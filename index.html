@@ -4,11 +4,17 @@
         <meta charset="UTF-8" />
         <link rel="icon" type="image/svg+xml" href="/assets/player.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="style.css">
         <title>Bundu.io</title>
     </head>
     <body>
-        <div id="chat-box">Test</div>
-        <input type="text"></input>
+        <section class="chat-area">
+            <div class="chat-box-area">
+                <div class="chat-message">Test</div>
+            </div>
+            <input type="text" id="chat-input"></input>
+            <button id="send">Send</button>
+        </section>
         <script type="module" defer src="/src/client/main.ts"></script>
     </body>
 </html>
