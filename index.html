@@ -6,15 +6,15 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="style.css">
         <title>Bundu.io</title>
+        <script type="module" defer src="/src/client/main.ts"></script>
     </head>
     <body>
         <section class="chat-area">
             <div class="chat-box-area">
                 <div class="chat-message">Test</div>
             </div>
-            <input type="text" id="chat-input"></input>
-            <button id="send">Send</button>
+            <input type="text" class="chat-input"></input>
+            <button class="chat-send-button" onclick="sendMessage();">Send</button>
         </section>
-        <script type="module" defer src="/src/client/main.ts"></script>
     </body>
 </html>

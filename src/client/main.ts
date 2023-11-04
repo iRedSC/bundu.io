@@ -1,5 +1,15 @@
-const app = document.getElementById("app");
+const sendButton: any = document.querySelector(".chat-send-button");
 
-if (app) {
-    app.innerHTML = "This is cool";
+if (sendButton) {
+    sendButton.onclick = () => {
+        const chatInput: any = document.querySelector(".chat-input");
+        if (!chatInput) {
+            return;
+        }
+        const chatArea = document.querySelector(".chat-box-area");
+        const message = document.createElement("div");
+        message.innerHTML = chatInput.value;
+
+        chatArea?.appendChild(message);
+    };
 }
