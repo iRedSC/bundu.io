@@ -7,7 +7,7 @@ Autobuilding is set up separately for client and server.
 Start autobuilding for the client:
 
 ```
-npm run dev
+npm run client
 ```
 
 Start autobuilding for the server:
