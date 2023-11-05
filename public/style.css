@@ -26,13 +26,22 @@ body {
 }
 
 body {
+    position: relative;
     display: grid;
     place-items: center;
     justify-content: center;
     grid-template-columns: 1fr;
 }
 
+.info-modal {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background-color: #242424;
+}
+
 .chat-area {
+    display: hidden;
     height: 100%;
     width: 50%;
     display: flex;
