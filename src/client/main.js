@@ -11,9 +11,13 @@ function sendMessage() {
     if (!chatInput) {
         return;
     }
+    exampleSocket.send(`${clientName} >> ${chatInput.value}`);
+}
+
+function displayMessage(messageContent) {
     const chatArea = document.querySelector(".chat-box-area");
     const message = document.createElement("div");
-    message.innerHTML = `${clientName} >> ${chatInput.value}`;
+    message.innerHTML = messageContent;
 
     chatArea?.appendChild(message);
     chatInput.value = "";
@@ -38,3 +42,14 @@ if (infoModalSubmitButton) {
         console.log(clientName);
     };
 }
+
+const exampleSocket = new WebSocket("ws://localhost:7777/");
+
+exampleSocket.onopen = () => {
+    console.log("connected");
+};
+
+exampleSocket.onmessage = (message) => {
+    console.log(message.data);
+    displayMessage(message.data);
+};
