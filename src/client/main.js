@@ -33,15 +33,27 @@ chatInput.addEventListener("keydown", function (e) {
 
 const infoModalSubmitButton = document.querySelector("#info-modal-submit");
 
-if (infoModalSubmitButton) {
-    infoModalSubmitButton.onclick = () => {
-        const infoModalNameField = document.querySelector("#info-name");
-        clientName = infoModalNameField.value;
-        infoModalNameField.value = "";
-        document.querySelector(".info-modal").style.display = "none";
-        console.log(clientName);
-    };
+function infoModalSubmit() {
+    const infoModalNameField = document.querySelector("#info-name");
+    clientName = infoModalNameField.value;
+    infoModalNameField.value = "";
+    document.querySelector(".chat-area").style.display = "flex";
+    document.querySelector(".info-modal").style.display = "none";
+    document.querySelector(".chat-input").focus();
+    console.log(clientName);
 }
+
+if (infoModalSubmitButton) {
+    infoModalSubmitButton.onclick = infoModalSubmit;
+}
+
+const nameInput = document.querySelector("#info-name");
+
+nameInput.addEventListener("keydown", function (e) {
+    if (e.code === "Enter") {
+        infoModalSubmit();
+    }
+});
 
 const exampleSocket = new WebSocket("ws://localhost:7777/");
 

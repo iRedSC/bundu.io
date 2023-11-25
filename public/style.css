@@ -34,17 +34,21 @@ body {
 }
 
 .info-modal {
-    position: absolute;
-    height: 100%;
-    width: 100%;
+    grid-row: 1;
+    grid-column: 1;
+
+    justify-content: center;
+
     background-color: #242424;
 }
 
 .chat-area {
-    display: hidden;
+    grid-row: 1;
+    grid-column: 1;
+
     height: 100%;
     width: 50%;
-    display: flex;
+    display: none;
     flex-direction: column;
     justify-content: center;
 }

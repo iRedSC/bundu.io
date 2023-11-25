@@ -1,6 +1,10 @@
 import * as uWS from "uWebSockets.js";
 import { BunduServer } from "./game.js";
 
+interface GameWS extends uWS.WebSocket<any> {
+    id?: number;
+}
+
 const sockets = new Map();
 
 function getIdWrapper() {
@@ -11,10 +15,6 @@ function getIdWrapper() {
         return id;
     }
     return wrapper;
-}
-
-interface GameWS extends uWS.WebSocket<any> {
-    id?: number;
 }
 
 const getId = getIdWrapper();
@@ -49,10 +49,11 @@ export class ServerController {
                     ws.subscribe("public");
                 },
                 message: (ws: GameWS, message, _isBinary) => {
-                    if (!ws.id) {
+                    if (ws.id === undefined) {
                         return;
                     }
-
+                    // for (let socket of sockets.values()) socket.send(message);
+                    ws.publish("public", message, _isBinary);
                     this.gameServer.receiveMessage(ws.id, message);
                 },
                 drain: (ws) => {
