@@ -5,8 +5,6 @@ interface GameWS extends uWS.WebSocket<any> {
     id?: number;
 }
 
-const sockets = new Map();
-
 function getIdWrapper() {
     let nextId = 0;
     function wrapper() {
@@ -24,12 +22,19 @@ The server controller coordinates between the Websockets and the actual game log
 It takes a game server as a property and will relay the messages sent by clients.
 */
 
+const decoder = new TextDecoder("utf-8");
+
 export class ServerController {
     webSocketServer: uWS.TemplatedApp;
     gameServer: BunduServer;
+    sockets: Map<number, uWS.WebSocket<any>>;
 
     constructor(gameServer: BunduServer) {
+        this.sockets = new Map();
         this.gameServer = gameServer;
+        this.gameServer.publish = (message: string) => {
+            for (let socket of this.sockets.values()) socket.send(message);
+        };
         this.webSocketServer = uWS
             .App({
                 key_file_name: "misc/key.pem",
@@ -43,25 +48,32 @@ export class ServerController {
                 idleTimeout: 10,
                 /* Handlers */
                 open: (ws: GameWS) => {
-                    ws.id = getId();
-                    sockets.set(ws.id, ws);
                     console.log("A WebSocket connected!");
+                    ws.id = getId();
+                    this.sockets.set(ws.id, ws);
                     ws.subscribe("public");
+                    for (let message of this.gameServer.messages) {
+                        ws.send(message);
+                    }
                 },
                 message: (ws: GameWS, message, _isBinary) => {
                     if (ws.id === undefined) {
                         return;
                     }
-                    // for (let socket of sockets.values()) socket.send(message);
-                    ws.publish("public", message, _isBinary);
-                    this.gameServer.receiveMessage(ws.id, message);
+                    this.gameServer.receiveMessage(
+                        ws.id,
+                        decoder.decode(message)
+                    );
                 },
                 drain: (ws) => {
                     console.log(
                         "WebSocket backpressure: " + ws.getBufferedAmount()
                     );
                 },
-                close: (_ws, _code, _message) => {
+                close: (ws: GameWS, _code, _message) => {
+                    if (ws.id !== undefined) {
+                        this.sockets.delete(ws.id);
+                    }
                     console.log("WebSocket closed");
                 },
             })
