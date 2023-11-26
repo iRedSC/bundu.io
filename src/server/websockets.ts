@@ -1,7 +1,7 @@
 import * as uWS from "uWebSockets.js";
 import { BunduServer } from "./game.js";
 
-interface GameWS extends uWS.WebSocket<any> {
+interface GameWS extends uWS.WebSocket<unknown> {
     id?: number;
 }
 
@@ -27,7 +27,7 @@ const decoder = new TextDecoder("utf-8");
 export class ServerController {
     webSocketServer: uWS.TemplatedApp;
     gameServer: BunduServer;
-    sockets: Map<number, uWS.WebSocket<any>>;
+    sockets: Map<number, uWS.WebSocket<unknown>>;
 
     constructor(gameServer: BunduServer) {
         this.sockets = new Map();
