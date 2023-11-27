@@ -4,23 +4,11 @@
         <meta charset="UTF-8" />
         <link rel="icon" type="image/svg+xml" href="/assets/player.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="style.css">
-        <title>Bundu.io</title>
-        <script type="module" defer src="/src/client/main.js"></script>
+        <link rel="stylesheet" href="/style.css" />
+        <title>Bundu.io Front End</title>
     </head>
-    <body>
-        <section class="info-modal">
-            <span>Name:</span>
-            <input type="text" name="name" id="info-name" class="info-name">
-            <button id="info-modal-submit">Submit</button>
-        </section>
-        <section class="chat-area">
-            <div class="chat-box-area">
-            </div>
-            <div class="chat-input-area">
-                <input type="text" class="chat-input"></input>
-                <button class="chat-send-button">Send</button>
-            </div>
-        </section>
+    <body oncontextmenu="return false;">
+        <div id="app"></div>
+        <script type="module" src="/src/client/main.ts"></script>
     </body>
 </html>

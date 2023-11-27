@@ -1,72 +1,143 @@
-let clientName = "unknown";
+import * as PIXI from "pixi.js";
+import { Player } from "./game_objects/player";
+import { degrees, lookToward, moveToward } from "../lib/transforms";
+import { createViewport } from "./viewport";
+import { WORLD_SIZE } from "./constants";
+import { moveInputs } from "./keyboard";
 
-const sendButton =
-    document.querySelector<HTMLButtonElement>(".chat-send-button");
+const app = new PIXI.Application<HTMLCanvasElement>({
+    resizeTo: window,
+    backgroundColor: 0x0d5b73,
+});
 
-if (sendButton) {
-    sendButton.onclick = sendMessage;
+// @ts-ignore
+globalThis.__PIXI_APP__ = app;
+
+function fromWorldCenter(x: number, y: number) {
+    return new PIXI.Point(WORLD_SIZE / 2 - x, WORLD_SIZE / 2 - y);
 }
 
-function sendMessage() {
-    const chatInput = document.querySelector<HTMLInputElement>(".chat-input")!;
-    if (!chatInput) {
-        return;
+const viewportCenter = new PIXI.Point(0, 0);
+const viewport = createViewport(app, viewportCenter);
+
+const graphics = new PIXI.Graphics();
+
+app.stage.addChild(viewport);
+
+graphics.beginFill(0x16a0ca);
+graphics.lineStyle({ width: 5 });
+graphics.drawRect(
+    app.stage.x,
+    app.stage.y,
+    viewport.worldWidth,
+    viewport.worldHeight
+);
+viewport.addChild(graphics);
+
+graphics.beginFill(0x1b6430);
+graphics.lineStyle({ width: 5 });
+graphics.drawRect(
+    app.stage.x + 5000,
+    app.stage.y + 5000,
+    viewport.worldWidth - 10000,
+    viewport.worldHeight - 10000
+);
+
+viewport.sortChildren();
+
+document.body.appendChild(app.view);
+
+const player: Player = new Player(Date.now(), 0, [[0, 0], 0]);
+
+const player2: Player = new Player(Date.now(), 1, [[0, 0], 0]);
+
+player.pos = fromWorldCenter(0, 0);
+player2.pos = fromWorldCenter(0, 0);
+
+viewport.follow(player.container, {
+    speed: 1,
+    acceleration: 0.2,
+    radius: 10,
+});
+
+viewport.addChild(player.container);
+
+viewport.addChild(player2.container);
+viewport.moveCenter(player.pos.x, player.pos.y);
+
+// tick updates
+
+app.ticker.add(() => {
+    player.animationManager.update();
+    player.setState(Date.now() - 50);
+    player2.setState(Date.now() - 50);
+    viewportCenter.x = viewport.center.x;
+    viewportCenter.y = viewport.center.y;
+});
+
+setInterval(() => {
+    let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
+    const rotation =
+        lookToward(player.container.position, mouseToWorld) - degrees(90);
+    const dir = moveInputs();
+    let pos: { x: number; y: number } = { x: player.pos.x, y: player.pos.y };
+    if (!(dir[0] === 0 && dir[1] === 0)) {
+        pos = moveToward(
+            player.pos,
+            lookToward(player.pos, {
+                x: player.pos.x - dir[0] * 10,
+                y: player.pos.y - dir[1] * 10,
+            }),
+            50
+        );
     }
-    exampleSocket.send(`${clientName} >> ${chatInput.value}`);
-}
+    player.update(Date.now(), [[pos.x, pos.y], rotation]);
+}, 50);
 
-function displayMessage(messageContent: string) {
-    const chatArea = document.querySelector(".chat-box-area")!;
-    const message = document.createElement("div")!;
-    message.innerHTML = messageContent;
+// interactions
 
-    chatArea?.appendChild(message);
-    chatInput.value = "";
-}
+let mousePos: [number, number] = [0, 0];
 
-const chatInput = document.querySelector<HTMLInputElement>(".chat-input")!;
+document.body.addEventListener("mousemove", (e) => {
+    mousePos[0] = e.clientX;
+    mousePos[1] = e.clientY;
+});
 
-chatInput.addEventListener("keydown", function (e) {
-    if (e.code === "Enter") {
-        sendMessage();
+let attack = false;
+let clicked = false;
+export let block = false;
+
+setInterval(() => {
+    if ((attack || clicked) && !block) {
+        player.trigger("attack");
+        clicked = false;
+    }
+}, 100);
+
+setInterval(() => {
+    if (block) {
+        player.trigger("block");
+    }
+}, 100);
+
+document.body.addEventListener("mousedown", (event) => {
+    if (event.button == 2) {
+        block = true;
+    } else {
+        attack = true;
     }
 });
 
-const infoModalSubmitButton =
-    document.querySelector<HTMLButtonElement>("#info-modal-submit");
-
-function infoModalSubmit() {
-    const infoModalNameField =
-        document.querySelector<HTMLInputElement>("#info-name")!;
-    clientName = infoModalNameField.value;
-    infoModalNameField.value = "";
-    document.querySelector<HTMLDivElement>(".chat-area")!.style.display =
-        "flex";
-    document.querySelector<HTMLDivElement>(".info-modal")!.style.display =
-        "none";
-    document.querySelector<HTMLInputElement>(".chat-input")!.focus();
-    console.log(clientName);
-}
-
-if (infoModalSubmitButton) {
-    infoModalSubmitButton.onclick = infoModalSubmit;
-}
-
-const nameInput = document.querySelector<HTMLInputElement>("#info-name")!;
-
-nameInput.onkeydown = (e: KeyboardEvent) => {
-    if (e.code === "Enter") {
-        infoModalSubmit();
+document.body.addEventListener("click", (event) => {
+    if (event.button == 0) {
+        clicked = true;
     }
-};
+});
 
-const exampleSocket = new WebSocket("ws://localhost:7777/");
-
-exampleSocket.onopen = () => {
-    console.log("connected");
-};
-
-exampleSocket.onmessage = (message) => {
-    console.log(message.data);
-    displayMessage(message.data);
-};
+document.body.addEventListener("mouseup", (event) => {
+    if (event.button == 2) {
+        block = false;
+    } else {
+        attack = false;
+    }
+});

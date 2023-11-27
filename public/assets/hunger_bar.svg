@@ -1,9 +1,9 @@
 <svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g filter="url(#filter0_i_1_93)">
-<rect x="36" y="182" width="328.17" height="36.8191" rx="11.2983" fill="#AE5454"/>
+<rect y="181" width="400" height="39" rx="10" fill="#AE5454"/>
 </g>
 <defs>
-<filter id="filter0_i_1_93" x="36" y="182" width="328.17" height="40.0472" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<filter id="filter0_i_1_93" x="0" y="181" width="400" height="42.2281" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
 <feFlood flood-opacity="0" result="BackgroundImageFix"/>
 <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
 <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
