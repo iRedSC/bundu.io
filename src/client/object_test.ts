@@ -1,4 +1,4 @@
-import { Animation, AnimationManager } from "../../lib/animation";
+import { Animation, AnimationManager } from "../lib/animation";
 
 type ObjectParts = { [key: string]: any };
 
