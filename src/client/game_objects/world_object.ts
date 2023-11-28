@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { degrees } from "../../../lib/transforms";
+import { degrees } from "../../lib/transforms";
 
 interface PreviousData {
     time: number;

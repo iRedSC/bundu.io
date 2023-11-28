@@ -4,6 +4,7 @@ import { degrees, lookToward, moveToward } from "../lib/transforms";
 import { createViewport } from "./viewport";
 import { WORLD_SIZE } from "./constants";
 import { moveInputs } from "./keyboard";
+import { loadGround } from "./ground";
 
 const app = new PIXI.Application<HTMLCanvasElement>({
     resizeTo: window,
@@ -20,27 +21,26 @@ function fromWorldCenter(x: number, y: number) {
 const viewportCenter = new PIXI.Point(0, 0);
 const viewport = createViewport(app, viewportCenter);
 
-const graphics = new PIXI.Graphics();
+const ground = new PIXI.Graphics();
 
 app.stage.addChild(viewport);
 
-graphics.beginFill(0x16a0ca);
-graphics.lineStyle({ width: 5 });
-graphics.drawRect(
-    app.stage.x,
-    app.stage.y,
-    viewport.worldWidth,
-    viewport.worldHeight
+loadGround(
+    viewport,
+    [
+        [0, 0],
+        [viewport.worldWidth, viewport.worldHeight],
+    ],
+    0x16a0ca
 );
-viewport.addChild(graphics);
 
-graphics.beginFill(0x1b6430);
-graphics.lineStyle({ width: 5 });
-graphics.drawRect(
-    app.stage.x + 5000,
-    app.stage.y + 5000,
-    viewport.worldWidth - 10000,
-    viewport.worldHeight - 10000
+loadGround(
+    viewport,
+    [
+        [5000, 5000],
+        [viewport.worldWidth - 5000, viewport.worldHeight - 5000],
+    ],
+    0x1b6430
 );
 
 viewport.sortChildren();
