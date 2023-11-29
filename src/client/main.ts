@@ -60,7 +60,7 @@ document.body.appendChild(app.view);
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
 
 player.update([Date.now() + 50, 0, 0, 0]);
-// player.pos = fromWorldCenter(0, 0);
+player.pos = fromWorldCenter(0, 0);
 
 viewport.follow(player.container, {
     speed: 1,
@@ -97,7 +97,7 @@ setInterval(() => {
             50
         );
     }
-    player.update([Date.now() + 50, pos.x, pos.y, rotation]);
+    player.update([Date.now() + 600, pos.x, pos.y, rotation]);
 }, 50);
 
 // interactions

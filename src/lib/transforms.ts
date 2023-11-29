@@ -4,6 +4,8 @@ interface Point {
     [key: string]: any;
 }
 export function rotationLerp(a: number, b: number, t: number): number {
+    t = Math.min(1, t);
+
     let delta = b - a;
 
     delta = ((delta + Math.PI) % (2 * Math.PI)) - Math.PI;
