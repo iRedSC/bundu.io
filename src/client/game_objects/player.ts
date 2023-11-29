@@ -1,32 +1,34 @@
 import * as PIXI from "pixi.js";
-import { clamp, degrees, lerp, rotationLerp } from "../../lib/transforms";
+import { degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager } from "../../lib/animation";
 import { block } from "../main";
 
 //* New: [pos, rotation, name, selectedItem, helmet]
 //* Changed: [[1, pos, rotation], [2, selectedItem, helmet]]
 
-function checkData(data: any[]): data is [[number, number], number] {
-    try {
-        const pos = data[0];
-        const rotation = data[1];
-        if (
-            typeof pos[0] === "number" &&
-            typeof pos[1] === "number" &&
-            typeof rotation === "number"
-        ) {
-            return true;
-        }
-        return false;
-    } catch {
+type State = [time: number, x: number, y: number, rotation: number];
+function typeofState(state?: State): state is State {
+    if (!state) {
         return false;
     }
+    return (
+        typeof state[0] === "number" &&
+        typeof state[1] === "number" &&
+        typeof state[2] === "number" &&
+        typeof state[3] === "number"
+    );
 }
 
-interface State {
-    time: number;
-    pos: PIXI.Point;
-    rotation: number;
+type Gear = [selectedItem: number, helmet: number, backpack: number];
+function typeofGear(gear?: Gear): gear is Gear {
+    if (!gear) {
+        return false;
+    }
+    return (
+        typeof gear[0] === "number" &&
+        typeof gear[1] === "number" &&
+        typeof gear[2] === "number"
+    );
 }
 
 interface PlayerParts {
@@ -50,12 +52,15 @@ interface PlayerParts {
 export class Player {
     id: number;
     parts: PlayerParts;
-    time: number;
-    states: State[];
+    lastState: State;
+    nextState: State;
     pos: PIXI.Point;
     rotation: number;
     animationManager: AnimationManager<PlayerParts>;
-    constructor(time: number, id: number, data: unknown[]) {
+    selectedItem: number;
+    helmet: number;
+    backpack: number;
+    constructor(id: number, state: State) {
         this.parts = {
             container: new PIXI.Container(),
             body: {
@@ -84,17 +89,14 @@ export class Player {
             },
         };
 
-        this.time = time;
-
         this.id = id;
 
-        if (checkData(data)) {
-            this.pos = new PIXI.Point(data[0][0], data[0][1]);
-            this.rotation = data[1];
-        } else {
-            this.pos = new PIXI.Point(0, 0);
-            this.rotation = 0;
-        }
+        this.selectedItem = -1;
+        this.helmet = -1;
+        this.backpack = -1;
+
+        this.pos = new PIXI.Point(0, 0);
+        this.rotation = 0;
 
         const parts = this.parts;
         const container = parts.container;
@@ -145,14 +147,10 @@ export class Player {
         this.trigger("leftHand");
         this.trigger("rightHand");
 
-        this.states = [];
-
-        this.states.push({
-            time: this.time,
-            pos: this.pos,
-            rotation: this.rotation,
-        });
+        this.lastState = state;
+        this.nextState = state;
     }
+
     get container() {
         return this.parts.container;
     }
@@ -161,108 +159,34 @@ export class Player {
         this.animationManager.start(name);
     }
 
-    setState(time: number) {
-        while (time > this.states[0].time && this.states.length > 2) {
-            this.states.splice(0, 1);
-        }
-        const lastState = this.states[0];
-        const nextState = this.states[1] || this.states[0];
-        const difference =
-            (time - lastState.time) / (nextState.time - lastState.time);
-        const t = clamp(difference, 0, 1);
-        this.parts.container.x = lerp(lastState.pos.x, nextState.pos.x, t);
-        this.parts.container.y = lerp(lastState.pos.y, nextState.pos.y, t);
+    move() {
+        const now = Date.now();
+        const t =
+            (now - this.lastState[0]) / (this.nextState[0] - this.lastState[0]);
+        this.pos.x = lerp(this.lastState[1], this.nextState[1], t);
+        this.pos.y = lerp(this.lastState[2], this.nextState[2], t);
+        this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
 
-        this.parts.container.rotation = rotationLerp(
-            lastState.rotation,
-            nextState.rotation,
-            t
-        );
+        this.container.position = this.pos;
+        this.container.rotation = this.rotation;
     }
 
-    update(time: number, data: unknown[]) {
-        let pos;
-        let rotation;
-        if (!checkData(data)) {
-            return;
-        } else {
-            (pos = data[0]), (rotation = data[1]);
-        }
-        // let selectedItem;
-        // let helmet;
+    update(state?: State, gear?: Gear) {
+        if (typeofState(state)) {
+            const now = Date.now();
+            this.lastState = [now, this.pos.x, this.pos.y, this.rotation];
 
-        // for (let property of data) {
-        //     try {
-        //         if (!checkPosRot(property) && !checkSelectedItems(property)) {
-        //             continue;
-        //         }
-        //         if (property[0] === 1) {
-        //             pos = property[1];
-        //             rotation = property[2];
-        //             continue;
-        //         }
-        //         if (property[0] === 2) {
-        //             selectedItem = property[1];
-        //             helmet = property[2];
-        //             continue;
-        //         }
-        //     } catch (error) {
-        //         console.log(error);
-        //     }
-        // }
-
-        this.states.push({
-            time: this.time,
-            pos: structuredClone(this.pos),
-            rotation: this.rotation,
-        });
-        this.time = time;
-        if (pos) {
-            this.pos = new PIXI.Point(pos[0], pos[1]);
+            this.nextState = state;
+            if (this.nextState[0] < now) {
+                this.nextState[0] = now;
+            }
+            console.log(this.lastState, this.nextState);
         }
-        if (rotation) {
-            this.rotation = rotation;
+        if (typeofGear(gear)) {
+            this.selectedItem = gear[0];
+            this.helmet = gear[1];
+            this.backpack = gear[2];
         }
-        this.states.push({
-            time: this.time,
-            pos: structuredClone(this.pos),
-            rotation: this.rotation,
-        });
-    }
-}
-
-function checkPosRot(data: any): data is [1, [number, number], number] {
-    try {
-        const pos = data[1];
-        const rotation = data[2];
-        if (
-            data[0] === 1 &&
-            typeof pos[0] === "number" &&
-            typeof pos[1] === "number" &&
-            typeof rotation === "number"
-        ) {
-            return true;
-        }
-        return false;
-    } catch {
-        return false;
-    }
-}
-
-function checkSelectedItems(data: any): data is [2, string, string] {
-    try {
-        const selectedItem = data[1];
-        const helmet = data[2];
-        if (
-            data[0] === 2 &&
-            typeof selectedItem === "string" &&
-            typeof helmet === "string"
-        ) {
-            return true;
-        }
-        return false;
-    } catch {
-        return false;
     }
 }
 

@@ -7,15 +7,19 @@ interface GameSprite {
     parts: ObjectParts;
 }
 
+type State = [time: number, x: number, y: number, rotation: number];
+type Gear = [selectedItem: number, helmet: number, backpack: number];
 interface GameObject {
     id: number;
-    lastpos: [number, number, number];
+    lastpos: State;
     pos: [number, number];
-    nextPos: [number, number, number];
+    nextPos: State;
     rotation: number;
     sprite: GameSprite;
 
+    update: (state?: State, gear?: Gear) => void;
+
     trigger: (event: string) => void;
 
-    move: (pos: [number, number], time: number) => void;
+    move: () => void;
 }

@@ -57,12 +57,10 @@ viewport.sortChildren();
 
 document.body.appendChild(app.view);
 
-const player: Player = new Player(Date.now(), 0, [[0, 0], 0]);
+const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
 
-const player2: Player = new Player(Date.now(), 1, [[0, 0], 0]);
-
-player.pos = fromWorldCenter(0, 0);
-player2.pos = fromWorldCenter(0, 0);
+player.update([Date.now() + 50, 0, 0, 0]);
+// player.pos = fromWorldCenter(0, 0);
 
 viewport.follow(player.container, {
     speed: 1,
@@ -72,16 +70,13 @@ viewport.follow(player.container, {
 
 viewport.addChild(player.container);
 
-viewport.addChild(player2.container);
 viewport.moveCenter(player.pos.x, player.pos.y);
 
 // tick updates
-player2.update(Date.now(), [[player2.pos.x, player2.pos.y], 0]);
 
 app.ticker.add(() => {
     player.animationManager.update();
-    player.setState(Date.now() - 50);
-    player2.setState(Date.now() - 50);
+    player.move();
     viewportCenter.x = viewport.center.x;
     viewportCenter.y = viewport.center.y;
 });
@@ -102,7 +97,7 @@ setInterval(() => {
             50
         );
     }
-    player.update(Date.now(), [[pos.x, pos.y], rotation]);
+    player.update([Date.now() + 50, pos.x, pos.y, rotation]);
 }, 50);
 
 // interactions

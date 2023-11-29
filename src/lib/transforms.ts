@@ -5,13 +5,16 @@ interface Point {
 }
 export function rotationLerp(a: number, b: number, t: number): number {
     let delta = b - a;
+
+    delta = ((delta + Math.PI) % (2 * Math.PI)) - Math.PI;
+
     if (delta > Math.PI) {
-        b -= 2 * Math.PI;
+        delta -= 2 * Math.PI;
     } else if (delta < -Math.PI) {
-        b += 2 * Math.PI;
+        delta += 2 * Math.PI;
     }
 
-    return a + (b - a) * t;
+    return a + delta * t;
 }
 
 export function degrees(degrees: number) {
