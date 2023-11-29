@@ -97,7 +97,7 @@ setInterval(() => {
             50
         );
     }
-    player.update([Date.now() + 600, pos.x, pos.y, rotation]);
+    player.update([Date.now() + 50, pos.x, pos.y, rotation]);
 }, 50);
 
 // interactions
