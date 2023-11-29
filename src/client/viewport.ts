@@ -13,7 +13,7 @@ export function createViewport(app: PIXI.Application, center: PIXI.Point) {
     // viewport.pivot.set(viewport.worldWidth / 2, viewport.worldHeight / 2);
     // viewport.position.set(0, 0);
 
-    viewport.clampZoom({ minScale: 0.15, maxScale: 1 });
+    // viewport.clampZoom({ minScale: 0.15, maxScale: 1 });
     viewport.clamp({
         direction: "all",
         left: true,

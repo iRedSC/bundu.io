@@ -11,7 +11,10 @@ const app = new PIXI.Application<HTMLCanvasElement>({
     backgroundColor: 0x0d5b73,
 });
 
-// @ts-ignore
+declare module globalThis {
+    var __PIXI_APP__: PIXI.Application;
+}
+
 globalThis.__PIXI_APP__ = app;
 
 function fromWorldCenter(x: number, y: number) {
@@ -20,8 +23,6 @@ function fromWorldCenter(x: number, y: number) {
 
 const viewportCenter = new PIXI.Point(0, 0);
 const viewport = createViewport(app, viewportCenter);
-
-const ground = new PIXI.Graphics();
 
 app.stage.addChild(viewport);
 
@@ -41,6 +42,15 @@ loadGround(
         [viewport.worldWidth - 5000, viewport.worldHeight - 5000],
     ],
     0x1b6430
+);
+
+loadGround(
+    viewport,
+    [
+        [10000, 10000],
+        [11000, 11000],
+    ],
+    0xd45959
 );
 
 viewport.sortChildren();
@@ -66,6 +76,7 @@ viewport.addChild(player2.container);
 viewport.moveCenter(player.pos.x, player.pos.y);
 
 // tick updates
+player2.update(Date.now(), [[player2.pos.x, player2.pos.y], 0]);
 
 app.ticker.add(() => {
     player.animationManager.update();
