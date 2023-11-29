@@ -1,18 +1,19 @@
 import * as PIXI from "pixi.js";
-import {
-    clamp,
-    colorLerp,
-    degrees,
-    lerp,
-    rotationLerp,
-} from "../../../lib/transforms";
-import { AnimationManager, Keyframes } from "../../../lib/animation";
-import { randomInt } from "../../../lib/math";
+import { colorLerp, degrees, lerp, rotationLerp } from "../../lib/transforms";
+import { AnimationManager, Keyframes } from "../../lib/animation";
+import { randomInt } from "../../lib/math";
 
-interface PreviousData {
-    time: number;
-    pos: PIXI.Point;
-    rotation: number;
+type State = [time: number, x: number, y: number, rotation: number];
+function typeofState(state?: State): state is State {
+    if (!state) {
+        return false;
+    }
+    return (
+        typeof state[0] === "number" &&
+        typeof state[1] === "number" &&
+        typeof state[2] === "number" &&
+        typeof state[3] === "number"
+    );
 }
 
 interface EntityParts {
@@ -21,129 +22,70 @@ interface EntityParts {
 }
 
 export class Entity {
-    time: number;
-
-    states: PreviousData[];
-
+    id: number;
+    lastState: State;
+    nextState: State;
     pos: PIXI.Point;
     rotation: number;
     size: number;
-
     parts: EntityParts;
-
     animationManager: AnimationManager<EntityParts>;
+    constructor(id: number, type: string, state: State) {
+        this.id = id;
 
-    constructor(
-        time: number,
-        pos: PIXI.Point,
-        rotation: number,
-        size: number,
-        sprite: string
-    ) {
-        this.time = time;
-
-        this.pos = pos;
-        this.size = size;
-
-        this.rotation = rotation;
+        this.pos = new PIXI.Point(0, 0);
+        this.rotation = 0;
+        this.size = 5;
 
         this.parts = {
             container: new PIXI.Container(),
-            body: PIXI.Sprite.from(`./assets/${sprite}.svg`, {
+            body: PIXI.Sprite.from(`./assets/${type}.svg`, {
                 mipmap: PIXI.MIPMAP_MODES.ON,
             }),
         };
-
         this.parts.container.pivot.set(
             this.parts.container.width / 2,
             this.parts.container.height / 2
         );
         this.parts.container.position.set(this.pos.x, this.pos.y);
-
-        this.parts.body = PIXI.Sprite.from(`./assets/${sprite}.svg`, {
+        this.parts.body = PIXI.Sprite.from(`./assets/${type}.svg`, {
             mipmap: PIXI.MIPMAP_MODES.ON,
         });
         this.parts.body.rotation = degrees(-90);
         this.parts.body.anchor.set(0.5);
-
         this.parts.container.addChild(this.parts.body);
-        this.parts.body.scale.set(size);
-        this.states = [];
-        this.states.push({
-            time: this.time,
-            pos: this.pos,
-            rotation: this.rotation,
-        });
-
+        this.parts.body.scale.set(this.size);
         this.animationManager = loadAnimations(this.parts);
-
-        this.addAnimation("idle");
+        this.trigger("idle");
+        this.lastState = state;
+        this.nextState = state;
+        this.move();
     }
-
-    setState(time: number) {
-        while (time > this.states[0].time && this.states.length > 2) {
-            this.states.splice(0, 1);
-        }
-        const lastState = this.states[0];
-        const nextState = this.states[1] || this.states[0];
-        const difference =
-            (time - lastState.time) / (nextState.time - lastState.time);
-        const t = clamp(difference, 0, 1);
-        this.parts.container.x = lerp(lastState.pos.x, nextState.pos.x, t);
-        this.parts.container.y = lerp(lastState.pos.y, nextState.pos.y, t);
-
-        this.parts.container.rotation = rotationLerp(
-            lastState.rotation,
-            nextState.rotation,
-            t
-        );
-    }
-
-    addAnimation(name: string) {
+    trigger(name: string) {
         this.animationManager.start(name);
     }
-
-    update(time: number, data: unknown[]) {
-        if (!checkData(data)) {
-            return;
-        }
-        const pos = data[0];
-        const rotation = data[1];
-
-        this.states.push({
-            time: this.time,
-            pos: structuredClone(this.pos),
-            rotation: this.rotation,
-        });
-        this.time = time;
-        this.pos = new PIXI.Point(pos[0], pos[1]);
-        this.rotation = rotation;
-        this.states.push({
-            time: this.time,
-            pos: structuredClone(this.pos),
-            rotation: this.rotation,
-        });
+    move() {
+        const now = Date.now();
+        const t =
+            (now - this.lastState[0]) / (this.nextState[0] - this.lastState[0]);
+        this.pos.x = lerp(this.lastState[1], this.nextState[1], t);
+        this.pos.y = lerp(this.lastState[2], this.nextState[2], t);
+        this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
+        this.container.position = this.pos;
+        this.container.rotation = this.rotation;
     }
-
+    update(state?: State) {
+        if (typeofState(state)) {
+            const now = Date.now();
+            this.lastState = [now, this.pos.x, this.pos.y, this.rotation];
+            this.nextState = state;
+            if (this.nextState[0] < now) {
+                this.nextState[0] = now;
+            }
+        }
+    }
     get container() {
         return this.parts.container;
-    }
-}
-
-function checkData(data: any[]): data is [[number, number], number] {
-    try {
-        const pos = data[0];
-        const rotation = data[1];
-        if (
-            typeof pos[0] === "number" &&
-            typeof pos[1] === "number" &&
-            typeof rotation === "number"
-        ) {
-            return true;
-        }
-        return false;
-    } catch {
-        return false;
     }
 }
 

@@ -62,11 +62,7 @@ const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
 player.update([Date.now() + 50, 0, 0, 0]);
 player.pos = fromWorldCenter(0, 0);
 
-viewport.follow(player.container, {
-    speed: 1,
-    acceleration: 0.2,
-    radius: 10,
-});
+viewport.follow(player.container);
 
 viewport.addChild(player.container);
 
@@ -94,10 +90,10 @@ setInterval(() => {
                 x: player.pos.x - dir[0] * 10,
                 y: player.pos.y - dir[1] * 10,
             }),
-            50
+            5
         );
     }
-    player.update([Date.now() + 50, pos.x, pos.y, rotation]);
+    player.update([Date.now() + 50, player.pos.x + 50, pos.y, rotation]);
 }, 50);
 
 // interactions

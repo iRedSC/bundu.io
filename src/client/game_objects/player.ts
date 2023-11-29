@@ -180,7 +180,6 @@ export class Player {
             if (this.nextState[0] < now) {
                 this.nextState[0] = now;
             }
-            console.log(this.lastState, this.nextState);
         }
         if (typeofGear(gear)) {
             this.selectedItem = gear[0];
