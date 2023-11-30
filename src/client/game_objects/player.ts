@@ -167,6 +167,9 @@ export class Player {
         this.pos.y = lerp(this.lastState[2], this.nextState[2], t);
         this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
 
+        // this.pos.x = this.nextState[1];
+        // this.pos.y = this.nextState[2];
+
         this.container.position = this.pos;
         this.container.rotation = this.rotation;
     }

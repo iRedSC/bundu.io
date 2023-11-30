@@ -59,10 +59,11 @@ document.body.appendChild(app.view);
 
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
 
-player.update([Date.now() + 50, 0, 0, 0]);
-player.pos = fromWorldCenter(0, 0);
-
-viewport.follow(player.container);
+// viewport.follow(player.container, {
+//     speed: 1,
+//     acceleration: 0.2,
+//     radius: 2,
+// });
 
 viewport.addChild(player.container);
 
@@ -77,23 +78,24 @@ app.ticker.add(() => {
     viewportCenter.y = viewport.center.y;
 });
 
+let playerPos: { x: number; y: number } = { x: 5000, y: 5000 };
+
 setInterval(() => {
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
     const rotation =
         lookToward(player.container.position, mouseToWorld) - degrees(90);
     const dir = moveInputs();
-    let pos: { x: number; y: number } = { x: player.pos.x, y: player.pos.y };
     if (!(dir[0] === 0 && dir[1] === 0)) {
-        pos = moveToward(
-            player.pos,
+        playerPos = moveToward(
+            playerPos,
             lookToward(player.pos, {
-                x: player.pos.x - dir[0] * 10,
-                y: player.pos.y - dir[1] * 10,
+                x: playerPos.x - dir[0] * 10,
+                y: playerPos.y - dir[1] * 10,
             }),
-            5
+            50
         );
     }
-    player.update([Date.now() + 50, player.pos.x + 50, pos.y, rotation]);
+    player.update([Date.now() + 50, playerPos.x, playerPos.y, rotation]);
 }, 50);
 
 // interactions
