@@ -71,6 +71,7 @@ function rgbToHex(rgb: { r: number; g: number; b: number }) {
 }
 
 export function lerp(a: number, b: number, t: number) {
+    t = Math.min(1, t);
     return a * (1 - t) + b * t;
 }
 

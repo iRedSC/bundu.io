@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 import { degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager } from "../../lib/animation";
 import { block } from "../main";
+import { round } from "../../lib/math";
 
 //* New: [pos, rotation, name, selectedItem, helmet]
 //* Changed: [[1, pos, rotation], [2, selectedItem, helmet]]
@@ -163,9 +164,13 @@ export class Player {
         const now = Date.now();
         const t =
             (now - this.lastState[0]) / (this.nextState[0] - this.lastState[0]);
-        this.pos.x = lerp(this.lastState[1], this.nextState[1], t);
-        this.pos.y = lerp(this.lastState[2], this.nextState[2], t);
+        if (t > 1 || t < 0) {
+            console.log(t);
+        }
+        this.pos.x = round(lerp(this.lastState[1], this.nextState[1], t));
+        this.pos.y = round(lerp(this.lastState[2], this.nextState[2], t));
         this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
+        // console.log(this.lastState[1], this.pos.x, this.nextState[1]);
 
         // this.pos.x = this.nextState[1];
         // this.pos.y = this.nextState[2];
@@ -176,12 +181,11 @@ export class Player {
 
     update(state?: State, gear?: Gear) {
         if (typeofState(state)) {
-            const now = Date.now();
-            this.lastState = [now, this.pos.x, this.pos.y, this.rotation];
+            this.lastState = this.nextState;
 
             this.nextState = state;
-            if (this.nextState[0] < now) {
-                this.nextState[0] = now;
+            if (this.nextState[0] < this.lastState[0]) {
+                this.nextState[0] = this.lastState[0];
             }
         }
         if (typeofGear(gear)) {

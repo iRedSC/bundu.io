@@ -5,6 +5,7 @@ import { createViewport } from "./viewport";
 import { WORLD_SIZE } from "./constants";
 import { moveInputs } from "./keyboard";
 import { loadGround } from "./ground";
+import { randomHexColor, randomInt } from "../lib/math";
 
 const app = new PIXI.Application<HTMLCanvasElement>({
     resizeTo: window,
@@ -17,13 +18,12 @@ declare module globalThis {
 
 globalThis.__PIXI_APP__ = app;
 
-function fromWorldCenter(x: number, y: number) {
-    return new PIXI.Point(WORLD_SIZE / 2 - x, WORLD_SIZE / 2 - y);
-}
+// function fromWorldCenter(x: number, y: number) {
+//     return new PIXI.Point(WORLD_SIZE / 2 - x, WORLD_SIZE / 2 - y);
+// }
 
 const viewportCenter = new PIXI.Point(0, 0);
 const viewport = createViewport(app, viewportCenter);
-
 app.stage.addChild(viewport);
 
 loadGround(
@@ -44,32 +44,37 @@ loadGround(
     0x1b6430
 );
 
-loadGround(
-    viewport,
-    [
-        [10000, 10000],
-        [11000, 11000],
-    ],
-    0xd45959
-);
+for (let i = 0; i < 50; i++) {
+    loadGround(
+        viewport,
+        [
+            [randomInt(0, 40000), randomInt(0, 40000)],
+            [randomInt(0, 40000), randomInt(0, 40000)],
+        ],
+        randomHexColor()
+    );
+}
 
 viewport.sortChildren();
 
 document.body.appendChild(app.view);
 
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
+player.update([Date.now(), 5000, 5000, 0]);
 
-// viewport.follow(player.container, {
-//     speed: 1,
-//     acceleration: 0.2,
-//     radius: 2,
-// });
+// viewport.follow(player.container);
+viewport.follow(player.container, {
+    speed: 0,
+    // acceleration: 0.1,
+    radius: 5,
+});
 
 viewport.addChild(player.container);
 
 viewport.moveCenter(player.pos.x, player.pos.y);
 
 // tick updates
+let playerPos: { x: number; y: number } = { x: 5000, y: 5000 };
 
 app.ticker.add(() => {
     player.animationManager.update();
@@ -78,7 +83,9 @@ app.ticker.add(() => {
     viewportCenter.y = viewport.center.y;
 });
 
-let playerPos: { x: number; y: number } = { x: 5000, y: 5000 };
+window.onresize = (_) => {
+    viewport.resize(window.innerWidth, window.innerHeight);
+};
 
 setInterval(() => {
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
@@ -88,11 +95,11 @@ setInterval(() => {
     if (!(dir[0] === 0 && dir[1] === 0)) {
         playerPos = moveToward(
             playerPos,
-            lookToward(player.pos, {
+            lookToward(playerPos, {
                 x: playerPos.x - dir[0] * 10,
                 y: playerPos.y - dir[1] * 10,
             }),
-            50
+            100
         );
     }
     player.update([Date.now() + 50, playerPos.x, playerPos.y, rotation]);
