@@ -19,7 +19,7 @@ type IncomingPlayerData =
 
 type IncomingData = [time: number, [dataType: 0, IncomingPlayerData][]];
 
-class GameObjectHolder {
+export class GameObjectHolder {
     user?: Player;
     players: Map<number, Player>;
     entities: Map<number, Entity>;

@@ -9,7 +9,7 @@ interface GameSprite {
 
 type State = [time: number, x: number, y: number, rotation: number];
 type Gear = [selectedItem: number, helmet: number, backpack: number];
-interface GameObject {
+export interface GameObject {
     id: number;
     lastpos: State;
     pos: [number, number];

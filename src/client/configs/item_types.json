@@ -1,0 +1,23 @@
+{
+    "undefined": {
+        "hand_position": {
+            "rotation": 0,
+            "x": 0,
+            "y": 0
+        }
+    },
+    "pickaxe": {
+        "hand_position": {
+            "rotation": -100,
+            "x": 150,
+            "y": -200
+        }
+    },
+    "sword": {
+        "hand_position": {
+            "rotation": -135,
+            "x": 0,
+            "y": -130
+        }
+    }
+}

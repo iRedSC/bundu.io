@@ -36,6 +36,7 @@ export class Structure {
                 mipmap: PIXI.MIPMAP_MODES.ON,
             }),
         };
+        this.parts.container.zIndex = 10;
         this.parts.container.pivot.set(
             this.parts.container.width / 2,
             this.parts.container.height / 2

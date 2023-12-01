@@ -4,8 +4,12 @@ export function randomInt(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function round(num: number) {
-    return Math.round((num + Number.EPSILON) * 1000) / 1000;
+export function round(num: number, digits?: number) {
+    if (!digits) {
+        digits = 2;
+    }
+    const place = 10 ** digits;
+    return Math.round((num + Number.EPSILON) * place) / place;
 }
 
 export function randomHexColor(): number {

@@ -5,8 +5,28 @@ import { block } from "../main";
 import { round } from "../../lib/math";
 import { NIGHT_COLOR } from "../constants";
 
+import itemTypes from "../configs/item_types.json";
+import items from "../configs/items.json";
+
+interface itemTypes {
+    [key: string]: keyof typeof itemTypes;
+}
+
+interface items {
+    [key: string]: string;
+}
+
 //* New: [pos, rotation, name, selectedItem, helmet]
 //* Changed: [[1, pos, rotation], [2, selectedItem, helmet]]
+
+function validItemType(type: string): keyof typeof itemTypes {
+    const validate = (type: string): type is keyof typeof itemTypes =>
+        type in itemTypes;
+    if (validate(type)) {
+        return type;
+    }
+    return "undefined";
+}
 
 type State = [time: number, x: number, y: number, rotation: number];
 function typeofState(state?: State): state is State {
@@ -21,16 +41,16 @@ function typeofState(state?: State): state is State {
     );
 }
 
-type Gear = [selectedItem: number, helmet: number, backpack: number];
+type Gear = [
+    selectedItem: keyof typeof items,
+    helmet: keyof typeof items,
+    backpack: number
+];
 function typeofGear(gear?: Gear): gear is Gear {
     if (!gear) {
         return false;
     }
-    return (
-        typeof gear[0] === "number" &&
-        typeof gear[1] === "number" &&
-        typeof gear[2] === "number"
-    );
+    return gear[0] in items && gear[1] in items && typeof gear[2] === "number";
 }
 
 interface PlayerParts {
@@ -59,8 +79,8 @@ export class Player {
     pos: PIXI.Point;
     rotation: number;
     animationManager: AnimationManager<PlayerParts>;
-    selectedItem: number;
-    helmet: number;
+    selectedItem: keyof typeof items;
+    helmet: string;
     backpack: number;
     constructor(id: number, state: State) {
         this.parts = {
@@ -70,7 +90,7 @@ export class Player {
                 sprite: PIXI.Sprite.from("./assets/player.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
-                helmet: PIXI.Sprite.from("./assets/amethyst_helmet.svg", {
+                helmet: PIXI.Sprite.from("./assets/diamond_helmet.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
             },
@@ -79,7 +99,7 @@ export class Player {
                 sprite: PIXI.Sprite.from("./assets/hand.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
-                selectedItem: PIXI.Sprite.from("./assets/amethyst_sword.svg", {
+                selectedItem: PIXI.Sprite.from("./assets/diamond_pickaxe.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
             },
@@ -93,8 +113,8 @@ export class Player {
 
         this.id = id;
 
-        this.selectedItem = -1;
-        this.helmet = -1;
+        this.selectedItem = "empty";
+        this.helmet = "empty";
         this.backpack = -1;
 
         this.pos = new PIXI.Point(0, 0);
@@ -105,6 +125,9 @@ export class Player {
         const body = parts.body;
         const leftHand = parts.leftHand;
         const rightHand = parts.rightHand;
+        container.zIndex = 1;
+
+        leftHand.selectedItem.renderable = false;
 
         container.pivot.x = container.width / 2;
         container.pivot.y = container.height / 2;
@@ -115,12 +138,12 @@ export class Player {
         body.container.addChild(rightHand.container);
         body.container.addChild(body.sprite);
 
+        leftHand.container.addChild(leftHand.selectedItem);
         leftHand.container.addChild(leftHand.sprite);
 
         rightHand.container.addChild(rightHand.sprite);
 
         body.container.addChild(body.helmet);
-        leftHand.container.addChild(leftHand.selectedItem);
 
         body.sprite.anchor.set(0.5);
         body.helmet.anchor.set(0.5);
@@ -134,9 +157,9 @@ export class Player {
 
         leftHand.selectedItem.anchor.set(1);
         leftHand.selectedItem.scale.set(1.8);
-        leftHand.selectedItem.rotation = degrees(-135);
-        leftHand.selectedItem.x = 0;
-        leftHand.selectedItem.y = -120;
+        leftHand.selectedItem.rotation = degrees(-100);
+        leftHand.selectedItem.x = 100;
+        leftHand.selectedItem.y = -200;
 
         rightHand.container.x = 60;
         rightHand.container.y = 45;
@@ -170,6 +193,7 @@ export class Player {
         this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
         // console.log(this.lastState[1], this.pos.x, this.nextState[1]);
 
+        // this.rotation = this.nextState[3];
         // this.pos.x = this.nextState[1];
         // this.pos.y = this.nextState[2];
 
@@ -190,6 +214,25 @@ export class Player {
             this.selectedItem = gear[0];
             this.helmet = gear[1];
             this.backpack = gear[2];
+            this.updateGear();
+        }
+    }
+
+    updateGear() {
+        this.parts.leftHand.selectedItem.renderable = false;
+        this.parts.body.helmet.renderable = false;
+
+        if (this.selectedItem !== "empty") {
+            this.parts.leftHand.selectedItem.renderable = true;
+            const item = items[this.selectedItem];
+            const itemData = itemTypes[validItemType(item.item_type)];
+            const texture = PIXI.Texture.from(`./assets/${item.sprite}.svg`);
+            this.parts.leftHand.selectedItem.texture = texture;
+            this.parts.leftHand.selectedItem.x = itemData.hand_position.x;
+            this.parts.leftHand.selectedItem.y = itemData.hand_position.y;
+            this.parts.leftHand.selectedItem.rotation = degrees(
+                itemData.hand_position.rotation
+            );
         }
     }
 
@@ -246,7 +289,7 @@ function loadAnimations(target: PlayerParts) {
         if (leftHand.rotation !== 0) {
             animation.expired = true;
         }
-        animation.next(75);
+        animation.next(100);
     });
     attackKeyframes.set(1, ({ target, animation }) => {
         const leftHand = target.leftHand.container;

@@ -3,10 +3,8 @@ import { Player } from "./game_objects/player";
 import { degrees, lookToward, moveToward } from "../lib/transforms";
 import { createViewport } from "./viewport";
 import { moveInputs } from "./keyboard";
-import { loadGround } from "./ground";
-import { randomHexColor, randomInt } from "../lib/math";
-import { Structure } from "./game_objects/structure";
 import { Entity } from "./game_objects/entity";
+import { createStuff } from "./testing";
 
 const all_objects: { setNight: () => void; setDay: () => void }[] = [];
 
@@ -29,92 +27,23 @@ const viewportCenter = new PIXI.Point(0, 0);
 const viewport = createViewport(app, viewportCenter);
 app.stage.addChild(viewport);
 
-all_objects.push(
-    loadGround(
-        viewport,
-        [
-            [0, 0],
-            [viewport.worldWidth, viewport.worldHeight],
-        ],
-        0x16a0ca
-    )
-);
-
-all_objects.push(
-    loadGround(
-        viewport,
-        [
-            [5000, 5000],
-            [viewport.worldWidth - 5000, viewport.worldHeight - 5000],
-        ],
-        0x1b6430
-    )
-);
-
-for (let i = 0; i < 50; i++) {
-    const ground = loadGround(
-        viewport,
-        [
-            [randomInt(0, 40000), randomInt(0, 40000)],
-            [randomInt(0, 40000), randomInt(0, 40000)],
-        ],
-        randomHexColor()
-    );
-    all_objects.push(ground);
-}
-
-for (let i = 0; i < 50; i++) {
-    const structure = new Structure(
-        i,
-        [randomInt(0, 40000), randomInt(0, 40000)],
-        randomInt(3, 5),
-        randomInt(0, Math.PI * 360),
-        "stone"
-    );
-    viewport.addChild(structure.parts.container);
-    all_objects.push(structure);
-}
-
-for (let i = 0; i < 50; i++) {
-    const structure = new Structure(
-        i,
-        [randomInt(0, 40000), randomInt(0, 40000)],
-        3,
-        randomInt(0, Math.PI * 360),
-        "red_wall"
-    );
-    viewport.addChild(structure.parts.container);
-    all_objects.push(structure);
-}
-
-for (let i = 0; i < 50; i++) {
-    const structure = new Structure(
-        i,
-        [randomInt(0, 40000), randomInt(0, 40000)],
-        randomInt(5, 10),
-        randomInt(0, Math.PI * 360),
-        "pine_tree"
-    );
-    viewport.addChild(structure.parts.container);
-    all_objects.push(structure);
-}
+createStuff(viewport, all_objects);
 
 viewport.sortChildren();
 
 document.body.appendChild(app.view);
 
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
-player.update([Date.now(), 20000, 20000, 0]);
+player.update([Date.now(), 20000, 20000, 0], ["empty", "empty", 0]);
 viewport.addChild(player.container);
 all_objects.push(player);
 
 let elePos = { x: 20000, y: 20000 };
 const elephant = new Entity(0, "elephant");
-elephant.update([Date.now(), 20000, 20000, 0]);
+elephant.update([Date.now(), 10000, 20000, 0]);
 viewport.addChild(elephant.container);
 all_objects.push(elephant);
 
-// viewport.follow(player.container);
 viewport.follow(player.container, {
     speed: 0,
     acceleration: 1,
@@ -134,7 +63,7 @@ app.ticker.add(() => {
 });
 
 setInterval(() => {
-    elephant.move();
+    // elephant.move();
     player.move();
 }, 10);
 
@@ -145,8 +74,10 @@ window.onresize = (_) => {
 setInterval(() => {
     elePos = moveToward(elePos, lookToward(elePos, playerPos), 20);
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
-    const rotation = lookToward(playerPos, mouseToWorld) - degrees(90);
+    const rotation =
+        lookToward(player.container.position, mouseToWorld) - degrees(90);
     const dir = moveInputs();
+    console.log(playerPos, mouseToWorld, mousePos, rotation);
     if (!(dir[0] === 0 && dir[1] === 0)) {
         playerPos = moveToward(
             playerPos,
