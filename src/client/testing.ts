@@ -2,6 +2,7 @@ import { Viewport } from "pixi-viewport";
 import { Structure } from "./game_objects/structure";
 import { randomHexColor, randomInt } from "../lib/math";
 import { loadGround } from "./ground";
+import { WORLD_SIZE } from "./constants";
 
 export function createStuff(viewport: Viewport, all_objects: any[]) {
     all_objects.push(
@@ -30,18 +31,18 @@ export function createStuff(viewport: Viewport, all_objects: any[]) {
         const ground = loadGround(
             viewport,
             [
-                [randomInt(0, 40000), randomInt(0, 40000)],
-                [randomInt(0, 40000), randomInt(0, 40000)],
+                [randomInt(0, WORLD_SIZE), randomInt(0, WORLD_SIZE)],
+                [randomInt(0, WORLD_SIZE), randomInt(0, WORLD_SIZE)],
             ],
             randomHexColor()
         );
         all_objects.push(ground);
     }
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 5000; i++) {
         const structure = new Structure(
             i,
-            [randomInt(0, 40000), randomInt(0, 40000)],
+            [randomInt(0, WORLD_SIZE), randomInt(0, WORLD_SIZE)],
             randomInt(3, 5),
             randomInt(0, Math.PI * 360),
             "stone"
@@ -50,10 +51,10 @@ export function createStuff(viewport: Viewport, all_objects: any[]) {
         all_objects.push(structure);
     }
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 5000; i++) {
         const structure = new Structure(
             i,
-            [randomInt(0, 40000), randomInt(0, 40000)],
+            [randomInt(0, WORLD_SIZE), randomInt(0, WORLD_SIZE)],
             3,
             randomInt(0, Math.PI * 360),
             "red_wall"
@@ -62,10 +63,10 @@ export function createStuff(viewport: Viewport, all_objects: any[]) {
         all_objects.push(structure);
     }
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 5000; i++) {
         const structure = new Structure(
             i,
-            [randomInt(0, 40000), randomInt(0, 40000)],
+            [randomInt(0, WORLD_SIZE), randomInt(0, WORLD_SIZE)],
             randomInt(5, 10),
             randomInt(0, Math.PI * 360),
             "pine_tree2"

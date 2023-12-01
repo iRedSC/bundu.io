@@ -17,6 +17,7 @@
     },
     "dependencies": {
         "@types/pixi.js": "^5.0.0",
+        "pixi-cull": "^2.1.1",
         "pixi-viewport": "^5.0.2",
         "pixi.js": "^7.3.2",
         "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.33.0",

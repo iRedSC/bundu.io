@@ -5,6 +5,7 @@ import { createViewport } from "./viewport";
 import { moveInputs } from "./keyboard";
 import { Entity } from "./game_objects/entity";
 import { createStuff } from "./testing";
+import { Simple } from "pixi-cull";
 
 const all_objects: { setNight: () => void; setDay: () => void }[] = [];
 
@@ -23,14 +24,27 @@ globalThis.__PIXI_APP__ = app;
 //     return new PIXI.Point(WORLD_SIZE / 2 - x, WORLD_SIZE / 2 - y);
 // }
 
+let cullDirty = true;
+
 const viewportCenter = new PIXI.Point(0, 0);
 const viewport = createViewport(app, viewportCenter);
 app.stage.addChild(viewport);
 
+const cull = new Simple();
+cull.addList(viewport.children);
+cull.cull(viewport.getVisibleBounds());
+viewport.on("frame-end", () => {
+    if (viewport.dirty || cullDirty) {
+        console.log("culling");
+        cull.cull(viewport.getVisibleBounds());
+
+        viewport.dirty = false;
+        cullDirty = false;
+    }
+});
 createStuff(viewport, all_objects);
 
 viewport.sortChildren();
-
 document.body.appendChild(app.view);
 
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
@@ -61,6 +75,8 @@ app.ticker.add(() => {
     viewportCenter.x = viewport.center.x;
     viewportCenter.y = viewport.center.y;
 });
+
+cullDirty = true;
 
 setInterval(() => {
     // elephant.move();
