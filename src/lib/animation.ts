@@ -1,5 +1,7 @@
 export type Keyframes<T> = Map<number, Keyframe<T>>;
 
+type Data = { [key: string]: unknown };
+
 export type Keyframe<T> = ({
     target,
     animation,
@@ -21,6 +23,7 @@ export class Animation<T> {
     start: number;
     duration: number;
     meta: { [key: string]: any };
+    data?: Data;
 
     constructor(
         target: T,

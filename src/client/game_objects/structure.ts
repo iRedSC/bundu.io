@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
-import { degrees } from "../../lib/transforms";
+import { degrees, lerp, lookToward, moveToward } from "../../lib/transforms";
 import { NIGHT_COLOR } from "../constants";
+import { AnimationManager, Keyframes } from "../../lib/animation";
 
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 
@@ -14,7 +15,9 @@ export class Structure {
     pos: PIXI.Point;
     size: number;
     rotation: number;
+    animationManager: AnimationManager<Structure>;
     parts: StructureParts;
+    lastHitSource: PIXI.Point;
 
     constructor(
         id: number,
@@ -23,6 +26,7 @@ export class Structure {
         rotation: number,
         type: string
     ) {
+        this.lastHitSource = new PIXI.Point(0, 0);
         this.id = id;
 
         this.pos = new PIXI.Point(pos[0], pos[1]);
@@ -49,7 +53,14 @@ export class Structure {
         this.parts.sprite.anchor.set(0.5);
         this.parts.container.addChild(this.parts.sprite);
         this.parts.sprite.scale.set(this.size);
+
+        this.animationManager = loadAnimations(this);
     }
+
+    trigger(name: string) {
+        this.animationManager.start(name);
+    }
+
     update() {}
 
     setNight() {
@@ -59,4 +70,43 @@ export class Structure {
     setDay() {
         this.parts.sprite.tint = 0xffffff;
     }
+}
+
+function loadAnimations(target: Structure) {
+    const hitKeyframes: Keyframes<Structure> = new Map();
+    hitKeyframes.set(0, ({ target, animation }) => {
+        if (animation.firstKeyframe) {
+            animation.goto(0, 100);
+        }
+        const targetPos = moveToward(
+            target.pos,
+            lookToward(target.lastHitSource, target.pos),
+            50
+        );
+        target.parts.container.x = lerp(target.pos.x, targetPos.x, animation.t);
+        target.parts.container.y = lerp(target.pos.y, targetPos.y, animation.t);
+        if (animation.keyframeEnded) {
+            animation.next(400);
+        }
+    });
+    hitKeyframes.set(1, ({ target, animation }) => {
+        target.parts.container.x = lerp(
+            target.parts.container.x,
+            target.pos.x,
+            animation.t
+        );
+        target.parts.container.y = lerp(
+            target.parts.container.y,
+            target.pos.y,
+            animation.t
+        );
+        if (animation.keyframeEnded) {
+            animation.expired = true;
+        }
+    });
+
+    const animationManager = new AnimationManager(target);
+
+    animationManager.add("hit", hitKeyframes);
+    return animationManager;
 }

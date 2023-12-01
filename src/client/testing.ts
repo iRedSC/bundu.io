@@ -4,7 +4,11 @@ import { randomHexColor, randomInt } from "../lib/math";
 import { loadGround } from "./ground";
 import { WORLD_SIZE } from "./constants";
 
-export function createStuff(viewport: Viewport, all_objects: any[]) {
+export function createStuff(
+    viewport: Viewport,
+    all_objects: any[],
+    structures: any[]
+) {
     all_objects.push(
         loadGround(
             viewport,
@@ -49,6 +53,7 @@ export function createStuff(viewport: Viewport, all_objects: any[]) {
         );
         viewport.addChild(structure.parts.container);
         all_objects.push(structure);
+        structures.push(structure);
     }
 
     for (let i = 0; i < 5000; i++) {
@@ -61,6 +66,7 @@ export function createStuff(viewport: Viewport, all_objects: any[]) {
         );
         viewport.addChild(structure.parts.container);
         all_objects.push(structure);
+        structures.push(structure);
     }
 
     for (let i = 0; i < 5000; i++) {
@@ -73,5 +79,6 @@ export function createStuff(viewport: Viewport, all_objects: any[]) {
         );
         viewport.addChild(structure.parts.container);
         all_objects.push(structure);
+        structures.push(structure);
     }
 }

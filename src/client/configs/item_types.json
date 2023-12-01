@@ -3,21 +3,24 @@
         "hand_position": {
             "rotation": 0,
             "x": 0,
-            "y": 0
+            "y": 0,
+            "scale": 1
         }
     },
     "pickaxe": {
         "hand_position": {
             "rotation": -100,
             "x": 150,
-            "y": -200
+            "y": -200,
+            "scale": 5
         }
     },
     "sword": {
         "hand_position": {
             "rotation": -135,
-            "x": 0,
-            "y": -130
+            "x": -75,
+            "y": -500,
+            "scale": 5
         }
     }
 }

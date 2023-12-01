@@ -3,11 +3,11 @@ import { Player } from "./game_objects/player";
 import { degrees, lookToward, moveToward } from "../lib/transforms";
 import { createViewport } from "./viewport";
 import { moveInputs } from "./keyboard";
-import { Entity } from "./game_objects/entity";
 import { createStuff } from "./testing";
 import { Simple } from "pixi-cull";
 
 const all_objects: { setNight: () => void; setDay: () => void }[] = [];
+const structures: any[] = [];
 
 const app = new PIXI.Application<HTMLCanvasElement>({
     resizeTo: window,
@@ -24,8 +24,6 @@ globalThis.__PIXI_APP__ = app;
 //     return new PIXI.Point(WORLD_SIZE / 2 - x, WORLD_SIZE / 2 - y);
 // }
 
-let cullDirty = true;
-
 const viewportCenter = new PIXI.Point(0, 0);
 const viewport = createViewport(app, viewportCenter);
 app.stage.addChild(viewport);
@@ -34,29 +32,21 @@ const cull = new Simple();
 cull.addList(viewport.children);
 cull.cull(viewport.getVisibleBounds());
 viewport.on("frame-end", () => {
-    if (viewport.dirty || cullDirty) {
-        console.log("culling");
+    if (viewport.dirty) {
         cull.cull(viewport.getVisibleBounds());
 
         viewport.dirty = false;
-        cullDirty = false;
     }
 });
-createStuff(viewport, all_objects);
+createStuff(viewport, all_objects, structures);
 
 viewport.sortChildren();
 document.body.appendChild(app.view);
 
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
-player.update([Date.now(), 20000, 20000, 0], ["empty", "empty", 0]);
+player.update([Date.now(), 20000, 20000, 0], ["diamond_sword", "empty", 0]);
 viewport.addChild(player.container);
 all_objects.push(player);
-
-let elePos = { x: 20000, y: 20000 };
-const elephant = new Entity(0, "elephant");
-elephant.update([Date.now(), 10000, 20000, 0]);
-viewport.addChild(elephant.container);
-all_objects.push(elephant);
 
 viewport.follow(player.container, {
     speed: 0,
@@ -71,15 +61,14 @@ let playerPos: { x: number; y: number } = { x: 20000, y: 20000 };
 
 app.ticker.add(() => {
     player.animationManager.update();
-    elephant.animationManager.update();
+    for (let obj of structures) {
+        obj.animationManager.update();
+    }
     viewportCenter.x = viewport.center.x;
     viewportCenter.y = viewport.center.y;
 });
 
-cullDirty = true;
-
 setInterval(() => {
-    // elephant.move();
     player.move();
 }, 10);
 
@@ -88,12 +77,10 @@ window.onresize = (_) => {
 };
 
 setInterval(() => {
-    elePos = moveToward(elePos, lookToward(elePos, playerPos), 20);
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
     const rotation =
         lookToward(player.container.position, mouseToWorld) - degrees(90);
     const dir = moveInputs();
-    console.log(playerPos, mouseToWorld, mousePos, rotation);
     if (!(dir[0] === 0 && dir[1] === 0)) {
         playerPos = moveToward(
             playerPos,
@@ -104,12 +91,6 @@ setInterval(() => {
             100
         );
     }
-    elephant.update([
-        Date.now() + 50,
-        elePos.x,
-        elePos.y,
-        lookToward(elePos, playerPos),
-    ]);
     player.update([Date.now() + 50, playerPos.x, playerPos.y, rotation]);
 }, 50);
 
@@ -166,14 +147,11 @@ const switchCheckbox =
 
 ("label.switch input");
 switchCheckbox.addEventListener("click", function () {
-    console.log("Switch toggled");
     if (switchCheckbox.checked) {
-        console.log("Switch is ON");
         for (let obj of all_objects) {
             obj.setNight();
         }
     } else {
-        console.log("Switch is OFF");
         for (let obj of all_objects) {
             obj.setDay();
         }

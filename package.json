@@ -16,6 +16,7 @@
         "vite": "^4.4.5"
     },
     "dependencies": {
+        "@pixi/filter-advanced-bloom": "^5.1.1",
         "@types/pixi.js": "^5.0.0",
         "pixi-cull": "^2.1.1",
         "pixi-viewport": "^5.0.2",

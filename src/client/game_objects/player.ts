@@ -227,6 +227,9 @@ export class Player {
             const item = items[this.selectedItem];
             const itemData = itemTypes[validItemType(item.item_type)];
             const texture = PIXI.Texture.from(`./assets/${item.sprite}.svg`);
+            this.parts.leftHand.selectedItem.scale.set(
+                itemData.hand_position.scale
+            );
             this.parts.leftHand.selectedItem.texture = texture;
             this.parts.leftHand.selectedItem.x = itemData.hand_position.x;
             this.parts.leftHand.selectedItem.y = itemData.hand_position.y;
