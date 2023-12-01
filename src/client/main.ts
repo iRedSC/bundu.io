@@ -99,7 +99,7 @@ player.update([Date.now(), 20000, 20000, 0]);
 viewport.addChild(player.container);
 
 let elePos = { x: 20000, y: 20000 };
-const elephant = new Entity(0, "elephant", [Date.now(), 0, 0, 0]);
+const elephant = new Entity(0, "elephant");
 elephant.update([Date.now(), 20000, 20000, 0]);
 viewport.addChild(elephant.container);
 
@@ -117,6 +117,7 @@ let playerPos: { x: number; y: number } = { x: 20000, y: 20000 };
 
 app.ticker.add(() => {
     player.animationManager.update();
+    elephant.animationManager.update();
     viewportCenter.x = viewport.center.x;
     viewportCenter.y = viewport.center.y;
 });
@@ -131,7 +132,7 @@ window.onresize = (_) => {
 };
 
 setInterval(() => {
-    elePos = moveToward(elePos, lookToward(elePos, playerPos), 10);
+    elePos = moveToward(elePos, lookToward(elePos, playerPos), 20);
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
     const rotation = lookToward(playerPos, mouseToWorld) - degrees(90);
     const dir = moveInputs();

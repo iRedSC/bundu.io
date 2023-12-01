@@ -30,7 +30,7 @@ export class Entity {
     size: number;
     parts: EntityParts;
     animationManager: AnimationManager<EntityParts>;
-    constructor(id: number, type: string, state: State) {
+    constructor(id: number, type: string) {
         this.id = id;
 
         this.pos = new PIXI.Point(0, 0);
@@ -57,8 +57,8 @@ export class Entity {
         this.parts.body.scale.set(this.size);
         this.animationManager = loadAnimations(this.parts);
         this.trigger("idle");
-        this.lastState = state;
-        this.nextState = state;
+        this.lastState = [Date.now(), 0, 0, 0];
+        this.nextState = [Date.now(), 0, 0, 0];
         this.move();
     }
     trigger(name: string) {
@@ -74,13 +74,12 @@ export class Entity {
         this.container.position = this.pos;
         this.container.rotation = this.rotation;
     }
-    update(state?: State) {
+    update(state: State) {
         if (typeofState(state)) {
-            const now = Date.now();
-            this.lastState = [now, this.pos.x, this.pos.y, this.rotation];
+            this.lastState = this.nextState;
             this.nextState = state;
-            if (this.nextState[0] < now) {
-                this.nextState[0] = now;
+            if (this.nextState[0] < this.lastState[0]) {
+                this.nextState[0] = this.lastState[0];
             }
         }
     }
