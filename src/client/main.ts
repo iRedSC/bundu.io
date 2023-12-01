@@ -85,7 +85,7 @@ for (let i = 0; i < 50; i++) {
         [randomInt(0, 40000), randomInt(0, 40000)],
         randomInt(5, 10),
         randomInt(0, Math.PI * 360),
-        "tree"
+        "pine_tree"
     );
     viewport.addChild(structure.parts.container);
 }
