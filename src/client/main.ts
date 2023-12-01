@@ -110,9 +110,7 @@ elephant.update([Date.now(), 20000, 20000, 0]);
 viewport.addChild(elephant.container);
 all_objects.push(elephant);
 
-for (let obj of all_objects) {
-    // obj.setNight();
-}
+
 // viewport.follow(player.container);
 viewport.follow(player.container, {
     speed: 0,
@@ -220,8 +218,14 @@ switchCheckbox.addEventListener('click', function() {
   console.log('Switch toggled');
   if (switchCheckbox.checked) {
     console.log('Switch is ON');
+    for (let obj of all_objects) {
+        obj.setNight();
+    }
   } else {
     console.log('Switch is OFF');
+    for (let obj of all_objects) {
+        obj.setDay();
+    }
   }
 });
 
