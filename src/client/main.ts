@@ -6,6 +6,7 @@ import { WORLD_SIZE } from "./constants";
 import { moveInputs } from "./keyboard";
 import { loadGround } from "./ground";
 import { randomHexColor, randomInt } from "../lib/math";
+import { Structure } from "./game_objects/structure";
 
 const app = new PIXI.Application<HTMLCanvasElement>({
     resizeTo: window,
@@ -55,6 +56,28 @@ for (let i = 0; i < 50; i++) {
     );
 }
 
+for (let i = 0; i < 50; i++) {
+    const structure = new Structure(
+        i,
+        [randomInt(0, 40000), randomInt(0, 40000)],
+        randomInt(3, 5),
+        randomInt(0, Math.PI * 360),
+        "stone"
+    );
+    viewport.addChild(structure.parts.container);
+}
+
+for (let i = 0; i < 50; i++) {
+    const structure = new Structure(
+        i,
+        [randomInt(0, 40000), randomInt(0, 40000)],
+        randomInt(5, 10),
+        randomInt(0, Math.PI * 360),
+        "tree"
+    );
+    viewport.addChild(structure.parts.container);
+}
+
 viewport.sortChildren();
 
 document.body.appendChild(app.view);
@@ -65,7 +88,7 @@ player.update([Date.now(), 5000, 5000, 0]);
 // viewport.follow(player.container);
 viewport.follow(player.container, {
     speed: 0,
-    // acceleration: 0.1,
+    acceleration: 1,
     radius: 5,
 });
 
@@ -78,10 +101,13 @@ let playerPos: { x: number; y: number } = { x: 5000, y: 5000 };
 
 app.ticker.add(() => {
     player.animationManager.update();
-    player.move();
     viewportCenter.x = viewport.center.x;
     viewportCenter.y = viewport.center.y;
 });
+
+setInterval(() => {
+    player.move();
+}, 10);
 
 window.onresize = (_) => {
     viewport.resize(window.innerWidth, window.innerHeight);
@@ -89,8 +115,7 @@ window.onresize = (_) => {
 
 setInterval(() => {
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
-    const rotation =
-        lookToward(player.container.position, mouseToWorld) - degrees(90);
+    const rotation = lookToward(playerPos, mouseToWorld) - degrees(90);
     const dir = moveInputs();
     if (!(dir[0] === 0 && dir[1] === 0)) {
         playerPos = moveToward(
