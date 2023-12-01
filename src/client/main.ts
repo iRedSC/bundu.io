@@ -8,7 +8,7 @@ import { randomHexColor, randomInt } from "../lib/math";
 import { Structure } from "./game_objects/structure";
 import { Entity } from "./game_objects/entity";
 
-const all_objects = [];
+const all_objects: { setNight: () => void; setDay: () => void }[] = [];
 
 const app = new PIXI.Application<HTMLCanvasElement>({
     resizeTo: window,
@@ -29,22 +29,26 @@ const viewportCenter = new PIXI.Point(0, 0);
 const viewport = createViewport(app, viewportCenter);
 app.stage.addChild(viewport);
 
-loadGround(
-    viewport,
-    [
-        [0, 0],
-        [viewport.worldWidth, viewport.worldHeight],
-    ],
-    0x16a0ca
+all_objects.push(
+    loadGround(
+        viewport,
+        [
+            [0, 0],
+            [viewport.worldWidth, viewport.worldHeight],
+        ],
+        0x16a0ca
+    )
 );
 
-loadGround(
-    viewport,
-    [
-        [5000, 5000],
-        [viewport.worldWidth - 5000, viewport.worldHeight - 5000],
-    ],
-    0x1b6430
+all_objects.push(
+    loadGround(
+        viewport,
+        [
+            [5000, 5000],
+            [viewport.worldWidth - 5000, viewport.worldHeight - 5000],
+        ],
+        0x1b6430
+    )
 );
 
 for (let i = 0; i < 50; i++) {
@@ -56,7 +60,7 @@ for (let i = 0; i < 50; i++) {
         ],
         randomHexColor()
     );
-    // all_objects.push(ground);
+    all_objects.push(ground);
 }
 
 for (let i = 0; i < 50; i++) {
@@ -109,7 +113,6 @@ const elephant = new Entity(0, "elephant");
 elephant.update([Date.now(), 20000, 20000, 0]);
 viewport.addChild(elephant.container);
 all_objects.push(elephant);
-
 
 // viewport.follow(player.container);
 viewport.follow(player.container, {
@@ -211,22 +214,23 @@ document.body.addEventListener("mouseup", (event) => {
     }
 });
 
-const switchCheckbox = document.querySelector<HTMLInputElement>('label.switch input')!;
+const switchCheckbox =
+    document.querySelector<HTMLInputElement>("label.switch input")!;
 
-'label.switch input'
-switchCheckbox.addEventListener('click', function() {
-  console.log('Switch toggled');
-  if (switchCheckbox.checked) {
-    console.log('Switch is ON');
-    for (let obj of all_objects) {
-        obj.setNight();
+("label.switch input");
+switchCheckbox.addEventListener("click", function () {
+    console.log("Switch toggled");
+    if (switchCheckbox.checked) {
+        console.log("Switch is ON");
+        for (let obj of all_objects) {
+            obj.setNight();
+        }
+    } else {
+        console.log("Switch is OFF");
+        for (let obj of all_objects) {
+            obj.setDay();
+        }
     }
-  } else {
-    console.log('Switch is OFF');
-    for (let obj of all_objects) {
-        obj.setDay();
-    }
-  }
 });
 
 console.log("this works");

@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { Viewport } from "pixi-viewport";
+import { NIGHT_COLOR } from "./constants";
 
 type Coordinates = [[x: number, y: number], [x: number, y: number]];
 type Rectangle = [x: number, y: number, width: number, height: number];
@@ -20,11 +21,25 @@ export function loadGround(
     coords: Coordinates,
     color: number
 ) {
-    const ground = new PIXI.Graphics();
-    ground.beginFill(color);
-    ground.lineStyle({ width: 5 });
-    const rect = coordsToRect(coords);
-    ground.drawRect(rect[0], rect[1], rect[2], rect[3]);
-    world.addChild(ground);
-    return ground;
+    return new Ground(world, coords, color);
+}
+
+class Ground {
+    graphics: PIXI.Graphics;
+
+    constructor(world: Viewport, coords: Coordinates, color: number) {
+        this.graphics = new PIXI.Graphics();
+        this.graphics.beginFill(color);
+        this.graphics.lineStyle({ width: 5 });
+        const rect = coordsToRect(coords);
+        this.graphics.drawRect(rect[0], rect[1], rect[2], rect[3]);
+        world.addChild(this.graphics);
+    }
+
+    setNight() {
+        this.graphics.tint = NIGHT_COLOR;
+    }
+    setDay() {
+        this.graphics.tint = 0xffffff;
+    }
 }
