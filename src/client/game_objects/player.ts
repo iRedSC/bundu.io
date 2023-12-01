@@ -3,6 +3,7 @@ import { degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager } from "../../lib/animation";
 import { block } from "../main";
 import { round } from "../../lib/math";
+import { NIGHT_COLOR } from "../constants";
 
 //* New: [pos, rotation, name, selectedItem, helmet]
 //* Changed: [[1, pos, rotation], [2, selectedItem, helmet]]
@@ -193,11 +194,19 @@ export class Player {
     }
 
     setNight() {
-        this.parts.body.helmet.tint = 0x0040ff;
-        this.parts.body.sprite.tint = 0x0040ff;
-        this.parts.leftHand.selectedItem.tint = 0x0040ff;
-        this.parts.leftHand.sprite.tint = 0x0040ff;
-        this.parts.rightHand.sprite.tint = 0x0040ff;
+        this.parts.body.helmet.tint = NIGHT_COLOR;
+        this.parts.body.sprite.tint = NIGHT_COLOR;
+        this.parts.leftHand.selectedItem.tint = NIGHT_COLOR;
+        this.parts.leftHand.sprite.tint = NIGHT_COLOR;
+        this.parts.rightHand.sprite.tint = NIGHT_COLOR;
+    }
+
+    setDay() {
+        this.parts.body.helmet.tint = 0xffffff;
+        this.parts.body.sprite.tint = 0xffffff;
+        this.parts.leftHand.selectedItem.tint = 0xffffff;
+        this.parts.leftHand.sprite.tint = 0xffffff;
+        this.parts.rightHand.sprite.tint = 0xffffff;
     }
 }
 

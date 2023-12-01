@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { degrees } from "../../lib/transforms";
+import { NIGHT_COLOR } from "../constants";
 
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 
@@ -49,4 +50,12 @@ export class Structure {
         this.parts.sprite.scale.set(this.size);
     }
     update() {}
+
+    setNight() {
+        this.parts.sprite.tint = NIGHT_COLOR;
+    }
+
+    setDay() {
+        this.parts.sprite.tint = 0xffffff;
+    }
 }

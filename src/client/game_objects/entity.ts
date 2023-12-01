@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 import { colorLerp, degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { AnimationManager, Keyframes } from "../../lib/animation";
 import { randomInt } from "../../lib/math";
+import { NIGHT_COLOR } from "../constants";
 
 type State = [time: number, x: number, y: number, rotation: number];
 function typeofState(state?: State): state is State {
@@ -85,6 +86,14 @@ export class Entity {
     }
     get container() {
         return this.parts.container;
+    }
+
+    setNight() {
+        this.parts.body.tint = NIGHT_COLOR;
+    }
+
+    setDay() {
+        this.parts.body.tint = 0xffffff;
     }
 }
 

@@ -2,12 +2,13 @@ import * as PIXI from "pixi.js";
 import { Player } from "./game_objects/player";
 import { degrees, lookToward, moveToward } from "../lib/transforms";
 import { createViewport } from "./viewport";
-import { WORLD_SIZE } from "./constants";
 import { moveInputs } from "./keyboard";
 import { loadGround } from "./ground";
 import { randomHexColor, randomInt } from "../lib/math";
 import { Structure } from "./game_objects/structure";
 import { Entity } from "./game_objects/entity";
+
+const all_objects = [];
 
 const app = new PIXI.Application<HTMLCanvasElement>({
     resizeTo: window,
@@ -47,7 +48,7 @@ loadGround(
 );
 
 for (let i = 0; i < 50; i++) {
-    loadGround(
+    const ground = loadGround(
         viewport,
         [
             [randomInt(0, 40000), randomInt(0, 40000)],
@@ -55,6 +56,7 @@ for (let i = 0; i < 50; i++) {
         ],
         randomHexColor()
     );
+    // all_objects.push(ground);
 }
 
 for (let i = 0; i < 50; i++) {
@@ -66,7 +68,7 @@ for (let i = 0; i < 50; i++) {
         "stone"
     );
     viewport.addChild(structure.parts.container);
-    structure.parts.sprite.tint = 0x0040ff;
+    all_objects.push(structure);
 }
 
 for (let i = 0; i < 50; i++) {
@@ -78,7 +80,7 @@ for (let i = 0; i < 50; i++) {
         "red_wall"
     );
     viewport.addChild(structure.parts.container);
-    structure.parts.sprite.tint = 0x0040ff;
+    all_objects.push(structure);
 }
 
 for (let i = 0; i < 50; i++) {
@@ -90,7 +92,7 @@ for (let i = 0; i < 50; i++) {
         "pine_tree"
     );
     viewport.addChild(structure.parts.container);
-    structure.parts.sprite.tint = 0x0040ff;
+    all_objects.push(structure);
 }
 
 viewport.sortChildren();
@@ -100,14 +102,17 @@ document.body.appendChild(app.view);
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
 player.update([Date.now(), 20000, 20000, 0]);
 viewport.addChild(player.container);
-player.setNight();
+all_objects.push(player);
 
 let elePos = { x: 20000, y: 20000 };
 const elephant = new Entity(0, "elephant");
 elephant.update([Date.now(), 20000, 20000, 0]);
 viewport.addChild(elephant.container);
-elephant.parts.body.tint = 0x0040ff;
+all_objects.push(elephant);
 
+for (let obj of all_objects) {
+    // obj.setNight();
+}
 // viewport.follow(player.container);
 viewport.follow(player.container, {
     speed: 0,

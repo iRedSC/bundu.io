@@ -26,5 +26,5 @@ export function loadGround(
     const rect = coordsToRect(coords);
     ground.drawRect(rect[0], rect[1], rect[2], rect[3]);
     world.addChild(ground);
-    ground.tint = 0x0040ff;
+    return ground;
 }
