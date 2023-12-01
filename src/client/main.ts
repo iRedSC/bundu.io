@@ -66,6 +66,7 @@ for (let i = 0; i < 50; i++) {
         "stone"
     );
     viewport.addChild(structure.parts.container);
+    structure.parts.sprite.tint = 0x0040ff;
 }
 
 for (let i = 0; i < 50; i++) {
@@ -77,6 +78,7 @@ for (let i = 0; i < 50; i++) {
         "red_wall"
     );
     viewport.addChild(structure.parts.container);
+    structure.parts.sprite.tint = 0x0040ff;
 }
 
 for (let i = 0; i < 50; i++) {
@@ -88,6 +90,7 @@ for (let i = 0; i < 50; i++) {
         "pine_tree"
     );
     viewport.addChild(structure.parts.container);
+    structure.parts.sprite.tint = 0x0040ff;
 }
 
 viewport.sortChildren();
@@ -97,11 +100,13 @@ document.body.appendChild(app.view);
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
 player.update([Date.now(), 20000, 20000, 0]);
 viewport.addChild(player.container);
+player.setNight();
 
 let elePos = { x: 20000, y: 20000 };
 const elephant = new Entity(0, "elephant");
 elephant.update([Date.now(), 20000, 20000, 0]);
 viewport.addChild(elephant.container);
+elephant.parts.body.tint = 0x0040ff;
 
 // viewport.follow(player.container);
 viewport.follow(player.container, {

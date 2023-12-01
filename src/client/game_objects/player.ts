@@ -191,6 +191,14 @@ export class Player {
             this.backpack = gear[2];
         }
     }
+
+    setNight() {
+        this.parts.body.helmet.tint = 0x0040ff;
+        this.parts.body.sprite.tint = 0x0040ff;
+        this.parts.leftHand.selectedItem.tint = 0x0040ff;
+        this.parts.leftHand.sprite.tint = 0x0040ff;
+        this.parts.rightHand.sprite.tint = 0x0040ff;
+    }
 }
 
 function loadAnimations(target: PlayerParts) {
