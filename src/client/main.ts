@@ -7,6 +7,7 @@ import { moveInputs } from "./keyboard";
 import { loadGround } from "./ground";
 import { randomHexColor, randomInt } from "../lib/math";
 import { Structure } from "./game_objects/structure";
+import { Entity } from "./game_objects/entity";
 
 const app = new PIXI.Application<HTMLCanvasElement>({
     resizeTo: window,
@@ -71,6 +72,17 @@ for (let i = 0; i < 50; i++) {
     const structure = new Structure(
         i,
         [randomInt(0, 40000), randomInt(0, 40000)],
+        3,
+        randomInt(0, Math.PI * 360),
+        "red_wall"
+    );
+    viewport.addChild(structure.parts.container);
+}
+
+for (let i = 0; i < 50; i++) {
+    const structure = new Structure(
+        i,
+        [randomInt(0, 40000), randomInt(0, 40000)],
         randomInt(5, 10),
         randomInt(0, Math.PI * 360),
         "tree"
@@ -83,7 +95,13 @@ viewport.sortChildren();
 document.body.appendChild(app.view);
 
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
-player.update([Date.now(), 5000, 5000, 0]);
+player.update([Date.now(), 20000, 20000, 0]);
+viewport.addChild(player.container);
+
+let elePos = { x: 20000, y: 20000 };
+const elephant = new Entity(0, "elephant", [Date.now(), 0, 0, 0]);
+elephant.update([Date.now(), 20000, 20000, 0]);
+viewport.addChild(elephant.container);
 
 // viewport.follow(player.container);
 viewport.follow(player.container, {
@@ -92,12 +110,10 @@ viewport.follow(player.container, {
     radius: 5,
 });
 
-viewport.addChild(player.container);
-
 viewport.moveCenter(player.pos.x, player.pos.y);
 
 // tick updates
-let playerPos: { x: number; y: number } = { x: 5000, y: 5000 };
+let playerPos: { x: number; y: number } = { x: 20000, y: 20000 };
 
 app.ticker.add(() => {
     player.animationManager.update();
@@ -106,6 +122,7 @@ app.ticker.add(() => {
 });
 
 setInterval(() => {
+    elephant.move();
     player.move();
 }, 10);
 
@@ -114,6 +131,7 @@ window.onresize = (_) => {
 };
 
 setInterval(() => {
+    elePos = moveToward(elePos, lookToward(elePos, playerPos), 10);
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
     const rotation = lookToward(playerPos, mouseToWorld) - degrees(90);
     const dir = moveInputs();
@@ -127,6 +145,12 @@ setInterval(() => {
             100
         );
     }
+    elephant.update([
+        Date.now() + 50,
+        elePos.x,
+        elePos.y,
+        lookToward(elePos, playerPos),
+    ]);
     player.update([Date.now() + 50, playerPos.x, playerPos.y, rotation]);
 }, 50);
 

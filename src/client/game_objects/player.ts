@@ -164,9 +164,6 @@ export class Player {
         const now = Date.now();
         const t =
             (now - this.lastState[0]) / (this.nextState[0] - this.lastState[0]);
-        if (t > 1 || t < 0) {
-            console.log(t);
-        }
         this.pos.x = round(lerp(this.lastState[1], this.nextState[1], t));
         this.pos.y = round(lerp(this.lastState[2], this.nextState[2], t));
         this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
