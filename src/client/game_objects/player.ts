@@ -263,14 +263,18 @@ function loadAnimations(target: PlayerParts) {
     });
     blockKeyframes.set(1, ({ target, animation }) => {
         const leftHand = target.leftHand.container;
+        const rightHand = target.rightHand.container;
         leftHand.rotation = lerp(degrees(0), degrees(-90), animation.t);
+        rightHand.rotation = lerp(degrees(0), degrees(25), animation.t);
         if (!block) {
             animation.next(60);
         }
     });
     blockKeyframes.set(2, ({ target, animation }) => {
         const leftHand = target.leftHand.container;
+        const rightHand = target.rightHand.container;
         leftHand.rotation = lerp(degrees(-90), degrees(0), animation.t);
+        rightHand.rotation = lerp(degrees(25), degrees(0), animation.t);
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
