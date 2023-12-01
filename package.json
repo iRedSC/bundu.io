@@ -4,11 +4,11 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "client": "vite",
-        "build-client": "tsc && vite build",
+        "client": "npm i && vite",
+        "build-client": "npm i && tsc && vite build",
         "preview": "vite preview",
         "server": "nodemon --exec npm run build-server",
-        "build-server": "tsc --project tsconfig.server.json --outDir dist-server && node dist-server/server/main.js"
+        "build-server": "npm i && tsc --project tsconfig.server.json --outDir dist-server && node dist-server/server/main.js"
     },
     "devDependencies": {
         "nodemon": "^3.0.1",
