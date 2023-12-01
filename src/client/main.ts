@@ -212,3 +212,17 @@ document.body.addEventListener("mouseup", (event) => {
         attack = false;
     }
 });
+
+const switchCheckbox = document.querySelector<HTMLInputElement>('label.switch input')!;
+
+'label.switch input'
+switchCheckbox.addEventListener('click', function() {
+  console.log('Switch toggled');
+  if (switchCheckbox.checked) {
+    console.log('Switch is ON');
+  } else {
+    console.log('Switch is OFF');
+  }
+});
+
+console.log("this works");
