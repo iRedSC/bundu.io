@@ -64,8 +64,8 @@ export class Structure {
 }
 
 function loadAnimations(target: Structure) {
-    const hitKeyframes: Keyframes<Structure> = new Map();
-    hitKeyframes.set(0, ({ target, animation }) => {
+    const hitKeyframes: Keyframes<Structure> = new Keyframes();
+    hitKeyframes.frame(0).set = ({ target, animation }) => {
         if (animation.firstKeyframe) {
             animation.goto(0, 100);
         }
@@ -79,8 +79,8 @@ function loadAnimations(target: Structure) {
         if (animation.keyframeEnded) {
             animation.next(400);
         }
-    });
-    hitKeyframes.set(1, ({ target, animation }) => {
+    };
+    hitKeyframes.frame(1).set = ({ target, animation }) => {
         target.parts.container.x = lerp(
             target.parts.container.x,
             target.pos.x,
@@ -94,7 +94,7 @@ function loadAnimations(target: Structure) {
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
-    });
+    };
 
     const animationManager = new AnimationManager(target);
 

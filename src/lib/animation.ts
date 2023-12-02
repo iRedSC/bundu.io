@@ -1,4 +1,30 @@
-export type Keyframes<T> = Map<number, Keyframe<T>>;
+// export type Keyframes<T> = Map<number, Keyframe<T>>;
+
+export class Keyframes<T> {
+    map: Map<number, Keyframe<T>>;
+    #nextKeyframe?: number;
+
+    constructor() {
+        this.map = new Map();
+    }
+
+    frame(frame: number) {
+        this.#nextKeyframe = frame;
+        return this;
+    }
+
+    set set(keyframe: Keyframe<T>) {
+        if (this.#nextKeyframe === undefined) {
+            throw "Must select a frame first.";
+        }
+        this.map.set(this.#nextKeyframe, keyframe);
+        this.#nextKeyframe = undefined;
+    }
+
+    get(index: number) {
+        return this.map.get(index);
+    }
+}
 
 type Data = { [key: string]: unknown };
 
@@ -16,7 +42,7 @@ export function lerp(a: number, b: number, t: number) {
 
 export class Animation<T> {
     target: T;
-    keyframes: Map<number, Keyframe<T>>;
+    keyframes: Keyframes<T>;
     replace: boolean;
     currentKeyframe: number;
     expired: boolean;
@@ -25,11 +51,7 @@ export class Animation<T> {
     meta: { [key: string]: any };
     data?: Data;
 
-    constructor(
-        target: T,
-        keyframes: Map<number, Keyframe<T>>,
-        replace: boolean = false
-    ) {
+    constructor(target: T, keyframes: Keyframes<T>, replace: boolean = false) {
         this.replace = replace;
         this.start = Date.now();
         this.duration = -1;

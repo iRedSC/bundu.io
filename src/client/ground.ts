@@ -1,6 +1,5 @@
 import * as PIXI from "pixi.js";
 import { Viewport } from "pixi-viewport";
-import { NIGHT_COLOR } from "./constants";
 
 type Coordinates = [[x: number, y: number], [x: number, y: number]];
 type Rectangle = [x: number, y: number, width: number, height: number];
@@ -34,12 +33,5 @@ class Ground {
         const rect = coordsToRect(coords);
         this.graphics.drawRect(rect[0], rect[1], rect[2], rect[3]);
         world.addChild(this.graphics);
-    }
-
-    setNight() {
-        this.graphics.tint = NIGHT_COLOR;
-    }
-    setDay() {
-        this.graphics.tint = 0xffffff;
     }
 }

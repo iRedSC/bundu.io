@@ -240,8 +240,8 @@ export class Player {
 }
 
 function loadAnimations(target: PlayerParts) {
-    let leftHandKeyframes: Keyframes<PlayerParts> = new Map();
-    leftHandKeyframes.set(0, ({ target, animation }) => {
+    let leftHandKeyframes: Keyframes<PlayerParts> = new Keyframes();
+    leftHandKeyframes.frame(0).set = ({ target, animation }) => {
         const leftHand = target.leftHand.container;
         if (animation.firstKeyframe) {
             animation.meta.x = leftHand.x;
@@ -252,10 +252,10 @@ function loadAnimations(target: PlayerParts) {
         if (animation.keyframeEnded) {
             animation.goto(0, 2000);
         }
-    });
+    };
 
-    let rightHandKeyframes: Keyframes<PlayerParts> = new Map();
-    rightHandKeyframes.set(0, ({ target, animation }) => {
+    let rightHandKeyframes: Keyframes<PlayerParts> = new Keyframes();
+    rightHandKeyframes.frame(0).set = ({ target, animation }) => {
         const rightHand = target.rightHand.container;
         if (animation.firstKeyframe) {
             animation.meta.x = rightHand.x;
@@ -267,17 +267,17 @@ function loadAnimations(target: PlayerParts) {
         if (animation.keyframeEnded) {
             animation.goto(0, 2000);
         }
-    });
+    };
 
-    const attackKeyframes: Keyframes<PlayerParts> = new Map();
-    attackKeyframes.set(0, ({ target, animation }) => {
+    const attackKeyframes: Keyframes<PlayerParts> = new Keyframes();
+    attackKeyframes.frame(0).set = ({ target, animation }) => {
         const leftHand = target.leftHand.container;
         if (leftHand.rotation !== 0) {
             animation.expired = true;
         }
         animation.next(100);
-    });
-    attackKeyframes.set(1, ({ target, animation }) => {
+    };
+    attackKeyframes.frame(1).set = ({ target, animation }) => {
         const leftHand = target.leftHand.container;
         const rightHand = target.rightHand.container;
         leftHand.rotation = lerp(degrees(0), degrees(-90), animation.t);
@@ -285,8 +285,8 @@ function loadAnimations(target: PlayerParts) {
         if (animation.keyframeEnded) {
             animation.next(200);
         }
-    });
-    attackKeyframes.set(2, ({ target, animation }) => {
+    };
+    attackKeyframes.frame(2).set = ({ target, animation }) => {
         const leftHand = target.leftHand.container;
         const rightHand = target.rightHand.container;
         leftHand.rotation = lerp(degrees(-90), degrees(0), animation.t);
@@ -294,17 +294,17 @@ function loadAnimations(target: PlayerParts) {
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
-    });
+    };
 
-    const blockKeyframes: Keyframes<PlayerParts> = new Map();
-    blockKeyframes.set(0, ({ target, animation }) => {
+    const blockKeyframes: Keyframes<PlayerParts> = new Keyframes();
+    blockKeyframes.frame(0).set = ({ target, animation }) => {
         const leftHand = target.leftHand.container;
         if (leftHand.rotation !== 0) {
             animation.expired = true;
         }
         animation.next(75);
-    });
-    blockKeyframes.set(1, ({ target, animation }) => {
+    };
+    blockKeyframes.frame(1).set = ({ target, animation }) => {
         const leftHand = target.leftHand.container;
         const rightHand = target.rightHand.container;
         leftHand.rotation = lerp(degrees(0), degrees(-90), animation.t);
@@ -312,8 +312,8 @@ function loadAnimations(target: PlayerParts) {
         if (!block) {
             animation.next(60);
         }
-    });
-    blockKeyframes.set(2, ({ target, animation }) => {
+    };
+    blockKeyframes.frame(2).set = ({ target, animation }) => {
         const leftHand = target.leftHand.container;
         const rightHand = target.rightHand.container;
         leftHand.rotation = lerp(degrees(-90), degrees(0), animation.t);
@@ -321,7 +321,7 @@ function loadAnimations(target: PlayerParts) {
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
-    });
+    };
     const animationManager = new AnimationManager(target);
     animationManager.add("leftHand", leftHandKeyframes);
     animationManager.add("rightHand", rightHandKeyframes);

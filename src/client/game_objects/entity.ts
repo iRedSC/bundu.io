@@ -89,15 +89,16 @@ export class Entity {
 }
 
 function loadAnimations(target: EntityParts) {
-    const idleKeyframes: Keyframes<EntityParts> = new Map();
-    idleKeyframes.set(0, ({ target, animation }) => {
+    const idleKeyframes: Keyframes<EntityParts> = new Keyframes();
+    idleKeyframes.frame(0).set = ({ target, animation }) => {
         animation.meta.width = target.container.scale.x;
         animation.meta.height = target.container.scale.y;
         animation.meta.frameLength = randomInt(2000, 4000);
 
         animation.next(animation.meta.frameLength);
-    });
-    idleKeyframes.set(1, ({ target, animation }) => {
+    };
+
+    idleKeyframes.frame(1).set = ({ target, animation }) => {
         target.container.scale.x =
             animation.meta.width + Math.cos(animation.t * Math.PI * 2) * 0.02;
         target.container.scale.y =
@@ -105,10 +106,10 @@ function loadAnimations(target: EntityParts) {
         if (animation.keyframeEnded) {
             animation.goto(1, animation.meta.frameLength);
         }
-    });
+    };
 
-    const hurtKeyframes: Keyframes<EntityParts> = new Map();
-    hurtKeyframes.set(0, ({ animation }) => {
+    const hurtKeyframes: Keyframes<EntityParts> = new Keyframes();
+    hurtKeyframes.frame(0).set = ({ animation }) => {
         if (animation.firstKeyframe) {
             animation.goto(0, 100);
         }
@@ -116,13 +117,13 @@ function loadAnimations(target: EntityParts) {
         if (animation.keyframeEnded) {
             animation.next(400);
         }
-    });
-    hurtKeyframes.set(1, ({ target, animation }) => {
+    };
+    hurtKeyframes.frame(1).set = ({ target, animation }) => {
         target.body.tint = colorLerp(0xff0000, 0xffffff, animation.t);
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
-    });
+    };
 
     const animationManager = new AnimationManager(target);
 

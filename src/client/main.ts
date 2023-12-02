@@ -30,6 +30,7 @@ viewport.follow(player.container, {
 // tick updates
 
 setInterval(() => {
+    sky.animationManager.update();
     player.animationManager.update();
     player.move();
 }, 10);
@@ -56,9 +57,9 @@ setInterval(() => {
 
 createEvents(player);
 
-createSwitch(all_objects);
-
 const sky = new Sky(viewport);
 setInterval(() => {
     sky.advanceCycle();
 }, 10000);
+
+createSwitch(sky);

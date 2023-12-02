@@ -7,6 +7,8 @@ import {
     NIGHT_COLOR,
     WORLD_SIZE,
 } from "./constants";
+import { AnimationManager, Keyframes } from "../lib/animation";
+import { colorLerp } from "../lib/transforms";
 
 const times = new Map();
 times.set(0, MORNING_COLOR);
@@ -17,6 +19,7 @@ times.set(3, NIGHT_COLOR);
 export class Sky {
     graphics: PIXI.Graphics;
     currentCycle: number;
+    animationManager: AnimationManager<Sky>;
 
     constructor(world: Viewport) {
         this.currentCycle = 0;
@@ -28,6 +31,8 @@ export class Sky {
         // this.graphics.alpha = 0.5;
         this.graphics.blendMode = PIXI.BLEND_MODES.MULTIPLY;
         world.addChild(this.graphics);
+
+        this.animationManager = loadAnimations(this);
     }
 
     setNight() {
@@ -47,6 +52,32 @@ export class Sky {
 
     advanceCycle() {
         this.currentCycle = (this.currentCycle + 1) % 4;
-        this.graphics.tint = times.get(this.currentCycle);
+        this.animationManager.start("transistion");
     }
+}
+
+function loadAnimations(target: Sky) {
+    const transistionKeyframes: Keyframes<Sky> = new Keyframes();
+
+    transistionKeyframes.frame(0).set = ({ target, animation }) => {
+        if (animation.firstKeyframe) {
+            animation.goto(0, 1000);
+        }
+        let lastCycle = target.currentCycle - 1;
+        if (lastCycle === -1) {
+            lastCycle = 3;
+        }
+        target.graphics.tint = colorLerp(
+            times.get(lastCycle),
+            times.get(target.currentCycle),
+            animation.t
+        );
+        if (animation.keyframeEnded) {
+            animation.expired = true;
+        }
+    };
+
+    const animationManager = new AnimationManager(target);
+    animationManager.add("transistion", transistionKeyframes);
+    return animationManager;
 }
