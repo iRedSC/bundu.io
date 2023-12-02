@@ -1,6 +1,6 @@
 import { Viewport } from "pixi-viewport";
 import { Structure } from "./game_objects/structure";
-import { randomInt } from "../lib/math";
+import { Random } from "../lib/random";
 import { loadGround } from "./ground";
 import { WORLD_SIZE } from "./constants";
 
@@ -35,8 +35,8 @@ export function createStuff(
     //     const ground = loadGround(
     //         viewport,
     //         [
-    //             [randomInt(0, WORLD_SIZE), randomInt(0, WORLD_SIZE)],
-    //             [randomInt(0, WORLD_SIZE), randomInt(0, WORLD_SIZE)],
+    //             [Random.integer(0, WORLD_SIZE), Random.integer(0, WORLD_SIZE)],
+    //             [Random.integer(0, WORLD_SIZE), Random.integer(0, WORLD_SIZE)],
     //         ],
     //         randomHexColor()
     //     );
@@ -47,11 +47,11 @@ export function createStuff(
         const structure = new Structure(
             i,
             [
-                randomInt(5000, WORLD_SIZE - 5000),
-                randomInt(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
             ],
-            randomInt(3, 5),
-            randomInt(0, Math.PI * 360),
+            Random.integer(3, 5),
+            Random.integer(0, Math.PI * 360),
             "stone"
         );
         viewport.addChild(structure.parts.container);
@@ -62,11 +62,11 @@ export function createStuff(
         const structure = new Structure(
             i,
             [
-                randomInt(5000, WORLD_SIZE - 5000),
-                randomInt(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
             ],
-            randomInt(3, 5),
-            randomInt(0, Math.PI * 360),
+            Random.integer(3, 5),
+            Random.integer(0, Math.PI * 360),
             "amethyst"
         );
         viewport.addChild(structure.parts.container);
@@ -77,11 +77,11 @@ export function createStuff(
         const structure = new Structure(
             i,
             [
-                randomInt(5000, WORLD_SIZE - 5000),
-                randomInt(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
             ],
-            randomInt(3, 5),
-            randomInt(0, Math.PI * 360),
+            Random.integer(3, 5),
+            Random.integer(0, Math.PI * 360),
             "diamond"
         );
         viewport.addChild(structure.parts.container);
@@ -93,11 +93,11 @@ export function createStuff(
         const structure = new Structure(
             i,
             [
-                randomInt(5000, WORLD_SIZE - 5000),
-                randomInt(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
             ],
             3,
-            randomInt(0, Math.PI * 360),
+            Random.integer(0, Math.PI * 360),
             "gold"
         );
         viewport.addChild(structure.parts.container);
@@ -109,11 +109,11 @@ export function createStuff(
         const structure = new Structure(
             i,
             [
-                randomInt(5000, WORLD_SIZE - 5000),
-                randomInt(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
             ],
-            randomInt(5, 10),
-            randomInt(0, Math.PI * 360),
+            Random.integer(5, 10),
+            Random.integer(0, Math.PI * 360),
             "pine_tree2"
         );
         viewport.addChild(structure.parts.container);
@@ -124,11 +124,11 @@ export function createStuff(
         const structure = new Structure(
             i,
             [
-                randomInt(5000, WORLD_SIZE - 5000),
-                randomInt(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
+                Random.integer(5000, WORLD_SIZE - 5000),
             ],
-            randomInt(5, 10),
-            randomInt(0, Math.PI * 360),
+            Random.integer(5, 10),
+            Random.integer(0, Math.PI * 360),
             "pine_tree"
         );
         viewport.addChild(structure.parts.container);

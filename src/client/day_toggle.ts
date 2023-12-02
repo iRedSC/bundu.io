@@ -1,14 +1,23 @@
-import { Sky } from "./sky";
+import { Random } from "../lib/random";
+import { Player } from "./game_objects/player";
 
-export function createSwitch(sky: Sky) {
+const items = [
+    "wooden_sword",
+    "gold_sword",
+    "amethyst_sword",
+    "stone_pickaxe",
+    "diamond_pickaxe",
+];
+
+export function createSwitch(player: Player) {
     const switchCheckbox =
         document.querySelector<HTMLInputElement>("label.switch input")!;
 
     switchCheckbox.addEventListener("click", function () {
         if (switchCheckbox.checked) {
-            sky.advanceCycle();
+            player.selectItem({ hand: Random.choose(items) });
         } else {
-            sky.advanceCycle();
+            player.selectItem({ hand: Random.choose(items) });
         }
     });
 }

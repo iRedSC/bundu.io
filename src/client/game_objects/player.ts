@@ -4,28 +4,10 @@ import { Keyframes, AnimationManager } from "../../lib/animation";
 import { block } from "../events";
 import { round } from "../../lib/math";
 
-import itemTypes from "../configs/item_types.json";
-import items from "../configs/items.json";
-
-type itemTypes = {
-    [key: string]: keyof typeof itemTypes;
-};
-
-type items = {
-    [key: string]: string;
-};
+import { getItem } from "../configs/configs";
 
 //* New: [pos, rotation, name, selectedItem, helmet]
 //* Changed: [[1, pos, rotation], [2, selectedItem, helmet]]
-
-function validItemType(type: string): keyof typeof itemTypes {
-    const validate = (type: string): type is keyof typeof itemTypes =>
-        type in itemTypes;
-    if (validate(type)) {
-        return type;
-    }
-    return "undefined";
-}
 
 type State = [time: number, x: number, y: number, rotation: number];
 function typeofState(state?: State): state is State {
@@ -40,16 +22,16 @@ function typeofState(state?: State): state is State {
     );
 }
 
-type Gear = [
-    selectedItem: keyof typeof items,
-    helmet: keyof typeof items,
-    backpack: number
-];
+type Gear = [selectedItem: string, helmet: string, backpack: number];
 function typeofGear(gear?: Gear): gear is Gear {
     if (!gear) {
         return false;
     }
-    return gear[0] in items && gear[1] in items && typeof gear[2] === "number";
+    return (
+        typeof gear[0] === "string" &&
+        typeof gear[1] === "string" &&
+        typeof gear[2] === "number"
+    );
 }
 
 type PlayerParts = {
@@ -78,7 +60,7 @@ export class Player {
     pos: PIXI.Point;
     rotation: number;
     animationManager: AnimationManager<PlayerParts>;
-    selectedItem: keyof typeof items;
+    selectedItem: string;
     helmet: string;
     backpack: number;
     constructor(id: number, state: State) {
@@ -112,7 +94,7 @@ export class Player {
 
         this.id = id;
 
-        this.selectedItem = "empty";
+        this.selectedItem = "";
         this.helmet = "empty";
         this.backpack = -1;
 
@@ -175,6 +157,16 @@ export class Player {
         this.nextState = state;
     }
 
+    selectItem({ hand, body }: { hand?: string; body?: string }) {
+        if (hand) {
+            this.selectedItem = hand;
+        }
+        if (body) {
+            this.selectedItem = body;
+        }
+        this.updateGear();
+    }
+
     get container() {
         return this.parts.container;
     }
@@ -190,11 +182,6 @@ export class Player {
         this.pos.x = round(lerp(this.lastState[1], this.nextState[1], t));
         this.pos.y = round(lerp(this.lastState[2], this.nextState[2], t));
         this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
-        // console.log(this.lastState[1], this.pos.x, this.nextState[1]);
-
-        // this.rotation = this.nextState[3];
-        // this.pos.x = this.nextState[1];
-        // this.pos.y = this.nextState[2];
 
         this.container.position = this.pos;
         this.container.rotation = this.rotation;
@@ -221,19 +208,21 @@ export class Player {
         this.parts.leftHand.selectedItem.renderable = false;
         this.parts.body.helmet.renderable = false;
 
-        if (this.selectedItem !== "empty") {
+        if (this.selectedItem !== "") {
             this.parts.leftHand.selectedItem.renderable = true;
-            const item = items[this.selectedItem];
-            const itemData = itemTypes[validItemType(item.item_type)];
+            const item = getItem(this.selectedItem, ["hand_display", "sprite"]);
+            if (!item) {
+                return;
+            }
             const texture = PIXI.Texture.from(`./assets/${item.sprite}.svg`);
             this.parts.leftHand.selectedItem.scale.set(
-                itemData.hand_position.scale
+                item.hand_display!.scale
             );
             this.parts.leftHand.selectedItem.texture = texture;
-            this.parts.leftHand.selectedItem.x = itemData.hand_position.x;
-            this.parts.leftHand.selectedItem.y = itemData.hand_position.y;
+            this.parts.leftHand.selectedItem.x = item.hand_display!.x;
+            this.parts.leftHand.selectedItem.y = item.hand_display!.y;
             this.parts.leftHand.selectedItem.rotation = degrees(
-                itemData.hand_position.rotation
+                item.hand_display!.rotation
             );
         }
     }

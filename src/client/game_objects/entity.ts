@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { colorLerp, degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { AnimationManager, Keyframes } from "../../lib/animation";
-import { randomInt } from "../../lib/math";
+import { Random } from "../../lib/random";
 
 type State = [time: number, x: number, y: number, rotation: number];
 function typeofState(state?: State): state is State {
@@ -93,7 +93,7 @@ function loadAnimations(target: EntityParts) {
     idleKeyframes.frame(0).set = ({ target, animation }) => {
         animation.meta.width = target.container.scale.x;
         animation.meta.height = target.container.scale.y;
-        animation.meta.frameLength = randomInt(2000, 4000);
+        animation.meta.frameLength = Random.integer(2000, 4000);
 
         animation.next(animation.meta.frameLength);
     };

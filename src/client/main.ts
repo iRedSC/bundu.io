@@ -62,4 +62,4 @@ setInterval(() => {
     sky.advanceCycle();
 }, 10000);
 
-createSwitch(sky);
+createSwitch(player);

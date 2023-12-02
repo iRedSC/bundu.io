@@ -23,48 +23,11 @@
 html,
 body {
     height: 100%;
-}
-
-body {
     position: relative;
     display: grid;
     place-items: center;
     justify-content: center;
     grid-template-columns: 1fr;
-}
-
-.info-modal {
-    grid-row: 1;
-    grid-column: 1;
-
-    justify-content: center;
-
-    background-color: #242424;
-}
-
-.chat-area {
-    grid-row: 1;
-    grid-column: 1;
-
-    height: 100%;
-    width: 50%;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.chat-input-area {
-    display: flex;
-    flex-direction: row;
-}
-
-.chat-box-area {
-    height: 50%;
-    overflow-y: scroll;
-}
-
-.chat-input {
-    width: 100%;
 }
 
 /* The switch - the box around the slider */
