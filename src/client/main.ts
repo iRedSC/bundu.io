@@ -16,7 +16,7 @@ createStuff(viewport, all_objects, structures);
 
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
 let playerPos: { x: number; y: number } = { x: 20000, y: 20000 };
-player.update([Date.now(), 20000, 20000, 0], ["wooden_pickaxe", "empty", 0]);
+player.update([Date.now(), 20000, 20000, 0], ["amethyst_sword", "empty", 0]);
 viewport.addChild(player.container);
 all_objects.push(player);
 

@@ -18,9 +18,9 @@
     "sword": {
         "hand_position": {
             "rotation": -135,
-            "x": -12500,
-            "y": -100000,
-            "scale": 1000
+            "x": -75,
+            "y": -200,
+            "scale": 2.2
         }
     }
 }
