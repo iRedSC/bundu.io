@@ -1,7 +1,7 @@
 export let actions: any = {};
 actions.move = {};
 
-interface KeyPresses {
+type KeyPresses = {
     Shift: boolean;
     r: boolean;
     w: boolean;
@@ -9,7 +9,7 @@ interface KeyPresses {
     s: boolean;
     d: boolean;
     [key: string]: any;
-}
+};
 
 let keys: KeyPresses = {
     Shift: false,

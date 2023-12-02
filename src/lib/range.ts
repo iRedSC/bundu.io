@@ -1,13 +1,8 @@
 type Point = [number, number];
 
-export interface Range {
+export class Range {
     pos1: Point;
     pos2: Point;
-    contains(pos: Point): boolean;
-    intersects(range: Range): boolean;
-}
-
-export class Range {
     constructor(pos1: Point, pos2: Point) {
         this.pos1 = pos1;
         this.pos2 = pos2;

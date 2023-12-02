@@ -5,10 +5,10 @@ import { AnimationManager, Keyframes } from "../../lib/animation";
 
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 
-interface StructureParts {
+type StructureParts = {
     container: PIXI.Container;
     sprite: PIXI.Sprite;
-}
+};
 
 export class Structure {
     id: number;

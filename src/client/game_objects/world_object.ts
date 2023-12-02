@@ -1,11 +1,11 @@
 import * as PIXI from "pixi.js";
 import { degrees } from "../../lib/transforms";
 
-interface PreviousData {
+type PreviousData = {
     time: number;
     pos: PIXI.Point;
     rotation: number;
-}
+};
 
 export class WorldObject {
     time: number;

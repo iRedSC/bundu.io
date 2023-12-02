@@ -8,13 +8,13 @@ import { NIGHT_COLOR } from "../constants";
 import itemTypes from "../configs/item_types.json";
 import items from "../configs/items.json";
 
-interface itemTypes {
+type itemTypes = {
     [key: string]: keyof typeof itemTypes;
-}
+};
 
-interface items {
+type items = {
     [key: string]: string;
-}
+};
 
 //* New: [pos, rotation, name, selectedItem, helmet]
 //* Changed: [[1, pos, rotation], [2, selectedItem, helmet]]
@@ -53,7 +53,7 @@ function typeofGear(gear?: Gear): gear is Gear {
     return gear[0] in items && gear[1] in items && typeof gear[2] === "number";
 }
 
-interface PlayerParts {
+type PlayerParts = {
     container: PIXI.Container;
     body: {
         container: PIXI.Container;
@@ -69,7 +69,7 @@ interface PlayerParts {
         container: PIXI.Container;
         sprite: PIXI.Sprite;
     };
-}
+};
 
 export class Player {
     id: number;

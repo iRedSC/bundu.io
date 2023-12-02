@@ -2,20 +2,17 @@ import { Range } from "./range.js";
 
 type Point = [number, number];
 
-interface ObjectWithPos {
+type ObjectWithPos = {
     id: number;
     pos: Point;
     [key: string]: any;
-}
+};
 
 type ObjectList<T extends ObjectWithPos> = Map<number, T>;
 
-export interface Quadtree<T extends ObjectWithPos> {
+export class Quadtree<T extends ObjectWithPos> {
     tree: InternalQuadtree<T>;
     objects: ObjectList<T>;
-}
-
-export class Quadtree<T extends ObjectWithPos> {
     constructor(objectList: ObjectList<T>, bounds: Range, maxObjects: number) {
         this.tree = new InternalQuadtree(bounds, maxObjects);
         this.objects = objectList;
@@ -47,15 +44,12 @@ export class Quadtree<T extends ObjectWithPos> {
     }
 }
 
-interface InternalQuadtree<T extends ObjectWithPos> {
+class InternalQuadtree<T extends ObjectWithPos> {
     bounds: Range;
     maxObjects: number;
     level: number;
     objects: Set<number>;
     nodes: InternalQuadtree<T>[];
-}
-
-class InternalQuadtree<T extends ObjectWithPos> {
     constructor(bounds: Range, maxObjects: number = 10) {
         this.bounds = bounds;
         this.maxObjects = maxObjects;

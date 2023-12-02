@@ -17,10 +17,10 @@ function typeofState(state?: State): state is State {
     );
 }
 
-interface EntityParts {
+type EntityParts = {
     container: PIXI.Container;
     body: PIXI.Sprite;
-}
+};
 
 export class Entity {
     id: number;

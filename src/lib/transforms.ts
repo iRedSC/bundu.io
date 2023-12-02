@@ -1,8 +1,8 @@
-interface Point {
+type Point = {
     x: number;
     y: number;
     [key: string]: any;
-}
+};
 export function rotationLerp(a: number, b: number, t: number): number {
     t = Math.min(1, t);
 
