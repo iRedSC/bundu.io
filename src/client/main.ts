@@ -6,8 +6,9 @@ import { createRenderer } from "./rendering";
 import { createEvents } from "./events";
 import { mousePos } from "./events";
 import { createSwitch } from "./day_toggle";
+import { Sky } from "./sky";
 
-export const all_objects: { setNight: () => void; setDay: () => void }[] = [];
+export const all_objects: any[] = [];
 const structures: any[] = [];
 
 const { viewport } = createRenderer();
@@ -56,3 +57,8 @@ setInterval(() => {
 createEvents(player);
 
 createSwitch(all_objects);
+
+const sky = new Sky(viewport);
+setInterval(() => {
+    sky.advanceCycle();
+}, 10000);

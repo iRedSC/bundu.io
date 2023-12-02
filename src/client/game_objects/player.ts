@@ -3,7 +3,6 @@ import { degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager } from "../../lib/animation";
 import { block } from "../events";
 import { round } from "../../lib/math";
-import { NIGHT_COLOR } from "../constants";
 
 import itemTypes from "../configs/item_types.json";
 import items from "../configs/items.json";
@@ -237,22 +236,6 @@ export class Player {
                 itemData.hand_position.rotation
             );
         }
-    }
-
-    setNight() {
-        this.parts.body.helmet.tint = NIGHT_COLOR;
-        this.parts.body.sprite.tint = NIGHT_COLOR;
-        this.parts.leftHand.selectedItem.tint = NIGHT_COLOR;
-        this.parts.leftHand.sprite.tint = NIGHT_COLOR;
-        this.parts.rightHand.sprite.tint = NIGHT_COLOR;
-    }
-
-    setDay() {
-        this.parts.body.helmet.tint = 0xffffff;
-        this.parts.body.sprite.tint = 0xffffff;
-        this.parts.leftHand.selectedItem.tint = 0xffffff;
-        this.parts.leftHand.sprite.tint = 0xffffff;
-        this.parts.rightHand.sprite.tint = 0xffffff;
     }
 }
 

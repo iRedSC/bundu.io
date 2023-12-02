@@ -62,14 +62,6 @@ export class Structure {
     }
 
     update() {}
-
-    setNight() {
-        this.parts.sprite.tint = NIGHT_COLOR;
-    }
-
-    setDay() {
-        this.parts.sprite.tint = 0xffffff;
-    }
 }
 
 function loadAnimations(target: Structure) {
