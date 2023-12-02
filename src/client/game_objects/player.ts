@@ -95,7 +95,7 @@ export class Player {
         this.id = id;
 
         this.selectedItem = "";
-        this.helmet = "empty";
+        this.helmet = "";
         this.backpack = -1;
 
         this.pos = new PIXI.Point(0, 0);
@@ -162,7 +162,7 @@ export class Player {
             this.selectedItem = hand;
         }
         if (body) {
-            this.selectedItem = body;
+            this.helmet = body;
         }
         this.updateGear();
     }
@@ -223,6 +223,22 @@ export class Player {
             this.parts.leftHand.selectedItem.y = item.hand_display!.y;
             this.parts.leftHand.selectedItem.rotation = degrees(
                 item.hand_display!.rotation
+            );
+        }
+
+        if (this.helmet !== "") {
+            this.parts.body.helmet.renderable = true;
+            const item = getItem(this.helmet, ["body_display", "sprite"]);
+            if (!item) {
+                return;
+            }
+            const texture = PIXI.Texture.from(`./assets/${item.sprite}.svg`);
+            this.parts.body.helmet.scale.set(item.body_display!.scale);
+            this.parts.body.helmet.texture = texture;
+            this.parts.body.helmet.x = item.body_display!.x;
+            this.parts.body.helmet.y = item.body_display!.y;
+            this.parts.body.helmet.rotation = degrees(
+                item.body_display!.rotation
             );
         }
     }

@@ -13,7 +13,10 @@
     },
     "diamond_pickaxe": {
         "type": "pickaxe",
-        "sprite": "diamond_pickaxe"
+        "sprite": "diamond_pickaxe",
+        "hand_display": {
+            "scale": 5
+        }
     },
     "amethyst_pickaxe": {
         "type": "pickaxe",
@@ -38,5 +41,25 @@
     "amethyst_sword": {
         "type": "sword",
         "sprite": "amethyst_sword"
+    },
+    "wooden_helmet": {
+        "type": "helmet",
+        "sprite": "wooden_helmet"
+    },
+    "stone_helmet": {
+        "type": "helmet",
+        "sprite": "stone_helmet"
+    },
+    "gold_helmet": {
+        "type": "helmet",
+        "sprite": "gold_helmet"
+    },
+    "diamond_helmet": {
+        "type": "helmet",
+        "sprite": "diamond_helmet"
+    },
+    "amethyst_helmet": {
+        "type": "helmet",
+        "sprite": "amethyst_helmet"
     }
 }
