@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager } from "../../lib/animation";
-import { block } from "../main";
+import { block } from "../events";
 import { round } from "../../lib/math";
 import { NIGHT_COLOR } from "../constants";
 

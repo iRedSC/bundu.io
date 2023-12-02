@@ -12,15 +12,15 @@
             "rotation": -100,
             "x": 150,
             "y": -200,
-            "scale": 5
+            "scale": 2
         }
     },
     "sword": {
         "hand_position": {
             "rotation": -135,
-            "x": -75,
-            "y": -500,
-            "scale": 5
+            "x": -12500,
+            "y": -100000,
+            "scale": 1000
         }
     }
 }
