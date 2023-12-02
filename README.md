@@ -1,26 +1,26 @@
 ## Bundu.io Development
 
-### Installed Dependancies
+### Installing Dependancies
 
 Dependancies will automatically be installed when autobuilding, so please see below.
 
-### Autobuilding
+### Auto-building
 
-Autobuilding is set up separately for client and server.
+Auto-building is set up separately for client and server.
 
-Start autobuilding for the client:
+Start auto-building for the client:
 
 ```
 npm run client
 ```
 
-Start autobuilding for the server:
+Start auto-building for the server:
 
 ```
 npm run server
 ```
 
-Keep in mind that in order to autobuild both, you need two terminal instances.
+Keep in mind that in order to auto-build both, you need two terminal instances.
 
 ### Hosting Platforms
 
@@ -29,4 +29,18 @@ Keep in mind that in order to autobuild both, you need two terminal instances.
 
 ### Frameworks & Libraries
 
-The client is being built using [Vite](https://vitejs.dev/) configured for vanilla Typescript. Testing is done with [Vitest](https://vitest.dev/). Client rendering is done using [Pixi.js](https://pixijs.com/) and [pixi-viewport](https://github.com/davidfig/pixi-viewport).
+#### **[Vite](https://vitejs.dev/)**
+
+The project is being built using Vite, configured for Vanilla Typescript. It is used for auto-building the client.
+
+#### **[Vitest](https://vitest.dev/)**
+
+Vite's testing framework, Vitest, is used to run our unit tests.
+
+#### **[Pixi.js](https://pixijs.com/)**
+
+Pixi.js is a fast WebGL based canvas renderer used for making the client.
+
+#### **[pixi-viewport](https://github.com/davidfig/pixi-viewport)**
+
+pixi-viewport allows for easy camera setup and zooming.
