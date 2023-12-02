@@ -1,5 +1,9 @@
 ## Bundu.io Development
 
+### Installed Dependancies
+
+Dependancies will automatically be installed when autobuilding, so please see below.
+
 ### Autobuilding
 
 Autobuilding is set up separately for client and server.
