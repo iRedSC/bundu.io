@@ -1,6 +1,5 @@
 import * as PIXI from "pixi.js";
 import { degrees, lerp, lookToward, moveToward } from "../../lib/transforms";
-import { NIGHT_COLOR } from "../constants";
 import { AnimationManager, Keyframes } from "../../lib/animation";
 
 // type StructureData = [id: number, pos: number, size: number, rotation: number];

@@ -3,7 +3,6 @@ import { Structure } from "./game_objects/structure";
 import { randomInt } from "../lib/math";
 import { loadGround } from "./ground";
 import { WORLD_SIZE } from "./constants";
-import { Sky } from "./sky";
 
 export function createStuff(
     viewport: Viewport,
