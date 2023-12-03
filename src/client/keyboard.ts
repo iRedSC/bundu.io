@@ -10,10 +10,10 @@ const keybinds = new Keystrokes({
     },
 });
 
-export const move = [0, 0];
+export const move: [number, number] = [0, 0];
 export let blocking = false;
 export let attacking = false;
-export let mousePos = [0, 0];
+export let mousePos: [number, number] = [0, 0];
 
 keybinds.bindKey("up", {
     onPressed: () => (move[1] += 1),
