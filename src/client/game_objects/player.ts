@@ -1,7 +1,6 @@
 import * as PIXI from "pixi.js";
 import { degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager } from "../../lib/animation";
-import { block } from "../events";
 import { round } from "../../lib/math";
 
 import { getItem } from "../configs/configs";
@@ -59,10 +58,11 @@ export class Player {
     nextState: State;
     pos: PIXI.Point;
     rotation: number;
-    animationManager: AnimationManager<PlayerParts>;
+    animationManager: AnimationManager<Player>;
     selectedItem: string;
     helmet: string;
     backpack: number;
+    blocking: boolean;
     constructor(id: number, state: State) {
         this.parts = {
             container: new PIXI.Container(),
@@ -100,6 +100,8 @@ export class Player {
 
         this.pos = new PIXI.Point(0, 0);
         this.rotation = 0;
+
+        this.blocking = false;
 
         const parts = this.parts;
         const container = parts.container;
@@ -149,7 +151,7 @@ export class Player {
         rightHand.container.scale.set(0.5);
         rightHand.sprite.scale.set(0.5);
 
-        this.animationManager = loadAnimations(this.parts);
+        this.animationManager = loadAnimations(this);
         this.trigger("leftHand");
         this.trigger("rightHand");
 
@@ -244,10 +246,10 @@ export class Player {
     }
 }
 
-function loadAnimations(target: PlayerParts) {
-    let leftHandKeyframes: Keyframes<PlayerParts> = new Keyframes();
+function loadAnimations(target: Player) {
+    let leftHandKeyframes: Keyframes<Player> = new Keyframes();
     leftHandKeyframes.frame(0).set = ({ target, animation }) => {
-        const leftHand = target.leftHand.container;
+        const leftHand = target.parts.leftHand.container;
         if (animation.firstKeyframe) {
             animation.meta.x = leftHand.x;
             animation.goto(0, 2000);
@@ -259,9 +261,9 @@ function loadAnimations(target: PlayerParts) {
         }
     };
 
-    let rightHandKeyframes: Keyframes<PlayerParts> = new Keyframes();
+    let rightHandKeyframes: Keyframes<Player> = new Keyframes();
     rightHandKeyframes.frame(0).set = ({ target, animation }) => {
-        const rightHand = target.rightHand.container;
+        const rightHand = target.parts.rightHand.container;
         if (animation.firstKeyframe) {
             animation.meta.x = rightHand.x;
             animation.goto(0, 2000);
@@ -274,17 +276,17 @@ function loadAnimations(target: PlayerParts) {
         }
     };
 
-    const attackKeyframes: Keyframes<PlayerParts> = new Keyframes();
+    const attackKeyframes: Keyframes<Player> = new Keyframes();
     attackKeyframes.frame(0).set = ({ target, animation }) => {
-        const leftHand = target.leftHand.container;
+        const leftHand = target.parts.leftHand.container;
         if (leftHand.rotation !== 0) {
             animation.expired = true;
         }
         animation.next(100);
     };
     attackKeyframes.frame(1).set = ({ target, animation }) => {
-        const leftHand = target.leftHand.container;
-        const rightHand = target.rightHand.container;
+        const leftHand = target.parts.leftHand.container;
+        const rightHand = target.parts.rightHand.container;
         leftHand.rotation = lerp(degrees(0), degrees(-90), animation.t);
         rightHand.rotation = lerp(degrees(0), degrees(-15), animation.t);
         if (animation.keyframeEnded) {
@@ -292,8 +294,8 @@ function loadAnimations(target: PlayerParts) {
         }
     };
     attackKeyframes.frame(2).set = ({ target, animation }) => {
-        const leftHand = target.leftHand.container;
-        const rightHand = target.rightHand.container;
+        const leftHand = target.parts.leftHand.container;
+        const rightHand = target.parts.rightHand.container;
         leftHand.rotation = lerp(degrees(-90), degrees(0), animation.t);
         rightHand.rotation = lerp(degrees(-15), degrees(0), animation.t);
         if (animation.keyframeEnded) {
@@ -301,26 +303,26 @@ function loadAnimations(target: PlayerParts) {
         }
     };
 
-    const blockKeyframes: Keyframes<PlayerParts> = new Keyframes();
+    const blockKeyframes: Keyframes<Player> = new Keyframes();
     blockKeyframes.frame(0).set = ({ target, animation }) => {
-        const leftHand = target.leftHand.container;
+        const leftHand = target.parts.leftHand.container;
         if (leftHand.rotation !== 0) {
             animation.expired = true;
         }
         animation.next(75);
     };
     blockKeyframes.frame(1).set = ({ target, animation }) => {
-        const leftHand = target.leftHand.container;
-        const rightHand = target.rightHand.container;
+        const leftHand = target.parts.leftHand.container;
+        const rightHand = target.parts.rightHand.container;
         leftHand.rotation = lerp(degrees(0), degrees(-90), animation.t);
         rightHand.rotation = lerp(degrees(0), degrees(25), animation.t);
-        if (!block) {
+        if (!target.blocking) {
             animation.next(60);
         }
     };
     blockKeyframes.frame(2).set = ({ target, animation }) => {
-        const leftHand = target.leftHand.container;
-        const rightHand = target.rightHand.container;
+        const leftHand = target.parts.leftHand.container;
+        const rightHand = target.parts.rightHand.container;
         leftHand.rotation = lerp(degrees(-90), degrees(0), animation.t);
         rightHand.rotation = lerp(degrees(25), degrees(0), animation.t);
         if (animation.keyframeEnded) {

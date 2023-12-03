@@ -64,9 +64,12 @@ type ReturnItem = {
 
 export function getItem(name: string, require: string[]): ReturnItem | null {
     const item = items[name];
+    if (!item) {
+        return null;
+    }
     let itemType: ItemTypeConfig = {};
     if (item.type) {
-        itemType = itemTypes[item.type];
+        itemType = itemTypes[item.type] || {};
         if ("hand_display" in itemType) {
             item.hand_display = mergeDisplayConfig(
                 itemType.hand_display,

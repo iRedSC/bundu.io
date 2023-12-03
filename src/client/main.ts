@@ -1,11 +1,9 @@
 import { Player } from "./game_objects/player";
 import { degrees, lookToward, moveToward } from "../lib/transforms";
-import { move } from "./keyboard";
+import { move, mousePos, createClickEvents } from "./keyboard";
 import { createStuff } from "./testing";
 import { createRenderer } from "./rendering";
-import { createEvents } from "./events";
-import { mousePos } from "./events";
-import { createSwitch } from "./day_toggle";
+import { createSwitch } from "./toggle";
 import { Sky } from "./sky";
 
 export const all_objects: any[] = [];
@@ -49,7 +47,7 @@ setInterval(() => {
                 x: playerPos.x - move[0] * 10,
                 y: playerPos.y - move[1] * 10,
             }),
-            100
+            85
         );
     }
     player.update([Date.now() + 50, playerPos.x, playerPos.y, rotation]);
@@ -57,11 +55,11 @@ setInterval(() => {
 
 // interactions
 
-createEvents(player);
+createClickEvents(player);
 
 const sky = new Sky(viewport);
 setInterval(() => {
     sky.advanceCycle();
-}, 10000);
+}, 60000);
 
 createSwitch(player);

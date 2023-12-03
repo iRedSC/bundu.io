@@ -52,7 +52,10 @@
     },
     "gold_helmet": {
         "type": "helmet",
-        "sprite": "gold_helmet"
+        "sprite": "gold_helmet",
+        "body_display": {
+            "y": 10
+        }
     },
     "diamond_helmet": {
         "type": "helmet",
