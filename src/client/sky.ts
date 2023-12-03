@@ -28,26 +28,10 @@ export class Sky {
         this.graphics.lineStyle({ width: 5 });
         this.graphics.drawRect(0, 0, WORLD_SIZE, WORLD_SIZE);
         this.graphics.zIndex = 100;
-        // this.graphics.alpha = 0.5;
         this.graphics.blendMode = PIXI.BLEND_MODES.MULTIPLY;
         world.addChild(this.graphics);
 
         this.animationManager = loadAnimations(this);
-    }
-
-    setNight() {
-        this.graphics.tint = NIGHT_COLOR;
-    }
-
-    setEvening() {
-        this.graphics.tint = EVENING_COLOR;
-    }
-    setMorning() {
-        this.graphics.tint = MORNING_COLOR;
-    }
-
-    setDay() {
-        this.graphics.tint = 0xffffff;
     }
 
     advanceCycle() {
