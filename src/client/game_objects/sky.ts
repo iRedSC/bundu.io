@@ -6,9 +6,9 @@ import {
     MORNING_COLOR,
     NIGHT_COLOR,
     WORLD_SIZE,
-} from "./constants";
-import { AnimationManager, Keyframes } from "../lib/animation";
-import { colorLerp } from "../lib/transforms";
+} from "../constants";
+import { AnimationManager, Keyframes } from "../../lib/animation";
+import { colorLerp } from "../../lib/transforms";
 
 const times = new Map();
 times.set(0, MORNING_COLOR);

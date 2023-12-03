@@ -2,9 +2,9 @@ import { Player } from "./game_objects/player";
 import { degrees, lookToward, moveToward } from "../lib/transforms";
 import { move, mousePos, createClickEvents } from "./keyboard";
 import { createStuff } from "./testing";
-import { createRenderer } from "./rendering";
+import { createRenderer } from "./rendering/rendering";
 import { createSwitch } from "./toggle";
-import { Sky } from "./sky";
+import { Sky } from "./game_objects/sky";
 
 export const all_objects: any[] = [];
 const structures: any[] = [];

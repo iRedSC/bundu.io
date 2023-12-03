@@ -11,7 +11,6 @@ const keybinds = new Keystrokes({
 });
 
 export const move: [number, number] = [0, 0];
-export let blocking = false;
 export let attacking = false;
 export let mousePos: [number, number] = [0, 0];
 
@@ -43,7 +42,6 @@ export function createClickEvents(player: Player) {
             player.blocking = true;
             player.trigger("block");
         } else {
-            attacking = true;
             player.trigger("attack");
         }
     });
@@ -51,8 +49,6 @@ export function createClickEvents(player: Player) {
     document.body.addEventListener("mouseup", (event) => {
         if (event.button == 2) {
             player.blocking = false;
-        } else {
-            attacking = false;
         }
     });
 }

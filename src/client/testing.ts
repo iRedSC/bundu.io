@@ -1,7 +1,7 @@
 import { Viewport } from "pixi-viewport";
 import { Structure } from "./game_objects/structure";
 import { Random } from "../lib/random";
-import { loadGround } from "./ground";
+import { loadGround } from "./game_objects/ground";
 import { WORLD_SIZE } from "./constants";
 
 export function createStuff(
@@ -30,18 +30,6 @@ export function createStuff(
             0x1b6430
         )
     );
-
-    // for (let i = 0; i < 50; i++) {
-    //     const ground = loadGround(
-    //         viewport,
-    //         [
-    //             [Random.integer(0, WORLD_SIZE), Random.integer(0, WORLD_SIZE)],
-    //             [Random.integer(0, WORLD_SIZE), Random.integer(0, WORLD_SIZE)],
-    //         ],
-    //         randomHexColor()
-    //     );
-    //     all_objects.push(ground);
-    // }
 
     for (let i = 0; i < 500; i++) {
         const structure = new Structure(

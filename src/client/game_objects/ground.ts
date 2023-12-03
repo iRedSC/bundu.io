@@ -29,7 +29,7 @@ class Ground {
     constructor(world: Viewport, coords: Coordinates, color: number) {
         this.graphics = new PIXI.Graphics();
         this.graphics.beginFill(color);
-        this.graphics.lineStyle({ width: 5 });
+        this.graphics.lineStyle({ width: 0 });
         const rect = coordsToRect(coords);
         this.graphics.drawRect(rect[0], rect[1], rect[2], rect[3]);
         world.addChild(this.graphics);
