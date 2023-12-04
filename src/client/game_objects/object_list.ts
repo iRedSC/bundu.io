@@ -4,10 +4,13 @@ import { Structure } from "./structure";
 import {
     IncomingEntityData,
     IncomingPlayerData,
+    IncomingStructureData,
     unpackEntityData,
     unpackPlayerData,
+    unpackStructureData,
 } from "./unpack";
 import { WorldObject } from "./world_object";
+import * as PIXI from "pixi.js";
 
 export class GameObjectHolder {
     user?: Player;
@@ -34,13 +37,22 @@ export class GameObjectHolder {
         }
     }
 
-    digest(incoming: IncomingEntityData | IncomingPlayerData) {
+    unpack(
+        incoming:
+            | IncomingEntityData
+            | IncomingPlayerData
+            | IncomingStructureData,
+        container: PIXI.Container
+    ) {
         switch (incoming[0]) {
             case 0:
-                unpackPlayerData(incoming, this.players);
+                unpackPlayerData(incoming, this.players, container);
                 break;
             case 1:
-                unpackEntityData(incoming, this.entities);
+                unpackEntityData(incoming, this.entities, container);
+                break;
+            case 2:
+                unpackStructureData(incoming, this.structures, container);
                 break;
         }
     }

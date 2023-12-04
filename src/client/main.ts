@@ -5,19 +5,18 @@ import { createStuff } from "./testing";
 import { createRenderer } from "./rendering/rendering";
 import { createSwitch } from "./toggle";
 import { Sky } from "./game_objects/sky";
-
-export const all_objects: any[] = [];
-const structures: any[] = [];
+import { BunduClient } from "./client";
 
 const { viewport } = createRenderer();
 
-createStuff(viewport, all_objects, structures);
+const client = new BunduClient(viewport);
+
+createStuff(client);
 
 const player: Player = new Player(0, "test", Date.now(), [0, 0], 0);
 let playerPos: { x: number; y: number } = { x: 20000, y: 20000 };
 player.update([Date.now(), 20000, 20000, 0], ["", "", 0]);
 viewport.addChild(player.container);
-all_objects.push(player);
 
 viewport.follow(player.container, {
     speed: 0,

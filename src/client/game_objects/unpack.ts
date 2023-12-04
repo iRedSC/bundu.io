@@ -1,6 +1,8 @@
-import { entityMap, itemMap } from "../configs/config_map";
+import { entityMap, itemMap, structureMap } from "../configs/config_map";
 import { Entity } from "./entity";
 import { Player } from "./player";
+import * as PIXI from "pixi.js";
+import { Structure } from "./structure";
 
 export type IncomingPlayerData =
     | [
@@ -37,7 +39,8 @@ export type IncomingPlayerData =
 
 export function unpackPlayerData(
     data: IncomingPlayerData,
-    playerList: Map<number, Player>
+    playerList: Map<number, Player>,
+    container: PIXI.Container
 ) {
     const time = data[1];
     const packets = data[2];
@@ -54,6 +57,7 @@ export function unpackPlayerData(
                     packet[5]
                 );
                 playerList.set(packet[1], player);
+                container.addChild(player.container);
                 break;
             }
             // update position
@@ -100,7 +104,8 @@ export type IncomingEntityData = [
 
 export function unpackEntityData(
     data: IncomingEntityData,
-    entityList: Map<number, Entity>
+    entityList: Map<number, Entity>,
+    container: PIXI.Container
 ) {
     const time = data[1];
     const packets = data[2];
@@ -109,11 +114,12 @@ export function unpackEntityData(
         switch (packet[0]) {
             // new entity
             case 0: {
-                const player = new Entity(
+                const entity = new Entity(
                     packet[1],
                     entityMap.get(packet[2]) || "elephant"
                 );
-                entityList.set(packet[1], player);
+                entityList.set(packet[1], entity);
+                container.addChild(entity.container);
                 break;
             }
             // update position
@@ -123,6 +129,48 @@ export function unpackEntityData(
                     break;
                 }
                 entity?.update([time, packet[1], packet[2], packet[3]]);
+                break;
+            }
+        }
+    }
+}
+
+export type IncomingStructureData = [
+    packetType: 2,
+    time: number,
+    (
+        | [
+              packetType: 0,
+              id: number,
+              type: number,
+              x: number,
+              y: number,
+              rotation: number,
+              size: number
+          ]
+    )[]
+];
+
+export function unpackStructureData(
+    data: IncomingStructureData,
+    structureList: Map<number, Structure>,
+    container: PIXI.Container
+) {
+    const packets = data[2];
+
+    for (let packet of packets) {
+        switch (packet[0]) {
+            // new structure
+            case 0: {
+                const structure = new Structure(
+                    packet[1],
+                    structureMap.get(packet[2]) || "stone",
+                    [packet[3], packet[4]],
+                    packet[5],
+                    packet[6]
+                );
+                structureList.set(packet[1], structure);
+                container.addChild(structure.container);
                 break;
             }
         }

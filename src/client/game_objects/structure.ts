@@ -20,10 +20,10 @@ export class Structure {
 
     constructor(
         id: number,
+        type: string,
         pos: [x: number, y: number],
-        size: number,
         rotation: number,
-        type: string
+        size: number
     ) {
         this.lastHitSource = new PIXI.Point(0, 0);
         this.id = id;
@@ -54,6 +54,10 @@ export class Structure {
         this.parts.sprite.scale.set(this.size);
 
         this.animationManager = loadAnimations(this);
+    }
+
+    get container() {
+        return this.parts.container;
     }
 
     trigger(name: string) {

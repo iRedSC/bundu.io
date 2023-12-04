@@ -1,126 +1,39 @@
-import { Viewport } from "pixi-viewport";
-import { Structure } from "./game_objects/structure";
 import { Random } from "../lib/random";
 import { loadGround } from "./game_objects/ground";
 import { WORLD_SIZE } from "./constants";
+import { BunduClient } from "./client";
+import { IncomingStructureData } from "./game_objects/unpack";
 
-export function createStuff(
-    viewport: Viewport,
-    all_objects: any[],
-    structures: any[]
-) {
-    all_objects.push(
-        loadGround(
-            viewport,
-            [
-                [0, 0],
-                [viewport.worldWidth, viewport.worldHeight],
-            ],
-            0x16a0ca
-        )
+export function createStuff(client: BunduClient) {
+    loadGround(
+        client.viewport,
+        [
+            [0, 0],
+            [WORLD_SIZE, WORLD_SIZE],
+        ],
+        0x16a0ca
     );
 
-    all_objects.push(
-        loadGround(
-            viewport,
-            [
-                [5000, 5000],
-                [viewport.worldWidth - 5000, viewport.worldHeight - 5000],
-            ],
-            0x1b6430
-        )
+    loadGround(
+        client.viewport,
+        [
+            [5000, 5000],
+            [WORLD_SIZE - 5000, WORLD_SIZE - 5000],
+        ],
+        0x1b6430
     );
 
-    for (let i = 0; i < 500; i++) {
-        const structure = new Structure(
-            i,
-            [
-                Random.integer(5000, WORLD_SIZE - 5000),
-                Random.integer(5000, WORLD_SIZE - 5000),
-            ],
-            Random.integer(3, 5),
-            Random.integer(0, Math.PI * 360),
-            "stone"
-        );
-        viewport.addChild(structure.parts.container);
-        all_objects.push(structure);
-        structures.push(structure);
-    }
-    for (let i = 0; i < 50; i++) {
-        const structure = new Structure(
-            i,
-            [
-                Random.integer(5000, WORLD_SIZE - 5000),
-                Random.integer(5000, WORLD_SIZE - 5000),
-            ],
-            Random.integer(3, 5),
-            Random.integer(0, Math.PI * 360),
-            "amethyst"
-        );
-        viewport.addChild(structure.parts.container);
-        all_objects.push(structure);
-        structures.push(structure);
-    }
-    for (let i = 0; i < 10; i++) {
-        const structure = new Structure(
-            i,
-            [
-                Random.integer(5000, WORLD_SIZE - 5000),
-                Random.integer(5000, WORLD_SIZE - 5000),
-            ],
-            Random.integer(3, 5),
-            Random.integer(0, Math.PI * 360),
-            "diamond"
-        );
-        viewport.addChild(structure.parts.container);
-        all_objects.push(structure);
-        structures.push(structure);
-    }
-
+    const structures: IncomingStructureData = [2, 0, []];
     for (let i = 0; i < 100; i++) {
-        const structure = new Structure(
+        structures[2].push([
+            0,
             i,
-            [
-                Random.integer(5000, WORLD_SIZE - 5000),
-                Random.integer(5000, WORLD_SIZE - 5000),
-            ],
-            3,
+            Random.integer(0, 3),
+            Random.integer(5000, WORLD_SIZE - 5000),
+            Random.integer(5000, WORLD_SIZE - 5000),
             Random.integer(0, Math.PI * 360),
-            "gold"
-        );
-        viewport.addChild(structure.parts.container);
-        all_objects.push(structure);
-        structures.push(structure);
+            Random.integer(3, 10),
+        ]);
     }
-
-    for (let i = 0; i < 500; i++) {
-        const structure = new Structure(
-            i,
-            [
-                Random.integer(5000, WORLD_SIZE - 5000),
-                Random.integer(5000, WORLD_SIZE - 5000),
-            ],
-            Random.integer(5, 10),
-            Random.integer(0, Math.PI * 360),
-            "pine_tree2"
-        );
-        viewport.addChild(structure.parts.container);
-        all_objects.push(structure);
-        structures.push(structure);
-    }
-    for (let i = 0; i < 500; i++) {
-        const structure = new Structure(
-            i,
-            [
-                Random.integer(5000, WORLD_SIZE - 5000),
-                Random.integer(5000, WORLD_SIZE - 5000),
-            ],
-            Random.integer(5, 10),
-            Random.integer(0, Math.PI * 360),
-            "pine_tree"
-        );
-        viewport.addChild(structure.parts.container);
-        all_objects.push(structure);
-        structures.push(structure);
-    }
+    client.objectHandler.unpack(structures, client.viewport);
 }
