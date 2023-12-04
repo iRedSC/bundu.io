@@ -1,6 +1,6 @@
 import { Player } from "./game_objects/player";
 import { degrees, lookToward, moveToward } from "../lib/transforms";
-import { move, mousePos, createClickEvents } from "./keyboard";
+import { move, mousePos, createClickEvents } from "./input/keyboard";
 import { createStuff } from "./testing";
 import { createRenderer } from "./rendering/rendering";
 import { createSwitch } from "./toggle";
@@ -15,10 +15,7 @@ createStuff(viewport, all_objects, structures);
 
 const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
 let playerPos: { x: number; y: number } = { x: 20000, y: 20000 };
-player.update(
-    [Date.now(), 20000, 20000, 0],
-    ["amethyst_sword", "amethyst_helmet", 0]
-);
+player.update([Date.now(), 20000, 20000, 0], ["", "", 0]);
 viewport.addChild(player.container);
 all_objects.push(player);
 

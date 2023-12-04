@@ -1,5 +1,5 @@
 import { Keystrokes } from "@rwh/keystrokes";
-import { Player } from "./game_objects/player";
+import { Player } from "../game_objects/player";
 
 const keybinds = new Keystrokes({
     keyRemap: {

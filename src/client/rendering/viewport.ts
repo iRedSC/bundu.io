@@ -1,6 +1,6 @@
 import { Viewport } from "pixi-viewport";
 import * as PIXI from "pixi.js";
-import { WORLD_SIZE } from "./constants";
+import { WORLD_SIZE } from "../constants";
 
 export function createViewport(app: PIXI.Application, center: PIXI.Point) {
     const viewport = new Viewport({

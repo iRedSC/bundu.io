@@ -53,17 +53,28 @@ type PlayerParts = {
 
 export class Player {
     id: number;
+    name: string;
     parts: PlayerParts;
+
     lastState: State;
     nextState: State;
     pos: PIXI.Point;
     rotation: number;
+
     animationManager: AnimationManager<Player>;
+
     selectedItem: string;
     helmet: string;
     backpack: number;
+
     blocking: boolean;
-    constructor(id: number, state: State) {
+    constructor(
+        id: number,
+        name: string,
+        time: number,
+        pos: [x: number, y: number],
+        rotation: number
+    ) {
         this.parts = {
             container: new PIXI.Container(),
             body: {
@@ -93,6 +104,7 @@ export class Player {
         };
 
         this.id = id;
+        this.name = name;
 
         this.selectedItem = "";
         this.helmet = "";
@@ -155,8 +167,8 @@ export class Player {
         this.trigger("leftHand");
         this.trigger("rightHand");
 
-        this.lastState = state;
-        this.nextState = state;
+        this.lastState = [time, pos[0], pos[1], rotation];
+        this.nextState = [time, pos[0], pos[1], rotation];
     }
 
     selectItem({ hand, body }: { hand?: string; body?: string }) {

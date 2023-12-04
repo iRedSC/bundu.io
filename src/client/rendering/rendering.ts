@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { createViewport } from "../viewport";
+import { createViewport } from "./viewport";
 import { Simple } from "pixi-cull";
 
 declare module globalThis {
