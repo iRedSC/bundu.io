@@ -32,7 +32,7 @@ export function createStuff(client: BunduClient) {
             Random.integer(5000, WORLD_SIZE - 5000),
             Random.integer(5000, WORLD_SIZE - 5000),
             Random.integer(0, Math.PI * 360),
-            Random.integer(3, 10),
+            Random.integer(3, 5),
         ]);
     }
     client.objectHandler.unpack(structures, client.viewport);

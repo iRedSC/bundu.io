@@ -116,7 +116,7 @@ export function unpackEntityData(
             case 0: {
                 const entity = new Entity(
                     packet[1],
-                    entityMap.get(packet[2]) || "elephant"
+                    entityMap.get(packet[2]) || "unknown_asset"
                 );
                 entityList.set(packet[1], entity);
                 container.addChild(entity.container);
@@ -164,7 +164,7 @@ export function unpackStructureData(
             case 0: {
                 const structure = new Structure(
                     packet[1],
-                    structureMap.get(packet[2]) || "stone",
+                    structureMap.get(packet[2]) || "unknown_asset",
                     [packet[3], packet[4]],
                     packet[5],
                     packet[6]

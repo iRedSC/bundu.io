@@ -1,4 +1,7 @@
 {
+    "none": {
+        "sprite": "unknown_asset"
+    },
     "pickaxe": {
         "sprite": "wooden_pickaxe",
         "hand_display": {

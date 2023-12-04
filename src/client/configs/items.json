@@ -1,4 +1,8 @@
 {
+    "unknown_asset": {
+        "type": "none",
+        "sprite": "unknown_asset"
+    },
     "wooden_pickaxe": {
         "type": "pickaxe",
         "sprite": "wooden_pickaxe"
