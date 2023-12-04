@@ -79,16 +79,16 @@ export class Player {
             container: new PIXI.Container(),
             body: {
                 container: new PIXI.Container(),
-                sprite: PIXI.Sprite.from("./assets/player.svg", {
+                sprite: PIXI.Sprite.from("./assets/gold.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
-                helmet: PIXI.Sprite.from("./assets/diamond_helmet.svg", {
+                helmet: PIXI.Sprite.from("./assets/unknown_asset.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
             },
             leftHand: {
                 container: new PIXI.Container(),
-                sprite: PIXI.Sprite.from("./assets/hand.svg", {
+                sprite: PIXI.Sprite.from("./assets/diamond.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
                 selectedItem: PIXI.Sprite.from("./assets/diamond_pickaxe.svg", {
@@ -97,7 +97,7 @@ export class Player {
             },
             rightHand: {
                 container: new PIXI.Container(),
-                sprite: PIXI.Sprite.from("./assets/hand.svg", {
+                sprite: PIXI.Sprite.from("./assets/amethyst.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
             },
@@ -141,6 +141,7 @@ export class Player {
         body.container.addChild(body.helmet);
 
         body.sprite.anchor.set(0.5);
+        body.sprite.scale.set(0.9);
         body.helmet.anchor.set(0.5);
 
         leftHand.container.x = -60;
