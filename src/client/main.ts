@@ -13,7 +13,7 @@ const { viewport } = createRenderer();
 
 createStuff(viewport, all_objects, structures);
 
-const player: Player = new Player(0, [Date.now(), 0, 0, 0]);
+const player: Player = new Player(0, "test", Date.now(), [0, 0], 0);
 let playerPos: { x: number; y: number } = { x: 20000, y: 20000 };
 player.update([Date.now(), 20000, 20000, 0], ["", "", 0]);
 viewport.addChild(player.container);
