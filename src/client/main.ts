@@ -3,7 +3,6 @@ import { degrees, lookToward, moveToward } from "../lib/transforms";
 import { move, mousePos, createClickEvents } from "./input/keyboard";
 import { createStuff } from "./testing";
 import { createRenderer } from "./rendering/rendering";
-import { createSwitch } from "./toggle";
 import { Sky } from "./game_objects/sky";
 import { BunduClient } from "./client";
 
@@ -50,11 +49,9 @@ setInterval(() => {
 
 // interactions
 
-createClickEvents(player);
+createClickEvents(viewport, player);
 
 const sky = new Sky(viewport);
 setInterval(() => {
     sky.advanceCycle();
 }, 60000);
-
-createSwitch(player);

@@ -1,5 +1,6 @@
 import { Keystrokes } from "@rwh/keystrokes";
 import { Player } from "../game_objects/player";
+import { Viewport } from "pixi-viewport";
 
 const keybinds = new Keystrokes({
     keyRemap: {
@@ -31,13 +32,13 @@ keybinds.bindKey("right", {
     onReleased: () => (move[0] += 1),
 });
 
-export function createClickEvents(player: Player) {
+export function createClickEvents(viewport: Viewport, player: Player) {
     document.body.addEventListener("mousemove", (event) => {
         mousePos[0] = event.clientX;
         mousePos[1] = event.clientY;
     });
 
-    document.body.addEventListener("mousedown", (event) => {
+    viewport.on("pointerdown", (event) => {
         if (event.button == 2) {
             player.blocking = true;
             player.trigger("block");
@@ -46,7 +47,7 @@ export function createClickEvents(player: Player) {
         }
     });
 
-    document.body.addEventListener("mouseup", (event) => {
+    viewport.on("pointerup", (event) => {
         if (event.button == 2) {
             player.blocking = false;
         }
