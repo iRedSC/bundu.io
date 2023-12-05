@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import { createViewport } from "./viewport";
 import { Simple } from "pixi-cull";
+import { UI } from "../UI/test";
 
 declare module globalThis {
     var __PIXI_APP__: PIXI.Application;
@@ -16,7 +17,7 @@ export function createRenderer() {
 
     const viewport = createViewport(app, new PIXI.Point(0, 0));
     app.stage.addChild(viewport);
-
+    app.stage.addChild(UI);
     const cull = new Simple();
     cull.addList(viewport.children);
     cull.cull(viewport.getVisibleBounds());
