@@ -17,6 +17,7 @@
     },
     "dependencies": {
         "@pixi/filter-advanced-bloom": "^5.1.1",
+        "@pixi/ui": "^0.10.1",
         "@rwh/keystrokes": "^1.4.0",
         "@types/pixi.js": "^5.0.0",
         "pixi-cull": "^2.1.1",
