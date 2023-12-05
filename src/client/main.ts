@@ -23,7 +23,6 @@ viewport.follow(player.container, {
     acceleration: 1,
     radius: 5,
 });
-
 // tick updates
 
 setInterval(() => {

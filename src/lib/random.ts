@@ -8,7 +8,7 @@ function choose<T>(array: T[]): T {
 }
 
 function hexColor(): number {
-    const letters = "0123456789ABCDEF";
+    const letters: string = "0123456789ABCDEF";
     let color = 0x0;
 
     for (let i = 0; i < 6; i++) {

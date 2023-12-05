@@ -2,11 +2,7 @@ import * as PIXI from "pixi.js";
 import { degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager } from "../../lib/animation";
 import { round } from "../../lib/math";
-
 import { getItem } from "../configs/configs";
-
-//* New: [pos, rotation, name, selectedItem, helmet]
-//* Changed: [[1, pos, rotation], [2, selectedItem, helmet]]
 
 type State = [time: number, x: number, y: number, rotation: number];
 function typeofState(state?: State): state is State {
@@ -79,7 +75,7 @@ export class Player {
             container: new PIXI.Container(),
             body: {
                 container: new PIXI.Container(),
-                sprite: PIXI.Sprite.from("./assets/gold.svg", {
+                sprite: PIXI.Sprite.from("./assets/player.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
                 helmet: PIXI.Sprite.from("./assets/unknown_asset.svg", {
@@ -88,7 +84,7 @@ export class Player {
             },
             leftHand: {
                 container: new PIXI.Container(),
-                sprite: PIXI.Sprite.from("./assets/diamond.svg", {
+                sprite: PIXI.Sprite.from("./assets/hand.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
                 selectedItem: PIXI.Sprite.from("./assets/diamond_pickaxe.svg", {
@@ -97,7 +93,7 @@ export class Player {
             },
             rightHand: {
                 container: new PIXI.Container(),
-                sprite: PIXI.Sprite.from("./assets/amethyst.svg", {
+                sprite: PIXI.Sprite.from("./assets/hand.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
             },
@@ -144,7 +140,7 @@ export class Player {
         body.sprite.scale.set(0.9);
         body.helmet.anchor.set(0.5);
 
-        leftHand.container.x = -60;
+        leftHand.container.x = -70;
         leftHand.container.y = 45;
         leftHand.sprite.anchor.set(0.5);
         leftHand.container.pivot.set(300, 0);
@@ -157,7 +153,7 @@ export class Player {
         leftHand.selectedItem.x = 100;
         leftHand.selectedItem.y = -200;
 
-        rightHand.container.x = 60;
+        rightHand.container.x = 70;
         rightHand.container.y = 45;
         rightHand.container.pivot.set(-300, 0);
         rightHand.sprite.anchor.set(0.5);
