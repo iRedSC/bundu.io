@@ -3,6 +3,7 @@ import { createViewport } from "./viewport";
 import { Simple } from "pixi-cull";
 import { UI } from "../UI/test";
 
+
 declare module globalThis {
     var __PIXI_APP__: PIXI.Application;
 }
