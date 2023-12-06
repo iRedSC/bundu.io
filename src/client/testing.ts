@@ -41,7 +41,7 @@ export function createStuff(client: BunduClient) {
     client.objectHandler.unpack(structures, client.viewport);
 
     const entities: IncomingEntityData = [1, 0, []];
-    for (let i = 0; i < 10000; i++) {
+    for (let i = 0; i < 1; i++) {
         entities[2].push([
             0,
             i,
