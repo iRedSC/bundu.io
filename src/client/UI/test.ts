@@ -3,10 +3,10 @@ import  * as PIXI  from 'pixi.js';
 import  { Layout } from '@pixi/layout';
 
 const button = new Button(
-    new PIXI.Graphics()
-        .beginFill(0xFFFFFF)
-        .drawRoundedRect(0, 0, 100, 50, 15),
-);
+    PIXI.Sprite.from("./assets/recipie_book.svg", {
+        mipmap: PIXI.MIPMAP_MODES.ON,
+    }
+    ));
 
 export const UI = new Layout({
     id: 'root',
@@ -29,5 +29,5 @@ export const UI = new Layout({
 
 
 
-button.hover = () => (console.log('onPress'));
-
+button.down = () => (button.view.scale.set(1.1));
+button.up = () => (button.view.scale.set(1));
