@@ -1,5 +1,3 @@
-// export type Keyframes<T> = Map<number, Keyframe<T>>;
-
 export class Keyframes<T> {
     map: Map<number, Keyframe<T>>;
     #nextKeyframe?: number;
@@ -26,22 +24,57 @@ export class Keyframes<T> {
     }
 }
 
-type Data = { [key: string]: unknown };
-
 export type Keyframe<T> = ({
     target,
     animation,
 }: {
     target: T;
-    animation: Animation<T>;
+    animation: ActiveAnimation<T>;
 }) => void;
 
-export function lerp(a: number, b: number, t: number) {
-    return a + (b - a) * t;
+export class AnimationMap<T> {
+    target: T;
+    animations: Map<string, Animation<T>>;
+
+    constructor(target: T) {
+        this.target = target;
+        this.animations = new Map();
+    }
+
+    set(name: string, keyframes: Keyframes<T>) {
+        const animation = new Animation(name, this.target, keyframes);
+        this.animations.set(name, animation);
+    }
+
+    get(name: string) {
+        return this.animations.get(name);
+    }
 }
 
 export class Animation<T> {
     target: T;
+    name: string;
+    keyframes: Keyframes<T>;
+
+    constructor(name: string, target: T, keyframes: Keyframes<T>) {
+        this.name = name;
+        this.target = target;
+        this.keyframes = keyframes;
+    }
+
+    run(replace: boolean = false) {
+        return new ActiveAnimation(
+            this.name,
+            this.target,
+            this.keyframes,
+            replace
+        );
+    }
+}
+
+class ActiveAnimation<T> {
+    target: T;
+    name: string;
     keyframes: Keyframes<T>;
     replace: boolean;
     currentKeyframe: number;
@@ -49,9 +82,14 @@ export class Animation<T> {
     start: number;
     duration: number;
     meta: { [key: string]: any };
-    data?: Data;
 
-    constructor(target: T, keyframes: Keyframes<T>, replace: boolean = false) {
+    constructor(
+        name: string,
+        target: T,
+        keyframes: Keyframes<T>,
+        replace: boolean = false
+    ) {
+        this.name = name;
         this.replace = replace;
         this.start = Date.now();
         this.duration = -1;
@@ -107,39 +145,48 @@ export class Animation<T> {
     }
 }
 
-export class AnimationManager<T> {
-    target: T;
-    animations: Map<string, Keyframes<T>>;
-    activeAnimations: Map<string, Animation<T>>;
+type ValidActiveAnimation = {
+    expired: boolean;
+    replace: boolean;
+    name: string;
+    update(): void;
+};
 
-    constructor(target: T) {
-        this.target = target;
-        this.animations = new Map();
-        this.activeAnimations = new Map();
+function getSource(
+    sources: Map<any, any>,
+    source: any
+): Map<any, ValidActiveAnimation> {
+    const value = sources.get(source);
+    if (value === undefined) {
+        sources.set(source, new Map());
+    }
+    return sources.get(source);
+}
+
+export class AnimationManager {
+    sources: Map<any, Map<string, ValidActiveAnimation>>;
+
+    constructor() {
+        this.sources = new Map();
     }
 
-    add(name: string, keyframes: Keyframes<T>) {
-        this.animations.set(name, keyframes);
-    }
-
-    start(name: string, replace?: boolean) {
-        const keyframes = this.animations.get(name);
-        if (!keyframes) {
+    add(target: any, animation: ValidActiveAnimation) {
+        const source = getSource(this.sources, target);
+        if (!animation.replace && source.get(animation.name)) {
             return;
         }
-        const animation = new Animation(this.target, keyframes, replace);
-        if (!animation.replace && this.activeAnimations.get(name)) {
-            return;
-        }
-        this.activeAnimations.set(name, animation);
+        source.set(animation.name, animation);
     }
 
     update() {
-        for (let [name, animation] of this.activeAnimations.entries()) {
-            if (animation.expired) {
-                this.activeAnimations.delete(name);
-            } else {
-                animation.update();
+        for (let animations of this.sources.values()) {
+            for (let [name, animation] of animations.entries()) {
+                if (animation.expired) {
+                    animations.delete(name);
+                } else {
+                    console.log(name, animation);
+                    animation.update();
+                }
             }
         }
     }

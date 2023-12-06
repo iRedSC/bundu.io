@@ -2,7 +2,10 @@ import { Random } from "../lib/random";
 import { loadGround } from "./game_objects/ground";
 import { WORLD_SIZE } from "./constants";
 import { BunduClient } from "./client";
-import { IncomingStructureData } from "./game_objects/unpack";
+import {
+    IncomingEntityData,
+    IncomingStructureData,
+} from "./game_objects/unpack";
 
 export function createStuff(client: BunduClient) {
     loadGround(
@@ -36,4 +39,17 @@ export function createStuff(client: BunduClient) {
         ]);
     }
     client.objectHandler.unpack(structures, client.viewport);
+
+    const entities: IncomingEntityData = [1, 0, []];
+    for (let i = 0; i < 100; i++) {
+        entities[2].push([
+            0,
+            i,
+            Random.integer(0, 3),
+            Random.integer(5000, WORLD_SIZE - 5000),
+            Random.integer(5000, WORLD_SIZE - 5000),
+            Random.integer(0, Math.PI * 360),
+        ]);
+    }
+    client.objectHandler.unpack(entities, client.viewport);
 }

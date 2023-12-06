@@ -14,7 +14,7 @@ export class Structure {
     pos: PIXI.Point;
     size: number;
     rotation: number;
-    animationManager: AnimationManager<Structure>;
+    animationManager: AnimationManager;
     parts: StructureParts;
     lastHitSource: PIXI.Point;
 
@@ -53,7 +53,7 @@ export class Structure {
         this.parts.container.addChild(this.parts.sprite);
         this.parts.sprite.scale.set(this.size);
 
-        this.animationManager = loadAnimations(this);
+        this.animationManager = new AnimationManager();
     }
 
     get container() {
@@ -61,7 +61,7 @@ export class Structure {
     }
 
     trigger(name: string) {
-        this.animationManager.start(name);
+        // this.animationManager.start(name);
     }
 
     update() {}
@@ -100,8 +100,8 @@ function loadAnimations(target: Structure) {
         }
     };
 
-    const animationManager = new AnimationManager(target);
+    // const animationManager = new AnimationManager(target);
 
-    animationManager.add("hit", hitKeyframes);
-    return animationManager;
+    // animationManager.add("hit", hitKeyframes);
+    // return animationManager;
 }

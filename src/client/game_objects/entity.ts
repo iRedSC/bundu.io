@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import { colorLerp, degrees, lerp, rotationLerp } from "../../lib/transforms";
-import { AnimationManager, Keyframes } from "../../lib/animation";
+import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { Random } from "../../lib/random";
 
 type State = [time: number, x: number, y: number, rotation: number];
@@ -29,8 +29,11 @@ export class Entity {
     rotation: number;
     size: number;
     parts: EntityParts;
-    animationManager: AnimationManager<EntityParts>;
-    constructor(id: number, type: string) {
+    animations: AnimationMap<EntityParts>;
+    animationManager: AnimationManager;
+    constructor(animationManager: AnimationManager, id: number, type: string) {
+        this.animationManager = animationManager;
+
         this.id = id;
 
         this.pos = new PIXI.Point(0, 0);
@@ -55,14 +58,17 @@ export class Entity {
         this.parts.body.anchor.set(0.5);
         this.parts.container.addChild(this.parts.body);
         this.parts.body.scale.set(this.size);
-        this.animationManager = loadAnimations(this.parts);
+        this.animations = loadAnimations(this.parts);
         this.trigger("idle");
         this.lastState = [Date.now(), 0, 0, 0];
         this.nextState = [Date.now(), 0, 0, 0];
         this.move();
     }
     trigger(name: string) {
-        this.animationManager.start(name);
+        const animation = this.animations.get(name);
+        if (animation) {
+            this.animationManager.add(this, animation.run());
+        }
     }
     move() {
         const now = Date.now();
@@ -125,9 +131,9 @@ function loadAnimations(target: EntityParts) {
         }
     };
 
-    const animationManager = new AnimationManager(target);
+    const animationMap = new AnimationMap(target);
 
-    animationManager.add("idle", idleKeyframes);
-    animationManager.add("hurt", hurtKeyframes);
-    return animationManager;
+    animationMap.set("idle", idleKeyframes);
+    animationMap.set("hurt", hurtKeyframes);
+    return animationMap;
 }

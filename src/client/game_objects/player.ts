@@ -1,6 +1,11 @@
 import * as PIXI from "pixi.js";
 import { degrees, lerp, rotationLerp } from "../../lib/transforms";
-import { Keyframes, AnimationManager } from "../../lib/animation";
+import {
+    Keyframes,
+    Animation,
+    AnimationManager,
+    AnimationMap,
+} from "../../lib/animation";
 import { round } from "../../lib/math";
 import { getItem } from "../configs/configs";
 
@@ -57,7 +62,8 @@ export class Player {
     pos: PIXI.Point;
     rotation: number;
 
-    animationManager: AnimationManager<Player>;
+    animationManager: AnimationManager;
+    animations: AnimationMap<Player>;
 
     selectedItem: string;
     helmet: string;
@@ -65,6 +71,7 @@ export class Player {
 
     blocking: boolean;
     constructor(
+        animationManager: AnimationManager,
         id: number,
         name: string,
         time: number,
@@ -160,7 +167,8 @@ export class Player {
         rightHand.container.scale.set(0.5);
         rightHand.sprite.scale.set(0.5);
 
-        this.animationManager = loadAnimations(this);
+        this.animationManager = animationManager;
+        this.animations = loadAnimations(this);
         this.trigger("leftHand");
         this.trigger("rightHand");
 
@@ -183,7 +191,10 @@ export class Player {
     }
 
     trigger(name: string) {
-        this.animationManager.start(name);
+        const animation = this.animations.get(name);
+        if (animation) {
+            this.animationManager.add(this, animation.run());
+        }
     }
 
     move() {
@@ -338,11 +349,11 @@ function loadAnimations(target: Player) {
             animation.expired = true;
         }
     };
-    const animationManager = new AnimationManager(target);
-    animationManager.add("leftHand", leftHandKeyframes);
-    animationManager.add("rightHand", rightHandKeyframes);
-    animationManager.add("attack", attackKeyframes);
-    animationManager.add("block", blockKeyframes);
+    const animations: AnimationMap<Player> = new AnimationMap(target);
+    animations.set("leftHand", leftHandKeyframes);
+    animations.set("rightHad", rightHandKeyframes);
+    animations.set("attack", attackKeyframes);
+    animations.set("block", blockKeyframes);
 
-    return animationManager;
+    return animations;
 }

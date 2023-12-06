@@ -7,7 +7,7 @@ import {
     NIGHT_COLOR,
     WORLD_SIZE,
 } from "../constants";
-import { AnimationManager, Keyframes } from "../../lib/animation";
+import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { colorLerp } from "../../lib/transforms";
 
 const times = new Map();
@@ -19,7 +19,7 @@ times.set(3, NIGHT_COLOR);
 export class Sky {
     graphics: PIXI.Graphics;
     currentCycle: number;
-    animationManager: AnimationManager<Sky>;
+    animations: AnimationMap<Sky>;
 
     constructor(world: Viewport) {
         this.currentCycle = 0;
@@ -31,12 +31,15 @@ export class Sky {
         this.graphics.blendMode = PIXI.BLEND_MODES.MULTIPLY;
         world.addChild(this.graphics);
 
-        this.animationManager = loadAnimations(this);
+        this.animations = loadAnimations(this);
     }
 
-    advanceCycle() {
+    advanceCycle(animationManager: AnimationManager) {
         this.currentCycle = (this.currentCycle + 1) % 4;
-        this.animationManager.start("transistion");
+        const animation = this.animations.get("transistion");
+        if (animation !== undefined) {
+            animationManager.add(this, animation.run());
+        }
     }
 }
 
@@ -61,7 +64,7 @@ function loadAnimations(target: Sky) {
         }
     };
 
-    const animationManager = new AnimationManager(target);
-    animationManager.add("transistion", transistionKeyframes);
-    return animationManager;
+    const animationMap = new AnimationMap(target);
+    animationMap.set("transistion", transistionKeyframes);
+    return animationMap;
 }

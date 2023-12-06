@@ -5,14 +5,25 @@ import { createStuff } from "./testing";
 import { createRenderer } from "./rendering/rendering";
 import { Sky } from "./game_objects/sky";
 import { BunduClient } from "./client";
+import { AnimationManager } from "../lib/animation";
+import { GameObjectHolder } from "./game_objects/object_list";
 
 const { viewport } = createRenderer();
+const animationManager = new AnimationManager();
+const objectHandler = new GameObjectHolder(animationManager);
 
-const client = new BunduClient(viewport);
+const client = new BunduClient(viewport, objectHandler);
 
 createStuff(client);
 
-const player: Player = new Player(0, "test", Date.now(), [0, 0], 0);
+const player: Player = new Player(
+    animationManager,
+    0,
+    "test",
+    Date.now(),
+    [0, 0],
+    0
+);
 let playerPos: { x: number; y: number } = { x: 20000, y: 20000 };
 player.update([Date.now(), 20000, 20000, 0], ["", "", 0]);
 viewport.addChild(player.container);
@@ -25,8 +36,7 @@ viewport.follow(player.container, {
 // tick updates
 
 setInterval(() => {
-    sky.animationManager.update();
-    player.animationManager.update();
+    objectHandler.tick();
     player.move();
 }, 10);
 
@@ -53,5 +63,5 @@ createClickEvents(viewport, player);
 
 const sky = new Sky(viewport);
 setInterval(() => {
-    sky.advanceCycle();
+    sky.advanceCycle(animationManager);
 }, 60000);
