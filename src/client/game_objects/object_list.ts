@@ -31,6 +31,9 @@ export class GameObjectHolder {
 
     tick() {
         this.animationManager.update();
+        for (let entity of this.entities.values()) {
+            entity.move();
+        }
     }
 
     unpack(

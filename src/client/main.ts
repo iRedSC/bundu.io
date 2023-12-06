@@ -55,6 +55,15 @@ setInterval(() => {
         );
     }
     player.update([Date.now() + 50, playerPos.x, playerPos.y, rotation]);
+    for (let entity of objectHandler.entities.values()) {
+        const newRot = lookToward(entity.pos, playerPos);
+        const newPos = moveToward(
+            entity.pos,
+            lookToward(entity.pos, playerPos),
+            50
+        );
+        entity.update([Date.now() + 50, newPos.x, newPos.y, newRot]);
+    }
 }, 50);
 
 // interactions
