@@ -64,6 +64,7 @@ setInterval(() => {
         );
         entity.update([Date.now() + 50, newPos.x, newPos.y, newRot]);
     }
+    viewport.dirty = true;
 }, 50);
 
 // interactions
