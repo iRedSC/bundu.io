@@ -1,3 +1,4 @@
+import { AnimationManager } from "../../lib/animation";
 import { Entity } from "./entity";
 import { Player } from "./player";
 import { Structure } from "./structure";
@@ -13,13 +14,15 @@ import { WorldObject } from "./world_object";
 import * as PIXI from "pixi.js";
 
 export class GameObjectHolder {
+    animationManager: AnimationManager;
     user?: Player;
     players: Map<number, Player>;
     entities: Map<number, Entity>;
     structures: Map<number, Structure>;
     worldObjects: Map<number, WorldObject>;
 
-    constructor() {
+    constructor(animationManager: AnimationManager) {
+        this.animationManager = animationManager;
         this.players = new Map();
         this.entities = new Map();
         this.structures = new Map();
@@ -27,14 +30,7 @@ export class GameObjectHolder {
     }
 
     tick() {
-        for (let player of this.players.values()) {
-            player.animationManager.update();
-            player.move();
-        }
-        for (let entity of this.entities.values()) {
-            entity.animationManager.update();
-            entity.move();
-        }
+        this.animationManager.update();
     }
 
     unpack(
@@ -46,10 +42,20 @@ export class GameObjectHolder {
     ) {
         switch (incoming[0]) {
             case 0:
-                unpackPlayerData(incoming, this.players, container);
+                unpackPlayerData(
+                    incoming,
+                    this.players,
+                    container,
+                    this.animationManager
+                );
                 break;
             case 1:
-                unpackEntityData(incoming, this.entities, container);
+                unpackEntityData(
+                    incoming,
+                    this.entities,
+                    container,
+                    this.animationManager
+                );
                 break;
             case 2:
                 unpackStructureData(incoming, this.structures, container);

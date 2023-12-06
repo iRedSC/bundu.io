@@ -6,9 +6,9 @@ export class BunduClient {
     objectHandler: GameObjectHolder;
     // socketHandler: SocketHandler;
 
-    constructor(viewport: Viewport) {
+    constructor(viewport: Viewport, objectHandler: GameObjectHolder) {
         this.viewport = viewport;
         // this.socketHandler = socketHandler;
-        this.objectHandler = new GameObjectHolder();
+        this.objectHandler = objectHandler;
     }
 }

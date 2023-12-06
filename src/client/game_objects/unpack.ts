@@ -3,6 +3,7 @@ import { Entity } from "./entity";
 import { Player } from "./player";
 import * as PIXI from "pixi.js";
 import { Structure } from "./structure";
+import { AnimationManager } from "../../lib/animation";
 
 export type IncomingPlayerData =
     | [
@@ -40,7 +41,8 @@ export type IncomingPlayerData =
 export function unpackPlayerData(
     data: IncomingPlayerData,
     playerList: Map<number, Player>,
-    container: PIXI.Container
+    container: PIXI.Container,
+    animationManager: AnimationManager
 ) {
     const time = data[1];
     const packets = data[2];
@@ -50,6 +52,7 @@ export function unpackPlayerData(
             // new player
             case 0: {
                 const player = new Player(
+                    animationManager,
                     packet[1],
                     packet[2],
                     time,
@@ -105,7 +108,8 @@ export type IncomingEntityData = [
 export function unpackEntityData(
     data: IncomingEntityData,
     entityList: Map<number, Entity>,
-    container: PIXI.Container
+    container: PIXI.Container,
+    animationManager: AnimationManager
 ) {
     const time = data[1];
     const packets = data[2];
@@ -115,8 +119,10 @@ export function unpackEntityData(
             // new entity
             case 0: {
                 const entity = new Entity(
+                    animationManager,
                     packet[1],
-                    entityMap.get(packet[2]) || "unknown_asset"
+                    entityMap.get(packet[2]) || "unknown_asset",
+                    [time, packet[3], packet[4], packet[5]]
                 );
                 entityList.set(packet[1], entity);
                 container.addChild(entity.container);
