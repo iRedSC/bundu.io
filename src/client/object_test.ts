@@ -3,7 +3,7 @@ import { AnimationManager } from "../lib/animation";
 type ObjectParts = { [key: string]: any };
 
 type GameSprite = {
-    animationManager: AnimationManager<ObjectParts>;
+    animationManager: AnimationManager;
     parts: ObjectParts;
 };
 
