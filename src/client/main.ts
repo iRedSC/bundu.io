@@ -24,8 +24,8 @@ const player: Player = new Player(
     [0, 0],
     0
 );
-let playerPos: { x: number; y: number } = { x: 20000, y: 20000 };
-player.update([Date.now(), 20000, 20000, 0], ["", "", 0]);
+let playerPos: { x: number; y: number } = { x: 10000, y: 10000 };
+player.update([Date.now(), 10000, 10000, 0], ["", "", 0]);
 viewport.addChild(player.container);
 
 viewport.follow(player.container, {

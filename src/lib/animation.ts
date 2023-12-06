@@ -184,7 +184,6 @@ export class AnimationManager {
                 if (animation.expired) {
                     animations.delete(name);
                 } else {
-                    console.log(name, animation);
                     animation.update();
                 }
             }

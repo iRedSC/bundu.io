@@ -351,7 +351,7 @@ function loadAnimations(target: Player) {
     };
     const animations: AnimationMap<Player> = new AnimationMap(target);
     animations.set("leftHand", leftHandKeyframes);
-    animations.set("rightHad", rightHandKeyframes);
+    animations.set("rightHand", rightHandKeyframes);
     animations.set("attack", attackKeyframes);
     animations.set("block", blockKeyframes);
 

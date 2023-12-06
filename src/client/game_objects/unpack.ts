@@ -121,7 +121,8 @@ export function unpackEntityData(
                 const entity = new Entity(
                     animationManager,
                     packet[1],
-                    entityMap.get(packet[2]) || "unknown_asset"
+                    entityMap.get(packet[2]) || "unknown_asset",
+                    [time, packet[3], packet[4], packet[5]]
                 );
                 entityList.set(packet[1], entity);
                 container.addChild(entity.container);

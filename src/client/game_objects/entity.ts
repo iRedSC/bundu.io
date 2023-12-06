@@ -31,7 +31,12 @@ export class Entity {
     parts: EntityParts;
     animations: AnimationMap<EntityParts>;
     animationManager: AnimationManager;
-    constructor(animationManager: AnimationManager, id: number, type: string) {
+    constructor(
+        animationManager: AnimationManager,
+        id: number,
+        type: string,
+        state: State
+    ) {
         this.animationManager = animationManager;
 
         this.id = id;
@@ -60,13 +65,13 @@ export class Entity {
         this.parts.body.scale.set(this.size);
         this.animations = loadAnimations(this.parts);
         this.trigger("idle");
-        this.lastState = [Date.now(), 0, 0, 0];
-        this.nextState = [Date.now(), 0, 0, 0];
+        this.lastState = state;
+        this.nextState = state;
         this.move();
     }
     trigger(name: string) {
         const animation = this.animations.get(name);
-        if (animation) {
+        if (animation !== undefined) {
             this.animationManager.add(this, animation.run());
         }
     }
@@ -105,6 +110,7 @@ function loadAnimations(target: EntityParts) {
     };
 
     idleKeyframes.frame(1).set = ({ target, animation }) => {
+        // console.log(animation);
         target.container.scale.x =
             animation.meta.width + Math.cos(animation.t * Math.PI * 2) * 0.02;
         target.container.scale.y =
