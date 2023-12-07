@@ -95,67 +95,97 @@ const craftingItems: Item[] = [
     {
         imagePath: "./assets/gold_wall.svg",
         result: "Crafted Item 1",
-        category: "Metal",
+        category: "structures",
     },
     {
         imagePath: "./assets/meat.svg",
         result: "Crafted Item 2",
-        category: "Food",
+        category: "misc",
     },
     {
-        imagePath: "./assets/name.svg",
+        imagePath: "./assets/gold_hammer.svg",
         result: "Crafted Item 3",
-        category: "Miscellaneous",
+        category: "tools",
     },
     {
         imagePath: "./assets/stone.svg",
         result: "Crafted Item 4",
-        category: "Miscellaneous",
+        category: "misc",
     },
     {
         imagePath: "./assets/diamond_wall.svg",
         result: "Crafted Item 5",
-        category: "Metal",
+        category: "structures",
     },
     {
         imagePath: "./assets/diamond.svg",
         result: "Crafted Item 6",
-        category: "Metal",
+        category: "misc",
     },
     {
-        imagePath: "./assets/gold_sword.svg",
+        imagePath: "./assets/stone_sword.svg",
         result: "Crafted Item 7",
-        category: "Metal",
+        category: "tools",
     },
     {
         imagePath: "./assets/amethyst.svg",
         result: "Crafted Item 8",
-        category: "Miscellaneous",
+        category: "misc",
     },
     {
         imagePath: "./assets/wood.svg",
         result: "Crafted Item 9",
-        category: "Wood",
+        category: "misc",
     },
     {
-        imagePath: "./assets/wood.svg",
+        imagePath: "./assets/ram_wool.svg",
         result: "Crafted Item 10",
-        category: "Wood",
+        category: "misc",
     },
     {
-        imagePath: "./assets/wood.svg",
+        imagePath: "./assets/wood_wall.svg",
         result: "Crafted Item 11",
-        category: "Wood",
+        category: "structures",
     },
     {
         imagePath: "./assets/earmuffs.svg",
         result: "Crafted Item 12",
-        category: "Miscellaneous",
+        category: "tools",
     },
     {
         imagePath: "./assets/gold_spear.svg",
         result: "Crafted Item 13",
-        category: "Metal",
+        category: "tools",
+    },
+    {
+        imagePath: "./assets/gold_pickaxe.svg",
+        result: "Crafted Item 13",
+        category: "tools",
+    },
+    {
+        imagePath: "./assets/gold_sword.svg",
+        result: "Crafted Item 13",
+        category: "tools",
+    },
+    {
+        imagePath: "./assets/gold_helmet.svg",
+        result: "Crafted Item 13",
+        category: "tools",
+    },
+    {
+        imagePath: "./assets/diamond_wall.svg",
+        result: "Crafted Item 13",
+        category: "structures",
+    },
+    {
+        imagePath: "./assets/diamond_spike.svg",
+        result: "Crafted Item 13",
+        category: "structures",
+    },
+    {
+        imagePath: "./assets/stone_door.svg",
+        result: "Crafted Item 13",
+        category: "structures",
     },
 ];
 
@@ -191,17 +221,17 @@ const activeCategories: Set<string> = new Set();
 
 // Create filter buttons
 const metalFilterButton = createToggleButton(
-    "Metal",
+    "tools",
     0,
     "./assets/weapon_toggle.svg"
 );
 const foodFilterButton = createToggleButton(
-    "Food",
+    "structures",
     filterButtonSize + 10,
     "./assets/build_toggle.svg"
 );
 const miscFilterButton = createToggleButton(
-    "Miscellaneous",
+    "misc",
     2 * (filterButtonSize + 10),
     "./assets/misc_toggle.svg"
 );
