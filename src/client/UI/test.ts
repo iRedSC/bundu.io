@@ -214,7 +214,7 @@ craftingItems.forEach((item) => {
 });
 
 const filterButtonContainer = new PIXI.Container();
-const filterButtonSize = 30; // Adjust the size as needed
+const filterButtonSize = 40; 
 
 // Add this line at the beginning of your file
 const activeCategories: Set<string> = new Set();
@@ -243,8 +243,10 @@ filterButtonContainer.addChild(miscFilterButton.view);
 
 // Position the filter button container
 filterButtonContainer.position.set(
-    craftingButtonContainer.x + craftingButtonContainer.width + 20,
-    10
+   35,
+    craftingButtonContainer.x + craftingButtonContainer.height + 40,
+    
+
 );
 
 // Add the filter button container and crafting button container to the UI layout
@@ -271,7 +273,7 @@ const toggleCategory = (category: string) => {
     filterButtons();
 };
 
-// Filter buttons function
+
 const filterButtons = () => {
     craftingButtonContainer.removeChildren(); // Clear existing buttons
 
@@ -301,21 +303,26 @@ const filterButtons = () => {
             currentCol++;
         }
     });
+
 };
 
 // Helper function to create a toggle button with updated appearance
 function createToggleButton(
     category: string,
-    yOffset: number,
+    xOffset: number,
     assetPath: string
 ) {
     const sprite: PIXI.Sprite = PIXI.Sprite.from(assetPath, {
         mipmap: PIXI.MIPMAP_MODES.ON,
     });
+    sprite.anchor.set(0.5, 0.5);
     const button = new Button(sprite);
     button.view.width = filterButtonSize;
     button.view.height = filterButtonSize;
-    button.view.position.set(0, yOffset);
+    button.view.position.set(xOffset, 0);
+    button.view.pivot.set(button.view.width / 2, button.view.height / 2);
+    
+
 
     const colorMatrixFilter = new PIXI.filters.ColorMatrixFilter();
     button.view.filters = [colorMatrixFilter];
@@ -326,9 +333,10 @@ function createToggleButton(
     });
 
     function updateButtonAppearance(selected: boolean) {
-        const hue = selected ? 0xffff00 : 0xffffff; // Adjust the tint color (red when selected, white when not)
-        sprite.tint = hue;
+        const scale = selected ? .11 : .1; // Adjust the scale factor as needed
+        button.view.scale.set(scale);
+        sprite.tint = selected ? 0xffff00 : 0xffffff;
     }
-
+    
     return button;
 }
