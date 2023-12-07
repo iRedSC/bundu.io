@@ -1,11 +1,6 @@
 import * as PIXI from "pixi.js";
 import { degrees, lerp, rotationLerp } from "../../lib/transforms";
-import {
-    Keyframes,
-    Animation,
-    AnimationManager,
-    AnimationMap,
-} from "../../lib/animation";
+import { Keyframes, AnimationManager, AnimationMap } from "../../lib/animation";
 import { round } from "../../lib/math";
 import { getItem } from "../configs/configs";
 

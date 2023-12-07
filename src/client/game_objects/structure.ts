@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import { degrees, lerp, lookToward, moveToward } from "../../lib/transforms";
-import { AnimationManager, Keyframes } from "../../lib/animation";
+import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 
@@ -9,16 +9,47 @@ type StructureParts = {
     sprite: PIXI.Sprite;
 };
 
+function createParts(
+    type: string,
+    pos: [number, number],
+    rotation: number,
+    size: number
+): StructureParts {
+    const parts = {
+        container: new PIXI.Container(),
+        sprite: PIXI.Sprite.from(`./assets/${type}.svg`, {
+            mipmap: PIXI.MIPMAP_MODES.ON,
+        }),
+    };
+    parts.container.zIndex = 10;
+    parts.container.pivot.set(
+        parts.container.width / 2,
+        parts.container.height / 2
+    );
+    parts.container.position.set(pos[0], pos[1]);
+    parts.sprite = PIXI.Sprite.from(`./assets/${type}.svg`, {
+        mipmap: PIXI.MIPMAP_MODES.ON,
+    });
+    parts.sprite.rotation = rotation - degrees(-90);
+    parts.sprite.anchor.set(0.5);
+    parts.container.addChild(parts.sprite);
+    parts.sprite.scale.set(size);
+
+    return parts;
+}
+
 export class Structure {
     id: number;
     pos: PIXI.Point;
     size: number;
     rotation: number;
     animationManager: AnimationManager;
+    animations: AnimationMap<Structure>;
     parts: StructureParts;
     lastHitSource: PIXI.Point;
 
     constructor(
+        animationManager: AnimationManager,
         id: number,
         type: string,
         pos: [x: number, y: number],
@@ -30,30 +61,13 @@ export class Structure {
 
         this.pos = new PIXI.Point(pos[0], pos[1]);
 
+        this.parts = createParts(type, pos, rotation, size);
+
         this.rotation = rotation;
         this.size = size;
 
-        this.parts = {
-            container: new PIXI.Container(),
-            sprite: PIXI.Sprite.from(`./assets/${type}.svg`, {
-                mipmap: PIXI.MIPMAP_MODES.ON,
-            }),
-        };
-        this.parts.container.zIndex = 10;
-        this.parts.container.pivot.set(
-            this.parts.container.width / 2,
-            this.parts.container.height / 2
-        );
-        this.parts.container.position.set(this.pos.x, this.pos.y);
-        this.parts.sprite = PIXI.Sprite.from(`./assets/${type}.svg`, {
-            mipmap: PIXI.MIPMAP_MODES.ON,
-        });
-        this.parts.sprite.rotation = rotation - degrees(-90);
-        this.parts.sprite.anchor.set(0.5);
-        this.parts.container.addChild(this.parts.sprite);
-        this.parts.sprite.scale.set(this.size);
-
-        this.animationManager = new AnimationManager();
+        this.animations = loadAnimations(this);
+        this.animationManager = animationManager;
     }
 
     get container() {
@@ -61,10 +75,11 @@ export class Structure {
     }
 
     trigger(name: string) {
-        // this.animationManager.start(name);
+        const animation = this.animations.get(name);
+        if (animation) {
+            this.animationManager.add(this, animation.run());
+        }
     }
-
-    update() {}
 }
 
 function loadAnimations(target: Structure) {
@@ -100,8 +115,8 @@ function loadAnimations(target: Structure) {
         }
     };
 
-    // const animationManager = new AnimationManager(target);
+    const animationMap = new AnimationMap(target);
 
-    // animationManager.add("hit", hitKeyframes);
-    // return animationManager;
+    animationMap.set("hit", hitKeyframes);
+    return animationMap;
 }

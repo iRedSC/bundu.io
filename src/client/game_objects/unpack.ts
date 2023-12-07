@@ -160,7 +160,8 @@ export type IncomingStructureData = [
 export function unpackStructureData(
     data: IncomingStructureData,
     structureList: Map<number, Structure>,
-    container: PIXI.Container
+    container: PIXI.Container,
+    animationManager: AnimationManager
 ) {
     const packets = data[2];
 
@@ -169,6 +170,7 @@ export function unpackStructureData(
             // new structure
             case 0: {
                 const structure = new Structure(
+                    animationManager,
                     packet[1],
                     structureMap.get(packet[2]) || "unknown_asset",
                     [packet[3], packet[4]],
