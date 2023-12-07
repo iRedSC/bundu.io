@@ -2,23 +2,23 @@ import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
 import { Layout } from "@pixi/layout";
 
-// Define the Item type
+
 type Item = { imagePath: string; result: string; category: string };
 
-// Function to create a crafting button
+
 const createCraftingButton = (item: Item) => {
     const buttonContainer = new PIXI.Container();
 
-    // Create a gray background for the button
+
     const background = new PIXI.Graphics();
 
-    // Initial fill color and border color
+
     let fillColor = 0x777777;
     let borderColor = 0x444444;
 
-    // Draw the rounded rectangle with the initial fill color
+
     background.lineStyle(2, borderColor, 1);
-    background.beginFill(fillColor, 0.7); // Initial transparency
+    background.beginFill(fillColor, 0.7); 
     background.drawRoundedRect(0, 0, 60, 60, 10);
     background.endFill();
 
@@ -90,7 +90,7 @@ const createCraftingButton = (item: Item) => {
     return button;
 };
 
-// List of crafting items with properties (imagePath, result, category)
+
 const craftingItems: Item[] = [
     {
         imagePath: "./assets/gold_wall.svg",
@@ -216,10 +216,10 @@ craftingItems.forEach((item) => {
 const filterButtonContainer = new PIXI.Container();
 const filterButtonSize = 40; 
 
-// Add this line at the beginning of your file
+
 const activeCategories: Set<string> = new Set();
 
-// Create filter buttons
+
 const metalFilterButton = createToggleButton(
     "tools",
     0,
@@ -236,12 +236,12 @@ const miscFilterButton = createToggleButton(
     "./assets/misc_toggle.svg"
 );
 
-// Add filter buttons to the container
+
 filterButtonContainer.addChild(metalFilterButton.view);
 filterButtonContainer.addChild(foodFilterButton.view);
 filterButtonContainer.addChild(miscFilterButton.view);
 
-// Position the filter button container
+
 filterButtonContainer.position.set(
    35,
     craftingButtonContainer.x + craftingButtonContainer.height + 40,
@@ -249,7 +249,7 @@ filterButtonContainer.position.set(
 
 );
 
-// Add the filter button container and crafting button container to the UI layout
+
 export const UI = new Layout({
     id: "root",
     content: {
@@ -261,8 +261,7 @@ export const UI = new Layout({
     },
 });
 
-// Rest of the code remains the same
-// Toggle category function
+
 const toggleCategory = (category: string) => {
     if (activeCategories.has(category)) {
         activeCategories.delete(category);
@@ -275,16 +274,16 @@ const toggleCategory = (category: string) => {
 
 
 const filterButtons = () => {
-    craftingButtonContainer.removeChildren(); // Clear existing buttons
+    craftingButtonContainer.removeChildren(); 
 
     const filteredItems = craftingItems.filter((item) => {
         if (activeCategories.size === 0 || activeCategories.has("All")) {
-            return true; // No categories selected or 'All' selected, show all items
+            return true; 
         }
         return activeCategories.has(item.category);
     });
 
-    // Reposition and add crafting buttons to the container
+
     let currentRow = 0;
     let currentCol = 0;
 
@@ -306,7 +305,7 @@ const filterButtons = () => {
 
 };
 
-// Helper function to create a toggle button with updated appearance
+
 function createToggleButton(
     category: string,
     xOffset: number,
@@ -333,9 +332,9 @@ function createToggleButton(
     });
 
     function updateButtonAppearance(selected: boolean) {
-        const scale = selected ? .11 : .1; // Adjust the scale factor as needed
+        const scale = selected ? .11 : .1; 
         button.view.scale.set(scale);
-        sprite.tint = selected ? 0xffff00 : 0xffffff;
+        sprite.tint = selected ? 0xfffff : 0xffffff;
     }
     
     return button;
