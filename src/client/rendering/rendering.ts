@@ -1,8 +1,7 @@
 import * as PIXI from "pixi.js";
 import { createViewport } from "./viewport";
 import { Simple } from "pixi-cull";
-import { UI } from "../UI/test";
-
+import { UI } from "../ui/test";
 
 declare module globalThis {
     var __PIXI_APP__: PIXI.Application;

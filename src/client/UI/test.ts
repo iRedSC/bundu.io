@@ -1,6 +1,6 @@
-import { Button } from '@pixi/ui';
-import * as PIXI from 'pixi.js';
-import { Layout } from '@pixi/layout';
+import { Button } from "@pixi/ui";
+import * as PIXI from "pixi.js";
+import { Layout } from "@pixi/layout";
 
 // Define the Item type
 type Item = { imagePath: string; result: string; category: string };
@@ -59,7 +59,7 @@ const createCraftingButton = (item: Item) => {
 
     button.view.interactive = true;
 
-    button.view.on('mouseover', () => {
+    button.view.on("mouseover", () => {
         button.view.scale.set(1.1);
         fillColor = 0x999999;
         borderColor = 0x666666;
@@ -67,7 +67,7 @@ const createCraftingButton = (item: Item) => {
         updateButtonAppearance();
     });
 
-    button.view.on('mouseout', () => {
+    button.view.on("mouseout", () => {
         button.view.scale.set(1);
         fillColor = 0x777777;
         borderColor = 0x444444;
@@ -75,7 +75,7 @@ const createCraftingButton = (item: Item) => {
         updateButtonAppearance();
     });
 
-    button.view.on('pointertap', () => {
+    button.view.on("pointertap", () => {
         console.log(item.result);
     });
 
@@ -92,19 +92,71 @@ const createCraftingButton = (item: Item) => {
 
 // List of crafting items with properties (imagePath, result, category)
 const craftingItems: Item[] = [
-    { imagePath: './assets/gold_wall.svg', result: 'Crafted Item 1', category: 'Metal' },
-    { imagePath: './assets/meat.svg', result: 'Crafted Item 2', category: 'Food' },
-    { imagePath: './assets/name.svg', result: 'Crafted Item 3', category: 'Miscellaneous' },
-    { imagePath: './assets/stone.svg', result: 'Crafted Item 4', category: 'Miscellaneous' },
-    { imagePath: './assets/diamond_wall.svg', result: 'Crafted Item 5', category: 'Metal' },
-    { imagePath: './assets/diamond.svg', result: 'Crafted Item 6', category: 'Metal' },
-    { imagePath: './assets/gold_sword.svg', result: 'Crafted Item 7', category: 'Metal' },
-    { imagePath: './assets/amethyst.svg', result: 'Crafted Item 8', category: 'Miscellaneous' },
-    { imagePath: './assets/wood.svg', result: 'Crafted Item 9', category: 'Wood' },
-    { imagePath: './assets/wood.svg', result: 'Crafted Item 10', category: 'Wood' },
-    { imagePath: './assets/wood.svg', result: 'Crafted Item 11', category: 'Wood' },
-    { imagePath: './assets/earmuffs.svg', result: 'Crafted Item 12', category: 'Miscellaneous' },
-    { imagePath: './assets/gold_spear.svg', result: 'Crafted Item 13', category: 'Metal' },
+    {
+        imagePath: "./assets/gold_wall.svg",
+        result: "Crafted Item 1",
+        category: "Metal",
+    },
+    {
+        imagePath: "./assets/meat.svg",
+        result: "Crafted Item 2",
+        category: "Food",
+    },
+    {
+        imagePath: "./assets/name.svg",
+        result: "Crafted Item 3",
+        category: "Miscellaneous",
+    },
+    {
+        imagePath: "./assets/stone.svg",
+        result: "Crafted Item 4",
+        category: "Miscellaneous",
+    },
+    {
+        imagePath: "./assets/diamond_wall.svg",
+        result: "Crafted Item 5",
+        category: "Metal",
+    },
+    {
+        imagePath: "./assets/diamond.svg",
+        result: "Crafted Item 6",
+        category: "Metal",
+    },
+    {
+        imagePath: "./assets/gold_sword.svg",
+        result: "Crafted Item 7",
+        category: "Metal",
+    },
+    {
+        imagePath: "./assets/amethyst.svg",
+        result: "Crafted Item 8",
+        category: "Miscellaneous",
+    },
+    {
+        imagePath: "./assets/wood.svg",
+        result: "Crafted Item 9",
+        category: "Wood",
+    },
+    {
+        imagePath: "./assets/wood.svg",
+        result: "Crafted Item 10",
+        category: "Wood",
+    },
+    {
+        imagePath: "./assets/wood.svg",
+        result: "Crafted Item 11",
+        category: "Wood",
+    },
+    {
+        imagePath: "./assets/earmuffs.svg",
+        result: "Crafted Item 12",
+        category: "Miscellaneous",
+    },
+    {
+        imagePath: "./assets/gold_spear.svg",
+        result: "Crafted Item 13",
+        category: "Metal",
+    },
 ];
 
 const buttonsPerRow = 4;
@@ -138,9 +190,21 @@ const filterButtonSize = 30; // Adjust the size as needed
 const activeCategories: Set<string> = new Set();
 
 // Create filter buttons
-const metalFilterButton = createToggleButton('Metal', 0, './assets/weapon_toggle.svg');
-const foodFilterButton = createToggleButton('Food', filterButtonSize + 10, './assets/build_toggle.svg');
-const miscFilterButton = createToggleButton('Miscellaneous', 2 * (filterButtonSize + 10), './assets/misc_toggle.svg');
+const metalFilterButton = createToggleButton(
+    "Metal",
+    0,
+    "./assets/weapon_toggle.svg"
+);
+const foodFilterButton = createToggleButton(
+    "Food",
+    filterButtonSize + 10,
+    "./assets/build_toggle.svg"
+);
+const miscFilterButton = createToggleButton(
+    "Miscellaneous",
+    2 * (filterButtonSize + 10),
+    "./assets/misc_toggle.svg"
+);
 
 // Add filter buttons to the container
 filterButtonContainer.addChild(metalFilterButton.view);
@@ -155,13 +219,13 @@ filterButtonContainer.position.set(
 
 // Add the filter button container and crafting button container to the UI layout
 export const UI = new Layout({
-    id: 'root',
+    id: "root",
     content: {
         container1: filterButtonContainer,
         container2: craftingButtonContainer,
     },
     styles: {
-        background: 'red',
+        background: "red",
     },
 });
 
@@ -182,7 +246,7 @@ const filterButtons = () => {
     craftingButtonContainer.removeChildren(); // Clear existing buttons
 
     const filteredItems = craftingItems.filter((item) => {
-        if (activeCategories.size === 0 || activeCategories.has('All')) {
+        if (activeCategories.size === 0 || activeCategories.has("All")) {
             return true; // No categories selected or 'All' selected, show all items
         }
         return activeCategories.has(item.category);
@@ -210,8 +274,15 @@ const filterButtons = () => {
 };
 
 // Helper function to create a toggle button with updated appearance
-function createToggleButton(category: string, yOffset: number, assetPath: string) {
-    const button = new Button(PIXI.Sprite.from(assetPath, { mipmap: PIXI.MIPMAP_MODES.ON }));
+function createToggleButton(
+    category: string,
+    yOffset: number,
+    assetPath: string
+) {
+    const sprite: PIXI.Sprite = PIXI.Sprite.from(assetPath, {
+        mipmap: PIXI.MIPMAP_MODES.ON,
+    });
+    const button = new Button(sprite);
     button.view.width = filterButtonSize;
     button.view.height = filterButtonSize;
     button.view.position.set(0, yOffset);
@@ -219,14 +290,14 @@ function createToggleButton(category: string, yOffset: number, assetPath: string
     const colorMatrixFilter = new PIXI.filters.ColorMatrixFilter();
     button.view.filters = [colorMatrixFilter];
 
-    button.view.on('pointertap', () => {
+    button.view.on("pointertap", () => {
         toggleCategory(category);
         updateButtonAppearance(activeCategories.has(category));
     });
 
     function updateButtonAppearance(selected: boolean) {
-        const hue = selected ? 0xFF0000 : 0xFFFFFF; // Adjust the tint color (red when selected, white when not)
-        button.view.tint = hue;
+        const hue = selected ? 0xffff00 : 0xffffff; // Adjust the tint color (red when selected, white when not)
+        sprite.tint = hue;
     }
 
     return button;
