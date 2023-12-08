@@ -22,7 +22,6 @@ type EntityParts = {
 };
 
 export class Entity {
-    id: number;
     lastState: State;
     nextState: State;
     pos: PIXI.Point;
@@ -33,13 +32,10 @@ export class Entity {
     animationManager: AnimationManager;
     constructor(
         animationManager: AnimationManager,
-        id: number,
         type: string,
         state: State
     ) {
         this.animationManager = animationManager;
-
-        this.id = id;
 
         this.pos = new PIXI.Point(0, 0);
         this.rotation = 0;

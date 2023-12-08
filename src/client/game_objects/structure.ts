@@ -39,7 +39,6 @@ function createParts(
 }
 
 export class Structure {
-    id: number;
     pos: PIXI.Point;
     size: number;
     rotation: number;
@@ -50,14 +49,12 @@ export class Structure {
 
     constructor(
         animationManager: AnimationManager,
-        id: number,
         type: string,
         pos: [x: number, y: number],
         rotation: number,
         size: number
     ) {
         this.lastHitSource = new PIXI.Point(0, 0);
-        this.id = id;
 
         this.pos = new PIXI.Point(pos[0], pos[1]);
 

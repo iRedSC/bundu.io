@@ -48,7 +48,6 @@ type PlayerParts = {
 };
 
 export class Player {
-    id: number;
     name: string;
     parts: PlayerParts;
 
@@ -67,7 +66,6 @@ export class Player {
     blocking: boolean;
     constructor(
         animationManager: AnimationManager,
-        id: number,
         name: string,
         time: number,
         pos: [x: number, y: number],
@@ -101,7 +99,6 @@ export class Player {
             },
         };
 
-        this.id = id;
         this.name = name;
 
         this.selectedItem = "";

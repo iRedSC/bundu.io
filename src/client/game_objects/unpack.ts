@@ -53,7 +53,6 @@ export function unpackPlayerData(
             case 0: {
                 const player = new Player(
                     animationManager,
-                    packet[1],
                     packet[2],
                     time,
                     [packet[3], packet[4]],
@@ -120,7 +119,6 @@ export function unpackEntityData(
             case 0: {
                 const entity = new Entity(
                     animationManager,
-                    packet[1],
                     entityMap.get(packet[2]) || "unknown_asset",
                     [time, packet[3], packet[4], packet[5]]
                 );
@@ -171,7 +169,6 @@ export function unpackStructureData(
             case 0: {
                 const structure = new Structure(
                     animationManager,
-                    packet[1],
                     structureMap.get(packet[2]) || "unknown_asset",
                     [packet[3], packet[4]],
                     packet[5],
