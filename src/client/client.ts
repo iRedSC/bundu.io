@@ -1,3 +1,5 @@
+// Main client class that handles all the goodness going on.
+
 import { Viewport } from "pixi-viewport";
 import { GameObjectHolder } from "./game_objects/object_list";
 
