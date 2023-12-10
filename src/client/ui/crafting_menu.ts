@@ -1,97 +1,13 @@
 import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
-import { Layout } from "@pixi/layout";
+import { ItemButton } from "./button";
 
+// IN -> RECEIVE ARRAY OF CRAFTABLE ITEMS
+// OUT -> CRAFTING BUTTONS SEND REQUEST TOs SERVER 
 
 type Item = { imagePath: string; result: string; category: string };
 
-
-const createCraftingButton = (item: Item) => {
-    const buttonContainer = new PIXI.Container();
-
-
-    const background = new PIXI.Graphics();
-
-
-    let fillColor = 0x777777;
-    let borderColor = 0x444444;
-
-
-    background.lineStyle(2, borderColor, 1);
-    background.beginFill(fillColor, 0.7); 
-    background.drawRoundedRect(0, 0, 60, 60, 10);
-    background.endFill();
-
-    buttonContainer.addChild(background);
-
-    const itemImage = PIXI.Sprite.from(item.imagePath, {
-        mipmap: PIXI.MIPMAP_MODES.ON,
-    });
-
-    itemImage.width = 45;
-    itemImage.height = 45;
-    itemImage.anchor.set(0.5);
-    itemImage.position.set(background.width / 2, background.height / 2);
-
-    buttonContainer.addChild(itemImage);
-
-    const button = new Button(buttonContainer);
-
-    button.view.width = background.width;
-    button.view.height = background.height;
-    button.view.pivot.set(button.view.width / 2, button.view.height / 2);
-
-    button.down = () => {
-        button.view.scale.set(0.9);
-        fillColor = 0x77777;
-        borderColor = 0x333333;
-
-        updateButtonAppearance();
-    };
-
-    button.up = () => {
-        button.view.scale.set(1);
-        fillColor = 0x777777;
-        borderColor = 0x444444;
-
-        updateButtonAppearance();
-    };
-
-    button.view.interactive = true;
-
-    button.view.on("mouseover", () => {
-        button.view.scale.set(1.1);
-        fillColor = 0x999999;
-        borderColor = 0x666666;
-
-        updateButtonAppearance();
-    });
-
-    button.view.on("mouseout", () => {
-        button.view.scale.set(1);
-        fillColor = 0x777777;
-        borderColor = 0x444444;
-
-        updateButtonAppearance();
-    });
-
-    button.view.on("pointertap", () => {
-        console.log(item.result);
-    });
-
-    const updateButtonAppearance = () => {
-        background.clear();
-        background.lineStyle(2, borderColor, 1);
-        background.beginFill(fillColor, 0.7);
-        background.drawRoundedRect(0, 0, 60, 60, 10);
-        background.endFill();
-    };
-
-    return button;
-};
-
-
-const craftingItems: Item[] = [
+export const craftingItems: Item[] = [
     {
         imagePath: "./assets/gold_wall.svg",
         result: "Crafted Item 1",
@@ -190,19 +106,21 @@ const craftingItems: Item[] = [
 ];
 
 const buttonsPerRow = 4;
-const craftingButtonContainer = new PIXI.Container();
-const paddingLeft = 40;
-const paddingTop = 40;
+export const craftingButtonContainer = new PIXI.Container();
+const paddingLeft = 24;
+const paddingTop = 24;
 const buttonSize = 68;
 let currentRow = 0;
 let currentCol = 0;
 
 craftingItems.forEach((item) => {
-    const button = createCraftingButton(item);
+    const button = new ItemButton();
+    // const button = createCraftingButton(item);
     button.view.position.set(
         paddingLeft + currentCol * buttonSize,
         paddingTop + currentRow * buttonSize
     );
+    button.setItem(item);
     craftingButtonContainer.addChild(button.view);
 
     currentRow++;
@@ -213,7 +131,7 @@ craftingItems.forEach((item) => {
     }
 });
 
-const filterButtonContainer = new PIXI.Container();
+export const filterButtonContainer = new PIXI.Container();
 const filterButtonSize = 40; 
 
 
@@ -250,16 +168,7 @@ filterButtonContainer.position.set(
 );
 
 
-export const UI = new Layout({
-    id: "root",
-    content: {
-        container1: filterButtonContainer,
-        container2: craftingButtonContainer,
-    },
-    styles: {
-        background: "red",
-    },
-});
+
 
 
 const toggleCategory = (category: string) => {
@@ -288,11 +197,12 @@ const filterButtons = () => {
     let currentCol = 0;
 
     filteredItems.forEach((item: Item) => {
-        const button = createCraftingButton(item);
+        const button = new ItemButton();
         button.view.position.set(
             paddingLeft + currentCol * buttonSize,
             paddingTop + currentRow * buttonSize
         );
+        button.setItem(item);
         craftingButtonContainer.addChild(button.view);
 
         currentRow++;
@@ -329,6 +239,7 @@ function createToggleButton(
     button.view.on("pointertap", () => {
         toggleCategory(category);
         updateButtonAppearance(activeCategories.has(category));
+        console.log("hi")
     });
 
     function updateButtonAppearance(selected: boolean) {
@@ -339,3 +250,4 @@ function createToggleButton(
     
     return button;
 }
+

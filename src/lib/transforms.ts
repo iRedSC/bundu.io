@@ -3,6 +3,17 @@ type Point = {
     y: number;
     [key: string]: any;
 };
+
+
+export function distance(point1: Point, point2: Point): number {
+    const deltaX = point2.x - point1.x;
+    const deltaY = point2.y - point1.y;
+
+    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+
+    return distance;
+}
+
 export function rotationLerp(a: number, b: number, t: number): number {
     t = Math.min(1, t);
 

@@ -18,7 +18,6 @@ createStuff(client);
 
 const player: Player = new Player(
     animationManager,
-    0,
     "test",
     Date.now(),
     [0, 0],

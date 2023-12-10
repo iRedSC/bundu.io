@@ -120,7 +120,7 @@ export class Player {
         leftHand.selectedItem.renderable = false;
 
         container.pivot.x = container.width / 2;
-        container.pivot.y = container.height / 2;
+        container.pivot.y = container.height / 2 + 15;
 
         container.addChild(body.container);
 
