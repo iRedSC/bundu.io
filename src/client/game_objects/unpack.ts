@@ -54,8 +54,7 @@ export function unpackPlayerData(
                 const player = new Player(
                     animationManager,
                     packet[2],
-                    time,
-                    [packet[3], packet[4]],
+                    { x: packet[3], y: packet[4] },
                     packet[5]
                 );
                 playerList.set(packet[1], player);
@@ -68,7 +67,7 @@ export function unpackPlayerData(
                 if (!player) {
                     break;
                 }
-                player?.update([time, packet[2], packet[3], packet[4]]);
+                player?.setState([time, packet[2], packet[3], packet[4]]);
                 break;
             }
             // update items
@@ -77,7 +76,7 @@ export function unpackPlayerData(
                 if (!player) {
                     break;
                 }
-                player?.update(undefined, [
+                player?.setState(undefined, [
                     itemMap.get(packet[2]) || "",
                     itemMap.get(packet[3]) || "",
                     packet[4],

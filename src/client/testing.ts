@@ -1,3 +1,5 @@
+// testing file (to mimic a server)
+
 import { Random } from "../lib/random";
 import { loadGround } from "./game_objects/ground";
 import { WORLD_SIZE } from "./constants";

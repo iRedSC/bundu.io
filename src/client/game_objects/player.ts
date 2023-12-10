@@ -3,19 +3,9 @@ import { degrees, lerp, rotationLerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager, AnimationMap } from "../../lib/animation";
 import { round } from "../../lib/math";
 import { getItem } from "../configs/configs";
+import { WorldObject } from "./world_object";
 
 type State = [time: number, x: number, y: number, rotation: number];
-function typeofState(state?: State): state is State {
-    if (!state) {
-        return false;
-    }
-    return (
-        typeof state[0] === "number" &&
-        typeof state[1] === "number" &&
-        typeof state[2] === "number" &&
-        typeof state[3] === "number"
-    );
-}
 
 type Gear = [selectedItem: string, helmet: string, backpack: number];
 function typeofGear(gear?: Gear): gear is Gear {
@@ -47,12 +37,9 @@ type PlayerParts = {
     };
 };
 
-export class Player {
+export class Player extends WorldObject {
     name: string;
-    parts: PlayerParts;
 
-    lastState: State;
-    nextState: State;
     pos: PIXI.Point;
     rotation: number;
 
@@ -67,11 +54,10 @@ export class Player {
     constructor(
         animationManager: AnimationManager,
         name: string,
-        time: number,
-        pos: [x: number, y: number],
+        pos: { x: number; y: number },
         rotation: number
     ) {
-        this.parts = {
+        const sprite: PlayerParts = {
             container: new PIXI.Container(),
             body: {
                 container: new PIXI.Container(),
@@ -99,6 +85,7 @@ export class Player {
             },
         };
 
+        super(pos, rotation, sprite);
         this.name = name;
 
         this.selectedItem = "";
@@ -110,7 +97,7 @@ export class Player {
 
         this.blocking = false;
 
-        const parts = this.parts;
+        const parts = this.sprite;
         const container = parts.container;
         const body = parts.body;
         const leftHand = parts.leftHand;
@@ -163,9 +150,6 @@ export class Player {
         this.animations = loadAnimations(this);
         this.trigger("leftHand");
         this.trigger("rightHand");
-
-        this.lastState = [time, pos[0], pos[1], rotation];
-        this.nextState = [time, pos[0], pos[1], rotation];
     }
 
     selectItem({ hand, body }: { hand?: string; body?: string }) {
@@ -179,7 +163,7 @@ export class Player {
     }
 
     get container() {
-        return this.parts.container;
+        return this.sprite.container;
     }
 
     trigger(name: string) {
@@ -201,15 +185,8 @@ export class Player {
         this.container.rotation = this.rotation;
     }
 
-    update(state?: State, gear?: Gear) {
-        if (typeofState(state)) {
-            this.lastState = this.nextState;
-
-            this.nextState = state;
-            if (this.nextState[0] < this.lastState[0]) {
-                this.nextState[0] = this.lastState[0];
-            }
-        }
+    override setState(state?: State, gear?: Gear) {
+        super.setState(state);
         if (typeofGear(gear)) {
             this.selectedItem = gear[0];
             this.helmet = gear[1];
@@ -219,39 +196,39 @@ export class Player {
     }
 
     updateGear() {
-        this.parts.leftHand.selectedItem.renderable = false;
-        this.parts.body.helmet.renderable = false;
+        this.sprite.leftHand.selectedItem.renderable = false;
+        this.sprite.body.helmet.renderable = false;
 
         if (this.selectedItem !== "") {
-            this.parts.leftHand.selectedItem.renderable = true;
+            this.sprite.leftHand.selectedItem.renderable = true;
             const item = getItem(this.selectedItem, ["hand_display", "sprite"]);
             if (!item) {
                 return;
             }
             const texture = PIXI.Texture.from(`./assets/${item.sprite}.svg`);
-            this.parts.leftHand.selectedItem.scale.set(
+            this.sprite.leftHand.selectedItem.scale.set(
                 item.hand_display!.scale
             );
-            this.parts.leftHand.selectedItem.texture = texture;
-            this.parts.leftHand.selectedItem.x = item.hand_display!.x;
-            this.parts.leftHand.selectedItem.y = item.hand_display!.y;
-            this.parts.leftHand.selectedItem.rotation = degrees(
+            this.sprite.leftHand.selectedItem.texture = texture;
+            this.sprite.leftHand.selectedItem.x = item.hand_display!.x;
+            this.sprite.leftHand.selectedItem.y = item.hand_display!.y;
+            this.sprite.leftHand.selectedItem.rotation = degrees(
                 item.hand_display!.rotation
             );
         }
 
         if (this.helmet !== "") {
-            this.parts.body.helmet.renderable = true;
+            this.sprite.body.helmet.renderable = true;
             const item = getItem(this.helmet, ["body_display", "sprite"]);
             if (!item) {
                 return;
             }
             const texture = PIXI.Texture.from(`./assets/${item.sprite}.svg`);
-            this.parts.body.helmet.scale.set(item.body_display!.scale);
-            this.parts.body.helmet.texture = texture;
-            this.parts.body.helmet.x = item.body_display!.x;
-            this.parts.body.helmet.y = item.body_display!.y;
-            this.parts.body.helmet.rotation = degrees(
+            this.sprite.body.helmet.scale.set(item.body_display!.scale);
+            this.sprite.body.helmet.texture = texture;
+            this.sprite.body.helmet.x = item.body_display!.x;
+            this.sprite.body.helmet.y = item.body_display!.y;
+            this.sprite.body.helmet.rotation = degrees(
                 item.body_display!.rotation
             );
         }
@@ -261,7 +238,7 @@ export class Player {
 function loadAnimations(target: Player) {
     let leftHandKeyframes: Keyframes<Player> = new Keyframes();
     leftHandKeyframes.frame(0).set = ({ target, animation }) => {
-        const leftHand = target.parts.leftHand.container;
+        const leftHand = target.sprite.leftHand.container;
         if (animation.firstKeyframe) {
             animation.meta.x = leftHand.x;
             animation.goto(0, 2000);
@@ -275,7 +252,7 @@ function loadAnimations(target: Player) {
 
     let rightHandKeyframes: Keyframes<Player> = new Keyframes();
     rightHandKeyframes.frame(0).set = ({ target, animation }) => {
-        const rightHand = target.parts.rightHand.container;
+        const rightHand = target.sprite.rightHand.container;
         if (animation.firstKeyframe) {
             animation.meta.x = rightHand.x;
             animation.goto(0, 2000);
@@ -290,15 +267,15 @@ function loadAnimations(target: Player) {
 
     const attackKeyframes: Keyframes<Player> = new Keyframes();
     attackKeyframes.frame(0).set = ({ target, animation }) => {
-        const leftHand = target.parts.leftHand.container;
+        const leftHand = target.sprite.leftHand.container;
         if (leftHand.rotation !== 0) {
             animation.expired = true;
         }
         animation.next(100);
     };
     attackKeyframes.frame(1).set = ({ target, animation }) => {
-        const leftHand = target.parts.leftHand.container;
-        const rightHand = target.parts.rightHand.container;
+        const leftHand = target.sprite.leftHand.container;
+        const rightHand = target.sprite.rightHand.container;
         leftHand.rotation = lerp(degrees(0), degrees(-90), animation.t);
         rightHand.rotation = lerp(degrees(0), degrees(-15), animation.t);
         if (animation.keyframeEnded) {
@@ -306,8 +283,8 @@ function loadAnimations(target: Player) {
         }
     };
     attackKeyframes.frame(2).set = ({ target, animation }) => {
-        const leftHand = target.parts.leftHand.container;
-        const rightHand = target.parts.rightHand.container;
+        const leftHand = target.sprite.leftHand.container;
+        const rightHand = target.sprite.rightHand.container;
         leftHand.rotation = lerp(degrees(-90), degrees(0), animation.t);
         rightHand.rotation = lerp(degrees(-15), degrees(0), animation.t);
         if (animation.keyframeEnded) {
@@ -317,15 +294,15 @@ function loadAnimations(target: Player) {
 
     const blockKeyframes: Keyframes<Player> = new Keyframes();
     blockKeyframes.frame(0).set = ({ target, animation }) => {
-        const leftHand = target.parts.leftHand.container;
+        const leftHand = target.sprite.leftHand.container;
         if (leftHand.rotation !== 0) {
             animation.expired = true;
         }
         animation.next(75);
     };
     blockKeyframes.frame(1).set = ({ target, animation }) => {
-        const leftHand = target.parts.leftHand.container;
-        const rightHand = target.parts.rightHand.container;
+        const leftHand = target.sprite.leftHand.container;
+        const rightHand = target.sprite.rightHand.container;
         leftHand.rotation = lerp(degrees(0), degrees(-90), animation.t);
         rightHand.rotation = lerp(degrees(0), degrees(25), animation.t);
         if (!target.blocking) {
@@ -333,8 +310,8 @@ function loadAnimations(target: Player) {
         }
     };
     blockKeyframes.frame(2).set = ({ target, animation }) => {
-        const leftHand = target.parts.leftHand.container;
-        const rightHand = target.parts.rightHand.container;
+        const leftHand = target.sprite.leftHand.container;
+        const rightHand = target.sprite.rightHand.container;
         leftHand.rotation = lerp(degrees(-90), degrees(0), animation.t);
         rightHand.rotation = lerp(degrees(25), degrees(0), animation.t);
         if (animation.keyframeEnded) {
