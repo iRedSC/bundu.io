@@ -16,16 +16,9 @@ const client = new BunduClient(viewport, objectHandler);
 
 createStuff(client);
 
-const player: Player = new Player(
-    animationManager,
-    0,
-    "test",
-    Date.now(),
-    [0, 0],
-    0
-);
+const player: Player = new Player(animationManager, "test", { x: 0, y: 0 }, 0);
 let playerPos: { x: number; y: number } = { x: 10000, y: 10000 };
-player.update([Date.now(), 10000, 10000, 0], ["", "", 0]);
+player.setState([Date.now(), 10000, 10000, 0], ["", "", 0]);
 viewport.addChild(player.container);
 
 viewport.follow(player.container, {
@@ -54,7 +47,7 @@ setInterval(() => {
             85
         );
     }
-    player.update([Date.now() + 50, playerPos.x, playerPos.y, rotation]);
+    player.setState([Date.now() + 50, playerPos.x, playerPos.y, rotation]);
     for (let entity of objectHandler.entities.values()) {
         const newRot = lookToward(entity.pos, playerPos);
         const newPos = moveToward(
@@ -72,6 +65,7 @@ setInterval(() => {
 createClickEvents(viewport, player);
 
 const sky = new Sky(viewport);
+sky.advanceCycle(animationManager);
 setInterval(() => {
     sky.advanceCycle(animationManager);
 }, 60000);
