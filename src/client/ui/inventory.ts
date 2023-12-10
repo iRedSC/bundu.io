@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { InventoryButton } from './button';
-import { distance } from '../../lib/transforms';
+
 
 
 type Item = { imagePath: string; result: string; amount: number };
@@ -26,15 +26,9 @@ export class Inventory {
     button.view.on("pointerdown", () => dragStart(button))
   }
 
-  rerender() {
-    for (let button of this.slots) {
-      this.container.removeChild(button.view);
-      console.log(button, this.slots)
-      this.container.addChild(button.view);
-      button.view.x = this.slots.length * (inventorySlotSize + padding);
-    }
+
     
-  }
+
   remove() {
     for (let button of this.slots) {
       this.slots= []
@@ -120,11 +114,11 @@ function dragStart(button: InventoryButton){
   sprite.alpha = 0.8;
   const _dragMove = (event: PointerEvent) => dragMove(sprite, button, event);
 
-  function dragEnd(event: PointerEvent) {
+  function dragEnd() {
     window.removeEventListener('pointermove', _dragMove);
     window.removeEventListener('pointerup', dragEnd);
     inventory.container.removeChild(sprite);
-    findswap(button, event)
+    findswap(button)
   }
 
   window.addEventListener('pointermove', _dragMove);
@@ -136,8 +130,8 @@ function dragStart(button: InventoryButton){
 
 function dragMove(sprite: PIXI.Sprite, button: InventoryButton, event: PointerEvent){
     let isActive: boolean = false
-    const distFromOrigin = distance(button.view.parent.toGlobal(button.view.position), {x: event.clientX, y: event.clientY})
-    if (distFromOrigin > 25) {
+    
+    if (!button.hovering) {
       if (isActive === false) {
         inventory.container.addChild(sprite);
       }
@@ -146,10 +140,9 @@ function dragMove(sprite: PIXI.Sprite, button: InventoryButton, event: PointerEv
     }
 }
 
-function findswap(button: InventoryButton, event: PointerEvent){
+function findswap(button: InventoryButton){
   for(let item of inventory.slots) {
-    const distFromOrigin = distance(item.view.parent.toGlobal(item.view.position), {x: event.clientX, y: event.clientY})
-    if (distFromOrigin <= 50) {
+    if (item.hovering) {
       const currentButton = inventory.slots.indexOf(item);
       const oldButton = inventory.slots.indexOf(button);
 
