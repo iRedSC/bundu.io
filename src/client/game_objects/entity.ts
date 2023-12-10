@@ -1,69 +1,52 @@
 import * as PIXI from "pixi.js";
-import { colorLerp, degrees, lerp, rotationLerp } from "../../lib/transforms";
+import { colorLerp, degrees } from "../../lib/transforms";
 import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { Random } from "../../lib/random";
-
-type State = [time: number, x: number, y: number, rotation: number];
-function typeofState(state?: State): state is State {
-    if (!state) {
-        return false;
-    }
-    return (
-        typeof state[0] === "number" &&
-        typeof state[1] === "number" &&
-        typeof state[2] === "number" &&
-        typeof state[3] === "number"
-    );
-}
+import { WorldObject } from "./world_object";
 
 type EntityParts = {
     container: PIXI.Container;
     body: PIXI.Sprite;
 };
 
-export class Entity {
-    lastState: State;
-    nextState: State;
+export class Entity extends WorldObject {
     pos: PIXI.Point;
     rotation: number;
     size: number;
-    parts: EntityParts;
-    animations: AnimationMap<EntityParts>;
+    animations: AnimationMap<Entity>;
     animationManager: AnimationManager;
     constructor(
         animationManager: AnimationManager,
         type: string,
-        state: State
+        pos: { x: number; y: number },
+        rotation: number
     ) {
-        this.animationManager = animationManager;
-
-        this.pos = new PIXI.Point(0, 0);
-        this.rotation = 0;
-        this.size = 5;
-
-        this.parts = {
+        const sprite: EntityParts = {
             container: new PIXI.Container(),
             body: PIXI.Sprite.from(`./assets/${type}.svg`, {
                 mipmap: PIXI.MIPMAP_MODES.ON,
             }),
         };
-        this.parts.container.pivot.set(
-            this.parts.container.width / 2,
-            this.parts.container.height / 2
+        super(pos, rotation, sprite);
+        this.animationManager = animationManager;
+
+        this.pos = new PIXI.Point(0, 0);
+        this.rotation = 0;
+        this.size = 5;
+        this.sprite.container.pivot.set(
+            this.sprite.container.width / 2,
+            this.sprite.container.height / 2
         );
-        this.parts.container.position.set(this.pos.x, this.pos.y);
-        this.parts.body = PIXI.Sprite.from(`./assets/${type}.svg`, {
+        this.sprite.container.position.set(this.pos.x, this.pos.y);
+        this.sprite.body = PIXI.Sprite.from(`./assets/${type}.svg`, {
             mipmap: PIXI.MIPMAP_MODES.ON,
         });
-        this.parts.body.rotation = degrees(-90);
-        this.parts.body.anchor.set(0.5);
-        this.parts.container.addChild(this.parts.body);
-        this.parts.body.scale.set(this.size);
-        this.animations = loadAnimations(this.parts);
+        this.sprite.body.rotation = degrees(-90);
+        this.sprite.body.anchor.set(0.5);
+        this.sprite.container.addChild(this.sprite.body);
+        this.sprite.body.scale.set(this.size);
+        this.animations = loadAnimations(this);
         this.trigger("idle");
-        this.lastState = state;
-        this.nextState = state;
-        this.move();
     }
     trigger(name: string) {
         const animation = this.animations.get(name);
@@ -71,32 +54,13 @@ export class Entity {
             this.animationManager.add(this, animation.run());
         }
     }
-    move() {
-        const now = Date.now();
-        const t =
-            (now - this.lastState[0]) / (this.nextState[0] - this.lastState[0]);
-        this.pos.x = lerp(this.lastState[1], this.nextState[1], t);
-        this.pos.y = lerp(this.lastState[2], this.nextState[2], t);
-        this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
-        this.container.position = this.pos;
-        this.container.rotation = this.rotation;
-    }
-    update(state: State) {
-        if (typeofState(state)) {
-            this.lastState = this.nextState;
-            this.nextState = state;
-            if (this.nextState[0] < this.lastState[0]) {
-                this.nextState[0] = this.lastState[0];
-            }
-        }
-    }
     get container() {
-        return this.parts.container;
+        return this.sprite.container;
     }
 }
 
-function loadAnimations(target: EntityParts) {
-    const idleKeyframes: Keyframes<EntityParts> = new Keyframes();
+function loadAnimations(target: Entity) {
+    const idleKeyframes: Keyframes<Entity> = new Keyframes();
     idleKeyframes.frame(0).set = ({ target, animation }) => {
         animation.meta.width = target.container.scale.x;
         animation.meta.height = target.container.scale.y;
@@ -116,18 +80,18 @@ function loadAnimations(target: EntityParts) {
         }
     };
 
-    const hurtKeyframes: Keyframes<EntityParts> = new Keyframes();
+    const hurtKeyframes: Keyframes<Entity> = new Keyframes();
     hurtKeyframes.frame(0).set = ({ animation }) => {
         if (animation.firstKeyframe) {
             animation.goto(0, 100);
         }
-        target.body.tint = colorLerp(0xffffff, 0xff0000, animation.t);
+        target.sprite.body.tint = colorLerp(0xffffff, 0xff0000, animation.t);
         if (animation.keyframeEnded) {
             animation.next(400);
         }
     };
     hurtKeyframes.frame(1).set = ({ target, animation }) => {
-        target.body.tint = colorLerp(0xff0000, 0xffffff, animation.t);
+        target.sprite.body.tint = colorLerp(0xff0000, 0xffffff, animation.t);
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
