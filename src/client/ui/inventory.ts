@@ -1,6 +1,5 @@
 import * as PIXI from "pixi.js";
 import { InventoryButton } from "./button";
-import { distance } from "../../lib/transforms";
 
 type Item = { imagePath: string; result: string; amount: number };
 

@@ -119,7 +119,8 @@ export function unpackEntityData(
                 const entity = new Entity(
                     animationManager,
                     entityMap.get(packet[2]) || "unknown_asset",
-                    [time, packet[3], packet[4], packet[5]]
+                    { x: packet[3], y: packet[4] },
+                    packet[5]
                 );
                 entityList.set(packet[1], entity);
                 container.addChild(entity.container);
@@ -131,7 +132,7 @@ export function unpackEntityData(
                 if (!entity) {
                     break;
                 }
-                entity?.update([time, packet[1], packet[2], packet[3]]);
+                entity?.setState([time, packet[1], packet[2], packet[3]]);
                 break;
             }
         }

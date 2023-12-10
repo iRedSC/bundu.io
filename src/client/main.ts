@@ -55,7 +55,7 @@ setInterval(() => {
             lookToward(entity.pos, playerPos),
             50
         );
-        entity.update([Date.now() + 50, newPos.x, newPos.y, newRot]);
+        entity.setState([Date.now() + 50, newPos.x, newPos.y, newRot]);
     }
     viewport.dirty = true;
 }, 50);
