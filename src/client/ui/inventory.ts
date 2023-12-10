@@ -113,7 +113,7 @@ function dragStart(button: InventoryButton) {
     sprite.scale.set(0.12);
     sprite.anchor.set(0.5);
     sprite.alpha = 0.8;
-    const _dragMove = (event: PointerEvent) => dragMove(sprite, button, event);
+    const _dragMove = (event: PointerEvent) => dragMove(sprite, event);
 
     function dragEnd() {
         window.removeEventListener("pointermove", _dragMove);
@@ -126,27 +126,17 @@ function dragStart(button: InventoryButton) {
     window.addEventListener("pointerup", dragEnd);
 }
 
-let isHovering = false;
-function dragMove(
-    sprite: PIXI.Sprite,
-    button: InventoryButton,
-    event: PointerEvent
-) {
+function dragMove(sprite: PIXI.Sprite, event: PointerEvent) {
     let isActive: boolean = false;
-    if (!button.hovering) {
-        isHovering = true;
+    if (isActive === false) {
+        inventory.container.addChild(sprite);
     }
-    if (isHovering) {
-        if (isActive === false) {
-            inventory.container.addChild(sprite);
-        }
-        const pos = sprite.parent.toLocal(
-            new PIXI.Point(event.clientX, event.clientY),
-            undefined,
-            sprite.position
-        );
-        sprite.position.set(pos.x, pos.y);
-    }
+    const pos = sprite.parent.toLocal(
+        new PIXI.Point(event.clientX, event.clientY),
+        undefined,
+        sprite.position
+    );
+    sprite.position.set(pos.x, pos.y);
 }
 
 function findswap(button: InventoryButton) {
