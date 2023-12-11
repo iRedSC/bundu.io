@@ -1,33 +1,88 @@
 import * as PIXI from "pixi.js";
-import { InventoryButton } from "./button";
+import { ItemButton } from "./button";
+import { colorLerp } from "../../lib/transforms";
 
 type Item = { imagePath: string; result: string; amount: number };
 
+export class InventoryButton extends ItemButton {
+    selected: boolean;
+
+    constructor() {
+        super();
+
+        this.selected = false;
+    }
+
+    override update(fillColor: number, borderColor: number) {
+        let newFill = fillColor;
+        let newBorder = borderColor;
+        if (this.selected) {
+            newFill = colorLerp(fillColor, 0xffffff, 0.5);
+            newBorder = colorLerp(borderColor, 0xffffff, 0.5);
+        }
+        super.update(newFill, newBorder);
+    }
+
+    override down() {
+        this.view.scale.set(1.1);
+        this.update(0x777777, 0x444444);
+    }
+
+    override up() {
+        this.view.scale.set(1);
+
+        if (this.hovering) {
+            this.hover();
+        } else {
+            this.update(0x777777, 0x444444);
+        }
+    }
+}
+
 export class Inventory {
+    slots: Item[];
+    display: InventoryDisplay;
+
+    constructor() {
+        this.slots = [];
+        this.display = new InventoryDisplay();
+    }
+}
+
+class InventoryDisplay {
     container: PIXI.Container;
-    slots: InventoryButton[];
+    buttons: InventoryButton[];
 
     constructor() {
         this.container = new PIXI.Container();
-        this.slots = [];
+        this.buttons = [];
     }
 
-    addSlot(item?: Item) {
-        const button = new InventoryButton();
-        if (item) {
-            button.setItem(item);
+    slotCount(count: number) {
+        for (let i = 0; i < count; i++) {
+            const button = new InventoryButton();
+            button.view.x = this.buttons.length * (inventorySlotSize + padding);
+            this.buttons.push(button);
+            this.container.addChild(button.view);
+            button.view.on("pointerdown", () => dragStart(button));
+            button.press = () => {
+                for (let _button of this.buttons) {
+                    _button.selected = false;
+                    _button.up();
+                }
+                button.selected = true;
+            };
         }
-        button.view.x = this.slots.length * (inventorySlotSize + padding);
-        this.slots.push(button);
-        this.container.addChild(button.view);
-        button.view.on("pointerdown", () => dragStart(button));
     }
 
-    remove() {
-        for (let button of this.slots) {
-            this.container.removeChild(button.view);
+    update(items: Item[]) {
+        for (let i = 0; i < items.length; i++) {
+            if (items[i]) {
+                try {
+                    this.buttons[i].setItem(items[i]);
+                } catch {}
+            }
         }
-        this.slots = [];
     }
 }
 
@@ -36,10 +91,9 @@ const inventorySlotCount = 10;
 const padding = 6;
 
 export const inventory = new Inventory();
-export let localInventoryOrder: Item[] = [];
 
 function resize() {
-    inventory.container.position.set(
+    inventory.display.container.position.set(
         (window.innerWidth - inventorySlotSize * inventorySlotCount) / 2,
         window.innerHeight - inventorySlotSize - 10
     );
@@ -90,17 +144,13 @@ const invItems: Item[] = [
     },
 ];
 
-localInventoryOrder = structuredClone(invItems);
+inventory.slots = structuredClone(invItems);
 
-updateinventory();
+inventory.display.slotCount(inventorySlotCount);
 function updateinventory() {
-    inventory.remove();
-    for (let i = 0; i < inventorySlotCount; i++) {
-        const item = localInventoryOrder[i];
-        console.log(item);
-        inventory.addSlot(item);
-    }
+    inventory.display.update(inventory.slots);
 }
+updateinventory();
 
 function dragStart(button: InventoryButton) {
     const sprite = PIXI.Sprite.from(button.item.imagePath);
@@ -112,7 +162,7 @@ function dragStart(button: InventoryButton) {
     function dragEnd() {
         window.removeEventListener("pointermove", _dragMove);
         window.removeEventListener("pointerup", dragEnd);
-        inventory.container.removeChild(sprite);
+        inventory.display.container.removeChild(sprite);
         findswap(button);
     }
 
@@ -123,7 +173,7 @@ function dragStart(button: InventoryButton) {
 function dragMove(sprite: PIXI.Sprite, event: PointerEvent) {
     let isActive: boolean = false;
     if (isActive === false) {
-        inventory.container.addChild(sprite);
+        inventory.display.container.addChild(sprite);
     }
     const pos = sprite.parent.toLocal(
         new PIXI.Point(event.clientX, event.clientY),
@@ -134,28 +184,26 @@ function dragMove(sprite: PIXI.Sprite, event: PointerEvent) {
 }
 
 function findswap(button: InventoryButton) {
-    for (let item of inventory.slots) {
+    for (let item of inventory.display.buttons) {
         if (item.hovering) {
-            const currentButton = inventory.slots.indexOf(item);
-            const oldButton = inventory.slots.indexOf(button);
+            const currentButton = inventory.display.buttons.indexOf(item);
+            const oldButton = inventory.display.buttons.indexOf(button);
 
-            const oldItem = localInventoryOrder[oldButton];
+            const oldItem = inventory.slots[oldButton];
 
-            localInventoryOrder.splice(oldButton, 1);
-            localInventoryOrder.splice(currentButton, 0, oldItem);
+            inventory.slots.splice(oldButton, 1);
+            inventory.slots.splice(currentButton, 0, oldItem);
 
-            for (let i = localInventoryOrder.length - 1; i >= 0; i--) {
-                const currentItem = localInventoryOrder[i];
+            for (let i = inventory.slots.length - 1; i >= 0; i--) {
+                const currentItem = inventory.slots[i];
 
                 if (!currentItem) {
-                    localInventoryOrder.push(
-                        localInventoryOrder.splice(i, 1)[0]
-                    );
+                    inventory.slots.push(inventory.slots.splice(i, 1)[0]);
                 }
             }
 
             updateinventory();
-            console.log(inventory.slots);
+            console.log(inventory.display.buttons);
         }
     }
 }

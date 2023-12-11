@@ -1,4 +1,7 @@
-import { craftingButtonContainer, filterButtonContainer } from "./crafting_menu";
+import {
+    craftingButtonContainer,
+    filterButtonContainer,
+} from "./crafting_menu";
 import { Layout } from "@pixi/layout";
 import { inventory } from "./inventory";
 import { barContainer } from "./statbars";
@@ -8,7 +11,7 @@ export const UI = new Layout({
     content: {
         container1: filterButtonContainer,
         container2: craftingButtonContainer,
-        container3: inventory.container,
+        container3: inventory.display.container,
         container4: barContainer,
     },
     styles: {

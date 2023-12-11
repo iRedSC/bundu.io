@@ -1,6 +1,5 @@
 import { Button } from "@pixi/ui";
-import * as PIXI from "pixi.js"
-import { colorLerp } from "../../lib/transforms";
+import * as PIXI from "pixi.js";
 
 export class ItemButton extends Button {
     background: PIXI.Graphics;
@@ -8,30 +7,29 @@ export class ItemButton extends Button {
     itemSprite: PIXI.Sprite;
     hovering: boolean;
 
-
     constructor() {
-        const container = new PIXI.Container()
+        const container = new PIXI.Container();
 
-        super(container)
+        super(container);
 
         this.hovering = false;
 
         this.background = new PIXI.Graphics();
-        this.view.pivot.set(this.view.width/ 4,  this.view.height/ 4);
-        
-        
-        this.item = { imagePath: "", result: "empty"};
+        this.view.pivot.set(this.view.width / 4, this.view.height / 4);
+
+        this.item = { imagePath: "", result: "empty" };
         this.itemSprite = PIXI.Sprite.from("./", {
             mipmap: PIXI.MIPMAP_MODES.ON,
         });
-        
-        
-        this.view.addChild(this.background)
-        this.update(0x777777, 0x444444)
 
+        this.view.addChild(this.background);
+        this.update(0x777777, 0x444444);
     }
 
-    setItem(item: { imagePath: string; result: string}) {
+    setItem(item: { imagePath: string; result: string }) {
+        if (this.itemSprite) {
+            this.view.removeChild(this.itemSprite);
+        }
         this.item = item;
         this.itemSprite = PIXI.Sprite.from(item.imagePath, {
             mipmap: PIXI.MIPMAP_MODES.ON,
@@ -39,7 +37,10 @@ export class ItemButton extends Button {
         this.itemSprite.width = 45;
         this.itemSprite.height = 45;
         this.itemSprite.anchor.set(0.5);
-        this.itemSprite.position.set(this.background.width / 2, this.background.height / 2);
+        this.itemSprite.position.set(
+            this.background.width / 2,
+            this.background.height / 2
+        );
         this.view.addChild(this.itemSprite);
     }
 
@@ -49,14 +50,14 @@ export class ItemButton extends Button {
         this.background.beginFill(fillColor, 0.7);
         this.background.drawRoundedRect(0, 0, 60, 60, 10);
         this.background.endFill();
-        this.view.pivot.set(this.view.width/ 4,  this.view.height/ 4);
+        this.view.pivot.set(this.view.width / 4, this.view.height / 4);
     }
 
     override hover() {
         this.view.scale.set(1.1);
         this.update(0x999999, 0x666666);
         this.hovering = true;
-    };
+    }
 
     override out() {
         this.view.scale.set(1);
@@ -73,7 +74,7 @@ export class ItemButton extends Button {
         this.view.scale.set(1);
 
         if (this.hovering) {
-            this.hover()
+            this.hover();
         } else {
             this.update(0x777777, 0x444444);
         }
@@ -82,47 +83,4 @@ export class ItemButton extends Button {
     override press() {
         console.log(this.item.result);
     }
-}
-
-export class InventoryButton extends ItemButton {
-    selected: boolean;
-
-    constructor(){
-        super()
-
-        this.selected = false;
-    }
-    
-    override update(fillColor: number, borderColor: number) {
-        let newFill = fillColor;
-        let newBorder = borderColor;
-        if (this.selected) {
-            newFill = colorLerp(fillColor, 0xffffff, 0.5);
-            newBorder = colorLerp(borderColor, 0xffffff, 0.5);
-        }
-        super.update(newFill, newBorder);
-
-    }
-
-    override press() {
-        this.selected = !this.selected
-        console.log(this.item.result);
-    }
-
-    override down() {
-        this.view.scale.set(1.1);
-        this.update(0x777777, 0x444444);
-        
-    }
-
-    override up() {
-        this.view.scale.set(1);
-
-        if (this.hovering) {
-            this.hover()
-        } else {
-            this.update(0x777777, 0x444444);
-        }
-    }
-
 }
