@@ -9,8 +9,10 @@ export class ItemButton extends Button {
 
     constructor() {
         const container = new PIXI.Container();
+        container.sortableChildren = true
 
         super(container);
+
 
         this.hovering = false;
 
@@ -36,6 +38,7 @@ export class ItemButton extends Button {
         });
         this.itemSprite.width = 45;
         this.itemSprite.height = 45;
+        this.itemSprite.zIndex = 1;
         this.itemSprite.anchor.set(0.5);
         this.itemSprite.position.set(
             this.background.width / 2,
