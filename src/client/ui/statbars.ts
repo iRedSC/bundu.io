@@ -1,117 +1,112 @@
 import * as PIXI from "pixi.js";
 import { AnimationMap, Keyframes } from "../../lib/animation";
 
+class StatsDisplay {
+    container: PIXI.Container;
+    primaryBar: PIXI.Sprite;
+    secondaryBar?: PIXI.Sprite;
+    decor: PIXI.Sprite;
+
+    constructor(decor: string, bar1: string, bar2?: string) {
+        this.container = new PIXI.Container();
+        this.container.scale.set(0.6);
+        this.container.position.set(270, 0);
+
+        this.primaryBar = PIXI.Sprite.from(bar1);
+        this.primaryBar.width = 290;
+        this.primaryBar.position.set(92, 0);
+        if (bar2) {
+            this.secondaryBar = PIXI.Sprite.from(bar2);
+            this.secondaryBar.width = 290;
+            this.secondaryBar.position.set(92, 100);
+            this.secondaryBar.height = 200;
+            this.secondaryBar.tint = 0x7b0700;
+            this.container.addChild(this.secondaryBar);
+        }
+        this.decor = PIXI.Sprite.from(decor);
+
+        this.container.addChild(this.decor, this.primaryBar);
+    }
+}
 class StatsBar {
-  value: number;
-  display: PIXI.Sprite;
-  constructor(params) {
-    this.value = 200
-    this.display = 
-  }
+    value: number;
+    display: StatsDisplay;
+    constructor(display: StatsDisplay) {
+        this.value = 200;
+        this.display = display;
+    }
 }
 
-const transition: Keyframes<PIXI.Sprite> = new Keyframes()
+const transition: Keyframes<PIXI.Sprite> = new Keyframes();
 transition.frame(0).set = ({ target, animation }) => {
-  if (animation.firstKeyframe) {
-    animation.goto(0, 400)
-  }
-}
-export const barContainer = new PIXI.Container()
-const hungerContainer = new PIXI.Container()
-const heatContainer = new PIXI.Container()
-const healthContainer = new PIXI.Container()
+    if (animation.firstKeyframe) {
+        animation.goto(0, 400);
+    }
+};
+export const barContainer = new PIXI.Container();
+const hungerContainer = new StatsDisplay(
+    "./assets/hunger.svg",
+    "./assets/hunger_bar.svg"
+);
+const heatContainer = new StatsDisplay(
+    "./assets/heat.svg",
+    "./assets/heat_bar.svg",
+    "./assets/heat_bar.svg"
+);
+const healthContainer = new StatsDisplay(
+    "./assets/health.svg",
+    "./assets/health_bar.svg",
+    "./assets/heat_bar.svg"
+);
 
-const health_bar_white = PIXI.Sprite.from('./assets/heat_bar.svg')
-const health_bar = PIXI.Sprite.from('./assets/health_bar.svg')
-const health = PIXI.Sprite.from('./assets/health.svg')
-const hunger_bar = PIXI.Sprite.from('./assets/hunger_bar.svg')
-const hunger = PIXI.Sprite.from('./assets/hunger.svg')
-const heat_bar = PIXI.Sprite.from('./assets/heat_bar.svg')
-const heat = PIXI.Sprite.from('./assets/heat.svg')
-const overheat_bar = PIXI.Sprite.from('./assets/heat_bar.svg')
+healthContainer.container.position.set(-270, 0);
 
-health_bar.width = 290
-health_bar.position.set(92, 0)
-health_bar_white.width = 290
-health_bar_white.position.set(92, 0)
-health_bar_white.tint = 0xBB0000;
-healthContainer.scale.set(0.6)
-healthContainer.position.set(-270, 0)
-
-hunger_bar.width = 290
-hunger_bar.position.set(92, 0)
-hungerContainer.scale.set(0.6)
-hungerContainer.position.set(0, 0)
-
-heat_bar.width = 290
-heat_bar.position.set(92, 0)
-overheat_bar.width = 290
-overheat_bar.position.set(92, 100)
-overheat_bar.height = 200
-overheat_bar.tint = 0x7B0700;
-heatContainer.scale.set(0.6)
-heatContainer.position.set(270, 0)
-
-
-
-healthContainer.addChild(health_bar_white);
-healthContainer.addChild(health_bar);
-healthContainer.addChild(health);
-hungerContainer.addChild(hunger_bar);
-hungerContainer.addChild(hunger);
-
-heatContainer.addChild(heat_bar);
-heatContainer.addChild(overheat_bar);
-heatContainer.addChild(heat);
-
-
-barContainer.addChild(heatContainer)
-barContainer.addChild(healthContainer)
-barContainer.addChild(hungerContainer)
+barContainer.addChild(
+    healthContainer.container,
+    heatContainer.container,
+    hungerContainer.container
+);
 
 function resize() {
-  barContainer.position.set(
-    (window.innerWidth - barContainer.width) / 2 + 270,
-    window.innerHeight - 250
-  );
+    barContainer.position.set(
+        (window.innerWidth - barContainer.width) / 2 + 270,
+        window.innerHeight - 250
+    );
 }
 window.addEventListener("resize", resize);
-resize()
+resize();
 
-let healthstat = 45
-let hungerstat = 100
-let heatstat = 200
+let healthstat = 45;
+let hungerstat = 100;
+let heatstat = 200;
 export function updateStatBars(health: number, hunger: number, heat: number) {
-  health = health * 2.9
-  health_bar.width = health
-  console.log(health)
-  hunger = hunger * 2.9
-  hunger_bar.width = hunger
-  heat = heat * 2.9
-  if (heat > 290) {
-    overheat_bar.width = heat - 290
-    heat_bar.width = 290
-  }
-  else {
-    overheat_bar.width = 0
-    heat_bar.width = heat
-  }
-
+    health = health * 2.9;
+    healthContainer.primaryBar.width = health;
+    console.log(health);
+    hunger = hunger * 2.9;
+    hungerContainer.primaryBar.width = hunger;
+    heat = heat * 2.9;
+    if (heat > 290) {
+        heatContainer.secondaryBar!.width = heat - 290;
+        heatContainer.primaryBar.width = 290;
+    } else {
+        heatContainer.secondaryBar!.width = 0;
+        heatContainer.primaryBar.width = heat;
+    }
 }
-window.addEventListener('click', updatestats)
-window.addEventListener('contextmenu', updatestats2)
-updateStatBars(healthstat, hungerstat, heatstat)
+window.addEventListener("click", updatestats);
+window.addEventListener("contextmenu", updatestats2);
+updateStatBars(healthstat, hungerstat, heatstat);
 
 function updatestats() {
-  healthstat -= 20
-  hungerstat -= 10
-  heatstat -= 20
-  updateStatBars(healthstat, hungerstat, heatstat)
+    healthstat -= 20;
+    hungerstat -= 10;
+    heatstat -= 20;
+    updateStatBars(healthstat, hungerstat, heatstat);
 }
 function updatestats2() {
-  healthstat += 20
-  hungerstat += 10
-  heatstat += 20
-  updateStatBars(healthstat, hungerstat, heatstat)
-
+    healthstat += 20;
+    hungerstat += 10;
+    heatstat += 20;
+    updateStatBars(healthstat, hungerstat, heatstat);
 }
