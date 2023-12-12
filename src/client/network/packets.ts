@@ -1,41 +1,35 @@
-const packetExample: Packet = [
-    0,
-    [
-        [1, 2, 3, 4, 5],
-        [1, 2, 3, 4, 5, 5],
-    ],
-];
-
-type Packet = [number, unknown[][]];
 class PacketManager {
-    children: Map<number, PacketManager>;
+    children: Map<number, PacketManager | PacketUnpacker>;
 
     constructor() {
         this.children = new Map();
     }
 
-    addChild(id: number, manager: PacketManager) {
+    addChild(id: number, manager: PacketManager | PacketUnpacker) {
         this.children.set(id, manager);
     }
 
-    unpack(packet: Packet) {
-        const type = packet[0];
-        const child = this.children.get(type);
-        if (child) {
-            child.unpackList(packet[1]);
-        }
-    }
-
-    unpackList(packet: unknown[][]) {
-        for (const ele of packet) {
-            if (typeof ele[0] === "number" && Array.isArray(ele[1])) {
-                this.unpack(ele as Packet);
+    unpack(packet: unknown[], isList: boolean = false) {
+        if (isList) {
+            for (let item of packet) {
+                if (Array.isArray(item)) {
+                    this.unpack(item);
+                }
             }
+        }
+        const type = packet[0];
+        console.log(type);
+        if (typeof type !== "number") {
+            return;
+        }
+        const child = this.children.get(type);
+        if (child && Array.isArray(packet[1])) {
+            child.unpack(packet[1], true);
         }
     }
 }
 
-class PacketThing {
+class PacketUnpacker {
     structure: [type: string, key: string][];
     callback: Function;
 
@@ -73,7 +67,10 @@ function cool(data: Test) {
     console.log(data.y);
 }
 
-export const test2 = new PacketThing(
+export const mainManager = new PacketManager();
+const playerManager = new PacketManager();
+
+const playerUnpacker = new PacketUnpacker(
     [
         ["string", "id"],
         ["number", "x"],
@@ -81,3 +78,6 @@ export const test2 = new PacketThing(
     ],
     cool
 );
+
+mainManager.addChild(0, playerManager);
+playerManager.addChild(0, playerUnpacker);

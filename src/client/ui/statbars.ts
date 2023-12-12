@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { AnimationMap, Keyframes } from "../../lib/animation";
+import { clamp } from "../../lib/transforms";
 
 class StatsDisplay {
     container: PIXI.Container;
@@ -16,8 +17,6 @@ class StatsDisplay {
         this.primaryBar = PIXI.Sprite.from(bar1);
         this.primaryBar.width = 290;
         this.primaryBar.position.set(92, 0);
-
-
 
         this.container.addChild(this.primaryBar);
         if (bar2) {
@@ -41,18 +40,17 @@ transition.frame(0).set = ({ target, animation }) => {
 export const barContainer = new PIXI.Container();
 const hungerContainer = new StatsDisplay(
     "./assets/hunger.svg",
-    "./assets/hunger_bar.svg",
-
+    "./assets/hunger_bar.svg"
 );
 const heatContainer = new StatsDisplay(
     "./assets/heat.svg",
     "./assets/heat_bar.svg",
-    "./assets/heat_bar.svg",
+    "./assets/heat_bar.svg"
 );
 const healthContainer = new StatsDisplay(
     "./assets/health.svg",
     "./assets/heat_bar.svg",
-    "./assets/health_bar.svg",
+    "./assets/health_bar.svg"
 );
 healthContainer.secondaryBar!.height = 400;
 healthContainer.secondaryBar!.position.set(92, 0);
@@ -80,6 +78,9 @@ let healthstat = 100;
 let hungerstat = 100;
 let heatstat = 200;
 export function updateStatBars(health: number, hunger: number, heat: number) {
+    health = clamp(health, 0, 100);
+    hunger = clamp(hunger, 0, 100);
+    heat = clamp(heat, 0, 200);
     health = health * 2.9;
     healthContainer.secondaryBar!.width = health;
     console.log(health);
