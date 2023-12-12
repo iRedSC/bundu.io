@@ -35,19 +35,12 @@ class PacketManager {
     }
 }
 
-type Class<T> = { new (): T; prototype: T };
-class PacketThing<T> {
+class PacketThing {
     structure: [type: string, key: string][];
-    type: Class<T>;
     callback: Function;
 
-    constructor(
-        structure: [string, string][],
-        type: Class<T>,
-        callback: Function
-    ) {
+    constructor(structure: [string, string][], callback: Function) {
         this.structure = structure;
-        this.type = type;
         this.callback = callback;
     }
 
@@ -62,18 +55,29 @@ class PacketThing<T> {
             }
             returnObject[typeElement[1]] = packetElement;
         }
-        if (
-            Object.keys(this.type).every((item) =>
-                returnObject.hasOwnProperty(item)
-            )
-        ) {
+        if (this.structure.every((item) => item[1] in returnObject)) {
             this.callback(returnObject);
         }
     }
 }
 
-// const test = new PacketThing([
-//     ["number", "id"],
-//     ["number", "x"],
-//     ["number", "y"],
-// ]);
+interface Test {
+    id: number;
+    x: number;
+    y: number;
+}
+
+function cool(data: Test) {
+    console.log(data.id);
+    console.log(data.x);
+    console.log(data.y);
+}
+
+export const test2 = new PacketThing(
+    [
+        ["string", "id"],
+        ["number", "x"],
+        ["number", "y"],
+    ],
+    cool
+);
