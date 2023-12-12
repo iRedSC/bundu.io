@@ -3,18 +3,23 @@ import { AnimationMap, Keyframes } from "../../lib/animation";
 
 class StatsDisplay {
     container: PIXI.Container;
+    decor: PIXI.Sprite;
     primaryBar: PIXI.Sprite;
     secondaryBar?: PIXI.Sprite;
-    decor: PIXI.Sprite;
 
     constructor(decor: string, bar1: string, bar2?: string) {
         this.container = new PIXI.Container();
         this.container.scale.set(0.6);
         this.container.position.set(270, 0);
+        this.decor = PIXI.Sprite.from(decor);
 
         this.primaryBar = PIXI.Sprite.from(bar1);
         this.primaryBar.width = 290;
         this.primaryBar.position.set(92, 0);
+
+
+
+        this.container.addChild(this.primaryBar);
         if (bar2) {
             this.secondaryBar = PIXI.Sprite.from(bar2);
             this.secondaryBar.width = 290;
@@ -23,17 +28,7 @@ class StatsDisplay {
             this.secondaryBar.tint = 0x7b0700;
             this.container.addChild(this.secondaryBar);
         }
-        this.decor = PIXI.Sprite.from(decor);
-
-        this.container.addChild(this.decor, this.primaryBar);
-    }
-}
-class StatsBar {
-    value: number;
-    display: StatsDisplay;
-    constructor(display: StatsDisplay) {
-        this.value = 200;
-        this.display = display;
+        this.container.addChild(this.decor);
     }
 }
 
@@ -46,21 +41,26 @@ transition.frame(0).set = ({ target, animation }) => {
 export const barContainer = new PIXI.Container();
 const hungerContainer = new StatsDisplay(
     "./assets/hunger.svg",
-    "./assets/hunger_bar.svg"
+    "./assets/hunger_bar.svg",
+
 );
 const heatContainer = new StatsDisplay(
     "./assets/heat.svg",
     "./assets/heat_bar.svg",
-    "./assets/heat_bar.svg"
+    "./assets/heat_bar.svg",
 );
 const healthContainer = new StatsDisplay(
     "./assets/health.svg",
+    "./assets/heat_bar.svg",
     "./assets/health_bar.svg",
-    "./assets/heat_bar.svg"
 );
-
+healthContainer.secondaryBar!.height = 400;
+healthContainer.secondaryBar!.position.set(92, 0);
+healthContainer.secondaryBar!.tint = 0xffffff;
+healthContainer.primaryBar!.tint = 0x7b0700;
 healthContainer.container.position.set(-270, 0);
-
+heatContainer.container.position.set(270, 0);
+hungerContainer.container.position.set(0, 0);
 barContainer.addChild(
     healthContainer.container,
     heatContainer.container,
@@ -76,12 +76,12 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-let healthstat = 45;
+let healthstat = 100;
 let hungerstat = 100;
 let heatstat = 200;
 export function updateStatBars(health: number, hunger: number, heat: number) {
     health = health * 2.9;
-    healthContainer.primaryBar.width = health;
+    healthContainer.secondaryBar!.width = health;
     console.log(health);
     hunger = hunger * 2.9;
     hungerContainer.primaryBar.width = hunger;
