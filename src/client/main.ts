@@ -7,6 +7,11 @@ import { Sky } from "./game_objects/sky";
 import { BunduClient } from "./client";
 import { AnimationManager } from "../lib/animation";
 import { GameObjectHolder } from "./game_objects/object_list";
+import { test2 } from "./network/packets";
+
+const data = [1, 1, 2];
+
+test2.unpack(data);
 
 const { viewport } = createRenderer();
 const animationManager = new AnimationManager();
