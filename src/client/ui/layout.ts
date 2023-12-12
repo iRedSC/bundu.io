@@ -10,9 +10,9 @@ export const UI = new Layout({
     id: "root",
     content: {
         container1: filterButtonContainer,
+        container4: barContainer,
         container2: craftingButtonContainer,
         container3: inventory.display.container,
-        container4: barContainer,
     },
     styles: {
         background: "red",
