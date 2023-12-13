@@ -14,16 +14,7 @@ export function coordsToRect(coords: Coordinates): Rectangle {
 
     return [x, y, width, height];
 }
-
-export function loadGround(
-    world: Viewport,
-    coords: Coordinates,
-    color: number
-) {
-    return new Ground(world, coords, color);
-}
-
-class Ground {
+export class Ground {
     graphics: PIXI.Graphics;
 
     constructor(world: Viewport, coords: Coordinates, color: number) {

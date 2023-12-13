@@ -1,7 +1,7 @@
 // testing file (to mimic a server)
 
 import { Random } from "../lib/random";
-import { loadGround } from "./game_objects/ground";
+import { Ground } from "./game_objects/ground";
 import { WORLD_SIZE } from "./constants";
 import { BunduClient } from "./client";
 import {
@@ -10,7 +10,7 @@ import {
 } from "./game_objects/unpack";
 
 export function createStuff(client: BunduClient) {
-    loadGround(
+    new Ground(
         client.viewport,
         [
             [0, 0],
@@ -19,7 +19,7 @@ export function createStuff(client: BunduClient) {
         0x16a0ca
     );
 
-    loadGround(
+    new Ground(
         client.viewport,
         [
             [5000, 5000],
