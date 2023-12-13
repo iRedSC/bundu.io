@@ -9,6 +9,7 @@ export class InventoryButton extends ItemButton {
     amount: PIXI.Text;
     amountstyle: PIXI.TextStyle;
     constructor() {
+        const fontFamily = "'Aoboshi One', sans-serif";
         super();
         this.amountstyle = new PIXI.TextStyle();
         this.amount = new PIXI.Text("", this.amountstyle);
