@@ -3,7 +3,7 @@ import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
 
 // IN -> RECEIVE ARRAY OF CRAFTABLE ITEMS
-// OUT -> CRAFTING BUTTONS SEND REQUEST TOs SERVER 
+// OUT -> CRAFTING BUTTONS SEND REQUEST TOs SERVER
 
 type Item = { imagePath: string; result: string; category: string };
 
@@ -105,7 +105,7 @@ export const craftingItems: Item[] = [
     },
 ];
 
-const buttonsPerRow = 4;
+const buttonsPerRow = 3;
 export const craftingButtonContainer = new PIXI.Container();
 const paddingLeft = 24;
 const paddingTop = 24;
@@ -115,7 +115,6 @@ let currentCol = 0;
 
 craftingItems.forEach((item) => {
     const button = new ItemButton();
-    // const button = createCraftingButton(item);
     button.view.position.set(
         paddingLeft + currentCol * buttonSize,
         paddingTop + currentRow * buttonSize
@@ -132,11 +131,9 @@ craftingItems.forEach((item) => {
 });
 
 export const filterButtonContainer = new PIXI.Container();
-const filterButtonSize = 40; 
-
+const filterButtonSize = 40;
 
 const activeCategories: Set<string> = new Set();
-
 
 const metalFilterButton = createToggleButton(
     "tools",
@@ -154,22 +151,14 @@ const miscFilterButton = createToggleButton(
     "./assets/misc_toggle.svg"
 );
 
-
 filterButtonContainer.addChild(metalFilterButton.view);
 filterButtonContainer.addChild(foodFilterButton.view);
 filterButtonContainer.addChild(miscFilterButton.view);
 
-
 filterButtonContainer.position.set(
-   35,
-    craftingButtonContainer.x + craftingButtonContainer.height + 40,
-    
-
+    35,
+    craftingButtonContainer.x + craftingButtonContainer.height + 40
 );
-
-
-
-
 
 const toggleCategory = (category: string) => {
     if (activeCategories.has(category)) {
@@ -181,17 +170,15 @@ const toggleCategory = (category: string) => {
     filterButtons();
 };
 
-
 const filterButtons = () => {
-    craftingButtonContainer.removeChildren(); 
+    craftingButtonContainer.removeChildren();
 
     const filteredItems = craftingItems.filter((item) => {
         if (activeCategories.size === 0 || activeCategories.has("All")) {
-            return true; 
+            return true;
         }
         return activeCategories.has(item.category);
     });
-
 
     let currentRow = 0;
     let currentCol = 0;
@@ -212,9 +199,7 @@ const filterButtons = () => {
             currentCol++;
         }
     });
-
 };
-
 
 function createToggleButton(
     category: string,
@@ -230,24 +215,21 @@ function createToggleButton(
     button.view.height = filterButtonSize;
     button.view.position.set(xOffset, 0);
     button.view.pivot.set(button.view.width / 2, button.view.height / 2);
-    
 
-
-    const colorMatrixFilter = new PIXI.filters.ColorMatrixFilter();
+    const colorMatrixFilter = new PIXI.ColorMatrixFilter();
     button.view.filters = [colorMatrixFilter];
 
     button.view.on("pointertap", () => {
         toggleCategory(category);
         updateButtonAppearance(activeCategories.has(category));
-        console.log("hi")
+        console.log("hi");
     });
 
     function updateButtonAppearance(selected: boolean) {
-        const scale = selected ? .11 : .1; 
+        const scale = selected ? 0.11 : 0.1;
         button.view.scale.set(scale);
         sprite.tint = selected ? 0xfffff : 0xffffff;
     }
-    
+
     return button;
 }
-

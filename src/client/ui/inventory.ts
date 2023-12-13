@@ -7,21 +7,20 @@ type Item = { imagePath: string; result: string; amount: number };
 export class InventoryButton extends ItemButton {
     selected: boolean;
     amount: PIXI.Text;
-    amountstyle: PIXI.TextStyle
+    amountstyle: PIXI.TextStyle;
     constructor() {
         super();
-        this.amountstyle = new PIXI.TextStyle
-        this.amount = new PIXI.Text("", this.amountstyle)
-        this.amount.position.set(40, 35)
-        this.amount.scale.set(.8)
+        this.amountstyle = new PIXI.TextStyle();
+        this.amount = new PIXI.Text("", this.amountstyle);
+        this.amount.position.set(40, 35);
+        this.amount.scale.set(0.8);
         this.amount.zIndex = 2;
         this.selected = false;
-        this.amountstyle.fill = '#ffffff'
-        this.amountstyle.dropShadow = true,
-            this.amountstyle.dropShadowColor = '#000000'
-        this.view.addChild(this.amount)
-        this.view.sortChildren()
-
+        this.amountstyle.fill = "#ffffff";
+        (this.amountstyle.dropShadow = true),
+            (this.amountstyle.dropShadowColor = "#000000");
+        this.view.addChild(this.amount);
+        this.view.sortChildren();
     }
 
     override update(fillColor: number, borderColor: number) {
@@ -67,7 +66,6 @@ class InventoryDisplay {
     constructor() {
         this.container = new PIXI.Container();
         this.buttons = [];
-
     }
 
     slotCount(count: number) {
@@ -91,11 +89,9 @@ class InventoryDisplay {
         for (let i = 0; i < items.length; i++) {
             if (items[i]) {
                 try {
-                    this.buttons[i].amount.text = `${items[i].amount}`
+                    this.buttons[i].amount.text = `${items[i].amount}`;
                     this.buttons[i].setItem(items[i]);
-
-
-                } catch { }
+                } catch {}
             }
         }
     }

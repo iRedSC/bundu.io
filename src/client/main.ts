@@ -7,21 +7,14 @@ import { Sky } from "./game_objects/sky";
 import { BunduClient } from "./client";
 import { AnimationManager } from "../lib/animation";
 import { GameObjectHolder } from "./game_objects/object_list";
-import { mainManager } from "./network/packets";
-
-const data = [
-    0,
-    [
-        [0, [1, 1, 2]],
-        [0, [2, 3, 4]],
-    ],
-];
-
-mainManager.unpack(data);
+import { WORLD_SIZE } from "./constants";
 
 const { viewport } = createRenderer();
 const animationManager = new AnimationManager();
 const objectHandler = new GameObjectHolder(animationManager);
+
+viewport.worldHeight = WORLD_SIZE * 5;
+viewport.worldWidth = WORLD_SIZE * 5;
 
 const client = new BunduClient(viewport, objectHandler);
 
@@ -39,10 +32,15 @@ viewport.follow(player.container, {
 });
 // tick updates
 
-setInterval(() => {
+function tick() {
     objectHandler.tick();
     player.move();
-}, 10);
+    requestAnimationFrame(tick);
+}
+
+requestAnimationFrame(tick);
+
+const updateSpeed = 50;
 
 setInterval(() => {
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
@@ -55,21 +53,26 @@ setInterval(() => {
                 x: playerPos.x - move[0] * 10,
                 y: playerPos.y - move[1] * 10,
             }),
-            85
+            updateSpeed * 10
         );
     }
-    player.setState([Date.now() + 50, playerPos.x, playerPos.y, rotation]);
+    player.setState([
+        Date.now() + updateSpeed,
+        playerPos.x,
+        playerPos.y,
+        rotation,
+    ]);
     for (let entity of objectHandler.entities.values()) {
         const newRot = lookToward(entity.pos, playerPos);
         const newPos = moveToward(
             entity.pos,
             lookToward(entity.pos, playerPos),
-            50
+            updateSpeed
         );
-        entity.setState([Date.now() + 50, newPos.x, newPos.y, newRot]);
+        entity.setState([Date.now() + updateSpeed, newPos.x, newPos.y, newRot]);
     }
     viewport.dirty = true;
-}, 50);
+}, updateSpeed);
 
 // interactions
 

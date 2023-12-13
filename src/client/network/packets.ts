@@ -9,47 +9,51 @@ class PacketManager {
         this.children.set(id, manager);
     }
 
-    unpack(packet: unknown[], isList: boolean = false) {
-        if (isList) {
-            for (let item of packet) {
-                if (Array.isArray(item)) {
-                    this.unpack(item);
-                }
-            }
-        }
+    unpack(packet: unknown[]) {
         const type = packet[0];
-        console.log(type);
         if (typeof type !== "number") {
             return;
         }
         const child = this.children.get(type);
-        if (child && Array.isArray(packet[1])) {
-            child.unpack(packet[1], true);
+        if (child instanceof PacketManager && Array.isArray(packet[1])) {
+            child.unpackList(packet[1]);
+        } else if (child && Array.isArray(packet[1])) {
+            child.unpack(packet[1]);
+        }
+    }
+
+    unpackList(packet: unknown[]) {
+        for (let item of packet) {
+            if (Array.isArray(item)) {
+                this.unpack(item);
+            }
         }
     }
 }
 
+type PacketValue = "string" | "number";
 class PacketUnpacker {
-    structure: [type: string, key: string][];
+    structure: { [key: string]: PacketValue };
     callback: Function;
 
-    constructor(structure: [string, string][], callback: Function) {
+    constructor(structure: { [key: string]: PacketValue }, callback: Function) {
         this.structure = structure;
         this.callback = callback;
     }
 
     unpack(packet: unknown[]) {
         const returnObject: { [key: string]: unknown } = {};
+        const keys = Object.keys(this.structure);
         for (let i = 0; i < packet.length; i++) {
             const packetElement = packet[i];
-            const typeElement = this.structure[i];
+            const typeElement = this.structure[keys[i]];
 
-            if (!(typeof packetElement === typeElement[0])) {
+            if (!(typeof packetElement === typeElement)) {
                 break;
             }
-            returnObject[typeElement[1]] = packetElement;
+            returnObject[keys[i]] = packetElement;
         }
-        if (this.structure.every((item) => item[1] in returnObject)) {
+        if (keys.every((item) => item in returnObject)) {
             this.callback(returnObject);
         }
     }
@@ -62,22 +66,30 @@ interface Test {
 }
 
 function cool(data: Test) {
-    console.log(data.id);
-    console.log(data.x);
-    console.log(data.y);
+    console.log(data);
 }
 
 export const mainManager = new PacketManager();
 const playerManager = new PacketManager();
 
 const playerUnpacker = new PacketUnpacker(
-    [
-        ["string", "id"],
-        ["number", "x"],
-        ["number", "y"],
-    ],
+    {
+        id: "number",
+        x: "number",
+        y: "number",
+    },
     cool
 );
 
 mainManager.addChild(0, playerManager);
 playerManager.addChild(0, playerUnpacker);
+
+const data = [
+    0,
+    [
+        [0, [1, 1, 2]],
+        [0, [2, 3, 4]],
+    ],
+];
+
+mainManager.unpack(data);

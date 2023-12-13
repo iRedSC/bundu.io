@@ -12,6 +12,7 @@ export function createRenderer() {
         resizeTo: window,
         backgroundColor: 0x0d5b73,
     });
+    document.body.appendChild(app.view);
 
     globalThis.__PIXI_APP__ = app;
 
@@ -24,13 +25,11 @@ export function createRenderer() {
     viewport.on("frame-end", () => {
         if (viewport.dirty) {
             cull.cull(viewport.getVisibleBounds());
-
             viewport.dirty = false;
         }
     });
 
     viewport.sortChildren();
-    document.body.appendChild(app.view);
 
     window.onresize = (_) => {
         viewport.resize(window.innerWidth, window.innerHeight);
