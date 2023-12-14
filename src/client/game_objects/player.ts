@@ -34,6 +34,7 @@ type PlayerParts = {
 };
 
 export class Player extends WorldObject {
+    sprite: PlayerParts;
     name: string;
 
     animations: AnimationMap<Player>;
@@ -49,7 +50,8 @@ export class Player extends WorldObject {
         pos: PIXI.Point,
         rotation: number
     ) {
-        const sprite: PlayerParts = {
+        super(pos, rotation);
+        this.sprite = {
             body: {
                 container: new PIXI.Container(),
                 sprite: PIXI.Sprite.from("./assets/player.svg", {
@@ -76,7 +78,6 @@ export class Player extends WorldObject {
             },
         };
 
-        super(pos, rotation, sprite);
         this.name = name;
 
         this.selectedItem = "";

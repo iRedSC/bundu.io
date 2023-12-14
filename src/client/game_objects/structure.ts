@@ -6,26 +6,25 @@ import { WorldObject } from "./world_object";
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 
 export class Structure extends WorldObject {
-    size: number;
+    sprite: PIXI.Sprite;
     animations: AnimationMap<Structure>;
     lastHitSource: PIXI.Point;
 
     constructor(type: string, pos: PIXI.Point, rotation: number, size: number) {
-        const sprite = PIXI.Sprite.from(`./assets/${type}.svg`, {
+        super(pos, rotation);
+        this.sprite = PIXI.Sprite.from(`./assets/${type}.svg`, {
             mipmap: PIXI.MIPMAP_MODES.ON,
         });
-        super(pos, rotation, sprite);
         this.lastHitSource = new PIXI.Point(0, 0);
 
         this.zIndex = 10;
         this.pivot.set(this.width / 2, this.height / 2);
         this.sprite.rotation = rotation - degrees(-90);
         this.sprite.anchor.set(0.5);
-        this.addChild(sprite);
-        this.sprite.scale.set(size);
+        this.addChild(this.sprite);
 
         this.rotation = rotation;
-        this.size = size;
+        this.scale.set(size);
 
         this.animations = loadAnimations(this);
     }
@@ -42,6 +41,8 @@ function loadAnimations(target: Structure) {
     const hitKeyframes: Keyframes<Structure> = new Keyframes();
     hitKeyframes.frame(0).set = ({ target, animation }) => {
         if (animation.firstKeyframe) {
+            animation.meta.x = target.x;
+            animation.meta.y = target.y;
             animation.goto(0, 100);
         }
         const targetPos = moveToward(
@@ -49,15 +50,15 @@ function loadAnimations(target: Structure) {
             lookToward(target.lastHitSource, target.position),
             50
         );
-        target.x = lerp(target.x, targetPos.x, animation.t);
-        target.y = lerp(target.y, targetPos.y, animation.t);
+        target.x = lerp(animation.meta.x, targetPos.x, animation.t);
+        target.y = lerp(animation.meta.y, targetPos.y, animation.t);
         if (animation.keyframeEnded) {
             animation.next(400);
         }
     };
     hitKeyframes.frame(1).set = ({ target, animation }) => {
-        target.x = lerp(target.x, target.x, animation.t);
-        target.y = lerp(target.y, target.y, animation.t);
+        target.x = lerp(target.x, animation.meta.x, animation.t);
+        target.y = lerp(target.y, animation.meta.y, animation.t);
         if (animation.keyframeEnded) {
             animation.expired = true;
         }

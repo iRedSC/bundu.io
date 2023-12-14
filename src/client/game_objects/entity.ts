@@ -4,11 +4,8 @@ import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { Random } from "../../lib/random";
 import { WorldObject } from "./world_object";
 
-type EntityParts = {
-    body: PIXI.Sprite;
-};
-
 export class Entity extends WorldObject {
+    sprite: PIXI.Sprite;
     size: number;
     animations: AnimationMap<Entity>;
     constructor(
@@ -17,24 +14,19 @@ export class Entity extends WorldObject {
         pos: PIXI.Point,
         rotation: number
     ) {
-        const sprite: EntityParts = {
-            body: PIXI.Sprite.from(`./assets/${type}.svg`, {
-                mipmap: PIXI.MIPMAP_MODES.ON,
-            }),
-        };
-        super(pos, rotation, sprite);
+        super(pos, rotation);
+        this.sprite = PIXI.Sprite.from(`./assets/${type}.svg`, {
+            mipmap: PIXI.MIPMAP_MODES.ON,
+        });
 
         this.size = 5;
         this.pivot.set(this.width / 2, this.height / 2);
-        this.sprite.body = PIXI.Sprite.from(`./assets/${type}.svg`, {
-            mipmap: PIXI.MIPMAP_MODES.ON,
-        });
-        this.sprite.body.rotation = degrees(-90);
-        this.sprite.body.anchor.set(0.5);
-        this.addChild(this.sprite.body);
-        this.sprite.body.scale.set(this.size);
+        this.sprite.rotation = degrees(-90);
+        this.sprite.anchor.set(0.5);
+        this.sprite.scale.set(this.size);
         this.animations = loadAnimations(this);
         this.trigger("idle", manager);
+        this.addChild(this.sprite);
     }
     trigger(name: string, manager: AnimationManager) {
         const animation = this.animations.get(name);
@@ -70,13 +62,13 @@ function loadAnimations(target: Entity) {
         if (animation.firstKeyframe) {
             animation.goto(0, 100);
         }
-        target.sprite.body.tint = colorLerp(0xffffff, 0xff0000, animation.t);
+        target.sprite.tint = colorLerp(0xffffff, 0xff0000, animation.t);
         if (animation.keyframeEnded) {
             animation.next(400);
         }
     };
     hurtKeyframes.frame(1).set = ({ target, animation }) => {
-        target.sprite.body.tint = colorLerp(0xff0000, 0xffffff, animation.t);
+        target.sprite.tint = colorLerp(0xff0000, 0xffffff, animation.t);
         if (animation.keyframeEnded) {
             animation.expired = true;
         }

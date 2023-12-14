@@ -22,13 +22,10 @@ export class WorldObject extends PIXI.Container {
     lastState: State;
     nextState: State;
 
-    sprite: SpriteManager;
-
-    constructor(pos: PIXI.Point, rotation: number, sprite: SpriteManager) {
+    constructor(pos: PIXI.Point, rotation: number) {
         super();
         this.position = pos;
         this.rotation = rotation;
-        this.sprite = sprite;
 
         this.lastState = [Date.now(), pos.x, pos.y, rotation];
         this.nextState = this.lastState;
