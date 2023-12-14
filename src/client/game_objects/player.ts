@@ -1,11 +1,8 @@
 import * as PIXI from "pixi.js";
-import { degrees, lerp, rotationLerp } from "../../lib/transforms";
+import { degrees, lerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager, AnimationMap } from "../../lib/animation";
-import { round } from "../../lib/math";
 import { getItem } from "../configs/configs";
 import { WorldObject } from "./world_object";
-
-type State = [time: number, x: number, y: number, rotation: number];
 
 type Gear = [selectedItem: string, helmet: string, backpack: number];
 function typeofGear(gear?: Gear): gear is Gear {
@@ -20,7 +17,6 @@ function typeofGear(gear?: Gear): gear is Gear {
 }
 
 type PlayerParts = {
-    container: PIXI.Container;
     body: {
         container: PIXI.Container;
         sprite: PIXI.Sprite;
@@ -40,10 +36,6 @@ type PlayerParts = {
 export class Player extends WorldObject {
     name: string;
 
-    pos: PIXI.Point;
-    rotation: number;
-
-    animationManager: AnimationManager;
     animations: AnimationMap<Player>;
 
     selectedItem: string;
@@ -52,19 +44,18 @@ export class Player extends WorldObject {
 
     blocking: boolean;
     constructor(
-        animationManager: AnimationManager,
+        manager: AnimationManager,
         name: string,
-        pos: { x: number; y: number },
+        pos: PIXI.Point,
         rotation: number
     ) {
         const sprite: PlayerParts = {
-            container: new PIXI.Container(),
             body: {
                 container: new PIXI.Container(),
                 sprite: PIXI.Sprite.from("./assets/player.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
-                helmet: PIXI.Sprite.from("./assets/unknown_asset.svg", {
+                helmet: PIXI.Sprite.from("./", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
             },
@@ -73,7 +64,7 @@ export class Player extends WorldObject {
                 sprite: PIXI.Sprite.from("./assets/hand.svg", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
-                selectedItem: PIXI.Sprite.from("./assets/diamond_pickaxe.svg", {
+                selectedItem: PIXI.Sprite.from("./", {
                     mipmap: PIXI.MIPMAP_MODES.ON,
                 }),
             },
@@ -92,13 +83,10 @@ export class Player extends WorldObject {
         this.helmet = "";
         this.backpack = -1;
 
-        this.pos = new PIXI.Point(0, 0);
-        this.rotation = 0;
-
         this.blocking = false;
 
         const parts = this.sprite;
-        const container = parts.container;
+        const container = this;
         const body = parts.body;
         const leftHand = parts.leftHand;
         const rightHand = parts.rightHand;
@@ -146,10 +134,9 @@ export class Player extends WorldObject {
         rightHand.container.scale.set(0.5);
         rightHand.sprite.scale.set(0.5);
 
-        this.animationManager = animationManager;
         this.animations = loadAnimations(this);
-        this.trigger("leftHand");
-        this.trigger("rightHand");
+        this.trigger("leftHand", manager);
+        this.trigger("rightHand", manager);
     }
 
     selectItem({ hand, body }: { hand?: string; body?: string }) {
@@ -162,31 +149,14 @@ export class Player extends WorldObject {
         this.updateGear();
     }
 
-    get container() {
-        return this.sprite.container;
-    }
-
-    trigger(name: string) {
+    trigger(name: string, manager: AnimationManager) {
         const animation = this.animations.get(name);
         if (animation) {
-            this.animationManager.add(this, animation.run());
+            manager.add(this, animation.run());
         }
     }
 
-    move() {
-        const now = Date.now();
-        const t =
-            (now - this.lastState[0]) / (this.nextState[0] - this.lastState[0]);
-        this.pos.x = round(lerp(this.lastState[1], this.nextState[1], t));
-        this.pos.y = round(lerp(this.lastState[2], this.nextState[2], t));
-        this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
-
-        this.container.position = this.pos;
-        this.container.rotation = this.rotation;
-    }
-
-    override setState(state?: State, gear?: Gear) {
-        super.setState(state);
+    setGear(gear?: Gear) {
         if (typeofGear(gear)) {
             this.selectedItem = gear[0];
             this.helmet = gear[1];

@@ -3,11 +3,8 @@ import { round } from "../../lib/math";
 import { lerp, rotationLerp } from "../../lib/transforms";
 
 export type SpriteManager = {
-    container: PIXI.Container;
     [key: string]: any;
 };
-
-type Point = { x: number; y: number };
 
 type State = [time: number, x: number, y: number, rotation: number];
 function typeofState(state?: State): state is State {
@@ -21,17 +18,15 @@ function typeofState(state?: State): state is State {
         typeof state[3] === "number"
     );
 }
-export class WorldObject {
-    pos: Point;
-    rotation: number;
-
+export class WorldObject extends PIXI.Container {
     lastState: State;
     nextState: State;
 
     sprite: SpriteManager;
 
-    constructor(pos: Point, rotation: number, sprite: SpriteManager) {
-        this.pos = pos;
+    constructor(pos: PIXI.Point, rotation: number, sprite: SpriteManager) {
+        super();
+        this.position = pos;
         this.rotation = rotation;
         this.sprite = sprite;
 
@@ -43,12 +38,10 @@ export class WorldObject {
         const now = Date.now();
         const t =
             (now - this.lastState[0]) / (this.nextState[0] - this.lastState[0]);
-        this.pos.x = round(lerp(this.lastState[1], this.nextState[1], t));
-        this.pos.y = round(lerp(this.lastState[2], this.nextState[2], t));
+        const x = round(lerp(this.lastState[1], this.nextState[1], t));
+        const y = round(lerp(this.lastState[2], this.nextState[2], t));
         this.rotation = rotationLerp(this.lastState[3], this.nextState[3], t);
-
-        this.sprite.container.position = this.pos;
-        this.sprite.container.rotation = this.rotation;
+        this.position.set(x, y);
     }
 
     setState(state?: State) {

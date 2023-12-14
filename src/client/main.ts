@@ -1,6 +1,6 @@
 import { Player } from "./game_objects/player";
 import { degrees, lookToward, moveToward } from "../lib/transforms";
-import { move, mousePos, createClickEvents } from "./input/keyboard";
+import { move, mousePos } from "./input/keyboard";
 import { createStuff } from "./testing";
 import { createRenderer } from "./rendering/rendering";
 import { Sky } from "./game_objects/sky";
@@ -8,10 +8,34 @@ import { BunduClient } from "./client";
 import { AnimationManager } from "../lib/animation";
 import { GameObjectHolder } from "./game_objects/object_list";
 import { WORLD_SIZE } from "./constants";
+import { Point } from "pixi.js";
+import { Viewport } from "pixi-viewport";
 
 const { viewport } = createRenderer();
 const animationManager = new AnimationManager();
 const objectHandler = new GameObjectHolder(animationManager);
+
+function createClickEvents(viewport: Viewport, player: Player) {
+    document.body.addEventListener("mousemove", (event) => {
+        mousePos[0] = event.clientX;
+        mousePos[1] = event.clientY;
+    });
+
+    viewport.on("pointerdown", (event) => {
+        if (event.button == 2) {
+            player.blocking = true;
+            player.trigger("block", animationManager);
+        } else {
+            player.trigger("attack", animationManager);
+        }
+    });
+
+    viewport.on("pointerup", (event) => {
+        if (event.button == 2) {
+            player.blocking = false;
+        }
+    });
+}
 
 viewport.worldHeight = WORLD_SIZE * 5;
 viewport.worldWidth = WORLD_SIZE * 5;
@@ -20,12 +44,12 @@ const client = new BunduClient(viewport, objectHandler);
 
 createStuff(client);
 
-const player: Player = new Player(animationManager, "test", { x: 0, y: 0 }, 0);
+const player: Player = new Player(animationManager, "test", new Point(0, 0), 0);
 let playerPos: { x: number; y: number } = { x: 10000, y: 10000 };
-player.setState([Date.now(), 10000, 10000, 0], ["", "", 0]);
-viewport.addChild(player.container);
+player.setState([Date.now(), 10000, 10000, 0]);
+viewport.addChild(player);
 
-viewport.follow(player.container, {
+viewport.follow(player, {
     speed: 0,
     acceleration: 1,
     radius: 5,
@@ -44,8 +68,7 @@ const updateSpeed = 50;
 
 setInterval(() => {
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
-    const rotation =
-        lookToward(player.container.position, mouseToWorld) - degrees(90);
+    const rotation = lookToward(player.position, mouseToWorld) - degrees(90);
     if (!(move[0] === 0 && move[1] === 0)) {
         playerPos = moveToward(
             playerPos,
@@ -63,10 +86,10 @@ setInterval(() => {
         rotation,
     ]);
     for (let entity of objectHandler.entities.values()) {
-        const newRot = lookToward(entity.pos, playerPos);
+        const newRot = lookToward(entity.position, playerPos);
         const newPos = moveToward(
-            entity.pos,
-            lookToward(entity.pos, playerPos),
+            entity.position,
+            lookToward(entity.position, playerPos),
             updateSpeed
         );
         entity.setState([Date.now() + updateSpeed, newPos.x, newPos.y, newRot]);

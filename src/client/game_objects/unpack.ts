@@ -54,11 +54,11 @@ export function unpackPlayerData(
                 const player = new Player(
                     animationManager,
                     packet[2],
-                    { x: packet[3], y: packet[4] },
+                    new PIXI.Point(packet[3], packet[4]),
                     packet[5]
                 );
                 playerList.set(packet[1], player);
-                container.addChild(player.container);
+                container.addChild(player);
                 break;
             }
             // update position
@@ -76,7 +76,7 @@ export function unpackPlayerData(
                 if (!player) {
                     break;
                 }
-                player?.setState(undefined, [
+                player?.setGear([
                     itemMap.get(packet[2]) || "",
                     itemMap.get(packet[3]) || "",
                     packet[4],
@@ -119,11 +119,11 @@ export function unpackEntityData(
                 const entity = new Entity(
                     animationManager,
                     entityMap.get(packet[2]) || "unknown_asset",
-                    { x: packet[3], y: packet[4] },
+                    new PIXI.Point(packet[3], packet[4]),
                     packet[5]
                 );
                 entityList.set(packet[1], entity);
-                container.addChild(entity.container);
+                container.addChild(entity);
                 break;
             }
             // update position
@@ -158,8 +158,7 @@ export type IncomingStructureData = [
 export function unpackStructureData(
     data: IncomingStructureData,
     structureList: Map<number, Structure>,
-    container: PIXI.Container,
-    animationManager: AnimationManager
+    container: PIXI.Container
 ) {
     const packets = data[2];
 
@@ -168,14 +167,13 @@ export function unpackStructureData(
             // new structure
             case 0: {
                 const structure = new Structure(
-                    animationManager,
                     structureMap.get(packet[2]) || "unknown_asset",
-                    [packet[3], packet[4]],
+                    new PIXI.Point(packet[3], packet[4]),
                     packet[5],
                     packet[6]
                 );
                 structureList.set(packet[1], structure);
-                container.addChild(structure.container);
+                container.addChild(structure);
                 break;
             }
         }

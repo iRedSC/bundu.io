@@ -61,12 +61,7 @@ export class GameObjectHolder {
                 );
                 break;
             case 2:
-                unpackStructureData(
-                    incoming,
-                    this.structures,
-                    container,
-                    this.animationManager
-                );
+                unpackStructureData(incoming, this.structures, container);
                 break;
         }
     }
