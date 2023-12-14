@@ -7,7 +7,6 @@ import { Sky } from "./game_objects/sky";
 import { BunduClient } from "./client";
 import { AnimationManager } from "../lib/animation";
 import { GameObjectHolder } from "./game_objects/object_list";
-import { WORLD_SIZE } from "./constants";
 import { Point } from "pixi.js";
 import { Viewport } from "pixi-viewport";
 
@@ -36,9 +35,6 @@ function createClickEvents(viewport: Viewport, player: Player) {
         }
     });
 }
-
-viewport.worldHeight = WORLD_SIZE * 5;
-viewport.worldWidth = WORLD_SIZE * 5;
 
 const client = new BunduClient(viewport, objectHandler);
 
