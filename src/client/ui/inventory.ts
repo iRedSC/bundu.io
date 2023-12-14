@@ -12,13 +12,14 @@ export class InventoryButton extends ItemButton {
         const fontFamily = "'Aoboshi One', sans-serif";
         super();
         this.amountstyle = new PIXI.TextStyle();
+        this.amountstyle.fontFamily = fontFamily;
         this.amount = new PIXI.Text("", this.amountstyle);
         this.amount.position.set(40, 35);
         this.amount.scale.set(0.8);
         this.amount.zIndex = 2;
         this.selected = false;
         this.amountstyle.fill = "#ffffff";
-        (this.amountstyle.dropShadow = true),
+        (this.amountstyle.dropShadow = false),
             (this.amountstyle.dropShadowColor = "#000000");
         this.view.addChild(this.amount);
         this.view.sortChildren();

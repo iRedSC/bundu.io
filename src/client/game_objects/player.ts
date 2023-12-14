@@ -94,19 +94,17 @@ export class Player extends WorldObject {
 
         this.blocking = false;
 
-        const parts = this.sprite;
-        const container = this;
-        const body = parts.body;
-        const leftHand = parts.leftHand;
-        const rightHand = parts.rightHand;
-        container.zIndex = 1;
+        this.pivot.x = this.width / 2;
+        this.pivot.y = this.height / 2 + 15;
+        this.zIndex = 1;
+
+        const body = this.sprite.body;
+        const leftHand = this.sprite.leftHand;
+        const rightHand = this.sprite.rightHand;
 
         leftHand.selectedItem.renderable = false;
 
-        container.pivot.x = container.width / 2;
-        container.pivot.y = container.height / 2 + 15;
-
-        container.addChild(body.container);
+        this.addChild(body.container);
 
         body.container.addChild(leftHand.container);
         body.container.addChild(rightHand.container);

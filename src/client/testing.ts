@@ -3,14 +3,11 @@
 import { Random } from "../lib/random";
 import { Ground } from "./game_objects/ground";
 import { WORLD_SIZE } from "./constants";
-import { BunduClient } from "./client";
-import {
-    IncomingEntityData,
-    IncomingStructureData,
-} from "./game_objects/unpack";
-import { OBJECT_TYPE } from "../shared/enums";
+import { PACKET, PACKET_TYPE } from "../shared/enums";
+import { Unpacker } from "./game_objects/unpack";
+import { World } from "./game_objects/object_list";
 
-export function createStuff(client: BunduClient) {
+export function createStuff(world: World, unpacker: Unpacker) {
     const sea = new Ground(
         [
             [0, 0],
@@ -18,7 +15,7 @@ export function createStuff(client: BunduClient) {
         ],
         0x16a0ca
     );
-    client.viewport.addChild(sea);
+    world.viewport.addChild(sea);
 
     const forest = new Ground(
         [
@@ -27,12 +24,15 @@ export function createStuff(client: BunduClient) {
         ],
         0x1b6430
     );
-    client.viewport.addChild(forest);
+    world.viewport.addChild(forest);
 
-    const structures: IncomingStructureData = [OBJECT_TYPE.Structure, 0, []];
+    const structures: PACKET.FULL.NEW_STRUCTURE = [
+        PACKET_TYPE.NEW_STRUCTURE,
+        0,
+        [],
+    ];
     for (let i = 0; i < 1000; i++) {
         structures[2].push([
-            0,
             i,
             Random.integer(0, 3),
             Random.integer(5000, WORLD_SIZE - 5000),
@@ -41,18 +41,18 @@ export function createStuff(client: BunduClient) {
             Random.integer(3, 5),
         ]);
     }
-    client.objectHandler.unpack(structures, client.viewport);
+    unpacker.unpack(structures);
 
-    const entities: IncomingEntityData = [OBJECT_TYPE.Entity, 0, []];
-    for (let i = 0; i < 1; i++) {
-        entities[2].push([
-            0,
-            i,
-            Random.integer(0, 3),
-            Random.integer(5000, WORLD_SIZE - 5000),
-            Random.integer(5000, WORLD_SIZE - 5000),
-            Random.integer(0, Math.PI * 360),
-        ]);
-    }
-    client.objectHandler.unpack(entities, client.viewport);
+    // const entities: PACKE = [OBJECT_TYPE.Entity, 0, []];
+    // for (let i = 0; i < 1; i++) {
+    //     entities[2].push([
+    //         0,
+    //         i,
+    //         Random.integer(0, 3),
+    //         Random.integer(5000, WORLD_SIZE - 5000),
+    //         Random.integer(5000, WORLD_SIZE - 5000),
+    //         Random.integer(0, Math.PI * 360),
+    //     ]);
+    // }
+    // client.objectHandler.unpack(entities, client.viewport);
 }

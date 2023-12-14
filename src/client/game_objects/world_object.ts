@@ -3,10 +3,6 @@ import { round } from "../../lib/math";
 import { lerp, rotationLerp } from "../../lib/transforms";
 import { AnimationManager, AnimationMap } from "../../lib/animation";
 
-export type SpriteManager = {
-    [key: string]: any;
-};
-
 type State = [time: number, x: number, y: number, rotation: number];
 function typeofState(state?: State): state is State {
     if (!state) {

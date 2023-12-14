@@ -1,10 +1,12 @@
 import * as PIXI from "pixi.js";
 import { degrees, lerp, lookToward, moveToward } from "../../lib/transforms";
-import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
+import { AnimationMap, Keyframes } from "../../lib/animation";
 import { WorldObject } from "./world_object";
 
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
-
+enum STRUCTURE_ANIMATION {
+    HIT = 0,
+}
 export class Structure extends WorldObject {
     sprite: PIXI.Sprite;
     animations: AnimationMap<Structure>;
@@ -27,13 +29,6 @@ export class Structure extends WorldObject {
         this.scale.set(size);
 
         this.animations = loadAnimations(this);
-    }
-
-    trigger(name: string, manager: AnimationManager) {
-        const animation = this.animations.get(name);
-        if (animation) {
-            manager.add(this, animation.run());
-        }
     }
 }
 
@@ -66,6 +61,6 @@ function loadAnimations(target: Structure) {
 
     const animationMap = new AnimationMap(target);
 
-    animationMap.set("hit", hitKeyframes);
+    animationMap.set(STRUCTURE_ANIMATION.HIT, hitKeyframes);
     return animationMap;
 }
