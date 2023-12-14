@@ -97,8 +97,9 @@ setInterval(() => {
 
 createClickEvents(viewport, player);
 
-const sky = new Sky(viewport);
+const sky = new Sky();
+viewport.addChild(sky);
 sky.advanceCycle(animationManager);
 setInterval(() => {
     sky.advanceCycle(animationManager);
-}, 60000);
+}, 6000);

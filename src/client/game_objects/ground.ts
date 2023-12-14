@@ -1,5 +1,4 @@
 import * as PIXI from "pixi.js";
-import { Viewport } from "pixi-viewport";
 
 type Coordinates = [[x: number, y: number], [x: number, y: number]];
 type Rectangle = [x: number, y: number, width: number, height: number];
@@ -14,15 +13,11 @@ export function coordsToRect(coords: Coordinates): Rectangle {
 
     return [x, y, width, height];
 }
-export class Ground {
-    graphics: PIXI.Graphics;
-
-    constructor(world: Viewport, coords: Coordinates, color: number) {
-        this.graphics = new PIXI.Graphics();
-        this.graphics.beginFill(color);
-        this.graphics.lineStyle({ width: 0 });
+export class Ground extends PIXI.Graphics {
+    constructor(coords: Coordinates, color: number) {
+        super();
+        this.beginFill(color);
         const rect = coordsToRect(coords);
-        this.graphics.drawRect(rect[0], rect[1], rect[2], rect[3]);
-        world.addChild(this.graphics);
+        this.drawRect(rect[0], rect[1], rect[2], rect[3]);
     }
 }

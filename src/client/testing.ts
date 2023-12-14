@@ -8,27 +8,28 @@ import {
     IncomingEntityData,
     IncomingStructureData,
 } from "./game_objects/unpack";
+import { OBJECT_TYPE } from "../shared/enums";
 
 export function createStuff(client: BunduClient) {
-    new Ground(
-        client.viewport,
+    const sea = new Ground(
         [
             [0, 0],
             [WORLD_SIZE, WORLD_SIZE],
         ],
         0x16a0ca
     );
+    client.viewport.addChild(sea);
 
-    new Ground(
-        client.viewport,
+    const forest = new Ground(
         [
             [5000, 5000],
             [WORLD_SIZE - 5000, WORLD_SIZE - 5000],
         ],
         0x1b6430
     );
+    client.viewport.addChild(forest);
 
-    const structures: IncomingStructureData = [2, 0, []];
+    const structures: IncomingStructureData = [OBJECT_TYPE.Structure, 0, []];
     for (let i = 0; i < 1000; i++) {
         structures[2].push([
             0,
@@ -42,7 +43,7 @@ export function createStuff(client: BunduClient) {
     }
     client.objectHandler.unpack(structures, client.viewport);
 
-    const entities: IncomingEntityData = [1, 0, []];
+    const entities: IncomingEntityData = [OBJECT_TYPE.Entity, 0, []];
     for (let i = 0; i < 1; i++) {
         entities[2].push([
             0,

@@ -6,8 +6,8 @@ import { WorldObject } from "./world_object";
 
 export class Entity extends WorldObject {
     sprite: PIXI.Sprite;
-    size: number;
     animations: AnimationMap<Entity>;
+
     constructor(
         manager: AnimationManager,
         type: string,
@@ -15,19 +15,22 @@ export class Entity extends WorldObject {
         rotation: number
     ) {
         super(pos, rotation);
+
+        this.scale.set(5);
+        this.pivot.set(this.width / 2, this.height / 2);
+
         this.sprite = PIXI.Sprite.from(`./assets/${type}.svg`, {
             mipmap: PIXI.MIPMAP_MODES.ON,
         });
-
-        this.size = 5;
-        this.pivot.set(this.width / 2, this.height / 2);
         this.sprite.rotation = degrees(-90);
         this.sprite.anchor.set(0.5);
-        this.sprite.scale.set(this.size);
+
         this.animations = loadAnimations(this);
         this.trigger("idle", manager);
+
         this.addChild(this.sprite);
     }
+
     trigger(name: string, manager: AnimationManager) {
         const animation = this.animations.get(name);
         if (animation !== undefined) {
@@ -47,7 +50,6 @@ function loadAnimations(target: Entity) {
     };
 
     idleKeyframes.frame(1).set = ({ target, animation }) => {
-        // console.log(animation);
         target.scale.x =
             animation.meta.width + Math.cos(animation.t * Math.PI * 2) * 0.02;
         target.scale.y =
