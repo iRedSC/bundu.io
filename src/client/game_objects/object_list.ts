@@ -1,4 +1,5 @@
 import { AnimationManager } from "../../lib/animation";
+import { OBJECT_TYPE } from "../../shared/enums";
 import { Entity } from "./entity";
 import { Player } from "./player";
 import { Structure } from "./structure";
@@ -44,7 +45,7 @@ export class GameObjectHolder {
         container: PIXI.Container
     ) {
         switch (incoming[0]) {
-            case 0:
+            case OBJECT_TYPE.Player:
                 unpackPlayerData(
                     incoming,
                     this.players,
@@ -52,7 +53,7 @@ export class GameObjectHolder {
                     this.animationManager
                 );
                 break;
-            case 1:
+            case OBJECT_TYPE.Entity:
                 unpackEntityData(
                     incoming,
                     this.entities,
@@ -60,7 +61,7 @@ export class GameObjectHolder {
                     this.animationManager
                 );
                 break;
-            case 2:
+            case OBJECT_TYPE.Structure:
                 unpackStructureData(incoming, this.structures, container);
                 break;
         }

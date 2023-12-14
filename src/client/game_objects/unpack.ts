@@ -4,10 +4,11 @@ import { Player } from "./player";
 import * as PIXI from "pixi.js";
 import { Structure } from "./structure";
 import { AnimationManager } from "../../lib/animation";
+import { OBJECT_TYPE } from "../../shared/enums";
 
 export type IncomingPlayerData =
     | [
-          packetType: 0,
+          packetType: OBJECT_TYPE.Player,
           time: number,
           (
               | [
@@ -88,7 +89,7 @@ export function unpackPlayerData(
 }
 
 export type IncomingEntityData = [
-    packetType: 1,
+    packetType: OBJECT_TYPE.Entity,
     time: number,
     (
         | [
@@ -140,7 +141,7 @@ export function unpackEntityData(
 }
 
 export type IncomingStructureData = [
-    packetType: 2,
+    packetType: OBJECT_TYPE.Structure,
     time: number,
     (
         | [
