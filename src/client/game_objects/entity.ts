@@ -4,6 +4,11 @@ import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { Random } from "../../lib/random";
 import { WorldObject } from "./world_object";
 
+enum ENTITY_ANIMATION {
+    IDLE = 0,
+    HURT = 1,
+}
+
 export class Entity extends WorldObject {
     sprite: PIXI.Sprite;
     animations: AnimationMap<Entity>;
@@ -26,16 +31,9 @@ export class Entity extends WorldObject {
         this.sprite.anchor.set(0.5);
 
         this.animations = loadAnimations(this);
-        this.trigger("idle", manager);
+        this.trigger(ENTITY_ANIMATION.IDLE, manager);
 
         this.addChild(this.sprite);
-    }
-
-    trigger(name: string, manager: AnimationManager) {
-        const animation = this.animations.get(name);
-        if (animation !== undefined) {
-            manager.add(this, animation.run());
-        }
     }
 }
 
@@ -78,7 +76,7 @@ function loadAnimations(target: Entity) {
 
     const animationMap = new AnimationMap(target);
 
-    animationMap.set("idle", idleKeyframes);
-    animationMap.set("hurt", hurtKeyframes);
+    animationMap.set(ENTITY_ANIMATION.IDLE, idleKeyframes);
+    animationMap.set(ENTITY_ANIMATION.HURT, hurtKeyframes);
     return animationMap;
 }

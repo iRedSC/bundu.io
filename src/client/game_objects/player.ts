@@ -33,6 +33,14 @@ type PlayerParts = {
     };
 };
 
+export enum PLAYER_ANIMATION {
+    LEFT_HAND = 0,
+    RIGHT_HAND = 1,
+
+    ATTACK = 2,
+    BLOCK = 3,
+}
+
 export class Player extends WorldObject {
     sprite: PlayerParts;
     name: string;
@@ -136,8 +144,8 @@ export class Player extends WorldObject {
         rightHand.sprite.scale.set(0.5);
 
         this.animations = loadAnimations(this);
-        this.trigger("leftHand", manager);
-        this.trigger("rightHand", manager);
+        this.trigger(PLAYER_ANIMATION.LEFT_HAND, manager);
+        this.trigger(PLAYER_ANIMATION.RIGHT_HAND, manager);
     }
 
     selectItem({ hand, body }: { hand?: string; body?: string }) {
@@ -148,13 +156,6 @@ export class Player extends WorldObject {
             this.helmet = body;
         }
         this.updateGear();
-    }
-
-    trigger(name: string, manager: AnimationManager) {
-        const animation = this.animations.get(name);
-        if (animation) {
-            manager.add(this, animation.run());
-        }
     }
 
     setGear(gear?: Gear) {
@@ -290,10 +291,10 @@ function loadAnimations(target: Player) {
         }
     };
     const animations: AnimationMap<Player> = new AnimationMap(target);
-    animations.set("leftHand", leftHandKeyframes);
-    animations.set("rightHand", rightHandKeyframes);
-    animations.set("attack", attackKeyframes);
-    animations.set("block", blockKeyframes);
+    animations.set(PLAYER_ANIMATION.LEFT_HAND, leftHandKeyframes);
+    animations.set(PLAYER_ANIMATION.RIGHT_HAND, rightHandKeyframes);
+    animations.set(PLAYER_ANIMATION.ATTACK, attackKeyframes);
+    animations.set(PLAYER_ANIMATION.BLOCK, blockKeyframes);
 
     return animations;
 }

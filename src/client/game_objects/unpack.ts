@@ -41,9 +41,8 @@ export type IncomingPlayerData =
 
 export function unpackPlayerData(
     data: IncomingPlayerData,
-    playerList: Map<number, Player>,
-    container: PIXI.Container,
-    animationManager: AnimationManager
+    animationManager: AnimationManager,
+    player?: Player
 ) {
     const time = data[1];
     const packets = data[2];
@@ -58,22 +57,19 @@ export function unpackPlayerData(
                     new PIXI.Point(packet[3], packet[4]),
                     packet[5]
                 );
-                playerList.set(packet[1], player);
-                container.addChild(player);
-                break;
+
+                return player;
             }
             // update position
             case 1: {
-                const player = playerList.get(packet[1]);
                 if (!player) {
                     break;
                 }
                 player?.setState([time, packet[2], packet[3], packet[4]]);
-                break;
+                return player;
             }
             // update items
             case 2: {
-                const player = playerList.get(packet[1]);
                 if (!player) {
                     break;
                 }
@@ -82,7 +78,7 @@ export function unpackPlayerData(
                     itemMap.get(packet[3]) || "",
                     packet[4],
                 ]);
-                break;
+                return player;
             }
         }
     }

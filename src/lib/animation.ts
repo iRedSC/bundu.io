@@ -34,37 +34,37 @@ export type Keyframe<T> = ({
 
 export class AnimationMap<T> {
     target: T;
-    animations: Map<string, Animation<T>>;
+    animations: Map<number, Animation<T>>;
 
     constructor(target: T) {
         this.target = target;
         this.animations = new Map();
     }
 
-    set(name: string, keyframes: Keyframes<T>) {
-        const animation = new Animation(name, this.target, keyframes);
-        this.animations.set(name, animation);
+    set(id: number, keyframes: Keyframes<T>) {
+        const animation = new Animation(id, this.target, keyframes);
+        this.animations.set(id, animation);
     }
 
-    get(name: string) {
-        return this.animations.get(name);
+    get(id: number) {
+        return this.animations.get(id);
     }
 }
 
 export class Animation<T> {
     target: T;
-    name: string;
+    id: number;
     keyframes: Keyframes<T>;
 
-    constructor(name: string, target: T, keyframes: Keyframes<T>) {
-        this.name = name;
+    constructor(id: number, target: T, keyframes: Keyframes<T>) {
+        this.id = id;
         this.target = target;
         this.keyframes = keyframes;
     }
 
     run(replace: boolean = false) {
         return new ActiveAnimation(
-            this.name,
+            this.id,
             this.target,
             this.keyframes,
             replace
@@ -74,7 +74,7 @@ export class Animation<T> {
 
 class ActiveAnimation<T> {
     target: T;
-    name: string;
+    id: number;
     keyframes: Keyframes<T>;
     replace: boolean;
     currentKeyframe: number;
@@ -84,12 +84,12 @@ class ActiveAnimation<T> {
     meta: { [key: string]: any };
 
     constructor(
-        name: string,
+        id: number,
         target: T,
         keyframes: Keyframes<T>,
         replace: boolean = false
     ) {
-        this.name = name;
+        this.id = id;
         this.replace = replace;
         this.start = Date.now();
         this.duration = -1;
@@ -148,7 +148,7 @@ class ActiveAnimation<T> {
 type ValidActiveAnimation = {
     expired: boolean;
     replace: boolean;
-    name: string;
+    id: number;
     update(): void;
 };
 
@@ -172,10 +172,10 @@ export class AnimationManager {
 
     add(target: any, animation: ValidActiveAnimation) {
         const source = getSource(this.sources, target);
-        if (!animation.replace && source.get(animation.name)) {
+        if (!animation.replace && source.get(animation.id)) {
             return;
         }
-        source.set(animation.name, animation);
+        source.set(animation.id, animation);
     }
 
     update() {

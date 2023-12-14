@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import { round } from "../../lib/math";
 import { lerp, rotationLerp } from "../../lib/transforms";
+import { AnimationManager, AnimationMap } from "../../lib/animation";
 
 export type SpriteManager = {
     [key: string]: any;
@@ -21,6 +22,8 @@ function typeofState(state?: State): state is State {
 export class WorldObject extends PIXI.Container {
     lastState: State;
     nextState: State;
+
+    animations?: AnimationMap<any>;
 
     constructor(pos: PIXI.Point, rotation: number) {
         super();
@@ -49,6 +52,16 @@ export class WorldObject extends PIXI.Container {
             if (this.nextState[0] < this.lastState[0]) {
                 this.nextState[0] = this.lastState[0];
             }
+        }
+    }
+
+    trigger(id: number, manager: AnimationManager) {
+        if (!this.animations) {
+            return;
+        }
+        const animation = this.animations.get(id);
+        if (animation) {
+            manager.add(this, animation.run());
         }
     }
 }

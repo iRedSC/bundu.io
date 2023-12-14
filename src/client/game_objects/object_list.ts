@@ -1,69 +1,30 @@
+import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animation";
-import { OBJECT_TYPE } from "../../shared/enums";
-import { Entity } from "./entity";
-import { Player } from "./player";
-import { Structure } from "./structure";
-import {
-    IncomingEntityData,
-    IncomingPlayerData,
-    IncomingStructureData,
-    unpackEntityData,
-    unpackPlayerData,
-    unpackStructureData,
-} from "./unpack";
 import { WorldObject } from "./world_object";
-import * as PIXI from "pixi.js";
 
-export class GameObjectHolder {
+export class World {
+    viewport: Viewport;
     animationManager: AnimationManager;
-    user?: Player;
-    players: Map<number, Player>;
-    entities: Map<number, Entity>;
-    structures: Map<number, Structure>;
-    worldObjects: Map<number, WorldObject>;
+    user?: WorldObject;
+    objects: Map<number, WorldObject>;
+    dynamicObjs: Map<number, WorldObject>;
+    updatingObjs: Map<number, WorldObject>;
 
-    constructor(animationManager: AnimationManager) {
+    constructor(viewport: Viewport, animationManager: AnimationManager) {
+        this.viewport = viewport;
         this.animationManager = animationManager;
-        this.players = new Map();
-        this.entities = new Map();
-        this.structures = new Map();
-        this.worldObjects = new Map();
+        this.objects = new Map();
+        this.dynamicObjs = new Map();
+        this.updatingObjs = new Map();
     }
 
     tick() {
         this.animationManager.update();
-        for (let entity of this.entities.values()) {
+        for (let [id, entity] of this.updatingObjs.entries()) {
             entity.move();
-        }
-    }
-
-    unpack(
-        incoming:
-            | IncomingEntityData
-            | IncomingPlayerData
-            | IncomingStructureData,
-        container: PIXI.Container
-    ) {
-        switch (incoming[0]) {
-            case OBJECT_TYPE.Player:
-                unpackPlayerData(
-                    incoming,
-                    this.players,
-                    container,
-                    this.animationManager
-                );
-                break;
-            case OBJECT_TYPE.Entity:
-                unpackEntityData(
-                    incoming,
-                    this.entities,
-                    container,
-                    this.animationManager
-                );
-                break;
-            case OBJECT_TYPE.Structure:
-                unpackStructureData(incoming, this.structures, container);
-                break;
+            if (entity.nextState[0] < Date.now()) {
+                this.updatingObjs.delete(id);
+            }
         }
     }
 }
