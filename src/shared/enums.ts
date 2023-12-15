@@ -9,12 +9,6 @@ export enum PACKET_TYPE {
     SET_TIME = 600,
 }
 
-export enum OBJECT_TYPE {
-    Structure = 0,
-    Player = 1,
-    Entity = 2,
-}
-
 export namespace PACKET {
     export type ANY =
         | MOVE_OBJECT

@@ -1,6 +1,6 @@
-// export class World {
-//     resources
-//     players
-//     entities
-//     structures
-// }
+export class World {
+    resources;
+    players;
+    entities;
+    structures;
+}

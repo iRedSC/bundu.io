@@ -3,6 +3,7 @@ import { colorLerp, degrees } from "../../lib/transforms";
 import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { Random } from "../../lib/random";
 import { WorldObject } from "./world_object";
+import { assets } from "../assets/load";
 
 enum ENTITY_ANIMATION {
     IDLE = 0,
@@ -24,9 +25,7 @@ export class Entity extends WorldObject {
         this.scale.set(5);
         this.pivot.set(this.width / 2, this.height / 2);
 
-        this.sprite = PIXI.Sprite.from(`./assets/${type}.svg`, {
-            mipmap: PIXI.MIPMAP_MODES.ON,
-        });
+        this.sprite = new PIXI.Sprite(assets.get(type));
         this.sprite.rotation = degrees(-90);
         this.sprite.anchor.set(0.5);
 

@@ -2,5 +2,5 @@
     "verbose": true,
     "watch": ["src/server/", "src/shared/"],
     "ignore": ["*.test.*", "**/fixtures/**"],
-    "ext": "ts, tsx, js, json"
+    "ext": "ts, tsx, js, json, yml, yaml"
 }

@@ -2,7 +2,7 @@ import * as PIXI from "pixi.js";
 import { degrees, lerp, lookToward, moveToward } from "../../lib/transforms";
 import { AnimationMap, Keyframes } from "../../lib/animation";
 import { WorldObject } from "./world_object";
-
+import { assets } from "../assets/load";
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 enum STRUCTURE_ANIMATION {
     HIT = 0,
@@ -14,9 +14,9 @@ export class Structure extends WorldObject {
 
     constructor(type: string, pos: PIXI.Point, rotation: number, size: number) {
         super(pos, rotation);
-        this.sprite = PIXI.Sprite.from(`./assets/${type}.svg`, {
-            mipmap: PIXI.MIPMAP_MODES.ON,
-        });
+        console.log(type);
+        console.log(assets);
+        this.sprite = new PIXI.Sprite(assets.get(type));
         this.lastHitSource = new PIXI.Point(0, 0);
 
         this.zIndex = 10;

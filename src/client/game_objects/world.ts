@@ -3,10 +3,10 @@ import { AnimationManager } from "../../lib/animation";
 import { WorldObject } from "./world_object";
 import { PACKET } from "../../shared/enums";
 import { Structure } from "./structure";
-import { structureMap } from "../configs/config_map";
 import * as PIXI from "pixi.js";
 import { Player } from "./player";
 import { Sky } from "./sky";
+import { itemMap } from "../../shared/item_map";
 
 export class World {
     viewport: Viewport;
@@ -42,7 +42,7 @@ export class World {
         const id = packet[0];
         const pos = new PIXI.Point(packet[2], packet[3]);
         const structure = new Structure(
-            structureMap.get(packet[1]) || "stone",
+            itemMap.getv(packet[1]) || "stone",
             pos,
             packet[4],
             packet[5]

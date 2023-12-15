@@ -34,7 +34,7 @@ export function createStuff(world: World, unpacker: Unpacker) {
     for (let i = 0; i < 1000; i++) {
         structures[2].push([
             i,
-            Random.integer(0, 3),
+            Random.integer(200, 205),
             Random.integer(5000, WORLD_SIZE - 5000),
             Random.integer(5000, WORLD_SIZE - 5000),
             Random.integer(0, Math.PI * 360),

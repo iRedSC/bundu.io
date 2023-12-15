@@ -1,0 +1,67 @@
+unknown_asset:
+    type: none
+    sprite: unknown_asset
+
+wooden_pickaxe:
+    type: pickaxe
+    sprite: wooden_pickaxe
+
+stone_pickaxe:
+    type: pickaxe
+    sprite: stone_pickaxe
+
+gold_pickaxe:
+    type: pickaxe
+    sprite: gold_pickaxe
+
+diamond_pickaxe:
+    type: pickaxe
+    sprite: diamond_pickaxe
+    hand_display:
+        scale: 5
+
+amethyst_pickaxe:
+    type: pickaxe
+    sprite: amethyst_pickaxe
+
+wooden_sword:
+    type: sword
+    sprite: wooden_sword
+
+stone_sword:
+    type: sword
+    sprite: stone_sword
+
+gold_sword:
+    type: sword
+    sprite: gold_sword
+
+diamond_sword:
+    type: sword
+    sprite: diamond_sword
+
+amethyst_sword:
+    type: sword
+    sprite: amethyst_sword
+
+wooden_helmet:
+    type: helmet
+    sprite: wooden_helmet
+
+stone_helmet:
+    type: helmet
+    sprite: stone_helmet
+
+gold_helmet:
+    type: helmet
+    sprite: gold_helmet
+    body_display:
+        y: 10
+
+diamond_helmet:
+    type: helmet
+    sprite: diamond_helmet
+
+amethyst_helmet:
+    type: helmet
+    sprite: amethyst_helmet

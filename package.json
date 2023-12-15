@@ -8,9 +8,12 @@
         "build-client": "npm i && tsc && vite build",
         "preview": "vite preview",
         "server": "nodemon --exec npm run build-server",
-        "build-server": "npm i && tsc --project tsconfig.server.json --outDir dist-server && node dist-server/server/main.js"
+        "copy-server-files": "copyfiles --up 1 src/server/**/*.yml dist-server",
+        "build-server": "npm i && npm run copy-server-files && tsc --project tsconfig.server.json --outDir dist-server && node dist-server/server/main.js"
     },
     "devDependencies": {
+        "@modyfi/vite-plugin-yaml": "^1.0.4",
+        "copyfiles": "^2.4.1",
         "nodemon": "^3.0.1",
         "typescript": "^5.0.2",
         "vite": "^4.4.5"
@@ -26,6 +29,7 @@
         "pixi.js": "^7.3.2",
         "sat": "^0.9.0",
         "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.33.0",
-        "vitest": "^0.34.6"
+        "vitest": "^0.34.6",
+        "yaml": "^2.3.4"
     }
 }

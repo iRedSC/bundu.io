@@ -3,6 +3,7 @@ import { degrees, lerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager, AnimationMap } from "../../lib/animation";
 import { getItem } from "../configs/configs";
 import { WorldObject } from "./world_object";
+import { assets } from "../assets/load";
 
 type Gear = [selectedItem: string, helmet: string, backpack: number];
 function typeofGear(gear?: Gear): gear is Gear {
@@ -175,7 +176,7 @@ export class Player extends WorldObject {
             if (!item) {
                 return;
             }
-            const texture = PIXI.Texture.from(`./assets/${item.sprite}.svg`);
+            const texture = assets.get(item.sprite || "unknown_asset")!;
             this.sprite.leftHand.selectedItem.scale.set(
                 item.hand_display!.scale
             );

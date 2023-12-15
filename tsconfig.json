@@ -19,7 +19,8 @@
         "noUnusedParameters": true,
         // "noUncheckedIndexedAccess": true,
         "noFallthroughCasesInSwitch": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "types": ["@modyfi/vite-plugin-yaml/modules"]
     },
-    "include": ["src"]
+    "include": ["src/client/**/*", "src/shared/**/*"]
 }

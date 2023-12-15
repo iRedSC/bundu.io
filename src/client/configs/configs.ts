@@ -1,5 +1,5 @@
-import _items from "./items.json";
-import _itemTypes from "./item_types.json";
+import _items from "./items.yml";
+import _itemTypes from "./item_types.yml";
 
 type DisplayConfig = {
     x: number;
