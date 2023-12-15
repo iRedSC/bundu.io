@@ -3,9 +3,8 @@ import { degrees, lookToward, moveToward } from "../lib/transforms";
 import { move, mousePos } from "./input/keyboard";
 import { createStuff } from "./testing";
 import { createRenderer } from "./rendering/rendering";
-import { Sky } from "./game_objects/sky";
 import { AnimationManager } from "../lib/animation";
-import { World } from "./game_objects/object_list";
+import { World } from "./game_objects/world";
 import { Viewport } from "pixi-viewport";
 import { PACKET, PACKET_TYPE } from "../shared/enums";
 import { Unpacker } from "./game_objects/unpack";
@@ -18,11 +17,17 @@ const world = new World(viewport, animationManager);
 unpacker.add(PACKET_TYPE.MOVE_OBJECT, world.moveObject.bind(world));
 unpacker.add(PACKET_TYPE.NEW_STRUCTURE, world.newStructure.bind(world));
 unpacker.add(PACKET_TYPE.NEW_PLAYER, world.newPlayer.bind(world));
+unpacker.add(PACKET_TYPE.SET_TIME, world.setTime.bind(world));
 
 function createClickEvents(viewport: Viewport, player: Player) {
     document.body.addEventListener("mousemove", (event) => {
         mousePos[0] = event.clientX;
         mousePos[1] = event.clientY;
+    });
+
+    document.body.addEventListener("touchmove", (event) => {
+        mousePos[0] = event.touches[0].clientX;
+        mousePos[1] = event.touches[0].clientY;
     });
 
     viewport.on("pointerdown", (event) => {
@@ -52,12 +57,11 @@ const _player: PACKET.FULL.NEW_PLAYER = [
 ];
 unpacker.unpack(_player);
 const player = world.dynamicObjs.get(1000)!;
-console.log(player);
 
 viewport.follow(player, {
     speed: 0,
     acceleration: 1,
-    radius: 5,
+    radius: 0,
 });
 
 let playerPos: { x: number; y: number } = { x: 10000, y: 10000 };
@@ -65,12 +69,15 @@ let playerPos: { x: number; y: number } = { x: 10000, y: 10000 };
 
 function tick() {
     world.tick();
+    let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
+    const rotation = lookToward(player.position, mouseToWorld) - degrees(90);
+    player.rotation = rotation;
     requestAnimationFrame(tick);
 }
 
 requestAnimationFrame(tick);
 
-const updateSpeed = 50;
+const updateSpeed = 100;
 
 setInterval(() => {
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
@@ -85,6 +92,8 @@ setInterval(() => {
             updateSpeed * 2
         );
     }
+    // playerPos.x = Random.integer(5000, WORLD_SIZE - 5000);
+    // playerPos.y = Random.integer(5000, WORLD_SIZE - 5000);
     unpacker.unpack([
         PACKET_TYPE.MOVE_OBJECT,
         Date.now() + updateSpeed,
@@ -101,7 +110,9 @@ setInterval(() => {
     //         lookToward(object.position, playerPos),
     //         updateSpeed
     //     );
-    //     objectMoving.push([id, newPos.x, newPos.y, newRot]);
+    //     const x = Random.integer(5000, WORLD_SIZE - 5000);
+    //     const y = Random.integer(5000, WORLD_SIZE - 5000);
+    //     objectMoving.push([id, x, y, newRot]);
     // }
     // unpacker.unpack([
     //     PACKET_TYPE.MOVE_OBJECT,
@@ -114,10 +125,3 @@ setInterval(() => {
 // interactions
 
 createClickEvents(viewport, player as Player);
-
-const sky = new Sky();
-viewport.addChild(sky);
-sky.advanceCycle(animationManager);
-setInterval(() => {
-    sky.advanceCycle(animationManager);
-}, 6000);

@@ -15,13 +15,19 @@ times.set(1, DAY_COLOR);
 times.set(2, EVENING_COLOR);
 times.set(3, NIGHT_COLOR);
 
+enum SKY_ANIMATION {
+    TRANSISTION = 0,
+}
+
 export class Sky extends PIXI.Graphics {
     currentCycle: number;
+    nextCycle: number;
     animations: AnimationMap<Sky>;
 
     constructor() {
         super();
         this.currentCycle = 0;
+        this.nextCycle = 0;
         this.beginFill(0xffffff);
         this.drawRect(0, 0, WORLD_SIZE, WORLD_SIZE);
         this.zIndex = 100;
@@ -30,11 +36,11 @@ export class Sky extends PIXI.Graphics {
         this.animations = loadAnimations(this);
     }
 
-    advanceCycle(animationManager: AnimationManager) {
-        this.currentCycle = (this.currentCycle + 1) % 4;
-        const animation = this.animations.get("transistion");
+    setTime(time: number, manager: AnimationManager) {
+        this.nextCycle = time;
+        const animation = this.animations.get(SKY_ANIMATION.TRANSISTION);
         if (animation !== undefined) {
-            animationManager.add(this, animation.run());
+            manager.add(this, animation.run());
         }
     }
 }
@@ -46,21 +52,18 @@ function loadAnimations(target: Sky) {
         if (animation.firstKeyframe) {
             animation.goto(0, 1000);
         }
-        let lastCycle = target.currentCycle - 1;
-        if (lastCycle === -1) {
-            lastCycle = 3;
-        }
         target.tint = colorLerp(
-            times.get(lastCycle),
             times.get(target.currentCycle),
+            times.get(target.nextCycle),
             animation.t
         );
         if (animation.keyframeEnded) {
+            target.currentCycle = target.nextCycle;
             animation.expired = true;
         }
     };
 
     const animationMap = new AnimationMap(target);
-    animationMap.set("transistion", transistionKeyframes);
+    animationMap.set(SKY_ANIMATION.TRANSISTION, transistionKeyframes);
     return animationMap;
 }

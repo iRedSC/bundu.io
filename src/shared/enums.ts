@@ -5,6 +5,8 @@ export enum PACKET_TYPE {
     UPDATE_PLAYER_GEAR = 201,
 
     NEW_STRUCTURE = 300,
+
+    SET_TIME = 600,
 }
 
 export enum OBJECT_TYPE {
@@ -18,7 +20,10 @@ export namespace PACKET {
         | MOVE_OBJECT
         | NEW_PLAYER
         | UPDATE_PLAYER_GEAR
-        | NEW_STRUCTURE;
+        | NEW_STRUCTURE
+        | SET_TIME;
+
+    export type SET_TIME = [time: number];
 
     export type NEW_STRUCTURE = [
         id: number,
@@ -56,7 +61,14 @@ export namespace PACKET {
             | MOVE_OBJECT
             | NEW_PLAYER
             | UPDATE_PLAYER_GEAR
-            | NEW_STRUCTURE;
+            | NEW_STRUCTURE
+            | SET_TIME;
+
+        export type SET_TIME = [
+            type: PACKET_TYPE.SET_TIME,
+            time: number,
+            PACKET.SET_TIME
+        ];
 
         export type NEW_STRUCTURE = [
             type: PACKET_TYPE.NEW_STRUCTURE,

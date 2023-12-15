@@ -1,14 +1,14 @@
 // Main client class that handles all the goodness going on.
 
 import { Viewport } from "pixi-viewport";
-import { GameObjectHolder } from "./game_objects/object_list";
+import { World } from "./game_objects/world";
 
 export class BunduClient {
     viewport: Viewport;
-    objectHandler: GameObjectHolder;
+    objectHandler: World;
     // socketHandler: SocketHandler;
 
-    constructor(viewport: Viewport, objectHandler: GameObjectHolder) {
+    constructor(viewport: Viewport, objectHandler: World) {
         this.viewport = viewport;
         // this.socketHandler = socketHandler;
         this.objectHandler = objectHandler;

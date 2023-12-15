@@ -83,7 +83,6 @@ export function updateStatBars(health: number, hunger: number, heat: number) {
     heat = clamp(heat, 0, 200);
     health = health * 2.9;
     healthContainer.secondaryBar!.width = health;
-    console.log(health);
     hunger = hunger * 2.9;
     hungerContainer.primaryBar.width = hunger;
     heat = heat * 2.9;

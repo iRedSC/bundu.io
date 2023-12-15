@@ -6,6 +6,7 @@ import { Structure } from "./structure";
 import { structureMap } from "../configs/config_map";
 import * as PIXI from "pixi.js";
 import { Player } from "./player";
+import { Sky } from "./sky";
 
 export class World {
     viewport: Viewport;
@@ -14,13 +15,17 @@ export class World {
     objects: Map<number, WorldObject>;
     dynamicObjs: Map<number, WorldObject>;
     updatingObjs: Map<number, WorldObject>;
+    sky: Sky;
 
     constructor(viewport: Viewport, animationManager: AnimationManager) {
         this.viewport = viewport;
+        this.sky = new Sky();
         this.animationManager = animationManager;
         this.objects = new Map();
         this.dynamicObjs = new Map();
         this.updatingObjs = new Map();
+
+        this.viewport.addChild(this.sky);
     }
 
     tick() {
@@ -67,5 +72,9 @@ export class World {
             object.setState([time, packet[1], packet[2], packet[3]]);
             this.updatingObjs.set(id, object);
         }
+    }
+
+    setTime(_: number, packet: PACKET.SET_TIME) {
+        this.sky.setTime(packet[0], this.animationManager);
     }
 }

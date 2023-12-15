@@ -5,7 +5,7 @@ import { Ground } from "./game_objects/ground";
 import { WORLD_SIZE } from "./constants";
 import { PACKET, PACKET_TYPE } from "../shared/enums";
 import { Unpacker } from "./game_objects/unpack";
-import { World } from "./game_objects/object_list";
+import { World } from "./game_objects/world";
 
 export function createStuff(world: World, unpacker: Unpacker) {
     const sea = new Ground(

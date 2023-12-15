@@ -18,6 +18,10 @@ export class Unpacker {
             return;
         }
         for (const _packet of packet[2]) {
+            if (!Array.isArray(_packet)) {
+                unpacker(time, packet[2]);
+                return;
+            }
             unpacker(time, _packet);
         }
     }

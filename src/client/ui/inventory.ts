@@ -216,7 +216,6 @@ function findswap(button: InventoryButton) {
             }
 
             updateinventory();
-            console.log(inventory.display.buttons);
         }
     }
 }

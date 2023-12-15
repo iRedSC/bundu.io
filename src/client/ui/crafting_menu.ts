@@ -222,7 +222,6 @@ function createToggleButton(
     button.view.on("pointertap", () => {
         toggleCategory(category);
         updateButtonAppearance(activeCategories.has(category));
-        console.log("hi");
     });
 
     function updateButtonAppearance(selected: boolean) {
