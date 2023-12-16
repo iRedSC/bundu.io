@@ -10,16 +10,11 @@ const __dirname = dirname(__filename);
 const _idMapData: { [key: string]: number } = yaml.parse(
     fs.readFileSync(`${__dirname}/../../shared/id_map.yml`, "utf8")
 );
-
 export const idMap: ReversableMap<string, number> = new ReversableMap();
 
 for (let [k, v] of Object.entries(_idMapData)) {
     idMap.set(k, v);
 }
-
-const _resourceConfigData: { [key: string]: resourceConfigData } = yaml.parse(
-    fs.readFileSync(`${__dirname}/resources.yml`, "utf8")
-);
 
 type resourceConfigData = {
     level: number;
@@ -43,6 +38,9 @@ export class ResourceConfig {
     }
 }
 
+const _resourceConfigData: { [key: string]: resourceConfigData } = yaml.parse(
+    fs.readFileSync(`${__dirname}/resources.yml`, "utf8")
+);
 export const resourceConfigs: Map<number, ResourceConfig> = new Map();
 
 for (let [k, v] of Object.entries(_resourceConfigData)) {
@@ -52,10 +50,6 @@ for (let [k, v] of Object.entries(_resourceConfigData)) {
 
     resourceConfigs.set(numericId, resource);
 }
-
-const _itemConfigData: { [key: string]: itemConfigData } = yaml.parse(
-    fs.readFileSync(`${__dirname}/items.yml`, "utf8")
-);
 
 type itemConfigData = {
     type: string;
@@ -79,6 +73,9 @@ export class ItemConfig {
     }
 }
 
+const _itemConfigData: { [key: string]: itemConfigData } = yaml.parse(
+    fs.readFileSync(`${__dirname}/items.yml`, "utf8")
+);
 export const itemConfigs: Map<number, ItemConfig> = new Map();
 
 for (let [k, v] of Object.entries(_itemConfigData)) {
@@ -89,4 +86,37 @@ for (let [k, v] of Object.entries(_itemConfigData)) {
     itemConfigs.set(numericId, item);
 }
 
-console.log(_itemConfigData);
+type entityConfigData = {
+    anger: number;
+    speed: number;
+    attack_damage: number;
+    size: number;
+};
+export class EntityConfig {
+    id: number;
+    anger: number;
+    speed: number;
+    attackDamage: number;
+    size: number;
+
+    constructor(id: number, data: Partial<entityConfigData>) {
+        this.id = id;
+        this.anger = data.anger || 1;
+        this.speed = data.speed || 1;
+        this.attackDamage = data.attack_damage || 0;
+        this.size = data.size || 2;
+    }
+}
+
+const _entityConfigData: { [key: string]: entityConfigData } = yaml.parse(
+    fs.readFileSync(`${__dirname}/items.yml`, "utf8")
+);
+export const entityConfigs: Map<number, EntityConfig> = new Map();
+
+for (let [k, v] of Object.entries(_entityConfigData)) {
+    const numericId = idMap.get(k);
+
+    const entity = new EntityConfig(numericId, v);
+
+    entityConfigs.set(numericId, entity);
+}

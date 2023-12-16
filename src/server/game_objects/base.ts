@@ -2,8 +2,6 @@ import { Vector, Circle } from "sat";
 
 export class WorldObject {
     id: number;
-
-    position: [number, number];
     rotation: number;
     size: number;
     collider: Circle;
@@ -15,15 +13,22 @@ export class WorldObject {
         size: number
     ) {
         this.id = id;
-
-        this.position = position;
         this.rotation = rotation;
         this.collider = new Circle(new Vector(position[0], position[1]), size);
     }
 
-    setPos(position: [number, number]) {
-        this.position = position;
-        this.collider.pos.x = position[0];
-        this.collider.pos.y = position[1];
+    get x() {
+        return this.collider.pos.x;
+    }
+    get y() {
+        return this.collider.pos.y;
+    }
+    get position() {
+        return this.collider.pos;
+    }
+
+    setPosition(x: number, y: number) {
+        this.collider.pos.x = x;
+        this.collider.pos.y = y;
     }
 }

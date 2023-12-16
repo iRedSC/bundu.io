@@ -1,0 +1,7 @@
+# anger = 0: scared, 1: no reaction, 2: agressive
+
+elephant:
+    anger: 2
+    speed: 1
+    attack_damage: 5
+    size: 5

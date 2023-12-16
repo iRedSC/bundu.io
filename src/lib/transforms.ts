@@ -4,7 +4,6 @@ type Point = {
     [key: string]: any;
 };
 
-
 export function distance(point1: Point, point2: Point): number {
     const deltaX = point2.x - point1.x;
     const deltaY = point2.y - point1.y;
@@ -53,16 +52,6 @@ export function moveToward(
 
 export function subPoints(a: Point, b: Point): Point {
     return { x: a.x - b.x, y: a.y - b.y };
-}
-
-export function moveForward(
-    point: Point,
-    direction: number,
-    distance: number
-): Point {
-    let newX = point.x + distance * Math.cos(direction);
-    let newY = point.y + distance * Math.sin(direction);
-    return { x: newX, y: newY };
 }
 
 export function clamp(value: number, min: number, max: number) {
