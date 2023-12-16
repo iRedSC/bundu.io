@@ -1,0 +1,7 @@
+world:
+    objects:
+        - stone:
+          x: 60
+          y: 50
+          rotation: 0
+          size: 5

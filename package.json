@@ -8,11 +8,12 @@
         "build-client": "npm i && tsc && vite build",
         "preview": "vite preview",
         "server": "nodemon --exec npm run build-server",
-        "copy-server-files": "copyfiles --up 1 src/server/**/*.yml dist-server",
+        "copy-server-files": "copyfiles -u 1 src/server/**/*.yml dist-server",
         "build-server": "npm i && npm run copy-server-files && tsc --project tsconfig.server.json --outDir dist-server && node dist-server/server/main.js"
     },
     "devDependencies": {
         "@modyfi/vite-plugin-yaml": "^1.0.4",
+        "@types/sat": "^0.0.35",
         "copyfiles": "^2.4.1",
         "nodemon": "^3.0.1",
         "typescript": "^5.0.2",

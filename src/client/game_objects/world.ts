@@ -6,7 +6,7 @@ import { Structure } from "./structure";
 import * as PIXI from "pixi.js";
 import { Player } from "./player";
 import { Sky } from "./sky";
-import { itemMap } from "../../shared/item_map";
+import { itemMap } from "../configs/item_map";
 
 export class World {
     viewport: Viewport;

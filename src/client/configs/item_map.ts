@@ -1,5 +1,5 @@
-import { ReversableMap } from "./reverseable_map";
-import Types from "./types.yml";
+import { ReversableMap } from "../../shared/reverseable_map";
+import Types from "../../shared/types.yml";
 
 export const itemMap: ReversableMap<string, number> = new ReversableMap();
 
