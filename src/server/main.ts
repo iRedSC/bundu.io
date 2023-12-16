@@ -1,7 +1,7 @@
 import { BunduServer } from "./game.js";
 import { ServerController } from "./websockets.js";
-import { resourceConfig } from "./configs/configs.js";
-const thing = resourceConfig;
+import { resourceConfigs } from "./configs/configs.js";
+const thing = resourceConfigs;
 
 const bunduServer = new BunduServer();
 const serverController = new ServerController(bunduServer);

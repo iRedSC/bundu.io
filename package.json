@@ -8,7 +8,7 @@
         "build-client": "npm i && tsc && vite build",
         "preview": "vite preview",
         "server": "nodemon --exec npm run build-server",
-        "copy-server-files": "copyfiles -u 1 src/server/**/*.yml dist-server",
+        "copy-server-files": "copyfiles -u 1 src/server/**/*.yml src/shared/**/*.yml dist-server ",
         "build-server": "npm i && npm run copy-server-files && tsc --project tsconfig.server.json --outDir dist-server && node dist-server/server/main.js"
     },
     "devDependencies": {

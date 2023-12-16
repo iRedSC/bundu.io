@@ -7,14 +7,14 @@ import { ReversableMap } from "../../shared/reverseable_map.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const _itemMapData: { [key: string]: number } = yaml.parse(
-    fs.readFileSync(`${__dirname}/resources.yml`, "utf8")
+const _idMapData: { [key: string]: number } = yaml.parse(
+    fs.readFileSync(`${__dirname}/../../shared/id_map.yml`, "utf8")
 );
 
-export const itemMap: ReversableMap<string, number> = new ReversableMap();
+export const idMap: ReversableMap<string, number> = new ReversableMap();
 
-for (let [k, v] of Object.entries(_itemMapData)) {
-    itemMap.set(k, v);
+for (let [k, v] of Object.entries(_idMapData)) {
+    idMap.set(k, v);
 }
 
 const _resourceConfigData: { [key: string]: resourceConfigData } = yaml.parse(
@@ -25,14 +25,14 @@ type resourceConfigData = {
     level: number;
     regenSpeed: number;
     amount: number;
-    item: string;
+    item: number;
 };
 export class ResourceConfig {
     id: number;
     level: number;
     regenSpeed: number;
     amount: number;
-    item: string | null;
+    item: number | null;
 
     constructor(id: number, data: Partial<resourceConfigData>) {
         this.id = id;
@@ -43,17 +43,50 @@ export class ResourceConfig {
     }
 }
 
-export const resourceConfig: Map<number, ResourceConfig> = new Map();
+export const resourceConfigs: Map<number, ResourceConfig> = new Map();
 
 for (let [k, v] of Object.entries(_resourceConfigData)) {
-    const numericId = itemMap.get(k);
+    const numericId = idMap.get(k);
 
-    const resource = new ResourceConfig(numericId, {
-        level: v.level,
-        regenSpeed: v.regenSpeed,
-        amount: v.amount,
-        item: v.item,
-    });
+    const resource = new ResourceConfig(numericId, v);
 
-    resourceConfig.set(numericId, resource);
+    resourceConfigs.set(numericId, resource);
 }
+
+const _itemConfigData: { [key: string]: itemConfigData } = yaml.parse(
+    fs.readFileSync(`${__dirname}/items.yml`, "utf8")
+);
+
+type itemConfigData = {
+    type: string;
+    attack_damage: number;
+    defense: number;
+    mining_level: number;
+};
+export class ItemConfig {
+    id: number;
+    type: string;
+    attackDamage: number;
+    defense: number;
+    miningLevel: number;
+
+    constructor(id: number, data: Partial<itemConfigData>) {
+        this.id = id;
+        this.type = data.type || "none";
+        this.attackDamage = data.attack_damage || 0;
+        this.defense = data.defense || 0;
+        this.miningLevel = data.mining_level || 0;
+    }
+}
+
+export const itemConfigs: Map<number, ItemConfig> = new Map();
+
+for (let [k, v] of Object.entries(_itemConfigData)) {
+    const numericId = idMap.get(k);
+
+    const item = new ItemConfig(numericId, v);
+
+    itemConfigs.set(numericId, item);
+}
+
+console.log(_itemConfigData);
