@@ -66,16 +66,18 @@ export class Inventory {
 class InventoryDisplay {
     container: PIXI.Container;
     buttons: InventoryButton[];
-
+    slotamount: number;
     constructor() {
         this.container = new PIXI.Container();
         this.buttons = [];
+        this.slotamount = 0;
     }
 
     slotCount(count: number) {
         for (let i = 0; i < count; i++) {
             const button = new InventoryButton();
             button.view.x = this.buttons.length * (inventorySlotSize + padding);
+            this.slotamount = count;
             this.buttons.push(button);
             this.container.addChild(button.view);
             button.view.on("pointerdown", () => dragStart(button));
@@ -105,13 +107,16 @@ const inventorySlotSize = 60;
 const inventorySlotCount = 10;
 const padding = 6;
 
+
 export const inventory = new Inventory();
 
 function resize() {
     inventory.display.container.position.set(
-        (window.innerWidth - inventorySlotSize * inventorySlotCount) / 2,
+        (window.innerWidth - inventorySlotSize * inventory.display.slotamount) / 2,
         window.innerHeight - inventorySlotSize - 10
+
     );
+    console.log()
 }
 window.addEventListener("resize", resize);
 resize();
@@ -159,11 +164,13 @@ const invItems: Item[] = [
     },
 ];
 
+
 inventory.slots = structuredClone(invItems);
 
 inventory.display.slotCount(inventorySlotCount);
 function updateinventory() {
     inventory.display.update(inventory.slots);
+    resize();
 }
 updateinventory();
 

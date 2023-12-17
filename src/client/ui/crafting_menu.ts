@@ -1,12 +1,7 @@
 import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
-
-// IN -> RECEIVE ARRAY OF CRAFTABLE ITEMS
-// OUT -> CRAFTING BUTTONS SEND REQUEST TOs SERVER
-
-type Item = { imagePath: string; result: string; category: string };
-
+import { assets } from "../assets/load";
 export const craftingItems: Item[] = [
     {
         imagePath: "./assets/gold_wall.svg",
@@ -104,131 +99,144 @@ export const craftingItems: Item[] = [
         category: "structures",
     },
 ];
+// IN -> RECEIVE ARRAY OF CRAFTABLE ITEMS
+// OUT -> CRAFTING BUTTONS SEND REQUEST TOs SERVER
 
-const buttonsPerRow = 3;
-export const craftingButtonContainer = new PIXI.Container();
-const paddingLeft = 24;
-const paddingTop = 24;
-const buttonSize = 68;
-let currentRow = 0;
-let currentCol = 0;
+type Item = { imagePath: string; result: string; category: string };
 
-craftingItems.forEach((item) => {
-    const button = new ItemButton();
-    button.view.position.set(
-        paddingLeft + currentCol * buttonSize,
-        paddingTop + currentRow * buttonSize
-    );
-    button.setItem(item);
-    craftingButtonContainer.addChild(button.view);
+export class CraftingMenu {
+    items: Array<Item>;
+    container: PIXI.Container;
+    padding: number;
+    buttonSize: number;
+    buttonsPerRow: number;
 
-    currentRow++;
-
-    if (currentRow >= buttonsPerRow) {
-        currentRow = 0;
-        currentCol++;
+    constructor(columns: number, padding: number, buttonSize: number) {
+        this.items = [];
+        this.container = new PIXI.Container();
+        this.buttonsPerRow = columns;
+        this.padding = padding;
+        this.buttonSize = buttonSize;
     }
-});
+    update(categories?: Set<string>) {
+        if (categories === undefined) {
+            categories = new Set();
+        }
+        let currentCol = 0;
+        let currentRow = 0;
+        this.container.removeChildren()
+        console.log(categories)
+        for (let item of this.items) {
+            if (categories!.size > 0) {
+                if (!(categories!.has(item.category))) {
+                    continue;
+                }
+            }
+            const button = new ItemButton();
+            button.view.position.set(
+                this.padding + currentCol * this.buttonSize,
+                this.padding + currentRow * this.buttonSize
+            );
+            button.setItem(item);
+            this.container.addChild(button.view);
 
-export const filterButtonContainer = new PIXI.Container();
-const filterButtonSize = 40;
+            currentRow++;
 
-const activeCategories: Set<string> = new Set();
+            if (currentRow >= this.buttonsPerRow) {
+                currentRow = 0;
+                currentCol++;
+            }
+        }
+    }
+}
 
-const metalFilterButton = createToggleButton(
-    "tools",
-    0,
-    "./assets/weapon_toggle.svg"
-);
-const foodFilterButton = createToggleButton(
-    "structures",
-    filterButtonSize + 10,
-    "./assets/build_toggle.svg"
-);
-const miscFilterButton = createToggleButton(
-    "misc",
-    2 * (filterButtonSize + 10),
-    "./assets/misc_toggle.svg"
-);
+class FilterButton extends Button {
 
-filterButtonContainer.addChild(metalFilterButton.view);
-filterButtonContainer.addChild(foodFilterButton.view);
-filterButtonContainer.addChild(miscFilterButton.view);
+    constructor(
+        activeCategories: Set<string>,
+        toggleCallback: Function,
+        category: string,
+        xOffset: number,
+        texture: PIXI.Texture,
+        size: number,
+    ) {
+        const sprite: PIXI.Sprite = new PIXI.Sprite(texture);
+        super(sprite);
+        sprite.anchor.set(0.5, 0.5);
+        this.view.width = size;
+        this.view.height = size;
+        this.view.position.set(xOffset, 0);
+        this.view.pivot.set(this.view.width / 2, this.view.height / 2);
 
-filterButtonContainer.position.set(
-    35,
-    craftingButtonContainer.x + craftingButtonContainer.height + 40
-);
+        const colorMatrixFilter = new PIXI.ColorMatrixFilter();
+        this.view.filters = [colorMatrixFilter];
 
-const toggleCategory = (category: string) => {
-    if (activeCategories.has(category)) {
-        activeCategories.delete(category);
-    } else {
-        activeCategories.add(category);
+        this.view.on("pointertap", () => {
+            toggleCallback(category);
+            this.updateButtonAppearance(activeCategories.has(category));
+        });
     }
 
-    filterButtons();
-};
-
-const filterButtons = () => {
-    craftingButtonContainer.removeChildren();
-
-    const filteredItems = craftingItems.filter((item) => {
-        if (activeCategories.size === 0 || activeCategories.has("All")) {
-            return true;
-        }
-        return activeCategories.has(item.category);
-    });
-
-    let currentRow = 0;
-    let currentCol = 0;
-
-    filteredItems.forEach((item: Item) => {
-        const button = new ItemButton();
-        button.view.position.set(
-            paddingLeft + currentCol * buttonSize,
-            paddingTop + currentRow * buttonSize
-        );
-        button.setItem(item);
-        craftingButtonContainer.addChild(button.view);
-
-        currentRow++;
-
-        if (currentRow >= buttonsPerRow) {
-            currentRow = 0;
-            currentCol++;
-        }
-    });
-};
-
-function createToggleButton(
-    category: string,
-    xOffset: number,
-    assetPath: string
-) {
-    const sprite: PIXI.Sprite = PIXI.Sprite.from(assetPath, {
-        mipmap: PIXI.MIPMAP_MODES.ON,
-    });
-    sprite.anchor.set(0.5, 0.5);
-    const button = new Button(sprite);
-    button.view.width = filterButtonSize;
-    button.view.height = filterButtonSize;
-    button.view.position.set(xOffset, 0);
-    button.view.pivot.set(button.view.width / 2, button.view.height / 2);
-
-    const colorMatrixFilter = new PIXI.ColorMatrixFilter();
-    button.view.filters = [colorMatrixFilter];
-
-    button.view.on("pointertap", () => {
-        toggleCategory(category);
-        updateButtonAppearance(activeCategories.has(category));
-    });
-
-    function updateButtonAppearance(selected: boolean) {
+    updateButtonAppearance(selected: boolean) {
         const scale = selected ? 0.11 : 0.1;
-        button.view.scale.set(scale);
+        const sprite = this.view as PIXI.Sprite;
+        this.view.scale.set(scale);
         sprite.tint = selected ? 0xfffff : 0xffffff;
     }
-
-    return button;
 }
+export class Filter {
+    container: PIXI.Container;
+    activeCategories: Set<string>;
+    buttonSize: number;
+    nextPos: number;
+    craftingMenu: CraftingMenu;
+
+    constructor(buttonSize: number, craftingMenu: CraftingMenu) {
+        this.craftingMenu = craftingMenu;
+        this.activeCategories = new Set();
+        this.container = new PIXI.Container();
+        this.buttonSize = buttonSize;
+        this.nextPos = 0;
+    }
+
+    add(category: string, texture: PIXI.Texture) {
+        const button = new FilterButton(this.activeCategories, this.filter.bind(this), category, this.nextPos, texture, this.buttonSize);
+        this.nextPos += this.buttonSize + 10
+        this.container.addChild(button.view);
+    }
+
+    filter(category: string) {
+        if (this.activeCategories.has(category)) {
+            this.activeCategories.delete(category);
+        } else {
+            this.activeCategories.add(category);
+        }
+        this.craftingMenu.update(this.activeCategories)
+    }
+}
+
+
+export const craftingMenu = new CraftingMenu(3, 24, 68);
+export const filterButtons = new Filter(40, craftingMenu);
+filterButtons.add(
+    "tools",
+    assets("weapon_toggle")
+);
+filterButtons.add(
+    "structures",
+    assets("build_toggle")
+);
+filterButtons.add(
+    "misc",
+    assets("misc_toggle")
+);
+
+
+filterButtons.container.position.set(
+    35,
+    craftingMenu.container.x + craftingMenu.container.height + 230
+);
+
+craftingMenu.items = craftingItems;
+
+craftingMenu.update()

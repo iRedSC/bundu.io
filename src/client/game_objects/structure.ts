@@ -16,7 +16,7 @@ export class Structure extends WorldObject {
         super(pos, rotation);
         console.log(type);
         console.log(assets);
-        this.sprite = new PIXI.Sprite(assets.get(type));
+        this.sprite = new PIXI.Sprite(assets(type));
         this.lastHitSource = new PIXI.Point(0, 0);
 
         this.zIndex = 10;

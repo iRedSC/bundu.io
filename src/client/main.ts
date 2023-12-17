@@ -3,14 +3,13 @@ import { degrees, lookToward, moveToward } from "../lib/transforms";
 import { move, mousePos } from "./input/keyboard";
 import { createStuff } from "./testing";
 import { createRenderer } from "./rendering/rendering";
-import { AnimationManager } from "../lib/animation";
 import { World } from "./game_objects/world";
 import { Viewport } from "pixi-viewport";
 import { PACKET, PACKET_TYPE } from "../shared/enums";
 import { Unpacker } from "./game_objects/unpack";
+import { animationManager } from "./animation_manager";
 
 const { viewport } = createRenderer();
-const animationManager = new AnimationManager();
 const unpacker = new Unpacker();
 const world = new World(viewport, animationManager);
 

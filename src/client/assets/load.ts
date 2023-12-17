@@ -45,4 +45,13 @@ async function loadAssets(): Promise<Map<string, PIXI.Texture>> {
 //     return assetMap;
 // }
 
-export const assets: Map<string, PIXI.Texture> = await loadAssets();
+const loadedAssets: Map<string, PIXI.Texture> = await loadAssets();
+const unknownAsset = PIXI.Texture.from(`./assets/unknown_asset.svg`, {
+    mipmap: PIXI.MIPMAP_MODES.ON,
+})
+function getAsset(asset: string) {
+    const loadedAsset = loadedAssets.get(asset);
+    return loadedAsset || unknownAsset;
+}
+
+export const assets: (asset: string) => PIXI.Texture = getAsset;

@@ -176,7 +176,7 @@ export class Player extends WorldObject {
             if (!item) {
                 return;
             }
-            const texture = assets.get(item.sprite || "unknown_asset")!;
+            const texture = assets(item.sprite || "unknown_asset")!;
             this.sprite.leftHand.selectedItem.scale.set(
                 item.hand_display!.scale
             );

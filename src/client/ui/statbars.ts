@@ -1,14 +1,19 @@
 import * as PIXI from "pixi.js";
-import { AnimationMap, Keyframes } from "../../lib/animation";
-import { clamp } from "../../lib/transforms";
+import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
+import { clamp, lerp } from "../../lib/transforms";
+import { animationManager } from "../animation_manager";
 
 class StatsDisplay {
+    amount: number;
     container: PIXI.Container;
     decor: PIXI.Sprite;
     primaryBar: PIXI.Sprite;
     secondaryBar?: PIXI.Sprite;
+    animations: AnimationMap<StatsDisplay>;
 
     constructor(decor: string, bar1: string, bar2?: string) {
+        this.animations = loadAnimations(this);
+        this.amount = 0;
         this.container = new PIXI.Container();
         this.container.scale.set(0.6);
         this.container.position.set(270, 0);
@@ -29,14 +34,37 @@ class StatsDisplay {
         }
         this.container.addChild(this.decor);
     }
+
+
+    update(amount: number, manager: AnimationManager) {
+        const animation = this.animations.get(0);
+        this.amount = amount;
+        if (animation) {
+            manager.add(this, animation.run(true));
+        }
+    }
 }
 
-const transition: Keyframes<PIXI.Sprite> = new Keyframes();
-transition.frame(0).set = ({ target, animation }) => {
-    if (animation.firstKeyframe) {
-        animation.goto(0, 400);
-    }
-};
+
+
+function loadAnimations(target: StatsDisplay) {
+    const transition: Keyframes<StatsDisplay> = new Keyframes();
+    transition.frame(0).set = ({ target, animation }) => {
+        if (animation.firstKeyframe) {
+            animation.meta.amount = target.primaryBar.width;
+            animation.goto(0, 500);
+        }
+        target.primaryBar.width = lerp(animation.meta.amount, target.amount, animation.t);
+        if (animation.keyframeEnded) {
+            animation.expired = true;
+        }
+    };
+
+    const animationMap = new AnimationMap(target);
+    animationMap.set(0, transition);
+
+    return animationMap;
+}
 export const barContainer = new PIXI.Container();
 const hungerContainer = new StatsDisplay(
     "./assets/hunger.svg",
@@ -65,6 +93,7 @@ barContainer.addChild(
     hungerContainer.container
 );
 
+
 function resize() {
     barContainer.position.set(
         (window.innerWidth - barContainer.width) / 2 + 270,
@@ -83,8 +112,9 @@ export function updateStatBars(health: number, hunger: number, heat: number) {
     heat = clamp(heat, 0, 200);
     health = health * 2.9;
     healthContainer.secondaryBar!.width = health;
+    healthContainer.update(health, animationManager)
     hunger = hunger * 2.9;
-    hungerContainer.primaryBar.width = hunger;
+    hungerContainer.update(hunger, animationManager);
     heat = heat * 2.9;
     if (heat > 290) {
         heatContainer.secondaryBar!.width = heat - 290;
