@@ -1,5 +1,5 @@
 import { PLAYER_ANIMATION, Player } from "./game_objects/player";
-import { degrees, lookToward, moveToward } from "../lib/transforms";
+import { degrees, lookToward, moveInDirection } from "../lib/transforms";
 import { move, mousePos } from "./input/keyboard";
 import { createStuff } from "./testing";
 import { createRenderer } from "./rendering/rendering";
@@ -83,7 +83,7 @@ setInterval(() => {
     let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
     const rotation = lookToward(player.position, mouseToWorld) - degrees(90);
     if (!(move[0] === 0 && move[1] === 0)) {
-        playerPos = moveToward(
+        playerPos = moveInDirection(
             playerPos,
             lookToward(playerPos, {
                 x: playerPos.x - move[0] * 10,

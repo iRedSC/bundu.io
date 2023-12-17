@@ -1,7 +1,8 @@
 import { EntityConfig } from "../configs/configs";
 import { WorldObject } from "./base";
 import { entityConfigs } from "../configs/configs";
-import { moveToward } from "../../lib/transforms";
+import { distance, moveToward } from "../../lib/transforms";
+import Random from "../../lib/random";
 
 type Point = {
     x: number;
@@ -34,6 +35,23 @@ export class Entity extends WorldObject {
     }
 
     move() {
-        // this.position = moveToward;
+        const newPos = moveToward(
+            this.position,
+            this.ai.target,
+            this.type.speed
+        );
+        if (Date.now() < this.ai.restTime) {
+            return;
+        }
+        if (distance(this.position, this.ai.target) < 10) {
+            this.setPosition(this.ai.target.x, this.ai.target.y);
+            this.ai.restTime = Date.now() + 1000;
+            this.ai.target = {
+                x: this.ai.target.x + Random.integer(-250, 250),
+                y: this.ai.target.y + Random.integer(-250, 250),
+            };
+        } else {
+            this.setPosition(newPos.x, newPos.y);
+        }
     }
 }
