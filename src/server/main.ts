@@ -1,9 +1,12 @@
-import { BunduServer } from "./game.js";
-import { ServerController } from "./websockets.js";
-import { resourceConfigs } from "./configs/configs.js";
-const thing = resourceConfigs;
+import { BunduServer } from "./server";
+import { ServerController } from "./websockets";
+import { World } from "./world";
 
-const bunduServer = new BunduServer();
-const serverController = new ServerController(bunduServer);
+const world = new World();
+const bunduServer = new BunduServer(world);
 
-serverController.start(7777);
+bunduServer.start();
+
+// const serverController = new ServerController(bunduServer);
+
+// serverController.start(7777);

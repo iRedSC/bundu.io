@@ -1,10 +1,10 @@
 import { Range } from "./range.js";
 
-type Point = [number, number];
+type Point = { x: number; y: number; [key: string]: any };
 
 type ObjectWithPos = {
     id: number;
-    pos: Point;
+    position: Point;
     [key: string]: any;
 };
 
@@ -70,34 +70,34 @@ class InternalQuadtree<T extends ObjectWithPos> {
         const dims = this.bounds.dimensions;
         const halfWidth = dims[0] / 2;
         const halfHeight = dims[1] / 2;
-        const centerX = this.bounds.pos1[0] + halfWidth;
-        const centerY = this.bounds.pos1[1] + halfHeight;
+        const centerX = this.bounds.pos1.x + halfWidth;
+        const centerY = this.bounds.pos1.y + halfHeight;
 
         this.nodes[0] = new InternalQuadtree(
             new Range(
-                [centerX, this.bounds.pos1[1]],
-                [this.bounds.pos2[0], centerY]
+                { x: centerX, y: this.bounds.pos1.y },
+                { x: this.bounds.pos2.x, y: centerY }
             ),
             this.maxObjects
         );
         this.nodes[1] = new InternalQuadtree(
             new Range(
-                [this.bounds.pos1[0], this.bounds.pos1[1]],
-                [centerX, centerY]
+                { x: this.bounds.pos1.x, y: this.bounds.pos1.y },
+                { x: centerX, y: centerY }
             ),
             this.maxObjects
         );
         this.nodes[2] = new InternalQuadtree(
             new Range(
-                [this.bounds.pos1[0], centerY],
-                [centerX, this.bounds.pos2[1]]
+                { x: this.bounds.pos1.x, y: centerY },
+                { x: centerX, y: this.bounds.pos2.y }
             ),
             this.maxObjects
         );
         this.nodes[3] = new InternalQuadtree(
             new Range(
-                [centerX, centerY],
-                [this.bounds.pos2[0], this.bounds.pos2[1]]
+                { x: centerX, y: centerY },
+                { x: this.bounds.pos2.x, y: this.bounds.pos2.y }
             ),
             this.maxObjects
         );
@@ -120,8 +120,8 @@ class InternalQuadtree<T extends ObjectWithPos> {
                 if (!object) {
                     continue;
                 }
-                if (this.bounds.contains(object.pos)) {
-                    if (range.contains(object.pos)) {
+                if (this.bounds.contains(object.position)) {
+                    if (range.contains(object.position)) {
                         found.push(object);
                     }
                 } else {
@@ -141,7 +141,7 @@ class InternalQuadtree<T extends ObjectWithPos> {
         if (!object) {
             return;
         }
-        let objectPos = object.pos;
+        let objectPos = object.position;
         if (!this.bounds.contains(objectPos)) {
             return;
         }

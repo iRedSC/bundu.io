@@ -1,4 +1,4 @@
-type Point = [number, number];
+type Point = { x: number; y: number; [key: string]: any };
 
 export class Range {
     pos1: Point;
@@ -9,22 +9,22 @@ export class Range {
     }
 
     get dimensions(): [number, number] {
-        const width = Math.abs(this.pos1[0] - this.pos2[0]);
-        const height = Math.abs(this.pos1[1] - this.pos2[1]);
+        const width = Math.abs(this.pos1.x - this.pos2.x);
+        const height = Math.abs(this.pos1.y - this.pos2.y);
 
         return [width, height];
     }
 
     get normalized(): [Point, Point] {
         return [
-            [
-                Math.min(this.pos1[0], this.pos2[0]),
-                Math.min(this.pos1[1], this.pos2[1]),
-            ],
-            [
-                Math.max(this.pos1[0], this.pos2[0]),
-                Math.max(this.pos1[1], this.pos2[1]),
-            ],
+            {
+                x: Math.min(this.pos1.x, this.pos2.x),
+                y: Math.min(this.pos1.y, this.pos2.y),
+            },
+            {
+                x: Math.max(this.pos1.x, this.pos2.x),
+                y: Math.max(this.pos1.y, this.pos2.y),
+            },
         ];
     }
 
@@ -32,8 +32,8 @@ export class Range {
         const normalized = this.normalized;
         const pos1 = normalized[0];
         const pos2 = normalized[1];
-        const isInsideX = pos[0] >= pos1[0] && pos[0] <= pos2[0];
-        const isInsideY = pos[1] >= pos1[1] && pos[1] <= pos2[1];
+        const isInsideX = pos.x >= pos1.x && pos.x <= pos2.x;
+        const isInsideY = pos.y >= pos1.y && pos.y <= pos2.y;
 
         return isInsideX && isInsideY;
     }
@@ -42,8 +42,8 @@ export class Range {
         const normalized = this.normalized;
         const pos1 = normalized[0];
         const pos2 = normalized[1];
-        const noOverlapX = pos2[0] < range.pos1[0] || pos1[0] > range.pos2[0];
-        const noOverlapY = pos2[1] < range.pos1[1] || pos1[1] > range.pos2[1];
+        const noOverlapX = pos2.x < range.pos1.x || pos1.x > range.pos2.x;
+        const noOverlapY = pos2.y < range.pos1.y || pos1.y > range.pos2.y;
 
         return !(noOverlapX || noOverlapY);
     }

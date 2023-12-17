@@ -40,6 +40,19 @@ export function lookToward(origin: Point, toward: Point) {
 }
 
 export function moveToward(
+    current: Point,
+    target: Point,
+    distance: number
+): Point {
+    const angle = Math.atan2(target.y - current.y, target.x - current.x);
+
+    return {
+        x: current.x + distance * Math.cos(angle),
+        y: current.y + distance * Math.sin(angle),
+    };
+}
+
+export function moveInDirection(
     origin: Point,
     angle: number,
     distance: number

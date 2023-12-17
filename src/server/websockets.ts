@@ -1,5 +1,5 @@
 import * as uWS from "uWebSockets.js";
-import { BunduServer } from "./game.js";
+import { BunduServer } from "./server";
 
 interface GameWS extends uWS.WebSocket<unknown> {
     id?: number;

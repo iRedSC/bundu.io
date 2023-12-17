@@ -1,5 +1,10 @@
 import * as PIXI from "pixi.js";
-import { degrees, lerp, lookToward, moveToward } from "../../lib/transforms";
+import {
+    degrees,
+    lerp,
+    lookToward,
+    moveInDirection,
+} from "../../lib/transforms";
 import { AnimationMap, Keyframes } from "../../lib/animation";
 import { WorldObject } from "./world_object";
 import { assets } from "../assets/load";
@@ -40,7 +45,7 @@ function loadAnimations(target: Structure) {
             animation.meta.y = target.y;
             animation.goto(0, 100);
         }
-        const targetPos = moveToward(
+        const targetPos = moveInDirection(
             target.position,
             lookToward(target.lastHitSource, target.position),
             50

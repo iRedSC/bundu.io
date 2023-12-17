@@ -1,6 +1,6 @@
 // testing file (to mimic a server)
 
-import { Random } from "../lib/random";
+import Random from "../lib/random";
 import { Ground } from "./game_objects/ground";
 import { WORLD_SIZE } from "./constants";
 import { PACKET, PACKET_TYPE } from "../shared/enums";

@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { colorLerp, degrees } from "../../lib/transforms";
 import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
-import { Random } from "../../lib/random";
+import Random from "../../lib/random";
 import { WorldObject } from "./world_object";
 import { assets } from "../assets/load";
 
