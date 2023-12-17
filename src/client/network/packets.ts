@@ -58,38 +58,3 @@ class PacketUnpacker {
         }
     }
 }
-
-interface Test {
-    id: number;
-    x: number;
-    y: number;
-}
-
-function cool(data: Test) {
-    console.log(data);
-}
-
-export const mainManager = new PacketManager();
-const playerManager = new PacketManager();
-
-const playerUnpacker = new PacketUnpacker(
-    {
-        id: "number",
-        x: "number",
-        y: "number",
-    },
-    cool
-);
-
-mainManager.addChild(0, playerManager);
-playerManager.addChild(0, playerUnpacker);
-
-const data = [
-    0,
-    [
-        [0, [1, 1, 2]],
-        [0, [2, 3, 4]],
-    ],
-];
-
-mainManager.unpack(data);

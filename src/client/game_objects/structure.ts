@@ -19,8 +19,6 @@ export class Structure extends WorldObject {
 
     constructor(type: string, pos: PIXI.Point, rotation: number, size: number) {
         super(pos, rotation);
-        console.log(type);
-        console.log(assets);
         this.sprite = new PIXI.Sprite(assets.get(type));
         this.lastHitSource = new PIXI.Point(0, 0);
 
