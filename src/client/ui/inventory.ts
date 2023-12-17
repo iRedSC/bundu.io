@@ -14,11 +14,13 @@ export class InventoryButton extends ItemButton {
         this.amountstyle = new PIXI.TextStyle();
         this.amountstyle.fontFamily = fontFamily;
         this.amount = new PIXI.Text("", this.amountstyle);
-        this.amount.position.set(40, 35);
-        this.amount.scale.set(0.8);
+        this.amount.position.set(55, 50);
+        this.amount.scale.set(0.6);
+        this.amount.anchor.set(1, .5);
         this.amount.zIndex = 2;
         this.selected = false;
         this.amountstyle.fill = "#ffffff";
+        this.amountstyle.strokeThickness = 4;
         (this.amountstyle.dropShadow = false),
             (this.amountstyle.dropShadowColor = "#000000");
         this.view.addChild(this.amount);
@@ -93,7 +95,7 @@ class InventoryDisplay {
                 try {
                     this.buttons[i].amount.text = `${items[i].amount}`;
                     this.buttons[i].setItem(items[i]);
-                } catch {}
+                } catch { }
             }
         }
     }
@@ -118,12 +120,12 @@ const invItems: Item[] = [
     {
         imagePath: "./assets/gold_wall.svg",
         result: "Selected Item 1",
-        amount: 2,
+        amount: 245,
     },
     {
         imagePath: "./assets/meat.svg",
         result: "Selected Item 2",
-        amount: 3,
+        amount: 9982,
     },
     {
         imagePath: "./assets/gold_hammer.svg",
