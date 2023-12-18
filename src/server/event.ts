@@ -10,12 +10,3 @@ export class Event {
         this.type = type;
     }
 }
-
-type ObjectWithPos = {
-    id: number;
-    position: { x: number; y: number };
-};
-
-function move(object: ObjectWithPos) {
-    const;
-}

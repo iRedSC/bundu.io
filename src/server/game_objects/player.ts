@@ -1,22 +1,22 @@
-import { moveToward } from "../../lib/transforms";
-import { WorldObject } from "./base";
+import { GameWS } from "../websockets.js";
+import { WorldObject } from "./base.js";
 
 export class Player extends WorldObject {
     name: string;
-    send: Function;
+    socket: GameWS;
     hasBackpack: boolean;
     holding?: number;
     helmet?: number;
 
     constructor(
         id: number,
-        send: Function,
+        socket: GameWS,
         position: [number, number],
         rotation: number,
         name: string
     ) {
         super(id, position, rotation, 5);
-        this.send = send;
+        this.socket = socket;
         this.name = name;
         this.hasBackpack = false;
     }

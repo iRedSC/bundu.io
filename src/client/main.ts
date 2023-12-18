@@ -13,6 +13,17 @@ const { viewport } = createRenderer();
 const unpacker = new Unpacker();
 const world = new World(viewport, animationManager);
 
+const exampleSocket = new WebSocket("ws://localhost:7777");
+
+exampleSocket.onopen = () => {
+    console.log("CONNECTED");
+};
+
+exampleSocket.onmessage = (ev) => {
+    console.log(ev.data);
+    unpacker.unpack(JSON.parse(ev.data));
+};
+
 unpacker.add(PACKET_TYPE.MOVE_OBJECT, world.moveObject.bind(world));
 unpacker.add(PACKET_TYPE.NEW_STRUCTURE, world.newStructure.bind(world));
 unpacker.add(PACKET_TYPE.NEW_PLAYER, world.newPlayer.bind(world));

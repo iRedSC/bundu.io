@@ -1,21 +1,9 @@
 import * as uWS from "uWebSockets.js";
-import { BunduServer } from "./server";
+import { BunduServer } from "./server.js";
 
-interface GameWS extends uWS.WebSocket<unknown> {
+export interface GameWS extends uWS.WebSocket<unknown> {
     id?: number;
 }
-
-function getIdWrapper() {
-    let nextId = 0;
-    function wrapper() {
-        let id = nextId;
-        nextId++;
-        return id;
-    }
-    return wrapper;
-}
-
-const getId = getIdWrapper();
 
 /* 
 The server controller coordinates between the Websockets and the actual game logic.
@@ -27,14 +15,13 @@ const decoder = new TextDecoder("utf-8");
 export class ServerController {
     webSocketServer: uWS.TemplatedApp;
     gameServer: BunduServer;
-    sockets: Map<number, uWS.WebSocket<unknown>>;
+    sockets: Map<number, GameWS>;
+    connect: (socket: GameWS) => void;
 
     constructor(gameServer: BunduServer) {
+        this.connect = (_: GameWS) => {};
         this.sockets = new Map();
         this.gameServer = gameServer;
-        this.gameServer.publish = (message: string) => {
-            for (let socket of this.sockets.values()) socket.send(message);
-        };
         this.webSocketServer = uWS
             .App({
                 key_file_name: "misc/key.pem",
@@ -49,20 +36,18 @@ export class ServerController {
                 /* Handlers */
                 open: (ws: GameWS) => {
                     console.log("A WebSocket connected!");
-                    ws.id = getId();
+                    ws.id = this.gameServer.createPlayer(ws);
                     this.sockets.set(ws.id, ws);
                     ws.subscribe("public");
-                    for (let message of this.gameServer.messages) {
-                        ws.send(message);
-                    }
+                    this.connect(ws);
                 },
                 message: (ws: GameWS, message, _isBinary) => {
                     if (ws.id === undefined) {
                         return;
                     }
-                    this.gameServer.receiveMessage(
+                    this.gameServer.receive(
                         ws.id,
-                        decoder.decode(message)
+                        JSON.parse(decoder.decode(message))
                     );
                 },
                 drain: (ws) => {
@@ -72,6 +57,8 @@ export class ServerController {
                 },
                 close: (ws: GameWS, _code, _message) => {
                     if (ws.id !== undefined) {
+                        this.gameServer.deletePlayer(ws.id);
+                        console.log(this.gameServer.players.get(ws.id));
                         this.sockets.delete(ws.id);
                     }
                     console.log("WebSocket closed");

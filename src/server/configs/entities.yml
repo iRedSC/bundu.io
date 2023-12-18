@@ -2,6 +2,17 @@
 
 elephant:
     anger: 2
-    speed: 1
+    speed: 50
     attack_damage: 5
-    size: 5
+    size: 6
+    wander_range: 5000
+
+bear:
+    size: 4
+    speed: 100
+    wander_range: 4000
+
+ram:
+    speed: 200
+    size: 3
+    wander_range: 3000

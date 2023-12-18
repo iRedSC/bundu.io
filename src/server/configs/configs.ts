@@ -91,6 +91,7 @@ type entityConfigData = {
     speed: number;
     attack_damage: number;
     size: number;
+    wander_range: number;
 };
 export class EntityConfig {
     id: number;
@@ -98,9 +99,11 @@ export class EntityConfig {
     speed: number;
     attackDamage: number;
     size: number;
+    wanderRange: number;
 
     constructor(id: number, data: Partial<entityConfigData>) {
         this.id = id;
+        this.wanderRange = data.wander_range || 1000;
         this.anger = data.anger || 1;
         this.speed = data.speed || 1;
         this.attackDamage = data.attack_damage || 0;
@@ -109,7 +112,7 @@ export class EntityConfig {
 }
 
 const _entityConfigData: { [key: string]: entityConfigData } = yaml.parse(
-    fs.readFileSync(`${__dirname}/items.yml`, "utf8")
+    fs.readFileSync(`${__dirname}/entities.yml`, "utf8")
 );
 export const entityConfigs: Map<number, EntityConfig> = new Map();
 

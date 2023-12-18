@@ -1,10 +1,11 @@
-import { Vector, Circle } from "sat";
+import sat from "sat";
+const { Vector, Circle } = sat;
 
 export class WorldObject {
     id: number;
     rotation: number;
     size: number;
-    collider: Circle;
+    collider: sat.Circle;
 
     constructor(
         id: number,
@@ -12,6 +13,7 @@ export class WorldObject {
         rotation: number,
         size: number
     ) {
+        this.size = size;
         this.id = id;
         this.rotation = rotation;
         this.collider = new Circle(new Vector(position[0], position[1]), size);

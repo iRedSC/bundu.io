@@ -124,11 +124,10 @@ export class CraftingMenu {
         }
         let currentCol = 0;
         let currentRow = 0;
-        this.container.removeChildren()
-        console.log(categories)
+        this.container.removeChildren();
         for (let item of this.items) {
             if (categories!.size > 0) {
-                if (!(categories!.has(item.category))) {
+                if (!categories!.has(item.category)) {
                     continue;
                 }
             }
@@ -151,14 +150,13 @@ export class CraftingMenu {
 }
 
 class FilterButton extends Button {
-
     constructor(
         activeCategories: Set<string>,
         toggleCallback: Function,
         category: string,
         xOffset: number,
         texture: PIXI.Texture,
-        size: number,
+        size: number
     ) {
         const sprite: PIXI.Sprite = new PIXI.Sprite(texture);
         super(sprite);
@@ -200,8 +198,15 @@ export class Filter {
     }
 
     add(category: string, texture: PIXI.Texture) {
-        const button = new FilterButton(this.activeCategories, this.filter.bind(this), category, this.nextPos, texture, this.buttonSize);
-        this.nextPos += this.buttonSize + 10
+        const button = new FilterButton(
+            this.activeCategories,
+            this.filter.bind(this),
+            category,
+            this.nextPos,
+            texture,
+            this.buttonSize
+        );
+        this.nextPos += this.buttonSize + 10;
         this.container.addChild(button.view);
     }
 
@@ -211,26 +216,15 @@ export class Filter {
         } else {
             this.activeCategories.add(category);
         }
-        this.craftingMenu.update(this.activeCategories)
+        this.craftingMenu.update(this.activeCategories);
     }
 }
 
-
 export const craftingMenu = new CraftingMenu(3, 24, 68);
 export const filterButtons = new Filter(40, craftingMenu);
-filterButtons.add(
-    "tools",
-    assets("weapon_toggle")
-);
-filterButtons.add(
-    "structures",
-    assets("build_toggle")
-);
-filterButtons.add(
-    "misc",
-    assets("misc_toggle")
-);
-
+filterButtons.add("tools", assets("weapon_toggle"));
+filterButtons.add("structures", assets("build_toggle"));
+filterButtons.add("misc", assets("misc_toggle"));
 
 filterButtons.container.position.set(
     35,
@@ -239,4 +233,4 @@ filterButtons.container.position.set(
 
 craftingMenu.items = craftingItems;
 
-craftingMenu.update()
+craftingMenu.update();

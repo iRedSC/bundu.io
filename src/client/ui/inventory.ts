@@ -16,7 +16,7 @@ export class InventoryButton extends ItemButton {
         this.amount = new PIXI.Text("", this.amountstyle);
         this.amount.position.set(55, 50);
         this.amount.scale.set(0.6);
-        this.amount.anchor.set(1, .5);
+        this.amount.anchor.set(1, 0.5);
         this.amount.zIndex = 2;
         this.selected = false;
         this.amountstyle.fill = "#ffffff";
@@ -97,7 +97,7 @@ class InventoryDisplay {
                 try {
                     this.buttons[i].amount.text = `${items[i].amount}`;
                     this.buttons[i].setItem(items[i]);
-                } catch { }
+                } catch {}
             }
         }
     }
@@ -107,16 +107,14 @@ const inventorySlotSize = 60;
 const inventorySlotCount = 10;
 const padding = 6;
 
-
 export const inventory = new Inventory();
 
 function resize() {
     inventory.display.container.position.set(
-        (window.innerWidth - inventorySlotSize * inventory.display.slotamount) / 2,
+        (window.innerWidth - inventorySlotSize * inventory.display.slotamount) /
+            2,
         window.innerHeight - inventorySlotSize - 10
-
     );
-    console.log()
 }
 window.addEventListener("resize", resize);
 resize();
@@ -163,7 +161,6 @@ const invItems: Item[] = [
         amount: 9,
     },
 ];
-
 
 inventory.slots = structuredClone(invItems);
 

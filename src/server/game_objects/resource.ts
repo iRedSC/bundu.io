@@ -1,5 +1,5 @@
-import { ResourceConfig, resourceConfigs } from "../configs/configs";
-import { WorldObject } from "./base";
+import { ResourceConfig, resourceConfigs } from "../configs/configs.js";
+import { WorldObject } from "./base.js";
 export class Resource extends WorldObject {
     type: ResourceConfig;
     variant: number;

@@ -39,3 +39,7 @@ amethyst: amethyst
 weapon_toggle: weapon_toggle
 build_toggle: build_toggle
 misc_toggle: misc_toggle
+
+elephant: elephant
+bear: bear
+ram: ram
