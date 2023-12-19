@@ -45,7 +45,7 @@ export class Entity extends WorldObject {
         }
         if (distance(this.position, this.ai.target) < this.type.speed) {
             this.setPosition(this.ai.target.x, this.ai.target.y);
-            this.ai.restTime = Date.now() + 1000;
+            this.ai.restTime = Date.now() + this.type.restTime;
             this.ai.target = {
                 x:
                     this.ai.target.x +

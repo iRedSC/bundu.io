@@ -92,6 +92,7 @@ type entityConfigData = {
     attack_damage: number;
     size: number;
     wander_range: number;
+    rest_time: number;
 };
 export class EntityConfig {
     id: number;
@@ -100,6 +101,7 @@ export class EntityConfig {
     attackDamage: number;
     size: number;
     wanderRange: number;
+    restTime: number;
 
     constructor(id: number, data: Partial<entityConfigData>) {
         this.id = id;
@@ -108,6 +110,7 @@ export class EntityConfig {
         this.speed = data.speed || 1;
         this.attackDamage = data.attack_damage || 0;
         this.size = data.size || 2;
+        this.restTime = data.rest_time || 1000;
     }
 }
 
