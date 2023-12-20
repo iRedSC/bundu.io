@@ -69,6 +69,7 @@ export class Entity extends WorldObject {
     pack() {
         return [this.id, this.position.x, this.position.y, this.rotation];
     }
+
     packNew() {
         return [
             this.id,
@@ -76,7 +77,7 @@ export class Entity extends WorldObject {
             this.position.x,
             this.position.y,
             this.rotation,
-            this.collider.r,
+            this.size,
         ];
     }
 }

@@ -13,7 +13,7 @@ bunduServer.start();
 controller.start(7777);
 
 const WORLD_SIZE = 200000;
-const structures: PACKET.FULL.NEW_STRUCTURE = [
+const structures: [number, number, number[][]] = [
     PACKET_TYPE.NEW_STRUCTURE,
     0,
     [],
@@ -29,7 +29,11 @@ for (let i = 0; i < 1000; i++) {
     ]);
 }
 
-const entities: PACKET.FULL.NEW_STRUCTURE = [PACKET_TYPE.NEW_STRUCTURE, 0, []];
+const entities: [number, number, number[][]] = [
+    PACKET_TYPE.NEW_STRUCTURE,
+    0,
+    [],
+];
 for (let i = 1001; i < 2000; i++) {
     const pos: [number, number] = [
         Random.integer(5000, WORLD_SIZE - 5000),

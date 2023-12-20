@@ -1,23 +1,24 @@
 import * as PIXI from "pixi.js";
-
-type Coordinates = [[x: number, y: number], [x: number, y: number]];
 type Rectangle = [x: number, y: number, width: number, height: number];
 
-export function coordsToRect(coords: Coordinates): Rectangle {
-    const set1 = coords[0];
-    const set2 = coords[1];
-    const x = Math.min(set1[0], set2[0]);
-    const y = Math.min(set1[1], set2[1]);
-    const width = Math.abs(set1[0] - set2[0]);
-    const height = Math.abs(set1[1] - set2[1]);
+export function coordsToRect(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+): Rectangle {
+    const x = Math.min(x1, x2);
+    const y = Math.min(y1, y2);
+    const width = Math.abs(x1 - x2);
+    const height = Math.abs(y1 - y2);
 
     return [x, y, width, height];
 }
 export class Ground extends PIXI.Graphics {
-    constructor(coords: Coordinates, color: number) {
+    constructor(color: number, x1: number, y1: number, x2: number, y2: number) {
         super();
         this.beginFill(color);
-        const rect = coordsToRect(coords);
+        const rect = coordsToRect(x1, x2, y1, y2);
         this.drawRect(rect[0], rect[1], rect[2], rect[3]);
     }
 }

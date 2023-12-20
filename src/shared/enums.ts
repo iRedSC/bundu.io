@@ -5,6 +5,7 @@ export enum PACKET_TYPE {
     UPDATE_PLAYER_GEAR = 201,
 
     NEW_STRUCTURE = 300,
+    LOAD_GROUND = 301,
 
     SET_TIME = 600,
 }
@@ -15,7 +16,17 @@ export namespace PACKET {
         | NEW_PLAYER
         | UPDATE_PLAYER_GEAR
         | NEW_STRUCTURE
-        | SET_TIME;
+        | SET_TIME
+        | LOAD_GROUND;
+
+    export type LOAD_GROUND = [
+        id: number,
+        type: number,
+        x1: number,
+        y1: number,
+        x2: number,
+        y2: number
+    ];
 
     export type SET_TIME = [time: number];
 
@@ -50,40 +61,4 @@ export namespace PACKET {
         helmet: number,
         backpack: number
     ];
-    export namespace FULL {
-        export type ANY =
-            | MOVE_OBJECT
-            | NEW_PLAYER
-            | UPDATE_PLAYER_GEAR
-            | NEW_STRUCTURE
-            | SET_TIME;
-
-        export type SET_TIME = [
-            type: PACKET_TYPE.SET_TIME,
-            time: number,
-            PACKET.SET_TIME
-        ];
-
-        export type NEW_STRUCTURE = [
-            type: PACKET_TYPE.NEW_STRUCTURE,
-            time: number,
-            PACKET.NEW_STRUCTURE[]
-        ];
-
-        export type MOVE_OBJECT = [
-            type: PACKET_TYPE.MOVE_OBJECT,
-            time: number,
-            PACKET.MOVE_OBJECT[]
-        ];
-        export type NEW_PLAYER = [
-            type: PACKET_TYPE.NEW_PLAYER,
-            time: number,
-            PACKET.NEW_PLAYER[]
-        ];
-        export type UPDATE_PLAYER_GEAR = [
-            type: PACKET_TYPE.UPDATE_PLAYER_GEAR,
-            time: number,
-            PACKET.UPDATE_PLAYER_GEAR[]
-        ];
-    }
 }

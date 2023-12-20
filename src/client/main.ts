@@ -1,11 +1,10 @@
 import { PLAYER_ANIMATION, Player } from "./game_objects/player";
 import { degrees, lookToward, moveInDirection } from "../lib/transforms";
 import { move, mousePos } from "./input/keyboard";
-import { createStuff } from "./testing";
 import { createRenderer } from "./rendering/rendering";
 import { World } from "./game_objects/world";
 import { Viewport } from "pixi-viewport";
-import { PACKET, PACKET_TYPE } from "../shared/enums";
+import { PACKET_TYPE } from "../shared/enums";
 import { Unpacker } from "./game_objects/unpack";
 import { animationManager } from "./animation_manager";
 
@@ -58,9 +57,7 @@ function createClickEvents(viewport: Viewport, player: Player) {
 
 // const client = new BunduClient(viewport, world);
 
-createStuff(world, unpacker);
-
-const _player: PACKET.FULL.NEW_PLAYER = [
+const _player = [
     PACKET_TYPE.NEW_PLAYER,
     0,
     [[1000, "test", 10_000, 10_000, 0, 0, 0, 0]],
@@ -102,33 +99,11 @@ setInterval(() => {
             updateSpeed * 2
         );
     }
-    // playerPos.x = Random.integer(5000, WORLD_SIZE - 5000);
-    // playerPos.y = Random.integer(5000, WORLD_SIZE - 5000);
     unpacker.unpack([
         PACKET_TYPE.MOVE_OBJECT,
         Date.now() + updateSpeed,
         [[1000, playerPos.x, playerPos.y, rotation]],
     ]);
-    // const objectMoving = [];
-    // for (let [id, object] of world.objects.entries()) {
-    //     if (id === 1000) {
-    //         continue;
-    //     }
-    //     const newRot = lookToward(object.position, playerPos);
-    //     const newPos = moveToward(
-    //         object.position,
-    //         lookToward(object.position, playerPos),
-    //         updateSpeed
-    //     );
-    //     const x = Random.integer(5000, WORLD_SIZE - 5000);
-    //     const y = Random.integer(5000, WORLD_SIZE - 5000);
-    //     objectMoving.push([id, x, y, newRot]);
-    // }
-    // unpacker.unpack([
-    //     PACKET_TYPE.MOVE_OBJECT,
-    //     Date.now() + updateSpeed,
-    //     objectMoving as PACKET.MOVE_OBJECT[],
-    // ]);
     viewport.dirty = true;
 }, updateSpeed);
 

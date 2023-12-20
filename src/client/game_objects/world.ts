@@ -7,6 +7,7 @@ import * as PIXI from "pixi.js";
 import { Player } from "./player";
 import { Sky } from "./sky";
 import { itemMap } from "../configs/item_map";
+import { Ground } from "./ground";
 
 export class World {
     viewport: Viewport;
@@ -76,5 +77,16 @@ export class World {
 
     setTime(_: number, packet: PACKET.SET_TIME) {
         this.sky.setTime(packet[0], this.animationManager);
+    }
+
+    loadGround(_: number, packet: PACKET.LOAD_GROUND) {
+        const ground = new Ground(
+            packet[1],
+            packet[2],
+            packet[3],
+            packet[4],
+            packet[5]
+        );
+        this.viewport.addChild(ground);
     }
 }
