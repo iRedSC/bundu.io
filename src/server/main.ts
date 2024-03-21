@@ -34,7 +34,7 @@ const entities: [number, number, number[][]] = [
     0,
     [],
 ];
-for (let i = 1001; i < 2000; i++) {
+for (let i = 1001; i < 1100; i++) {
     const pos: [number, number] = [
         Random.integer(5000, WORLD_SIZE - 5000),
         Random.integer(5000, WORLD_SIZE - 5000),
