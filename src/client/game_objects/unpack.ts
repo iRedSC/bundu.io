@@ -10,7 +10,7 @@ export class Unpacker {
         this.unpackers.set(id, unpacker);
     }
 
-    unpack(packet: PACKET.FULL.ANY) {
+    unpack(packet: [id: number, time: number, PACKET.ANY]) {
         const id = packet[0];
         const time = packet[1];
         const unpacker = this.unpackers.get(id);

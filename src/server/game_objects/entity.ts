@@ -1,7 +1,7 @@
 import { EntityConfig } from "../configs/configs.js";
 import { WorldObject } from "./base.js";
 import { entityConfigs } from "../configs/configs.js";
-import { distance, lookToward, moveToward } from "../../lib/transforms.js";
+import { lerp, distance } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";
 
 type Point = {
@@ -12,15 +12,20 @@ type Point = {
 export class EntityAI {
     target: Point;
     restTime: number;
+    time: number;
     constructor(position: Point) {
         this.target = position;
         this.restTime = 0;
+        this.time = 0;
     }
 }
 
 export class Entity extends WorldObject {
     type: EntityConfig;
     ai: EntityAI;
+    _lastPos: { x: number; y: number };
+    _lastMoveTime: number;
+    _resting: boolean;
 
     constructor(
         id: number,
@@ -30,40 +35,41 @@ export class Entity extends WorldObject {
     ) {
         const config = entityConfigs.get(type) || new EntityConfig(0, {});
         super(id, position, rotation, config.size);
+        this._lastMoveTime = 0;
+        this._resting = false;
         this.type = config;
         this.ai = new EntityAI(this.position);
+        this.updateTarget();
     }
 
     move() {
-        const newPos = moveToward(
-            this.position,
-            this.ai.target,
-            this.type.speed
+        const totalTime = this.ai.time - this._lastMoveTime;
+        const elapsedTime = Date.now() - this._lastMoveTime;
+        const t = elapsedTime / totalTime;
+        const tClamped = Math.max(0, Math.min(1, t));
+        this.setPosition(
+            lerp(this.x, this.ai.target.x, tClamped),
+            lerp(this.y, this.ai.target.y, tClamped)
         );
-        if (Date.now() < this.ai.restTime) {
-            return;
+        if (t >= 1) {
+            this.updateTarget();
         }
-        if (distance(this.position, this.ai.target) < this.type.speed) {
-            this.setPosition(this.ai.target.x, this.ai.target.y);
-            this.ai.restTime = Date.now() + this.type.restTime;
-            this.ai.target = {
-                x:
-                    this.ai.target.x +
-                    Random.integer(
-                        -this.type.wanderRange,
-                        this.type.wanderRange
-                    ),
-                y:
-                    this.ai.target.y +
-                    Random.integer(
-                        -this.type.wanderRange,
-                        this.type.wanderRange
-                    ),
-            };
-        } else {
-            this.rotation = lookToward(this.ai.target, this.position);
-            this.setPosition(newPos.x, newPos.y);
-        }
+    }
+
+    private updateTarget() {
+        this._lastPos = { ...this.position };
+        this._lastMoveTime = Date.now();
+        this.ai.target = {
+            x:
+                this.ai.target.x +
+                Random.integer(-this.type.wanderRange, this.type.wanderRange),
+            y:
+                this.ai.target.y +
+                Random.integer(-this.type.wanderRange, this.type.wanderRange),
+        };
+        this.ai.time =
+            Date.now() +
+            distance(this.position, this.ai.target) / this.type.speed;
     }
 
     pack() {
