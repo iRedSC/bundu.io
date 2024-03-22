@@ -1,7 +1,7 @@
 import { EntityConfig } from "../configs/configs.js";
 import { WorldObject } from "./base.js";
 import { entityConfigs } from "../configs/configs.js";
-import { lerp, distance } from "../../lib/transforms.js";
+import { lerp, distance, lookToward } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";
 
 type Point = {
@@ -48,10 +48,10 @@ export class Entity extends WorldObject {
         const t = elapsedTime / totalTime;
         const tClamped = Math.max(0, Math.min(1, t));
         this.setPosition(
-            lerp(this.x, this.ai.target.x, tClamped),
-            lerp(this.y, this.ai.target.y, tClamped)
+            lerp(this._lastPos.x, this.ai.target.x, tClamped),
+            lerp(this._lastPos.y, this.ai.target.y, tClamped)
         );
-        if (t >= 1) {
+        if (t >= 1 + this.type.restTime) {
             this.updateTarget();
         }
     }
@@ -69,7 +69,8 @@ export class Entity extends WorldObject {
         };
         this.ai.time =
             Date.now() +
-            distance(this.position, this.ai.target) / this.type.speed;
+            distance(this.position, this.ai.target) / (this.type.speed / 2);
+        this.rotation = lookToward(this.position, this.ai.target);
     }
 
     pack() {
