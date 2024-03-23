@@ -5,28 +5,26 @@ import { createRenderer } from "./rendering/rendering";
 import { World } from "./game_objects/world";
 import { Viewport } from "pixi-viewport";
 import { PACKET_TYPE } from "../shared/enums";
-import { Unpacker } from "./game_objects/unpack";
+import { PacketPipeline } from "./game_objects/unpack";
 import { animationManager } from "./animation_manager";
+import { Schemas, createPipeline } from "./packet_pipline";
 
 const { viewport } = createRenderer();
-const unpacker = new Unpacker();
+const packetPipline = new PacketPipeline();
 const world = new World(viewport, animationManager);
 
-const exampleSocket = new WebSocket("ws://localhost:7777");
+createPipeline(packetPipline, world);
 
-exampleSocket.onopen = () => {
+const socket = new WebSocket("ws://localhost:7777");
+
+socket.onopen = () => {
     console.log("CONNECTED");
 };
 
-exampleSocket.onmessage = (ev) => {
+socket.onmessage = (ev) => {
     console.log(ev.data);
-    unpacker.unpack(JSON.parse(ev.data));
+    packetPipline.unpack(JSON.parse(ev.data));
 };
-
-unpacker.add(PACKET_TYPE.MOVE_OBJECT, world.moveObject.bind(world));
-unpacker.add(PACKET_TYPE.NEW_STRUCTURE, world.newStructure.bind(world));
-unpacker.add(PACKET_TYPE.NEW_PLAYER, world.newPlayer.bind(world));
-unpacker.add(PACKET_TYPE.SET_TIME, world.setTime.bind(world));
 
 function createClickEvents(viewport: Viewport, player: Player) {
     document.body.addEventListener("mousemove", (event) => {
@@ -57,12 +55,20 @@ function createClickEvents(viewport: Viewport, player: Player) {
 
 // const client = new BunduClient(viewport, world);
 
-const _player = [
+const _player: [number, ...Schemas.newPlayer] = [
     PACKET_TYPE.NEW_PLAYER,
+    1000,
+    10_000,
+    10_000,
     0,
-    [[1000, "test", 10_000, 10_000, 0, 0, 0, 0]],
+    "test",
+    0,
+    0,
+    0,
+    0,
 ];
-unpacker.unpack(_player);
+
+packetPipline.unpack(_player);
 const player = world.dynamicObjs.get(1000)!;
 
 viewport.follow(player, {
@@ -99,10 +105,13 @@ setInterval(() => {
             updateSpeed * 2
         );
     }
-    unpacker.unpack([
+    packetPipline.unpack([
         PACKET_TYPE.MOVE_OBJECT,
+        1000,
         Date.now() + updateSpeed,
-        [[1000, playerPos.x, playerPos.y, rotation]],
+        playerPos.x,
+        playerPos.y,
+        rotation,
     ]);
     viewport.dirty = true;
 }, updateSpeed);

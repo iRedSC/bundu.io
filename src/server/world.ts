@@ -4,6 +4,14 @@ import { Entity } from "./game_objects/entity.js";
 import { Quadtree } from "../lib/quadtree.js";
 import { Range } from "../lib/range.js";
 
+class UpdateList {
+    entities: Entity[];
+
+    constructor() {
+        this.entities = [];
+    }
+}
+
 export class World {
     nextId: number;
     mapBounds: Range;
@@ -31,9 +39,14 @@ export class World {
         );
     }
 
-    tick() {
+    tick(): UpdateList {
+        const updateList = new UpdateList();
         for (let [id, entity] of this.entities.objects.entries()) {
-            entity.move();
+            const moved = entity.move();
+            if (moved) {
+                updateList.entities.push(entity);
+            }
         }
+        return updateList;
     }
 }

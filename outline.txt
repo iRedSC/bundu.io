@@ -1,0 +1,16 @@
+
+
+
+Ground Packet: [packet_id, x1, y1, x2, y2, type, x1, y1, x2, y2, type, ...]
+
+WorldObject Packet: [packet_id, id, x, y, rot, size, type, id, x, y, rot, size, type, ...]
+
+Player Packets:
+    -> New: [packet_id, id, x, y, rot, name, hand, helm, skin, backpack, id, x, y, rot, name, hand, helm, skin, backpack]
+    -> Move: [packet_id, id, time, x, y, rot]
+    -> Update Gear: [packet_id, id, hand, helm, backpack]
+
+Entity Packets:
+    -> New: [packet_id, id, x, y, rot, type, angry, ...]
+    -> Move: [packet_id, id, time x, y, rot, ...]
+    -> Update: [packet_id, id, angry, ...]

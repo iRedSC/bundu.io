@@ -18,11 +18,12 @@ export class Entity extends WorldObject {
         manager: AnimationManager,
         type: string,
         pos: PIXI.Point,
-        rotation: number
+        rotation: number,
+        size: number
     ) {
         super(pos, rotation);
 
-        this.scale.set(5);
+        this.scale.set(size);
         this.pivot.set(this.width / 2, this.height / 2);
 
         this.sprite = new PIXI.Sprite(assets(type));

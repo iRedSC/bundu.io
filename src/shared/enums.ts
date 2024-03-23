@@ -8,6 +8,8 @@ export enum PACKET_TYPE {
     LOAD_GROUND = 301,
 
     SET_TIME = 600,
+
+    NEW_ENTITY = 700,
 }
 
 export namespace PACKET {
@@ -16,6 +18,7 @@ export namespace PACKET {
         | NEW_PLAYER
         | UPDATE_PLAYER_GEAR
         | NEW_STRUCTURE
+        | NEW_ENTITY
         | SET_TIME
         | LOAD_GROUND;
 
@@ -37,6 +40,16 @@ export namespace PACKET {
         y: number,
         rotation: number,
         size: number
+    ];
+
+    export type NEW_ENTITY = [
+        id: number,
+        type: number,
+        x: number,
+        y: number,
+        rotation: number,
+        size: number,
+        speed: number
     ];
 
     export type MOVE_OBJECT = [

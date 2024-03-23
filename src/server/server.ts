@@ -2,10 +2,16 @@ import { Player } from "./game_objects/player.js";
 import { GameWS } from "./websockets.js";
 import { World } from "./world.js";
 import { PACKET_TYPE } from "../shared/enums.js";
+import { Entity } from "./game_objects/entity.js";
 let tickthing = false;
+
+type UpdateList = {
+    entities: Entity[];
+};
 export class BunduServer {
     world: World;
     players: Map<number, Player>;
+    updateList: UpdateList;
     constructor(world: World) {
         this.world = world;
         this.players = new Map();
@@ -27,7 +33,7 @@ export class BunduServer {
     receive(id: number, data: unknown) {}
 
     start() {
-        setInterval(this.tick.bind(this), 50);
+        setInterval(this.tick.bind(this), 200);
         setInterval(this.sendPackets.bind(this), 200);
     }
 
@@ -37,7 +43,7 @@ export class BunduServer {
             Date.now() + 200,
             [],
         ];
-        for (const entity of this.world.entities.objects.values()) {
+        for (const entity of this.updateList.entities) {
             packet[2].push(entity.pack());
         }
         for (const player of this.players.values()) {
@@ -46,6 +52,6 @@ export class BunduServer {
     }
 
     tick() {
-        this.world.tick();
+        this.updateList = this.world.tick();
     }
 }

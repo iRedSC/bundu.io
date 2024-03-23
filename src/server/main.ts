@@ -29,11 +29,7 @@ for (let i = 0; i < 1000; i++) {
     ]);
 }
 
-const entities: [number, number, number[][]] = [
-    PACKET_TYPE.NEW_STRUCTURE,
-    0,
-    [],
-];
+const entities: [number, number, number[][]] = [PACKET_TYPE.NEW_ENTITY, 0, []];
 for (let i = 1001; i < 1100; i++) {
     const pos: [number, number] = [
         Random.integer(5000, WORLD_SIZE - 5000),
@@ -41,7 +37,7 @@ for (let i = 1001; i < 1100; i++) {
     ];
     const entity = new Entity(i, Random.integer(400, 402), pos, 0);
     world.entities.insert(entity);
-    entities[2].push(entity.packNew() as PACKET.NEW_STRUCTURE);
+    entities[2].push(entity.packNew() as PACKET.NEW_ENTITY);
 }
 
 controller.connect = (socket: GameWS) => {

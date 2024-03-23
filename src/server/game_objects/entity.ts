@@ -1,7 +1,7 @@
 import { EntityConfig } from "../configs/configs.js";
 import { WorldObject } from "./base.js";
 import { entityConfigs } from "../configs/configs.js";
-import { lerp, distance, lookToward } from "../../lib/transforms.js";
+import { lerp, distance, lookToward, degrees } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";
 
 type Point = {
@@ -11,21 +11,20 @@ type Point = {
 
 export class EntityAI {
     target: Point;
-    restTime: number;
     time: number;
+    _lastPos: { x: number; y: number };
+    _lastMoveTime: number;
     constructor(position: Point) {
         this.target = position;
-        this.restTime = 0;
         this.time = 0;
+        this._lastMoveTime = 0;
+        this._lastPos = position;
     }
 }
 
 export class Entity extends WorldObject {
     type: EntityConfig;
     ai: EntityAI;
-    _lastPos: { x: number; y: number };
-    _lastMoveTime: number;
-    _resting: boolean;
 
     constructor(
         id: number,
@@ -35,30 +34,31 @@ export class Entity extends WorldObject {
     ) {
         const config = entityConfigs.get(type) || new EntityConfig(0, {});
         super(id, position, rotation, config.size);
-        this._lastMoveTime = 0;
-        this._resting = false;
         this.type = config;
         this.ai = new EntityAI(this.position);
         this.updateTarget();
     }
 
-    move() {
-        const totalTime = this.ai.time - this._lastMoveTime;
-        const elapsedTime = Date.now() - this._lastMoveTime;
+    move(): boolean {
+        this.rotation = lookToward(this.ai._lastPos, this.ai.target);
+        const totalTime = this.ai.time - this.ai._lastMoveTime;
+        const elapsedTime = Date.now() - this.ai._lastMoveTime;
         const t = elapsedTime / totalTime;
         const tClamped = Math.max(0, Math.min(1, t));
         this.setPosition(
-            lerp(this._lastPos.x, this.ai.target.x, tClamped),
-            lerp(this._lastPos.y, this.ai.target.y, tClamped)
+            lerp(this.ai._lastPos.x, this.ai.target.x, tClamped),
+            lerp(this.ai._lastPos.y, this.ai.target.y, tClamped)
         );
         if (t >= 1 + this.type.restTime) {
             this.updateTarget();
+            return true;
         }
+        return false;
     }
 
     private updateTarget() {
-        this._lastPos = { ...this.position };
-        this._lastMoveTime = Date.now();
+        this.ai._lastPos = { ...this.position };
+        this.ai._lastMoveTime = Date.now();
         this.ai.target = {
             x:
                 this.ai.target.x +
@@ -70,11 +70,10 @@ export class Entity extends WorldObject {
         this.ai.time =
             Date.now() +
             distance(this.position, this.ai.target) / (this.type.speed / 2);
-        this.rotation = lookToward(this.position, this.ai.target);
     }
 
     pack() {
-        return [this.id, this.position.x, this.position.y, this.rotation];
+        return [this.id, this.ai.target.x, this.ai.target.y, this.rotation];
     }
 
     packNew() {
@@ -85,6 +84,7 @@ export class Entity extends WorldObject {
             this.position.y,
             this.rotation,
             this.size,
+            this.type.speed,
         ];
     }
 }
