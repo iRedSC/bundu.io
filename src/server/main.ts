@@ -3,11 +3,33 @@ import { Entity } from "./game_objects/entity.js";
 import { BunduServer } from "./server.js";
 import { GameWS, ServerController } from "./websockets.js";
 import { World } from "./world.js";
-import { Schemas, PACKET_TYPE } from "../shared/enums.js";
+import {
+    Schemas,
+    PACKET_TYPE,
+    CLIENT_PACKET_TYPE,
+    ClientSchemas,
+} from "../shared/enums.js";
+import { PacketPipeline, Unpacker } from "../shared/unpack.js";
+
+const packetPipeline = new PacketPipeline();
 
 const world = new World();
-const bunduServer = new BunduServer(world);
+const bunduServer = new BunduServer(world, packetPipeline);
 const controller = new ServerController(bunduServer);
+
+packetPipeline.add(
+    CLIENT_PACKET_TYPE.PING,
+    new Unpacker(bunduServer.ping.bind(bunduServer), 0, ClientSchemas.ping)
+);
+
+packetPipeline.add(
+    CLIENT_PACKET_TYPE.MOVE_UPDATE,
+    new Unpacker(
+        bunduServer.moveUpdate.bind(bunduServer),
+        2,
+        ClientSchemas.moveUpdate
+    )
+);
 
 bunduServer.start();
 controller.start(7777);
@@ -52,8 +74,8 @@ const ground: [number, ...any[]] = [
 
 controller.connect = (socket: GameWS) => {
     socket.send(JSON.stringify(ground));
-    // socket.send(JSON.stringify(structures));
-    // socket.send(JSON.stringify(entities));
+    socket.send(JSON.stringify(structures));
+    socket.send(JSON.stringify(entities));
 };
 // const serverController = new ServerController(bunduServer);
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export enum PACKET_TYPE {
+    PING = 0,
     MOVE_OBJECT = 100,
 
     NEW_PLAYER = 200,
@@ -15,6 +16,12 @@ export enum PACKET_TYPE {
 }
 
 export namespace Schemas {
+    // length: 0
+    export const ping = z.tuple([
+        z.number(), // server time
+    ]);
+    export type ping = z.infer<typeof ping>;
+
     // length: 9
     export const newPlayer = z.tuple([
         z.number(), // id
@@ -70,4 +77,25 @@ export namespace Schemas {
         z.number(), // type
     ]);
     export type loadGround = z.infer<typeof loadGround>;
+}
+
+export enum CLIENT_PACKET_TYPE {
+    PING = 0,
+    MOVE_UPDATE = 1,
+    ROTATE = 2,
+}
+
+export namespace ClientSchemas {
+    export const ping = z.tuple([]);
+
+    export const moveUpdate = z.tuple([
+        z.number(), // x
+        z.number(), // y
+    ]);
+    export type moveUpdate = z.infer<typeof moveUpdate>;
+
+    export const rotate = z.tuple([
+        z.number(), // rotation
+    ]);
+    export type rotate = z.infer<typeof rotate>;
 }

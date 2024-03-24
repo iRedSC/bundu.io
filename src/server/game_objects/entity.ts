@@ -11,12 +11,14 @@ type Point = {
 
 export class EntityAI {
     target: Point;
-    time: number;
+    arriveTime: number;
+    travelTime: number;
     _lastPos: { x: number; y: number };
     _lastMoveTime: number;
     constructor(position: Point) {
         this.target = position;
-        this.time = 0;
+        this.arriveTime = 0;
+        this.travelTime = 0;
         this._lastMoveTime = 0;
         this._lastPos = position;
     }
@@ -43,7 +45,8 @@ export class Entity extends WorldObject {
 
     move(): boolean {
         this.rotation = lookToward(this.ai._lastPos, this.ai.target);
-        const totalTime = this.ai.time - this.ai._lastMoveTime;
+
+        const totalTime = this.ai.arriveTime - this.ai._lastMoveTime;
         const elapsedTime = Date.now() - this.ai._lastMoveTime;
         const t = elapsedTime / totalTime;
         const tClamped = Math.max(0, Math.min(1, t));
@@ -51,7 +54,7 @@ export class Entity extends WorldObject {
             lerp(this.ai._lastPos.x, this.ai.target.x, tClamped),
             lerp(this.ai._lastPos.y, this.ai.target.y, tClamped)
         );
-        if (t >= 1 + this.type.restTime) {
+        if (t >= 1) {
             this.updateTarget();
             return true;
         }
@@ -69,15 +72,15 @@ export class Entity extends WorldObject {
                 this.ai.target.y +
                 Random.integer(-this.type.wanderRange, this.type.wanderRange),
         };
-        this.ai.time =
-            Date.now() +
-            distance(this.position, this.ai.target) / (this.type.speed / 2);
+        this.ai.travelTime =
+            distance(this.position, this.ai.target) / (this.type.speed / 5);
+        this.ai.arriveTime = Date.now() + this.ai.travelTime;
     }
 
     pack() {
         return [
             this.id,
-            this.ai.time + 200,
+            this.ai.travelTime,
             this.ai.target.x,
             this.ai.target.y,
             this.rotation,

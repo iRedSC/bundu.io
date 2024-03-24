@@ -3,17 +3,25 @@ import { GameWS } from "./websockets.js";
 import { World } from "./world.js";
 import { PACKET_TYPE } from "../shared/enums.js";
 import { Entity } from "./game_objects/entity.js";
+import { PacketPipeline } from "../shared/unpack.js";
 
-type UpdateList = {
+class UpdateList {
     entities: Entity[];
-};
+
+    constructor() {
+        this.entities = [];
+    }
+}
 export class BunduServer {
     world: World;
     players: Map<number, Player>;
     updateList: UpdateList;
-    constructor(world: World) {
+    pipeline: PacketPipeline;
+    constructor(world: World, pipeline: PacketPipeline) {
+        this.pipeline = pipeline;
         this.world = world;
         this.players = new Map();
+        this.updateList = new UpdateList();
     }
 
     createPlayer(socket: GameWS) {
@@ -28,12 +36,24 @@ export class BunduServer {
         this.players.delete(id);
         this.world.players.delete(id);
     }
+    moveUpdate(data: unknown[], id: number) {}
 
-    receive(id: number, data: unknown) {}
+    receive(id: number, data: unknown[]) {
+        console.log(`Received: ${id}`);
+        this.pipeline.unpack(data, id);
+    }
 
     start() {
-        setInterval(this.tick.bind(this), 200);
+        setInterval(this.tick.bind(this), 50);
         setInterval(this.sendPackets.bind(this), 200);
+    }
+
+    ping(_: unknown[], id: number) {
+        const player = this.players.get(id);
+        if (player) {
+            console.log(`Pinging: ${id}`);
+            player.socket.send(JSON.stringify([PACKET_TYPE.PING, Date.now()]));
+        }
     }
 
     sendPackets() {
@@ -41,15 +61,13 @@ export class BunduServer {
         for (const entity of this.updateList.entities) {
             packet.push(...entity.pack());
         }
+        this.updateList.entities = [];
         for (const player of this.players.values()) {
             player.socket.send(JSON.stringify(packet));
         }
     }
 
     tick() {
-        this.updateList = this.world.tick();
-        // if (this.updateList.entities.length > 0) {
-        //     this.sendPackets();
-        // }
+        this.world.tick(this.updateList);
     }
 }

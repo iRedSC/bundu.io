@@ -3,14 +3,11 @@ import { Player } from "./game_objects/player.js";
 import { Entity } from "./game_objects/entity.js";
 import { Quadtree } from "../lib/quadtree.js";
 import { Range } from "../lib/range.js";
+import { Update } from "vite";
 
-class UpdateList {
+type UpdateList = {
     entities: Entity[];
-
-    constructor() {
-        this.entities = [];
-    }
-}
+};
 
 export class World {
     nextId: number;
@@ -39,14 +36,12 @@ export class World {
         );
     }
 
-    tick(): UpdateList {
-        const updateList = new UpdateList();
+    tick(updateList: UpdateList) {
         for (let [id, entity] of this.entities.objects.entries()) {
             const moved = entity.move();
             if (moved) {
                 updateList.entities.push(entity);
             }
         }
-        return updateList;
     }
 }

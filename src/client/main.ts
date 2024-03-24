@@ -4,26 +4,41 @@ import { move, mousePos } from "./input/keyboard";
 import { createRenderer } from "./rendering/rendering";
 import { World } from "./game_objects/world";
 import { Viewport } from "pixi-viewport";
-import { PACKET_TYPE, Schemas } from "../shared/enums";
-import { PacketPipeline } from "./game_objects/unpack";
+import { CLIENT_PACKET_TYPE, PACKET_TYPE, Schemas } from "../shared/enums";
+import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { animationManager } from "./animation_manager";
 import { createPipeline } from "./packet_pipline";
+import { debugContainer } from "./debug";
 
 const { viewport } = createRenderer();
-const packetPipline = new PacketPipeline();
+const packetPipeline = new PacketPipeline();
 const world = new World(viewport, animationManager);
 
-createPipeline(packetPipline, world);
+viewport.addChild(debugContainer);
+
+createPipeline(packetPipeline, world);
+
+packetPipeline.add(
+    PACKET_TYPE.PING,
+    new Unpacker(
+        (packet: Schemas.ping) => {
+            console.log(packet[0]);
+        },
+        1,
+        Schemas.ping
+    )
+);
 
 const socket = new WebSocket("ws://localhost:7777");
 
 socket.onopen = () => {
     console.log("CONNECTED");
+    socket.send(JSON.stringify([CLIENT_PACKET_TYPE.PING]));
 };
 
 socket.onmessage = (ev) => {
     console.log(ev.data);
-    packetPipline.unpack(JSON.parse(ev.data));
+    packetPipeline.unpack(JSON.parse(ev.data));
 };
 
 function createClickEvents(viewport: Viewport, player: Player) {
@@ -68,7 +83,7 @@ const _player: [number, ...Schemas.newPlayer] = [
     0,
 ];
 
-packetPipline.unpack(_player);
+packetPipeline.unpack(_player);
 const player = world.dynamicObjs.get(1000)!;
 
 viewport.follow(player, {
@@ -105,10 +120,10 @@ setInterval(() => {
             updateSpeed * 2
         );
     }
-    packetPipline.unpack([
+    packetPipeline.unpack([
         PACKET_TYPE.MOVE_OBJECT,
         1000,
-        Date.now() + updateSpeed,
+        updateSpeed,
         playerPos.x,
         playerPos.y,
         rotation,

@@ -1,5 +1,5 @@
 import { PACKET_TYPE, Schemas } from "../shared/enums";
-import { PacketPipeline, Unpacker } from "./game_objects/unpack";
+import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { World } from "./game_objects/world";
 
 export function createPipeline(packetPipeline: PacketPipeline, world: World) {

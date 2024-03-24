@@ -6,6 +6,7 @@ import { World } from "./game_objects/world";
 export class BunduClient {
     viewport: Viewport;
     objectHandler: World;
+
     // socketHandler: SocketHandler;
 
     constructor(viewport: Viewport, objectHandler: World) {
