@@ -3,7 +3,6 @@ import { GameWS } from "./websockets.js";
 import { World } from "./world.js";
 import { PACKET_TYPE } from "../shared/enums.js";
 import { Entity } from "./game_objects/entity.js";
-let tickthing = false;
 
 type UpdateList = {
     entities: Entity[];
@@ -38,13 +37,9 @@ export class BunduServer {
     }
 
     sendPackets() {
-        const packet: [number, number, any[]] = [
-            PACKET_TYPE.MOVE_OBJECT,
-            Date.now() + 200,
-            [],
-        ];
+        const packet: [number, ...any[]] = [PACKET_TYPE.MOVE_OBJECT];
         for (const entity of this.updateList.entities) {
-            packet[2].push(entity.pack());
+            packet.push(...entity.pack());
         }
         for (const player of this.players.values()) {
             player.socket.send(JSON.stringify(packet));
@@ -53,5 +48,8 @@ export class BunduServer {
 
     tick() {
         this.updateList = this.world.tick();
+        // if (this.updateList.entities.length > 0) {
+        //     this.sendPackets();
+        // }
     }
 }

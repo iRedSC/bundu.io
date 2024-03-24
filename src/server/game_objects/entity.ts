@@ -25,6 +25,7 @@ export class EntityAI {
 export class Entity extends WorldObject {
     type: EntityConfig;
     ai: EntityAI;
+    angry: boolean;
 
     constructor(
         id: number,
@@ -37,6 +38,7 @@ export class Entity extends WorldObject {
         this.type = config;
         this.ai = new EntityAI(this.position);
         this.updateTarget();
+        this.angry = false;
     }
 
     move(): boolean {
@@ -73,18 +75,23 @@ export class Entity extends WorldObject {
     }
 
     pack() {
-        return [this.id, this.ai.target.x, this.ai.target.y, this.rotation];
+        return [
+            this.id,
+            this.ai.time + 200,
+            this.ai.target.x,
+            this.ai.target.y,
+            this.rotation,
+        ];
     }
 
     packNew() {
         return [
             this.id,
-            this.type.id,
             this.position.x,
             this.position.y,
             this.rotation,
-            this.size,
-            this.type.speed,
+            this.type.id,
+            this.angry,
         ];
     }
 }

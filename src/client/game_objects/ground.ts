@@ -14,11 +14,23 @@ export function coordsToRect(
 
     return [x, y, width, height];
 }
-export class Ground extends PIXI.Graphics {
-    constructor(color: number, x1: number, y1: number, x2: number, y2: number) {
-        super();
-        this.beginFill(color);
-        const rect = coordsToRect(x1, x2, y1, y2);
-        this.drawRect(rect[0], rect[1], rect[2], rect[3]);
-    }
+
+const types = new Map();
+
+types.set(0, 0x00a35c);
+types.set(1, 0x72084f);
+
+export function createGround(
+    type: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+) {
+    const ground = new PIXI.Graphics();
+    ground.beginFill(types.get(type) || 0xffffff);
+    const rect = coordsToRect(x1, y1, x2, y2);
+    console.log(rect);
+    ground.drawRect(rect[0], rect[1], rect[2], rect[3]);
+    return ground;
 }

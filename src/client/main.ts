@@ -4,10 +4,10 @@ import { move, mousePos } from "./input/keyboard";
 import { createRenderer } from "./rendering/rendering";
 import { World } from "./game_objects/world";
 import { Viewport } from "pixi-viewport";
-import { PACKET_TYPE } from "../shared/enums";
+import { PACKET_TYPE, Schemas } from "../shared/enums";
 import { PacketPipeline } from "./game_objects/unpack";
 import { animationManager } from "./animation_manager";
-import { Schemas, createPipeline } from "./packet_pipline";
+import { createPipeline } from "./packet_pipline";
 
 const { viewport } = createRenderer();
 const packetPipline = new PacketPipeline();

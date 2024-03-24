@@ -1,15 +1,14 @@
 import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animation";
 import { WorldObject } from "./world_object";
-import { PACKET } from "../../shared/enums";
+import { Schemas } from "../../shared/enums";
 import { Structure } from "./structure";
 import * as PIXI from "pixi.js";
 import { Player } from "./player";
 import { Sky } from "./sky";
 import { itemMap } from "../configs/item_map";
-import { Ground } from "./ground";
+import { createGround } from "./ground";
 import { Entity } from "./entity";
-import { Schemas } from "../packet_pipline";
 
 export class World {
     viewport: Viewport;
@@ -41,28 +40,28 @@ export class World {
         }
     }
 
-    newStructure(_: number, packet: PACKET.NEW_STRUCTURE) {
+    newStructure(packet: Schemas.newStructure) {
         const id = packet[0];
-        const pos = new PIXI.Point(packet[2], packet[3]);
+        const pos = new PIXI.Point(packet[1], packet[2]);
         const structure = new Structure(
-            itemMap.getv(packet[1]) || "stone",
+            itemMap.getv(packet[4]) || "stone",
             pos,
-            packet[4],
+            packet[3],
             packet[5]
         );
         this.objects.set(id, structure);
         this.viewport.addChild(structure);
     }
 
-    newEntity(_: number, packet: PACKET.NEW_ENTITY) {
+    newEntity(packet: Schemas.newEntity) {
         const id = packet[0];
-        const pos = new PIXI.Point(packet[2], packet[3]);
+        const pos = new PIXI.Point(packet[1], packet[2]);
         const structure = new Entity(
             this.animationManager,
-            itemMap.getv(packet[1]) || "stone",
+            itemMap.getv(packet[4]) || "stone",
             pos,
-            packet[4],
-            packet[5]
+            packet[3],
+            2
         );
         this.objects.set(id, structure);
         this.viewport.addChild(structure);
@@ -93,17 +92,17 @@ export class World {
         }
     }
 
-    setTime(_: number, packet: PACKET.SET_TIME) {
-        this.sky.setTime(packet[0], this.animationManager);
-    }
+    // setTime(_: number, packet: PACKET.SET_TIME) {
+    //     this.sky.setTime(packet[0], this.animationManager);
+    // }
 
-    loadGround(_: number, packet: PACKET.LOAD_GROUND) {
-        const ground = new Ground(
+    loadGround(packet: Schemas.loadGround) {
+        const ground = createGround(
+            packet[4],
+            packet[0],
             packet[1],
             packet[2],
-            packet[3],
-            packet[4],
-            packet[5]
+            packet[3]
         );
         this.viewport.addChild(ground);
     }

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export enum PACKET_TYPE {
     MOVE_OBJECT = 100,
 
@@ -12,66 +14,60 @@ export enum PACKET_TYPE {
     NEW_ENTITY = 700,
 }
 
-export namespace PACKET {
-    export type ANY =
-        | MOVE_OBJECT
-        | NEW_PLAYER
-        | UPDATE_PLAYER_GEAR
-        | NEW_STRUCTURE
-        | NEW_ENTITY
-        | SET_TIME
-        | LOAD_GROUND;
+export namespace Schemas {
+    // length: 9
+    export const newPlayer = z.tuple([
+        z.number(), // id
+        z.number(), // x
+        z.number(), // y
+        z.number(), // rot
+        z.string(), // name
+        z.number(), // hand
+        z.number(), // helm
+        z.number(), // skin
+        z.number(), // backpack
+    ]);
+    export type newPlayer = z.infer<typeof newPlayer>;
 
-    export type LOAD_GROUND = [
-        id: number,
-        type: number,
-        x1: number,
-        y1: number,
-        x2: number,
-        y2: number
-    ];
+    // length: 5
+    export const moveObject = z.tuple([
+        z.number(), // id
+        z.number(), // time
+        z.number(), // x
+        z.number(), // y
+        z.number(), // rot
+    ]);
+    export type moveObject = z.infer<typeof moveObject>;
 
-    export type SET_TIME = [time: number];
+    // length: 6
+    export const newEntity = z.tuple([
+        z.number(), // id
+        z.number(), // x
+        z.number(), // y
+        z.number(), // rot
+        z.number(), // type
+        z.boolean(), // angry
+    ]);
+    export type newEntity = z.infer<typeof newEntity>;
 
-    export type NEW_STRUCTURE = [
-        id: number,
-        type: number,
-        x: number,
-        y: number,
-        rotation: number,
-        size: number
-    ];
+    // length 6
+    export const newStructure = z.tuple([
+        z.number(), // id
+        z.number(), // x
+        z.number(), // y
+        z.number(), // rot
+        z.number(), // type
+        z.number(), // size
+    ]);
+    export type newStructure = z.infer<typeof newStructure>;
 
-    export type NEW_ENTITY = [
-        id: number,
-        type: number,
-        x: number,
-        y: number,
-        rotation: number,
-        size: number,
-        speed: number
-    ];
-
-    export type MOVE_OBJECT = [
-        id: number,
-        x: number,
-        y: number,
-        rotation: number
-    ];
-    export type NEW_PLAYER = [
-        id: number,
-        name: string,
-        x: number,
-        y: number,
-        rotation: number,
-        holding: number,
-        helmet: number,
-        backpack: number
-    ];
-    export type UPDATE_PLAYER_GEAR = [
-        id: number,
-        holding: number,
-        helmet: number,
-        backpack: number
-    ];
+    // length: 5
+    export const loadGround = z.tuple([
+        z.number(), // x1
+        z.number(), // y1
+        z.number(), // x2
+        z.number(), // y2
+        z.number(), // type
+    ]);
+    export type loadGround = z.infer<typeof loadGround>;
 }
