@@ -6,7 +6,8 @@ import { Range } from "../lib/range.js";
 import { Update } from "vite";
 
 type UpdateList = {
-    entities: Entity[];
+    entities: Map<number, Entity>;
+    players: Map<number, Player>;
 };
 
 export class World {
@@ -40,11 +41,14 @@ export class World {
         for (let [id, entity] of this.entities.objects.entries()) {
             const moved = entity.move();
             if (moved) {
-                updateList.entities.push(entity);
+                updateList.entities.set(id, entity);
             }
         }
-        for (let player of this.players.objects.values()) {
-            player.move();
+        for (let [id, player] of this.players.objects.entries()) {
+            const moved = player.move();
+            // if (moved) {
+            updateList.players.set(id, player);
+            // }
         }
     }
 }

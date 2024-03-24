@@ -53,9 +53,9 @@ export class World {
         this.animationManager.update();
         for (let [id, object] of this.updatingObjs.entries()) {
             object.move();
-            if (object.nextState[0] < Date.now()) {
-                this.updatingObjs.delete(id);
-            }
+            // if (object.states[-1][0] < Date.now()) {
+            //     this.updatingObjs.delete(id);
+            // }
         }
     }
 

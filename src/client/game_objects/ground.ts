@@ -17,7 +17,7 @@ export function coordsToRect(
 
 const types = new Map();
 
-types.set(0, 0x00a35c);
+types.set(0, 0x105903);
 types.set(1, 0x72084f);
 
 export function createGround(

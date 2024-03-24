@@ -18,8 +18,7 @@ function typeofState(state?: State): state is State {
     );
 }
 export class WorldObject extends PIXI.Container {
-    lastState: State;
-    nextState: State;
+    states: State[];
 
     animations?: AnimationMap<any>;
 
@@ -27,38 +26,61 @@ export class WorldObject extends PIXI.Container {
         super();
         this.position = pos;
         this.rotation = rotation;
-
-        this.lastState = [Date.now(), pos.x, pos.y, rotation];
-        this.nextState = this.lastState;
+        this.states = [];
     }
 
     move() {
-        const now = Date.now();
-        const t =
-            (now - this.lastState[0]) / (this.nextState[0] - this.lastState[0]);
+        const removeStaleStates = () => {
+            const state = this.states[1];
+            if (state) {
+                if (Date.now() - 50 > state[0]) {
+                    this.states = this.states.slice(1);
+                    removeStaleStates();
+                }
+            }
+        };
+        removeStaleStates();
+
+        const lastState = this.states[0];
+        const nextState = this.states[1];
+
+        if (!nextState) {
+            return;
+        }
+
+        // for (const state of this.states) {
+        //     console.log(state[0]);
+        // }
+        // console.log("-------------");
+        const now = Date.now() - 50;
+        const t = (now - lastState[0]) / (nextState[0] - lastState[0]);
         const tClamped = Math.max(0, Math.min(1, t));
-        const x = round(lerp(this.lastState[1], this.nextState[1], tClamped));
-        const y = round(lerp(this.lastState[2], this.nextState[2], tClamped));
-        this.rotation = rotationLerp(
-            this.lastState[3],
-            this.nextState[3],
-            tClamped
-        );
+        const x = round(lerp(lastState[1], nextState[1], tClamped));
+        const y = round(lerp(lastState[2], nextState[2], tClamped));
+
+        const rotationT = (now - lastState[0]) / 150;
+        this.rotation = rotationLerp(lastState[3], nextState[3], rotationT);
+        // this.rotation = this.nextState[3];
         this.position.set(x, y);
     }
 
     setState(state?: State) {
         if (typeofState(state)) {
-            this.lastState = this.nextState;
-            this.lastState[0] = Date.now();
-
-            this.nextState = state;
-            if (this.nextState[0] < this.lastState[0]) {
-                this.nextState[0] = this.lastState[0];
+            this.states.push(state);
+            if (this.states.length === 2) {
+                this.states[0][0] = Date.now() - 50;
             }
+
+            const lastState = this.states[0];
+            const nextState = this.states[1];
+
+            if (!nextState) {
+                return;
+            }
+
             const line = new Line(
-                [this.lastState[1], this.lastState[2]],
-                [this.nextState[1], this.nextState[2]],
+                [lastState[1], lastState[2]],
+                [nextState[1], nextState[2]],
                 0xff0000,
                 25
             );

@@ -1,18 +1,18 @@
 import { degrees, lookToward } from "../lib/transforms";
-import { mousePos, InputHandler } from "./input/keyboard";
+import { InputHandler } from "./input/keyboard";
 import { createRenderer } from "./rendering/rendering";
 import { World } from "./game_objects/world";
 import { CLIENT_PACKET_TYPE, PACKET_TYPE, Schemas } from "../shared/enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { animationManager } from "./animation_manager";
 import { createPipeline } from "./packet_pipline";
-// import { debugContainer } from "./debug";
+import { debugContainer } from "./debug";
 
 const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
 const world = new World(viewport, animationManager);
 
-// viewport.addChild(debugContainer);
+viewport.addChild(debugContainer);
 
 createPipeline(packetPipeline, world);
 
@@ -59,7 +59,7 @@ function mouseMoveCallback(mousePos: [number, number]) {
         let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
         const rotation =
             lookToward(player.position, mouseToWorld) - degrees(90);
-        if (Math.abs(player.rotation - rotation) > 0.3) {
+        if (Math.abs(player.rotation - rotation) > 0.1) {
             socket.send(JSON.stringify([CLIENT_PACKET_TYPE.ROTATE, rotation]));
         }
     }

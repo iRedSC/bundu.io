@@ -44,8 +44,6 @@ export class Entity extends WorldObject {
     }
 
     move(): boolean {
-        this.rotation = lookToward(this.ai._lastPos, this.ai.target);
-
         const totalTime = this.ai.arriveTime - this.ai._lastMoveTime;
         const elapsedTime = Date.now() - this.ai._lastMoveTime;
         const t = elapsedTime / totalTime;
@@ -75,6 +73,7 @@ export class Entity extends WorldObject {
         this.ai.travelTime =
             distance(this.position, this.ai.target) / (this.type.speed / 5);
         this.ai.arriveTime = Date.now() + this.ai.travelTime;
+        this.rotation = lookToward(this.ai._lastPos, this.ai.target);
     }
 
     pack() {

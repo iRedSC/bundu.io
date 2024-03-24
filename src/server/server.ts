@@ -6,10 +6,16 @@ import { Entity } from "./game_objects/entity.js";
 import { PacketPipeline } from "../shared/unpack.js";
 
 class UpdateList {
-    entities: Entity[];
+    entities: Map<number, Entity>;
+    players: Map<number, Player>;
 
     constructor() {
-        this.entities = [];
+        this.clear();
+    }
+
+    clear() {
+        this.entities = new Map();
+        this.players = new Map();
     }
 }
 export class BunduServer {
@@ -88,13 +94,13 @@ export class BunduServer {
 
     sendPackets() {
         const packet: [number, ...any[]] = [PACKET_TYPE.MOVE_OBJECT];
-        for (const entity of this.updateList.entities) {
+        for (const entity of this.updateList.entities.values()) {
             packet.push(...entity.pack());
         }
-        for (const player of this.players.values()) {
+        for (const player of this.updateList.players.values()) {
             packet.push(...player.pack());
         }
-        this.updateList.entities = [];
+        this.updateList.clear();
         for (const player of this.players.values()) {
             player.socket.send(JSON.stringify(packet));
         }
