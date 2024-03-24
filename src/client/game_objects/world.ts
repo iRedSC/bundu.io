@@ -84,7 +84,6 @@ export class World {
     moveObject(packet: Schemas.moveObject) {
         const id = packet[0];
         const time = packet[1];
-        console.log(`time: ${time}`);
 
         const object = this.objects.get(id);
         if (object) {

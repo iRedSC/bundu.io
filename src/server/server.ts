@@ -45,7 +45,7 @@ export class BunduServer {
 
     start() {
         setInterval(this.tick.bind(this), 50);
-        setInterval(this.sendPackets.bind(this), 200);
+        setInterval(this.sendPackets.bind(this), 50);
     }
 
     ping(_: unknown[], id: number) {

@@ -37,7 +37,7 @@ socket.onopen = () => {
 };
 
 socket.onmessage = (ev) => {
-    console.log(ev.data);
+    // console.log(ev.data);
     packetPipeline.unpack(JSON.parse(ev.data));
 };
 

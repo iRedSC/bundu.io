@@ -54,7 +54,7 @@ export class Entity extends WorldObject {
             lerp(this.ai._lastPos.x, this.ai.target.x, tClamped),
             lerp(this.ai._lastPos.y, this.ai.target.y, tClamped)
         );
-        if (t >= 1) {
+        if (t >= 1 + this.type.restTime) {
             this.updateTarget();
             return true;
         }
