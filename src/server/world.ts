@@ -43,5 +43,8 @@ export class World {
                 updateList.entities.push(entity);
             }
         }
+        for (let player of this.players.objects.values()) {
+            player.move();
+        }
     }
 }

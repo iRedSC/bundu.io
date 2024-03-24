@@ -4,16 +4,35 @@ import { WorldObject } from "./world_object";
 import { Schemas } from "../../shared/enums";
 import { Structure } from "./structure";
 import * as PIXI from "pixi.js";
-import { Player } from "./player";
+import { PLAYER_ANIMATION, Player } from "./player";
 import { Sky } from "./sky";
 import { itemMap } from "../configs/item_map";
 import { createGround } from "./ground";
 import { Entity } from "./entity";
+import { mousePos } from "../input/keyboard";
+import { animationManager } from "../animation_manager";
+
+function createClickEvents(viewport: Viewport, player: Player) {
+    viewport.on("pointerdown", (event) => {
+        if (event.button == 2) {
+            player.blocking = true;
+            player.trigger(PLAYER_ANIMATION.BLOCK, animationManager);
+        } else {
+            player.trigger(PLAYER_ANIMATION.ATTACK, animationManager);
+        }
+    });
+
+    viewport.on("pointerup", (event) => {
+        if (event.button == 2) {
+            player.blocking = false;
+        }
+    });
+}
 
 export class World {
     viewport: Viewport;
     animationManager: AnimationManager;
-    user?: WorldObject;
+    user?: number;
     objects: Map<number, WorldObject>;
     dynamicObjs: Map<number, WorldObject>;
     updatingObjs: Map<number, WorldObject>;
@@ -38,6 +57,21 @@ export class World {
                 this.updatingObjs.delete(id);
             }
         }
+    }
+
+    setPlayer(packet: Schemas.startingInfo) {
+        this.user = packet[0];
+        console.log(this.user);
+
+        const player = this.dynamicObjs.get(this.user)!;
+
+        this.viewport.follow(player, {
+            speed: 0,
+            acceleration: 1,
+            radius: 0,
+        });
+
+        createClickEvents(this.viewport, player as Player);
     }
 
     newStructure(packet: Schemas.newStructure) {

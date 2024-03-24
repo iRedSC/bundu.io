@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export enum PACKET_TYPE {
     PING = 0,
+    STARTING_INFO = 99,
     MOVE_OBJECT = 100,
 
     NEW_PLAYER = 200,
@@ -35,6 +36,11 @@ export namespace Schemas {
         z.number(), // backpack
     ]);
     export type newPlayer = z.infer<typeof newPlayer>;
+
+    export const startingInfo = z.tuple([
+        z.number(), // player's id
+    ]);
+    export type startingInfo = z.infer<typeof startingInfo>;
 
     // length: 5
     export const moveObject = z.tuple([

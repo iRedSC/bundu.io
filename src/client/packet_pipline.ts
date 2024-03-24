@@ -21,7 +21,17 @@ export function createPipeline(packetPipeline: PacketPipeline, world: World) {
     );
 
     packetPipeline.add(
+        PACKET_TYPE.NEW_PLAYER,
+        new Unpacker(world.newPlayer.bind(world), 9, Schemas.newPlayer)
+    );
+
+    packetPipeline.add(
         PACKET_TYPE.LOAD_GROUND,
         new Unpacker(world.loadGround.bind(world), 5, Schemas.loadGround)
+    );
+
+    packetPipeline.add(
+        PACKET_TYPE.STARTING_INFO,
+        new Unpacker(world.setPlayer.bind(world), 1, Schemas.startingInfo)
     );
 }

@@ -31,12 +31,21 @@ packetPipeline.add(
     )
 );
 
+packetPipeline.add(
+    CLIENT_PACKET_TYPE.ROTATE,
+    new Unpacker(
+        bunduServer.rotatePlayer.bind(bunduServer),
+        1,
+        ClientSchemas.rotate
+    )
+);
+
 bunduServer.start();
 controller.start(7777);
 
 const WORLD_SIZE = 200000;
 const structures: [number, ...any[]] = [PACKET_TYPE.NEW_STRUCTURE];
-for (let i = 0; i < 1000; i++) {
+for (let i = 5000; i < 6000; i++) {
     structures.push(
         i,
         Random.integer(5000, WORLD_SIZE - 5000),

@@ -1,20 +1,18 @@
-import { PLAYER_ANIMATION, Player } from "./game_objects/player";
-import { degrees, lookToward, moveInDirection } from "../lib/transforms";
-import { move, mousePos } from "./input/keyboard";
+import { degrees, lookToward } from "../lib/transforms";
+import { mousePos, InputHandler } from "./input/keyboard";
 import { createRenderer } from "./rendering/rendering";
 import { World } from "./game_objects/world";
-import { Viewport } from "pixi-viewport";
 import { CLIENT_PACKET_TYPE, PACKET_TYPE, Schemas } from "../shared/enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { animationManager } from "./animation_manager";
 import { createPipeline } from "./packet_pipline";
-import { debugContainer } from "./debug";
+// import { debugContainer } from "./debug";
 
 const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
 const world = new World(viewport, animationManager);
 
-viewport.addChild(debugContainer);
+// viewport.addChild(debugContainer);
 
 createPipeline(packetPipeline, world);
 
@@ -37,100 +35,36 @@ socket.onopen = () => {
 };
 
 socket.onmessage = (ev) => {
-    // console.log(ev.data);
+    console.log(ev.data);
     packetPipeline.unpack(JSON.parse(ev.data));
 };
 
-function createClickEvents(viewport: Viewport, player: Player) {
-    document.body.addEventListener("mousemove", (event) => {
-        mousePos[0] = event.clientX;
-        mousePos[1] = event.clientY;
-    });
-
-    document.body.addEventListener("touchmove", (event) => {
-        mousePos[0] = event.touches[0].clientX;
-        mousePos[1] = event.touches[0].clientY;
-    });
-
-    viewport.on("pointerdown", (event) => {
-        if (event.button == 2) {
-            player.blocking = true;
-            player.trigger(PLAYER_ANIMATION.BLOCK, animationManager);
-        } else {
-            player.trigger(PLAYER_ANIMATION.ATTACK, animationManager);
-        }
-    });
-
-    viewport.on("pointerup", (event) => {
-        if (event.button == 2) {
-            player.blocking = false;
-        }
-    });
-}
-
-// const client = new BunduClient(viewport, world);
-
-const _player: [number, ...Schemas.newPlayer] = [
-    PACKET_TYPE.NEW_PLAYER,
-    1000,
-    10_000,
-    10_000,
-    0,
-    "test",
-    0,
-    0,
-    0,
-    0,
-];
-
-packetPipeline.unpack(_player);
-const player = world.dynamicObjs.get(1000)!;
-
-viewport.follow(player, {
-    speed: 0,
-    acceleration: 1,
-    radius: 0,
-});
-
-let playerPos: { x: number; y: number } = { x: 10000, y: 10000 };
 // tick updates
 
 function tick() {
     world.tick();
-    let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
-    const rotation = lookToward(player.position, mouseToWorld) - degrees(90);
-    player.rotation = rotation;
     requestAnimationFrame(tick);
 }
 
 requestAnimationFrame(tick);
 
-const updateSpeed = 100;
+function moveUpdate(move: [number, number]) {
+    console.log(move);
+    socket.send(JSON.stringify([CLIENT_PACKET_TYPE.MOVE_UPDATE, ...move]));
+}
 
-setInterval(() => {
-    let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
-    const rotation = lookToward(player.position, mouseToWorld) - degrees(90);
-    if (!(move[0] === 0 && move[1] === 0)) {
-        playerPos = moveInDirection(
-            playerPos,
-            lookToward(playerPos, {
-                x: playerPos.x - move[0] * 10,
-                y: playerPos.y - move[1] * 10,
-            }),
-            updateSpeed * 2
-        );
+function mouseMoveCallback(mousePos: [number, number]) {
+    const player = world.dynamicObjs.get(world.user || -1);
+    if (player) {
+        let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
+        const rotation =
+            lookToward(player.position, mouseToWorld) - degrees(90);
+        if (Math.abs(player.rotation - rotation) > 0.3) {
+            socket.send(JSON.stringify([CLIENT_PACKET_TYPE.ROTATE, rotation]));
+        }
     }
-    packetPipeline.unpack([
-        PACKET_TYPE.MOVE_OBJECT,
-        1000,
-        updateSpeed,
-        playerPos.x,
-        playerPos.y,
-        rotation,
-    ]);
-    viewport.dirty = true;
-}, updateSpeed);
+}
+
+const inputHandler = new InputHandler(moveUpdate, mouseMoveCallback);
 
 // interactions
-
-createClickEvents(viewport, player as Player);

@@ -1,7 +1,7 @@
 import { Player } from "./game_objects/player.js";
 import { GameWS } from "./websockets.js";
 import { World } from "./world.js";
-import { PACKET_TYPE } from "../shared/enums.js";
+import { ClientSchemas, PACKET_TYPE } from "../shared/enums.js";
 import { Entity } from "./game_objects/entity.js";
 import { PacketPipeline } from "../shared/unpack.js";
 
@@ -25,21 +25,51 @@ export class BunduServer {
     }
 
     createPlayer(socket: GameWS) {
-        const player = new Player(0, socket, [10_000, 10_000], 0, "test");
-        player.id = this.world.nextId;
+        const player = new Player(0, socket, [10_000, 10_000], 0, "");
         this.world.nextId++;
+        player.id = this.world.nextId;
+        player.name = `Player #${player.id}`;
+
+        const packet: any[] = [PACKET_TYPE.NEW_PLAYER];
+        for (const player of this.players.values()) {
+            packet.push(...player.packNew());
+        }
+        if (packet.length > 1) {
+            player.socket.send(JSON.stringify(packet));
+        }
+
         this.world.players.insert(player);
+        console.log(`ID = ${player.id}`);
         this.players.set(player.id, player);
+        for (let client of this.players.values()) {
+            client.socket.send(
+                JSON.stringify([PACKET_TYPE.NEW_PLAYER, ...player.packNew()])
+            );
+        }
+        player.socket.send(
+            JSON.stringify([PACKET_TYPE.STARTING_INFO, player.id])
+        );
         return player.id;
     }
     deletePlayer(id: number) {
         this.players.delete(id);
         this.world.players.delete(id);
     }
-    moveUpdate(data: unknown[], id: number) {}
+    moveUpdate(data: ClientSchemas.moveUpdate, id: number) {
+        const player = this.players.get(id);
+        if (player) {
+            player.moveDir = [data[0], data[1]];
+        }
+    }
+    rotatePlayer(data: ClientSchemas.rotate, id: number) {
+        const player = this.players.get(id);
+        if (player) {
+            player.rotation = data[0];
+        }
+    }
 
     receive(id: number, data: unknown[]) {
-        console.log(`Received: ${id}`);
+        // console.log(`Received: ${id}`);
         this.pipeline.unpack(data, id);
     }
 
@@ -60,6 +90,9 @@ export class BunduServer {
         const packet: [number, ...any[]] = [PACKET_TYPE.MOVE_OBJECT];
         for (const entity of this.updateList.entities) {
             packet.push(...entity.pack());
+        }
+        for (const player of this.players.values()) {
+            packet.push(...player.pack());
         }
         this.updateList.entities = [];
         for (const player of this.players.values()) {
