@@ -48,7 +48,7 @@ export class Entity extends WorldObject {
             lerp(this.ai._lastPos.x, this.ai.target.x, tClamped),
             lerp(this.ai._lastPos.y, this.ai.target.y, tClamped)
         );
-        if (t >= 1 + this.type.restTime) {
+        if (t >= 1 + this.type.restTime + Math.random()) {
             this.updateTarget(collisionObjects);
             return true;
         }
@@ -78,7 +78,7 @@ export class Entity extends WorldObject {
         this.rotation = lookToward(this.ai._lastPos, this.ai.target);
     }
 
-    pack(type: string) {
+    pack(type: string): any[] {
         switch (type) {
             case "moveObject":
                 return [

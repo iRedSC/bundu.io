@@ -4,6 +4,7 @@ import { World } from "./world.js";
 import { ClientSchemas, PACKET_TYPE } from "../shared/enums.js";
 import { Entity } from "./game_objects/entity.js";
 import { PacketPipeline } from "../shared/unpack.js";
+import { WorldObject } from "./game_objects/base.js";
 
 function sendPacket(players: Iterable<Player>, packets: any[]) {
     for (let player of players) {
@@ -16,6 +17,7 @@ function sendPacket(players: Iterable<Player>, packets: any[]) {
 class UpdateList {
     entities: Map<number, Entity>;
     players: Map<number, Player>;
+    generics: Map<number, WorldObject>;
 
     constructor() {
         this.clear();
@@ -24,6 +26,7 @@ class UpdateList {
     clear() {
         this.entities = new Map();
         this.players = new Map();
+        this.generics = new Map();
     }
 }
 export class BunduServer {
@@ -107,6 +110,10 @@ export class BunduServer {
         for (const entity of this.updateList.entities.values()) {
             moveObject.push(...entity.pack("moveObject"));
             rotateObject.push(...entity.pack("rotateObject"));
+        }
+        for (const generic of this.updateList.generics.values()) {
+            moveObject.push(...generic.pack("moveObject"));
+            rotateObject.push(...generic.pack("rotateObject"));
         }
         for (const player of this.updateList.players.values()) {
             moveObject.push(...player.pack("moveObject"));

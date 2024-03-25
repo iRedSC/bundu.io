@@ -36,4 +36,8 @@ export class WorldObject {
         this.collider.pos.x = x;
         this.collider.pos.y = y;
     }
+
+    pack(type: string): any[] {
+        return [];
+    }
 }

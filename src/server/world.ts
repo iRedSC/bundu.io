@@ -9,6 +9,7 @@ import { WorldObject } from "./game_objects/base.js";
 type UpdateList = {
     entities: Map<number, Entity>;
     players: Map<number, Player>;
+    generics: Map<number, WorldObject>;
 };
 
 export class World {
@@ -49,8 +50,8 @@ export class World {
         }
         for (let [id, player] of this.players.objects.entries()) {
             const moved = player.move();
-            collideCircle(player, player.collider.pos, this);
-            if (moved) {
+            const collided = collideCircle(player, this, updateList);
+            if (moved || collided) {
                 updateList.players.set(id, player);
             }
         }
@@ -64,16 +65,13 @@ function collisionBounds(pos: { x: number; y: number; [key: string]: any }) {
     return new Range(p1, p2);
 }
 
-function collisionObjects(bounds: Range) {}
-
-function collideCircle(
+function collide(
     object: WorldObject,
-    updateVec: SAT.Vector,
-    world: World
+    others: Iterable<WorldObject>,
+    updateList: UpdateList
 ) {
-    const detectionRange = collisionBounds(object.position);
-    const collisionTest = world.resources.query(detectionRange);
-    for (const other of collisionTest.values()) {
+    let success = false;
+    for (const other of others) {
         const response = new SAT.Response();
         const overlap = SAT.testCircleCircle(
             object.collider,
@@ -81,7 +79,28 @@ function collideCircle(
             response
         );
         if (overlap) {
-            updateVec.sub(response.overlapV);
+            const responseV = response.overlapV.scale(0.5, 0.5);
+            object.collider.pos.sub(responseV);
+            other.collider.pos.add(responseV);
+            updateList.generics.set(other.id, other);
+            success = true;
         }
     }
+    return success;
+}
+
+function collideCircle(
+    object: WorldObject,
+    world: World,
+    updateList: UpdateList
+) {
+    const detectionRange = collisionBounds(object.position);
+    const resources = world.resources.query(detectionRange);
+    const entities = world.entities.query(detectionRange);
+    const rcol = collide(object, resources, updateList);
+    const ecol = collide(object, entities, updateList);
+    if (rcol || ecol) {
+        return true;
+    }
+    return false;
 }

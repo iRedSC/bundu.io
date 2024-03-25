@@ -17,5 +17,5 @@ bear:
 ram:
     speed: 6
     size: 3
-    wander_range: 750
-    rest_time: 0.1
+    wander_range: 1100
+    rest_time: 0.25

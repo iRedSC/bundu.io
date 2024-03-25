@@ -35,7 +35,6 @@ class StatsDisplay {
         this.container.addChild(this.decor);
     }
 
-
     update(amount: number, manager: AnimationManager) {
         const animation = this.animations.get(0);
         this.amount = amount;
@@ -45,8 +44,6 @@ class StatsDisplay {
     }
 }
 
-
-
 function loadAnimations(target: StatsDisplay) {
     const transition: Keyframes<StatsDisplay> = new Keyframes();
     transition.frame(0).set = ({ target, animation }) => {
@@ -54,7 +51,11 @@ function loadAnimations(target: StatsDisplay) {
             animation.meta.amount = target.primaryBar.width;
             animation.goto(0, 500);
         }
-        target.primaryBar.width = lerp(animation.meta.amount, target.amount, animation.t);
+        target.primaryBar.width = lerp(
+            animation.meta.amount,
+            target.amount,
+            animation.t
+        );
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
@@ -93,7 +94,6 @@ barContainer.addChild(
     hungerContainer.container
 );
 
-
 function resize() {
     barContainer.position.set(
         (window.innerWidth - barContainer.width) / 2 + 270,
@@ -112,7 +112,7 @@ export function updateStatBars(health: number, hunger: number, heat: number) {
     heat = clamp(heat, 0, 200);
     health = health * 2.9;
     healthContainer.secondaryBar!.width = health;
-    healthContainer.update(health, animationManager)
+    healthContainer.update(health, animationManager);
     hunger = hunger * 2.9;
     hungerContainer.update(hunger, animationManager);
     heat = heat * 2.9;
@@ -124,8 +124,8 @@ export function updateStatBars(health: number, hunger: number, heat: number) {
         heatContainer.primaryBar.width = heat;
     }
 }
-window.addEventListener("click", updatestats);
-window.addEventListener("contextmenu", updatestats2);
+// window.addEventListener("click", updatestats);
+// window.addEventListener("contextmenu", updatestats2);
 updateStatBars(healthstat, hungerstat, heatstat);
 
 function updatestats() {

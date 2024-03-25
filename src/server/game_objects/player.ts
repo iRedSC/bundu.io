@@ -46,7 +46,7 @@ export class Player extends WorldObject {
         return true;
     }
 
-    pack(type: string) {
+    pack(type: string): any[] {
         switch (type) {
             case "moveObject":
                 return [
