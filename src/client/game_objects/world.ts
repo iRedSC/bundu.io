@@ -100,15 +100,16 @@ export class World {
     newEntity(packet: Schemas.newEntity) {
         const id = packet[0];
         const pos = new PIXI.Point(packet[1], packet[2]);
-        const structure = new Entity(
+        const entity = new Entity(
             this.animationManager,
             itemMap.getv(packet[4]) || "stone",
             pos,
             packet[3],
             2
         );
-        this.objects.set(id, structure);
-        this.viewport.addChild(structure);
+        entity.setState([Date.now(), pos.x, pos.y]);
+        this.objects.set(id, entity);
+        this.viewport.addChild(entity);
     }
 
     newPlayer(packet: Schemas.newPlayer) {
