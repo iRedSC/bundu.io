@@ -7,6 +7,7 @@ import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { animationManager } from "./animation_manager";
 import { createPipeline } from "./packet_pipline";
 import { debugContainer } from "./debug";
+import { round } from "../lib/math";
 
 const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
@@ -35,7 +36,7 @@ socket.onopen = () => {
 };
 
 socket.onmessage = (ev) => {
-    console.log(ev.data);
+    // console.log(ev.data);
     packetPipeline.unpack(JSON.parse(ev.data));
 };
 
@@ -60,7 +61,9 @@ function mouseMoveCallback(mousePos: [number, number]) {
         const rotation =
             lookToward(player.position, mouseToWorld) - degrees(90);
         if (Math.abs(player.rotation - rotation) > 0.1) {
-            socket.send(JSON.stringify([CLIENT_PACKET_TYPE.ROTATE, rotation]));
+            socket.send(
+                JSON.stringify([CLIENT_PACKET_TYPE.ROTATE, round(rotation, 3)])
+            );
         }
     }
 }

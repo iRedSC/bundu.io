@@ -46,9 +46,9 @@ export class World {
         }
         for (let [id, player] of this.players.objects.entries()) {
             const moved = player.move();
-            // if (moved) {
-            updateList.players.set(id, player);
-            // }
+            if (moved) {
+                updateList.players.set(id, player);
+            }
         }
     }
 }

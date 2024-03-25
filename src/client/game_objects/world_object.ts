@@ -67,6 +67,7 @@ export class WorldObject extends PIXI.Container {
     setState(state?: State) {
         if (typeofState(state)) {
             this.states.push(state);
+            console.log(this.states);
             if (this.states.length === 2) {
                 this.states[0][0] = Date.now() - 50;
             }

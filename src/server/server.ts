@@ -81,7 +81,6 @@ export class BunduServer {
 
     start() {
         setInterval(this.tick.bind(this), 50);
-        setInterval(this.sendPackets.bind(this), 50);
     }
 
     ping(_: unknown[], id: number) {
@@ -101,12 +100,15 @@ export class BunduServer {
             packet.push(...player.pack());
         }
         this.updateList.clear();
-        for (const player of this.players.values()) {
-            player.socket.send(JSON.stringify(packet));
+        if (packet.length > 1) {
+            for (const player of this.players.values()) {
+                player.socket.send(JSON.stringify(packet));
+            }
         }
     }
 
     tick() {
         this.world.tick(this.updateList);
+        this.sendPackets();
     }
 }
