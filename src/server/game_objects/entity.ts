@@ -5,11 +5,6 @@ import { lerp, distance, lookToward, degrees } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";
 import SAT from "sat";
 
-type Point = {
-    x: number;
-    y: number;
-};
-
 export class EntityAI {
     target: SAT.Vector;
     arriveTime: number;
