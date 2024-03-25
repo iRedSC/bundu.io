@@ -79,10 +79,10 @@ function collide(
             response
         );
         if (overlap) {
-            const responseV = response.overlapV.scale(0.5, 0.5);
-            object.collider.pos.sub(responseV);
-            other.collider.pos.add(responseV);
-            updateList.generics.set(other.id, other);
+            // const responseV = response.overlapV.scale(0.5, 0.5);
+            object.collider.pos.sub(response.overlapV);
+            // other.collider.pos.add(responseV);
+            // updateList.generics.set(other.id, other);
             success = true;
         }
     }
