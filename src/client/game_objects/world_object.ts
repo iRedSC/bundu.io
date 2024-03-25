@@ -5,7 +5,7 @@ import { AnimationManager, AnimationMap } from "../../lib/animation";
 import { Line } from "./line";
 import { debugContainer } from "../debug";
 
-type State = [time: number, x: number, y: number, rotation: number];
+type State = [time: number, x: number, y: number];
 function typeofState(state?: State): state is State {
     if (!state) {
         return false;
@@ -13,12 +13,15 @@ function typeofState(state?: State): state is State {
     return (
         typeof state[0] === "number" &&
         typeof state[1] === "number" &&
-        typeof state[2] === "number" &&
-        typeof state[3] === "number"
+        typeof state[2] === "number"
     );
 }
 export class WorldObject extends PIXI.Container {
     states: State[];
+    interpolateRotation: boolean;
+    lastRotation: number;
+    nextRotation: number;
+    rotationUpdate: number;
 
     animations?: AnimationMap<any>;
 
@@ -27,6 +30,10 @@ export class WorldObject extends PIXI.Container {
         this.position = pos;
         this.rotation = rotation;
         this.states = [];
+        this.lastRotation = 0;
+        this.nextRotation = 0;
+        this.rotationUpdate = 0;
+        this.interpolateRotation = true;
     }
 
     move() {
@@ -58,8 +65,14 @@ export class WorldObject extends PIXI.Container {
         const x = round(lerp(lastState[1], nextState[1], tClamped));
         const y = round(lerp(lastState[2], nextState[2], tClamped));
 
-        const rotationT = (now - lastState[0]) / 150;
-        this.rotation = rotationLerp(lastState[3], nextState[3], rotationT);
+        if (this.interpolateRotation) {
+            const rotationT = (now - this.rotationUpdate) / 100;
+            this.rotation = rotationLerp(
+                this.lastRotation,
+                this.nextRotation,
+                rotationT
+            );
+        }
         // this.rotation = this.nextState[3];
         this.position.set(x, y);
     }
@@ -67,7 +80,6 @@ export class WorldObject extends PIXI.Container {
     setState(state?: State) {
         if (typeofState(state)) {
             this.states.push(state);
-            console.log(this.states);
             if (this.states.length === 2) {
                 this.states[0][0] = Date.now() - 50;
             }
@@ -87,6 +99,12 @@ export class WorldObject extends PIXI.Container {
             );
             debugContainer.addChild(line);
         }
+    }
+
+    setRotation(rotation: number) {
+        this.rotationUpdate = Date.now() - 50;
+        this.lastRotation = this.rotation;
+        this.nextRotation = rotation;
     }
 
     trigger(id: number, manager: AnimationManager) {

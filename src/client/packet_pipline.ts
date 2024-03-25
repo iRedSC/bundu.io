@@ -9,8 +9,18 @@ export function createPipeline(packetPipeline: PacketPipeline, world: World) {
     );
     packetPipeline.add(
         PACKET_TYPE.MOVE_OBJECT,
-        new Unpacker(world.moveObject.bind(world), 5, Schemas.moveObject)
+        new Unpacker(world.moveObject.bind(world), 4, Schemas.moveObject)
     );
+    packetPipeline.add(
+        PACKET_TYPE.ROTATE_OBJECT,
+        new Unpacker(world.rotateObject.bind(world), 2, Schemas.rotateObject)
+    );
+
+    packetPipeline.add(
+        PACKET_TYPE.DELETE_OBJECT,
+        new Unpacker(world.deleteObject.bind(world), 1, Schemas.deleteObject)
+    );
+
     packetPipeline.add(
         PACKET_TYPE.NEW_STRUCTURE,
         new Unpacker(world.newStructure.bind(world), 6, Schemas.newStructure)

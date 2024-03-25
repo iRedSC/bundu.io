@@ -5,6 +5,14 @@ import { ClientSchemas, PACKET_TYPE } from "../shared/enums.js";
 import { Entity } from "./game_objects/entity.js";
 import { PacketPipeline } from "../shared/unpack.js";
 
+function sendPacket(players: Iterable<Player>, packets: any[]) {
+    for (let player of players) {
+        for (let packet of packets) {
+            player.socket.send(JSON.stringify(packet));
+        }
+    }
+}
+
 class UpdateList {
     entities: Map<number, Entity>;
     players: Map<number, Player>;
@@ -38,7 +46,7 @@ export class BunduServer {
 
         const packet: any[] = [PACKET_TYPE.NEW_PLAYER];
         for (const player of this.players.values()) {
-            packet.push(...player.packNew());
+            packet.push(...player.pack("new"));
         }
         if (packet.length > 1) {
             player.socket.send(JSON.stringify(packet));
@@ -49,7 +57,7 @@ export class BunduServer {
         this.players.set(player.id, player);
         for (let client of this.players.values()) {
             client.socket.send(
-                JSON.stringify([PACKET_TYPE.NEW_PLAYER, ...player.packNew()])
+                JSON.stringify([PACKET_TYPE.NEW_PLAYER, ...player.pack("new")])
             );
         }
         player.socket.send(
@@ -60,6 +68,7 @@ export class BunduServer {
     deletePlayer(id: number) {
         this.players.delete(id);
         this.world.players.delete(id);
+        sendPacket(this.players.values(), [[PACKET_TYPE.DELETE_OBJECT, id]]);
     }
     moveUpdate(data: ClientSchemas.moveUpdate, id: number) {
         const player = this.players.get(id);
@@ -71,6 +80,7 @@ export class BunduServer {
         const player = this.players.get(id);
         if (player) {
             player.rotation = data[0];
+            this.updateList.players.set(id, player);
         }
     }
 
@@ -92,18 +102,19 @@ export class BunduServer {
     }
 
     sendPackets() {
-        const packet: [number, ...any[]] = [PACKET_TYPE.MOVE_OBJECT];
+        const moveObject: [number, ...any[]] = [PACKET_TYPE.MOVE_OBJECT];
+        const rotateObject: [number, ...any[]] = [PACKET_TYPE.ROTATE_OBJECT];
         for (const entity of this.updateList.entities.values()) {
-            packet.push(...entity.pack());
+            moveObject.push(...entity.pack("moveObject"));
+            rotateObject.push(...entity.pack("rotateObject"));
         }
         for (const player of this.updateList.players.values()) {
-            packet.push(...player.pack());
+            moveObject.push(...player.pack("moveObject"));
+            rotateObject.push(...player.pack("rotateObject"));
         }
         this.updateList.clear();
-        if (packet.length > 1) {
-            for (const player of this.players.values()) {
-                player.socket.send(JSON.stringify(packet));
-            }
+        if (moveObject.length > 1) {
+            sendPacket(this.players.values(), [moveObject, rotateObject]);
         }
     }
 

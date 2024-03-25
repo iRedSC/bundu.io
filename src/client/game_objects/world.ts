@@ -64,6 +64,7 @@ export class World {
         console.log(this.user);
 
         const player = this.dynamicObjs.get(this.user)!;
+        player.interpolateRotation = false;
 
         this.viewport.follow(player, {
             speed: 0,
@@ -121,13 +122,29 @@ export class World {
 
         const object = this.objects.get(id);
         if (object) {
-            object.setState([
-                Date.now() + time,
-                packet[2],
-                packet[3],
-                packet[4],
-            ]);
+            object.setState([Date.now() + time, packet[2], packet[3]]);
             this.updatingObjs.set(id, object);
+        }
+    }
+
+    rotateObject(packet: Schemas.rotateObject) {
+        const id = packet[0];
+
+        const object = this.objects.get(id);
+        if (object && id !== this.user) {
+            object.setRotation(packet[1]);
+            this.updatingObjs.set(id, object);
+        }
+    }
+
+    deleteObject(packet: Schemas.deleteObject) {
+        const id = packet[0];
+        const object = this.objects.get(id);
+        if (object) {
+            this.viewport.removeChild(object);
+            this.objects.delete(id);
+            this.dynamicObjs.delete(id);
+            this.updatingObjs.delete(id);
         }
     }
 

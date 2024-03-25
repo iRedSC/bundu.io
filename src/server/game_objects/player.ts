@@ -46,17 +46,19 @@ export class Player extends WorldObject {
         return true;
     }
 
-    pack() {
-        return [
-            this.id,
-            50,
-            round(this.x, 1),
-            round(this.y, 1),
-            round(this.rotation, 3),
-        ];
-    }
-
-    packNew() {
+    pack(type: string) {
+        switch (type) {
+            case "moveObject":
+                return [
+                    this.id,
+                    50,
+                    round(this.x, 1),
+                    round(this.y, 1),
+                    round(this.rotation, 3),
+                ];
+            case "rotateObject":
+                return [this.id, this.rotation];
+        }
         return [
             this.id,
             round(this.x, 1),

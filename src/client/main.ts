@@ -54,17 +54,22 @@ function moveUpdate(move: [number, number]) {
     socket.send(JSON.stringify([CLIENT_PACKET_TYPE.MOVE_UPDATE, ...move]));
 }
 
+let updateTick = 0;
 function mouseMoveCallback(mousePos: [number, number]) {
     const player = world.dynamicObjs.get(world.user || -1);
     if (player) {
         let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
         const rotation =
             lookToward(player.position, mouseToWorld) - degrees(90);
-        if (Math.abs(player.rotation - rotation) > 0.1) {
-            socket.send(
-                JSON.stringify([CLIENT_PACKET_TYPE.ROTATE, round(rotation, 3)])
-            );
+        player.rotation = rotation;
+        updateTick++;
+        if (updateTick < 10) {
+            return;
         }
+        updateTick = 0;
+        socket.send(
+            JSON.stringify([CLIENT_PACKET_TYPE.ROTATE, round(rotation, 3)])
+        );
     }
 }
 

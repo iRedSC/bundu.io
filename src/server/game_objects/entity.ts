@@ -76,17 +76,18 @@ export class Entity extends WorldObject {
         this.rotation = lookToward(this.ai._lastPos, this.ai.target);
     }
 
-    pack() {
-        return [
-            this.id,
-            this.ai.travelTime,
-            this.ai.target.x,
-            this.ai.target.y,
-            this.rotation,
-        ];
-    }
-
-    packNew() {
+    pack(type: string) {
+        switch (type) {
+            case "moveObject":
+                return [
+                    this.id,
+                    this.ai.travelTime,
+                    this.ai.target.x,
+                    this.ai.target.y,
+                ];
+            case "rotateObject":
+                return [this.id, this.rotation];
+        }
         return [
             this.id,
             this.position.x,

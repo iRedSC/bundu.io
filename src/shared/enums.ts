@@ -4,6 +4,8 @@ export enum PACKET_TYPE {
     PING = 0,
     STARTING_INFO = 99,
     MOVE_OBJECT = 100,
+    ROTATE_OBJECT = 101,
+    DELETE_OBJECT = 102,
 
     NEW_PLAYER = 200,
     UPDATE_PLAYER_GEAR = 201,
@@ -48,9 +50,19 @@ export namespace Schemas {
         z.number(), // time
         z.number(), // x
         z.number(), // y
-        z.number(), // rot
     ]);
     export type moveObject = z.infer<typeof moveObject>;
+
+    export const rotateObject = z.tuple([
+        z.number(), // id
+        z.number(), // rotation
+    ]);
+    export type rotateObject = z.infer<typeof rotateObject>;
+
+    export const deleteObject = z.tuple([
+        z.number(), // id
+    ]);
+    export type deleteObject = z.infer<typeof deleteObject>;
 
     // length: 6
     export const newEntity = z.tuple([
