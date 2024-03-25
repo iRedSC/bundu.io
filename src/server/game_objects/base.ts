@@ -16,7 +16,10 @@ export class WorldObject {
         this.size = size;
         this.id = id;
         this.rotation = rotation;
-        this.collider = new Circle(new Vector(position[0], position[1]), size);
+        this.collider = new Circle(
+            new Vector(position[0], position[1]),
+            size * 10
+        );
     }
 
     get x() {

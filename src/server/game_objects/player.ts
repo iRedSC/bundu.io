@@ -23,7 +23,7 @@ export class Player extends WorldObject {
         rotation: number,
         name: string
     ) {
-        super(id, position, rotation, 5);
+        super(id, position, rotation, 50);
         this.moveDir = [0, 0];
         this.socket = socket;
         this.name = name;

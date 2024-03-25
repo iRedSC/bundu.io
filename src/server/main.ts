@@ -10,6 +10,7 @@ import {
     ClientSchemas,
 } from "../shared/enums.js";
 import { PacketPipeline, Unpacker } from "../shared/unpack.js";
+import { Resource } from "./game_objects/resource.js";
 
 const packetPipeline = new PacketPipeline();
 
@@ -46,14 +47,19 @@ controller.start(7777);
 const WORLD_SIZE = 200000;
 const structures: [number, ...any[]] = [PACKET_TYPE.NEW_STRUCTURE];
 for (let i = 5000; i < 6000; i++) {
-    structures.push(
+    const structure = new Resource(
         i,
-        Random.integer(5000, WORLD_SIZE - 5000),
-        Random.integer(5000, WORLD_SIZE - 5000),
+        [
+            Random.integer(5000, WORLD_SIZE - 5000),
+            Random.integer(5000, WORLD_SIZE - 5000),
+        ],
         Random.integer(0, Math.PI * 360),
         Random.integer(200, 205),
-        Random.integer(3, 5)
+        Random.integer(30, 50)
     );
+
+    world.resources.insert(structure);
+    structures.push(...structure.pack("new"));
 }
 
 const entities: [number, ...any[]] = [PACKET_TYPE.NEW_ENTITY];

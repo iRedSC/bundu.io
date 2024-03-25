@@ -3,6 +3,7 @@ import { WorldObject } from "./base.js";
 import { entityConfigs } from "../configs/configs.js";
 import { lerp, distance, lookToward, degrees } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";
+import SAT from "sat";
 
 type Point = {
     x: number;
@@ -10,12 +11,12 @@ type Point = {
 };
 
 export class EntityAI {
-    target: Point;
+    target: SAT.Vector;
     arriveTime: number;
     travelTime: number;
     _lastPos: { x: number; y: number };
     _lastMoveTime: number;
-    constructor(position: Point) {
+    constructor(position: SAT.Vector) {
         this.target = position;
         this.arriveTime = 0;
         this.travelTime = 0;
@@ -39,11 +40,11 @@ export class Entity extends WorldObject {
         super(id, position, rotation, config.size);
         this.type = config;
         this.ai = new EntityAI(this.position);
-        this.updateTarget();
+        this.updateTarget([]);
         this.angry = false;
     }
 
-    move(): boolean {
+    move(collisionObjects: Iterable<WorldObject>): boolean {
         const totalTime = this.ai.arriveTime - this.ai._lastMoveTime;
         const elapsedTime = Date.now() - this.ai._lastMoveTime;
         const t = elapsedTime / totalTime;
@@ -53,23 +54,29 @@ export class Entity extends WorldObject {
             lerp(this.ai._lastPos.y, this.ai.target.y, tClamped)
         );
         if (t >= 1 + this.type.restTime) {
-            this.updateTarget();
+            this.updateTarget(collisionObjects);
             return true;
         }
         return false;
     }
 
-    private updateTarget() {
+    private updateTarget(
+        collisionObjects: Iterable<WorldObject>,
+        leapReduction: number = 0
+    ) {
         this.ai._lastPos = { ...this.position };
         this.ai._lastMoveTime = Date.now();
-        this.ai.target = {
-            x:
-                this.ai.target.x +
-                Random.integer(-this.type.wanderRange, this.type.wanderRange),
-            y:
-                this.ai.target.y +
-                Random.integer(-this.type.wanderRange, this.type.wanderRange),
-        };
+        const range = Math.max(this.type.wanderRange - leapReduction, 0);
+        this.ai.target = new SAT.Vector(
+            this.ai.target.x + Random.integer(-range, range),
+
+            this.ai.target.y + Random.integer(-range, range)
+        );
+        const hit = raycast(this.position, this.ai.target, collisionObjects);
+
+        if (hit) {
+            this.updateTarget(collisionObjects, leapReduction + 30);
+        }
         this.ai.travelTime =
             distance(this.position, this.ai.target) / (this.type.speed / 5);
         this.ai.arriveTime = Date.now() + this.ai.travelTime;
@@ -97,4 +104,23 @@ export class Entity extends WorldObject {
             this.angry,
         ];
     }
+}
+
+function raycast(
+    start: SAT.Vector,
+    end: SAT.Vector,
+    collisionTest: Iterable<WorldObject>
+) {
+    const line = new SAT.Polygon(start, [
+        new SAT.Vector(),
+        end.clone().sub(start),
+    ]);
+    for (const other of collisionTest) {
+        const response = new SAT.Response();
+        const overlap = SAT.testPolygonCircle(line, other.collider, response);
+        if (overlap) {
+            return true;
+        }
+    }
+    return false;
 }
