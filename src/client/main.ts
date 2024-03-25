@@ -13,7 +13,7 @@ const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
 const world = new World(viewport, animationManager);
 
-viewport.addChild(debugContainer);
+// viewport.addChild(debugContainer);
 
 createPipeline(packetPipeline, world);
 
@@ -61,15 +61,14 @@ function mouseMoveCallback(mousePos: [number, number]) {
         let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
         const rotation =
             lookToward(player.position, mouseToWorld) - degrees(90);
-        player.rotation = rotation;
         updateTick++;
-        if (updateTick < 10) {
-            return;
+        if (Math.abs(player.rotation - rotation) > 0.2 || updateTick > 10) {
+            updateTick = 0;
+            socket.send(
+                JSON.stringify([CLIENT_PACKET_TYPE.ROTATE, round(rotation, 3)])
+            );
         }
-        updateTick = 0;
-        socket.send(
-            JSON.stringify([CLIENT_PACKET_TYPE.ROTATE, round(rotation, 3)])
-        );
+        player.rotation = rotation;
     }
 }
 

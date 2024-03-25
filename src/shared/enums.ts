@@ -3,17 +3,18 @@ import { z } from "zod";
 export enum PACKET_TYPE {
     PING = 0,
     STARTING_INFO = 99,
+
     MOVE_OBJECT = 100,
     ROTATE_OBJECT = 101,
     DELETE_OBJECT = 102,
 
     NEW_PLAYER = 200,
-    UPDATE_PLAYER_GEAR = 201,
+    // UPDATE_PLAYER_GEAR = 201,
 
     NEW_STRUCTURE = 300,
     LOAD_GROUND = 301,
 
-    SET_TIME = 600,
+    // SET_TIME = 600,
 
     NEW_ENTITY = 700,
 }

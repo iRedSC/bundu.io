@@ -111,6 +111,7 @@ export class World {
             pos,
             packet[3]
         );
+        player.rotationSpeed = 100;
         this.objects.set(id, player);
         this.dynamicObjs.set(id, player);
         this.viewport.addChild(player);

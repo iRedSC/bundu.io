@@ -56,16 +56,16 @@ for (let i = 5000; i < 6000; i++) {
     );
 }
 
-// const entities: [number, ...any[]] = [PACKET_TYPE.NEW_ENTITY];
-// for (let i = 1001; i < 1100; i++) {
-//     const pos: [number, number] = [
-//         Random.integer(5000, WORLD_SIZE - 5000),
-//         Random.integer(5000, WORLD_SIZE - 5000),
-//     ];
-//     const entity = new Entity(i, Random.integer(400, 402), pos, 0);
-//     world.entities.insert(entity);
-//     entities.push(...entity.packNew());
-// }
+const entities: [number, ...any[]] = [PACKET_TYPE.NEW_ENTITY];
+for (let i = 1001; i < 1100; i++) {
+    const pos: [number, number] = [
+        Random.integer(5000, WORLD_SIZE - 5000),
+        Random.integer(5000, WORLD_SIZE - 5000),
+    ];
+    const entity = new Entity(i, Random.integer(400, 402), pos, 0);
+    world.entities.insert(entity);
+    entities.push(...entity.pack("new"));
+}
 
 const ground: [number, ...any[]] = [
     PACKET_TYPE.LOAD_GROUND,
@@ -84,7 +84,7 @@ const ground: [number, ...any[]] = [
 controller.connect = (socket: GameWS) => {
     socket.send(JSON.stringify(ground));
     socket.send(JSON.stringify(structures));
-    // socket.send(JSON.stringify(entities));
+    socket.send(JSON.stringify(entities));
 };
 // const serverController = new ServerController(bunduServer);
 

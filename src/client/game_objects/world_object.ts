@@ -22,6 +22,7 @@ export class WorldObject extends PIXI.Container {
     lastRotation: number;
     nextRotation: number;
     rotationUpdate: number;
+    rotationSpeed: number;
 
     animations?: AnimationMap<any>;
 
@@ -34,6 +35,7 @@ export class WorldObject extends PIXI.Container {
         this.nextRotation = 0;
         this.rotationUpdate = 0;
         this.interpolateRotation = true;
+        this.rotationSpeed = 200;
     }
 
     move() {
@@ -66,7 +68,7 @@ export class WorldObject extends PIXI.Container {
         const y = round(lerp(lastState[2], nextState[2], tClamped));
 
         if (this.interpolateRotation) {
-            const rotationT = (now - this.rotationUpdate) / 100;
+            const rotationT = (now - this.rotationUpdate) / this.rotationSpeed;
             this.rotation = rotationLerp(
                 this.lastRotation,
                 this.nextRotation,
