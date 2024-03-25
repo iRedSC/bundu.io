@@ -9,9 +9,12 @@ import { Sky } from "./sky";
 import { itemMap } from "../configs/item_map";
 import { createGround } from "./ground";
 import { Entity } from "./entity";
-import { mousePos } from "../input/keyboard";
 import { animationManager } from "../animation_manager";
 
+// TODO: This place is a freaking mess, needs a little tidying up
+
+// Currently events (attack and block) are client side only
+// TODO: Remove this and make it send event requests
 function createClickEvents(viewport: Viewport, player: Player) {
     viewport.on("pointerdown", (event) => {
         if (event.button == 2) {
@@ -29,6 +32,8 @@ function createClickEvents(viewport: Viewport, player: Player) {
     });
 }
 
+// This basically controls everything on the client
+// All packets (after being parsed) are sent to one of these methods
 export class World {
     viewport: Viewport;
     animationManager: AnimationManager;
@@ -53,9 +58,13 @@ export class World {
         this.animationManager.update();
         for (let [id, object] of this.updatingObjs.entries()) {
             object.move();
-            // if (object.states[-1][0] < Date.now()) {
-            //     this.updatingObjs.delete(id);
-            // }
+            const lastState = object.states[-1];
+            if (!lastState) {
+                continue;
+            }
+            if (object.states[-1][0] < Date.now()) {
+                this.updatingObjs.delete(id);
+            }
         }
     }
 
