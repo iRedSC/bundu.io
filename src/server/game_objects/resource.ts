@@ -1,3 +1,4 @@
+import { PACKET_TYPE } from "../../shared/enums.js";
 import { ResourceConfig, resourceConfigs } from "../configs/configs.js";
 import { WorldObject } from "./base.js";
 export class Resource extends WorldObject {
@@ -18,20 +19,22 @@ export class Resource extends WorldObject {
         this.variant = variant || 0;
     }
 
-    pack(type: string) {
+    pack(type: PACKET_TYPE) {
         switch (type) {
-            case "moveObject":
-                return [this.id, 10, this.x, this.y];
-            case "rotateObject":
+            case PACKET_TYPE.MOVE_OBJECT:
+                return [this.id, 50, this.x, this.y];
+            case PACKET_TYPE.ROTATE_OBJECT:
                 return [this.id, this.rotation];
+            case PACKET_TYPE.NEW_STRUCTURE:
+                return [
+                    this.id,
+                    this.position.x,
+                    this.position.y,
+                    this.rotation,
+                    this.type.id,
+                    this.size,
+                ];
         }
-        return [
-            this.id,
-            this.position.x,
-            this.position.y,
-            this.rotation,
-            this.type.id,
-            this.size,
-        ];
+        return [];
     }
 }

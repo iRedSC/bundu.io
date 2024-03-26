@@ -2,6 +2,10 @@ import { distance, lerp, moveToward } from "../../lib/transforms.js";
 import { GameWS } from "../websockets.js";
 import { WorldObject } from "./base.js";
 import { round } from "../../lib/math.js";
+import { PACKET_TYPE } from "../../shared/enums.js";
+
+// Player should have the following properties:
+// name, socket, inventory, cosmetics, movement
 
 export class Player extends WorldObject {
     name: string;
@@ -10,11 +14,6 @@ export class Player extends WorldObject {
     holding?: number;
     helmet?: number;
     moveDir: [number, number];
-    travelTime: number;
-    lastPos: { x: number; y: number };
-    arriveTime: number;
-    lastMoveTime: number;
-    target: { x: number; y: number };
 
     constructor(
         id: number,
@@ -28,11 +27,6 @@ export class Player extends WorldObject {
         this.socket = socket;
         this.name = name;
         this.backpack = 0;
-        this.travelTime = 0;
-        this.lastMoveTime = 0;
-        this.arriveTime = 0;
-        this.lastPos = { x: 0, y: 0 };
-        this.target = { x: 0, y: 0 };
     }
 
     move() {
@@ -41,14 +35,14 @@ export class Player extends WorldObject {
         }
         const newX = this.position.x - this.moveDir[0];
         const newY = this.position.y - this.moveDir[1];
-        this.target = moveToward(this.position, { x: newX, y: newY }, 100);
-        this.setPosition(this.target.x, this.target.y);
+        const target = moveToward(this.position, { x: newX, y: newY }, 250);
+        this.setPosition(target.x, target.y);
         return true;
     }
 
-    pack(type: string): any[] {
+    pack(type: PACKET_TYPE): any[] {
         switch (type) {
-            case "moveObject":
+            case PACKET_TYPE.MOVE_OBJECT:
                 return [
                     this.id,
                     50,
@@ -56,19 +50,21 @@ export class Player extends WorldObject {
                     round(this.y, 1),
                     round(this.rotation, 3),
                 ];
-            case "rotateObject":
+            case PACKET_TYPE.ROTATE_OBJECT:
                 return [this.id, this.rotation];
+            case PACKET_TYPE.NEW_PLAYER:
+                return [
+                    this.id,
+                    round(this.x, 1),
+                    round(this.y, 1),
+                    round(this.rotation, 3),
+                    this.name,
+                    this.holding || 0,
+                    this.helmet || 0,
+                    0,
+                    this.backpack,
+                ];
         }
-        return [
-            this.id,
-            round(this.x, 1),
-            round(this.y, 1),
-            round(this.rotation, 3),
-            this.name,
-            this.holding || 0,
-            this.helmet || 0,
-            0,
-            this.backpack,
-        ];
+        return [];
     }
 }

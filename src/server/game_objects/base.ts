@@ -1,4 +1,5 @@
 import sat from "sat";
+import { PACKET_TYPE } from "../../shared/enums";
 const { Vector, Circle } = sat;
 
 export class WorldObject {
@@ -37,7 +38,7 @@ export class WorldObject {
         this.collider.pos.y = y;
     }
 
-    pack(type: string): any[] {
+    pack(type: PACKET_TYPE): any[] {
         return [];
     }
 }

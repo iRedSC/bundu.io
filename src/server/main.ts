@@ -59,7 +59,7 @@ for (let i = 5000; i < 6000; i++) {
     );
 
     world.resources.insert(structure);
-    structures.push(...structure.pack("new"));
+    structures.push(...structure.pack(PACKET_TYPE.NEW_STRUCTURE));
 }
 
 for (let i = 1001; i < 1100; i++) {
@@ -88,7 +88,7 @@ const ground: [number, ...any[]] = [
 controller.connect = (socket: GameWS) => {
     const entities = [PACKET_TYPE.NEW_ENTITY];
     for (let entity of world.entities.objects.values()) {
-        entities.push(...entity.pack("new"));
+        entities.push(...entity.pack(PACKET_TYPE.NEW_ENTITY));
     }
     socket.send(JSON.stringify(ground));
     socket.send(JSON.stringify(structures));

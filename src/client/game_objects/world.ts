@@ -10,6 +10,7 @@ import { itemMap } from "../configs/item_map";
 import { createGround } from "./ground";
 import { Entity } from "./entity";
 import { animationManager } from "../animation_manager";
+import { DropShadowFilter } from "@pixi/filter-drop-shadow";
 
 // TODO: This place is a freaking mess, needs a little tidying up
 
@@ -93,6 +94,7 @@ export class World {
             packet[3],
             packet[5]
         );
+        // structure.filters = [new DropShadowFilter({ offset: { x: 0, y: 0 } })];
         this.objects.set(id, structure);
         this.viewport.addChild(structure);
     }

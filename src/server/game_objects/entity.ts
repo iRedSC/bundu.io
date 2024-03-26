@@ -4,6 +4,9 @@ import { entityConfigs } from "../configs/configs.js";
 import { lerp, distance, lookToward, degrees } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";
 import SAT from "sat";
+import { PACKET_TYPE } from "../../shared/enums.js";
+
+// TODO: Entity AI needs to be organized better
 
 export class EntityAI {
     target: SAT.Vector;
@@ -78,26 +81,28 @@ export class Entity extends WorldObject {
         this.rotation = lookToward(this.ai._lastPos, this.ai.target);
     }
 
-    pack(type: string): any[] {
+    pack(type: PACKET_TYPE): any[] {
         switch (type) {
-            case "moveObject":
+            case PACKET_TYPE.MOVE_OBJECT:
                 return [
                     this.id,
                     this.ai.travelTime,
                     this.ai.target.x,
                     this.ai.target.y,
                 ];
-            case "rotateObject":
+            case PACKET_TYPE.ROTATE_OBJECT:
                 return [this.id, this.rotation];
+            case PACKET_TYPE.NEW_ENTITY:
+                return [
+                    this.id,
+                    this.position.x,
+                    this.position.y,
+                    this.rotation,
+                    this.type.id,
+                    this.angry,
+                ];
         }
-        return [
-            this.id,
-            this.position.x,
-            this.position.y,
-            this.rotation,
-            this.type.id,
-            this.angry,
-        ];
+        return [];
     }
 }
 

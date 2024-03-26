@@ -42,16 +42,16 @@ function loadAnimations(target: Entity) {
     idleKeyframes.frame(0).set = ({ target, animation }) => {
         animation.meta.width = target.scale.x;
         animation.meta.height = target.scale.y;
-        animation.meta.frameLength = Random.integer(2000, 4000);
+        animation.meta.frameLength = Random.integer(1000, 2000);
 
         animation.next(animation.meta.frameLength);
     };
 
     idleKeyframes.frame(1).set = ({ target, animation }) => {
         target.scale.x =
-            animation.meta.width + Math.cos(animation.t * Math.PI * 2) * 0.02;
+            animation.meta.width + Math.cos(animation.t * Math.PI * 2) * 0.06;
         target.scale.y =
-            animation.meta.height - Math.cos(animation.t * Math.PI * 2) * 0.03;
+            animation.meta.height - Math.cos(animation.t * Math.PI * 2) * 0.11;
         if (animation.keyframeEnded) {
             animation.goto(1, animation.meta.frameLength);
         }

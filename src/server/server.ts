@@ -108,16 +108,16 @@ export class BunduServer {
         const moveObject: [number, ...any[]] = [PACKET_TYPE.MOVE_OBJECT];
         const rotateObject: [number, ...any[]] = [PACKET_TYPE.ROTATE_OBJECT];
         for (const entity of this.updateList.entities.values()) {
-            moveObject.push(...entity.pack("moveObject"));
-            rotateObject.push(...entity.pack("rotateObject"));
+            moveObject.push(...entity.pack(PACKET_TYPE.MOVE_OBJECT));
+            rotateObject.push(...entity.pack(PACKET_TYPE.ROTATE_OBJECT));
         }
         for (const generic of this.updateList.generics.values()) {
-            moveObject.push(...generic.pack("moveObject"));
-            rotateObject.push(...generic.pack("rotateObject"));
+            moveObject.push(...generic.pack(PACKET_TYPE.MOVE_OBJECT));
+            rotateObject.push(...generic.pack(PACKET_TYPE.ROTATE_OBJECT));
         }
         for (const player of this.updateList.players.values()) {
-            moveObject.push(...player.pack("moveObject"));
-            rotateObject.push(...player.pack("rotateObject"));
+            moveObject.push(...player.pack(PACKET_TYPE.MOVE_OBJECT));
+            rotateObject.push(...player.pack(PACKET_TYPE.ROTATE_OBJECT));
         }
         this.updateList.clear();
         if (moveObject.length > 1) {
