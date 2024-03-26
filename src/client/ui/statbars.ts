@@ -29,7 +29,7 @@ class StatsDisplay {
             this.secondaryBar.width = 290;
             this.secondaryBar.position.set(92, 100);
             this.secondaryBar.height = 200;
-            this.secondaryBar.tint = 0x7b0700;
+            this.secondaryBar.tint = 0xaaaaaa;
             this.container.addChild(this.secondaryBar);
         }
         this.container.addChild(this.decor);
@@ -46,19 +46,29 @@ class StatsDisplay {
 
 function loadAnimations(target: StatsDisplay) {
     const transition: Keyframes<StatsDisplay> = new Keyframes();
-    transition.frame(0).set = ({ target, animation }) => {
+
+    transition.frame(0).set = ({ target, animation}) => {
         if (animation.firstKeyframe) {
             animation.meta.amount = target.primaryBar.width;
-            animation.goto(0, 500);
+            animation.goto(0, 200);
         }
+        if (animation.keyframeEnded) {
+            animation.goto(1, 400)
+        }
+        
+    }
+
+    transition.frame(1).set = ({ target, animation }) => {
         target.primaryBar.width = lerp(
             animation.meta.amount,
             target.amount,
-            animation.t
+            animation.t 
         );
+
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
+        
     };
 
     const animationMap = new AnimationMap(target);
@@ -78,13 +88,13 @@ const heatContainer = new StatsDisplay(
 );
 const healthContainer = new StatsDisplay(
     "./assets/health.svg",
-    "./assets/heat_bar.svg",
+    "./assets/damage_bar.svg",
     "./assets/health_bar.svg"
 );
 healthContainer.secondaryBar!.height = 400;
 healthContainer.secondaryBar!.position.set(92, 0);
 healthContainer.secondaryBar!.tint = 0xffffff;
-healthContainer.primaryBar!.tint = 0x7b0700;
+healthContainer.primaryBar!.tint = 0xffffff;
 healthContainer.container.position.set(-270, 0);
 heatContainer.container.position.set(270, 0);
 hungerContainer.container.position.set(0, 0);
@@ -124,8 +134,8 @@ export function updateStatBars(health: number, hunger: number, heat: number) {
         heatContainer.primaryBar.width = heat;
     }
 }
-// window.addEventListener("click", updatestats);
-// window.addEventListener("contextmenu", updatestats2);
+ window.addEventListener("click", updatestats);
+window.addEventListener("contextmenu", updatestats2);
 updateStatBars(healthstat, hungerstat, heatstat);
 
 function updatestats() {
