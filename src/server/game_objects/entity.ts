@@ -120,6 +120,7 @@ export class Entity extends WorldObject {
                     this.position.x,
                     this.position.y,
                     this.rotation,
+                    this.type.size,
                     this.type.id,
                     this.angry,
                 ];

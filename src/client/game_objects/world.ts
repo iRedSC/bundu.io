@@ -109,10 +109,10 @@ export class World {
         scaleCoords(pos);
         const entity = new Entity(
             this.animationManager,
-            itemMap.getv(packet[4]) || "stone",
+            itemMap.getv(packet[5]) || "stone",
             pos,
             packet[3],
-            2
+            packet[4]
         );
         entity.setState([Date.now(), pos.x, pos.y]);
         this.objects.set(id, entity);

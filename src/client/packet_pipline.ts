@@ -27,7 +27,7 @@ export function createPipeline(packetPipeline: PacketPipeline, world: World) {
     );
     packetPipeline.add(
         PACKET_TYPE.NEW_ENTITY,
-        new Unpacker(world.newEntity.bind(world), 6, Schemas.newEntity)
+        new Unpacker(world.newEntity.bind(world), 7, Schemas.newEntity)
     );
 
     packetPipeline.add(

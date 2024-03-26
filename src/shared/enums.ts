@@ -71,6 +71,7 @@ export namespace Schemas {
         z.number(), // x
         z.number(), // y
         z.number(), // rot
+        z.number(), // size
         z.number(), // type
         z.boolean(), // angry
     ]);

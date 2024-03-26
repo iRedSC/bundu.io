@@ -52,7 +52,7 @@ for (let i = 5000; i < 5050; i++) {
         [Random.integer(5000, 15000), Random.integer(5000, 15000)],
         Random.integer(0, Math.PI * 360),
         Random.integer(200, 205),
-        Random.integer(2, 30)
+        Random.integer(7, 14)
     );
 
     world.resources.insert(structure);

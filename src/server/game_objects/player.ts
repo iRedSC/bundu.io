@@ -35,7 +35,7 @@ export class Player extends WorldObject {
         }
         const newX = this.position.x - this.moveDir[0];
         const newY = this.position.y - this.moveDir[1];
-        const target = moveToward(this.position, { x: newX, y: newY }, 15);
+        const target = moveToward(this.position, { x: newX, y: newY }, 10);
         this.setPosition(target.x, target.y);
         return true;
     }
