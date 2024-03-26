@@ -20,14 +20,13 @@ const controller = new ServerController(bunduServer);
 
 packetPipeline.add(
     CLIENT_PACKET_TYPE.PING,
-    new Unpacker(bunduServer.ping.bind(bunduServer), 0, ClientSchemas.ping)
+    new Unpacker(bunduServer.ping.bind(bunduServer), ClientSchemas.ping)
 );
 
 packetPipeline.add(
     CLIENT_PACKET_TYPE.MOVE_UPDATE,
     new Unpacker(
         bunduServer.moveUpdate.bind(bunduServer),
-        2,
         ClientSchemas.moveUpdate
     )
 );
@@ -36,7 +35,6 @@ packetPipeline.add(
     CLIENT_PACKET_TYPE.ROTATE,
     new Unpacker(
         bunduServer.rotatePlayer.bind(bunduServer),
-        1,
         ClientSchemas.rotate
     )
 );

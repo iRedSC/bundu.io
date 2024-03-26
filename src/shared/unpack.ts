@@ -30,31 +30,30 @@ export class PacketPipeline {
 
 export class Unpacker {
     callback: Function;
-    length: number;
     guard: AnyZodTuple;
 
-    constructor(callback: Function, packetLength: number, guard: AnyZodTuple) {
+    constructor(callback: Function, guard: AnyZodTuple) {
         this.guard = guard;
         this.callback = callback;
-        this.length = packetLength;
     }
 
     unpack(packet: unknown[], playerId?: number) {
-        if (packet.length < this.length) {
+        const length = this.guard.items.length;
+        if (packet.length < length) {
             // console.log(
-            //     `Packet length: ${packet.length}, required length: ${this.length}`
+            //     `Packet length: ${packet.length}, required length: ${length}`
             // );
             return;
         }
-        const slicedPacket = packet.slice(0, this.length);
+        const slicedPacket = packet.slice(0, length);
         const parsedPacket = this.guard.safeParse(slicedPacket);
         if (parsedPacket.success === true) {
             this.callback(parsedPacket.data, playerId);
         } else {
             console.log(parsedPacket.error.message);
         }
-        if (!playerId && this.length > 0) {
-            this.unpack(packet.slice(this.length));
+        if (!playerId && length > 0) {
+            this.unpack(packet.slice(length));
         }
     }
 }

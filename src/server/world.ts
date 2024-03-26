@@ -53,6 +53,7 @@ export class World {
             if (moved) {
                 updateList.entities.set(id, entity);
             }
+            this.entities.insert(entity);
         }
         for (let [id, player] of this.players.objects.entries()) {
             const moved = player.move();
