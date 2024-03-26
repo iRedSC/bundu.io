@@ -49,7 +49,7 @@ export class BunduServer {
 
         const packet: any[] = [PACKET_TYPE.NEW_PLAYER];
         for (const player of this.players.values()) {
-            packet.push(...player.pack("new"));
+            packet.push(...player.pack(PACKET_TYPE.NEW_PLAYER));
         }
         if (packet.length > 1) {
             player.socket.send(JSON.stringify(packet));
@@ -60,7 +60,10 @@ export class BunduServer {
         this.players.set(player.id, player);
         for (let client of this.players.values()) {
             client.socket.send(
-                JSON.stringify([PACKET_TYPE.NEW_PLAYER, ...player.pack("new")])
+                JSON.stringify([
+                    PACKET_TYPE.NEW_PLAYER,
+                    ...player.pack(PACKET_TYPE.NEW_PLAYER),
+                ])
             );
         }
         player.socket.send(

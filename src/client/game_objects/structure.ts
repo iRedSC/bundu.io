@@ -29,7 +29,7 @@ export class Structure extends WorldObject {
         this.addChild(this.sprite);
 
         this.rotation = rotation;
-        this.scale.set(size / 10);
+        this.scale.set(size / 16);
 
         this.animations = loadAnimations(this);
     }

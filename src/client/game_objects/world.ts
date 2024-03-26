@@ -10,7 +10,6 @@ import { itemMap } from "../configs/item_map";
 import { createGround } from "./ground";
 import { Entity } from "./entity";
 import { animationManager } from "../animation_manager";
-import { DropShadowFilter } from "@pixi/filter-drop-shadow";
 
 // TODO: This place is a freaking mess, needs a little tidying up
 

@@ -13,7 +13,9 @@ const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
 const world = new World(viewport, animationManager);
 
-// viewport.addChild(debugContainer);
+viewport.addChild(debugContainer);
+debugContainer.zIndex = 1000;
+viewport.sortChildren();
 
 createPipeline(packetPipeline, world);
 

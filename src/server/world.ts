@@ -40,10 +40,15 @@ export class World {
     }
 
     tick(updateList: UpdateList) {
+        const player = this.players.get(1);
         for (let [id, entity] of this.entities.objects.entries()) {
             const detectionRange = collisionBounds(entity.position);
             const collisionTest = this.resources.query(detectionRange);
-            const moved = entity.move(collisionTest.values());
+
+            const moved = entity.move(
+                collisionTest,
+                player?.position || new SAT.Vector()
+            );
             if (moved) {
                 updateList.entities.set(id, entity);
             }

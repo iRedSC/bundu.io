@@ -30,6 +30,7 @@ export class WorldObject extends PIXI.Container {
     nextRotation: number;
     rotationUpdate: number;
     rotationSpeed: number;
+    debugLine?: PIXI.Graphics;
 
     animations?: AnimationMap<any>;
 
@@ -104,13 +105,16 @@ export class WorldObject extends PIXI.Container {
                 return;
             }
 
-            const line = new Line(
+            if (this.debugLine) {
+                debugContainer.removeChild(this.debugLine);
+            }
+            this.debugLine = new Line(
                 [lastState[1], lastState[2]],
                 [nextState[1], nextState[2]],
                 0xff0000,
                 25
             );
-            debugContainer.addChild(line);
+            debugContainer.addChild(this.debugLine);
         }
     }
 
