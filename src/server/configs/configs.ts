@@ -7,6 +7,7 @@ import { ReversableMap } from "../../shared/reverseable_map.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Load the id map
 const _idMapData: { [key: string]: number } = yaml.parse(
     fs.readFileSync(`${__dirname}/../../shared/id_map.yml`, "utf8")
 );
@@ -45,9 +46,7 @@ export const resourceConfigs: Map<number, ResourceConfig> = new Map();
 
 for (let [k, v] of Object.entries(_resourceConfigData)) {
     const numericId = idMap.get(k);
-
     const resource = new ResourceConfig(numericId, v);
-
     resourceConfigs.set(numericId, resource);
 }
 
@@ -80,9 +79,7 @@ export const itemConfigs: Map<number, ItemConfig> = new Map();
 
 for (let [k, v] of Object.entries(_itemConfigData)) {
     const numericId = idMap.get(k);
-
     const item = new ItemConfig(numericId, v);
-
     itemConfigs.set(numericId, item);
 }
 
@@ -121,8 +118,6 @@ export const entityConfigs: Map<number, EntityConfig> = new Map();
 
 for (let [k, v] of Object.entries(_entityConfigData)) {
     const numericId = idMap.get(k);
-
     const entity = new EntityConfig(numericId, v);
-
     entityConfigs.set(numericId, entity);
 }
