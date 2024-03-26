@@ -43,10 +43,10 @@ bunduServer.start();
 controller.start(7777);
 
 const WORLD_SIZE = 20000;
-for (let i = 5000; i < 5050; i++) {
+for (let i = 5000; i < 5100; i++) {
     const structure = new Resource(
         i,
-        [Random.integer(5000, 15000), Random.integer(5000, 15000)],
+        [Random.integer(1500, 19500), Random.integer(1500, 19500)],
         Random.integer(0, Math.PI * 360),
         Random.integer(200, 205),
         Random.integer(7, 14)
@@ -57,8 +57,8 @@ for (let i = 5000; i < 5050; i++) {
 
 for (let i = 1001; i < 1100; i++) {
     const pos: [number, number] = [
-        Random.integer(5000, 15000),
-        Random.integer(5000, 15000),
+        Random.integer(1500, 19500),
+        Random.integer(1500, 19500),
     ];
     const entity = new Entity(i, Random.integer(400, 402), pos, 0);
     world.entities.insert(entity);
@@ -66,8 +66,8 @@ for (let i = 1001; i < 1100; i++) {
 
 const ground: [number, ...any[]] = [
     PACKET_TYPE.LOAD_GROUND,
-    5000,
-    5000,
+    1500,
+    1500,
     19500,
     19500,
     0,
@@ -91,6 +91,10 @@ controller.connect = (socket: GameWS) => {
     socket.send(JSON.stringify(structures));
     socket.send(JSON.stringify(entities));
 };
+
+setInterval(() => {
+    console.log(`Memory Usage: ${process.memoryUsage().heapUsed * 0.000001}mb`);
+}, 5000);
 // const serverController = new ServerController(bunduServer);
 
 // serverController.start(7777);
