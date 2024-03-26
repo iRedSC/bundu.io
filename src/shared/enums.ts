@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export enum PACKET_TYPE {
     PING = 0,
+    ACTION = 1,
     STARTING_INFO = 99,
 
     MOVE_OBJECT = 100,
@@ -19,12 +20,24 @@ export enum PACKET_TYPE {
     NEW_ENTITY = 700,
 }
 
+export enum ACTION {
+    ATTACK = 1,
+    START_BLOCK = 2,
+    STOP_BLOCK = 3,
+}
+
 export namespace Schemas {
     // length: 0
     export const ping = z.tuple([
         z.number(), // server time
     ]);
     export type ping = z.infer<typeof ping>;
+
+    export const action = z.tuple([
+        z.number(), // id
+        z.number(), // action
+    ]);
+    export type action = z.infer<typeof action>;
 
     // length: 9
     export const newPlayer = z.tuple([
@@ -103,6 +116,14 @@ export enum CLIENT_PACKET_TYPE {
     PING = 0,
     MOVE_UPDATE = 1,
     ROTATE = 2,
+    ACTION = 3,
+}
+
+export enum CLIENT_ACTION {
+    START_ATTACK = 1,
+    STOP_ATTACK = 2,
+    START_BLOCK = 3,
+    STOP_BLOCK = 4,
 }
 
 export namespace ClientSchemas {
@@ -118,4 +139,9 @@ export namespace ClientSchemas {
         z.number(), // rotation
     ]);
     export type rotate = z.infer<typeof rotate>;
+
+    export const action = z.tuple([
+        z.number(), // ACTION
+    ]);
+    export type action = z.infer<typeof rotate>;
 }

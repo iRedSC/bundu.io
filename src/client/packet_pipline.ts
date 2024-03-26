@@ -44,4 +44,9 @@ export function createPipeline(packetPipeline: PacketPipeline, world: World) {
         PACKET_TYPE.STARTING_INFO,
         new Unpacker(world.setPlayer.bind(world), Schemas.startingInfo)
     );
+
+    packetPipeline.add(
+        PACKET_TYPE.ACTION,
+        new Unpacker(world.action.bind(world), Schemas.action)
+    );
 }

@@ -1,7 +1,7 @@
 import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animation";
 import { WorldObject } from "./world_object";
-import { Schemas } from "../../shared/enums";
+import { ACTION, Schemas } from "../../shared/enums";
 import { Structure } from "./structure";
 import * as PIXI from "pixi.js";
 import { PLAYER_ANIMATION, Player } from "./player";
@@ -15,22 +15,7 @@ import { animationManager } from "../animation_manager";
 
 // Currently events (attack and block) are client side only
 // TODO: Remove this and make it send event requests
-function createClickEvents(viewport: Viewport, player: Player) {
-    viewport.on("pointerdown", (event) => {
-        if (event.button == 2) {
-            player.blocking = true;
-            player.trigger(PLAYER_ANIMATION.BLOCK, animationManager);
-        } else {
-            player.trigger(PLAYER_ANIMATION.ATTACK, animationManager);
-        }
-    });
-
-    viewport.on("pointerup", (event) => {
-        if (event.button == 2) {
-            player.blocking = false;
-        }
-    });
-}
+function createClickEvents(viewport: Viewport, player: Player) {}
 
 function scaleCoords(pos: { x: number; y: number }) {
     pos.x *= 10;
@@ -168,6 +153,25 @@ export class World {
             this.objects.delete(id);
             this.dynamicObjs.delete(id);
             this.updatingObjs.delete(id);
+        }
+    }
+
+    action(packet: Schemas.action) {
+        const id = packet[0];
+        const player = this.objects.get(id) as Player;
+        if (player) {
+            switch (packet[1]) {
+                case ACTION.ATTACK:
+                    player.trigger(PLAYER_ANIMATION.ATTACK, animationManager);
+                    break;
+                case ACTION.START_BLOCK:
+                    player.blocking = true;
+                    player.trigger(PLAYER_ANIMATION.BLOCK, animationManager);
+                    break;
+                case ACTION.STOP_BLOCK:
+                    player.blocking = false;
+                    break;
+            }
         }
     }
 

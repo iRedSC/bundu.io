@@ -14,6 +14,7 @@ export class Player extends WorldObject {
     holding?: number;
     helmet?: number;
     moveDir: [number, number];
+    attacking: number;
 
     constructor(
         id: number,

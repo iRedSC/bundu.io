@@ -2,7 +2,12 @@ import { degrees, lookToward } from "../lib/transforms";
 import { InputHandler } from "./input/keyboard";
 import { createRenderer } from "./rendering/rendering";
 import { World } from "./game_objects/world";
-import { CLIENT_PACKET_TYPE, PACKET_TYPE, Schemas } from "../shared/enums";
+import {
+    CLIENT_ACTION,
+    CLIENT_PACKET_TYPE,
+    PACKET_TYPE,
+    Schemas,
+} from "../shared/enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { animationManager } from "./animation_manager";
 import { createPipeline } from "./packet_pipline";
@@ -21,13 +26,9 @@ createPipeline(packetPipeline, world);
 
 packetPipeline.add(
     PACKET_TYPE.PING,
-    new Unpacker(
-        (packet: Schemas.ping) => {
-            console.log(packet[0]);
-        },
-        1,
-        Schemas.ping
-    )
+    new Unpacker((packet: Schemas.ping) => {
+        console.log(packet[0]);
+    }, Schemas.ping)
 );
 
 const socket = new WebSocket("ws://localhost:7777");
@@ -52,7 +53,6 @@ function tick() {
 requestAnimationFrame(tick);
 
 function moveUpdate(move: [number, number]) {
-    console.log(move);
     socket.send(JSON.stringify([CLIENT_PACKET_TYPE.MOVE_UPDATE, ...move]));
 }
 
@@ -73,6 +73,42 @@ function mouseMoveCallback(mousePos: [number, number]) {
         player.rotation = rotation;
     }
 }
+
+viewport.on("pointerdown", (event) => {
+    if (event.button == 2) {
+        socket.send(
+            JSON.stringify([
+                CLIENT_PACKET_TYPE.ACTION,
+                CLIENT_ACTION.START_BLOCK,
+            ])
+        );
+    } else {
+        socket.send(
+            JSON.stringify([
+                CLIENT_PACKET_TYPE.ACTION,
+                CLIENT_ACTION.START_ATTACK,
+            ])
+        );
+    }
+});
+
+viewport.on("pointerup", (event) => {
+    if (event.button == 2) {
+        socket.send(
+            JSON.stringify([
+                CLIENT_PACKET_TYPE.ACTION,
+                CLIENT_ACTION.STOP_BLOCK,
+            ])
+        );
+    } else {
+        socket.send(
+            JSON.stringify([
+                CLIENT_PACKET_TYPE.ACTION,
+                CLIENT_ACTION.STOP_ATTACK,
+            ])
+        );
+    }
+});
 
 const inputHandler = new InputHandler(moveUpdate, mouseMoveCallback);
 

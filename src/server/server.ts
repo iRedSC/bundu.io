@@ -1,7 +1,7 @@
 import { Player } from "./game_objects/player.js";
 import { GameWS } from "./websockets.js";
 import { World } from "./world.js";
-import { ClientSchemas, PACKET_TYPE } from "../shared/enums.js";
+import { CLIENT_ACTION, ClientSchemas, PACKET_TYPE } from "../shared/enums.js";
 import { Entity } from "./game_objects/entity.js";
 import { PacketPipeline } from "../shared/unpack.js";
 import { WorldObject } from "./game_objects/base.js";
@@ -95,6 +95,33 @@ export class BunduServer {
         if (player) {
             player.rotation = data[0];
             this.updateList.players.set(id, player);
+        }
+    }
+
+    playerAction(data: ClientSchemas.action, id: number) {
+        const player = this.players.get(id);
+        if (player) {
+            let action = 0;
+            switch (data[0]) {
+                case CLIENT_ACTION.START_ATTACK:
+                    player.attacking = 1;
+                    action = 1;
+                    break;
+                case CLIENT_ACTION.STOP_ATTACK:
+                    player.attacking = 0;
+                    break;
+                case CLIENT_ACTION.START_BLOCK:
+                    player.attacking = 2;
+                    action = 2;
+                    break;
+                case CLIENT_ACTION.STOP_BLOCK:
+                    player.attacking = 0;
+                    action = 3;
+                    break;
+            }
+            sendPacket(this.players.values(), [
+                [PACKET_TYPE.ACTION, id, action],
+            ]);
         }
     }
 

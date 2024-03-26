@@ -11,6 +11,7 @@ import {
 } from "../shared/enums.js";
 import { PacketPipeline, Unpacker } from "../shared/unpack.js";
 import { Resource } from "./game_objects/resource.js";
+import { round } from "../lib/math.js";
 
 const packetPipeline = new PacketPipeline();
 
@@ -36,6 +37,14 @@ packetPipeline.add(
     new Unpacker(
         bunduServer.rotatePlayer.bind(bunduServer),
         ClientSchemas.rotate
+    )
+);
+
+packetPipeline.add(
+    CLIENT_PACKET_TYPE.ACTION,
+    new Unpacker(
+        bunduServer.playerAction.bind(bunduServer),
+        ClientSchemas.action
     )
 );
 
@@ -93,7 +102,9 @@ controller.connect = (socket: GameWS) => {
 };
 
 setInterval(() => {
-    console.log(`Memory Usage: ${process.memoryUsage().heapUsed * 0.000001}mb`);
+    console.log(
+        `Memory Usage: ${round(process.memoryUsage().heapUsed * 0.000001, 2)}mb`
+    );
 }, 5000);
 // const serverController = new ServerController(bunduServer);
 
