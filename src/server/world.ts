@@ -75,7 +75,8 @@ function collisionBounds(pos: { x: number; y: number; [key: string]: any }) {
 function collide(
     object: WorldObject,
     others: Iterable<WorldObject>,
-    updateList: UpdateList
+    updateList: UpdateList,
+    worldList: Quadtree<WorldObject>
 ) {
     let success = false;
     for (const other of others) {
@@ -86,10 +87,11 @@ function collide(
             response
         );
         if (overlap) {
-            // const responseV = response.overlapV.scale(0.5, 0.5);
-            object.collider.pos.sub(response.overlapV);
-            // other.collider.pos.add(responseV);
-            // updateList.generics.set(other.id, other);
+            const responseV = response.overlapV.scale(0.5, 0.5);
+            object.collider.pos.sub(responseV);
+            other.collider.pos.add(responseV);
+            updateList.generics.set(other.id, other);
+            worldList.insert(other);
             success = true;
         }
     }
@@ -104,8 +106,8 @@ function collideCircle(
     const detectionRange = collisionBounds(object.position);
     const resources = world.resources.query(detectionRange);
     const entities = world.entities.query(detectionRange);
-    const rcol = collide(object, resources, updateList);
-    const ecol = collide(object, entities, updateList);
+    const rcol = collide(object, resources, updateList, world.resources);
+    const ecol = collide(object, entities, updateList, world.entities);
     if (rcol || ecol) {
         return true;
     }
