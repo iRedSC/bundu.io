@@ -43,7 +43,6 @@ bunduServer.start();
 controller.start(7777);
 
 const WORLD_SIZE = 20000;
-const structures: [number, ...any[]] = [PACKET_TYPE.NEW_STRUCTURE];
 for (let i = 5000; i < 5050; i++) {
     const structure = new Resource(
         i,
@@ -54,7 +53,6 @@ for (let i = 5000; i < 5050; i++) {
     );
 
     world.resources.insert(structure);
-    structures.push(...structure.pack(PACKET_TYPE.NEW_STRUCTURE));
 }
 
 for (let i = 1001; i < 1100; i++) {
@@ -84,6 +82,10 @@ controller.connect = (socket: GameWS) => {
     const entities = [PACKET_TYPE.NEW_ENTITY];
     for (let entity of world.entities.objects.values()) {
         entities.push(...entity.pack(PACKET_TYPE.NEW_ENTITY));
+    }
+    const structures = [PACKET_TYPE.NEW_STRUCTURE];
+    for (let structure of world.resources.objects.values()) {
+        structures.push(...structure.pack(PACKET_TYPE.NEW_STRUCTURE));
     }
     socket.send(JSON.stringify(ground));
     socket.send(JSON.stringify(structures));
