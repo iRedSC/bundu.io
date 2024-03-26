@@ -3,7 +3,8 @@ import { round } from "../../lib/math";
 import { lerp, rotationLerp } from "../../lib/transforms";
 import { AnimationManager, AnimationMap } from "../../lib/animation";
 import { Line } from "./line";
-import { debugContainer } from "../debug";
+import { DebugWorldObject } from "../debug";
+import { Circle } from "./circle";
 
 // TODO: There are too many properties related to rotation clogging up the object.
 
@@ -24,17 +25,18 @@ function typeofState(state?: State): state is State {
 // Contains states for interpolating movement
 // Separate system for interpolating rotation
 export class WorldObject extends PIXI.Container {
+    private _size?: number;
     states: State[];
     interpolateRotation: boolean;
     lastRotation: number;
     nextRotation: number;
     rotationUpdate: number;
     rotationSpeed: number;
-    debugLine?: PIXI.Graphics;
+    debug: DebugWorldObject;
 
     animations?: AnimationMap<any>;
 
-    constructor(pos: PIXI.Point, rotation: number) {
+    constructor(pos: PIXI.Point, rotation: number, size: number) {
         super();
         this.position = pos;
         this.rotation = rotation;
@@ -44,16 +46,19 @@ export class WorldObject extends PIXI.Container {
         this.rotationUpdate = 0;
         this.interpolateRotation = true;
         this.rotationSpeed = 200;
+        this.debug = new DebugWorldObject();
+        console.log(this.position);
+        this.size = size;
     }
 
     move() {
         // remove state if it is in the past
-        const removeStaleStates = () => {
+        const removeStaleStates = (tries = 0) => {
             const state = this.states[1];
-            if (state) {
+            if (state && tries < 100) {
                 if (Date.now() - 50 > state[0]) {
                     this.states = this.states.slice(1);
-                    removeStaleStates();
+                    removeStaleStates(tries + 1);
                 }
             }
         };
@@ -83,6 +88,10 @@ export class WorldObject extends PIXI.Container {
             );
         }
         this.position.set(x, y);
+
+        if (this.debug.hitbox) {
+            this.debug.hitbox.position.set(x, y);
+        }
     }
 
     setState(state?: State) {
@@ -105,16 +114,13 @@ export class WorldObject extends PIXI.Container {
                 return;
             }
 
-            if (this.debugLine) {
-                debugContainer.removeChild(this.debugLine);
-            }
-            this.debugLine = new Line(
-                [lastState[1], lastState[2]],
-                [nextState[1], nextState[2]],
+            const debugLine = new Line(
+                { x: lastState[1], y: lastState[2] },
+                { x: nextState[1], y: nextState[2] },
                 0xff0000,
                 25
             );
-            debugContainer.addChild(this.debugLine);
+            this.debug.updateStateLine(debugLine);
         }
     }
 
@@ -132,5 +138,17 @@ export class WorldObject extends PIXI.Container {
         if (animation) {
             manager.add(this, animation.run());
         }
+    }
+
+    set size(value: number) {
+        this._size = value;
+        this.scale.set(value / 1.2);
+
+        const hitbox = new Circle(this.position, this._size * 10, 0xff0000, 25);
+        this.debug.updateHitbox(hitbox);
+    }
+
+    get size() {
+        return this._size || 0;
     }
 }

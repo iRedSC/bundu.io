@@ -14,6 +14,8 @@ function sendPacket(players: Iterable<Player>, packets: any[]) {
     }
 }
 
+// updateList is the items that have been updated and need
+// sent to clients.
 class UpdateList {
     entities: Map<number, Entity>;
     players: Map<number, Player>;
@@ -29,6 +31,9 @@ class UpdateList {
         this.generics = new Map();
     }
 }
+
+// This is where most of the player handling logic happens
+// creating, deleting, etc.
 export class BunduServer {
     world: World;
     players: Map<number, Player>;
@@ -71,17 +76,20 @@ export class BunduServer {
         );
         return player.id;
     }
+
     deletePlayer(id: number) {
         this.players.delete(id);
         this.world.players.delete(id);
         sendPacket(this.players.values(), [[PACKET_TYPE.DELETE_OBJECT, id]]);
     }
+
     moveUpdate(data: ClientSchemas.moveUpdate, id: number) {
         const player = this.players.get(id);
         if (player) {
             player.moveDir = [data[0], data[1]];
         }
     }
+
     rotatePlayer(data: ClientSchemas.rotate, id: number) {
         const player = this.players.get(id);
         if (player) {
@@ -102,7 +110,6 @@ export class BunduServer {
     ping(_: unknown[], id: number) {
         const player = this.players.get(id);
         if (player) {
-            console.log(`Pinging: ${id}`);
             player.socket.send(JSON.stringify([PACKET_TYPE.PING, Date.now()]));
         }
     }

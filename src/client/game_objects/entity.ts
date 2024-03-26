@@ -21,9 +21,8 @@ export class Entity extends WorldObject {
         rotation: number,
         size: number
     ) {
-        super(pos, rotation);
+        super(pos, rotation, size);
 
-        this.scale.set(size);
         this.pivot.set(this.width / 2, this.height / 2);
 
         this.sprite = new PIXI.Sprite(assets(type));

@@ -1,13 +1,14 @@
 import * as PIXI from "pixi.js";
+import { BasicPoint } from "../../lib/types";
 
 export class Line extends PIXI.Graphics {
-    start: [number, number];
-    end: [number, number];
+    start: BasicPoint;
+    end: BasicPoint;
     color: number;
     size: number;
     constructor(
-        start: [number, number],
-        end: [number, number],
+        start: BasicPoint,
+        end: BasicPoint,
         color: number,
         size: number = 2
     ) {
@@ -21,7 +22,7 @@ export class Line extends PIXI.Graphics {
 
         this.lineStyle(s, c);
 
-        this.moveTo(start[0], start[1]);
-        this.lineTo(end[0], end[1]);
+        this.moveTo(start.x, start.y);
+        this.lineTo(end.x, end.y);
     }
 }

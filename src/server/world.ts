@@ -12,6 +12,7 @@ type UpdateList = {
     generics: Map<number, WorldObject>;
 };
 
+// Holds all the actual world items as different quadtrees
 export class World {
     nextId: number;
     mapBounds: Range;
@@ -21,7 +22,7 @@ export class World {
 
     constructor() {
         this.nextId = 0;
-        this.mapBounds = new Range({ x: 0, y: 0 }, { x: 200000, y: 200000 });
+        this.mapBounds = new Range({ x: 0, y: 0 }, { x: 20000, y: 20000 });
         this.resources = new Quadtree(
             new Map<number, Resource>(),
             this.mapBounds,
@@ -64,7 +65,7 @@ export class World {
 }
 
 function collisionBounds(pos: { x: number; y: number; [key: string]: any }) {
-    const dist = 5000;
+    const dist = 500;
     const p1 = { x: pos.x - dist, y: pos.y - dist };
     const p2 = { x: pos.x + dist, y: pos.y + dist };
     return new Range(p1, p2);

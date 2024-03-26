@@ -22,7 +22,7 @@ export class Player extends WorldObject {
         rotation: number,
         name: string
     ) {
-        super(id, position, rotation, 5);
+        super(id, position, rotation, 1);
         this.moveDir = [0, 0];
         this.socket = socket;
         this.name = name;
@@ -35,7 +35,7 @@ export class Player extends WorldObject {
         }
         const newX = this.position.x - this.moveDir[0];
         const newY = this.position.y - this.moveDir[1];
-        const target = moveToward(this.position, { x: newX, y: newY }, 250);
+        const target = moveToward(this.position, { x: newX, y: newY }, 15);
         this.setPosition(target.x, target.y);
         return true;
     }

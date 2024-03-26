@@ -32,6 +32,11 @@ function createClickEvents(viewport: Viewport, player: Player) {
     });
 }
 
+function scaleCoords(pos: { x: number; y: number }) {
+    pos.x *= 10;
+    pos.y *= 10;
+}
+
 // This basically controls everything on the client
 // All packets (after being parsed) are sent to one of these methods
 export class World {
@@ -87,13 +92,13 @@ export class World {
     newStructure(packet: Schemas.newStructure) {
         const id = packet[0];
         const pos = new PIXI.Point(packet[1], packet[2]);
+        scaleCoords(pos);
         const structure = new Structure(
             itemMap.getv(packet[4]) || "stone",
             pos,
             packet[3],
             packet[5]
         );
-        // structure.filters = [new DropShadowFilter({ offset: { x: 0, y: 0 } })];
         this.objects.set(id, structure);
         this.viewport.addChild(structure);
     }
@@ -101,6 +106,7 @@ export class World {
     newEntity(packet: Schemas.newEntity) {
         const id = packet[0];
         const pos = new PIXI.Point(packet[1], packet[2]);
+        scaleCoords(pos);
         const entity = new Entity(
             this.animationManager,
             itemMap.getv(packet[4]) || "stone",
@@ -116,6 +122,7 @@ export class World {
     newPlayer(packet: Schemas.newPlayer) {
         const id = packet[0];
         const pos = new PIXI.Point(packet[1], packet[2]);
+        scaleCoords(pos);
         const player = new Player(
             this.animationManager,
             packet[4],
@@ -134,7 +141,11 @@ export class World {
 
         const object = this.objects.get(id);
         if (object) {
-            object.setState([Date.now() + time, packet[2], packet[3]]);
+            object.setState([
+                Date.now() + time,
+                packet[2] * 10,
+                packet[3] * 10,
+            ]);
             this.updatingObjs.set(id, object);
         }
     }
@@ -167,10 +178,10 @@ export class World {
     loadGround(packet: Schemas.loadGround) {
         const ground = createGround(
             packet[4],
-            packet[0],
-            packet[1],
-            packet[2],
-            packet[3]
+            packet[0] * 10,
+            packet[1] * 10,
+            packet[2] * 10,
+            packet[3] * 10
         );
         this.viewport.addChild(ground);
     }

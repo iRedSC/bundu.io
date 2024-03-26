@@ -44,15 +44,15 @@ packetPipeline.add(
 bunduServer.start();
 controller.start(7777);
 
-const WORLD_SIZE = 200000;
+const WORLD_SIZE = 20000;
 const structures: [number, ...any[]] = [PACKET_TYPE.NEW_STRUCTURE];
 for (let i = 5000; i < 5050; i++) {
     const structure = new Resource(
         i,
-        [Random.integer(5000, 50000), Random.integer(5000, 50000)],
+        [Random.integer(5000, 15000), Random.integer(5000, 15000)],
         Random.integer(0, Math.PI * 360),
         Random.integer(200, 205),
-        Random.integer(30, 50)
+        Random.integer(2, 30)
     );
 
     world.resources.insert(structure);
@@ -61,8 +61,8 @@ for (let i = 5000; i < 5050; i++) {
 
 for (let i = 1001; i < 1100; i++) {
     const pos: [number, number] = [
-        Random.integer(5000, 50000),
-        Random.integer(5000, 50000),
+        Random.integer(5000, 15000),
+        Random.integer(5000, 15000),
     ];
     const entity = new Entity(i, Random.integer(400, 402), pos, 0);
     world.entities.insert(entity);
@@ -72,8 +72,8 @@ const ground: [number, ...any[]] = [
     PACKET_TYPE.LOAD_GROUND,
     5000,
     5000,
-    195000,
-    195000,
+    19500,
+    19500,
     0,
     10000,
     10000,

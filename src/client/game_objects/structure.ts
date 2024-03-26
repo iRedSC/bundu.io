@@ -18,7 +18,7 @@ export class Structure extends WorldObject {
     lastHitSource: PIXI.Point;
 
     constructor(type: string, pos: PIXI.Point, rotation: number, size: number) {
-        super(pos, rotation);
+        super(pos, rotation, size);
         this.sprite = new PIXI.Sprite(assets(type));
         this.lastHitSource = new PIXI.Point(0, 0);
 
@@ -29,7 +29,6 @@ export class Structure extends WorldObject {
         this.addChild(this.sprite);
 
         this.rotation = rotation;
-        this.scale.set(size / 16);
 
         this.animations = loadAnimations(this);
     }

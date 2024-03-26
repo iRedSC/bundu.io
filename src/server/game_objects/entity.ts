@@ -100,7 +100,7 @@ export class Entity extends WorldObject {
     }
 
     get moveTime() {
-        return distance(this.position, this.ai.target) / (this.type.speed / 5);
+        return distance(this.position, this.ai.target) / (this.type.speed / 15);
     }
 
     pack(type: PACKET_TYPE): any[] {
