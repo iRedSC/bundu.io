@@ -29,7 +29,7 @@ class StatsDisplay {
             this.secondaryBar.width = 290;
             this.secondaryBar.position.set(92, 100);
             this.secondaryBar.height = 200;
-            this.secondaryBar.tint = 0x7b0700;
+            this.secondaryBar.tint = 0xaaaaaa;
             this.container.addChild(this.secondaryBar);
         }
         this.container.addChild(this.decor);
@@ -56,6 +56,7 @@ function loadAnimations(target: StatsDisplay) {
             target.amount,
             animation.t
         );
+
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
@@ -78,13 +79,13 @@ const heatContainer = new StatsDisplay(
 );
 const healthContainer = new StatsDisplay(
     "./assets/health.svg",
-    "./assets/heat_bar.svg",
+    "./assets/damage_bar.svg",
     "./assets/health_bar.svg"
 );
 healthContainer.secondaryBar!.height = 400;
 healthContainer.secondaryBar!.position.set(92, 0);
 healthContainer.secondaryBar!.tint = 0xffffff;
-healthContainer.primaryBar!.tint = 0x7b0700;
+healthContainer.primaryBar!.tint = 0xffffff;
 healthContainer.container.position.set(-270, 0);
 heatContainer.container.position.set(270, 0);
 hungerContainer.container.position.set(0, 0);
@@ -124,8 +125,8 @@ export function updateStatBars(health: number, hunger: number, heat: number) {
         heatContainer.primaryBar.width = heat;
     }
 }
-// window.addEventListener("click", updatestats);
-// window.addEventListener("contextmenu", updatestats2);
+ window.addEventListener("click", updatestats);
+window.addEventListener("contextmenu", updatestats2);
 updateStatBars(healthstat, hungerstat, heatstat);
 
 function updatestats() {
