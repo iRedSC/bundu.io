@@ -106,6 +106,7 @@ export class BunduServer {
                 case CLIENT_ACTION.START_ATTACK:
                     player.attacking = 1;
                     action = 1;
+                    this.world.attack(player);
                     break;
                 case CLIENT_ACTION.STOP_ATTACK:
                     player.attacking = 0;

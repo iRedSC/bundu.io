@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { round } from "../../lib/math";
 import { lerp, rotationLerp } from "../../lib/transforms";
-import { AnimationManager, AnimationMap } from "../../lib/animation";
+import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { Line } from "./line";
 import { DebugWorldObject } from "../debug";
 import { Circle } from "./circle";
@@ -27,25 +27,32 @@ function typeofState(state?: State): state is State {
 export class WorldObject extends PIXI.Container {
     private _size?: number;
     states: State[];
-    interpolateRotation: boolean;
-    lastRotation: number;
-    nextRotation: number;
-    rotationUpdate: number;
-    rotationSpeed: number;
+    rotationProperties: {
+        interpolate: boolean;
+        last: number;
+        next: number;
+        time: number;
+        speed: number;
+    };
     debug: DebugWorldObject;
 
     animations?: AnimationMap<any>;
 
     constructor(pos: PIXI.Point, rotation: number, size: number) {
         super();
+
+        this.animations = loadAnimations(this);
+
         this.position = pos;
         this.rotation = rotation;
         this.states = [];
-        this.lastRotation = 0;
-        this.nextRotation = 0;
-        this.rotationUpdate = 0;
-        this.interpolateRotation = true;
-        this.rotationSpeed = 200;
+        this.rotationProperties = {
+            interpolate: true,
+            last: 0,
+            next: 0,
+            time: 0,
+            speed: 200,
+        };
         this.debug = new DebugWorldObject();
         console.log(this.position);
         this.size = size;
@@ -79,11 +86,13 @@ export class WorldObject extends PIXI.Container {
         const x = round(lerp(lastState[1], nextState[1], tClamped));
         const y = round(lerp(lastState[2], nextState[2], tClamped));
 
-        if (this.interpolateRotation) {
-            const rotationT = (now - this.rotationUpdate) / this.rotationSpeed;
+        if (this.rotationProperties.interpolate) {
+            const rotationT =
+                (now - this.rotationProperties.time) /
+                this.rotationProperties.speed;
             this.rotation = rotationLerp(
-                this.lastRotation,
-                this.nextRotation,
+                this.rotationProperties.last,
+                this.rotationProperties.next,
                 rotationT
             );
         }
@@ -125,9 +134,9 @@ export class WorldObject extends PIXI.Container {
     }
 
     setRotation(rotation: number) {
-        this.rotationUpdate = Date.now() - 50;
-        this.lastRotation = this.rotation;
-        this.nextRotation = rotation;
+        this.rotationProperties.time = Date.now() - 50;
+        this.rotationProperties.last = this.rotation;
+        this.rotationProperties.next = rotation;
     }
 
     trigger(id: number, manager: AnimationManager) {
@@ -151,4 +160,41 @@ export class WorldObject extends PIXI.Container {
     get size() {
         return this._size || 0;
     }
+}
+
+export enum OBJECT_ANIMATION {
+    HURT = 1,
+}
+
+function loadAnimations(target: WorldObject) {
+    const hurtKeyframes: Keyframes<WorldObject> = new Keyframes();
+    hurtKeyframes.frame(0).set = ({ target, animation }) => {
+        if (animation.firstKeyframe) {
+            animation.meta.scale = target.size;
+            animation.goto(0, 100);
+        }
+        target.size = lerp(
+            animation.meta.scale,
+            animation.meta.scale - 0.5,
+            animation.t
+        );
+        if (animation.keyframeEnded) {
+            animation.next(400);
+        }
+    };
+    hurtKeyframes.frame(1).set = ({ target, animation }) => {
+        target.size = lerp(
+            animation.meta.scale - 0.5,
+            animation.meta.scale,
+            animation.t
+        );
+        if (animation.keyframeEnded) {
+            animation.expired = true;
+        }
+    };
+
+    const animationMap = new AnimationMap(target);
+
+    animationMap.set(OBJECT_ANIMATION.HURT, hurtKeyframes);
+    return animationMap;
 }

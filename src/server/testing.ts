@@ -43,12 +43,12 @@ export function createGround(world: World) {
     const ground1 = new Ground(
         new SAT.Vector(1500, 1500),
         new SAT.Vector(19500, 19500),
-        1
+        0
     );
     const ground2 = new Ground(
-        new SAT.Vector(15000, 15000),
-        new SAT.Vector(19500, 19500),
-        2
+        new SAT.Vector(15000, 1500),
+        new SAT.Vector(19500, 15000),
+        1
     );
 
     world.ground.push(ground1, ground2);

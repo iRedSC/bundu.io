@@ -1,11 +1,13 @@
 import { Resource } from "./game_objects/resource.js";
 import { Player } from "./game_objects/player.js";
-import { Entity } from "./game_objects/entity.js";
+import { Entity, testForIntersection } from "./game_objects/entity.js";
 import { Quadtree } from "../lib/quadtree.js";
 import { Range } from "../lib/range.js";
 import SAT from "sat";
 import { WorldObject } from "./game_objects/base.js";
 import { Ground } from "./game_objects/ground.js";
+import { ACTION, PACKET_TYPE } from "../shared/enums.js";
+import { degrees, moveInDirection, moveToward } from "../lib/transforms.js";
 
 type UpdateList = {
     entities: Map<number, Entity>;
@@ -64,6 +66,29 @@ export class World {
             if (moved || collided) {
                 updateList.players.set(id, player);
             }
+        }
+    }
+
+    attack(player: Player) {
+        const detectionRange = collisionBounds(player.position);
+        const resources = this.resources.query(detectionRange);
+        const _hitRange = moveInDirection(
+            player.position,
+            player.rotation + degrees(90),
+            50
+        );
+        const hitRange = new SAT.Vector(_hitRange.x, _hitRange.y);
+
+        console.log(resources);
+        const hit = testForIntersection(player.position, hitRange, resources);
+        console.log(hit);
+
+        const packet: any[] = [PACKET_TYPE.ACTION];
+        for (let object of hit) {
+            packet.push(object.id, ACTION.HURT);
+        }
+        for (let player of this.players.objects.values()) {
+            player.socket.send(JSON.stringify(packet));
         }
     }
 }

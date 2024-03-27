@@ -24,6 +24,8 @@ export enum ACTION {
     ATTACK = 1,
     START_BLOCK = 2,
     STOP_BLOCK = 3,
+
+    HURT = 4,
 }
 
 export namespace Schemas {

@@ -10,7 +10,7 @@ import { WorldObject } from "./world_object";
 import { assets } from "../assets/load";
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 enum STRUCTURE_ANIMATION {
-    HIT = 0,
+    HIT = 1,
 }
 export class Structure extends WorldObject {
     sprite: PIXI.Sprite;
@@ -61,8 +61,34 @@ function loadAnimations(target: Structure) {
         }
     };
 
+    const hurtKeyframes: Keyframes<Structure> = new Keyframes();
+    hurtKeyframes.frame(0).set = ({ target, animation }) => {
+        if (animation.firstKeyframe) {
+            animation.meta.scale = target.size;
+            animation.goto(0, 100);
+        }
+        target.size = lerp(
+            animation.meta.scale,
+            animation.meta.scale - 0.5,
+            animation.t
+        );
+        if (animation.keyframeEnded) {
+            animation.next(400);
+        }
+    };
+    hurtKeyframes.frame(1).set = ({ target, animation }) => {
+        target.size = lerp(
+            animation.meta.scale - 0.5,
+            animation.meta.scale,
+            animation.t
+        );
+        if (animation.keyframeEnded) {
+            animation.expired = true;
+        }
+    };
+
     const animationMap = new AnimationMap(target);
 
-    animationMap.set(STRUCTURE_ANIMATION.HIT, hitKeyframes);
+    animationMap.set(STRUCTURE_ANIMATION.HIT, hurtKeyframes);
     return animationMap;
 }

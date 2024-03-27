@@ -81,7 +81,7 @@ export class Entity extends WorldObject {
                 collisionObjects
             );
 
-            if (hit) {
+            if (hit.length > 0) {
                 range /= 2;
                 let targetCalc = moveToward(
                     this.position,
@@ -133,11 +133,12 @@ export class Entity extends WorldObject {
     }
 }
 
-function testForIntersection(
+export function testForIntersection(
     start: SAT.Vector,
     end: SAT.Vector,
     collisionTest: WorldObject[]
 ) {
+    const hitObjects: WorldObject[] = [];
     const line = new SAT.Polygon(start, [
         new SAT.Vector(0, 0),
         end.clone().sub(start),
@@ -146,8 +147,8 @@ function testForIntersection(
     for (const other of collisionTest) {
         const overlap = SAT.testPolygonCircle(line, other.collider);
         if (overlap) {
-            return true;
+            hitObjects.push(other);
         }
     }
-    return false;
+    return hitObjects;
 }

@@ -1,6 +1,6 @@
 import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animation";
-import { WorldObject } from "./world_object";
+import { OBJECT_ANIMATION, WorldObject } from "./world_object";
 import { ACTION, Schemas } from "../../shared/enums";
 import { Structure } from "./structure";
 import * as PIXI from "pixi.js";
@@ -12,10 +12,6 @@ import { Entity } from "./entity";
 import { animationManager } from "../animation_manager";
 
 // TODO: This place is a freaking mess, needs a little tidying up
-
-// Currently events (attack and block) are client side only
-// TODO: Remove this and make it send event requests
-function createClickEvents(viewport: Viewport, player: Player) {}
 
 function scaleCoords(pos: { x: number; y: number }) {
     pos.x *= 10;
@@ -63,15 +59,13 @@ export class World {
         console.log(this.user);
 
         const player = this.dynamicObjs.get(this.user)!;
-        player.interpolateRotation = false;
+        player.rotationProperties.interpolate = false;
 
         this.viewport.follow(player, {
             speed: 0,
             acceleration: 1,
             radius: 0,
         });
-
-        createClickEvents(this.viewport, player as Player);
     }
 
     newStructure(packet: Schemas.newStructure) {
@@ -114,7 +108,7 @@ export class World {
             pos,
             packet[3]
         );
-        player.rotationSpeed = 100;
+        player.rotationProperties.speed = 100;
         this.objects.set(id, player);
         this.dynamicObjs.set(id, player);
         this.viewport.addChild(player);
@@ -158,19 +152,28 @@ export class World {
 
     action(packet: Schemas.action) {
         const id = packet[0];
-        const player = this.objects.get(id) as Player;
-        if (player) {
+        const object = this.objects.get(id) as WorldObject;
+        if (object) {
             switch (packet[1]) {
                 case ACTION.ATTACK:
-                    player.trigger(PLAYER_ANIMATION.ATTACK, animationManager);
+                    object.trigger(PLAYER_ANIMATION.ATTACK, animationManager);
                     break;
                 case ACTION.START_BLOCK:
-                    player.blocking = true;
-                    player.trigger(PLAYER_ANIMATION.BLOCK, animationManager);
+                    if (object instanceof Player) {
+                        object.blocking = true;
+                        object.trigger(
+                            PLAYER_ANIMATION.BLOCK,
+                            animationManager
+                        );
+                    }
                     break;
                 case ACTION.STOP_BLOCK:
-                    player.blocking = false;
+                    if (object instanceof Player) {
+                        object.blocking = false;
+                    }
                     break;
+                case ACTION.HURT:
+                    object.trigger(OBJECT_ANIMATION.HURT, animationManager);
             }
         }
     }
