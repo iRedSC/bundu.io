@@ -56,16 +56,26 @@ export class World {
                 player?.position || new SAT.Vector()
             );
             if (moved) {
-                updateList.entities.set(id, entity);
+                const players = this.players.query(detectionRange);
+                players.forEach((player) => {
+                    player.updateHandler.move.push(entity);
+                    player.updateHandler.rotate.push(entity);
+                });
             }
             this.entities.insert(entity);
         }
         for (let [id, player] of this.players.objects.entries()) {
             const moved = player.move();
-            const collided = collideCircle(player, this, updateList);
+            const movedObjects = [];
+            const collided = collideCircle(player, this, movedObjects);
             if (moved || collided) {
-                updateList.players.set(id, player);
+                const detectionRange = collisionBounds(player.position);
+                const players = this.players.query(detectionRange);
+                players.forEach((other) => {
+                    other.updateHandler.move.push(player, ...movedObjects);
+                });
             }
+            console.log(movedObjects);
         }
     }
 
@@ -93,7 +103,11 @@ export class World {
     }
 }
 
-function collisionBounds(pos: { x: number; y: number; [key: string]: any }) {
+export function collisionBounds(pos: {
+    x: number;
+    y: number;
+    [key: string]: any;
+}) {
     const dist = 500;
     const p1 = { x: pos.x - dist, y: pos.y - dist };
     const p2 = { x: pos.x + dist, y: pos.y + dist };
@@ -103,7 +117,7 @@ function collisionBounds(pos: { x: number; y: number; [key: string]: any }) {
 function collide(
     object: WorldObject,
     others: Iterable<WorldObject>,
-    updateList: UpdateList,
+    updateList: WorldObject[],
     worldList: Quadtree<WorldObject>
 ) {
     let success = false;
@@ -118,7 +132,7 @@ function collide(
             const responseV = response.overlapV.scale(0.5, 0.5);
             object.collider.pos.sub(responseV);
             other.collider.pos.add(responseV);
-            updateList.generics.set(other.id, other);
+            updateList.push(other);
             worldList.insert(other);
             success = true;
         }
@@ -129,7 +143,7 @@ function collide(
 function collideCircle(
     object: WorldObject,
     world: World,
-    updateList: UpdateList
+    updateList: WorldObject[]
 ) {
     const detectionRange = collisionBounds(object.position);
     const resources = world.resources.query(detectionRange);

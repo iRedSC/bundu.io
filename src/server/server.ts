@@ -1,6 +1,6 @@
 import { Player } from "./game_objects/player.js";
 import { GameWS } from "./websockets.js";
-import { World } from "./world.js";
+import { World, collisionBounds } from "./world.js";
 import { CLIENT_ACTION, ClientSchemas, PACKET_TYPE } from "../shared/enums.js";
 import { Entity } from "./game_objects/entity.js";
 import { PacketPipeline } from "../shared/unpack.js";
@@ -94,7 +94,11 @@ export class BunduServer {
         const player = this.players.get(id);
         if (player) {
             player.rotation = data[0];
-            this.updateList.players.set(id, player);
+            const detectionRange = collisionBounds(player.position);
+            const players = this.world.players.query(detectionRange);
+            players.forEach((other) => {
+                other.updateHandler.rotate.push(player);
+            });
         }
     }
 
@@ -143,23 +147,9 @@ export class BunduServer {
     }
 
     sendPackets() {
-        const moveObject: [number, ...any[]] = [PACKET_TYPE.MOVE_OBJECT];
-        const rotateObject: [number, ...any[]] = [PACKET_TYPE.ROTATE_OBJECT];
-        for (const entity of this.updateList.entities.values()) {
-            moveObject.push(...entity.pack(PACKET_TYPE.MOVE_OBJECT));
-            rotateObject.push(...entity.pack(PACKET_TYPE.ROTATE_OBJECT));
-        }
-        for (const generic of this.updateList.generics.values()) {
-            moveObject.push(...generic.pack(PACKET_TYPE.MOVE_OBJECT));
-            rotateObject.push(...generic.pack(PACKET_TYPE.ROTATE_OBJECT));
-        }
-        for (const player of this.updateList.players.values()) {
-            moveObject.push(...player.pack(PACKET_TYPE.MOVE_OBJECT));
-            rotateObject.push(...player.pack(PACKET_TYPE.ROTATE_OBJECT));
-        }
-        this.updateList.clear();
-        if (moveObject.length > 1) {
-            sendPacket(this.players.values(), [moveObject, rotateObject]);
+        for (let player of this.players.values()) {
+            player.updateHandler.send(player.socket);
+            player.updateHandler.clear();
         }
     }
 

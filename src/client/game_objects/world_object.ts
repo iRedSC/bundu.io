@@ -53,6 +53,7 @@ export class WorldObject extends PIXI.Container {
             time: 0,
             speed: 200,
         };
+        this.setRotation(rotation);
         this.debug = new DebugWorldObject();
         console.log(this.position);
         this.size = size;
@@ -139,13 +140,13 @@ export class WorldObject extends PIXI.Container {
         this.rotationProperties.next = rotation;
     }
 
-    trigger(id: number, manager: AnimationManager) {
+    trigger(id: number, manager: AnimationManager, replace: boolean = false) {
         if (!this.animations) {
             return;
         }
         const animation = this.animations.get(id);
         if (animation) {
-            manager.add(this, animation.run());
+            manager.add(this, animation.run(replace));
         }
     }
 

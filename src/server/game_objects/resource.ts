@@ -1,5 +1,5 @@
 import { PACKET_TYPE } from "../../shared/enums.js";
-import { ResourceConfig, resourceConfigs } from "../configs/configs.js";
+import { ResourceConfig, resourceConfigs } from "../configs/resources.js";
 import { WorldObject } from "./base.js";
 export class Resource extends WorldObject {
     type: ResourceConfig;

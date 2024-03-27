@@ -3,18 +3,31 @@ import { GameWS } from "../websockets.js";
 import { WorldObject } from "./base.js";
 import { round } from "../../lib/math.js";
 import { PACKET_TYPE } from "../../shared/enums.js";
+import { UpdateHandler } from "./update_handler.js";
+import { UPDATE_PRIORITY } from "pixi.js";
 
 // Player should have the following properties:
 // name, socket, inventory, cosmetics, movement
 
+class Cosmetics {
+    skin: number;
+    backpack: number;
+    book: number;
+}
+
+class Inventory {
+    slots: number;
+    items: Map<string, number>;
+    hand: string;
+    head: string;
+}
+
 export class Player extends WorldObject {
     name: string;
     socket: GameWS;
-    backpack: number;
-    holding?: number;
-    helmet?: number;
     moveDir: [number, number];
     attacking: number;
+    updateHandler: UpdateHandler;
 
     constructor(
         id: number,
@@ -27,7 +40,7 @@ export class Player extends WorldObject {
         this.moveDir = [0, 0];
         this.socket = socket;
         this.name = name;
-        this.backpack = 0;
+        this.updateHandler = new UpdateHandler();
     }
 
     move() {
@@ -44,13 +57,7 @@ export class Player extends WorldObject {
     pack(type: PACKET_TYPE): any[] {
         switch (type) {
             case PACKET_TYPE.MOVE_OBJECT:
-                return [
-                    this.id,
-                    50,
-                    round(this.x, 1),
-                    round(this.y, 1),
-                    round(this.rotation, 3),
-                ];
+                return [this.id, 50, round(this.x, 1), round(this.y, 1)];
             case PACKET_TYPE.ROTATE_OBJECT:
                 return [this.id, this.rotation];
             case PACKET_TYPE.NEW_PLAYER:
@@ -60,10 +67,10 @@ export class Player extends WorldObject {
                     round(this.y, 1),
                     round(this.rotation, 3),
                     this.name,
-                    this.holding || 0,
-                    this.helmet || 0,
                     0,
-                    this.backpack,
+                    0,
+                    0,
+                    0,
                 ];
         }
         return [];

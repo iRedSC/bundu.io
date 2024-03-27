@@ -240,7 +240,8 @@ function loadAnimations(target: Player) {
     attackKeyframes.frame(0).set = ({ target, animation }) => {
         const leftHand = target.sprite.leftHand.container;
         if (leftHand.rotation !== 0) {
-            animation.expired = true;
+            leftHand.rotation = 0;
+            // animation.expired = true;
         }
         animation.next(100);
     };

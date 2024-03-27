@@ -156,7 +156,11 @@ export class World {
         if (object) {
             switch (packet[1]) {
                 case ACTION.ATTACK:
-                    object.trigger(PLAYER_ANIMATION.ATTACK, animationManager);
+                    object.trigger(
+                        PLAYER_ANIMATION.ATTACK,
+                        animationManager,
+                        true
+                    );
                     break;
                 case ACTION.START_BLOCK:
                     if (object instanceof Player) {

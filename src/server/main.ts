@@ -5,7 +5,6 @@ import {
     PACKET_TYPE,
     CLIENT_PACKET_TYPE,
     ClientSchemas,
-    ACTION,
 } from "../shared/enums.js";
 import { PacketPipeline, Unpacker } from "../shared/unpack.js";
 import { round } from "../lib/math.js";
