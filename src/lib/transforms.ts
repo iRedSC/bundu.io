@@ -98,3 +98,19 @@ export function colorLerp(color1: number, color2: number, t: number) {
 
     return rgbToHex({ r, g, b });
 }
+
+type Rectangle = { x: number; y: number; width: number; height: number };
+
+export function coordsToRect(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+): Rectangle {
+    const x = Math.min(x1, x2);
+    const y = Math.min(y1, y2);
+    const width = Math.abs(x1 - x2);
+    const height = Math.abs(y1 - y2);
+
+    return { x: x, y: y, width: width, height: height };
+}

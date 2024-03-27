@@ -75,7 +75,11 @@ export class Entity extends WorldObject {
         );
         let tries = 0;
         while (tries < 20 && success !== true) {
-            const hit = raycast(this.position, target, collisionObjects);
+            const hit = testForIntersection(
+                this.position,
+                target,
+                collisionObjects
+            );
 
             if (hit) {
                 range /= 2;
@@ -129,7 +133,7 @@ export class Entity extends WorldObject {
     }
 }
 
-function raycast(
+function testForIntersection(
     start: SAT.Vector,
     end: SAT.Vector,
     collisionTest: WorldObject[]
@@ -147,9 +151,3 @@ function raycast(
     }
     return false;
 }
-
-// start: 15, 14
-
-//end: 28, 13
-
-// end - start = 28-15=13, 13-14=-1

@@ -5,6 +5,7 @@ import { Quadtree } from "../lib/quadtree.js";
 import { Range } from "../lib/range.js";
 import SAT from "sat";
 import { WorldObject } from "./game_objects/base.js";
+import { Ground } from "./game_objects/ground.js";
 
 type UpdateList = {
     entities: Map<number, Entity>;
@@ -19,6 +20,7 @@ export class World {
     resources: Quadtree<Resource>;
     players: Quadtree<Player>;
     entities: Quadtree<Entity>;
+    ground: Ground[];
 
     constructor() {
         this.nextId = 0;
@@ -38,6 +40,7 @@ export class World {
             this.mapBounds,
             10
         );
+        this.ground = [];
     }
 
     tick(updateList: UpdateList) {
