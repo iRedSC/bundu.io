@@ -25,6 +25,7 @@ function typeofState(state?: State): state is State {
 // Contains states for interpolating movement
 // Separate system for interpolating rotation
 export class WorldObject extends PIXI.Container {
+    id: number;
     private _size?: number;
     states: State[];
     rotationProperties: {
@@ -38,9 +39,10 @@ export class WorldObject extends PIXI.Container {
 
     animations?: AnimationMap<any>;
 
-    constructor(pos: PIXI.Point, rotation: number, size: number) {
+    constructor(id: number, pos: PIXI.Point, rotation: number, size: number) {
         super();
 
+        this.id = id;
         this.animations = loadAnimations(this);
 
         this.position = pos;
@@ -57,6 +59,9 @@ export class WorldObject extends PIXI.Container {
         this.debug = new DebugWorldObject();
         console.log(this.position);
         this.size = size;
+        const idText = new PIXI.Text(`ID: ${this.id}`);
+        idText.position = pos;
+        this.debug.updateId(idText);
     }
 
     move() {
@@ -102,11 +107,15 @@ export class WorldObject extends PIXI.Container {
         if (this.debug.hitbox) {
             this.debug.hitbox.position.set(x, y);
         }
+        if (this.debug.id) {
+            this.debug.id.position.set(x, y);
+        }
     }
 
     setState(state?: State) {
         if (typeofState(state)) {
             this.states.push(state);
+            this.renderable = true;
 
             // if there was no state updates for a while, this will set the old state's time
             // to the present so it can update smoothly.
@@ -124,13 +133,13 @@ export class WorldObject extends PIXI.Container {
                 return;
             }
 
-            const debugLine = new Line(
-                { x: lastState[1], y: lastState[2] },
-                { x: nextState[1], y: nextState[2] },
-                0xff0000,
-                25
-            );
-            this.debug.updateStateLine(debugLine);
+            // const debugLine = new Line(
+            //     { x: lastState[1], y: lastState[2] },
+            //     { x: nextState[1], y: nextState[2] },
+            //     0xff0000,
+            //     25
+            // );
+            // this.debug.updateStateLine(debugLine);
         }
     }
 
@@ -154,8 +163,8 @@ export class WorldObject extends PIXI.Container {
         this._size = value;
         this.scale.set(value / 1.2);
 
-        const hitbox = new Circle(this.position, this._size * 10, 0xff0000, 25);
-        this.debug.updateHitbox(hitbox);
+        // const hitbox = new Circle(this.position, this._size * 10, 0xff0000, 25);
+        // this.debug.updateHitbox(hitbox);
     }
 
     get size() {

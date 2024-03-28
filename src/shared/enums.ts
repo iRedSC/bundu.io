@@ -119,6 +119,8 @@ export enum CLIENT_PACKET_TYPE {
     MOVE_UPDATE = 1,
     ROTATE = 2,
     ACTION = 3,
+
+    REQUEST_OBJECT = 20,
 }
 
 export enum CLIENT_ACTION {
@@ -146,4 +148,9 @@ export namespace ClientSchemas {
         z.number(), // ACTION
     ]);
     export type action = z.infer<typeof rotate>;
+
+    export const requestObjects = z.tuple([
+        z.number().array(), // list of IDS
+    ]);
+    export type requestObjects = z.infer<typeof requestObjects>;
 }

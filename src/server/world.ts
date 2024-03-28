@@ -2,18 +2,14 @@ import { Resource } from "./game_objects/resource.js";
 import { Player } from "./game_objects/player.js";
 import { Entity, testForIntersection } from "./game_objects/entity.js";
 import { Quadtree } from "../lib/quadtree.js";
-import { Range } from "../lib/range.js";
+import { Range, rangeFromPoint } from "../lib/range.js";
 import SAT from "sat";
 import { WorldObject } from "./game_objects/base.js";
 import { Ground } from "./game_objects/ground.js";
-import { ACTION, PACKET_TYPE } from "../shared/enums.js";
+import { ACTION, ClientSchemas, PACKET_TYPE } from "../shared/enums.js";
 import { degrees, moveInDirection, moveToward } from "../lib/transforms.js";
-
-type UpdateList = {
-    entities: Map<number, Entity>;
-    players: Map<number, Player>;
-    generics: Map<number, WorldObject>;
-};
+import { UpdateHandler } from "./game_objects/update_handler.js";
+import { Schema } from "zod";
 
 // Holds all the actual world items as different quadtrees
 export class World {
@@ -45,22 +41,50 @@ export class World {
         this.ground = [];
     }
 
-    tick(updateList: UpdateList) {
+    updatePlayerViews() {
+        const move: any[] = [PACKET_TYPE.MOVE_OBJECT];
+        const rotate: any[] = [PACKET_TYPE.ROTATE_OBJECT];
+        function loop(player: Player, objects: Iterable<WorldObject>) {
+            for (const object of objects) {
+                const isNew = player.visibleObjects.set(object.id, object);
+                if (isNew) {
+                    move.push(object.pack(PACKET_TYPE.MOVE_OBJECT));
+                    rotate.push(object.pack(PACKET_TYPE.ROTATE_OBJECT));
+                }
+            }
+        }
+        for (const player of this.players.values()) {
+            player.visibleObjects.clear();
+            const range = rangeFromPoint(player.position, 800);
+            const resources = this.resources.query(range);
+            const players = this.players.query(range);
+            const entities = this.entities.query(range);
+
+            loop(player, resources.values());
+            loop(player, players.values());
+            loop(player, entities.values());
+        }
+    }
+
+    requestObjects(data: ClientSchemas.requestObjects, id: number) {
+        const packet = [PACKET_TYPE.NEW_ENTITY];
+    }
+
+    tick(updateHandler: UpdateHandler) {
         const player = this.players.get(1);
         for (let [id, entity] of this.entities.objects.entries()) {
-            const detectionRange = collisionBounds(entity.position);
+            const detectionRange = rangeFromPoint(entity.position, 800);
             const collisionTest = this.resources.query(detectionRange);
 
             const moved = entity.move(
-                collisionTest,
+                Array.from(collisionTest.values()),
                 player?.position || new SAT.Vector()
             );
             if (moved) {
-                const players = this.players.query(detectionRange);
-                players.forEach((player) => {
-                    player.updateHandler.move.push(entity);
-                    player.updateHandler.rotate.push(entity);
-                });
+                updateHandler.add(
+                    [entity],
+                    [PACKET_TYPE.ROTATE_OBJECT, PACKET_TYPE.MOVE_OBJECT]
+                );
             }
             this.entities.insert(entity);
         }
@@ -69,18 +93,16 @@ export class World {
             const movedObjects = [];
             const collided = collideCircle(player, this, movedObjects);
             if (moved || collided) {
-                const detectionRange = collisionBounds(player.position);
-                const players = this.players.query(detectionRange);
-                players.forEach((other) => {
-                    other.updateHandler.move.push(player, ...movedObjects);
-                });
+                updateHandler.add(
+                    [player, ...movedObjects],
+                    [PACKET_TYPE.MOVE_OBJECT]
+                );
             }
-            console.log(movedObjects);
         }
     }
 
     attack(player: Player) {
-        const detectionRange = collisionBounds(player.position);
+        const detectionRange = rangeFromPoint(player.position, 100);
         const resources = this.resources.query(detectionRange);
         const _hitRange = moveInDirection(
             player.position,
@@ -89,9 +111,11 @@ export class World {
         );
         const hitRange = new SAT.Vector(_hitRange.x, _hitRange.y);
 
-        console.log(resources);
-        const hit = testForIntersection(player.position, hitRange, resources);
-        console.log(hit);
+        const hit = testForIntersection(
+            player.position,
+            hitRange,
+            Array.from(resources.values())
+        );
 
         const packet: any[] = [PACKET_TYPE.ACTION];
         for (let object of hit) {
@@ -102,18 +126,6 @@ export class World {
         }
     }
 }
-
-export function collisionBounds(pos: {
-    x: number;
-    y: number;
-    [key: string]: any;
-}) {
-    const dist = 500;
-    const p1 = { x: pos.x - dist, y: pos.y - dist };
-    const p2 = { x: pos.x + dist, y: pos.y + dist };
-    return new Range(p1, p2);
-}
-
 function collide(
     object: WorldObject,
     others: Iterable<WorldObject>,
@@ -145,11 +157,16 @@ function collideCircle(
     world: World,
     updateList: WorldObject[]
 ) {
-    const detectionRange = collisionBounds(object.position);
+    const detectionRange = rangeFromPoint(object.position, 500);
     const resources = world.resources.query(detectionRange);
     const entities = world.entities.query(detectionRange);
-    const rcol = collide(object, resources, updateList, world.resources);
-    const ecol = collide(object, entities, updateList, world.entities);
+    const rcol = collide(
+        object,
+        resources.values(),
+        updateList,
+        world.resources
+    );
+    const ecol = collide(object, entities.values(), updateList, world.entities);
     if (rcol || ecol) {
         return true;
     }

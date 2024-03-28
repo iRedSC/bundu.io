@@ -1,9 +1,9 @@
-type Point = { x: number; y: number; [key: string]: any };
+import { BasicPoint } from "./types";
 
 export class Range {
-    pos1: Point;
-    pos2: Point;
-    constructor(pos1: Point, pos2: Point) {
+    pos1: BasicPoint;
+    pos2: BasicPoint;
+    constructor(pos1: BasicPoint, pos2: BasicPoint) {
         this.pos1 = pos1;
         this.pos2 = pos2;
     }
@@ -15,7 +15,7 @@ export class Range {
         return [width, height];
     }
 
-    get normalized(): [Point, Point] {
+    get normalized(): [BasicPoint, BasicPoint] {
         return [
             {
                 x: Math.min(this.pos1.x, this.pos2.x),
@@ -28,7 +28,7 @@ export class Range {
         ];
     }
 
-    contains(pos: Point): boolean {
+    contains(pos: BasicPoint): boolean {
         const normalized = this.normalized;
         const pos1 = normalized[0];
         const pos2 = normalized[1];
@@ -47,4 +47,12 @@ export class Range {
 
         return !(noOverlapX || noOverlapY);
     }
+}
+
+export function rangeFromPoint(point: BasicPoint, size: number) {
+    const sizeX = size * 1.7;
+
+    const p1 = { x: point.x - sizeX, y: point.y - size };
+    const p2 = { x: point.x + sizeX, y: point.y + size };
+    return new Range(p1, p2);
 }

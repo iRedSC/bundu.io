@@ -1,10 +1,12 @@
 import { Player } from "./game_objects/player.js";
 import { GameWS } from "./websockets.js";
-import { World, collisionBounds } from "./world.js";
+import { World } from "./world.js";
 import { CLIENT_ACTION, ClientSchemas, PACKET_TYPE } from "../shared/enums.js";
 import { Entity } from "./game_objects/entity.js";
 import { PacketPipeline } from "../shared/unpack.js";
 import { WorldObject } from "./game_objects/base.js";
+import { rangeFromPoint } from "../lib/range.js";
+import { UpdateHandler } from "./game_objects/update_handler.js";
 
 function sendPacket(players: Iterable<Player>, packets: any[]) {
     for (let player of players) {
@@ -13,37 +15,18 @@ function sendPacket(players: Iterable<Player>, packets: any[]) {
         }
     }
 }
-
-// updateList is the items that have been updated and need
-// sent to clients.
-class UpdateList {
-    entities: Map<number, Entity>;
-    players: Map<number, Player>;
-    generics: Map<number, WorldObject>;
-
-    constructor() {
-        this.clear();
-    }
-
-    clear() {
-        this.entities = new Map();
-        this.players = new Map();
-        this.generics = new Map();
-    }
-}
-
 // This is where most of the player handling logic happens
 // creating, deleting, etc.
 export class BunduServer {
     world: World;
     players: Map<number, Player>;
-    updateList: UpdateList;
     pipeline: PacketPipeline;
+    updateHandler: UpdateHandler;
     constructor(world: World, pipeline: PacketPipeline) {
         this.pipeline = pipeline;
         this.world = world;
         this.players = new Map();
-        this.updateList = new UpdateList();
+        this.updateHandler = new UpdateHandler();
     }
 
     createPlayer(socket: GameWS) {
@@ -85,21 +68,26 @@ export class BunduServer {
 
     moveUpdate(data: ClientSchemas.moveUpdate, id: number) {
         const player = this.players.get(id);
-        if (player) {
-            player.moveDir = [data[0], data[1]];
+        if (!player) {
+            return;
         }
+        player.moveDir = [data[0], data[1]];
     }
 
     rotatePlayer(data: ClientSchemas.rotate, id: number) {
         const player = this.players.get(id);
-        if (player) {
-            player.rotation = data[0];
-            const detectionRange = collisionBounds(player.position);
-            const players = this.world.players.query(detectionRange);
-            players.forEach((other) => {
-                other.updateHandler.rotate.push(player);
-            });
+        if (!player) {
+            return;
         }
+        player.rotation = data[0];
+        this.updateHandler.add([player], [PACKET_TYPE.ROTATE_OBJECT]);
+    }
+    requestObjects(data: ClientSchemas.requestObjects, id: number) {
+        const player = this.players.get(id);
+        if (!player) {
+            return;
+        }
+        const packet = this.world.requestObjects(data, id);
     }
 
     playerAction(data: ClientSchemas.action, id: number) {
@@ -137,6 +125,7 @@ export class BunduServer {
 
     start() {
         setInterval(this.tick.bind(this), 50);
+        setInterval(this.world.updatePlayerViews.bind(this.world), 500);
     }
 
     ping(_: unknown[], id: number) {
@@ -147,14 +136,14 @@ export class BunduServer {
     }
 
     sendPackets() {
-        for (let player of this.players.values()) {
-            player.updateHandler.send(player.socket);
-            player.updateHandler.clear();
+        for (const player of this.players.values()) {
+            this.updateHandler.send(player);
         }
+        this.updateHandler.clear();
     }
 
     tick() {
-        this.world.tick(this.updateList);
+        this.world.tick(this.updateHandler);
         this.sendPackets();
     }
 }

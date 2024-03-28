@@ -17,8 +17,14 @@ export class Structure extends WorldObject {
     animations: AnimationMap<Structure>;
     lastHitSource: PIXI.Point;
 
-    constructor(type: string, pos: PIXI.Point, rotation: number, size: number) {
-        super(pos, rotation, size);
+    constructor(
+        id: number,
+        type: string,
+        pos: PIXI.Point,
+        rotation: number,
+        size: number
+    ) {
+        super(id, pos, rotation, size);
         this.sprite = new PIXI.Sprite(assets(type));
         this.lastHitSource = new PIXI.Point(0, 0);
 

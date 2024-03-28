@@ -22,8 +22,14 @@ export class Quadtree<T extends ObjectWithPos> {
         this.objects.delete(objectID);
     }
 
-    get(objectID: number) {
-        return this.objects.get(objectID);
+    get(objectID: number | undefined) {
+        if (objectID) {
+            return this.objects.get(objectID);
+        }
+    }
+
+    values() {
+        return this.objects.values();
     }
 
     clear() {
@@ -108,9 +114,13 @@ class InternalQuadtree<T extends ObjectWithPos> {
         }
     }
 
-    query(range: Range, objectList: ObjectList<T>, found?: T[]): T[] {
+    query(
+        range: Range,
+        objectList: ObjectList<T>,
+        found?: Map<number, T>
+    ): Map<number, T> {
         if (!found) {
-            found = [];
+            found = new Map();
         }
         if (!this.bounds.intersects(range)) {
             return found;
@@ -122,7 +132,7 @@ class InternalQuadtree<T extends ObjectWithPos> {
                 }
                 if (this.bounds.contains(object.position)) {
                     if (range.contains(object.position)) {
-                        found.push(object);
+                        found.set(object.id, object);
                     }
                 } else {
                     this.objects.delete(objectID);

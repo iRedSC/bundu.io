@@ -22,12 +22,52 @@ class Inventory {
     head: string;
 }
 
+class VisibleObjects {
+    private oldObjects: Map<number, WorldObject>;
+    objects: Map<number, WorldObject>;
+    new: Map<number, WorldObject>;
+
+    constructor() {
+        this.objects = new Map();
+        this.new = new Map();
+    }
+
+    set(id: number, object: WorldObject): boolean {
+        this.objects.set(id, object);
+        const exists = this.oldObjects.get(id);
+        if (exists) {
+            return false;
+        }
+        this.new.set(id, object);
+        return true;
+    }
+    clear() {
+        this.oldObjects = structuredClone(this.objects);
+        this.objects.clear();
+        this.new.clear();
+    }
+
+    get(id: number) {
+        return this.objects.get(id);
+    }
+
+    getAll() {
+        return this.objects.values();
+    }
+
+    getNew() {
+        const values = this.new.values();
+        this.new.clear();
+        return values;
+    }
+}
+
 export class Player extends WorldObject {
     name: string;
     socket: GameWS;
     moveDir: [number, number];
     attacking: number;
-    updateHandler: UpdateHandler;
+    visibleObjects: VisibleObjects;
 
     constructor(
         id: number,
@@ -40,7 +80,7 @@ export class Player extends WorldObject {
         this.moveDir = [0, 0];
         this.socket = socket;
         this.name = name;
-        this.updateHandler = new UpdateHandler();
+        this.visibleObjects = new VisibleObjects();
     }
 
     move() {

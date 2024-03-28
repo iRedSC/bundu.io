@@ -1,37 +1,50 @@
 import { PACKET_TYPE } from "../../shared/enums.js";
-import { GameWS } from "../websockets.js";
 import { WorldObject } from "./base.js";
+import { Player } from "./player.js";
 
+type UpdateTypes = PACKET_TYPE[];
 export class UpdateHandler {
-    move: WorldObject[];
-    rotate: WorldObject[];
+    objects: Map<WorldObject, UpdateTypes>;
 
     constructor() {
-        this.move = [];
-        this.rotate = [];
+        this.objects = new Map();
     }
 
-    send(to: GameWS) {
-        const MOVE_OBJECT = [PACKET_TYPE.MOVE_OBJECT];
-        for (let object of this.move) {
-            MOVE_OBJECT.push(...object.pack(PACKET_TYPE.MOVE_OBJECT));
+    add(objects: WorldObject[], types: PACKET_TYPE[]) {
+        for (const object of objects) {
+            const existingTypes = this.objects.get(object);
+            if (existingTypes) {
+                types.push(...types);
+                return;
+            }
+            this.objects.set(object, types);
         }
+    }
 
-        const ROTATE_OBJECT = [PACKET_TYPE.ROTATE_OBJECT];
-        for (let object of this.rotate) {
-            ROTATE_OBJECT.push(...object.pack(PACKET_TYPE.ROTATE_OBJECT));
+    send(player: Player) {
+        const packets: Map<PACKET_TYPE, any[]> = new Map();
+        for (const [object, updateTypes] of this.objects.entries()) {
+            if (!player.visibleObjects.get(object.id)) {
+                continue;
+            }
+            for (const updateType of updateTypes) {
+                let packet = packets.get(updateType);
+                if (packet) {
+                    packet.push(...object.pack(updateType));
+                } else {
+                    packets.set(updateType, [
+                        updateType,
+                        ...object.pack(updateType),
+                    ]);
+                }
+            }
         }
-
-        if (MOVE_OBJECT.length > 1) {
-            to.send(JSON.stringify(MOVE_OBJECT));
-        }
-        if (ROTATE_OBJECT.length > 1) {
-            to.send(JSON.stringify(ROTATE_OBJECT));
+        for (const packet of packets.values()) {
+            player.socket.send(JSON.stringify(packet));
         }
     }
 
     clear() {
-        this.move = [];
-        this.rotate = [];
+        this.objects.clear();
     }
 }

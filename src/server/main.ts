@@ -45,16 +45,23 @@ packetPipeline.add(
     )
 );
 
+packetPipeline.add(
+    CLIENT_PACKET_TYPE.REQUEST_OBJECT,
+    new Unpacker(
+        bunduServer.requestObjects.bind(bunduServer),
+        ClientSchemas.requestObjects
+    )
+);
+
 bunduServer.start();
 controller.start(7777);
 
 createEntities(world, 50);
 createGround(world);
-createResources(world, 500);
+createResources(world, 5000);
 
 function createPacket(type: PACKET_TYPE, objects: Iterable<any>) {
     const packet = [type];
-    console.log(objects);
     for (let object of objects) {
         packet.push(...object.pack(type));
     }
@@ -64,22 +71,6 @@ function createPacket(type: PACKET_TYPE, objects: Iterable<any>) {
 controller.connect = (socket: GameWS) => {
     socket.send(
         JSON.stringify(createPacket(PACKET_TYPE.LOAD_GROUND, world.ground))
-    );
-    socket.send(
-        JSON.stringify(
-            createPacket(
-                PACKET_TYPE.NEW_STRUCTURE,
-                world.resources.objects.values()
-            )
-        )
-    );
-    socket.send(
-        JSON.stringify(
-            createPacket(
-                PACKET_TYPE.NEW_ENTITY,
-                world.entities.objects.values()
-            )
-        )
     );
 };
 

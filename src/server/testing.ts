@@ -14,7 +14,7 @@ export function createResources(world: World, amount: number) {
             [Random.integer(1500, 19500), Random.integer(1500, 19500)],
             Random.integer(0, Math.PI * 360),
             Random.integer(200, 205),
-            Random.integer(3, 9)
+            Random.integer(1, 5)
         );
 
         world.nextId++;

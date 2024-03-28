@@ -13,25 +13,25 @@ import { animationManager } from "./animation_manager";
 import { createPipeline } from "./packet_pipline";
 import { debugContainer } from "./debug";
 import { round } from "../lib/math";
+import { rangeFromPoint } from "../lib/range";
 
 const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
+const socket = new WebSocket("ws://localhost:7777");
 const world = new World(viewport, animationManager);
 
-// viewport.addChild(debugContainer);
+viewport.addChild(debugContainer);
 debugContainer.zIndex = 1000;
 viewport.sortChildren();
 
 createPipeline(packetPipeline, world);
 
+export const requestIds: number[] = [];
+
 packetPipeline.add(
     PACKET_TYPE.PING,
-    new Unpacker((packet: Schemas.ping) => {
-        console.log(packet[0]);
-    }, Schemas.ping)
+    new Unpacker((packet: Schemas.ping) => {}, Schemas.ping)
 );
-
-const socket = new WebSocket("ws://localhost:7777");
 
 socket.onopen = () => {
     console.log("CONNECTED");
@@ -110,6 +110,23 @@ viewport.on("pointerup", (event) => {
     }
 });
 
-const inputHandler = new InputHandler(moveUpdate, mouseMoveCallback);
+new InputHandler(moveUpdate, mouseMoveCallback);
 
 // interactions
+
+function hideOutOfSight() {
+    const player = world.objects.get(world.user);
+    if (player) {
+        const range = rangeFromPoint(player.position, 8000);
+        const query = world.objects.query(range);
+        console.log(world.objects.values());
+        for (const object of world.objects.values()) {
+            const queryObject = query.get(object.id);
+            if (queryObject) {
+                continue;
+            }
+            object.renderable = false;
+        }
+    }
+}
+setInterval(hideOutOfSight, 500);

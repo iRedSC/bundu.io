@@ -10,6 +10,9 @@ import { itemMap } from "../configs/item_map";
 import { createGround } from "./ground";
 import { Entity } from "./entity";
 import { animationManager } from "../animation_manager";
+import { Quadtree } from "../../lib/quadtree";
+import { Range } from "../../lib/range";
+import { requestIds } from "../main";
 
 // TODO: This place is a freaking mess, needs a little tidying up
 
@@ -21,10 +24,11 @@ function scaleCoords(pos: { x: number; y: number }) {
 // This basically controls everything on the client
 // All packets (after being parsed) are sent to one of these methods
 export class World {
+    size: number;
     viewport: Viewport;
     animationManager: AnimationManager;
     user?: number;
-    objects: Map<number, WorldObject>;
+    objects: Quadtree<WorldObject>;
     dynamicObjs: Map<number, WorldObject>;
     updatingObjs: Map<number, WorldObject>;
     sky: Sky;
@@ -33,9 +37,12 @@ export class World {
         this.viewport = viewport;
         this.sky = new Sky();
         this.animationManager = animationManager;
-        this.objects = new Map();
+
+        const mapBounds = new Range({ x: 0, y: 0 }, { x: 200000, y: 200000 });
+        this.objects = new Quadtree(new Map(), mapBounds, 10);
         this.dynamicObjs = new Map();
         this.updatingObjs = new Map();
+        this.size = 0;
 
         this.viewport.addChild(this.sky);
     }
@@ -73,12 +80,13 @@ export class World {
         const pos = new PIXI.Point(packet[1], packet[2]);
         scaleCoords(pos);
         const structure = new Structure(
+            id,
             itemMap.getv(packet[4]) || "stone",
             pos,
             packet[3],
             packet[5]
         );
-        this.objects.set(id, structure);
+        this.objects.insert(structure);
         this.viewport.addChild(structure);
     }
 
@@ -87,6 +95,7 @@ export class World {
         const pos = new PIXI.Point(packet[1], packet[2]);
         scaleCoords(pos);
         const entity = new Entity(
+            id,
             this.animationManager,
             itemMap.getv(packet[5]) || "stone",
             pos,
@@ -94,7 +103,7 @@ export class World {
             packet[4]
         );
         entity.setState([Date.now(), pos.x, pos.y]);
-        this.objects.set(id, entity);
+        this.objects.insert(entity);
         this.viewport.addChild(entity);
     }
 
@@ -103,13 +112,14 @@ export class World {
         const pos = new PIXI.Point(packet[1], packet[2]);
         scaleCoords(pos);
         const player = new Player(
+            id,
             this.animationManager,
             packet[4],
             pos,
             packet[3]
         );
         player.rotationProperties.speed = 100;
-        this.objects.set(id, player);
+        this.objects.insert(player);
         this.dynamicObjs.set(id, player);
         this.viewport.addChild(player);
     }
@@ -119,21 +129,24 @@ export class World {
         const time = packet[1];
 
         const object = this.objects.get(id);
-        if (object) {
-            object.setState([
-                Date.now() + time,
-                packet[2] * 10,
-                packet[3] * 10,
-            ]);
-            this.updatingObjs.set(id, object);
+        if (!object) {
+            requestIds.push(id);
+            return;
         }
+        object.setState([Date.now() + time, packet[2] * 10, packet[3] * 10]);
+        this.updatingObjs.set(id, object);
+        this.objects.insert(object);
     }
 
     rotateObject(packet: Schemas.rotateObject) {
         const id = packet[0];
 
         const object = this.objects.get(id);
-        if (object && id !== this.user) {
+        if (!object) {
+            requestIds.push(id);
+            return;
+        }
+        if (id !== this.user) {
             object.setRotation(packet[1]);
             this.updatingObjs.set(id, object);
         }

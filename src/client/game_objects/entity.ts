@@ -15,13 +15,14 @@ export class Entity extends WorldObject {
     animations: AnimationMap<Entity>;
 
     constructor(
+        id: number,
         manager: AnimationManager,
         type: string,
         pos: PIXI.Point,
         rotation: number,
         size: number
     ) {
-        super(pos, rotation, size);
+        super(id, pos, rotation, size);
 
         this.pivot.set(this.width / 2, this.height / 2);
 

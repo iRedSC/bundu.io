@@ -7,6 +7,7 @@ export const debugContainer = new PIXI.Container();
 export class DebugWorldObject {
     stateLine?: Line;
     hitbox?: Circle;
+    id?: PIXI.Text;
 
     constructor() {}
 
@@ -23,5 +24,13 @@ export class DebugWorldObject {
         }
         this.hitbox = hitbox;
         debugContainer.addChild(this.hitbox);
+    }
+
+    updateId(id: PIXI.Text) {
+        if (this.id) {
+            debugContainer.removeChild(this.id);
+        }
+        this.id = id;
+        debugContainer.addChild(this.id);
     }
 }
