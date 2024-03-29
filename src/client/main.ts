@@ -14,6 +14,8 @@ import { createPipeline } from "./packet_pipline";
 import { debugContainer } from "./debug";
 import { round } from "../lib/math";
 import { rangeFromPoint } from "../lib/range";
+import { encode } from "@msgpack/msgpack";
+import { decodeFromBlob } from "./network/decode";
 
 const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
@@ -36,12 +38,12 @@ packetPipeline.add(
 
 socket.onopen = () => {
     console.log("CONNECTED");
-    socket.send(JSON.stringify([CLIENT_PACKET_TYPE.PING]));
+    socket.send(encode([CLIENT_PACKET_TYPE.PING]));
 };
 
-socket.onmessage = (ev) => {
-    // console.log(ev.data);
-    packetPipeline.unpack(JSON.parse(ev.data));
+socket.onmessage = async (ev) => {
+    const data = await decodeFromBlob(ev.data);
+    packetPipeline.unpack(data);
 };
 
 // tick updates
@@ -54,7 +56,7 @@ function tick() {
 requestAnimationFrame(tick);
 
 function moveUpdate(move: [number, number]) {
-    socket.send(JSON.stringify([CLIENT_PACKET_TYPE.MOVE_UPDATE, ...move]));
+    socket.send(encode([CLIENT_PACKET_TYPE.MOVE_UPDATE, ...move]));
 }
 
 let updateTick = 0;
@@ -68,7 +70,7 @@ function mouseMoveCallback(mousePos: [number, number]) {
         if (Math.abs(player.rotation - rotation) > 0.2 || updateTick > 10) {
             updateTick = 0;
             socket.send(
-                JSON.stringify([CLIENT_PACKET_TYPE.ROTATE, round(rotation, 3)])
+                encode([CLIENT_PACKET_TYPE.ROTATE, round(rotation, 3)])
             );
         }
         player.rotation = rotation;
@@ -78,17 +80,11 @@ function mouseMoveCallback(mousePos: [number, number]) {
 viewport.on("pointerdown", (event) => {
     if (event.button == 2) {
         socket.send(
-            JSON.stringify([
-                CLIENT_PACKET_TYPE.ACTION,
-                CLIENT_ACTION.START_BLOCK,
-            ])
+            encode([CLIENT_PACKET_TYPE.ACTION, CLIENT_ACTION.START_BLOCK])
         );
     } else {
         socket.send(
-            JSON.stringify([
-                CLIENT_PACKET_TYPE.ACTION,
-                CLIENT_ACTION.START_ATTACK,
-            ])
+            encode([CLIENT_PACKET_TYPE.ACTION, CLIENT_ACTION.START_ATTACK])
         );
     }
 });
@@ -96,17 +92,11 @@ viewport.on("pointerdown", (event) => {
 viewport.on("pointerup", (event) => {
     if (event.button == 2) {
         socket.send(
-            JSON.stringify([
-                CLIENT_PACKET_TYPE.ACTION,
-                CLIENT_ACTION.STOP_BLOCK,
-            ])
+            encode([CLIENT_PACKET_TYPE.ACTION, CLIENT_ACTION.STOP_BLOCK])
         );
     } else {
         socket.send(
-            JSON.stringify([
-                CLIENT_PACKET_TYPE.ACTION,
-                CLIENT_ACTION.STOP_ATTACK,
-            ])
+            encode([CLIENT_PACKET_TYPE.ACTION, CLIENT_ACTION.STOP_ATTACK])
         );
     }
 });
@@ -120,7 +110,6 @@ function hideOutOfSight() {
     if (player) {
         const range = rangeFromPoint(player.position, 8000);
         const query = world.objects.query(range);
-        console.log(world.objects.values());
         for (const object of world.objects.values()) {
             const queryObject = query.get(object.id);
             if (queryObject) {
@@ -133,9 +122,7 @@ function hideOutOfSight() {
 
 setInterval(() => {
     if (requestIds.length > 0) {
-        socket.send(
-            JSON.stringify([CLIENT_PACKET_TYPE.REQUEST_OBJECT, requestIds])
-        );
+        socket.send(encode([CLIENT_PACKET_TYPE.REQUEST_OBJECT, requestIds]));
         requestIds = [];
     }
 }, 500);

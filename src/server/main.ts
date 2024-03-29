@@ -10,6 +10,7 @@ import { PacketPipeline, Unpacker } from "../shared/unpack.js";
 import { round } from "../lib/math.js";
 import { createEntities, createGround, createResources } from "./testing.js";
 import Logger from "js-logger";
+import { send } from "./send.js";
 
 Logger.useDefaults();
 
@@ -75,9 +76,7 @@ function createPacket(type: PACKET_TYPE, objects: Iterable<any>) {
 }
 
 controller.connect = (socket: GameWS) => {
-    socket.send(
-        JSON.stringify(createPacket(PACKET_TYPE.LOAD_GROUND, world.ground))
-    );
+    send(socket, createPacket(PACKET_TYPE.LOAD_GROUND, world.ground));
 };
 
 // * Check memory usage, could be put in a better spot.

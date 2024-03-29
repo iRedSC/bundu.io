@@ -22,7 +22,6 @@ export class CraftingRecipe {
             }
         }
         this.flags = data.flags || [];
-        console.log(this);
     }
 }
 

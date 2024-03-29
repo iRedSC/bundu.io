@@ -1,4 +1,8 @@
 import { AnyZodTuple } from "zod";
+import Logger from "js-logger";
+
+const logger = Logger.get("Packet");
+
 export class PacketPipeline {
     unpackers: Map<number, Unpacker>;
 
@@ -10,9 +14,12 @@ export class PacketPipeline {
         this.unpackers.set(id, unpacker);
     }
 
-    unpack(packet: unknown[], playerId?: number) {
+    unpack(packet: unknown, playerId?: number) {
         // find packet id
-        console.log(packet);
+        if (!(packet instanceof Array)) {
+            logger.error(`Packet ${packet} is not an array.`);
+            return;
+        }
 
         const id = packet[0];
         if (typeof id !== "number") {
@@ -40,11 +47,8 @@ export class Unpacker {
 
     unpack(packet: unknown[], playerId?: number) {
         const length = this.guard.items.length;
-        if (typeof packet === "string") {
-            packet = JSON.parse(packet);
-        }
         if (packet.length < length) {
-            console.log(
+            logger.warn(
                 `Packet length: ${packet.length}, required length: ${length}`
             );
             return;
@@ -54,7 +58,7 @@ export class Unpacker {
         if (parsedPacket.success === true) {
             this.callback(parsedPacket.data, playerId);
         } else {
-            console.log(parsedPacket.error.message);
+            logger.error(parsedPacket.error.message);
         }
         if (!playerId && length > 0) {
             this.unpack(packet.slice(length));

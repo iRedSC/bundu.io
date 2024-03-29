@@ -9,11 +9,12 @@ import {
 } from "../shared/enums.js";
 import { PacketPipeline } from "../shared/unpack.js";
 import { UpdateHandler } from "./game_objects/update_handler.js";
+import { send } from "./send.js";
 
 function sendPacket(players: Iterable<Player>, packets: any[]) {
     for (let player of players) {
         for (let packet of packets) {
-            player.socket.send(JSON.stringify(packet));
+            send(player.socket, packet);
         }
     }
 }
@@ -45,24 +46,19 @@ export class BunduServer {
             );
         }
         if (packet.length > 1) {
-            player.socket.send(JSON.stringify(packet));
+            send(player.socket, packet);
         }
 
         this.world.players.insert(player);
-        console.log(`ID = ${player.id}`);
         this.players.set(player.id, player);
         for (let client of this.players.values()) {
-            client.socket.send(
-                JSON.stringify([
-                    PACKET_TYPE.NEW_OBJECT,
-                    OBJECT_CLASS.PLAYER,
-                    player.pack(PACKET_TYPE.NEW_OBJECT),
-                ])
-            );
+            send(client.socket, [
+                PACKET_TYPE.NEW_OBJECT,
+                OBJECT_CLASS.PLAYER,
+                player.pack(PACKET_TYPE.NEW_OBJECT),
+            ]);
         }
-        player.socket.send(
-            JSON.stringify([PACKET_TYPE.STARTING_INFO, player.id])
-        );
+        send(player.socket, [PACKET_TYPE.STARTING_INFO, player.id]);
         return player.id;
     }
 
@@ -88,6 +84,7 @@ export class BunduServer {
         player.rotation = data[0];
         this.updateHandler.add([player], [PACKET_TYPE.ROTATE_OBJECT]);
     }
+
     requestObjects(data: ClientPacketSchema.requestObjects, id: number) {
         const player = this.players.get(id);
         if (!player) {
@@ -124,20 +121,20 @@ export class BunduServer {
         }
     }
 
-    receive(id: number, data: unknown[]) {
+    receive(id: number, data: unknown) {
         // console.log(`Received: ${id}`);
         this.pipeline.unpack(data, id);
     }
 
     start() {
         setInterval(this.tick.bind(this), 50);
-        setInterval(this.world.updatePlayerViews.bind(this.world), 500);
+        setInterval(this.world.updatePlayerViews.bind(this.world), 2000);
     }
 
     ping(_: unknown[], id: number) {
         const player = this.players.get(id);
         if (player) {
-            player.socket.send(JSON.stringify([PACKET_TYPE.PING, Date.now()]));
+            send(player.socket, [PACKET_TYPE.PING, Date.now()]);
         }
     }
 

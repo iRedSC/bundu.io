@@ -1,6 +1,7 @@
 import * as uWS from "uWebSockets.js";
 import { BunduServer } from "./server.js";
 import Logger from "js-logger";
+import { decode } from "@msgpack/msgpack";
 
 const logger = Logger.get("Network");
 
@@ -12,7 +13,6 @@ export interface GameWS extends uWS.WebSocket<unknown> {
 The server controller coordinates between the Websockets and the actual game logic.
 It takes a game server as a property and will relay the messages sent by clients.
 */
-
 const decoder = new TextDecoder("utf-8");
 
 export class ServerController {
@@ -48,10 +48,7 @@ export class ServerController {
                     if (ws.id === undefined) {
                         return;
                     }
-                    this.gameServer.receive(
-                        ws.id,
-                        JSON.parse(decoder.decode(message))
-                    );
+                    this.gameServer.receive(ws.id, decode(message));
                 },
                 drain: (ws) => {
                     logger.info(
@@ -61,7 +58,6 @@ export class ServerController {
                 close: (ws: GameWS, _code, _message) => {
                     if (ws.id !== undefined) {
                         this.gameServer.deletePlayer(ws.id);
-                        console.log(this.gameServer.players.get(ws.id));
                         this.sockets.delete(ws.id);
                     }
                     logger.info(`${ws.id} disconnected.`);

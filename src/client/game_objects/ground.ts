@@ -16,7 +16,6 @@ export function createGround(
     const ground = new PIXI.Graphics();
     ground.beginFill(types.get(type) || 0xffffff);
     const rect = coordsToRect(x1, y1, x2, y2);
-    console.log(rect);
     ground.drawRect(rect.x, rect.y, rect.width, rect.height);
     return ground;
 }

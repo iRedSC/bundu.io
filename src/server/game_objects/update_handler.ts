@@ -1,4 +1,5 @@
 import { PACKET_TYPE } from "../../shared/enums.js";
+import { send } from "../send.js";
 import { WorldObject } from "./base.js";
 import { Player } from "./player.js";
 
@@ -40,7 +41,7 @@ export class UpdateHandler {
             }
         }
         for (const packet of packets.values()) {
-            player.socket.send(JSON.stringify(packet));
+            send(player.socket, packet);
         }
     }
 

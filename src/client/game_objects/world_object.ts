@@ -57,7 +57,6 @@ export class WorldObject extends PIXI.Container {
         };
         this.setRotation(rotation);
         this.debug = new DebugWorldObject();
-        console.log(this.position);
         this.size = size;
         const idText = new PIXI.Text(`ID: ${this.id}`);
         idText.position = pos;

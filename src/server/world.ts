@@ -10,6 +10,7 @@ import { ACTION, ClientPacketSchema, PACKET_TYPE } from "../shared/enums.js";
 import { degrees, moveInDirection, moveToward } from "../lib/transforms.js";
 import { UpdateHandler } from "./game_objects/update_handler.js";
 import Logger from "js-logger";
+import { send } from "./send.js";
 
 const logger = Logger.get("World");
 
@@ -57,7 +58,6 @@ export class World {
         function loop(player: Player, objects: Iterable<WorldObject>) {
             for (const object of objects) {
                 const isNew = player.visibleObjects.set(object.id, object);
-                console.log(object);
                 if (isNew) {
                     move.push(...object.pack(PACKET_TYPE.MOVE_OBJECT));
                     rotate.push(...object.pack(PACKET_TYPE.ROTATE_OBJECT));
@@ -73,9 +73,8 @@ export class World {
             loop(player, resources.values());
             loop(player, players.values());
             loop(player, entities.values());
-            player.socket.send(JSON.stringify(move));
-            player.socket.send(JSON.stringify(rotate));
-            // console.log(player.visibleObjects);
+            send(player.socket, move);
+            send(player.socket, rotate);
         }
     }
 
@@ -92,7 +91,7 @@ export class World {
                 packet.push(object.class, object.pack(PACKET_TYPE.NEW_OBJECT));
             }
         }
-        player.socket.send(JSON.stringify(packet));
+        send(player.socket, packet);
     }
 
     tick(updateHandler: UpdateHandler) {
@@ -147,7 +146,7 @@ export class World {
             packet.push(object.id, ACTION.HURT);
         }
         for (let player of this.players.objects.values()) {
-            player.socket.send(JSON.stringify(packet));
+            send(player.socket, packet);
         }
     }
 }
