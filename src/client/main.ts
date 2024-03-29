@@ -32,8 +32,7 @@ export let requestIds: number[] = [];
 
 packetPipeline.add(
     PACKET_TYPE.PING,
-    new Unpacker((packet: ServerPacketSchema.ping) => {},
-    ServerPacketSchema.ping)
+    new Unpacker((_: ServerPacketSchema.ping) => {}, ServerPacketSchema.ping)
 );
 
 socket.onopen = () => {
