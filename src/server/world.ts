@@ -6,10 +6,9 @@ import { Range, rangeFromPoint } from "../lib/range.js";
 import SAT from "sat";
 import { WorldObject } from "./game_objects/base.js";
 import { Ground } from "./game_objects/ground.js";
-import { ACTION, ClientSchemas, PACKET_TYPE } from "../shared/enums.js";
+import { ACTION, ClientPacketSchema, PACKET_TYPE } from "../shared/enums.js";
 import { degrees, moveInDirection, moveToward } from "../lib/transforms.js";
 import { UpdateHandler } from "./game_objects/update_handler.js";
-import { Schema } from "zod";
 
 // Holds all the actual world items as different quadtrees
 export class World {
@@ -41,15 +40,24 @@ export class World {
         this.ground = [];
     }
 
+    getAllObjects() {
+        return new Map<number, WorldObject>([
+            ...this.players.objects.entries(),
+            ...this.entities.objects.entries(),
+            ...this.resources.objects.entries(),
+        ]);
+    }
+
     updatePlayerViews() {
         const move: any[] = [PACKET_TYPE.MOVE_OBJECT];
         const rotate: any[] = [PACKET_TYPE.ROTATE_OBJECT];
         function loop(player: Player, objects: Iterable<WorldObject>) {
             for (const object of objects) {
                 const isNew = player.visibleObjects.set(object.id, object);
+                console.log(object);
                 if (isNew) {
-                    move.push(object.pack(PACKET_TYPE.MOVE_OBJECT));
-                    rotate.push(object.pack(PACKET_TYPE.ROTATE_OBJECT));
+                    move.push(...object.pack(PACKET_TYPE.MOVE_OBJECT));
+                    rotate.push(...object.pack(PACKET_TYPE.ROTATE_OBJECT));
                 }
             }
         }
@@ -59,15 +67,29 @@ export class World {
             const resources = this.resources.query(range);
             const players = this.players.query(range);
             const entities = this.entities.query(range);
-
             loop(player, resources.values());
             loop(player, players.values());
             loop(player, entities.values());
+            player.socket.send(JSON.stringify(move));
+            player.socket.send(JSON.stringify(rotate));
+            // console.log(player.visibleObjects);
         }
     }
 
-    requestObjects(data: ClientSchemas.requestObjects, id: number) {
-        const packet = [PACKET_TYPE.NEW_ENTITY];
+    requestObjects(data: ClientPacketSchema.requestObjects, id: number) {
+        const packet: any[] = [PACKET_TYPE.NEW_OBJECT];
+        const objects = data[0];
+        const player = this.players.get(id);
+        if (!player) {
+            return;
+        }
+        for (const objId of objects) {
+            const object = this.getAllObjects().get(objId);
+            if (object) {
+                packet.push(object.class, object.pack(PACKET_TYPE.NEW_OBJECT));
+            }
+        }
+        player.socket.send(JSON.stringify(packet));
     }
 
     tick(updateHandler: UpdateHandler) {

@@ -15,6 +15,7 @@
         "@modyfi/vite-plugin-yaml": "^1.0.4",
         "@types/sat": "^0.0.35",
         "copyfiles": "^2.4.1",
+        "js-logger": "^1.6.1",
         "nodemon": "^3.0.1",
         "typescript": "^5.0.2",
         "vite": "^4.4.5"

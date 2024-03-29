@@ -2,18 +2,22 @@ import { Range } from "./range.js";
 
 type Point = { x: number; y: number; [key: string]: any };
 
-type ObjectWithPos = {
+export type QuadtreeObject = {
     id: number;
     position: Point;
     [key: string]: any;
 };
 
-type ObjectList<T extends ObjectWithPos> = Map<number, T>;
+export type QuadtreeObjectList<T extends QuadtreeObject> = Map<number, T>;
 
-export class Quadtree<T extends ObjectWithPos> {
+export class Quadtree<T extends QuadtreeObject> {
     tree: InternalQuadtree<T>;
-    objects: ObjectList<T>;
-    constructor(objectList: ObjectList<T>, bounds: Range, maxObjects: number) {
+    objects: QuadtreeObjectList<T>;
+    constructor(
+        objectList: QuadtreeObjectList<T>,
+        bounds: Range,
+        maxObjects: number
+    ) {
         this.tree = new InternalQuadtree(bounds, maxObjects);
         this.objects = objectList;
     }
@@ -50,7 +54,7 @@ export class Quadtree<T extends ObjectWithPos> {
     }
 }
 
-class InternalQuadtree<T extends ObjectWithPos> {
+class InternalQuadtree<T extends QuadtreeObject> {
     bounds: Range;
     maxObjects: number;
     level: number;
@@ -72,7 +76,7 @@ class InternalQuadtree<T extends ObjectWithPos> {
         this.nodes = [];
     }
 
-    divide(objectList: ObjectList<T>) {
+    divide(objectList: QuadtreeObjectList<T>) {
         const dims = this.bounds.dimensions;
         const halfWidth = dims[0] / 2;
         const halfHeight = dims[1] / 2;
@@ -116,7 +120,7 @@ class InternalQuadtree<T extends ObjectWithPos> {
 
     query(
         range: Range,
-        objectList: ObjectList<T>,
+        objectList: QuadtreeObjectList<T>,
         found?: Map<number, T>
     ): Map<number, T> {
         if (!found) {
@@ -146,7 +150,7 @@ class InternalQuadtree<T extends ObjectWithPos> {
         }
     }
 
-    insert(objectID: number, objectList: ObjectList<T>) {
+    insert(objectID: number, objectList: QuadtreeObjectList<T>) {
         let object = objectList.get(objectID);
         if (!object) {
             return;
@@ -171,7 +175,7 @@ class InternalQuadtree<T extends ObjectWithPos> {
         }
     }
 
-    rebuild(objects: ObjectList<T>) {
+    rebuild(objects: QuadtreeObjectList<T>) {
         this.clear();
         for (let objectID of objects.keys()) {
             this.insert(objectID, objects);

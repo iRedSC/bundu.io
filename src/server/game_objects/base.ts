@@ -1,8 +1,9 @@
 import sat from "sat";
-import { PACKET_TYPE } from "../../shared/enums";
+import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
 const { Vector, Circle } = sat;
 
 export class WorldObject {
+    class: OBJECT_CLASS;
     id: number;
     rotation: number;
     size: number;
@@ -21,6 +22,7 @@ export class WorldObject {
             new Vector(position[0], position[1]),
             size * 10
         );
+        this.class = OBJECT_CLASS.STRUCTURE;
     }
 
     get x() {

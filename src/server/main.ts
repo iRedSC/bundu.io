@@ -4,7 +4,7 @@ import { World } from "./world.js";
 import {
     PACKET_TYPE,
     CLIENT_PACKET_TYPE,
-    ClientSchemas,
+    ClientPacketSchema,
 } from "../shared/enums.js";
 import { PacketPipeline, Unpacker } from "../shared/unpack.js";
 import { round } from "../lib/math.js";
@@ -18,14 +18,14 @@ const controller = new ServerController(bunduServer);
 
 packetPipeline.add(
     CLIENT_PACKET_TYPE.PING,
-    new Unpacker(bunduServer.ping.bind(bunduServer), ClientSchemas.ping)
+    new Unpacker(bunduServer.ping.bind(bunduServer), ClientPacketSchema.ping)
 );
 
 packetPipeline.add(
     CLIENT_PACKET_TYPE.MOVE_UPDATE,
     new Unpacker(
         bunduServer.moveUpdate.bind(bunduServer),
-        ClientSchemas.moveUpdate
+        ClientPacketSchema.moveUpdate
     )
 );
 
@@ -33,7 +33,7 @@ packetPipeline.add(
     CLIENT_PACKET_TYPE.ROTATE,
     new Unpacker(
         bunduServer.rotatePlayer.bind(bunduServer),
-        ClientSchemas.rotate
+        ClientPacketSchema.rotate
     )
 );
 
@@ -41,7 +41,7 @@ packetPipeline.add(
     CLIENT_PACKET_TYPE.ACTION,
     new Unpacker(
         bunduServer.playerAction.bind(bunduServer),
-        ClientSchemas.action
+        ClientPacketSchema.action
     )
 );
 
@@ -49,7 +49,7 @@ packetPipeline.add(
     CLIENT_PACKET_TYPE.REQUEST_OBJECT,
     new Unpacker(
         bunduServer.requestObjects.bind(bunduServer),
-        ClientSchemas.requestObjects
+        ClientPacketSchema.requestObjects
     )
 );
 

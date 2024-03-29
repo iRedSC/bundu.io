@@ -1,7 +1,11 @@
 import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animation";
 import { OBJECT_ANIMATION, WorldObject } from "./world_object";
-import { ACTION, Schemas } from "../../shared/enums";
+import {
+    ACTION,
+    NewObjectSchema,
+    ServerPacketSchema,
+} from "../../shared/enums";
 import { Structure } from "./structure";
 import * as PIXI from "pixi.js";
 import { PLAYER_ANIMATION, Player } from "./player";
@@ -61,11 +65,18 @@ export class World {
         }
     }
 
-    setPlayer(packet: Schemas.startingInfo) {
-        this.user = packet[0];
-        console.log(this.user);
-
-        const player = this.dynamicObjs.get(this.user)!;
+    setPlayer(packet?: ServerPacketSchema.startingInfo) {
+        if (packet) {
+            this.user = packet[0];
+        }
+        if (!this.user) {
+            return;
+        }
+        const player = this.dynamicObjs.get(this.user);
+        if (!player) {
+            setTimeout(this.setPlayer.bind(this), 500);
+            return;
+        }
         player.rotationProperties.interpolate = false;
 
         this.viewport.follow(player, {
@@ -75,8 +86,16 @@ export class World {
         });
     }
 
-    newStructure(packet: Schemas.newStructure) {
+    newStructure(data: NewObjectSchema.newStructure) {
+        const packet = data[0];
         const id = packet[0];
+        const existing = this.objects.objects.get(id);
+        if (existing) {
+            this.viewport.removeChild(existing);
+            this.dynamicObjs.delete(existing.id);
+            this.updatingObjs.delete(existing.id);
+            this.objects.delete(existing.id);
+        }
         const pos = new PIXI.Point(packet[1], packet[2]);
         scaleCoords(pos);
         const structure = new Structure(
@@ -90,8 +109,16 @@ export class World {
         this.viewport.addChild(structure);
     }
 
-    newEntity(packet: Schemas.newEntity) {
+    newEntity(data: NewObjectSchema.newEntity) {
+        const packet = data[0];
         const id = packet[0];
+        const existing = this.objects.objects.get(id);
+        if (existing) {
+            this.viewport.removeChild(existing);
+            this.dynamicObjs.delete(existing.id);
+            this.updatingObjs.delete(existing.id);
+            this.objects.delete(existing.id);
+        }
         const pos = new PIXI.Point(packet[1], packet[2]);
         scaleCoords(pos);
         const entity = new Entity(
@@ -107,8 +134,16 @@ export class World {
         this.viewport.addChild(entity);
     }
 
-    newPlayer(packet: Schemas.newPlayer) {
+    newPlayer(data: NewObjectSchema.newPlayer) {
+        const packet = data[0];
         const id = packet[0];
+        const existing = this.objects.objects.get(id);
+        if (existing) {
+            this.viewport.removeChild(existing);
+            this.dynamicObjs.delete(existing.id);
+            this.updatingObjs.delete(existing.id);
+            this.objects.delete(existing.id);
+        }
         const pos = new PIXI.Point(packet[1], packet[2]);
         scaleCoords(pos);
         const player = new Player(
@@ -124,7 +159,7 @@ export class World {
         this.viewport.addChild(player);
     }
 
-    moveObject(packet: Schemas.moveObject) {
+    moveObject(packet: ServerPacketSchema.moveObject) {
         const id = packet[0];
         const time = packet[1];
 
@@ -138,7 +173,7 @@ export class World {
         this.objects.insert(object);
     }
 
-    rotateObject(packet: Schemas.rotateObject) {
+    rotateObject(packet: ServerPacketSchema.rotateObject) {
         const id = packet[0];
 
         const object = this.objects.get(id);
@@ -152,7 +187,7 @@ export class World {
         }
     }
 
-    deleteObject(packet: Schemas.deleteObject) {
+    deleteObject(packet: ServerPacketSchema.deleteObject) {
         const id = packet[0];
         const object = this.objects.get(id);
         if (object) {
@@ -163,7 +198,7 @@ export class World {
         }
     }
 
-    action(packet: Schemas.action) {
+    action(packet: ServerPacketSchema.action) {
         const id = packet[0];
         const object = this.objects.get(id) as WorldObject;
         if (object) {
@@ -199,7 +234,7 @@ export class World {
     //     this.sky.setTime(packet[0], this.animationManager);
     // }
 
-    loadGround(packet: Schemas.loadGround) {
+    loadGround(packet: ServerPacketSchema.loadGround) {
         const ground = createGround(
             packet[4],
             packet[0] * 10,

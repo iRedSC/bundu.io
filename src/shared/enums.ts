@@ -5,19 +5,15 @@ export enum PACKET_TYPE {
     ACTION = 1,
     STARTING_INFO = 99,
 
-    MOVE_OBJECT = 100,
-    ROTATE_OBJECT = 101,
-    DELETE_OBJECT = 102,
-
-    NEW_PLAYER = 200,
+    NEW_OBJECT = 100,
+    MOVE_OBJECT = 101,
+    ROTATE_OBJECT = 102,
+    DELETE_OBJECT = 103,
     // UPDATE_PLAYER_GEAR = 201,
 
-    NEW_STRUCTURE = 300,
     LOAD_GROUND = 301,
 
     // SET_TIME = 600,
-
-    NEW_ENTITY = 700,
 }
 
 export enum ACTION {
@@ -28,7 +24,55 @@ export enum ACTION {
     HURT = 4,
 }
 
-export namespace Schemas {
+export enum OBJECT_CLASS {
+    PLAYER = 1,
+    ENTITY = 2,
+    STRUCTURE = 3,
+}
+
+export namespace NewObjectSchema {
+    export const newPlayer = z.tuple([
+        z.tuple([
+            z.number(), // id
+            z.number(), // x
+            z.number(), // y
+            z.number(), // rot
+            z.string(), // name
+            z.number(), // hand
+            z.number(), // helm
+            z.number(), // skin
+            z.number(), // backpack
+        ]),
+    ]);
+    export type newPlayer = z.infer<typeof newPlayer>;
+
+    export const newEntity = z.tuple([
+        z.tuple([
+            z.number(), // id
+            z.number(), // x
+            z.number(), // y
+            z.number(), // rot
+            z.number(), // size
+            z.number(), // type
+            z.boolean(), // angry
+        ]),
+    ]);
+    export type newEntity = z.infer<typeof newEntity>;
+
+    export const newStructure = z.tuple([
+        z.tuple([
+            z.number(), // id
+            z.number(), // x
+            z.number(), // y
+            z.number(), // rot
+            z.number(), // type
+            z.number(), // size
+        ]),
+    ]);
+    export type newStructure = z.infer<typeof newStructure>;
+}
+
+export namespace ServerPacketSchema {
     // length: 0
     export const ping = z.tuple([
         z.number(), // server time
@@ -41,24 +85,16 @@ export namespace Schemas {
     ]);
     export type action = z.infer<typeof action>;
 
-    // length: 9
-    export const newPlayer = z.tuple([
-        z.number(), // id
-        z.number(), // x
-        z.number(), // y
-        z.number(), // rot
-        z.string(), // name
-        z.number(), // hand
-        z.number(), // helm
-        z.number(), // skin
-        z.number(), // backpack
-    ]);
-    export type newPlayer = z.infer<typeof newPlayer>;
-
     export const startingInfo = z.tuple([
         z.number(), // player's id
     ]);
     export type startingInfo = z.infer<typeof startingInfo>;
+
+    export const newObject = z.tuple([
+        z.number(), // object class
+        z.unknown().array(), // object info
+    ]);
+    export type newObject = z.infer<typeof newObject>;
 
     // length: 5
     export const moveObject = z.tuple([
@@ -79,29 +115,6 @@ export namespace Schemas {
         z.number(), // id
     ]);
     export type deleteObject = z.infer<typeof deleteObject>;
-
-    // length: 6
-    export const newEntity = z.tuple([
-        z.number(), // id
-        z.number(), // x
-        z.number(), // y
-        z.number(), // rot
-        z.number(), // size
-        z.number(), // type
-        z.boolean(), // angry
-    ]);
-    export type newEntity = z.infer<typeof newEntity>;
-
-    // length 6
-    export const newStructure = z.tuple([
-        z.number(), // id
-        z.number(), // x
-        z.number(), // y
-        z.number(), // rot
-        z.number(), // type
-        z.number(), // size
-    ]);
-    export type newStructure = z.infer<typeof newStructure>;
 
     // length: 5
     export const loadGround = z.tuple([
@@ -130,7 +143,7 @@ export enum CLIENT_ACTION {
     STOP_BLOCK = 4,
 }
 
-export namespace ClientSchemas {
+export namespace ClientPacketSchema {
     export const ping = z.tuple([]);
 
     export const moveUpdate = z.tuple([

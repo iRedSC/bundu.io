@@ -6,7 +6,7 @@ import {
     CLIENT_ACTION,
     CLIENT_PACKET_TYPE,
     PACKET_TYPE,
-    Schemas,
+    ServerPacketSchema,
 } from "../shared/enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { animationManager } from "./animation_manager";
@@ -20,17 +20,18 @@ const packetPipeline = new PacketPipeline();
 const socket = new WebSocket("ws://localhost:7777");
 const world = new World(viewport, animationManager);
 
-viewport.addChild(debugContainer);
+// viewport.addChild(debugContainer);
 debugContainer.zIndex = 1000;
 viewport.sortChildren();
 
 createPipeline(packetPipeline, world);
 
-export const requestIds: number[] = [];
+export let requestIds: number[] = [];
 
 packetPipeline.add(
     PACKET_TYPE.PING,
-    new Unpacker((packet: Schemas.ping) => {}, Schemas.ping)
+    new Unpacker((packet: ServerPacketSchema.ping) => {},
+    ServerPacketSchema.ping)
 );
 
 socket.onopen = () => {
@@ -129,4 +130,14 @@ function hideOutOfSight() {
         }
     }
 }
-setInterval(hideOutOfSight, 500);
+
+setInterval(() => {
+    if (requestIds.length > 0) {
+        socket.send(
+            JSON.stringify([CLIENT_PACKET_TYPE.REQUEST_OBJECT, requestIds])
+        );
+        requestIds = [];
+    }
+}, 500);
+
+setInterval(hideOutOfSight, 2000);

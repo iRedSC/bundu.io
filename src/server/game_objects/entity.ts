@@ -9,7 +9,7 @@ import {
 } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";
 import SAT from "sat";
-import { PACKET_TYPE } from "../../shared/enums.js";
+import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
 
 // TODO: Entity AI needs to be organized better
 
@@ -44,6 +44,7 @@ export class Entity extends WorldObject {
         this.ai = new EntityAI(this.position);
         this.updateTarget([], new SAT.Vector());
         this.angry = false;
+        this.class = OBJECT_CLASS.ENTITY;
     }
 
     move(collisionObjects: WorldObject[], prey: SAT.Vector): boolean {
@@ -117,7 +118,7 @@ export class Entity extends WorldObject {
                 ];
             case PACKET_TYPE.ROTATE_OBJECT:
                 return [this.id, this.rotation];
-            case PACKET_TYPE.NEW_ENTITY:
+            case PACKET_TYPE.NEW_OBJECT:
                 return [
                     this.id,
                     this.position.x,

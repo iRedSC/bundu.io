@@ -25,7 +25,7 @@ export class Resource extends WorldObject {
                 return [this.id, 50, this.x, this.y];
             case PACKET_TYPE.ROTATE_OBJECT:
                 return [this.id, this.rotation];
-            case PACKET_TYPE.NEW_STRUCTURE:
+            case PACKET_TYPE.NEW_OBJECT:
                 return [
                     this.id,
                     this.position.x,

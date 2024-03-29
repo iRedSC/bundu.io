@@ -12,6 +12,7 @@ export class PacketPipeline {
 
     unpack(packet: unknown[], playerId?: number) {
         // find packet id
+        console.log(packet);
 
         const id = packet[0];
         if (typeof id !== "number") {
@@ -39,10 +40,13 @@ export class Unpacker {
 
     unpack(packet: unknown[], playerId?: number) {
         const length = this.guard.items.length;
+        if (typeof packet === "string") {
+            packet = JSON.parse(packet);
+        }
         if (packet.length < length) {
-            // console.log(
-            //     `Packet length: ${packet.length}, required length: ${length}`
-            // );
+            console.log(
+                `Packet length: ${packet.length}, required length: ${length}`
+            );
             return;
         }
         const slicedPacket = packet.slice(0, length);

@@ -2,7 +2,7 @@ import { distance, lerp, moveToward } from "../../lib/transforms.js";
 import { GameWS } from "../websockets.js";
 import { WorldObject } from "./base.js";
 import { round } from "../../lib/math.js";
-import { PACKET_TYPE } from "../../shared/enums.js";
+import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
 import { UpdateHandler } from "./update_handler.js";
 import { UPDATE_PRIORITY } from "pixi.js";
 
@@ -77,6 +77,7 @@ export class Player extends WorldObject {
         name: string
     ) {
         super(id, position, rotation, 1);
+        this.class = OBJECT_CLASS.PLAYER;
         this.moveDir = [0, 0];
         this.socket = socket;
         this.name = name;
@@ -100,7 +101,7 @@ export class Player extends WorldObject {
                 return [this.id, 50, round(this.x, 1), round(this.y, 1)];
             case PACKET_TYPE.ROTATE_OBJECT:
                 return [this.id, this.rotation];
-            case PACKET_TYPE.NEW_PLAYER:
+            case PACKET_TYPE.NEW_OBJECT:
                 return [
                     this.id,
                     round(this.x, 1),
