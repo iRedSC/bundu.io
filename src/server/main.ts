@@ -13,18 +13,19 @@ import Logger from "js-logger";
 
 Logger.useDefaults();
 
-const packetPipeline = new PacketPipeline();
+const packets = new PacketPipeline();
 
 const world = new World();
-const bunduServer = new BunduServer(world, packetPipeline);
+const bunduServer = new BunduServer(world, packets);
 const controller = new ServerController(bunduServer);
 
-packetPipeline.add(
+// * This should go in networking.
+packets.add(
     CLIENT_PACKET_TYPE.PING,
     new Unpacker(bunduServer.ping.bind(bunduServer), ClientPacketSchema.ping)
 );
 
-packetPipeline.add(
+packets.add(
     CLIENT_PACKET_TYPE.MOVE_UPDATE,
     new Unpacker(
         bunduServer.moveUpdate.bind(bunduServer),
@@ -32,7 +33,7 @@ packetPipeline.add(
     )
 );
 
-packetPipeline.add(
+packets.add(
     CLIENT_PACKET_TYPE.ROTATE,
     new Unpacker(
         bunduServer.rotatePlayer.bind(bunduServer),
@@ -40,7 +41,7 @@ packetPipeline.add(
     )
 );
 
-packetPipeline.add(
+packets.add(
     CLIENT_PACKET_TYPE.ACTION,
     new Unpacker(
         bunduServer.playerAction.bind(bunduServer),
@@ -48,7 +49,7 @@ packetPipeline.add(
     )
 );
 
-packetPipeline.add(
+packets.add(
     CLIENT_PACKET_TYPE.REQUEST_OBJECT,
     new Unpacker(
         bunduServer.requestObjects.bind(bunduServer),
@@ -59,10 +60,12 @@ packetPipeline.add(
 bunduServer.start();
 controller.start(7777);
 
+// * For testing atm, eventually there will be a world loader.
 createEntities(world, 50);
 createGround(world);
 createResources(world, 5000);
 
+// * Also just for testing.
 function createPacket(type: PACKET_TYPE, objects: Iterable<any>) {
     const packet = [type];
     for (let object of objects) {
@@ -77,6 +80,7 @@ controller.connect = (socket: GameWS) => {
     );
 };
 
+// * Check memory usage, could be put in a better spot.
 setInterval(() => {
     Logger.get("Performance").info(
         `Memory Usage: ${round(process.memoryUsage().heapUsed * 0.000001, 2)}mb`
