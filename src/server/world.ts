@@ -9,6 +9,9 @@ import { Ground } from "./game_objects/ground.js";
 import { ACTION, ClientPacketSchema, PACKET_TYPE } from "../shared/enums.js";
 import { degrees, moveInDirection, moveToward } from "../lib/transforms.js";
 import { UpdateHandler } from "./game_objects/update_handler.js";
+import Logger from "js-logger";
+
+const logger = Logger.get("World");
 
 // Holds all the actual world items as different quadtrees
 export class World {

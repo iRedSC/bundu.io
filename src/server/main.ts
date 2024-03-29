@@ -9,6 +9,9 @@ import {
 import { PacketPipeline, Unpacker } from "../shared/unpack.js";
 import { round } from "../lib/math.js";
 import { createEntities, createGround, createResources } from "./testing.js";
+import Logger from "js-logger";
+
+Logger.useDefaults();
 
 const packetPipeline = new PacketPipeline();
 
@@ -75,10 +78,7 @@ controller.connect = (socket: GameWS) => {
 };
 
 setInterval(() => {
-    console.log(
+    Logger.get("Performance").info(
         `Memory Usage: ${round(process.memoryUsage().heapUsed * 0.000001, 2)}mb`
     );
-}, 5000);
-// const serverController = new ServerController(bunduServer);
-
-// serverController.start(7777);
+}, 10000);

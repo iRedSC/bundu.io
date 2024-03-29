@@ -1,5 +1,8 @@
 import * as uWS from "uWebSockets.js";
 import { BunduServer } from "./server.js";
+import Logger from "js-logger";
+
+const logger = Logger.get("Network");
 
 export interface GameWS extends uWS.WebSocket<unknown> {
     id?: number;
@@ -35,11 +38,11 @@ export class ServerController {
                 idleTimeout: 10,
                 /* Handlers */
                 open: (ws: GameWS) => {
-                    console.log("A WebSocket connected!");
                     ws.id = this.gameServer.createPlayer(ws);
                     this.sockets.set(ws.id, ws);
                     ws.subscribe("public");
                     this.connect(ws);
+                    logger.info(`${ws.id} connected.`);
                 },
                 message: (ws: GameWS, message, _isBinary) => {
                     if (ws.id === undefined) {
@@ -51,7 +54,7 @@ export class ServerController {
                     );
                 },
                 drain: (ws) => {
-                    console.log(
+                    logger.info(
                         "WebSocket backpressure: " + ws.getBufferedAmount()
                     );
                 },
@@ -61,7 +64,7 @@ export class ServerController {
                         console.log(this.gameServer.players.get(ws.id));
                         this.sockets.delete(ws.id);
                     }
-                    console.log("WebSocket closed");
+                    logger.info(`${ws.id} disconnected.`);
                 },
             })
             .any("/*", (res, _req) => {
@@ -72,9 +75,9 @@ export class ServerController {
     start(port: number) {
         this.webSocketServer.listen(port, (token) => {
             if (token) {
-                console.log("Listening to port " + port);
+                logger.info("Listening to port " + port);
             } else {
-                console.log("Failed to listen to port " + port);
+                logger.info("Failed to listen to port " + port);
             }
         });
     }
