@@ -4,7 +4,7 @@ import { Entity, testForIntersection } from "./game_objects/entity.js";
 import { Quadtree } from "../lib/quadtree.js";
 import { Range, rangeFromPoint } from "../lib/range.js";
 import SAT from "sat";
-import { WorldObject } from "./game_objects/base.js";
+import { WorldObject } from "./game_objects/world_object.js";
 import { Ground } from "./game_objects/ground.js";
 import { ACTION, ClientPacketSchema, PACKET_TYPE } from "../shared/enums.js";
 import { degrees, moveInDirection, moveToward } from "../lib/transforms.js";

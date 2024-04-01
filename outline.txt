@@ -14,3 +14,11 @@ Entity Packets:
     -> New: [packet_id, id, x, y, rot, type, angry, ...]
     -> Move: [packet_id, id, time x, y, rot, ...]
     -> Update: [packet_id, id, angry, ...]
+
+
+Updates are sent like this:
+
+Any time something does a packet-worth update, it gets saved to the global
+UpdateHandler. When a player is sent to the UpdateHandler, it will loop through every
+object that has been added to it, check if the player is allowed to see it, and if so,
+send it to the player.

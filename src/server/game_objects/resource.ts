@@ -1,40 +1,32 @@
-import { PACKET_TYPE } from "../../shared/enums.js";
-import { ResourceConfig, resourceConfigs } from "../configs/resources.js";
-import { WorldObject } from "./base.js";
-export class Resource extends WorldObject {
-    type: ResourceConfig;
-    variant: number;
+import { Physics, ResourceConfig, Type } from "../components/base.js";
+import { createResourceConfig, resourceConfigs } from "../configs/resources.js";
+import { GameObject } from "../game_engine/game_object.js";
 
-    constructor(
-        id: number,
-        position: [number, number],
-        rotation: number,
-        type: number,
-        size: number,
-        variant?: number
-    ) {
-        super(id, position, rotation, size);
+/**
+ * A resource node that gives an item when hurt.
+ */
+export class Resource extends GameObject {
+    constructor(physics: Physics, type: Type) {
+        super();
 
-        this.type = resourceConfigs.get(type) || new ResourceConfig(0, {});
-        this.variant = variant || 0;
-    }
+        const config =
+            resourceConfigs.get(type.id) || createResourceConfig(type.id, {});
 
-    pack(type: PACKET_TYPE) {
-        switch (type) {
-            case PACKET_TYPE.MOVE_OBJECT:
-                return [this.id, 50, this.x, this.y];
-            case PACKET_TYPE.ROTATE_OBJECT:
-                return [this.id, this.rotation];
-            case PACKET_TYPE.NEW_OBJECT:
-                return [
-                    this.id,
-                    this.position.x,
-                    this.position.y,
-                    this.rotation,
-                    this.type.id,
-                    this.size,
-                ];
-        }
-        return [];
+        this.add(new ResourceConfig(config));
+        this.add(new Physics(physics));
+        this.add(new Type(type));
+
+        this.pack.new = () => {
+            const physics = Physics.get(this).data;
+            const type = Type.get(this).data;
+            return [
+                this.id,
+                physics.position.x,
+                physics.position.y,
+                physics.rotation,
+                type.id,
+                physics.size,
+            ];
+        };
     }
 }

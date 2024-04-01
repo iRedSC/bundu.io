@@ -1,6 +1,6 @@
 import { distance, lerp, moveToward } from "../../lib/transforms.js";
 import { GameWS } from "../websockets.js";
-import { WorldObject } from "./base.js";
+import { WorldObject } from "./world_object.js";
 import { round } from "../../lib/math.js";
 import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
 import { UpdateHandler } from "./update_handler.js";

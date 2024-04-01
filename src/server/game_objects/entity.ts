@@ -1,5 +1,5 @@
 import { EntityConfig, entityConfigs } from "../configs/entity.js";
-import { WorldObject } from "./base.js";
+import { WorldObject } from "./world_object.js";
 import {
     lerp,
     distance,

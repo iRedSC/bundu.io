@@ -1,6 +1,6 @@
 import { PACKET_TYPE } from "../../shared/enums.js";
 import { send } from "../send.js";
-import { WorldObject } from "./base.js";
+import { WorldObject } from "./world_object.js";
 import { Player } from "./player.js";
 
 type UpdateTypes = PACKET_TYPE[];
