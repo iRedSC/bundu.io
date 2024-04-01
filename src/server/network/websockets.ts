@@ -1,7 +1,7 @@
 import * as uWS from "uWebSockets.js";
-import { BunduServer } from "./server.js";
 import Logger from "js-logger";
 import { decode } from "@msgpack/msgpack";
+import { PacketPipeline } from "../../shared/unpack.js";
 
 const logger = Logger.get("Network");
 
@@ -9,22 +9,21 @@ export interface GameWS extends uWS.WebSocket<unknown> {
     id?: number;
 }
 
+let NEXT_SOCKET_ID = 1;
+
 /* 
 The server controller coordinates between the Websockets and the actual game logic.
 It takes a game server as a property and will relay the messages sent by clients.
 */
-const decoder = new TextDecoder("utf-8");
-
 export class ServerController {
     webSocketServer: uWS.TemplatedApp;
-    gameServer: BunduServer;
     sockets: Map<number, GameWS>;
     connect: (socket: GameWS) => void;
+    disconnect: (socket: GameWS) => void;
+    message: (socket: GameWS, message: unknown) => void;
 
-    constructor(gameServer: BunduServer) {
-        this.connect = (_: GameWS) => {};
+    constructor() {
         this.sockets = new Map();
-        this.gameServer = gameServer;
         this.webSocketServer = uWS
             .App({
                 key_file_name: "misc/key.pem",
@@ -38,7 +37,7 @@ export class ServerController {
                 idleTimeout: 10,
                 /* Handlers */
                 open: (ws: GameWS) => {
-                    ws.id = this.gameServer.createPlayer(ws);
+                    ws.id = NEXT_SOCKET_ID++;
                     this.sockets.set(ws.id, ws);
                     ws.subscribe("public");
                     this.connect(ws);
@@ -48,7 +47,7 @@ export class ServerController {
                     if (ws.id === undefined) {
                         return;
                     }
-                    this.gameServer.receive(ws.id, decode(message));
+                    this.message(ws, decode(message));
                 },
                 drain: (ws) => {
                     logger.info(
@@ -57,7 +56,7 @@ export class ServerController {
                 },
                 close: (ws: GameWS, _code, _message) => {
                     if (ws.id !== undefined) {
-                        this.gameServer.deletePlayer(ws.id);
+                        this.disconnect(ws);
                         this.sockets.delete(ws.id);
                     }
                     logger.info(`${ws.id} disconnected.`);

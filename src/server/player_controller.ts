@@ -4,6 +4,9 @@ enum MOVE_DIR {
     POSITIVE = 1,
 }
 
+/**
+ * Override the methods of this class to accept different player actions.
+ */
 export class PlayerController {
     constructor() {}
 

@@ -18,9 +18,7 @@ export enum PACKET_TYPE {
 
 export enum ACTION {
     ATTACK = 1,
-    START_BLOCK = 2,
-    STOP_BLOCK = 3,
-
+    BLOCK = 2,
     HURT = 4,
 }
 
@@ -32,42 +30,37 @@ export enum OBJECT_CLASS {
 
 export namespace NewObjectSchema {
     export const newPlayer = z.tuple([
-        z.tuple([
-            z.number(), // id
-            z.number(), // x
-            z.number(), // y
-            z.number(), // rot
-            z.string(), // name
-            z.number(), // hand
-            z.number(), // helm
-            z.number(), // skin
-            z.number(), // backpack
-        ]),
+        z.number(), // id
+        z.number(), // x
+        z.number(), // y
+        z.number(), // rot
+        z.string(), // name
+        z.number(), // hand
+        z.number(), // helm
+        z.number(), // skin
+        z.number(), // backpackSkin
+        z.boolean(), // hasBackpack
     ]);
     export type newPlayer = z.infer<typeof newPlayer>;
 
     export const newEntity = z.tuple([
-        z.tuple([
-            z.number(), // id
-            z.number(), // x
-            z.number(), // y
-            z.number(), // rot
-            z.number(), // size
-            z.number(), // type
-            z.boolean(), // angry
-        ]),
+        z.number(), // id
+        z.number(), // x
+        z.number(), // y
+        z.number(), // rot
+        z.number(), // size
+        z.number(), // type
+        z.boolean(), // angry
     ]);
     export type newEntity = z.infer<typeof newEntity>;
 
     export const newStructure = z.tuple([
-        z.tuple([
-            z.number(), // id
-            z.number(), // x
-            z.number(), // y
-            z.number(), // rot
-            z.number(), // type
-            z.number(), // size
-        ]),
+        z.number(), // id
+        z.number(), // x
+        z.number(), // y
+        z.number(), // rot
+        z.number(), // type
+        z.number(), // size
     ]);
     export type newStructure = z.infer<typeof newStructure>;
 }
@@ -159,8 +152,9 @@ export namespace ClientPacketSchema {
 
     export const action = z.tuple([
         z.number(), // ACTION
+        z.boolean(), // stop
     ]);
-    export type action = z.infer<typeof rotate>;
+    export type action = z.infer<typeof action>;
 
     export const requestObjects = z.tuple([
         z.number().array(), // list of IDS
