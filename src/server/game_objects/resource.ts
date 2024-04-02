@@ -1,4 +1,4 @@
-import { OBJECT_CLASS } from "../../shared/enums.js";
+import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
 import { Physics, Type } from "../components/base.js";
 import { createResourceConfig, resourceConfigs } from "../configs/resources.js";
 import { GameObject } from "../game_engine/game_object.js";
@@ -17,7 +17,7 @@ export class Resource extends GameObject {
         this.add(new Physics(physics));
         this.add(new Type(type));
 
-        this.pack.new = () => {
+        this.pack[PACKET_TYPE.NEW_OBJECT] = () => {
             const physics = Physics.get(this).data;
             const type = Type.get(this).data;
             return [
@@ -32,12 +32,12 @@ export class Resource extends GameObject {
                 ],
             ];
         };
-        this.pack.move = () => {
+        this.pack[PACKET_TYPE.MOVE_OBJECT] = () => {
             const physics = Physics.get(this).data;
             return [this.id, 50, physics.position.x, physics.position.y];
         };
 
-        this.pack.rotate = () => {
+        this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {
             const physics = Physics.get(this).data;
             return [this.id, physics.rotation];
         };

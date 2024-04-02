@@ -1,12 +1,12 @@
-import { Component, ComponentFactory } from "./component";
-import { GameObject } from "./game_object";
-import { World } from "./world";
+import { Component, ComponentFactory } from "./component.js";
+import { GameObject } from "./game_object.js";
+import { World } from "./world.js";
 
 let NEXT_SYSTEM_ID = 1;
 
 export type EventCallback = (
-    data: any,
-    objects: IterableIterator<GameObject>
+    objects: IterableIterator<GameObject>,
+    data?: any
 ) => void;
 
 export abstract class System {
@@ -15,7 +15,11 @@ export abstract class System {
     readonly componentIds: Set<number> = new Set();
 
     public world: World = undefined as any;
-    public trigger: (event: string, data: any) => void = undefined as any;
+    public trigger: (
+        event: string,
+        objectIds?: Set<number> | number,
+        data?: any
+    ) => void = undefined as any;
 
     readonly callbacks: Map<string, Set<EventCallback>> = new Map();
 

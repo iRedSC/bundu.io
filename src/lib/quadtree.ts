@@ -1,24 +1,66 @@
-import { Range } from "./range.js";
+import { BasicPoint } from "./types.js";
 
-type Point = { x: number; y: number; [key: string]: any };
+export class Range {
+    pos1: BasicPoint;
+    pos2: BasicPoint;
+    constructor(pos1: BasicPoint, pos2: BasicPoint) {
+        this.pos1 = pos1;
+        this.pos2 = pos2;
+    }
 
-export type QuadtreeObject = {
-    id: number;
-    position: Point;
-    [key: string]: any;
-};
+    get dimensions(): [number, number] {
+        const width = Math.abs(this.pos1.x - this.pos2.x);
+        const height = Math.abs(this.pos1.y - this.pos2.y);
 
-export type QuadtreeObjectList<T extends QuadtreeObject> = Map<number, T>;
+        return [width, height];
+    }
 
-export class Quadtree<T extends QuadtreeObject> {
-    tree: InternalQuadtree<T>;
-    objects: QuadtreeObjectList<T>;
+    get normalized(): [BasicPoint, BasicPoint] {
+        return [
+            {
+                x: Math.min(this.pos1.x, this.pos2.x),
+                y: Math.min(this.pos1.y, this.pos2.y),
+            },
+            {
+                x: Math.max(this.pos1.x, this.pos2.x),
+                y: Math.max(this.pos1.y, this.pos2.y),
+            },
+        ];
+    }
+
+    contains(pos: BasicPoint): boolean {
+        const normalized = this.normalized;
+        const pos1 = normalized[0];
+        const pos2 = normalized[1];
+        const isInsideX = pos.x >= pos1.x && pos.x <= pos2.x;
+        const isInsideY = pos.y >= pos1.y && pos.y <= pos2.y;
+
+        return isInsideX && isInsideY;
+    }
+
+    intersects(range: Range): boolean {
+        const normalized = this.normalized;
+        const pos1 = normalized[0];
+        const pos2 = normalized[1];
+        const noOverlapX = pos2.x < range.pos1.x || pos1.x > range.pos2.x;
+        const noOverlapY = pos2.y < range.pos1.y || pos1.y > range.pos2.y;
+
+        return !(noOverlapX || noOverlapY);
+    }
+}
+
+export type QuadtreeObjectList = Map<number, BasicPoint>;
+
+export class Quadtree {
+    tree: InternalQuadtree;
+    objects: QuadtreeObjectList;
     constructor(
-        objectList: QuadtreeObjectList<T>,
-        bounds: Range,
+        objectList: QuadtreeObjectList,
+        bounds: [BasicPoint, BasicPoint],
         maxObjects: number
     ) {
-        this.tree = new InternalQuadtree(bounds, maxObjects);
+        const range = new Range(bounds[0], bounds[1]);
+        this.tree = new InternalQuadtree(range, maxObjects);
         this.objects = objectList;
     }
 
@@ -27,7 +69,7 @@ export class Quadtree<T extends QuadtreeObject> {
     }
 
     get(objectID: number | undefined) {
-        if (objectID) {
+        if (objectID !== undefined) {
             return this.objects.get(objectID);
         }
     }
@@ -40,12 +82,13 @@ export class Quadtree<T extends QuadtreeObject> {
         this.tree.clear();
     }
 
-    insert(object: T) {
-        this.objects.set(object.id, object);
-        this.tree.insert(object.id, this.objects);
+    insert(objectId: number, position: BasicPoint) {
+        this.objects.set(objectId, position);
+        this.tree.insert(objectId, this.objects);
     }
 
-    query(range: Range) {
+    query(bounds: [BasicPoint, BasicPoint]) {
+        const range = new Range(bounds[0], bounds[1]);
         return this.tree.query(range, this.objects);
     }
 
@@ -54,29 +97,29 @@ export class Quadtree<T extends QuadtreeObject> {
     }
 }
 
-class InternalQuadtree<T extends QuadtreeObject> {
+class InternalQuadtree {
     bounds: Range;
     maxObjects: number;
     level: number;
-    objects: Set<number>;
-    nodes: InternalQuadtree<T>[];
+    objects: Map<number, BasicPoint>;
+    nodes: InternalQuadtree[];
     constructor(bounds: Range, maxObjects: number = 10) {
         this.bounds = bounds;
         this.maxObjects = maxObjects;
         this.level = 0;
-        this.objects = new Set();
+        this.objects = new Map();
         this.nodes = [];
     }
 
     clear() {
-        this.objects = new Set();
+        this.objects.clear();
         for (let node of this.nodes) {
             node.clear();
         }
         this.nodes = [];
     }
 
-    divide(objectList: QuadtreeObjectList<T>) {
+    divide(objectList: QuadtreeObjectList) {
         const dims = this.bounds.dimensions;
         const halfWidth = dims[0] / 2;
         const halfHeight = dims[1] / 2;
@@ -112,34 +155,34 @@ class InternalQuadtree<T extends QuadtreeObject> {
             this.maxObjects
         );
         const objects = this.objects;
-        this.objects = new Set();
-        for (let objectID of objects) {
-            this.insert(objectID, objectList);
+        this.objects = new Map();
+        for (let id of objects.keys()) {
+            this.insert(id, objectList);
         }
     }
 
     query(
         range: Range,
-        objectList: QuadtreeObjectList<T>,
-        found?: Map<number, T>
-    ): Map<number, T> {
+        objectList: QuadtreeObjectList,
+        found?: Set<number>
+    ): Set<number> {
         if (!found) {
-            found = new Map();
+            found = new Set();
         }
         if (!this.bounds.intersects(range)) {
             return found;
         } else {
-            for (let objectID of this.objects) {
-                let object = objectList.get(objectID);
-                if (!object) {
+            for (let id of this.objects.keys()) {
+                const position = objectList.get(id);
+                if (!position) {
                     continue;
                 }
-                if (this.bounds.contains(object.position)) {
-                    if (range.contains(object.position)) {
-                        found.set(object.id, object);
+                if (this.bounds.contains(position)) {
+                    if (range.contains(position)) {
+                        found.add(id);
                     }
                 } else {
-                    this.objects.delete(objectID);
+                    this.objects.delete(id);
                 }
             }
 
@@ -150,35 +193,37 @@ class InternalQuadtree<T extends QuadtreeObject> {
         }
     }
 
-    insert(objectID: number, objectList: QuadtreeObjectList<T>) {
-        let object = objectList.get(objectID);
-        if (!object) {
-            return;
+    insert(id: number, objectList: QuadtreeObjectList): boolean {
+        const position = objectList.get(id);
+        if (!position) {
+            return false;
         }
-        let objectPos = object.position;
-        if (!this.bounds.contains(objectPos)) {
-            return;
+        if (!this.bounds.contains(position)) {
+            return false;
         }
 
         if (this.objects.size < this.maxObjects) {
-            this.objects.add(objectID);
+            this.objects.set(id, position);
+            return true;
         } else {
             if (!this.nodes.length) {
                 this.divide(objectList);
             }
             for (let node of this.nodes) {
-                if (node.bounds.contains(objectPos)) {
-                    node.insert(objectID, objectList);
-                    break;
+                if (node.bounds.contains(position)) {
+                    if (node.insert(id, objectList)) {
+                        return true;
+                    }
                 }
             }
+            return false;
         }
     }
 
-    rebuild(objects: QuadtreeObjectList<T>) {
+    rebuild(objects: QuadtreeObjectList) {
         this.clear();
-        for (let objectID of objects.keys()) {
-            this.insert(objectID, objects);
+        for (let id of objects.keys()) {
+            this.insert(id, objects);
         }
     }
 }

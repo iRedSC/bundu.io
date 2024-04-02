@@ -10,7 +10,7 @@ import Random from "../../lib/random.js";
 import SAT from "sat";
 import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
 import { GameObject } from "../game_engine/game_object.js";
-import { Physics, Type } from "../components/base.js";
+import { EntityAI, Physics, Type } from "../components/base.js";
 
 export class Entity extends GameObject {
     constructor(physics: Physics, type: Type) {
@@ -21,10 +21,19 @@ export class Entity extends GameObject {
         this.add(config);
         this.add(new Physics(physics));
         this.add(new Type(type));
+        this.add(
+            new EntityAI({
+                target: new SAT.Vector(),
+                arriveTime: 0,
+                travelTime: 0,
+                lastPosition: new SAT.Vector(),
+                lastMoveTime: 0,
+            })
+        );
 
-        this.pack.new = () => {
-            return [OBJECT_CLASS.ENTITY, [this.id]];
-        };
+        // this.pack[PACKET_TYPE.NEW_OBJECT] = () => {
+        //     return [OBJECT_CLASS.ENTITY, [this.id]];
+        // };
     }
 }
 

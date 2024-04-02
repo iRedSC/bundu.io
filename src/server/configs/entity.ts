@@ -28,13 +28,13 @@ export function createEntityConfig(
     data: Partial<entityConfigData>
 ) {
     const config: any = {};
-    this.id = id;
-    this.wanderRange = data.wander_range || 1000;
-    this.anger = data.anger || 1;
-    this.speed = data.speed || 1;
-    this.attackDamage = data.attack_damage || 0;
-    this.size = data.size || 2;
-    this.restTime = data.rest_time || 1000;
+    config.id = id;
+    config.wanderRange = data.wander_range || 1000;
+    config.anger = data.anger || 1;
+    config.speed = data.speed || 1;
+    config.attackDamage = data.attack_damage || 0;
+    config.size = data.size || 2;
+    config.restTime = data.rest_time || 1000;
     return new EntityConfig(config);
 }
 

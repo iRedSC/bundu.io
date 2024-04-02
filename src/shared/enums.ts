@@ -35,11 +35,11 @@ export namespace NewObjectSchema {
         z.number(), // y
         z.number(), // rot
         z.string(), // name
-        z.number(), // hand
-        z.number(), // helm
-        z.number(), // skin
-        z.number(), // backpackSkin
-        z.boolean(), // hasBackpack
+        z.number().nullable(), // hand
+        z.number().nullable(), // helm
+        z.number().nullable(), // skin
+        z.number().nullable(), // backpackSkin
+        z.boolean().nullable(), // hasBackpack
     ]);
     export type newPlayer = z.infer<typeof newPlayer>;
 
@@ -75,6 +75,7 @@ export namespace ServerPacketSchema {
     export const action = z.tuple([
         z.number(), // id
         z.number(), // action
+        z.boolean(), //stop
     ]);
     export type action = z.infer<typeof action>;
 
@@ -122,22 +123,30 @@ export namespace ServerPacketSchema {
 
 export enum CLIENT_PACKET_TYPE {
     PING = 0,
-    MOVE_UPDATE = 1,
-    ROTATE = 2,
-    ACTION = 3,
+    JOIN = 1,
+    MOVE_UPDATE = 20,
+    ROTATE = 21,
+    ACTION = 22,
 
-    REQUEST_OBJECT = 20,
+    REQUEST_OBJECT = 50,
 }
 
 export enum CLIENT_ACTION {
-    START_ATTACK = 1,
-    STOP_ATTACK = 2,
-    START_BLOCK = 3,
-    STOP_BLOCK = 4,
+    ATTACK = 1,
+    BLOCK = 3,
 }
 
 export namespace ClientPacketSchema {
     export const ping = z.tuple([]);
+    export type ping = z.infer<typeof ping>;
+
+    export const join = z.tuple([
+        z.string(), // name,
+        z.number(), // skin
+        z.number(), // backpack skin,
+        z.number(), // bookskin
+    ]);
+    export type join = z.infer<typeof join>;
 
     export const moveUpdate = z.tuple([
         z.number(), // x
@@ -156,8 +165,6 @@ export namespace ClientPacketSchema {
     ]);
     export type action = z.infer<typeof action>;
 
-    export const requestObjects = z.tuple([
-        z.number().array(), // list of IDS
-    ]);
+    export const requestObjects = z.number().array();
     export type requestObjects = z.infer<typeof requestObjects>;
 }

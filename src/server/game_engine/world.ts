@@ -1,14 +1,15 @@
-import { GameObject } from "./game_object";
-import { EventCallback, System } from "./system";
-import { NOW } from "./now";
-import { Component } from "./component";
+import { GameObject } from "./game_object.js";
+import { EventCallback, System } from "./system.js";
+import { NOW } from "./now.js";
+import { Component } from "./component.js";
+import Logger from "js-logger";
 
 function checkSubset<T>(subSet: Set<T>, superSet: Set<T>) {
-    subSet.forEach((value) => {
+    for (const value of subSet.values()) {
         if (!superSet.has(value)) {
             return false;
         }
-    });
+    }
     return true;
 }
 
@@ -39,7 +40,14 @@ export class World {
         }
     }
 
-    private triggerSystems = (event: string, data: any) => {
+    private triggerSystems = (
+        event: string,
+        objectIds?: Set<number> | number,
+        data?: any
+    ) => {
+        if (typeof objectIds === "number") {
+            objectIds = new Set([objectIds]);
+        }
         for (const system of this.systems.values()) {
             const events: Map<string, Set<EventCallback>> = system.callbacks;
             if (!events.has(event)) {
@@ -49,8 +57,8 @@ export class World {
             const callbacks = events.get(event) || new Set();
             if (callbacks.size > 0) {
                 this.inject(system);
-                const objects = this.query(system.componentIds);
-                callbacks.forEach((callback) => callback(data, objects));
+                const objects = this.query(system.componentIds, objectIds);
+                callbacks.forEach((callback) => callback(objects, data));
             }
         }
     };
@@ -70,7 +78,6 @@ export class World {
         }
 
         this.objects.set(object.id, object);
-        console.log(object);
         this.objectLastUpdateGT.set(object.id, new Map());
         this.objectLastUpdateRT.set(object.id, new Map());
 
@@ -85,6 +92,7 @@ export class World {
             })
         );
         this.indexObject(object);
+        return this;
     }
 
     removeObject(object: GameObject) {
@@ -109,6 +117,7 @@ export class World {
         this.objectSystems.delete(object.id);
         this.objectLastUpdateGT.delete(object.id);
         this.objectLastUpdateRT.delete(object.id);
+        return this;
     }
 
     addSystem(system: System) {
@@ -126,6 +135,7 @@ export class World {
                 }
             }
         }
+        return this;
     }
 
     removeSystem(system: System) {
@@ -150,6 +160,7 @@ export class World {
             system.world = undefined as any;
             system.trigger = undefined as any;
         }
+        return this;
     }
 
     public update() {
@@ -169,26 +180,25 @@ export class World {
             if (!systems) {
                 continue;
             }
-
             const objectLastUpdateRT = this.objectLastUpdateRT.get(objectId);
             const objectLastUpdateGT = this.objectLastUpdateGT.get(objectId);
 
-            for (const [systemId, system] of this.systems.entries()) {
+            for (const system of systems) {
                 if (!system.update) {
                     continue;
                 }
                 this.inject(system);
 
-                const elapsed = now - objectLastUpdateRT?.get(systemId)!;
+                const elapsed = now - objectLastUpdateRT?.get(system.id)!;
                 const elapsedScaled =
-                    this.gameTime - objectLastUpdateGT?.get(systemId)!;
+                    this.gameTime - objectLastUpdateGT?.get(system.id)!;
 
                 const interval = 1000 / system.tps;
                 if (elapsed < interval) {
                     return;
                 }
-                objectLastUpdateRT?.set(systemId, now - (elapsed % interval));
-                objectLastUpdateGT?.set(systemId, this.gameTime);
+                objectLastUpdateRT?.set(system.id, now - (elapsed % interval));
+                objectLastUpdateGT?.set(system.id, this.gameTime);
 
                 if (!afterUpdateListeners.get(system)) {
                     if (system.beforeUpdate) {
@@ -208,18 +218,30 @@ export class World {
         }
     }
 
+    /**
+     * Query the world for specific objects.
+     * @param componentIds id of components to query for
+     * @param ids objects to query for, objects must contain specified components
+     * @returns generator that gives requested objects
+     */
     public query(
-        componentIds: number[] | Set<number>
+        componentIds: number[] | Set<number>,
+        ids?: Set<number>
     ): IterableIterator<GameObject> {
         let _componentIds = componentIds as Set<number>;
         if (componentIds instanceof Array) {
             _componentIds = new Set(componentIds);
         }
-        const listAll = componentIds.values.length > 0;
-        const objects = this.objects.values();
+        const listAll = componentIds.values.length === 0;
+        const objects = ids || this.objects.keys();
+        const thisObjects = this.objects;
 
         function* generator(): IterableIterator<GameObject> {
-            for (const object of objects) {
+            for (const id of objects) {
+                const object = thisObjects.get(id);
+                if (!object) {
+                    continue;
+                }
                 if (listAll) {
                     yield object;
                 }
@@ -290,7 +312,7 @@ export class World {
     }
 
     private indexObjectSystem = (object: GameObject, system: System) => {
-        const objectSystem = this.objectSystems.get(object.id) || new Set();
+        const objectSystem = this.objectSystems.get(object.id)!;
 
         function deleteObject() {
             objectSystem.delete(system);
@@ -308,7 +330,22 @@ export class World {
 
         const componentIds = system.componentIds;
 
-        if (!checkSubset(new Set(object.components.keys()), componentIds)) {
+        // Logger.log(
+        //     `System needs ${Array.from(
+        //         componentIds.values()
+        //     )}, \nObject has ${Array.from(
+        //         new Set(object.components.keys()).values()
+        //     )} \nSuccess: ${checkSubset(
+        //         componentIds,
+        //         new Set(object.components.keys())
+        //     )}`
+        // );
+
+        const HasAllComponents = checkSubset(
+            componentIds,
+            new Set(object.components.keys())
+        );
+        if (!HasAllComponents) {
             if (objectSystem.has(system)) {
                 if (system.exit) {
                     this.inject(system);
@@ -316,6 +353,7 @@ export class World {
                 }
                 deleteObject();
             }
+            return;
         }
 
         if (!objectSystem.has(system)) {

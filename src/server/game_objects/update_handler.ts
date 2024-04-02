@@ -4,7 +4,7 @@ import { Player } from "./player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { PlayerData } from "../components/player.js";
 
-type UpdateTypes = PACKET_TYPE[];
+type UpdateTypes = Set<PACKET_TYPE>;
 
 /**
  * UpdateHandler deals with sending packets to players.
@@ -23,44 +23,58 @@ export class UpdateHandler {
      * @param objects List of objects to add to the handler
      * @param types Packet types to send out of each object
      */
-    public add(objects: GameObject[], types: PACKET_TYPE[]): void {
-        for (const object of objects) {
-            const existingTypes = this.objects.get(object);
-            if (existingTypes) {
-                types.push(...types);
-                return;
-            }
-            this.objects.set(object, types);
+    public add(
+        objects: IterableIterator<GameObject>,
+        types: PACKET_TYPE[],
+        giveList: boolean = false
+    ): Map<GameObject, UpdateTypes> {
+        const list = giveList ? new Map() : this.objects;
+        const objectsList = Array.from(objects);
+        for (const object of objectsList) {
+            let existingTypes: Set<number> = list.get(object) || new Set();
+            list.set(object, new Set([...types, ...existingTypes.values()]));
         }
+
+        return list;
     }
 
     /**
      * Send packets for all objects a player can see.
      * @param player player to send packets to
      */
-    send(player: Player) {
+    send(
+        player: Player,
+        objects?: [IterableIterator<GameObject>, PACKET_TYPE[]]
+    ) {
+        let list = this.objects;
+        if (objects) {
+            // console.log(Array.from(objects[0]).length);
+            list = this.add(objects[0], objects[1], true)!;
+        }
         const playerData = PlayerData.get(player).data;
         const packets: Map<PACKET_TYPE, any[]> = new Map();
-        for (const [object, updateTypes] of this.objects.entries()) {
-            if (!playerData.visibleObject.has(object.id)) {
+        for (const [object, packetTypes] of list.entries()) {
+            if (!playerData.visibleObjects.has(object.id)) {
                 continue;
             }
-            for (const updateType of updateTypes) {
-                if (!object.pack[updateType]) {
+            for (const packetType of packetTypes.values()) {
+                if (!object.pack[packetType]) {
                     continue;
                 }
-                let packet = packets.get(updateType);
+
+                let packet = packets.get(packetType);
                 if (packet) {
-                    packet.push(object.pack[updateType]());
+                    packet.push(object.pack[packetType]());
                 } else {
-                    packets.set(updateType, [
-                        updateType,
-                        object.pack[updateType](),
+                    packets.set(packetType, [
+                        packetType,
+                        object.pack[packetType](),
                     ]);
                 }
             }
         }
         for (const packet of packets.values()) {
+            // console.log(packet);
             send(playerData.socket, packet);
         }
     }

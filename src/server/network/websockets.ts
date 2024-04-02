@@ -18,9 +18,9 @@ It takes a game server as a property and will relay the messages sent by clients
 export class ServerController {
     webSocketServer: uWS.TemplatedApp;
     sockets: Map<number, GameWS>;
-    connect: (socket: GameWS) => void;
-    disconnect: (socket: GameWS) => void;
-    message: (socket: GameWS, message: unknown) => void;
+    connect: (socket: GameWS) => void = () => {};
+    disconnect: (socket: GameWS) => void = () => {};
+    message: (socket: GameWS, message: unknown) => void = () => {};
 
     constructor() {
         this.sockets = new Map();

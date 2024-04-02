@@ -5,7 +5,7 @@ import {
     PACKET_TYPE,
     ServerPacketSchema,
 } from "../../shared/enums.js";
-import { Physics } from "../components/base.js";
+import { CalculateCollisions, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
 
@@ -17,8 +17,9 @@ export class Player extends GameObject {
         super();
         this.add(new Physics(physics));
         this.add(new PlayerData(playerData));
+        this.add(new CalculateCollisions({}));
 
-        this.pack.new = () => {
+        this.pack[PACKET_TYPE.NEW_OBJECT] = () => {
             const physics = Physics.get(this).data;
             const playerData = PlayerData.get(this).data;
             return [
@@ -38,25 +39,14 @@ export class Player extends GameObject {
             ];
         };
 
-        this.pack.move = () => {
+        this.pack[PACKET_TYPE.MOVE_OBJECT] = () => {
             const physics = Physics.get(this).data;
             return [this.id, 50, physics.position.x, physics.position.y];
         };
 
-        this.pack.rotate = () => {
+        this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {
             const physics = Physics.get(this).data;
             return [this.id, physics.rotation];
         };
     }
 }
-
-// move() {
-//     if (this.moveDir[0] === 0 && this.moveDir[1] === 0) {
-//         return false;
-//     }
-//     const newX = this.position.x - this.moveDir[0];
-//     const newY = this.position.y - this.moveDir[1];
-//     const target = moveToward(this.position, { x: newX, y: newY }, 10);
-//     this.setPosition(target.x, target.y);
-//     return true;
-// }

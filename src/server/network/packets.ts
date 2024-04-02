@@ -2,9 +2,9 @@ import {
     ACTION,
     CLIENT_PACKET_TYPE,
     ClientPacketSchema,
-} from "../../shared/enums";
-import { PacketPipeline, Unpacker } from "../../shared/unpack";
-import { PlayerController } from "../player_controller";
+} from "../../shared/enums.js";
+import { PacketPipeline, Unpacker } from "../../shared/unpack.js";
+import { PlayerController } from "../player_controller.js";
 
 export function createPacketPipeline(controller: PlayerController) {
     const packets = new PacketPipeline();
@@ -45,7 +45,7 @@ export function createPacketPipeline(controller: PlayerController) {
         CLIENT_PACKET_TYPE.REQUEST_OBJECT,
         new Unpacker(
             (packet: ClientPacketSchema.requestObjects, id: number) => {
-                controller.requestObjects(id, packet[0]);
+                controller.requestObjects(id, packet);
             },
             ClientPacketSchema.requestObjects
         )

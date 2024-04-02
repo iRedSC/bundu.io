@@ -1,4 +1,4 @@
-import { GameObject } from "./game_object";
+import { GameObject } from "./game_object.js";
 
 let NEXT_COMPONENT_ID = 1;
 
