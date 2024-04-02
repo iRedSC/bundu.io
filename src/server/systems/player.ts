@@ -6,6 +6,7 @@ import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import { BasicPoint } from "../game_engine/types.js";
 import { quadtree } from "./position.js";
+import { Player } from "../game_objects/player.js";
 
 export class PlayerSystem extends System {
     constructor() {
@@ -15,6 +16,14 @@ export class PlayerSystem extends System {
     update(time: number, delta: number, player: GameObject) {
         const physics = Physics.get(player).data;
         const data = PlayerData.get(player).data;
+
+        if (data.attacking && data.lastAttackTime) {
+            console.log("GAMETIME = ", data.lastAttackTime);
+            if (data.lastAttackTime < time - 400) {
+                this.trigger("attack", player.id);
+                data.lastAttackTime = time;
+            }
+        }
         if (data.moveDir[0] === 0 && data.moveDir[1] === 0) {
             return;
         }
@@ -24,14 +33,7 @@ export class PlayerSystem extends System {
         physics.position.x = target.x;
         physics.position.y = target.y;
 
-        const bounds: [BasicPoint, BasicPoint] = [
-            { x: physics.position.x - 500, y: physics.position.y - 500 },
-            { x: physics.position.x + 500, y: physics.position.y + 500 },
-        ];
-        const nearby = quadtree.query(bounds);
-        data.visibleObjects.update(nearby);
-        this.trigger("positionUpdate", player.id);
-        this.trigger("sendUpdatedObjects", player.id);
+        this.trigger("moved", player.id);
     }
 
     move(playerId: number, x: number, y: number) {
@@ -43,6 +45,16 @@ export class PlayerSystem extends System {
         data.moveDir = [x, y];
     }
 
+    rotate(playerId: number, rotation: number) {
+        const player = this.world.getObject(playerId);
+        if (!player) {
+            return;
+        }
+        const data = Physics.get(player).data;
+        data.rotation = rotation;
+        this.trigger("rotated", player.id);
+    }
+
     requestObjects(playerId: number, objects: number[]) {
         const player = this.world.getObject(playerId);
         if (!player) {
@@ -50,5 +62,27 @@ export class PlayerSystem extends System {
         }
 
         this.trigger("sendNewObjects", player.id, objects);
+    }
+
+    attack(playerId: number, stop: boolean) {
+        const player = this.world.getObject(playerId);
+        if (!player) {
+            return;
+        }
+        const data = PlayerData.get(player).data;
+        data.attacking = !stop;
+        if (data.lastAttackTime === undefined) {
+            data.lastAttackTime = this.world.gameTime;
+        }
+    }
+
+    block(playerId: number, stop: boolean) {
+        const player = this.world.getObject(playerId);
+        if (!player) {
+            return;
+        }
+        const data = PlayerData.get(player).data;
+        data.blocking = !stop;
+        this.trigger("blocking", player.id, stop);
     }
 }

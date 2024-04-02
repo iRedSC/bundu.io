@@ -58,7 +58,10 @@ export class World {
 
     tick() {
         this.animationManager.update();
-        for (let [id, object] of this.updatingObjs.entries()) {
+        for (let [id, object] of [
+            ...this.updatingObjs.entries(),
+            ...this.dynamicObjs.entries(),
+        ]) {
             object.move();
             const lastState = object.states[-1];
             if (!lastState) {
@@ -167,6 +170,8 @@ export class World {
     }
 
     moveObject(packet: ServerPacketSchema.moveObject) {
+        console.log("MOVE");
+        console.log(packet);
         const id = packet[0];
         const time = packet[1];
 
@@ -189,6 +194,7 @@ export class World {
             return;
         }
         if (id !== this.user) {
+            console.log("ROTATING" + packet[1]);
             object.setRotation(packet[1]);
             this.updatingObjs.set(id, object);
         }

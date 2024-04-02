@@ -79,17 +79,7 @@ export class WorldObject extends PIXI.Container {
         const lastState = this.states[0];
         const nextState = this.states[1];
 
-        if (!nextState) {
-            return;
-        }
-
-        // interpolate between the two most recent states
-
         const now = Date.now() - 50;
-        const t = (now - lastState[0]) / (nextState[0] - lastState[0]);
-        const tClamped = Math.max(0, Math.min(1, t));
-        const x = round(lerp(lastState[1], nextState[1], tClamped));
-        const y = round(lerp(lastState[2], nextState[2], tClamped));
 
         if (this.rotationProperties.interpolate) {
             const rotationT =
@@ -101,8 +91,18 @@ export class WorldObject extends PIXI.Container {
                 rotationT
             );
         }
-        this.position.set(x, y);
+        if (!nextState) {
+            return;
+        }
 
+        // interpolate between the two most recent states
+
+        const t = (now - lastState[0]) / (nextState[0] - lastState[0]);
+        const tClamped = Math.max(0, Math.min(1, t));
+        const x = round(lerp(lastState[1], nextState[1], tClamped));
+        const y = round(lerp(lastState[2], nextState[2], tClamped));
+
+        this.position.set(x, y);
         if (this.debug.hitbox) {
             this.debug.hitbox.position.set(x, y);
         }
@@ -125,12 +125,12 @@ export class WorldObject extends PIXI.Container {
             // {TESTING}
             // ? For debug purposes, can be removed later
 
-            const lastState = this.states[0];
-            const nextState = this.states[1];
+            // const lastState = this.states[0];
+            // const nextState = this.states[1];
 
-            if (!nextState) {
-                return;
-            }
+            // if (!nextState) {
+            //     return;
+            // }
 
             // const debugLine = new Line(
             //     { x: lastState[1], y: lastState[2] },

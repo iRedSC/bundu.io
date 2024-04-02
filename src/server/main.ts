@@ -24,17 +24,12 @@ import { send } from "./send.js";
 
 Logger.useDefaults();
 
-const playerController = new PlayerController();
-const pipeline = createPacketPipeline(playerController);
-
 const world = new World();
 
 const positionSystem = new PositionSystem();
 const playerSystem = new PlayerSystem();
+const pipeline = createPacketPipeline(playerSystem);
 
-playerController.move = playerSystem.move.bind(playerSystem);
-playerController.requestObjects =
-    playerSystem.requestObjects.bind(playerSystem);
 const packetSystem = new PacketSystem();
 const collisionSystem = new CollisionSystem();
 
@@ -70,8 +65,8 @@ pipeline.add(
             return;
         }
         const position = new SAT.Vector(
-            random.integer(5000, 10000),
-            random.integer(5000, 10000)
+            random.integer(7000, 8000),
+            random.integer(7000, 8000)
         );
         const size = 5;
         const collider = new SAT.Circle(position, size);

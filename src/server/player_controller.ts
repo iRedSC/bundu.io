@@ -7,9 +7,7 @@ enum MOVE_DIR {
 /**
  * Override the methods of this class to accept different player actions.
  */
-export class PlayerController {
-    constructor() {}
-
+export interface PlayerController {
     // * Actions
 
     /**
@@ -18,28 +16,28 @@ export class PlayerController {
      * @param x direction to move x `(-1, 0, 1)`
      * @param y direction to move y `(-1, 0, 1)`
      */
-    public move(id: number, x: MOVE_DIR, y: MOVE_DIR): void {}
+    move?(id: number, x: MOVE_DIR, y: MOVE_DIR): void;
 
     /**
      * Request to rotate player.
      * @param id player id
      * @param rotation requested rotation in radians
      */
-    public rotate(id: number, rotation: number): void {}
+    rotate?(id: number, rotation: number): void;
 
     /**
      * Request for a player to attack.
      * @param id player id
      * @param stop whether the request is to stop attacking
      */
-    public attack(id: number, stop: boolean): void {}
+    attack?(id: number, stop: boolean): void;
 
     /**
      * Request for a player to block.
      * @param id player id
      * @param stop whether the request is to stop blocking
      */
-    public block(id: number, stop: boolean = false): void {}
+    block?(id: number, stop: boolean): void;
 
     /**
      * Request for a player to select a specific item.
@@ -47,14 +45,14 @@ export class PlayerController {
      * @param id player id
      * @param itemId id of item attempting to be selected
      */
-    public selectItem(id: number, itemId: number): void {}
+    selectItem?(id: number, itemId: number): void;
 
     /**
      * Request for a player to craft a specific item.
      * @param id player id
      * @param itemId id of item attemping to be crafted
      */
-    public craftItem(id: number, itemId: number): void {}
+    craftItem?(id: number, itemId: number): void;
 
     // * Requests
 
@@ -63,5 +61,5 @@ export class PlayerController {
      * @param id player id
      * @param objects id of requested objects
      */
-    public requestObjects(id: number, objects: number[]): void {}
+    requestObjects?(id: number, objects: number[]): void;
 }

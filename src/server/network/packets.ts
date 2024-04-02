@@ -1,5 +1,6 @@
 import {
     ACTION,
+    CLIENT_ACTION,
     CLIENT_PACKET_TYPE,
     ClientPacketSchema,
 } from "../../shared/enums.js";
@@ -16,14 +17,14 @@ export function createPacketPipeline(controller: PlayerController) {
     packets.add(
         CLIENT_PACKET_TYPE.MOVE_UPDATE,
         new Unpacker((packet: ClientPacketSchema.moveUpdate, id: number) => {
-            controller.move(id, packet[0], packet[1]);
+            controller.move?.call(controller, id, packet[0], packet[1]);
         }, ClientPacketSchema.moveUpdate)
     );
 
     packets.add(
         CLIENT_PACKET_TYPE.ROTATE,
         new Unpacker((packet: ClientPacketSchema.rotate, id: number) => {
-            controller.rotate(id, packet[0]);
+            controller.rotate?.call(controller, id, packet[0]);
         }, ClientPacketSchema.rotate)
     );
 
@@ -31,11 +32,11 @@ export function createPacketPipeline(controller: PlayerController) {
         CLIENT_PACKET_TYPE.ACTION,
         new Unpacker((packet: ClientPacketSchema.action, id: number) => {
             switch (packet[0]) {
-                case ACTION.ATTACK:
-                    controller.attack(id, packet[1]);
+                case CLIENT_ACTION.ATTACK:
+                    controller.attack?.call(controller, id, packet[1]);
                     break;
-                case ACTION.BLOCK:
-                    controller.block(id, packet[1]);
+                case CLIENT_ACTION.BLOCK:
+                    controller.block?.call(controller, id, packet[1]);
                     break;
             }
         }, ClientPacketSchema.action)
@@ -45,7 +46,7 @@ export function createPacketPipeline(controller: PlayerController) {
         CLIENT_PACKET_TYPE.REQUEST_OBJECT,
         new Unpacker(
             (packet: ClientPacketSchema.requestObjects, id: number) => {
-                controller.requestObjects(id, packet);
+                controller.requestObjects?.call(controller, id, packet);
             },
             ClientPacketSchema.requestObjects
         )

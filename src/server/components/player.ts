@@ -76,5 +76,8 @@ export type PlayerData = {
     backpack?: boolean;
 
     moveDir: [number, number];
+    attacking?: boolean;
+    blocking?: boolean;
+    lastAttackTime?: number;
 };
 export const PlayerData = Component.register<PlayerData>();

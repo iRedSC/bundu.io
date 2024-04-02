@@ -16,7 +16,7 @@ export class PositionSystem extends System {
     constructor() {
         super([Physics]);
 
-        this.listen("positionUpdate", this.insert);
+        this.listen("moved", this.insert);
     }
 
     insert(objects: IterableIterator<GameObject>) {

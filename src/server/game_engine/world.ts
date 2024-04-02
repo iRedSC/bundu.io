@@ -29,8 +29,8 @@ export class World {
     private subscriptions: Map<number, () => void> = new Map();
 
     public timeScale = 1;
-    private lastUpdate: number = NOW();
-    private gameTime: number = 0;
+    public lastUpdate: number = NOW();
+    public gameTime: number = 0;
 
     constructor(systems?: System[]) {
         if (systems) {
@@ -183,7 +183,7 @@ export class World {
             const objectLastUpdateRT = this.objectLastUpdateRT.get(objectId);
             const objectLastUpdateGT = this.objectLastUpdateGT.get(objectId);
 
-            for (const system of systems) {
+            for (const system of systems.values()) {
                 if (!system.update) {
                     continue;
                 }
