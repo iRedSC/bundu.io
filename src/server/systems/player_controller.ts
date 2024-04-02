@@ -5,7 +5,7 @@ enum MOVE_DIR {
 }
 
 /**
- * Override the methods of this class to accept different player actions.
+ * Protocol for interacting with players
  */
 export interface PlayerController {
     // * Actions

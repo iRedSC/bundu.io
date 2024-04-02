@@ -1,24 +1,23 @@
 import { coordsToRect } from "../../lib/transforms.js";
 import SAT from "sat";
+import { GroundData } from "../components/base.js";
+import { GameObject } from "../game_engine/game_object.js";
+import { PACKET_TYPE } from "../../shared/enums.js";
 
-export class Ground {
-    pos1: SAT.Vector;
-    pos2: SAT.Vector;
-    collider: SAT.Box;
-    type: number;
+export class Ground extends GameObject {
+    constructor(data: GroundData) {
+        super();
+        this.add(new GroundData(data));
 
-    constructor(pos1: SAT.Vector, pos2: SAT.Vector, type: number) {
-        this.pos1 = pos1;
-        this.pos2 = pos2;
-        this.type = type;
-
-        const rect = coordsToRect(pos1.x, pos1.y, pos2.x, pos2.y);
-        const pos = new SAT.Vector(rect.x, rect.y);
-
-        this.collider = new SAT.Box(pos, rect.width, rect.height);
-    }
-
-    pack() {
-        return [this.pos1.x, this.pos1.y, this.pos2.x, this.pos2.y, this.type];
+        this.pack[PACKET_TYPE.LOAD_GROUND] = () => {
+            const data = GroundData.get(this).data;
+            return [
+                data.collider.pos.x,
+                data.collider.pos.y,
+                data.collider.w,
+                data.collider.h,
+                data.type,
+            ];
+        };
     }
 }

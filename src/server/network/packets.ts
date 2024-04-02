@@ -5,7 +5,7 @@ import {
     ClientPacketSchema,
 } from "../../shared/enums.js";
 import { PacketPipeline, Unpacker } from "../../shared/unpack.js";
-import { PlayerController } from "../player_controller.js";
+import { PlayerController } from "../systems/player_controller.js";
 
 export function createPacketPipeline(controller: PlayerController) {
     const packets = new PacketPipeline();

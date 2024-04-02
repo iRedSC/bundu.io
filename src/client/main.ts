@@ -22,7 +22,7 @@ const packetPipeline = new PacketPipeline();
 const socket = new WebSocket("ws://localhost:7777");
 const world = new World(viewport, animationManager);
 
-// viewport.addChild(debugContainer);
+viewport.addChild(debugContainer);
 debugContainer.zIndex = 1000;
 viewport.sortChildren();
 

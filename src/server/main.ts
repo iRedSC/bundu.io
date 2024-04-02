@@ -2,7 +2,7 @@ import { GameWS, ServerController } from "./network/websockets.js";
 import { World } from "./game_engine/world.js";
 import { round } from "../lib/math.js";
 import Logger from "js-logger";
-import { PlayerController } from "./player_controller.js";
+import { PlayerController } from "./systems/player_controller.js";
 import { createPacketPipeline } from "./network/packets.js";
 import { PositionSystem } from "./systems/position.js";
 import { PlayerSystem } from "./systems/player.js";
@@ -21,6 +21,8 @@ import { VisibleObjects } from "./components/player.js";
 import SAT from "sat";
 import { GameObject } from "./game_engine/game_object.js";
 import { send } from "./send.js";
+import { GroundData } from "./components/base.js";
+import { Ground } from "./game_objects/ground.js";
 
 Logger.useDefaults();
 
@@ -33,11 +35,21 @@ const pipeline = createPacketPipeline(playerSystem);
 const packetSystem = new PacketSystem();
 const collisionSystem = new CollisionSystem();
 
-world.addSystem(positionSystem).addSystem(playerSystem).addSystem(packetSystem);
-// .addSystem(collisionSystem);
+world
+    .addSystem(positionSystem)
+    .addSystem(playerSystem)
+    .addSystem(packetSystem)
+    .addSystem(collisionSystem);
 
+const ground: GroundData = {
+    collider: new SAT.Box(new SAT.Vector(1000, 1000), 5000, 5000),
+    type: 1,
+    speedMultiplier: 1,
+};
+
+world.addObject(new Ground(ground));
 // createEntities(world, 5);
-createResources(world, 10000);
+createResources(world, 1000);
 
 const controller = new ServerController();
 controller.start(7777);
@@ -68,11 +80,11 @@ pipeline.add(
             random.integer(7000, 8000),
             random.integer(7000, 8000)
         );
-        const size = 5;
+        const size = 15;
         const collider = new SAT.Circle(position, size);
 
         const player = new Player(
-            { position, collider, size, solid: true, rotation: 0 },
+            { position, collider, size, solid: true, rotation: 0, speed: 10 },
             {
                 socket: socket,
                 name: packet[0],

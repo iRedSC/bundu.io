@@ -60,7 +60,7 @@ export class Player extends WorldObject {
         pos: PIXI.Point,
         rotation: number
     ) {
-        super(id, pos, rotation, 1);
+        super(id, pos, rotation, 15);
         this.sprite = {
             body: {
                 container: new PIXI.Container(),

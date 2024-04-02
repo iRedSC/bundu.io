@@ -58,7 +58,8 @@ export class WorldObject extends PIXI.Container {
         this.setRotation(rotation);
         this.debug = new DebugWorldObject();
         this.size = size;
-        const idText = new PIXI.Text(`ID: ${this.id}`);
+        const idTextStyle = new PIXI.TextStyle({ fontSize: 100 });
+        const idText = new PIXI.Text(`ID: ${this.id}`, idTextStyle);
         idText.position = pos;
         this.debug.updateId(idText);
     }
@@ -160,9 +161,9 @@ export class WorldObject extends PIXI.Container {
 
     set size(value: number) {
         this._size = value;
-        this.scale.set(value / 1.2);
+        this.scale.set(value / 15);
 
-        // const hitbox = new Circle(this.position, this._size * 10, 0xff0000, 25);
+        // const hitbox = new Circle(this.position, this._size, 0xff0000, 25);
         // this.debug.updateHitbox(hitbox);
     }
 

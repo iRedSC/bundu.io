@@ -1,4 +1,5 @@
 import { Component } from "../game_engine/component.js";
+import { BasicPoint } from "../game_engine/types.js";
 
 export type Health = { value: number };
 export const Health = Component.register<Health>();
@@ -12,6 +13,7 @@ export type Physics = {
     rotation: number;
     size: number;
     solid: boolean;
+    speed: number;
 };
 export const Physics = Component.register<Physics>();
 
@@ -29,3 +31,10 @@ export type EntityAI = {
     lastMoveTime: number;
 };
 export const EntityAI = Component.register<EntityAI>();
+
+export type GroundData = {
+    collider: SAT.Box;
+    type: number;
+    speedMultiplier: number;
+};
+export const GroundData = Component.register<GroundData>();

@@ -1,24 +1,32 @@
-import Logger from "js-logger";
 import { moveToward } from "../../lib/transforms.js";
-import { Physics } from "../components/base.js";
+import { PACKET_TYPE } from "../../shared/enums.js";
+import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
-import { BasicPoint } from "../game_engine/types.js";
-import { quadtree } from "./position.js";
-import { Player } from "../game_objects/player.js";
+import { updateHandler } from "./packet.js";
+import { PlayerController } from "./player_controller.js";
 
-export class PlayerSystem extends System {
+/**
+ * This is the system that controls players.
+ * ! Method calls come directly from client's packets, so it's a potential attack point.
+ */
+export class PlayerSystem extends System implements PlayerController {
     constructor() {
         super([PlayerData, Physics]);
     }
 
-    update(time: number, delta: number, player: GameObject) {
+    /**
+     * Updates each player.
+     *
+     * Moves them based on their moveDir value.
+     * Sends attack event if attacking is true.
+     */
+    update(time: number, delta: number, player: GameObject): void {
         const physics = Physics.get(player).data;
         const data = PlayerData.get(player).data;
 
         if (data.attacking && data.lastAttackTime) {
-            console.log("GAMETIME = ", data.lastAttackTime);
             if (data.lastAttackTime < time - 400) {
                 this.trigger("attack", player.id);
                 data.lastAttackTime = time;
@@ -36,6 +44,12 @@ export class PlayerSystem extends System {
         this.trigger("moved", player.id);
     }
 
+    enter(player: GameObject) {
+        const ground = this.world.query([GroundData.id]);
+        updateHandler.send(player, [ground, [PACKET_TYPE.LOAD_GROUND]]);
+    }
+
+    // Sets selected player's moveDir property.
     move(playerId: number, x: number, y: number) {
         const player = this.world.getObject(playerId);
         if (!player) {
@@ -45,6 +59,7 @@ export class PlayerSystem extends System {
         data.moveDir = [x, y];
     }
 
+    // Sets selected player's rotation
     rotate(playerId: number, rotation: number) {
         const player = this.world.getObject(playerId);
         if (!player) {
@@ -55,6 +70,7 @@ export class PlayerSystem extends System {
         this.trigger("rotated", player.id);
     }
 
+    // Triggers event to send objects to selected player
     requestObjects(playerId: number, objects: number[]) {
         const player = this.world.getObject(playerId);
         if (!player) {
@@ -64,6 +80,7 @@ export class PlayerSystem extends System {
         this.trigger("sendNewObjects", player.id, objects);
     }
 
+    // starts or stops a player from attacking
     attack(playerId: number, stop: boolean) {
         const player = this.world.getObject(playerId);
         if (!player) {
@@ -76,6 +93,7 @@ export class PlayerSystem extends System {
         }
     }
 
+    // starts or stops a player from blocking
     block(playerId: number, stop: boolean) {
         const player = this.world.getObject(playerId);
         if (!player) {

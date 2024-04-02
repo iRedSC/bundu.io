@@ -17,6 +17,7 @@ export class PositionSystem extends System {
         super([Physics]);
 
         this.listen("moved", this.insert);
+        this.listen("collided", this.insert);
     }
 
     insert(objects: IterableIterator<GameObject>) {

@@ -9,7 +9,7 @@ import SAT from "sat";
 // This file is filled with test objects
 
 function getRandomPhysics(): Physics {
-    const size = Random.integer(1, 5);
+    const size = Random.integer(15, 45);
     const position = new SAT.Vector(
         Random.integer(1500, 19500),
         Random.integer(1500, 19500)
@@ -20,6 +20,7 @@ function getRandomPhysics(): Physics {
         size: size,
         rotation: 0,
         solid: true,
+        speed: 0,
     };
 }
 

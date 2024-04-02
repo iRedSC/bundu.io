@@ -112,10 +112,10 @@ export namespace ServerPacketSchema {
 
     // length: 5
     export const loadGround = z.tuple([
-        z.number(), // x1
-        z.number(), // y1
-        z.number(), // x2
-        z.number(), // y2
+        z.number(), // x
+        z.number(), // y
+        z.number(), // w
+        z.number(), // h
         z.number(), // type
     ]);
     export type loadGround = z.infer<typeof loadGround>;
