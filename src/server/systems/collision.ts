@@ -1,5 +1,6 @@
 import { BasicPoint } from "../../lib/types.js";
 import { CalculateCollisions, Physics } from "../components/base.js";
+import { PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import { quadtree } from "./position.js";
@@ -12,7 +13,7 @@ import SAT from "sat";
  */
 export class CollisionSystem extends System {
     constructor() {
-        super([Physics, CalculateCollisions]);
+        super([Physics, CalculateCollisions], 10);
 
         this.listen("moved", this.collide.bind(this));
     }
@@ -33,6 +34,9 @@ export class CollisionSystem extends System {
 
             const response = new SAT.Response();
             for (const other of nearby) {
+                if (other.id === object.id || PlayerData.get(other)) {
+                    continue;
+                }
                 const otherPhysics = Physics.get(other).data;
                 const collided = SAT.testCircleCircle(
                     physics.collider,

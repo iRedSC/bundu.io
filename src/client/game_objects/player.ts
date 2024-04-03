@@ -1,9 +1,9 @@
 import * as PIXI from "pixi.js";
 import { degrees, lerp } from "../../lib/transforms";
 import { Keyframes, AnimationManager, AnimationMap } from "../../lib/animation";
-import { getItem } from "../configs/configs";
+import { itemConfigs } from "../configs/item_configs";
 import { WorldObject } from "./world_object";
-import { assets } from "../assets/load";
+import { SpriteFactory } from "../assets/sprite_factory";
 
 type Gear = [selectedItem: string, helmet: string, backpack: number];
 function typeofGear(gear?: Gear): gear is Gear {
@@ -148,7 +148,7 @@ export class Player extends WorldObject {
         this.trigger(PLAYER_ANIMATION.LEFT_HAND, manager);
         this.trigger(PLAYER_ANIMATION.RIGHT_HAND, manager);
 
-        this.selectItem({ hand: "amethyst_pickaxe", body: "amethyst_helmet" });
+        this.selectItem({ hand: "amethyst_spear", body: "amethyst_helmet" });
     }
 
     selectItem({ hand, body }: { hand?: string; body?: string }) {
@@ -176,35 +176,27 @@ export class Player extends WorldObject {
 
         if (this.selectedItem !== "") {
             this.sprite.leftHand.selectedItem.renderable = true;
-            const item = getItem(this.selectedItem, ["hand_display", "sprite"]);
-            if (!item) {
+            const config = itemConfigs.get(this.selectedItem);
+            if (!config) {
                 return;
             }
-            const texture = assets(item.sprite || "unknown_asset")!;
-            this.sprite.leftHand.selectedItem.scale.set(
-                item.hand_display!.scale
-            );
-            this.sprite.leftHand.selectedItem.texture = texture;
-            this.sprite.leftHand.selectedItem.x = item.hand_display!.x;
-            this.sprite.leftHand.selectedItem.y = item.hand_display!.y;
-            this.sprite.leftHand.selectedItem.rotation = degrees(
-                item.hand_display!.rotation
+            SpriteFactory.update(
+                this.sprite.leftHand.selectedItem,
+                config.hand_display,
+                this.selectedItem
             );
         }
 
         if (this.helmet !== "") {
             this.sprite.body.helmet.renderable = true;
-            const item = getItem(this.helmet, ["body_display", "sprite"]);
-            if (!item) {
+            const config = itemConfigs.get(this.helmet);
+            if (!config) {
                 return;
             }
-            const texture = PIXI.Texture.from(`./assets/${item.sprite}.svg`);
-            this.sprite.body.helmet.scale.set(item.body_display!.scale);
-            this.sprite.body.helmet.texture = texture;
-            this.sprite.body.helmet.x = item.body_display!.x;
-            this.sprite.body.helmet.y = item.body_display!.y;
-            this.sprite.body.helmet.rotation = degrees(
-                item.body_display!.rotation
+            SpriteFactory.update(
+                this.sprite.body.helmet,
+                config.body_display,
+                this.helmet
             );
         }
     }

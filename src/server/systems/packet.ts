@@ -15,6 +15,7 @@ export class PacketSystem extends System {
         super([PlayerData], 20);
 
         this.listen("moved", this.moveObject.bind(this));
+        this.listen("collided", this.moveObject.bind(this));
         this.listen("blocking", this.blocking.bind(this));
         this.listen("attack", this.attack.bind(this));
         this.listen("rotated", this.rotateObject.bind(this));

@@ -52,7 +52,7 @@ const ground: GroundData = {
 
 world.addObject(new Ground(ground));
 // createEntities(world, 5);
-createResources(world, 2500);
+createResources(world, 1000);
 
 const controller = new ServerController();
 controller.start(7777);

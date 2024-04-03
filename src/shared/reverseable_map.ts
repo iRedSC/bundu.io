@@ -20,12 +20,12 @@ export class ReversableMap<K, V> extends Map {
         return this._valueMap.get(value);
     }
 
-    override delete(key: K) {
+    delete(key: K) {
         const value = this.get(key);
         if (value === undefined) {
             return false;
         }
-        this.delete(key);
+        super.delete(key);
         this._valueMap.delete(value);
         return true;
     }

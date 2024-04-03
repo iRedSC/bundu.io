@@ -65,3 +65,7 @@ diamond_helmet:
 amethyst_helmet:
     type: helmet
     sprite: amethyst_helmet
+
+amethyst_spear:
+    type: spear
+    sprite: amethyst_spear
