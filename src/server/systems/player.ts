@@ -1,4 +1,5 @@
 import { moveToward } from "../../lib/transforms.js";
+import { BasicPoint } from "../../lib/types.js";
 import { PACKET_TYPE } from "../../shared/enums.js";
 import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
@@ -6,6 +7,7 @@ import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
+import { quadtree } from "./position.js";
 
 /**
  * This is the system that controls players.
@@ -46,7 +48,10 @@ export class PlayerSystem extends System implements PlayerController {
 
     enter(player: GameObject) {
         const ground = this.world.query([GroundData.id]);
-        updateHandler.send(player, [ground, [PACKET_TYPE.LOAD_GROUND]]);
+        updateHandler.send(player, [
+            ground.values(),
+            [PACKET_TYPE.LOAD_GROUND],
+        ]);
     }
 
     // Sets selected player's moveDir property.

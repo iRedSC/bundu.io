@@ -47,15 +47,17 @@ export class UpdateHandler {
         objects?: [IterableIterator<GameObject>, PACKET_TYPE[]]
     ) {
         let list = this.objects;
+        let ignoreVisible = false;
         if (objects) {
+            ignoreVisible = true;
             list = this.add(objects[0], objects[1], true)!;
         }
         const playerData = PlayerData.get(player).data;
         const packets: Map<PACKET_TYPE, any[]> = new Map();
         for (const [object, packetTypes] of list.entries()) {
-            // if (!playerData.visibleObjects.has(object.id)) {
-            //     continue;
-            // }
+            if (!ignoreVisible && !playerData.visibleObjects.has(object.id)) {
+                continue;
+            }
             for (const packetType of packetTypes.values()) {
                 if (!object.pack[packetType]) {
                     continue;
@@ -73,7 +75,6 @@ export class UpdateHandler {
             }
         }
         for (const packet of packets.values()) {
-            console.log(player.id, packet);
             send(playerData.socket, packet);
         }
     }

@@ -43,7 +43,7 @@ export class WorldObject extends PIXI.Container {
         super();
 
         this.id = id;
-        this.animations = loadAnimations(this);
+        // this.animations = loadAnimations(this);
 
         this.position = pos;
         this.rotation = rotation;
@@ -180,12 +180,12 @@ function loadAnimations(target: WorldObject) {
     const hurtKeyframes: Keyframes<WorldObject> = new Keyframes();
     hurtKeyframes.frame(0).set = ({ target, animation }) => {
         if (animation.firstKeyframe) {
-            animation.meta.scale = target.size;
+            animation.meta.scale = target.size / 15;
             animation.goto(0, 100);
         }
         target.size = lerp(
             animation.meta.scale,
-            animation.meta.scale - 0.5,
+            animation.meta.scale - 5,
             animation.t
         );
         if (animation.keyframeEnded) {
@@ -194,7 +194,7 @@ function loadAnimations(target: WorldObject) {
     };
     hurtKeyframes.frame(1).set = ({ target, animation }) => {
         target.size = lerp(
-            animation.meta.scale - 0.5,
+            animation.meta.scale - 5,
             animation.meta.scale,
             animation.t
         );

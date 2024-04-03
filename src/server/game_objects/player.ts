@@ -6,6 +6,7 @@ import {
     ServerPacketSchema,
 } from "../../shared/enums.js";
 import { CalculateCollisions, Physics } from "../components/base.js";
+import { AttackData } from "../components/combat.js";
 import { PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
 
@@ -15,6 +16,8 @@ import { GameObject } from "../game_engine/game_object.js";
 export class Player extends GameObject {
     constructor(physics: Physics, playerData: PlayerData) {
         super();
+
+        this.add(new AttackData({ speed: 10, damage: 1, reach: 5 }));
         this.add(new Physics(physics));
         this.add(new PlayerData(playerData));
         this.add(new CalculateCollisions({}));

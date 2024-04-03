@@ -88,6 +88,7 @@ export class Player extends WorldObject {
             },
         };
 
+        this.rotationProperties.speed = 5;
         this.name = name;
 
         this.selectedItem = "";
@@ -146,6 +147,8 @@ export class Player extends WorldObject {
         this.animations = loadAnimations(this);
         this.trigger(PLAYER_ANIMATION.LEFT_HAND, manager);
         this.trigger(PLAYER_ANIMATION.RIGHT_HAND, manager);
+
+        this.selectItem({ hand: "amethyst_pickaxe", body: "amethyst_helmet" });
     }
 
     selectItem({ hand, body }: { hand?: string; body?: string }) {

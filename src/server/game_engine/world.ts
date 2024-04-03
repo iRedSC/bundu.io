@@ -58,7 +58,9 @@ export class World {
             if (callbacks.size > 0) {
                 this.inject(system);
                 const objects = this.query(system.componentIds, objectIds);
-                callbacks.forEach((callback) => callback(objects, data));
+                callbacks.forEach((callback) =>
+                    callback(objects.values(), data)
+                );
             }
         }
     };
@@ -227,36 +229,29 @@ export class World {
     public query(
         componentIds: number[] | Set<number>,
         ids?: Set<number>
-    ): IterableIterator<GameObject> {
+    ): Set<GameObject> {
         let _componentIds = componentIds as Set<number>;
         if (componentIds instanceof Array) {
             _componentIds = new Set(componentIds);
         }
-        const listAll = componentIds.values.length === 0;
-        const objects = ids || this.objects.keys();
-        const thisObjects = this.objects;
+        const listAll = _componentIds.size === 0;
+        const objects = ids ? ids.values() : this.objects.keys();
 
-        function* generator(): IterableIterator<GameObject> {
-            for (const id of objects) {
-                const object = thisObjects.get(id);
-                if (!object) {
-                    continue;
-                }
-                if (listAll) {
-                    yield object;
-                }
-                if (
-                    checkSubset(
-                        _componentIds,
-                        new Set(object.components.keys())
-                    )
-                ) {
-                    yield object;
-                }
+        const found = new Set<GameObject>();
+        for (const id of objects) {
+            const object = this.objects.get(id);
+            if (!object) {
+                continue;
+            }
+            if (listAll) {
+                found.add(object);
+            }
+            if (checkSubset(_componentIds, new Set(object.components.keys()))) {
+                found.add(object);
             }
         }
 
-        return generator();
+        return found;
     }
 
     private inject(system: System) {

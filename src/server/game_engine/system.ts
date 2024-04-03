@@ -48,7 +48,7 @@ export abstract class System {
     }
 
     protected query(componentTypes: number[]): Iterator<GameObject> {
-        return this.world.query(componentTypes);
+        return this.world.query(componentTypes).values();
     }
 
     public listen(event: string, callback: EventCallback, once?: boolean) {

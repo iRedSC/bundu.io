@@ -131,6 +131,15 @@ class ActiveAnimation<T> {
         }
     }
 
+    end() {
+        if (this.keyframes.get(-1)) {
+            this.start = Date.now();
+            this.duration = 0;
+            this.currentKeyframe = -1;
+            this.update();
+        }
+    }
+
     get keyframeEnded() {
         let ended = Date.now() > this.start + this.duration;
         return ended;
@@ -150,6 +159,7 @@ type ValidActiveAnimation = {
     replace: boolean;
     id: number;
     update(): void;
+    end(): void;
 };
 
 function getSource(
@@ -172,8 +182,12 @@ export class AnimationManager {
 
     add(target: any, animation: ValidActiveAnimation) {
         const source = getSource(this.sources, target);
-        if (!animation.replace && source.get(animation.id)) {
+        const existing = source.get(animation.id);
+        if (!animation.replace && existing) {
             return;
+        }
+        if (existing) {
+            existing.end();
         }
         source.set(animation.id, animation);
     }
@@ -182,6 +196,7 @@ export class AnimationManager {
         for (let animations of this.sources.values()) {
             for (let [name, animation] of animations.entries()) {
                 if (animation.expired) {
+                    animation.end();
                     animations.delete(name);
                 } else {
                     animation.update();

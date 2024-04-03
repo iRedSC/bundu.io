@@ -23,10 +23,10 @@ export function createRenderer() {
     cull.addList(viewport.children);
     cull.cull(viewport.getVisibleBounds());
     viewport.on("frame-end", () => {
-        if (viewport.dirty) {
-            cull.cull(viewport.getVisibleBounds());
-            viewport.dirty = false;
-        }
+        // if (viewport.dirty) {
+        //     cull.cull(viewport.getVisibleBounds());
+        //     viewport.dirty = false;
+        // }
     });
 
     viewport.sortChildren();

@@ -22,7 +22,7 @@ const packetPipeline = new PacketPipeline();
 const socket = new WebSocket("ws://localhost:7777");
 const world = new World(viewport, animationManager);
 
-viewport.addChild(debugContainer);
+// viewport.addChild(debugContainer);
 debugContainer.zIndex = 1000;
 viewport.sortChildren();
 
@@ -112,8 +112,8 @@ function hideOutOfSight() {
     const player = world.objects.get(world.user);
     if (player) {
         const range: [BasicPoint, BasicPoint] = [
-            { x: player.position.x - 8000, y: player.position.y - 8000 },
-            { x: player.position.x + 8000, y: player.position.y + 8000 },
+            { x: player.position.x - 16000, y: player.position.y - 9000 },
+            { x: player.position.x + 16000, y: player.position.y + 9000 },
         ];
         const query = world.quadtree.query(range);
         for (const object of world.objects.values()) {

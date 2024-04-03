@@ -23,6 +23,7 @@ import { GameObject } from "./game_engine/game_object.js";
 import { send } from "./send.js";
 import { GroundData } from "./components/base.js";
 import { Ground } from "./game_objects/ground.js";
+import { AttackSystem } from "./systems/attack.js";
 
 Logger.useDefaults();
 
@@ -34,22 +35,24 @@ const pipeline = createPacketPipeline(playerSystem);
 
 const packetSystem = new PacketSystem();
 const collisionSystem = new CollisionSystem();
+const attackSystem = new AttackSystem();
 
 world
     .addSystem(positionSystem)
     .addSystem(playerSystem)
     .addSystem(packetSystem)
-    .addSystem(collisionSystem);
+    .addSystem(collisionSystem)
+    .addSystem(attackSystem);
 
 const ground: GroundData = {
-    collider: new SAT.Box(new SAT.Vector(1000, 1000), 5000, 5000),
-    type: 1,
+    collider: new SAT.Box(new SAT.Vector(1000, 1000), 15000, 15000),
+    type: 0,
     speedMultiplier: 1,
 };
 
 world.addObject(new Ground(ground));
 // createEntities(world, 5);
-createResources(world, 1000);
+createResources(world, 2500);
 
 const controller = new ServerController();
 controller.start(7777);

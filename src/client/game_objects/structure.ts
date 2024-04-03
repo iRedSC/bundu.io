@@ -75,7 +75,7 @@ function loadAnimations(target: Structure) {
         }
         target.size = lerp(
             animation.meta.scale,
-            animation.meta.scale - 0.5,
+            animation.meta.scale / 1.1,
             animation.t
         );
         if (animation.keyframeEnded) {
@@ -84,13 +84,16 @@ function loadAnimations(target: Structure) {
     };
     hurtKeyframes.frame(1).set = ({ target, animation }) => {
         target.size = lerp(
-            animation.meta.scale - 0.5,
+            animation.meta.scale / 1.1,
             animation.meta.scale,
             animation.t
         );
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
+    };
+    hurtKeyframes.frame(-1).set = ({ target, animation }) => {
+        target.size = animation.meta.scale;
     };
 
     const animationMap = new AnimationMap(target);

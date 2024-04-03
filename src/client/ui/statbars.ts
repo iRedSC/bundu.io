@@ -47,28 +47,26 @@ class StatsDisplay {
 function loadAnimations(target: StatsDisplay) {
     const transition: Keyframes<StatsDisplay> = new Keyframes();
 
-    transition.frame(0).set = ({ target, animation}) => {
+    transition.frame(0).set = ({ target, animation }) => {
         if (animation.firstKeyframe) {
             animation.meta.amount = target.primaryBar.width;
             animation.goto(0, 200);
         }
         if (animation.keyframeEnded) {
-            animation.goto(1, 400)
+            animation.goto(1, 400);
         }
-        
-    }
+    };
 
     transition.frame(1).set = ({ target, animation }) => {
         target.primaryBar.width = lerp(
             animation.meta.amount,
             target.amount,
-            animation.t 
+            animation.t
         );
 
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
-        
     };
 
     const animationMap = new AnimationMap(target);
@@ -134,8 +132,8 @@ export function updateStatBars(health: number, hunger: number, heat: number) {
         heatContainer.primaryBar.width = heat;
     }
 }
- window.addEventListener("click", updatestats);
-window.addEventListener("contextmenu", updatestats2);
+//  window.addEventListener("click", updatestats);
+// window.addEventListener("contextmenu", updatestats2);
 updateStatBars(healthstat, hungerstat, heatstat);
 
 function updatestats() {

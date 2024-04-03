@@ -14,32 +14,33 @@ export class PacketSystem extends System {
     constructor() {
         super([PlayerData], 20);
 
-        this.listen("moved", this.moveObject);
+        this.listen("moved", this.moveObject.bind(this));
         this.listen("blocking", this.blocking.bind(this));
         this.listen("attack", this.attack.bind(this));
-        this.listen("rotated", this.rotateObject);
+        this.listen("rotated", this.rotateObject.bind(this));
         this.listen("sendNewObjects", this.sendNewObjects.bind(this));
         this.listen("sendUpdatedObjects", this.sendUpdatedObjects.bind(this));
     }
 
-    update(time: number, delta: number, player: GameObject) {
-        const data = PlayerData.get(player).data;
-        const physics = Physics.get(player).data;
-        if (!physics) {
-            return;
-        }
-        const bounds: [BasicPoint, BasicPoint] = [
-            { x: physics.position.x - 500, y: physics.position.y - 500 },
-            { x: physics.position.x + 500, y: physics.position.y + 500 },
-        ];
-        const nearby = quadtree.query(bounds);
-        data.visibleObjects.update(nearby);
-
-        this.trigger("sendUpdatedObjects", player.id);
-    }
+    update(time: number, delta: number, player: GameObject) {}
 
     public afterUpdate(time: number, objects: Set<GameObject>): void {
         for (const player of objects.values()) {
+            const data = PlayerData.get(player).data;
+            const physics = Physics.get(player).data;
+            if (!physics) {
+                console.log("NONE PHYS");
+                return;
+            }
+            const bounds: [BasicPoint, BasicPoint] = [
+                { x: physics.position.x - 1600, y: physics.position.y - 900 },
+                { x: physics.position.x + 1600, y: physics.position.y + 900 },
+            ];
+            const nearby = quadtree.query(bounds);
+            data.visibleObjects.update(nearby);
+            if (data.visibleObjects.new.size > 0) {
+                this.trigger("sendUpdatedObjects", player.id);
+            }
             updateHandler.send(player);
         }
         updateHandler.clear();
@@ -77,6 +78,9 @@ export class PacketSystem extends System {
                 if (!data) {
                     continue;
                 }
+                if (!data.visibleObjects.has(object.id)) {
+                    continue;
+                }
                 send(data.socket, [
                     PACKET_TYPE.ACTION,
                     [object.id, ACTION.ATTACK, false],
@@ -90,32 +94,22 @@ export class PacketSystem extends System {
             return;
         }
         for (const player of players) {
-            const data = PlayerData.get(player).data;
-            const newObjects = data.visibleObjects.getNew();
             const foundObjects = this.world.query([], new Set(objects));
 
             updateHandler.send(player, [
-                foundObjects,
+                foundObjects.values(),
                 [PACKET_TYPE.NEW_OBJECT],
             ]);
         }
     }
-    sendUpdatedObjects(
-        players: IterableIterator<GameObject>,
-        objects?: number[]
-    ) {
+    sendUpdatedObjects(players: IterableIterator<GameObject>) {
         for (const player of players) {
             const data = PlayerData.get(player).data;
             const newObjects = data.visibleObjects.getNew();
-            let foundObjects;
-            if (objects) {
-                foundObjects = this.world.query([], new Set(objects));
-            } else {
-                foundObjects = this.world.query([], newObjects);
-            }
+            const objects = this.world.query([], newObjects);
             updateHandler.send(player, [
-                foundObjects,
-                [PACKET_TYPE.ROTATE_OBJECT],
+                objects.values(),
+                [PACKET_TYPE.MOVE_OBJECT, PACKET_TYPE.ROTATE_OBJECT],
             ]);
             data.visibleObjects.clear();
         }

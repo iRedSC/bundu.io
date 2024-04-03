@@ -170,8 +170,6 @@ export class World {
     }
 
     moveObject(packet: ServerPacketSchema.moveObject) {
-        console.log("MOVE");
-        console.log(packet);
         const id = packet[0];
         const time = packet[1];
 
@@ -180,6 +178,7 @@ export class World {
             requestIds.push(id);
             return;
         }
+        object.renderable = true;
         object.setState([Date.now() + time, packet[2] * 10, packet[3] * 10]);
         this.updatingObjs.set(id, object);
         this.quadtree.insert(object.id, object.position);
@@ -194,7 +193,6 @@ export class World {
             return;
         }
         if (id !== this.user) {
-            console.log("ROTATING" + packet[1]);
             object.setRotation(packet[1]);
             this.updatingObjs.set(id, object);
         }
@@ -241,7 +239,11 @@ export class World {
                     }
                     break;
                 case ACTION.HURT:
-                    object.trigger(OBJECT_ANIMATION.HURT, animationManager);
+                    object.trigger(
+                        OBJECT_ANIMATION.HURT,
+                        animationManager,
+                        true
+                    );
             }
         }
     }
@@ -251,6 +253,7 @@ export class World {
     // }
 
     loadGround(packet: ServerPacketSchema.loadGround) {
+        console.log("LOADING GROUND");
         const ground = createGround(
             packet[4],
             packet[0] * 10,
