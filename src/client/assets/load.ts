@@ -2,7 +2,7 @@ import SpriteMap from "../configs/sprites.yml";
 import * as PIXI from "pixi.js";
 
 async function getTexture(name: string) {
-    return PIXI.Texture.from(`./assets/${name}.svg`, {
+    return PIXI.Texture.from(`./assets/${name}`, {
         mipmap: PIXI.MIPMAP_MODES.ON,
     });
 }
@@ -48,7 +48,7 @@ async function loadAssets(): Promise<Map<string, PIXI.Texture>> {
 const loadedAssets: Map<string, PIXI.Texture> = await loadAssets();
 const unknownAsset = PIXI.Texture.from(`./assets/unknown_asset.svg`, {
     mipmap: PIXI.MIPMAP_MODES.ON,
-})
+});
 function getAsset(asset: string) {
     const loadedAsset = loadedAssets.get(asset);
     return loadedAsset || unknownAsset;

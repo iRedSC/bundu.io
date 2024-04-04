@@ -1,35 +1,35 @@
-unknown_asset: unknown_asset
+unknown_asset: unknown_asset.svg
 
-wooden_pickaxe: wooden_pickaxe
-stone_pickaxe: stone_pickaxe
-gold_pickaxe: gold_pickaxe
-diamond_pickaxe: diamond_pickaxe
-amethyst_pickaxe: amethyst_pickaxe
+wooden_pickaxe: wooden_pickaxe.svg
+stone_pickaxe: stone_pickaxe.svg
+gold_pickaxe: gold_pickaxe.svg
+diamond_pickaxe: diamond_pickaxe.svg
+amethyst_pickaxe: amethyst_pickaxe.svg
 
-wooden_sword: wooden_sword
-stone_sword: stone_sword
-gold_sword: gold_sword
-diamond_sword: diamond_sword
-amethyst_sword: amethyst_sword
+wooden_sword: wooden_sword.svg
+stone_sword: stone_sword.svg
+gold_sword: gold_sword.svg
+diamond_sword: diamond_sword.svg
+amethyst_sword: amethyst_sword.svg
 
-amethyst_spear: amethyst_spear
+amethyst_spear: amethyst_spear.svg
 
-wooden_helmet: wooden_helmet
-stone_helmet: stone_helmet
-gold_helmet: gold_helmet
-diamond_helmet: diamond_helmet
-amethyst_helmet: amethyst_helmet
+wooden_helmet: wooden_helmet.svg
+stone_helmet: stone_helmet.svg
+gold_helmet: gold_helmet.svg
+diamond_helmet: diamond_helmet.svg
+amethyst_helmet: amethyst_helmet.svg
 
-wood: acacia3
-stone: stone
-gold: gold
-diamond: diamond
-amethyst: amethyst
+wood: flame2.png
+stone: stone.svg
+gold: gold.svg
+diamond: diamond.svg
+amethyst: amethyst.svg
 
-weapon_toggle: weapon_toggle
-build_toggle: build_toggle
-misc_toggle: misc_toggle
+weapon_toggle: weapon_toggle.svg
+build_toggle: build_toggle.svg
+misc_toggle: misc_toggle.svg
 
-elephant: elephant
-bear: bear
-ram: ram
+elephant: elephant.svg
+bear: bear.svg
+ram: ram.svg

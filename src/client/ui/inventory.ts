@@ -1,28 +1,21 @@
 import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
 import { colorLerp } from "../../lib/transforms";
+import { TEXT_STYLE } from "../assets/text";
 
 type Item = { imagePath: string; result: string; amount: number };
 
 export class InventoryButton extends ItemButton {
     selected: boolean;
     amount: PIXI.Text;
-    amountstyle: PIXI.TextStyle;
     constructor() {
-        const fontFamily = "'Aoboshi One', sans-serif";
         super();
-        this.amountstyle = new PIXI.TextStyle();
-        this.amountstyle.fontFamily = fontFamily;
-        this.amount = new PIXI.Text("", this.amountstyle);
+        this.amount = new PIXI.Text("", TEXT_STYLE);
         this.amount.position.set(55, 50);
         this.amount.scale.set(0.6);
         this.amount.anchor.set(1, 0.5);
         this.amount.zIndex = 2;
         this.selected = false;
-        this.amountstyle.fill = "#ffffff";
-        this.amountstyle.strokeThickness = 4;
-        (this.amountstyle.dropShadow = false),
-            (this.amountstyle.dropShadowColor = "#000000");
         this.view.addChild(this.amount);
         this.view.sortChildren();
     }
