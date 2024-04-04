@@ -5,25 +5,24 @@ import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { Line } from "./line";
 import { DebugWorldObject } from "../debug";
 import { Circle } from "./circle";
+import { z } from "zod";
+import { validate } from "../../shared/type_guard";
 
 // TODO: There are too many properties related to rotation clogging up the object.
 
 // TODO: I'm using zod now, this can be a zod object.
-type State = [time: number, x: number, y: number];
-function typeofState(state?: State): state is State {
-    if (!state) {
-        return false;
-    }
-    return (
-        typeof state[0] === "number" &&
-        typeof state[1] === "number" &&
-        typeof state[2] === "number"
-    );
-}
+const State = z.tuple([
+    z.number(), // time
+    z.number(), // x
+    z.number(), // y
+]);
+type State = z.infer<typeof State>;
 
-// The base object for rendering something in the world.
-// Contains states for interpolating movement
-// Separate system for interpolating rotation
+/**
+ * The base object for rendering something in the world.
+ * Contains states for interpolating movement
+ * Separate system for interpolating rotation
+ */
 export class WorldObject extends PIXI.Container {
     id: number;
     private _size?: number;
@@ -43,7 +42,6 @@ export class WorldObject extends PIXI.Container {
         super();
 
         this.id = id;
-        // this.animations = loadAnimations(this);
 
         this.position = pos;
         this.rotation = rotation;
@@ -113,7 +111,7 @@ export class WorldObject extends PIXI.Container {
     }
 
     setState(state?: State) {
-        if (typeofState(state)) {
+        if (validate(state, State)) {
             this.states.push(state);
             this.renderable = true;
 
@@ -163,48 +161,11 @@ export class WorldObject extends PIXI.Container {
         this._size = value;
         this.scale.set(value / 15);
 
-        // const hitbox = new Circle(this.position, this._size, 0xff0000, 25);
-        // this.debug.updateHitbox(hitbox);
+        const hitbox = new Circle(this.position, this._size, 0xff0000, 25);
+        this.debug.updateHitbox(hitbox);
     }
 
     get size() {
         return this._size || 0;
     }
-}
-
-export enum OBJECT_ANIMATION {
-    HURT = 1,
-}
-
-function loadAnimations(target: WorldObject) {
-    const hurtKeyframes: Keyframes<WorldObject> = new Keyframes();
-    hurtKeyframes.frame(0).set = ({ target, animation }) => {
-        if (animation.firstKeyframe) {
-            animation.meta.scale = target.size / 15;
-            animation.goto(0, 100);
-        }
-        target.size = lerp(
-            animation.meta.scale,
-            animation.meta.scale - 5,
-            animation.t
-        );
-        if (animation.keyframeEnded) {
-            animation.next(400);
-        }
-    };
-    hurtKeyframes.frame(1).set = ({ target, animation }) => {
-        target.size = lerp(
-            animation.meta.scale - 5,
-            animation.meta.scale,
-            animation.t
-        );
-        if (animation.keyframeEnded) {
-            animation.expired = true;
-        }
-    };
-
-    const animationMap = new AnimationMap(target);
-
-    animationMap.set(OBJECT_ANIMATION.HURT, hurtKeyframes);
-    return animationMap;
 }

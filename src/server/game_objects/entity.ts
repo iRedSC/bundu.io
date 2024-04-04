@@ -3,7 +3,7 @@ import {
     lerp,
     distance,
     lookToward,
-    degrees,
+    radians,
     moveToward,
 } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";

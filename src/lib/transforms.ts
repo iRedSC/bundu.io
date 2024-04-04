@@ -29,8 +29,12 @@ export function rotationLerp(a: number, b: number, t: number): number {
     return a + delta * t;
 }
 
-export function degrees(degrees: number) {
+export function radians(degrees: number) {
     return (Math.PI / 180) * degrees;
+}
+
+export function degrees(radians: number) {
+    return (180 / Math.PI) * radians;
 }
 
 export function lookToward(origin: Point, toward: Point) {

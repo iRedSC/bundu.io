@@ -1,3 +1,4 @@
+import { radians } from "../../lib/transforms.js";
 import {
     ACTION,
     CLIENT_ACTION,
@@ -16,15 +17,19 @@ export function createPacketPipeline(controller: PlayerController) {
 
     packets.add(
         CLIENT_PACKET_TYPE.MOVE_UPDATE,
-        new Unpacker((packet: ClientPacketSchema.moveUpdate, id: number) => {
-            controller.move?.call(controller, id, packet[0], packet[1]);
+        new Unpacker((byte: ClientPacketSchema.moveUpdate, id: number) => {
+            byte--;
+            const y = (byte & 0b11) - 1;
+            const x = ((byte >> 2) & 0b11) - 1;
+            console.log(x, y);
+            controller.move?.call(controller, id, x, y);
         }, ClientPacketSchema.moveUpdate)
     );
 
     packets.add(
         CLIENT_PACKET_TYPE.ROTATE,
-        new Unpacker((packet: ClientPacketSchema.rotate, id: number) => {
-            controller.rotate?.call(controller, id, packet[0]);
+        new Unpacker((rotation: ClientPacketSchema.rotate, id: number) => {
+            controller.rotate?.call(controller, id, radians(rotation));
         }, ClientPacketSchema.rotate)
     );
 

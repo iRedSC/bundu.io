@@ -1,41 +1,43 @@
 import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
+import { SpriteFactory } from "../assets/sprite_factory";
 
 export class ItemButton extends Button {
     background: PIXI.Graphics;
-    item: { imagePath: string; result: string };
+    item: string;
     itemSprite: PIXI.Sprite;
     hovering: boolean;
+    callback?: (item: string) => void;
 
-    constructor() {
+    constructor(callback?: (item: string) => void) {
         const container = new PIXI.Container();
-        container.sortableChildren = true
+        container.sortableChildren = true;
 
         super(container);
 
-
         this.hovering = false;
 
+        this.callback = callback;
         this.background = new PIXI.Graphics();
         this.view.pivot.set(this.view.width / 4, this.view.height / 4);
 
-        this.item = { imagePath: "", result: "empty" };
-        this.itemSprite = PIXI.Sprite.from("./", {
-            mipmap: PIXI.MIPMAP_MODES.ON,
-        });
+        this.item = "";
+        this.itemSprite = SpriteFactory.build(this.item);
 
         this.view.addChild(this.background);
         this.update(0x777777, 0x444444);
     }
 
-    setItem(item: { imagePath: string; result: string }) {
+    setItem(item: string) {
         if (this.itemSprite) {
             this.view.removeChild(this.itemSprite);
         }
         this.item = item;
-        this.itemSprite = PIXI.Sprite.from(item.imagePath, {
-            mipmap: PIXI.MIPMAP_MODES.ON,
-        });
+        this.itemSprite = SpriteFactory.update(
+            this.itemSprite,
+            undefined,
+            this.item
+        );
         this.itemSprite.width = 45;
         this.itemSprite.height = 45;
         this.itemSprite.zIndex = 1;
@@ -84,6 +86,8 @@ export class ItemButton extends Button {
     }
 
     override press() {
-        console.log(this.item.result);
+        if (this.callback) {
+            this.callback(this.item);
+        }
     }
 }

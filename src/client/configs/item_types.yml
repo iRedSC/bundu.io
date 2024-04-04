@@ -12,7 +12,7 @@ pickaxe:
 sword:
     hand_display:
         rotation: -135
-        x: -75
+        x: -50
         y: -200
         scale: 2.2
 

@@ -1,15 +1,20 @@
 import SpriteMap from "../configs/sprites.yml";
-import * as PIXI from "pixi.js";
+import { MIPMAP_MODES, Resource, Texture } from "pixi.js";
 
-async function getTexture(name: string) {
-    return PIXI.Texture.from(`./assets/${name}`, {
-        mipmap: PIXI.MIPMAP_MODES.ON,
+/**
+ *
+ * @param name Retrieves a specific asset file
+ * @returns
+ */
+async function getTexture(name: string): Promise<Texture<Resource>> {
+    return Texture.from(`./assets/${name}`, {
+        mipmap: MIPMAP_MODES.ON,
     });
 }
 
-async function loadAssets(): Promise<Map<string, PIXI.Texture>> {
-    const promises: Promise<PIXI.Texture>[] = [];
-    const assetMap = new Map<string, Promise<PIXI.Texture>>();
+async function loadAssets(): Promise<Map<string, Texture>> {
+    const promises: Promise<Texture>[] = [];
+    const assetMap = new Map<string, Promise<Texture>>();
 
     for (const [key, value] of Object.entries(SpriteMap)) {
         const promise = getTexture(value);
@@ -18,7 +23,7 @@ async function loadAssets(): Promise<Map<string, PIXI.Texture>> {
     }
 
     const resolved = await Promise.all(promises);
-    const result = new Map<string, PIXI.Texture>();
+    const result = new Map<string, Texture>();
 
     // Convert the resolved array back to a map with the original keys
     for (let i = 0; i < resolved.length; i++) {
@@ -28,30 +33,13 @@ async function loadAssets(): Promise<Map<string, PIXI.Texture>> {
     return result;
 }
 
-// function getTexture(name: string) {
-//     return PIXI.Texture.from(`./assets/${name}.svg`, {
-//         mipmap: PIXI.MIPMAP_MODES.ON,
-//     });
-// }
-
-// function loadAssets(): Map<string, PIXI.Texture> {
-//     const assetMap = new Map<string, PIXI.Texture>();
-
-//     for (const [key, value] of Object.entries(SpriteMap)) {
-//         const texture = getTexture(value);
-//         assetMap.set(key, texture);
-//     }
-
-//     return assetMap;
-// }
-
-const loadedAssets: Map<string, PIXI.Texture> = await loadAssets();
-const unknownAsset = PIXI.Texture.from(`./assets/unknown_asset.svg`, {
-    mipmap: PIXI.MIPMAP_MODES.ON,
+const loadedAssets: Map<string, Texture> = await loadAssets();
+const unknownAsset = Texture.from(`./`, {
+    mipmap: MIPMAP_MODES.ON,
 });
 function getAsset(asset: string) {
     const loadedAsset = loadedAssets.get(asset);
     return loadedAsset || unknownAsset;
 }
 
-export const assets: (asset: string) => PIXI.Texture = getAsset;
+export const assets: (asset: string) => Texture = getAsset;

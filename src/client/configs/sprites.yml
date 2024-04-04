@@ -1,5 +1,8 @@
 unknown_asset: unknown_asset.svg
 
+player: player.svg
+hand: hand.svg
+
 wooden_pickaxe: wooden_pickaxe.svg
 stone_pickaxe: stone_pickaxe.svg
 gold_pickaxe: gold_pickaxe.svg

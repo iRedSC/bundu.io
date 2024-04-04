@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import {
-    degrees,
+    radians,
     lerp,
     lookToward,
     moveInDirection,
@@ -8,10 +8,9 @@ import {
 import { AnimationMap, Keyframes } from "../../lib/animation";
 import { WorldObject } from "./world_object";
 import { assets } from "../assets/load";
+import { ANIMATION } from "./animations";
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
-enum STRUCTURE_ANIMATION {
-    HIT = 1,
-}
+
 export class Structure extends WorldObject {
     sprite: PIXI.Sprite;
     animations: AnimationMap<Structure>;
@@ -30,7 +29,7 @@ export class Structure extends WorldObject {
 
         this.zIndex = 10;
         this.pivot.set(this.width / 2, this.height / 2);
-        this.sprite.rotation = rotation - degrees(-90);
+        this.sprite.rotation = rotation - radians(-90);
         this.sprite.anchor.set(0.5);
         this.addChild(this.sprite);
 
@@ -98,6 +97,6 @@ function loadAnimations(target: Structure) {
 
     const animationMap = new AnimationMap(target);
 
-    animationMap.set(STRUCTURE_ANIMATION.HIT, hurtKeyframes);
+    animationMap.set(ANIMATION.HURT, hurtKeyframes);
     return animationMap;
 }

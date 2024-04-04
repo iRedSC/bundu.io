@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { colorLerp, degrees } from "../../lib/transforms";
+import { colorLerp, radians } from "../../lib/transforms";
 import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import Random from "../../lib/random";
 import { WorldObject } from "./world_object";
@@ -27,7 +27,7 @@ export class Entity extends WorldObject {
         this.pivot.set(this.width / 2, this.height / 2);
 
         this.sprite = new PIXI.Sprite(assets(type));
-        this.sprite.rotation = degrees(-90);
+        this.sprite.rotation = radians(-90);
         this.sprite.anchor.set(0.5);
 
         this.animations = loadAnimations(this);

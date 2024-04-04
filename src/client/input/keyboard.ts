@@ -17,7 +17,7 @@ export class InputHandler {
                 d: "right",
             },
         });
-        this.move = [0, 0];
+        this.move = [1, 1];
         this.mousePos = [0, 0];
 
         this.keybinds.bindKey("up", {

@@ -2,7 +2,6 @@ import { GameWS, ServerController } from "./network/websockets.js";
 import { World } from "./game_engine/world.js";
 import { round } from "../lib/math.js";
 import Logger from "js-logger";
-import { PlayerController } from "./systems/player_controller.js";
 import { createPacketPipeline } from "./network/packets.js";
 import { PositionSystem } from "./systems/position.js";
 import { PlayerSystem } from "./systems/player.js";

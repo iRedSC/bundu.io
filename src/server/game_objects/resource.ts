@@ -1,3 +1,5 @@
+import { round } from "../../lib/math.js";
+import { degrees } from "../../lib/transforms.js";
 import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
 import { Physics, Type } from "../components/base.js";
 import { createResourceConfig, resourceConfigs } from "../configs/resources.js";
@@ -26,7 +28,7 @@ export class Resource extends GameObject {
                     this.id,
                     physics.position.x,
                     physics.position.y,
-                    physics.rotation,
+                    round(degrees(physics.rotation)),
                     type.id,
                     physics.size,
                 ],
@@ -39,7 +41,7 @@ export class Resource extends GameObject {
 
         this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {
             const physics = Physics.get(this).data;
-            return [this.id, physics.rotation];
+            return [this.id, round(degrees(physics.rotation))];
         };
     }
 }

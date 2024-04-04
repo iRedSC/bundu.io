@@ -3,15 +3,16 @@ import { z } from "zod";
 export enum PACKET_TYPE {
     PING = 0,
     ACTION = 1,
-    STARTING_INFO = 99,
+    MOVE_OBJECT = 2,
+    ROTATE_OBJECT = 3,
+    NEW_OBJECT = 4,
+    DELETE_OBJECT = 5,
 
-    NEW_OBJECT = 100,
-    MOVE_OBJECT = 101,
-    ROTATE_OBJECT = 102,
-    DELETE_OBJECT = 103,
     // UPDATE_PLAYER_GEAR = 201,
 
     LOAD_GROUND = 301,
+    STARTING_INFO = 99,
+    DRAW_POLYGON = 200,
 
     // SET_TIME = 600,
 }
@@ -119,25 +120,47 @@ export namespace ServerPacketSchema {
         z.number(), // type
     ]);
     export type loadGround = z.infer<typeof loadGround>;
+
+    export const updateInventory = z.tuple([
+        z.number(), // slot count;
+        z.array(
+            z.tuple([
+                z.number(), // item id
+                z.number(), // count
+            ])
+        ),
+    ]);
+    export type updateInventory = z.infer<typeof updateInventory>;
+
+    export const drawPolygon = z.tuple([
+        z.number(), // start x
+        z.number(), // start y
+        z.array(
+            z.tuple([
+                z.number(), // x
+                z.number(), // y
+            ])
+        ),
+    ]);
+    export type drawPolygon = z.infer<typeof drawPolygon>;
 }
 
 export enum CLIENT_PACKET_TYPE {
     PING = 0,
-    JOIN = 1,
-    MOVE_UPDATE = 20,
-    ROTATE = 21,
-    ACTION = 22,
-
-    REQUEST_OBJECT = 50,
+    MOVE_UPDATE = 1,
+    ROTATE = 2,
+    ACTION = 3,
+    REQUEST_OBJECT = 4,
+    JOIN = 5,
 }
 
 export enum CLIENT_ACTION {
     ATTACK = 1,
-    BLOCK = 3,
+    BLOCK = 2,
 }
 
 export namespace ClientPacketSchema {
-    export const ping = z.tuple([]);
+    export const ping = z.undefined();
     export type ping = z.infer<typeof ping>;
 
     export const join = z.tuple([
@@ -148,15 +171,10 @@ export namespace ClientPacketSchema {
     ]);
     export type join = z.infer<typeof join>;
 
-    export const moveUpdate = z.tuple([
-        z.number(), // x
-        z.number(), // y
-    ]);
+    export const moveUpdate = z.number();
     export type moveUpdate = z.infer<typeof moveUpdate>;
 
-    export const rotate = z.tuple([
-        z.number(), // rotation
-    ]);
+    export const rotate = z.number(); // rotation
     export type rotate = z.infer<typeof rotate>;
 
     export const action = z.tuple([

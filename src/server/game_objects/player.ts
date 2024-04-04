@@ -1,4 +1,5 @@
 import { round } from "../../lib/math.js";
+import { degrees } from "../../lib/transforms.js";
 import {
     NewObjectSchema,
     OBJECT_CLASS,
@@ -31,7 +32,7 @@ export class Player extends GameObject {
                     this.id,
                     physics.position.x,
                     physics.position.y,
-                    physics.rotation,
+                    round(degrees(physics.rotation)),
                     playerData.name,
                     playerData.selectedItem,
                     playerData.helmet,
@@ -49,7 +50,7 @@ export class Player extends GameObject {
 
         this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {
             const physics = Physics.get(this).data;
-            return [this.id, physics.rotation];
+            return [this.id, round(degrees(physics.rotation))];
         };
     }
 }

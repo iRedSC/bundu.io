@@ -1,4 +1,4 @@
-import { degrees, lookToward } from "../lib/transforms";
+import { radians, lookToward, degrees } from "../lib/transforms";
 import { InputHandler } from "./input/keyboard";
 import { createRenderer } from "./rendering/rendering";
 import { World } from "./game_objects/world";
@@ -16,13 +16,14 @@ import { round } from "../lib/math";
 import { encode } from "@msgpack/msgpack";
 import { decodeFromBlob } from "./network/decode";
 import { BasicPoint } from "../lib/types";
+import { Graphics } from "pixi.js";
 
 const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
 const socket = new WebSocket("ws://localhost:7777");
 const world = new World(viewport, animationManager);
 
-// viewport.addChild(debugContainer);
+viewport.addChild(debugContainer);
 debugContainer.zIndex = 1000;
 viewport.sortChildren();
 
@@ -33,6 +34,31 @@ export let requestIds: number[] = [];
 packetPipeline.add(
     PACKET_TYPE.PING,
     new Unpacker((_: ServerPacketSchema.ping) => {}, ServerPacketSchema.ping)
+);
+
+function drawPolygon(packet: ServerPacketSchema.drawPolygon) {
+    console.log("Drawing poly");
+    const polygon = new Graphics();
+    polygon.lineStyle({ width: 20, color: "#FF0000" });
+    const start = { x: packet[0] * 10, y: packet[1] * 10 };
+    polygon.moveTo(start.x, start.y);
+    for (const rawPoint of packet[2]) {
+        const point = {
+            x: start.x + rawPoint[0] * 10,
+            y: start.y + rawPoint[1] * 10,
+        };
+        polygon.lineTo(point.x, point.y);
+    }
+    debugContainer.addChild(polygon);
+    setTimeout(() => {
+        debugContainer.removeChild(polygon);
+        polygon.destroy();
+    }, 1000);
+}
+
+packetPipeline.add(
+    PACKET_TYPE.DRAW_POLYGON,
+    new Unpacker(drawPolygon, ServerPacketSchema.drawPolygon)
 );
 
 socket.onopen = () => {
@@ -56,7 +82,11 @@ function tick() {
 requestAnimationFrame(tick);
 
 function moveUpdate(move: [number, number]) {
-    socket.send(encode([CLIENT_PACKET_TYPE.MOVE_UPDATE, move]));
+    move[0] = Math.max(0, Math.min(2, move[0]));
+    move[1] = Math.max(0, Math.min(2, move[1]));
+    const dir = (move[0] << 2) | move[1];
+    console.log(dir);
+    socket.send(encode([CLIENT_PACKET_TYPE.MOVE_UPDATE, dir + 1]));
 }
 
 let updateTick = 0;
@@ -65,12 +95,12 @@ function mouseMoveCallback(mousePos: [number, number]) {
     if (player) {
         let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
         const rotation =
-            lookToward(player.position, mouseToWorld) - degrees(90);
+            lookToward(player.position, mouseToWorld) - radians(90);
         updateTick++;
         if (Math.abs(player.rotation - rotation) > 0.2 || updateTick > 10) {
             updateTick = 0;
             socket.send(
-                encode([CLIENT_PACKET_TYPE.ROTATE, [round(rotation, 3)]])
+                encode([CLIENT_PACKET_TYPE.ROTATE, round(degrees(rotation))])
             );
         }
         player.rotation = rotation;

@@ -2,9 +2,20 @@ import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
 import { colorLerp } from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
+import { SpriteFactory } from "../assets/sprite_factory";
 
-type Item = { imagePath: string; result: string; amount: number };
+/**
+ * Ah yes the inventory, not looking so good rn
+ * I'm going to try to get is nice and cleaned up soon enough.
+ */
 
+type Item = { name: string; amount: number };
+
+/**
+ * The InventoryButton is what makes up the hotbar.
+ * It can be clicked to select the item in it's slot,
+ * or you can drag the item to a new slot to rearrange.
+ */
 export class InventoryButton extends ItemButton {
     selected: boolean;
     amount: PIXI.Text;
@@ -20,6 +31,11 @@ export class InventoryButton extends ItemButton {
         this.view.sortChildren();
     }
 
+    /**
+     * Update the button with a specific style.
+     * @param fillColor Button's fill color
+     * @param borderColor Buttons' border color
+     */
     override update(fillColor: number, borderColor: number) {
         let newFill = fillColor;
         let newBorder = borderColor;
@@ -46,6 +62,9 @@ export class InventoryButton extends ItemButton {
     }
 }
 
+/**
+ * The inventory, where all of your item data is stored.
+ */
 export class Inventory {
     slots: Item[];
     display: InventoryDisplay;
@@ -56,6 +75,9 @@ export class Inventory {
     }
 }
 
+/**
+ * The display side of the inventory, holds all of the buttons.
+ */
 class InventoryDisplay {
     container: PIXI.Container;
     buttons: InventoryButton[];
@@ -66,6 +88,10 @@ class InventoryDisplay {
         this.slotamount = 0;
     }
 
+    /**
+     * Change the slot count of the display
+     * @param count Number of slots to display
+     */
     slotCount(count: number) {
         for (let i = 0; i < count; i++) {
             const button = new InventoryButton();
@@ -84,12 +110,16 @@ class InventoryDisplay {
         }
     }
 
+    /**
+     * Update's the inventory display!
+     * @param items List of items to put in the display
+     */
     update(items: Item[]) {
         for (let i = 0; i < items.length; i++) {
             if (items[i]) {
                 try {
                     this.buttons[i].amount.text = `${items[i].amount}`;
-                    this.buttons[i].setItem(items[i]);
+                    this.buttons[i].setItem(items[i].name);
                 } catch {}
             }
         }
@@ -113,46 +143,9 @@ window.addEventListener("resize", resize);
 resize();
 
 const invItems: Item[] = [
-    {
-        imagePath: "./assets/gold_wall.svg",
-        result: "Selected Item 1",
-        amount: 245,
-    },
-    {
-        imagePath: "./assets/meat.svg",
-        result: "Selected Item 2",
-        amount: 9982,
-    },
-    {
-        imagePath: "./assets/gold_hammer.svg",
-        result: "Selected Item 3",
-        amount: 4,
-    },
-    {
-        imagePath: "./assets/stone.svg",
-        result: "Selected Item 4",
-        amount: 5,
-    },
-    {
-        imagePath: "./assets/gold_helmet.svg",
-        result: "Selected Item 4",
-        amount: 6,
-    },
-    {
-        imagePath: "./assets/gold_sword.svg",
-        result: "Selected Item 4",
-        amount: 77,
-    },
-    {
-        imagePath: "./assets/diamond_pickaxe.svg",
-        result: "Selected Item 4",
-        amount: 8,
-    },
-    {
-        imagePath: "./assets/earmuffs.svg",
-        result: "Selected Item 4",
-        amount: 9,
-    },
+    { name: "stone", amount: 50 },
+    { name: "gold_pickaxe", amount: 1 },
+    { name: "diamond_helmet", amount: 1 },
 ];
 
 inventory.slots = structuredClone(invItems);
@@ -164,8 +157,12 @@ function updateinventory() {
 }
 updateinventory();
 
+/**
+ * You started dragging a button, good job!
+ * @param button The button that is being draged
+ */
 function dragStart(button: InventoryButton) {
-    const sprite = PIXI.Sprite.from(button.item.imagePath);
+    const sprite = SpriteFactory.build(button.item);
     sprite.scale.set(0.12);
     sprite.anchor.set(0.5);
     sprite.alpha = 0.8;
@@ -182,6 +179,11 @@ function dragStart(button: InventoryButton) {
     window.addEventListener("pointerup", dragEnd);
 }
 
+/**
+ * Triggers when moving your mouse
+ * @param sprite The dragged item sprite
+ * @param event The mouseMove event
+ */
 function dragMove(sprite: PIXI.Sprite, event: PointerEvent) {
     let isActive: boolean = false;
     if (isActive === false) {
@@ -195,6 +197,10 @@ function dragMove(sprite: PIXI.Sprite, event: PointerEvent) {
     sprite.position.set(pos.x, pos.y);
 }
 
+/**
+ * Find which button to swap with.
+ * @param button Orginal button that is going to be swapped with another
+ */
 function findswap(button: InventoryButton) {
     for (let item of inventory.display.buttons) {
         if (item.hovering) {

@@ -1,6 +1,6 @@
 import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animation";
-import { OBJECT_ANIMATION, WorldObject } from "./world_object";
+import { WorldObject } from "./world_object";
 import {
     ACTION,
     NewObjectSchema,
@@ -8,7 +8,7 @@ import {
 } from "../../shared/enums";
 import { Structure } from "./structure";
 import * as PIXI from "pixi.js";
-import { PLAYER_ANIMATION, Player } from "./player";
+import { Player } from "./player";
 import { Sky } from "./sky";
 import { itemMap } from "../configs/item_map";
 import { createGround } from "./ground";
@@ -17,6 +17,8 @@ import { animationManager } from "../animation_manager";
 import { Quadtree } from "../../lib/quadtree";
 import { requestIds } from "../main";
 import { BasicPoint } from "../../lib/types";
+import { radians } from "../../lib/transforms";
+import { ANIMATION } from "./animations";
 
 // TODO: This place is a freaking mess, needs a little tidying up
 
@@ -193,7 +195,7 @@ export class World {
             return;
         }
         if (id !== this.user) {
-            object.setRotation(packet[1]);
+            object.setRotation(radians(packet[1]));
             this.updatingObjs.set(id, object);
         }
     }
@@ -217,20 +219,13 @@ export class World {
         if (object) {
             switch (packet[1]) {
                 case ACTION.ATTACK:
-                    object.trigger(
-                        PLAYER_ANIMATION.ATTACK,
-                        animationManager,
-                        true
-                    );
+                    object.trigger(ANIMATION.ATTACK, animationManager, true);
                     break;
                 case ACTION.BLOCK:
                     if (!stop) {
                         if (object instanceof Player) {
                             object.blocking = true;
-                            object.trigger(
-                                PLAYER_ANIMATION.BLOCK,
-                                animationManager
-                            );
+                            object.trigger(ANIMATION.BLOCK, animationManager);
                         }
                         break;
                     }
@@ -239,11 +234,7 @@ export class World {
                     }
                     break;
                 case ACTION.HURT:
-                    object.trigger(
-                        OBJECT_ANIMATION.HURT,
-                        animationManager,
-                        true
-                    );
+                    object.trigger(ANIMATION.HURT, animationManager, true);
             }
         }
     }
