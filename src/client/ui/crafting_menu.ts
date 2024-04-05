@@ -2,6 +2,7 @@ import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
 import { assets } from "../assets/load";
+import { Grid } from "./grid";
 export const craftingItems: Item[] = [
     {
         imagePath: "./assets/gold_wall.svg",
@@ -104,27 +105,32 @@ export const craftingItems: Item[] = [
 
 type Item = { imagePath: string; result: string; category: string };
 
+const craftingGrid = new Grid(10, 10, 68, 68, 3);
+
 export class CraftingMenu {
+    buttons: ItemButton[];
     items: Array<Item>;
     container: PIXI.Container;
     padding: number;
     buttonSize: number;
     buttonsPerRow: number;
+    rows: number;
 
     constructor(columns: number, padding: number, buttonSize: number) {
+        this.buttons = [];
         this.items = [];
         this.container = new PIXI.Container();
         this.buttonsPerRow = columns;
         this.padding = padding;
         this.buttonSize = buttonSize;
+        this.rows = 0;
     }
     update(categories?: Set<string>) {
         if (categories === undefined) {
             categories = new Set();
         }
-        let currentCol = 0;
-        let currentRow = 0;
         this.container.removeChildren();
+        this.buttons = [];
         for (let item of this.items) {
             if (categories!.size > 0) {
                 if (!categories!.has(item.category)) {
@@ -132,20 +138,12 @@ export class CraftingMenu {
                 }
             }
             const button = new ItemButton();
-            button.view.position.set(
-                this.padding + currentCol * this.buttonSize,
-                this.padding + currentRow * this.buttonSize
-            );
-            button.setItem(item);
-            this.container.addChild(button.view);
-
-            currentRow++;
-
-            if (currentRow >= this.buttonsPerRow) {
-                currentRow = 0;
-                currentCol++;
-            }
+            button.setItem(-1);
+            button.update(0x777777);
+            this.container.addChild(button.button.view);
+            this.buttons.push(button);
         }
+        craftingGrid.arrange(this.buttons);
     }
 }
 
@@ -220,17 +218,21 @@ export class Filter {
     }
 }
 
-export const craftingMenu = new CraftingMenu(3, 24, 68);
+export const craftingMenu = new CraftingMenu(3, 25, 68);
 export const filterButtons = new Filter(40, craftingMenu);
 filterButtons.add("tools", assets("weapon_toggle"));
 filterButtons.add("structures", assets("build_toggle"));
 filterButtons.add("misc", assets("misc_toggle"));
-
-filterButtons.container.position.set(
-    35,
-    craftingMenu.container.x + craftingMenu.container.height + 230
-);
-
 craftingMenu.items = craftingItems;
 
 craftingMenu.update();
+
+console.log(craftingMenu.rows);
+filterButtons.container.position.set(
+    craftingMenu.padding,
+    craftingMenu.buttonsPerRow *
+        (craftingMenu.buttonSize + craftingMenu.padding) +
+        craftingMenu.padding * 2
+);
+
+craftingMenu.container.position.set(craftingMenu.padding, craftingMenu.padding);

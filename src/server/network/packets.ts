@@ -57,5 +57,12 @@ export function createPacketPipeline(controller: PlayerController) {
         )
     );
 
+    packets.add(
+        CLIENT_PACKET_TYPE.SELECT_ITEM,
+        new Unpacker((packet: ClientPacketSchema.selectItem, id: number) => {
+            controller.selectItem?.call(controller, id, packet);
+        }, ClientPacketSchema.selectItem)
+    );
+
     return packets;
 }

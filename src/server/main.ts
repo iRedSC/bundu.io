@@ -23,6 +23,7 @@ import { send } from "./send.js";
 import { GroundData } from "./components/base.js";
 import { Ground } from "./game_objects/ground.js";
 import { AttackSystem } from "./systems/attack.js";
+import { InventorySystem } from "./systems/inventory.js";
 
 Logger.useDefaults();
 
@@ -35,13 +36,15 @@ const pipeline = createPacketPipeline(playerSystem);
 const packetSystem = new PacketSystem();
 const collisionSystem = new CollisionSystem();
 const attackSystem = new AttackSystem();
+const inventorySystem = new InventorySystem();
 
 world
     .addSystem(positionSystem)
     .addSystem(playerSystem)
     .addSystem(packetSystem)
     .addSystem(collisionSystem)
-    .addSystem(attackSystem);
+    .addSystem(attackSystem)
+    .addSystem(inventorySystem);
 
 const ground: GroundData = {
     collider: new SAT.Box(new SAT.Vector(1000, 1000), 15000, 15000),

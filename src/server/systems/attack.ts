@@ -125,7 +125,9 @@ export class AttackSystem extends System {
             //     continue;
             // }
             const players = this.world.query([PlayerData.id]);
+
             for (let player of players.values()) {
+                this.trigger("giveItem", player.id, [[100, 1]]);
                 const data = PlayerData.get(player)?.data;
                 send(data?.socket, packPolygon(hitRange));
                 if (data?.visibleObjects.has(object.id) && packet.length > 1) {

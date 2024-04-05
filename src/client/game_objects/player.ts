@@ -8,13 +8,15 @@ import random from "../../lib/random";
 import { z } from "zod";
 import { validate } from "../../shared/type_guard";
 import { ANIMATION } from "./animations";
+import { idMap } from "../configs/id_map";
 
 const Gear = z.tuple([
-    z.string(), // mainHand
-    z.string(), // offHand
-    z.string(), // helmet
+    z.number(), // mainHand
+    z.number(), // offHand
+    z.number(), // helmet
     z.number(), // backpack
 ]);
+type Gear = z.infer<typeof Gear>;
 type PlayerParts = {
     body: {
         container: PIXI.Container;
@@ -161,11 +163,11 @@ export class Player extends WorldObject {
         this.updateGear();
     }
 
-    setGear(gear?: typeof Gear) {
+    setGear(gear?: Gear) {
         if (validate(gear, Gear)) {
-            this.mainHand = gear[0];
-            this.offHand = gear[1];
-            this.helmet = gear[2];
+            this.mainHand = idMap.getv(gear[0]) || "";
+            this.offHand = idMap.getv(gear[1]) || "";
+            this.helmet = idMap.getv(gear[2]) || "";
             this.backpack = gear[3];
             this.updateGear();
         }

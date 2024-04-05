@@ -7,6 +7,7 @@ import { DebugWorldObject } from "../debug";
 import { Circle } from "./circle";
 import { z } from "zod";
 import { validate } from "../../shared/type_guard";
+import { TEXT_STYLE } from "../assets/text";
 
 // TODO: There are too many properties related to rotation clogging up the object.
 
@@ -56,8 +57,8 @@ export class WorldObject extends PIXI.Container {
         this.setRotation(rotation);
         this.debug = new DebugWorldObject();
         this.size = size;
-        const idTextStyle = new PIXI.TextStyle({ fontSize: 100 });
-        const idText = new PIXI.Text(`ID: ${this.id}`, idTextStyle);
+        const idText = new PIXI.Text(`ID: ${this.id}`, TEXT_STYLE);
+        idText.scale.set(5);
         idText.position = pos;
         this.debug.updateId(idText);
     }

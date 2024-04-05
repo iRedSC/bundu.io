@@ -105,7 +105,7 @@ barContainer.addChild(
 function resize() {
     barContainer.position.set(
         (window.innerWidth - barContainer.width) / 2 + 270,
-        window.innerHeight - 250
+        window.innerHeight - 280
     );
 }
 window.addEventListener("resize", resize);

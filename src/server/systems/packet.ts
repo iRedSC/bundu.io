@@ -1,6 +1,6 @@
 import { ACTION, PACKET_TYPE } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
-import { PlayerData } from "../components/player.js";
+import { Inventory, PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import { BasicPoint } from "../game_engine/types.js";
@@ -21,6 +21,9 @@ export class PacketSystem extends System {
         this.listen("rotated", this.rotateObject.bind(this));
         this.listen("sendNewObjects", this.sendNewObjects.bind(this));
         this.listen("sendUpdatedObjects", this.sendUpdatedObjects.bind(this));
+
+        this.listen("inventoryUpdate", this.sendInventory.bind(this));
+        this.listen("updateGear", this.updateGear.bind(this));
     }
 
     update(time: number, delta: number, player: GameObject) {}
@@ -113,6 +116,34 @@ export class PacketSystem extends System {
                 [PACKET_TYPE.MOVE_OBJECT, PACKET_TYPE.ROTATE_OBJECT],
             ]);
             data.visibleObjects.clear();
+        }
+    }
+
+    sendInventory(objects: IterableIterator<GameObject>) {
+        for (const object of objects) {
+            const data = PlayerData.get(object)?.data;
+            if (!data) {
+                continue;
+            }
+            const inventory = Inventory.get(object).data;
+            send(data.socket, [
+                PACKET_TYPE.UPDATE_INVENTORY,
+                [inventory.slots, Array.from(inventory.items.entries())],
+            ]);
+        }
+    }
+
+    updateGear(
+        players: IterableIterator<GameObject>,
+        items: [number, number, number, number]
+    ) {
+        console.log("update gear");
+        for (const player of players) {
+            const data = PlayerData.get(player)?.data;
+            if (!data) {
+                continue;
+            }
+            send(data.socket, [PACKET_TYPE.UPDATE_GEAR, [player.id, ...items]]);
         }
     }
 }

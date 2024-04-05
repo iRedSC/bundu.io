@@ -1,93 +1,107 @@
 import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
 import { SpriteFactory } from "../assets/sprite_factory";
+import { idMap } from "../configs/id_map";
 
-export class ItemButton extends Button {
-    background: PIXI.Graphics;
-    item: string;
+export class ItemButton {
+    button: Button;
+    background: PIXI.Sprite;
+    item: number;
     itemSprite: PIXI.Sprite;
     hovering: boolean;
-    callback?: (item: string) => void;
+    callback?: (item: number) => void;
 
-    constructor(callback?: (item: string) => void) {
+    constructor(callback?: (item: number) => void) {
         const container = new PIXI.Container();
         container.sortableChildren = true;
 
-        super(container);
-
+        this.button = new Button(container);
         this.hovering = false;
 
         this.callback = callback;
-        this.background = new PIXI.Graphics();
-        this.view.pivot.set(this.view.width / 4, this.view.height / 4);
+        // this.background = new PIXI.Graphics();
+        this.background = SpriteFactory.build("item_button");
 
-        this.item = "";
+        this.item = -1;
         this.itemSprite = SpriteFactory.build(this.item);
 
-        this.view.addChild(this.background);
-        this.update(0x777777, 0x444444);
+        this.button.view.addChild(this.background);
+
+        this.button.hover = () => {
+            this.button.view.scale.set(1.1);
+            this.update(0x999999);
+            this.hovering = true;
+        };
+
+        this.button.out = () => {
+            this.button.view.scale.set(1);
+            this.update(0x777777);
+            this.hovering = false;
+        };
+
+        this.button.down = () => {
+            this.button.view.scale.set(0.9);
+            this.update(0x777777);
+        };
+
+        this.button.up = () => {
+            this.button.view.scale.set(1);
+
+            if (this.hovering) {
+                this.button.hover();
+            } else {
+                this.update(0x777777);
+            }
+        };
+
+        // this.button.press = () => {
+        //     console.log(this.callback);
+        //     if (this.callback) {
+        //         this.callback(this.item);
+        //     }
+        // };
+        // this.update(0x77777);
     }
 
-    setItem(item: string) {
+    setItem(item: number) {
+        const name = idMap.getv(item);
+        if (!name) {
+            return;
+        }
         if (this.itemSprite) {
-            this.view.removeChild(this.itemSprite);
+            this.button.view.removeChild(this.itemSprite);
         }
         this.item = item;
         this.itemSprite = SpriteFactory.update(
             this.itemSprite,
             undefined,
-            this.item
+            name
         );
-        this.itemSprite.width = 45;
-        this.itemSprite.height = 45;
+        this.itemSprite.width = 65;
+        this.itemSprite.height = 65;
         this.itemSprite.zIndex = 1;
         this.itemSprite.anchor.set(0.5);
         this.itemSprite.position.set(
             this.background.width / 2,
             this.background.height / 2
         );
-        this.view.addChild(this.itemSprite);
+        this.button.view.addChild(this.itemSprite);
     }
 
-    update(fillColor: number, borderColor: number) {
-        this.background.clear();
-        this.background.lineStyle(2, borderColor, 1);
-        this.background.beginFill(fillColor, 0.7);
-        this.background.drawRoundedRect(0, 0, 60, 60, 10);
-        this.background.endFill();
-        this.view.pivot.set(this.view.width / 4, this.view.height / 4);
+    update(tint: number) {
+        this.background.width = 68;
+        this.background.height = 68;
+        this.background.tint = tint;
+        this.itemSprite.position.set(
+            this.background.width / 2,
+            this.background.height / 2
+        );
+        this.button.view.pivot.set(
+            this.button.view.width / 4,
+            this.button.view.height / 4
+        );
     }
-
-    override hover() {
-        this.view.scale.set(1.1);
-        this.update(0x999999, 0x666666);
-        this.hovering = true;
-    }
-
-    override out() {
-        this.view.scale.set(1);
-        this.update(0x777777, 0x444444);
-        this.hovering = false;
-    }
-
-    override down() {
-        this.view.scale.set(0.9);
-        this.update(0x777777, 0x444444);
-    }
-
-    override up() {
-        this.view.scale.set(1);
-
-        if (this.hovering) {
-            this.hover();
-        } else {
-            this.update(0x777777, 0x444444);
-        }
-    }
-
-    override press() {
-        if (this.callback) {
-            this.callback(this.item);
-        }
+    get position() {
+        return this.button.view.position;
     }
 }

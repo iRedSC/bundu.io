@@ -111,4 +111,12 @@ export class PlayerSystem extends System implements PlayerController {
         data.blocking = !stop;
         this.trigger("blocking", player.id, stop);
     }
+
+    selectItem(playerId: number, itemId: number) {
+        const player = this.world.getObject(playerId);
+        if (!player) {
+            return;
+        }
+        this.trigger("updateGear", player.id, [itemId, itemId, -1, -1]);
+    }
 }

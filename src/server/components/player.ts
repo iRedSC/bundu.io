@@ -81,3 +81,9 @@ export type PlayerData = {
     lastAttackTime?: number;
 };
 export const PlayerData = Component.register<PlayerData>();
+
+export type Inventory = {
+    slots: number;
+    items: Map<number, number>;
+};
+export const Inventory = Component.register<Inventory>();

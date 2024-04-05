@@ -56,7 +56,7 @@ export class Unpacker {
         if (parsedPacket.success === true) {
             this.callback(parsedPacket.data, playerId);
         } else {
-            console.log(parsedPacket.error.message);
+            console.error(packet + "\n\n" + parsedPacket.error.message);
         }
         if (!playerId && data.length > 0) {
             this.unpack(data.slice(1));

@@ -7,8 +7,8 @@ export enum PACKET_TYPE {
     ROTATE_OBJECT = 3,
     NEW_OBJECT = 4,
     DELETE_OBJECT = 5,
-
-    // UPDATE_PLAYER_GEAR = 201,
+    UPDATE_INVENTORY = 6,
+    UPDATE_GEAR = 7,
 
     LOAD_GROUND = 301,
     STARTING_INFO = 99,
@@ -132,6 +132,15 @@ export namespace ServerPacketSchema {
     ]);
     export type updateInventory = z.infer<typeof updateInventory>;
 
+    export const updateGear = z.tuple([
+        z.number(), // player id
+        z.number(), // mainHand
+        z.number(), // offHand
+        z.number(), // helmet,
+        z.number(), // backpack
+    ]);
+    export type updateGear = z.infer<typeof updateGear>;
+
     export const drawPolygon = z.tuple([
         z.number(), // start x
         z.number(), // start y
@@ -152,6 +161,7 @@ export enum CLIENT_PACKET_TYPE {
     ACTION = 3,
     REQUEST_OBJECT = 4,
     JOIN = 5,
+    SELECT_ITEM = 6,
 }
 
 export enum CLIENT_ACTION {
@@ -185,4 +195,7 @@ export namespace ClientPacketSchema {
 
     export const requestObjects = z.number().array();
     export type requestObjects = z.infer<typeof requestObjects>;
+
+    export const selectItem = z.number();
+    export type selectItem = z.infer<typeof selectItem>;
 }

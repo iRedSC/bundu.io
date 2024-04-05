@@ -57,6 +57,14 @@ export function createPipeline(packetPipeline: PacketPipeline, world: World) {
     );
 
     packetPipeline.add(
+        PACKET_TYPE.UPDATE_GEAR,
+        new Unpacker(
+            world.updateGear.bind(world),
+            ServerPacketSchema.updateGear
+        )
+    );
+
+    packetPipeline.add(
         PACKET_TYPE.ACTION,
         new Unpacker(world.action.bind(world), ServerPacketSchema.action)
     );

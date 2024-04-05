@@ -10,7 +10,7 @@ import { Structure } from "./structure";
 import * as PIXI from "pixi.js";
 import { Player } from "./player";
 import { Sky } from "./sky";
-import { itemMap } from "../configs/item_map";
+import { idMap } from "../configs/id_map";
 import { createGround } from "./ground";
 import { Entity } from "./entity";
 import { animationManager } from "../animation_manager";
@@ -108,7 +108,7 @@ export class World {
         scaleCoords(pos);
         const structure = new Structure(
             id,
-            itemMap.getv(packet[4]) || "stone",
+            idMap.getv(packet[4]) || "stone",
             pos,
             packet[3],
             packet[5]
@@ -132,7 +132,7 @@ export class World {
         const entity = new Entity(
             id,
             this.animationManager,
-            itemMap.getv(packet[5]) || "stone",
+            idMap.getv(packet[5]) || "stone",
             pos,
             packet[3],
             packet[4]
@@ -236,6 +236,20 @@ export class World {
                 case ACTION.HURT:
                     object.trigger(ANIMATION.HURT, animationManager, true);
             }
+        }
+    }
+
+    updateGear(packet: ServerPacketSchema.updateGear) {
+        console.log("setGear");
+        const gear: [number, number, number, number] = [
+            packet[1],
+            packet[2],
+            packet[3],
+            packet[4],
+        ];
+        const player = this.dynamicObjs.get(packet[0]);
+        if (player instanceof Player) {
+            player.setGear(gear);
         }
     }
 

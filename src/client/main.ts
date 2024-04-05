@@ -17,6 +17,12 @@ import { encode } from "@msgpack/msgpack";
 import { decodeFromBlob } from "./network/decode";
 import { BasicPoint } from "../lib/types";
 import { Graphics } from "pixi.js";
+import {
+    INVENTORY_SLOT_PADDING,
+    INVENTORY_SLOT_SIZE,
+    Inventory,
+} from "./ui/inventory";
+import { UI } from "./ui/layout";
 
 const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
@@ -171,3 +177,47 @@ setInterval(() => {
 }, 500);
 
 setInterval(hideOutOfSight, 2000);
+
+export const inventory = new Inventory();
+inventory.callback = (item: number) => {
+    socket.send(encode([CLIENT_PACKET_TYPE.SELECT_ITEM, item]));
+};
+
+function resize() {
+    inventory.display.container.position.set(
+        window.innerWidth / 2 -
+            ((INVENTORY_SLOT_SIZE + INVENTORY_SLOT_PADDING) *
+                inventory.display.slotamount) /
+                2,
+        window.innerHeight - INVENTORY_SLOT_SIZE
+    );
+}
+window.addEventListener("resize", resize);
+resize();
+
+setTimeout(() => {
+    inventory.update([
+        10,
+        [
+            [100, 10],
+            [101, 50],
+        ],
+    ]);
+    resize();
+}, 50);
+
+function updateinventory() {
+    inventory.display.update(inventory.slots);
+    resize();
+}
+updateinventory();
+
+UI.addChild(inventory.display.container);
+
+packetPipeline.add(
+    PACKET_TYPE.UPDATE_INVENTORY,
+    new Unpacker(
+        inventory.update.bind(inventory),
+        ServerPacketSchema.updateInventory
+    )
+);
