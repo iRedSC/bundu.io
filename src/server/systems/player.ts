@@ -28,7 +28,7 @@ export class PlayerSystem extends System implements PlayerController {
         const physics = Physics.get(player).data;
         const data = PlayerData.get(player).data;
 
-        if (data.attacking && data.lastAttackTime) {
+        if (data.attacking && data.lastAttackTime && !data.blocking) {
             if (data.lastAttackTime < time - 400) {
                 this.trigger("attack", player.id);
                 data.lastAttackTime = time;
@@ -105,6 +105,9 @@ export class PlayerSystem extends System implements PlayerController {
             return;
         }
         const data = PlayerData.get(player).data;
+        if (!stop && data.attacking) {
+            data.attacking = false;
+        }
         data.blocking = !stop;
         this.trigger("blocking", player.id, stop);
     }

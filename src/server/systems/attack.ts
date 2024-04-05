@@ -25,7 +25,8 @@ function pointToVec(point: BasicPoint) {
     return new SAT.Vector(point.x, point.y);
 }
 
-export function createPolygon(
+// Yes, I used ChatGPT for this one, don't hate on me
+export function attackBox(
     start: SAT.Vector,
     direction: number,
     length: number,
@@ -98,7 +99,7 @@ export class AttackSystem extends System {
                 quadtree.query(bounds)
             );
 
-            const hitRange = createPolygon(
+            const hitRange = attackBox(
                 pointToVec(
                     moveInDirection(
                         physics.position,

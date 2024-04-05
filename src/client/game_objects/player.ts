@@ -250,6 +250,9 @@ function loadAnimations(target: Player) {
 
     const attackKeyframes: Keyframes<Player> = new Keyframes();
     attackKeyframes.frame(0).set = ({ target, animation }) => {
+        if (target.blocking) {
+            return;
+        }
         animation.meta.targetHand = random.integer(0, 1);
         if (target.mainHand) {
             animation.meta.targetHand = 1;
@@ -263,6 +266,9 @@ function loadAnimations(target: Player) {
         animation.next(100);
     };
     attackKeyframes.frame(1).set = ({ target, animation }) => {
+        if (target.blocking) {
+            return;
+        }
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
         if (animation.meta.targetHand) {
@@ -277,6 +283,9 @@ function loadAnimations(target: Player) {
         }
     };
     attackKeyframes.frame(2).set = ({ target, animation }) => {
+        if (target.blocking) {
+            return;
+        }
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
         if (animation.meta.targetHand) {
@@ -290,20 +299,35 @@ function loadAnimations(target: Player) {
             animation.expired = true;
         }
     };
+    // attackKeyframes.frame(-1).set = ({ target }) => {
+    //     const leftHand = target.sprite.leftHand.container;
+    //     const rightHand = target.sprite.rightHand.container;
+
+    //     leftHand.rotation = 0;
+    //     rightHand.rotation = 0;
+    // };
 
     const blockKeyframes: Keyframes<Player> = new Keyframes();
     blockKeyframes.frame(0).set = ({ target, animation }) => {
-        const leftHand = target.sprite.leftHand.container;
-        if (leftHand.rotation !== 0) {
-            animation.expired = true;
-        }
+        animation.meta.leftHandRot = target.sprite.leftHand.container.rotation;
+        animation.meta.rightHandRot =
+            target.sprite.rightHand.container.rotation;
+
         animation.next(75);
     };
     blockKeyframes.frame(1).set = ({ target, animation }) => {
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
-        leftHand.rotation = lerp(radians(0), radians(-90), animation.t);
-        rightHand.rotation = lerp(radians(0), radians(25), animation.t);
+        leftHand.rotation = lerp(
+            radians(animation.meta.leftHandRot),
+            radians(-90),
+            animation.t
+        );
+        rightHand.rotation = lerp(
+            radians(animation.meta.rightHandRot),
+            radians(25),
+            animation.t
+        );
         if (!target.blocking) {
             animation.next(60);
         }

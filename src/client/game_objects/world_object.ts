@@ -76,7 +76,7 @@ export class WorldObject extends PIXI.Container {
         removeStaleStates();
 
         const lastState = this.states[0];
-        const nextState = this.states[1];
+        let nextState = this.states[1];
 
         const now = Date.now() - 50;
 
@@ -91,6 +91,17 @@ export class WorldObject extends PIXI.Container {
             );
         }
         if (!nextState) {
+            if (lastState) {
+                const x = lastState[1];
+                const y = lastState[2];
+                this.position.set(x, y);
+                if (this.debug.hitbox) {
+                    this.debug.hitbox.position.set(x, y);
+                }
+                if (this.debug.id) {
+                    this.debug.id.position.set(x, y);
+                }
+            }
             return;
         }
 

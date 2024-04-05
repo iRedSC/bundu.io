@@ -68,7 +68,7 @@ socket.onopen = () => {
 
 socket.onmessage = async (ev) => {
     const data = await decodeFromBlob(ev.data);
-    // console.log(data);
+    // console.log(Date.now(), data);
     packetPipeline.unpack(data);
 };
 
@@ -107,24 +107,28 @@ function mouseMoveCallback(mousePos: [number, number]) {
     }
 }
 
-viewport.on("pointerdown", (event) => {
-    if (event.button == 2) {
+viewport.addEventListener("pointerdown", (event) => {
+    console.log(event.button);
+    if (event.button === 2) {
         socket.send(
             encode([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.BLOCK, false]])
         );
-    } else {
+    }
+    if (event.button === 0) {
         socket.send(
             encode([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.ATTACK, false]])
         );
     }
+    viewport;
 });
 
-viewport.on("pointerup", (event) => {
+viewport.addEventListener("pointerup", (event) => {
     if (event.button == 2) {
         socket.send(
             encode([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.BLOCK, true]])
         );
-    } else {
+    }
+    if (event.button === 0) {
         socket.send(
             encode([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.ATTACK, true]])
         );
@@ -149,6 +153,9 @@ function hideOutOfSight() {
         for (const object of world.objects.values()) {
             const queryObject = query.has(object.id);
             if (queryObject) {
+                if (object.renderable === false) {
+                    requestIds.push(object.id);
+                }
                 continue;
             }
             object.renderable = false;
