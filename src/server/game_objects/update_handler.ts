@@ -24,12 +24,17 @@ export class UpdateHandler {
      * @param types Packet types to send out of each object
      */
     public add(
-        objects: IterableIterator<GameObject>,
+        objects: IterableIterator<GameObject> | GameObject,
         types: PACKET_TYPE[],
         giveList: boolean = false
     ): Map<GameObject, UpdateTypes> {
         const list = giveList ? new Map() : this.objects;
-        const objectsList = Array.from(objects);
+        let objectsList: GameObject[] = [];
+        if (objects instanceof GameObject) {
+            objectsList.push(objects);
+        } else {
+            objectsList = Array.from(objects);
+        }
         for (const object of objectsList) {
             let existingTypes: Set<number> = list.get(object) || new Set();
             list.set(object, new Set([...types, ...existingTypes.values()]));

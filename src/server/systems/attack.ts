@@ -81,40 +81,35 @@ export class AttackSystem extends System {
         this.listen("attack", this.attack.bind(this));
     }
 
-    attack(objects: IterableIterator<GameObject>) {
-        for (const object of objects) {
-            const data = AttackData.get(object)?.data;
-            const physics = Physics.get(object)?.data;
-            if (!(data && physics)) {
-                continue;
-            }
-
-            const bounds: [BasicPoint, BasicPoint] = [
-                { x: physics.position.x - 500, y: physics.position.y - 500 },
-                { x: physics.position.x + 500, y: physics.position.y + 500 },
-            ];
-
-            const nearby = this.world.query(
-                [Physics.id],
-                quadtree.query(bounds)
-            );
-
-            const hitRange = attackBox(
-                pointToVec(
-                    moveInDirection(
-                        physics.position,
-                        physics.rotation + radians(90),
-                        50
-                    )
-                ),
-                physics.rotation + radians(90),
-                50,
-                50
-            );
-
-            const hits = testForIntersection(hitRange, nearby);
-
-            this.trigger("hurt", new Set(hits.keys()), object);
+    attack(object: GameObject) {
+        const data = AttackData.get(object)?.data;
+        const physics = Physics.get(object)?.data;
+        if (!(data && physics)) {
+            return;
         }
+
+        const bounds: [BasicPoint, BasicPoint] = [
+            { x: physics.position.x - 500, y: physics.position.y - 500 },
+            { x: physics.position.x + 500, y: physics.position.y + 500 },
+        ];
+
+        const nearby = this.world.query([Physics.id], quadtree.query(bounds));
+
+        const hitRange = attackBox(
+            pointToVec(
+                moveInDirection(
+                    physics.position,
+                    physics.rotation + radians(90),
+                    50
+                )
+            ),
+            physics.rotation + radians(90),
+            50,
+            50
+        );
+
+        const hits = testForIntersection(hitRange, nearby);
+
+        this.trigger("hurt", new Set(hits.keys()), object);
     }
 }

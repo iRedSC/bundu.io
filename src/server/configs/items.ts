@@ -13,14 +13,14 @@ export class ItemConfig {
     type: string;
     attackDamage: number;
     defense: number;
-    miningLevel: number;
+    level: number;
 
     constructor(id: number, data: Partial<itemConfigData>) {
         this.id = id;
         this.type = data.type || "none";
         this.attackDamage = data.attack_damage || 0;
         this.defense = data.defense || 0;
-        this.miningLevel = data.mining_level || 0;
+        this.level = data.mining_level || 0;
     }
 }
 

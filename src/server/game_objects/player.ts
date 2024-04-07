@@ -41,7 +41,12 @@ export class Player extends GameObject {
 
         this.pack[PACKET_TYPE.MOVE_OBJECT] = () => {
             const physics = Physics.get(this).data;
-            return [this.id, 50, physics.position.x, physics.position.y];
+            return [
+                this.id,
+                100,
+                round(physics.position.x),
+                round(physics.position.y),
+            ];
         };
 
         this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {

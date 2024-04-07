@@ -119,4 +119,4 @@ setInterval(() => {
 
 setInterval(() => {
     world.update();
-}, 50);
+}, 100);

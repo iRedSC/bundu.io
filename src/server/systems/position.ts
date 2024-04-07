@@ -20,14 +20,12 @@ export class PositionSystem extends System {
         this.listen("collided", this.insert);
     }
 
-    insert(objects: IterableIterator<GameObject>) {
-        for (const object of objects) {
-            const physics = Physics.get(object)?.data;
-            if (!physics) {
-                continue;
-            }
-            quadtree.insert(object.id, physics.position);
+    insert(object: GameObject) {
+        const physics = Physics.get(object)?.data;
+        if (!physics) {
+            return;
         }
+        quadtree.insert(object.id, physics.position);
     }
 
     enter(object: GameObject) {
