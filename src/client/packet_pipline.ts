@@ -3,7 +3,7 @@ import {
     OBJECT_CLASS,
     PACKET_TYPE,
     ServerPacketSchema,
-} from "../shared/packet_enums";
+} from "../shared/enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { World } from "./game_objects/world";
 

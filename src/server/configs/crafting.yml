@@ -3,6 +3,7 @@ wood_sword:
         wood: 20
 
 stone_sword:
+    duration: 6000
     ingredients:
         # wooden_sword: 1
         stone: 20

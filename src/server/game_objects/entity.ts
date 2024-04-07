@@ -1,4 +1,5 @@
-import { createEntityConfig, entityConfigs } from "../configs/entity.js";
+import { createEntityConfig } from "../configs/entity.js";
+import { entityConfigs } from "../configs/load.js";
 import {
     lerp,
     distance,
@@ -8,7 +9,7 @@ import {
 } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";
 import SAT from "sat";
-import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/packet_enums.js";
+import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { EntityAI, Physics, Type } from "../components/base.js";
 

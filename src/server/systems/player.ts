@@ -1,6 +1,6 @@
 import { moveToward } from "../../lib/transforms.js";
 import { BasicPoint } from "../../lib/types.js";
-import { PACKET_TYPE } from "../../shared/packet_enums.js";
+import { PACKET_TYPE } from "../../shared/enums.js";
 import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/crafting.js";
@@ -126,5 +126,13 @@ export class PlayerSystem extends System implements PlayerController {
             return;
         }
         this.trigger("updateGear", player.id, [itemId, itemId, -1, -1]);
+    }
+
+    craftItem(playerId: number, itemId: number) {
+        const player = this.world.getObject(playerId);
+        if (!player) {
+            return;
+        }
+        this.trigger("craftItem", player.id, itemId);
     }
 }

@@ -3,7 +3,7 @@ import {
     CLIENT_ACTION,
     CLIENT_PACKET_TYPE,
     ClientPacketSchema,
-} from "../../shared/packet_enums.js";
+} from "../../shared/enums.js";
 import { PacketPipeline, Unpacker } from "../../shared/unpack.js";
 import { PlayerController } from "../systems/player_controller.js";
 
@@ -55,6 +55,13 @@ export function createPacketPipeline(controller: PlayerController) {
             controller.selectItem?.call(controller, id, packet);
         },
         ClientPacketSchema.selectItem
+    );
+
+    packets.unpackers[CLIENT_PACKET_TYPE.CRAFT_ITEM] = new Unpacker(
+        (packet: ClientPacketSchema.craftItem, id: number) => {
+            controller.craftItem?.call(controller, id, packet);
+        },
+        ClientPacketSchema.craftItem
     );
 
     return packets;

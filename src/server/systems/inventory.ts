@@ -15,6 +15,9 @@ export class InventorySystem extends System {
             return;
         }
         for (const [item, amount] of items) {
+            if (item === -1) {
+                continue;
+            }
             const existing = inventory.items.get(item);
             if (!existing) {
                 if (inventory.items.size >= inventory.slots) {

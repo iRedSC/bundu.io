@@ -1,4 +1,4 @@
-import { PACKET_TYPE } from "../../shared/packet_enums.js";
+import { PACKET_TYPE } from "../../shared/enums.js";
 import { send } from "../send.js";
 import { Player } from "./player.js";
 import { GameObject } from "../game_engine/game_object.js";

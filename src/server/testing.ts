@@ -27,7 +27,7 @@ function getRandomPhysics(): Physics {
 export function createResources(world: World, amount: number) {
     for (let i = 0; i < amount; i++) {
         const structure = new Resource(getRandomPhysics(), {
-            id: Random.integer(200, 204),
+            id: Random.integer(1, 100),
         });
         world.addObject(structure);
     }

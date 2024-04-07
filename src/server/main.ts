@@ -12,7 +12,7 @@ import {
     CLIENT_PACKET_TYPE,
     ClientPacketSchema,
     PACKET_TYPE,
-} from "../shared/packet_enums.js";
+} from "../shared/enums.js";
 import { Unpacker } from "../shared/unpack.js";
 import { Player } from "./game_objects/player.js";
 import random from "../lib/random.js";
@@ -25,6 +25,7 @@ import { Ground } from "./game_objects/ground.js";
 import { AttackSystem } from "./systems/attack.js";
 import { InventorySystem } from "./systems/inventory.js";
 import { ResourceSystem } from "./systems/resource.js";
+import { CraftingSystem } from "./systems/crafting.js";
 
 Logger.useDefaults();
 
@@ -46,7 +47,8 @@ world
     .addSystem(collisionSystem)
     .addSystem(attackSystem)
     .addSystem(inventorySystem)
-    .addSystem(new ResourceSystem());
+    .addSystem(new ResourceSystem())
+    .addSystem(new CraftingSystem());
 
 const ground: GroundData = {
     collider: new SAT.Box(new SAT.Vector(1000, 1000), 15000, 15000),

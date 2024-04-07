@@ -1,9 +1,6 @@
-import fs from "fs";
-import yaml from "yaml";
-import { idMap, __dirname } from "./id_map.js";
 import { Component } from "../game_engine/component.js";
 
-type entityConfigData = {
+export type entityConfigData = {
     anger: number;
     speed: number;
     attack_damage: number;
@@ -36,15 +33,4 @@ export function createEntityConfig(
     config.size = data.size || 2;
     config.restTime = data.rest_time || 1000;
     return new EntityConfig(config);
-}
-
-const _entityConfigData: { [key: string]: entityConfigData } = yaml.parse(
-    fs.readFileSync(`${__dirname}/entities.yml`, "utf8")
-);
-export const entityConfigs: Map<number, Component<EntityConfig>> = new Map();
-
-for (let [k, v] of Object.entries(_entityConfigData)) {
-    const numericId = idMap.get(k);
-    const entity = createEntityConfig(numericId, v);
-    entityConfigs.set(numericId, entity);
 }

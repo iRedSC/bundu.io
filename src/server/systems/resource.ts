@@ -16,7 +16,6 @@ export class ResourceSystem extends System {
         if (!(data && config)) {
             return;
         }
-        console.log("Resource hit" + config.item, config.amount);
-        this.trigger("giveItem", source.id, [[config.item, config.amount]]);
+        this.trigger("giveItem", source.id, [[config.item, 1]]);
     }
 }

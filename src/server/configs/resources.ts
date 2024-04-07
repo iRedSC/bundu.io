@@ -1,9 +1,8 @@
-import { idMap, __dirname } from "./id_map.js";
-import fs from "fs";
-import yaml from "yaml";
+import { idMap } from "./id_map.js";
+
 import { Component } from "../game_engine/component.js";
 
-type resourceConfigData = {
+export type resourceConfigData = {
     level: number;
     regenSpeed: number;
     amount: number;
@@ -30,18 +29,4 @@ export function createResourceConfig(
     config.amount = data.amount || 5;
     config.item = idMap.get(data.item) || -1;
     return new ResourceConfig(config);
-}
-
-const _resourceConfigData: { [key: string]: resourceConfigData } = yaml.parse(
-    fs.readFileSync(`${__dirname}/resources.yml`, "utf8")
-);
-export const resourceConfigs: Map<
-    number,
-    Component<ResourceConfig>
-> = new Map();
-
-for (let [k, v] of Object.entries(_resourceConfigData)) {
-    const numericId = idMap.get(k);
-    const resource = createResourceConfig(numericId, v);
-    resourceConfigs.set(numericId, resource);
 }

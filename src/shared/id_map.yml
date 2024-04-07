@@ -1,21 +1,184 @@
-### Weapons: 100
+unknown_asset: 1
 
-wood_sword: 100
-stone_sword: 101
-gold_sword: 102
-diamond_sword: 103
-amethyst_sword: 104
+player: 2
+player_hat: 3
+player_dead: 4
+hand: 5
 
-### Resources: 200
+item_button: 6
 
-wood: 200
-stone: 201
-gold: 202
-diamond: 203
-amethyst: 204
+weapon_toggle: 7
+build_toggle: 8
+misc_toggle: 9
 
-# Animals: 400
+# * TOOLS
 
-elephant: 400
-bear: 401
-ram: 402
+# Pickaxe
+wood_pickaxe: 10
+stone_pickaxe: 11
+gold_pickaxe: 12
+diamond_pickaxe: 13
+amethyst_pickaxe: 14
+
+# Special Tools
+lumber_axe: 15
+spyglass: 16
+butcher_knife: 17
+shovel: 18
+
+# Sword
+wood_sword: 19
+stone_sword: 20
+gold_sword: 21
+diamond_sword: 22
+amethyst_sword: 23
+
+# Hammer
+stone_hammer: 24
+gold_hammer: 25
+diamond_hammer: 26
+amethyst_hammer: 27
+
+# Spear
+stone_spear: 28
+gold_spear: 29
+diamond_spear: 30
+amethyst_spear: 31
+tusk_spear: 32
+
+# Helmet
+wood_helmet: 33
+stone_helmet: 34
+gold_helmet: 35
+diamond_helmet: 36
+amethyst_helmet: 37
+
+# Hat
+earmuffs: 38
+beanie: 39
+coat: 40
+
+# Special Items
+book: 41
+resource_book: 42
+time_book: 43
+
+# Consumable
+meat: 44
+meat_cooked: 45
+blue_berry: 46
+red_berry: 47
+honey: 48
+mango: 49
+miracle_fruit: 50
+bandage: 51
+
+# Resources
+wood: 52
+stone: 53
+gold: 54
+diamond: 55
+amethyst: 56
+
+# * PLACEABLE
+
+# Walls
+friendly_wall: 57
+wood_wall: 58
+stone_wall: 59
+gold_wall: 60
+diamond_wall: 61
+amethyst_wall: 62
+
+# Spike
+wood_spike: 63
+stone_spike: 64
+gold_spike: 65
+diamond_spike: 66
+amethyst_spike: 67
+
+# Door
+friendly_door: 68
+door_open: 69
+wood_door: 70
+stone_door: 71
+gold_door: 72
+diamond_door: 73
+amethyst_door: 74
+
+# Crafting
+workbench: 75
+fire_pit: 76
+anvil: 77
+fire_small: 78
+fire_big: 79
+
+# Quick buildings
+quick_wood_wall: 80
+quick_stone_wall: 81
+quick_stone_spike: 82
+quick_diamond_spike: 83
+
+# * Map Objects
+
+# Trees
+forest_tree1: 84
+forest_tree2: 85
+forest_tree3: 86
+forest_tree4: 87
+forest_tree5: 88
+forest_tree6: 89
+
+pine_tree: 90
+pine_tree2: 91
+pine_tree3: 92
+pine_tree4: 93
+pine_tree5: 94
+pine_tree6: 95
+pine_tree_snow: 96
+
+savanah_tree1: 97
+savanah_tree2: 98
+savanah_bush1: 99
+
+# Other
+berry_bush: 100
+berry_bush_overlay: 101
+mango_tree1: 102
+hive1: 103
+hive2: 104
+hive3: 105
+
+# * Animals
+
+# Alive
+bear: 106
+deer: 107
+ram: 108
+elephant: 109
+alligator: 110
+komodo_dragon: 111
+bee: 112
+queen_bee: 113
+
+# Dead
+bear_dead: 114
+deer_dead: 115
+ram_dead: 116
+elephant_dead: 117
+alligator_dead: 118
+komodo_dragon_dead: 119
+bee_dead: 120
+queen_bee_dead: 121
+
+# Angry
+ram_angry: 122
+elephant_angry: 123
+
+# Animal Items
+bear_fur: 124
+deer_hide: 125
+ram_wool: 126
+elephant_tusk: 127
+alligator_skin: 128
+komodo_dragon_eye: 129
