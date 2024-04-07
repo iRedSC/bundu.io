@@ -11,7 +11,7 @@ stone_sword:
         stone: 30
         wood: 40
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 gold_sword:
     duration: 18000
@@ -22,7 +22,7 @@ gold_sword:
         wood: 80
 
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_sword:
     duration: 25000
@@ -33,21 +33,21 @@ diamond_sword:
         stone: 90
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_sword:
     duration: 40000
     ingredients:
         diamond_sword: 1
         amethyst: 60
-        diamond : 50
+        diamond: 50
         gold: 40
-        stone : 40
+        stone: 40
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #* PICKAXE
 
@@ -59,13 +59,12 @@ wood_pickaxe:
 stone_pickaxe:
     duration: 8000
     ingredients:
-         wood_pickaxe: 1
+        wood_pickaxe: 1
         stone: 20
         wood: 30
 
     flags:
-     - near_crafting_table
-
+        - near_crafting_table
 
 gold_pickaxe:
     duration: 12000
@@ -76,7 +75,7 @@ gold_pickaxe:
         wood: 50
 
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_pickaxe:
     duration: 18000
@@ -87,8 +86,8 @@ diamond_pickaxe:
         stone: 80
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_pickaxe:
     duration: 25000
@@ -99,12 +98,11 @@ amethyst_pickaxe:
         gold: 60
         stone: 100
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 # * SPEARS
-
 
 stone_spear:
     duration: 14000
@@ -113,8 +111,7 @@ stone_spear:
         wood: 80
 
     flags:
-     - near_crafting_table
-
+        - near_crafting_table
 
 gold_spear:
     duration: 20000
@@ -125,7 +122,7 @@ gold_spear:
         wood: 100
 
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_spear:
     duration: 25000
@@ -136,8 +133,8 @@ diamond_spear:
         wood: 120
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_spear:
     duration: 40000
@@ -148,9 +145,9 @@ amethyst_spear:
         gold: 60
         stone: 140
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 tusk_spear:
     duration: 60000
@@ -161,12 +158,11 @@ tusk_spear:
         gold: 60
         wood: 140
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 # * Hammers
-
 
 stone_hammer:
     duration: 10000
@@ -175,8 +171,7 @@ stone_hammer:
         wood: 60
 
     flags:
-     - near_crafting_table
-
+        - near_crafting_table
 
 gold_hammer:
     duration: 18000
@@ -187,8 +182,8 @@ gold_hammer:
         wood: 60
 
     flags:
-     - near_anvil
-     - near_crafting_table
+        - near_anvil
+        - near_crafting_table
 
 diamond_hammer:
     duration: 30000
@@ -199,8 +194,8 @@ diamond_hammer:
         stone: 80
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_hammer:
     duration: 50000
@@ -212,9 +207,9 @@ amethyst_hammer:
         stone: 80
         wood: 80
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #* Helmets
 
@@ -226,13 +221,12 @@ wood_helmet:
 stone_helmet:
     duration: 20000
     ingredients:
-         wood_helmet: 1
+        wood_helmet: 1
         stone: 80
         wood: 60
 
     flags:
-     - near_crafting_table
-
+        - near_crafting_table
 
 gold_helmet:
     duration: 30000
@@ -243,7 +237,7 @@ gold_helmet:
         wood: 40
 
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_helmet:
     duration: 40000
@@ -254,8 +248,8 @@ diamond_helmet:
         stone: 40
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_helmet:
     duration: 50000
@@ -266,9 +260,9 @@ amethyst_helmet:
         gold: 40
         stone: 80
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 # * Fur Crafts
 
@@ -279,7 +273,7 @@ pitch:
         honey: 1
 
     flags:
-     - near_fire
+        - near_fire
 
 cloth:
     duration: 2000
@@ -289,9 +283,8 @@ cloth:
         wood: 10
 
     flags:
-     - near_fire
-     - near_crafting_table
-
+        - near_fire
+        - near_crafting_table
 
 backpack:
     duration: 14000
@@ -301,15 +294,15 @@ backpack:
         bear_fur: 8
 
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 bandage:
-    duration:  2000 
+    duration: 2000
     ingredients:
         cloth: 1
         honey: 1
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 book:
     duration: 7000
@@ -318,7 +311,7 @@ book:
         pitch: 2
         bear_fur: 4
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 resource_book:
     duration: 40000
@@ -329,9 +322,9 @@ resource_book:
         stone: 140
         wood: 200
     flags:
-     - near_crafting_table
-     - near_anvil
-     - near_fire
+        - near_crafting_table
+        - near_anvil
+        - near_fire
 
 time_book:
     duration: 40000
@@ -343,8 +336,8 @@ time_book:
         elephant_tusk: 2
         wood: 200
     flags:
-     - near_crafting_table
-     - near_fire
+        - near_crafting_table
+        - near_fire
 
 earmuffs:
     duration: 6000
@@ -352,7 +345,7 @@ earmuffs:
         bear_fur: 2
         deer_hide: 3
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 beanie:
     duration: 12000
@@ -362,7 +355,7 @@ beanie:
         cloth: 2
 
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 coat:
     duration: 18000
@@ -372,12 +365,7 @@ coat:
         pitch: 2
 
     flags:
-     - near_crafting_table
-
-
-
-
-
+        - near_crafting_table
 
 # * BUILDINGS
 
@@ -395,7 +383,7 @@ stone_wall:
         stone: 23
         wood: 13
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 gold_wall:
     duration: 3000
@@ -404,9 +392,8 @@ gold_wall:
         gold: 21
         stone: 11
 
-
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_wall:
     duration: 5000
@@ -416,19 +403,19 @@ diamond_wall:
         gold: 9
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_wall:
     duration: 6000
     ingredients:
         diamond_wall: 1
         amethyst: 17
-        diamond : 7
+        diamond: 7
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #Doors
 
@@ -438,13 +425,13 @@ wood_door:
         wood: 30
 
 stone_door:
-    3500
+    duration: 3500
     ingredients:
         wood_door: 1
         stone: 28
         wood: 18
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 gold_door:
     duration: 4500
@@ -453,9 +440,8 @@ gold_door:
         gold: 26
         stone: 16
 
-
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_door:
     duration: 6000
@@ -465,19 +451,19 @@ diamond_door:
         gold: 14
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_door:
     duration: 7000
     ingredients:
         diamond_door: 1
         amethyst: 22
-        diamond : 12
+        diamond: 12
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #spike
 
@@ -493,7 +479,7 @@ stone_spike:
         stone: 35
         wood: 25
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 gold_spike:
     duration: 8000
@@ -502,9 +488,8 @@ gold_spike:
         gold: 40
         stone: 30
 
-
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_spike:
     duration: 9000
@@ -514,19 +499,19 @@ diamond_spike:
         gold: 35
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_spike:
     duration: 10000
     ingredients:
         diamond_spike: 1
         amethyst: 50
-        diamond : 40
+        diamond: 40
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #other buildings
 
@@ -541,61 +526,60 @@ anvil:
     ingredients:
         wood: 10
         stone: 30
-    
+
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 fire_small:
     duration: 3000
     ingredients:
         wood: 25
-        stone : 10
+        stone: 10
 
 fire_big:
     duration: 4000
     ingredients:
         wood: 35
-        stone : 15
+        stone: 15
 
-fire_pit: 
+fire_pit:
     duration: 8000
     ingredients:
         wood: 50
-        stone : 50
-    
-    flags:
-     - near_crafting_table
+        stone: 50
 
-quick_wood_wall: 
+    flags:
+        - near_crafting_table
+
+quick_wood_wall:
     duration: 1000
     ingredients:
         wood: 20
-    
 
 quick_stone_wall:
     duration: 2000
     ingredients:
         quick_wood_wall: 1
         stone: 20
-    
+
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 quick_stone_spike:
     duration: 5000
     ingredients:
         stone: 30
         tooth: 2
-    
+
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 quick_diamond_spike:
     duration: 7000
     ingredients:
         diamond: 30
         tooth: 4
-    
+
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
