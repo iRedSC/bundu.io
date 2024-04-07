@@ -1,36 +1,30 @@
 import yaml from "yaml";
 import fs from "fs";
 import { idMap, __dirname } from "./id_map.js";
+import { Component } from "../game_engine/component.js";
 
-type itemConfigData = {
+export type itemConfigData = {
     type: string;
     attack_damage: number;
     defense: number;
     mining_level: number;
 };
-export class ItemConfig {
+
+export type ItemConfig = {
     id: number;
     type: string;
     attackDamage: number;
     defense: number;
     level: number;
+};
+export const ItemConfig = Component.register<ItemConfig>();
 
-    constructor(id: number, data: Partial<itemConfigData>) {
-        this.id = id;
-        this.type = data.type || "none";
-        this.attackDamage = data.attack_damage || 0;
-        this.defense = data.defense || 0;
-        this.level = data.mining_level || 0;
-    }
-}
-
-const _itemConfigData: { [key: string]: itemConfigData } = yaml.parse(
-    fs.readFileSync(`${__dirname}/items.yml`, "utf8")
-);
-export const itemConfigs: Map<number, ItemConfig> = new Map();
-
-for (let [k, v] of Object.entries(_itemConfigData)) {
-    const numericId = idMap.get(k);
-    const item = new ItemConfig(numericId, v);
-    itemConfigs.set(numericId, item);
+export function createItemConfig(id: number, data: Partial<itemConfigData>) {
+    const config: any = {};
+    config.id = id;
+    config.type = data.type || "none";
+    config.attackDamage = data.attack_damage || 0;
+    config.defense = data.defense || 0;
+    config.level = data.mining_level || 0;
+    return new ItemConfig(config);
 }

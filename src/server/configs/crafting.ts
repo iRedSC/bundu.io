@@ -2,7 +2,7 @@ import fs from "fs";
 import yaml from "yaml";
 import { idMap, __dirname } from "./id_map.js";
 import { flagMap } from "./flag_map.js";
-import { PACKET_TYPE } from "../../shared/packet_enums.js";
+import { PACKET_TYPE } from "../../shared/enums.js";
 
 type craftingRecipeData = {
     ingredients: { [key: string]: number };

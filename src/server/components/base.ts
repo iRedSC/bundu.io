@@ -32,3 +32,6 @@ export type GroundData = {
     speedMultiplier: number;
 };
 export const GroundData = Component.register<GroundData>();
+
+export type Flags = Set<number>;
+export const Flags = Component.register<Flags>();

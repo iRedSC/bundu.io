@@ -1,9 +1,8 @@
 import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
-import { assets } from "../assets/load";
 import { Grid } from "./grid";
-import { ServerPacketSchema } from "../../shared/packet_enums";
+import { ServerPacketSchema } from "../../shared/enums";
 
 export class RecipeManager {
     recipes: Map<number, [Map<number, number>, number[]]>;
@@ -60,13 +59,14 @@ export class RecipeManager {
 type Item = number;
 
 // const craftingGrid = new Grid(6, 6, 68, 68, 3);
-
+type Callback = (item: number) => void;
 export class CraftingMenu {
     buttons: ItemButton[];
     items: Item[];
     container: PIXI.Container;
     rows: number;
     grid: Grid;
+    private _callback?: Callback;
 
     constructor(grid: Grid) {
         this.grid = grid;
@@ -79,13 +79,32 @@ export class CraftingMenu {
         this.container.removeChildren();
         this.buttons = [];
         for (let item of this.items) {
-            const button = new ItemButton();
+            const button = new ItemButton(this._callback);
             button.setItem(item);
             button.update(0x777777);
             this.container.addChild(button.button.view);
             this.buttons.push(button);
         }
         this.grid.arrange(this.buttons);
+    }
+
+    setCallback(value: Callback) {
+        this._callback = value;
+        for (const button of this.buttons) {
+            button.setCallback(value);
+        }
+    }
+    set callback(value: Callback) {
+        console.log("SET CALLBACK");
+        console.log(value);
+        this._callback = value;
+        for (const button of this.buttons) {
+            button.setCallback(value);
+        }
+    }
+
+    get callback(): Callback | undefined {
+        return this._callback;
     }
 }
 

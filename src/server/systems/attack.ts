@@ -1,6 +1,6 @@
 import { radians, moveInDirection } from "../../lib/transforms.js";
 import { BasicPoint } from "../../lib/types.js";
-import { ACTION, PACKET_TYPE } from "../../shared/packet_enums.js";
+import { ACTION, PACKET_TYPE } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
 import { AttackData } from "../components/combat.js";
 import { PlayerData } from "../components/player.js";

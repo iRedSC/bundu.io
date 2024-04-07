@@ -54,13 +54,12 @@ export class ItemButton {
             }
         };
 
-        // this.button.press = () => {
-        //     console.log(this.callback);
-        //     if (this.callback) {
-        //         this.callback(this.item);
-        //     }
-        // };
-        // this.update(0x77777);
+        this.button.press = () => {
+            console.log(this.callback);
+            if (this.callback) {
+                this.callback(this.item);
+            }
+        };
     }
 
     setItem(item: number) {
@@ -103,5 +102,9 @@ export class ItemButton {
     }
     get position() {
         return this.button.view.position;
+    }
+
+    setCallback(callback: (item: number) => void) {
+        this.callback = callback;
     }
 }

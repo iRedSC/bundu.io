@@ -1,4 +1,4 @@
-import { ACTION, PACKET_TYPE } from "../../shared/packet_enums.js";
+import { ACTION, PACKET_TYPE } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
 import { Inventory, PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";

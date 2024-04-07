@@ -7,7 +7,7 @@ import {
     CLIENT_PACKET_TYPE,
     PACKET_TYPE,
     ServerPacketSchema,
-} from "../shared/packet_enums";
+} from "../shared/enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { animationManager } from "./animation_manager";
 import { createPipeline } from "./packet_pipline";
@@ -185,36 +185,9 @@ inventory.callback = (item: number) => {
     socket.send(encode([CLIENT_PACKET_TYPE.SELECT_ITEM, item]));
 };
 
-function resize() {
-    inventory.display.container.position.set(
-        window.innerWidth / 2 -
-            ((INVENTORY_SLOT_SIZE + INVENTORY_SLOT_PADDING) *
-                inventory.display.slotamount) /
-                2,
-        window.innerHeight - INVENTORY_SLOT_SIZE
-    );
-}
-window.addEventListener("resize", resize);
-resize();
-
-setTimeout(() => {
-    inventory.update([
-        10,
-        [
-            [100, 10],
-            [101, 50],
-        ],
-    ]);
-    resize();
-}, 50);
-
-function updateinventory() {
-    inventory.display.update(inventory.slots);
-    resize();
-}
-updateinventory();
-
 UI.addChild(inventory.display.container);
+inventory.slots = [];
+inventory.display.update(inventory.slots);
 
 packetPipeline.unpackers[PACKET_TYPE.UPDATE_INVENTORY] = new Unpacker(
     inventory.update.bind(inventory),
@@ -225,20 +198,11 @@ const recipeManager = new RecipeManager();
 
 const craftingGrid = new Grid(6, 6, 68, 68, 3);
 export const craftingMenu = new CraftingMenu(craftingGrid);
+craftingMenu.setCallback((item: number) => {
+    socket.send(encode([CLIENT_PACKET_TYPE.CRAFT_ITEM, item]));
+});
 
 UI.addChild(craftingMenu.container);
-
-// const dummyRecipes: ServerPacketSchema.craftingRecipes = [
-//     [101, [[100, 5]], []],
-//     [
-//         102,
-//         [
-//             [100, 40],
-//             [101, 25],
-//         ],
-//         [],
-//     ],
-// ];
 
 packetPipeline.unpackers[PACKET_TYPE.CRAFTING_RECIPES] = new Unpacker(
     recipeManager.updateRecipes.bind(recipeManager),
@@ -251,9 +215,22 @@ setInterval(() => {
     craftingMenu.update();
 }, 500);
 
-window.addEventListener("resize", () => {
+function resize() {
     craftingMenu.container.position.set(
         craftingGrid.spacingH * 4,
         craftingGrid.spacingV * 4
     );
-});
+    inventory.display.container.position.set(
+        window.innerWidth / 2 -
+            ((INVENTORY_SLOT_SIZE + INVENTORY_SLOT_PADDING) *
+                inventory.display.slotamount) /
+                2,
+        window.innerHeight - INVENTORY_SLOT_SIZE
+    );
+}
+window.addEventListener("resize", resize);
+
+setTimeout(() => {
+    inventory.display.update(inventory.slots);
+    resize();
+}, 50);

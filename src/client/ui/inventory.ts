@@ -3,7 +3,7 @@ import { ItemButton } from "./button";
 import { colorLerp } from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
 import { SpriteFactory } from "../assets/sprite_factory";
-import { ServerPacketSchema } from "../../shared/packet_enums";
+import { ServerPacketSchema } from "../../shared/enums";
 import { Grid } from "./grid";
 
 /**
@@ -78,7 +78,7 @@ type Callback = (item: number) => void;
 export class Inventory {
     slots: Item[];
     display: InventoryDisplay;
-    private _callback?: (item: number) => void;
+    private _callback?: Callback;
 
     constructor() {
         this.slots = [];
