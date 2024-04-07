@@ -1,35 +1,32 @@
 wooden_sword:
-    materials:
+    ingredients:
         wood: 20
 
 stone_sword:
-    materials:
-        wooden_sword: 1
-        stone: 30
-
-    flags:
-        - crafting_table
+    ingredients:
+        # wooden_sword: 1
+        stone: 20
 
 gold_sword:
-    materials:
-        stone_sword: 1
+    ingredients:
+        # stone_sword: 1
         gold: 40
 
-    flags:
-        - crafting_table
+    # flags:
+    #     - near_crafting_table
 
 diamond_sword:
-    materials:
-        gold_sword: 1
+    ingredients:
+        # gold_sword: 1
         diamond: 50
 
-    flags:
-        - crafting_table
+    # flags:
+    #     - near_crafting_table
 
 amethyst_sword:
-    materials:
-        diamond_sword: 1
+    ingredients:
+        # diamond_sword: 1
         amethyst: 60
-    flags:
-        - crafting_table
-        - fire
+    # flags:
+    #     - near_crafting_table
+    #     - near_fire

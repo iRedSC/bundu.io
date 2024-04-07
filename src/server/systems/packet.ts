@@ -1,4 +1,4 @@
-import { ACTION, PACKET_TYPE } from "../../shared/enums.js";
+import { ACTION, PACKET_TYPE } from "../../shared/packet_enums.js";
 import { Physics } from "../components/base.js";
 import { Inventory, PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
@@ -15,6 +15,7 @@ export class PacketSystem extends System {
         super([PlayerData], 20);
 
         this.listen("moved", this.moveObject.bind(this));
+        this.listen("hurt", this.hurt.bind(this));
         this.listen("collided", this.moveObject.bind(this));
         this.listen("blocking", this.blocking.bind(this));
         this.listen("attack", this.attack.bind(this));
@@ -144,6 +145,23 @@ export class PacketSystem extends System {
                 continue;
             }
             send(data.socket, [PACKET_TYPE.UPDATE_GEAR, [player.id, ...items]]);
+        }
+    }
+
+    hurt(objects: IterableIterator<GameObject>, source: GameObject) {
+        const packet: any[] = [PACKET_TYPE.ACTION];
+        for (let object of objects) {
+            packet.push([object.id, ACTION.HURT, false]);
+        }
+        console.log(packet);
+        if (packet.length <= 1) {
+            return;
+        }
+        const players = this.world.query([PlayerData.id]);
+
+        for (let player of players.values()) {
+            const data = PlayerData.get(player)?.data;
+            send(data?.socket, packet);
         }
     }
 }

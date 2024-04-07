@@ -1,6 +1,6 @@
 import { radians, moveInDirection } from "../../lib/transforms.js";
 import { BasicPoint } from "../../lib/types.js";
-import { ACTION, PACKET_TYPE } from "../../shared/enums.js";
+import { ACTION, PACKET_TYPE } from "../../shared/packet_enums.js";
 import { Physics } from "../components/base.js";
 import { AttackData } from "../components/combat.js";
 import { PlayerData } from "../components/player.js";
@@ -114,27 +114,11 @@ export class AttackSystem extends System {
 
             const hits = testForIntersection(hitRange, nearby);
 
-            const packet: any[] = [PACKET_TYPE.ACTION];
-            for (let hit of hits) {
-                if (hit.id === object.id) {
-                    continue;
-                }
-                packet.push([hit.id, ACTION.HURT, false]);
-            }
-            // if (packet.length <= 1) {
-            //     continue;
-            // }
-            const players = this.world.query([PlayerData.id]);
-
-            for (let player of players.values()) {
-                this.trigger("giveItem", player.id, [[100, 1]]);
-                const data = PlayerData.get(player)?.data;
-                send(data?.socket, packPolygon(hitRange));
-                if (data?.visibleObjects.has(object.id) && packet.length > 1) {
-                    console.log(packet);
-                    send(data?.socket, packet);
-                }
-            }
+            this.trigger(
+                "hurt",
+                new Set(Array.from(hits).map((obj) => obj.id)),
+                object
+            );
         }
     }
 }

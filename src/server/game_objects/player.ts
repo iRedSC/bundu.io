@@ -1,6 +1,6 @@
 import { round } from "../../lib/math.js";
 import { degrees } from "../../lib/transforms.js";
-import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
+import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/packet_enums.js";
 import { CalculateCollisions, Physics } from "../components/base.js";
 import { AttackData } from "../components/combat.js";
 import { Inventory, PlayerData } from "../components/player.js";

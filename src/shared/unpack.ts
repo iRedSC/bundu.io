@@ -4,14 +4,10 @@ import Logger from "js-logger";
 const logger = Logger.get("Packet");
 
 export class PacketPipeline {
-    unpackers: Map<number, Unpacker>;
+    unpackers: { [key: number]: Unpacker };
 
     constructor() {
-        this.unpackers = new Map();
-    }
-
-    add(id: number, unpacker: Unpacker) {
-        this.unpackers.set(id, unpacker);
+        this.unpackers = {};
     }
 
     unpack(packet: unknown, data?: any) {
@@ -27,7 +23,7 @@ export class PacketPipeline {
         }
 
         // find unpacker linked to packet id
-        const unpacker = this.unpackers.get(id);
+        const unpacker = this.unpackers[id];
         if (!unpacker) {
             return;
         }

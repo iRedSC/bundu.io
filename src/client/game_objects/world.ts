@@ -5,7 +5,7 @@ import {
     ACTION,
     NewObjectSchema,
     ServerPacketSchema,
-} from "../../shared/enums";
+} from "../../shared/packet_enums";
 import { Structure } from "./structure";
 import * as PIXI from "pixi.js";
 import { Player } from "./player";

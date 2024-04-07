@@ -2,7 +2,7 @@ import { coordsToRect } from "../../lib/transforms.js";
 import SAT from "sat";
 import { GroundData } from "../components/base.js";
 import { GameObject } from "../game_engine/game_object.js";
-import { PACKET_TYPE } from "../../shared/enums.js";
+import { PACKET_TYPE } from "../../shared/packet_enums.js";
 
 export class Ground extends GameObject {
     constructor(data: GroundData) {

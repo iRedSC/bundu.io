@@ -12,7 +12,7 @@ import {
     CLIENT_PACKET_TYPE,
     ClientPacketSchema,
     PACKET_TYPE,
-} from "../shared/enums.js";
+} from "../shared/packet_enums.js";
 import { Unpacker } from "../shared/unpack.js";
 import { Player } from "./game_objects/player.js";
 import random from "../lib/random.js";
@@ -24,6 +24,7 @@ import { GroundData } from "./components/base.js";
 import { Ground } from "./game_objects/ground.js";
 import { AttackSystem } from "./systems/attack.js";
 import { InventorySystem } from "./systems/inventory.js";
+import { ResourceSystem } from "./systems/resource.js";
 
 Logger.useDefaults();
 
@@ -44,7 +45,8 @@ world
     .addSystem(packetSystem)
     .addSystem(collisionSystem)
     .addSystem(attackSystem)
-    .addSystem(inventorySystem);
+    .addSystem(inventorySystem)
+    .addSystem(new ResourceSystem());
 
 const ground: GroundData = {
     collider: new SAT.Box(new SAT.Vector(1000, 1000), 15000, 15000),
@@ -74,9 +76,8 @@ controller.disconnect = (socket: GameWS) => {
     players.delete(socket.id!);
 };
 
-pipeline.add(
-    CLIENT_PACKET_TYPE.JOIN,
-    new Unpacker((packet: ClientPacketSchema.join, id: number) => {
+pipeline.unpackers[CLIENT_PACKET_TYPE.JOIN] = new Unpacker(
+    (packet: ClientPacketSchema.join, id: number) => {
         const socket = controller.sockets.get(id);
         if (!socket) {
             return;
@@ -105,7 +106,8 @@ pipeline.add(
         players.set(player.id, player);
         world.addObject(player);
         send(socket, [PACKET_TYPE.STARTING_INFO, [player.id]]);
-    }, ClientPacketSchema.join)
+    },
+    ClientPacketSchema.join
 );
 
 // * Check memory usage, could be put in a better spot.

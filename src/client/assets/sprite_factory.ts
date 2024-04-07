@@ -2,35 +2,43 @@ import * as PIXI from "pixi.js";
 import { assets } from "./load";
 import { radians } from "../../lib/transforms";
 import { idMap } from "../configs/id_map";
+import { mergeObjects } from "../../lib/object_utils";
 
 type DisplayConfig = { x: number; y: number; scale: number; rotation: number };
 
 const DEFAULT_CONFIG = { x: 0, y: 0, scale: 1, rotation: 0 };
 export class SpriteFactory {
-    static build(
-        texture: string | number,
-        config: DisplayConfig = DEFAULT_CONFIG
-    ) {
+    static build(texture: string | number, config?: Partial<DisplayConfig>) {
         if (typeof texture === "number") {
             texture = idMap.getv(texture) || "";
         }
+        const fullConfig = mergeObjects<DisplayConfig>(
+            undefined,
+            config,
+            DEFAULT_CONFIG
+        );
         const sprite = new PIXI.Sprite(assets(texture));
-        sprite.x = config.x;
-        sprite.y = config.y;
-        sprite.scale.set(config.scale);
-        sprite.rotation = radians(config.rotation);
+        sprite.x = fullConfig.x;
+        sprite.y = fullConfig.y;
+        sprite.scale.set(fullConfig.scale);
+        sprite.rotation = radians(fullConfig.rotation);
         return sprite;
     }
 
     static update(
         sprite: PIXI.Sprite,
-        config: DisplayConfig = DEFAULT_CONFIG,
+        config?: Partial<DisplayConfig>,
         texture?: string
     ) {
-        sprite.x = config.x;
-        sprite.y = config.y;
-        sprite.scale.set(config.scale);
-        sprite.rotation = radians(config.rotation);
+        const fullConfig = mergeObjects<DisplayConfig>(
+            undefined,
+            config,
+            DEFAULT_CONFIG
+        );
+        sprite.x = fullConfig.x;
+        sprite.y = fullConfig.y;
+        sprite.scale.set(fullConfig.scale);
+        sprite.rotation = radians(fullConfig.rotation);
         if (texture) {
             sprite.texture = assets(texture);
         }

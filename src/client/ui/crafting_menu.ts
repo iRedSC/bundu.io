@@ -3,147 +3,89 @@ import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
 import { assets } from "../assets/load";
 import { Grid } from "./grid";
-export const craftingItems: Item[] = [
-    {
-        imagePath: "./assets/gold_wall.svg",
-        result: "Crafted Item 1",
-        category: "structures",
-    },
-    {
-        imagePath: "./assets/meat.svg",
-        result: "Crafted Item 2",
-        category: "misc",
-    },
-    {
-        imagePath: "./assets/gold_hammer.svg",
-        result: "Crafted Item 3",
-        category: "tools",
-    },
-    {
-        imagePath: "./assets/stone.svg",
-        result: "Crafted Item 4",
-        category: "misc",
-    },
-    {
-        imagePath: "./assets/diamond_wall.svg",
-        result: "Crafted Item 5",
-        category: "structures",
-    },
-    {
-        imagePath: "./assets/diamond.svg",
-        result: "Crafted Item 6",
-        category: "misc",
-    },
-    {
-        imagePath: "./assets/stone_sword.svg",
-        result: "Crafted Item 7",
-        category: "tools",
-    },
-    {
-        imagePath: "./assets/amethyst.svg",
-        result: "Crafted Item 8",
-        category: "misc",
-    },
-    {
-        imagePath: "./assets/wood.svg",
-        result: "Crafted Item 9",
-        category: "misc",
-    },
-    {
-        imagePath: "./assets/ram_wool.svg",
-        result: "Crafted Item 10",
-        category: "misc",
-    },
-    {
-        imagePath: "./assets/wood_wall.svg",
-        result: "Crafted Item 11",
-        category: "structures",
-    },
-    {
-        imagePath: "./assets/earmuffs.svg",
-        result: "Crafted Item 12",
-        category: "tools",
-    },
-    {
-        imagePath: "./assets/gold_spear.svg",
-        result: "Crafted Item 13",
-        category: "tools",
-    },
-    {
-        imagePath: "./assets/gold_pickaxe.svg",
-        result: "Crafted Item 13",
-        category: "tools",
-    },
-    {
-        imagePath: "./assets/gold_sword.svg",
-        result: "Crafted Item 13",
-        category: "tools",
-    },
-    {
-        imagePath: "./assets/gold_helmet.svg",
-        result: "Crafted Item 13",
-        category: "tools",
-    },
-    {
-        imagePath: "./assets/diamond_wall.svg",
-        result: "Crafted Item 13",
-        category: "structures",
-    },
-    {
-        imagePath: "./assets/diamond_spike.svg",
-        result: "Crafted Item 13",
-        category: "structures",
-    },
-    {
-        imagePath: "./assets/stone_door.svg",
-        result: "Crafted Item 13",
-        category: "structures",
-    },
-];
-// IN -> RECEIVE ARRAY OF CRAFTABLE ITEMS
-// OUT -> CRAFTING BUTTONS SEND REQUEST TOs SERVER
+import { ServerPacketSchema } from "../../shared/packet_enums";
 
-type Item = { imagePath: string; result: string; category: string };
+export class RecipeManager {
+    recipes: Map<number, [Map<number, number>, number[]]>;
 
-const craftingGrid = new Grid(10, 10, 68, 68, 3);
+    constructor() {
+        this.recipes = new Map();
+    }
+
+    updateRecipes(update: ServerPacketSchema.craftingRecipes) {
+        console.log("updating recipes");
+        console.log(update);
+        this.recipes.clear();
+        for (const recipe of update) {
+            const item = recipe[0];
+            const ingredients = recipe[1];
+            const flags = recipe[2];
+
+            const ingredientMap = new Map();
+            for (const ingredient of ingredients) {
+                ingredientMap.set(ingredient[0], ingredient[1]);
+            }
+
+            this.recipes.set(item, [ingredientMap, flags]);
+        }
+    }
+
+    filter(items: [number, number][], flags: number[]): number[] {
+        const craftable: number[] = [];
+        const itemsMap = new Map(items);
+        nextRecipe: for (const [recipeId, recipe] of this.recipes.entries()) {
+            const ingredients = recipe[0];
+            const itemFlags = new Set(flags);
+            for (const flag of recipe[1]) {
+                if (!itemFlags.has(flag)) {
+                    continue nextRecipe;
+                }
+            }
+
+            for (const [id, recipeAmount] of ingredients.entries()) {
+                const itemsAmount = itemsMap.get(id);
+                if (!itemsAmount) {
+                    continue nextRecipe;
+                }
+                if (itemsAmount < recipeAmount) {
+                    continue nextRecipe;
+                }
+            }
+            craftable.push(recipeId);
+        }
+        return craftable;
+    }
+}
+
+type Item = number;
+
+// const craftingGrid = new Grid(6, 6, 68, 68, 3);
 
 export class CraftingMenu {
     buttons: ItemButton[];
-    items: Array<Item>;
+    items: Item[];
     container: PIXI.Container;
-    padding: number;
-    buttonSize: number;
-    buttonsPerRow: number;
     rows: number;
+    grid: Grid;
 
-    constructor(columns: number, padding: number, buttonSize: number) {
+    constructor(grid: Grid) {
+        this.grid = grid;
         this.buttons = [];
         this.items = [];
         this.container = new PIXI.Container();
-        this.buttonsPerRow = columns;
-        this.padding = padding;
-        this.buttonSize = buttonSize;
         this.rows = 0;
     }
-    update(categories?: Set<string>) {
-        if (categories === undefined) {
-            categories = new Set();
-        }
+    update() {
         this.container.removeChildren();
         this.buttons = [];
         for (let item of this.items) {
-            if (categories!.size > 0) {
-                if (!categories!.has(item.category)) {
-                    continue;
-                }
-            }
             const button = new ItemButton();
-            button.setItem(-1);
+            button.setItem(item);
             button.update(0x777777);
             this.container.addChild(button.button.view);
             this.buttons.push(button);
         }
-        craftingGrid.arrange(this.buttons);
+        this.grid.arrange(this.buttons);
     }
 }
 
@@ -214,25 +156,18 @@ export class Filter {
         } else {
             this.activeCategories.add(category);
         }
-        this.craftingMenu.update(this.activeCategories);
+        // this.craftingMenu.update(this.activeCategories);
     }
 }
 
-export const craftingMenu = new CraftingMenu(3, 25, 68);
-export const filterButtons = new Filter(40, craftingMenu);
-filterButtons.add("tools", assets("weapon_toggle"));
-filterButtons.add("structures", assets("build_toggle"));
-filterButtons.add("misc", assets("misc_toggle"));
-craftingMenu.items = craftingItems;
+// export const filterButtons = new Filter(40, craftingMenu);
+// filterButtons.add("tools", assets("weapon_toggle"));
+// filterButtons.add("structures", assets("build_toggle"));
+// filterButtons.add("misc", assets("misc_toggle"));
 
-craftingMenu.update();
-
-console.log(craftingMenu.rows);
-filterButtons.container.position.set(
-    craftingMenu.padding,
-    craftingMenu.buttonsPerRow *
-        (craftingMenu.buttonSize + craftingMenu.padding) +
-        craftingMenu.padding * 2
-);
-
-craftingMenu.container.position.set(craftingMenu.padding, craftingMenu.padding);
+// filterButtons.container.position.set(
+//     craftingMenu.padding,
+//     craftingMenu.buttonsPerRow *
+//         (craftingMenu.buttonSize + craftingMenu.padding) +
+//         craftingMenu.padding * 2
+// );

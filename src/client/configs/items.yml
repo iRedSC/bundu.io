@@ -2,6 +2,7 @@ unknown_asset:
     type: none
     sprite: unknown_asset
 
+# Pickaxe
 wooden_pickaxe:
     type: pickaxe
     sprite: wooden_pickaxe
@@ -17,13 +18,12 @@ gold_pickaxe:
 diamond_pickaxe:
     type: pickaxe
     sprite: diamond_pickaxe
-    hand_display:
-        scale: 5
 
 amethyst_pickaxe:
     type: pickaxe
     sprite: amethyst_pickaxe
 
+# Sword
 wooden_sword:
     type: sword
     sprite: wooden_sword
@@ -44,6 +44,32 @@ amethyst_sword:
     type: sword
     sprite: amethyst_sword
 
+# Spear
+wooden_spear:
+    type: spear
+    sprite: wooden_spear
+
+stone_spear:
+    type: spear
+    sprite: stone_spear
+
+gold_spear:
+    type: spear
+    sprite: gold_spear
+
+diamond_spear:
+    type: spear
+    sprite: diamond_spear
+
+amethyst_spear:
+    type: spear
+    sprite: amethyst_spear
+
+tusk_spear:
+    type: spear
+    sprite: tusk_spear
+
+# Helmet
 wooden_helmet:
     type: helmet
     sprite: wooden_helmet
@@ -65,7 +91,3 @@ diamond_helmet:
 amethyst_helmet:
     type: helmet
     sprite: amethyst_helmet
-
-amethyst_spear:
-    type: spear
-    sprite: amethyst_spear

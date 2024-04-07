@@ -1,10 +1,12 @@
 import { moveToward } from "../../lib/transforms.js";
 import { BasicPoint } from "../../lib/types.js";
-import { PACKET_TYPE } from "../../shared/enums.js";
+import { PACKET_TYPE } from "../../shared/packet_enums.js";
 import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
+import { packCraftingList } from "../configs/crafting.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
+import { send } from "../send.js";
 import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
 import { quadtree } from "./position.js";
@@ -39,7 +41,11 @@ export class PlayerSystem extends System implements PlayerController {
         }
         const newX = physics.position.x - data.moveDir[0];
         const newY = physics.position.y - data.moveDir[1];
-        const target = moveToward(physics.position, { x: newX, y: newY }, 10);
+        const target = moveToward(
+            physics.position,
+            { x: newX, y: newY },
+            delta / 5
+        );
         physics.position.x = target.x;
         physics.position.y = target.y;
 
@@ -48,10 +54,12 @@ export class PlayerSystem extends System implements PlayerController {
 
     enter(player: GameObject) {
         const ground = this.world.query([GroundData.id]);
+        const data = PlayerData.get(player).data;
         updateHandler.send(player, [
             ground.values(),
             [PACKET_TYPE.LOAD_GROUND],
         ]);
+        send(data.socket, packCraftingList());
     }
 
     // Sets selected player's moveDir property.

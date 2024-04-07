@@ -5,36 +5,59 @@ hand: hand.svg
 
 item_button: item_button.svg
 
+weapon_toggle: weapon_toggle.svg
+build_toggle: build_toggle.svg
+misc_toggle: misc_toggle.svg
+
+# * TOOLS
+
+# Pickaxe
 wooden_pickaxe: wooden_pickaxe.svg
 stone_pickaxe: stone_pickaxe.svg
 gold_pickaxe: gold_pickaxe.svg
 diamond_pickaxe: diamond_pickaxe.svg
 amethyst_pickaxe: amethyst_pickaxe.svg
 
+# Special Tools
+lumber_axe: lumber_axe.svg
+spyglass: spyglass.svg
+butcher_knife: butcher_knife.svg
+
+# Sword
 wooden_sword: wooden_sword.svg
 stone_sword: stone_sword.svg
 gold_sword: gold_sword.svg
 diamond_sword: diamond_sword.svg
 amethyst_sword: amethyst_sword.svg
 
+# Spear
+wooden_spear: wooden_spear.svg
+stone_spear: stone_spear.svg
+gold_spear: gold_spear.svg
+diamond_spear: diamond_spear.svg
 amethyst_spear: amethyst_spear.svg
+tusk_spear: tusk_spear.svg
 
+# Helmet
 wooden_helmet: wooden_helmet.svg
 stone_helmet: stone_helmet.svg
 gold_helmet: gold_helmet.svg
 diamond_helmet: diamond_helmet.svg
 amethyst_helmet: amethyst_helmet.svg
 
-wood: flame2.png
+# Hat
+earmuffs: earmuffs.svg
+cap_and_scarf: cap_and_scarf.svg
+chapka: chapka.svg
+
+# Resources
+wood: pine_tree.svg
 stone: stone.svg
 gold: gold.svg
 diamond: diamond.svg
 amethyst: amethyst.svg
 
-weapon_toggle: weapon_toggle.svg
-build_toggle: build_toggle.svg
-misc_toggle: misc_toggle.svg
-
+# Animals
 elephant: elephant.svg
 bear: bear.svg
 ram: ram.svg

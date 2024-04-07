@@ -3,7 +3,7 @@ import { ItemButton } from "./button";
 import { colorLerp } from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
 import { SpriteFactory } from "../assets/sprite_factory";
-import { ServerPacketSchema } from "../../shared/enums";
+import { ServerPacketSchema } from "../../shared/packet_enums";
 import { Grid } from "./grid";
 
 /**

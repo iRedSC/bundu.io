@@ -1,27 +1,44 @@
 import fs from "fs";
 import yaml from "yaml";
 import { idMap, __dirname } from "./id_map.js";
+import { flagMap } from "./flag_map.js";
+import { PACKET_TYPE } from "../../shared/packet_enums.js";
 
 type craftingRecipeData = {
-    materials: { [key: string]: number };
+    ingredients: { [key: string]: number };
     flags: string[];
 };
 
 export class CraftingRecipe {
     id: number;
-    materials: Map<string, number>;
-    flags: string[];
+    ingredients: Map<number, number>;
+    flags: number[];
 
     constructor(id: number, data: Partial<craftingRecipeData>) {
         this.id = id;
 
-        this.materials = new Map();
-        if (data.materials) {
-            for (const [k, v] of Object.entries(data.materials)) {
-                this.materials.set(k, v);
+        this.ingredients = new Map();
+        if (data.ingredients) {
+            for (const [k, v] of Object.entries(data.ingredients)) {
+                const id = idMap.get(k);
+                if (!id) {
+                    continue;
+                }
+                this.ingredients.set(id, v);
             }
         }
-        this.flags = data.flags || [];
+        this.flags = [];
+        for (const flag of data.flags || []) {
+            const flagId = flagMap.get(flag);
+            if (!flagId) {
+                continue;
+            }
+            this.flags.push(flagId);
+        }
+    }
+
+    pack() {
+        return [this.id, Array.from(this.ingredients.entries()), this.flags];
     }
 }
 
@@ -34,4 +51,13 @@ for (let [k, v] of Object.entries(_craftingRecipeData)) {
     const numericId = idMap.get(k);
     const recipe = new CraftingRecipe(numericId, v);
     craftingList.set(numericId, recipe);
+}
+
+export function packCraftingList() {
+    const packet: any[] = [];
+
+    for (const recipe of craftingList.values()) {
+        packet.push(recipe.pack());
+    }
+    return [PACKET_TYPE.CRAFTING_RECIPES, packet];
 }

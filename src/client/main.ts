@@ -7,7 +7,7 @@ import {
     CLIENT_PACKET_TYPE,
     PACKET_TYPE,
     ServerPacketSchema,
-} from "../shared/enums";
+} from "../shared/packet_enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
 import { animationManager } from "./animation_manager";
 import { createPipeline } from "./packet_pipline";
@@ -23,6 +23,8 @@ import {
     Inventory,
 } from "./ui/inventory";
 import { UI } from "./ui/layout";
+import { CraftingMenu, RecipeManager } from "./ui/crafting_menu";
+import { Grid } from "./ui/grid";
 
 const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
@@ -37,9 +39,9 @@ createPipeline(packetPipeline, world);
 
 export let requestIds: number[] = [];
 
-packetPipeline.add(
-    PACKET_TYPE.PING,
-    new Unpacker((_: ServerPacketSchema.ping) => {}, ServerPacketSchema.ping)
+packetPipeline.unpackers[PACKET_TYPE.PING] = new Unpacker(
+    (_: ServerPacketSchema.ping) => {},
+    ServerPacketSchema.ping
 );
 
 function drawPolygon(packet: ServerPacketSchema.drawPolygon) {
@@ -62,9 +64,9 @@ function drawPolygon(packet: ServerPacketSchema.drawPolygon) {
     }, 1000);
 }
 
-packetPipeline.add(
-    PACKET_TYPE.DRAW_POLYGON,
-    new Unpacker(drawPolygon, ServerPacketSchema.drawPolygon)
+packetPipeline.unpackers[PACKET_TYPE.DRAW_POLYGON] = new Unpacker(
+    drawPolygon,
+    ServerPacketSchema.drawPolygon
 );
 
 socket.onopen = () => {
@@ -214,10 +216,44 @@ updateinventory();
 
 UI.addChild(inventory.display.container);
 
-packetPipeline.add(
-    PACKET_TYPE.UPDATE_INVENTORY,
-    new Unpacker(
-        inventory.update.bind(inventory),
-        ServerPacketSchema.updateInventory
-    )
+packetPipeline.unpackers[PACKET_TYPE.UPDATE_INVENTORY] = new Unpacker(
+    inventory.update.bind(inventory),
+    ServerPacketSchema.updateInventory
 );
+
+const recipeManager = new RecipeManager();
+
+const craftingGrid = new Grid(6, 6, 68, 68, 3);
+export const craftingMenu = new CraftingMenu(craftingGrid);
+
+UI.addChild(craftingMenu.container);
+
+// const dummyRecipes: ServerPacketSchema.craftingRecipes = [
+//     [101, [[100, 5]], []],
+//     [
+//         102,
+//         [
+//             [100, 40],
+//             [101, 25],
+//         ],
+//         [],
+//     ],
+// ];
+
+packetPipeline.unpackers[PACKET_TYPE.CRAFTING_RECIPES] = new Unpacker(
+    recipeManager.updateRecipes.bind(recipeManager),
+    ServerPacketSchema.craftingRecipes
+);
+
+setInterval(() => {
+    console.log(recipeManager.filter(inventory.slots, []));
+    craftingMenu.items = recipeManager.filter(inventory.slots, []);
+    craftingMenu.update();
+}, 500);
+
+window.addEventListener("resize", () => {
+    craftingMenu.container.position.set(
+        craftingGrid.spacingH * 4,
+        craftingGrid.spacingV * 4
+    );
+});

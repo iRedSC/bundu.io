@@ -28,7 +28,7 @@ export function createResourceConfig(
     config.level = data.level || 0;
     config.regenSpeed = data.regenSpeed || 10;
     config.amount = data.amount || 5;
-    config.item = data.item || null;
+    config.item = idMap.get(data.item) || -1;
     return new ResourceConfig(config);
 }
 
