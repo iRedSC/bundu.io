@@ -74,16 +74,12 @@ miracle_fruit: miracle_fruit.svg
 bandage: bandage.svg
 
 # Resources
-wood: pine_tree.svg
+wood: wood.svg
 stone: stone.svg
 gold: gold.svg
 diamond: diamond.svg
 amethyst: amethyst.svg
 
-# Animals
-elephant: elephant.svg
-bear: bear.svg
-ram: ram.svg
 
 # * PLACEABLE
 
@@ -126,3 +122,65 @@ quick_diamond_spike: quick_diamond_spike.svg
 
 #* Map Objects
 
+#Trees
+forest_tree1: forest_tree1.svg
+forest_tree2: forest_tree2.svg
+forest_tree3: forest_tree3.svg
+forest_tree4: forest_tree4.svg
+forest_tree5: forest_tree5.svg
+forest_tree6: forest_tree6.svg
+
+pine_tree: pine_tree.svg
+pine_tree2: pine_tree2.svg
+pine_tree3: pine_tree3.svg
+pine_tree4: pine_tree4.svg
+pine_tree5: pine_tree5.svg
+pine_tree6: pine_tree6.svg
+pine_tree_snow: pine_tree_snow.svg
+
+savanah_tree1: savanah_tree1.svg
+savanah_tree2: savanah_tree2.svg
+savanah_bush1: savanah_bush1.svg
+
+#other
+berry_bush: berry_bush.svg
+berry_bush_overlay: berry_bush_overlay.svg
+mango_tree1: mango_tree1.svg
+hive1: hive1.svg
+hive2: hive2.svg
+hive3: hive3.svg
+
+
+# * Aniamls
+
+#Alive
+bear: bear.svg
+deer: deer.svg
+ram: ram.svg
+elephant: elephant.svg
+alligator: alligator.svg
+komodo_dragon: komodo_dragon.svg
+bee: bee.svg
+queen_bee: queen_bee.svg
+
+#Dead
+bear_dead: bear_dead.svg
+deer_dead: deer_dead.svg
+ram_dead: ram_dead.svg
+elephant_dead: elephant_dead.svg
+alligator_dead: alligator_dead.svg
+komodo_dragon_dead: komodo_dragon_dead.svg
+bee_dead: bee_dead.svg
+queen_bee_dead: queen_bee_dead.svg
+
+#Angry
+ram_angry: ram_angry.svg
+elephant_angry: elephant_angry.svg
+
+#Animal Items
+bear_fur: bear_fur.svg
+deer_hide: deer_hide.svg
+ram_wool: ram_wool.svg
+elephant_tusk: elephant_tusk.svg
+alligator_skin: alligator_skin.svg
+komodo_dragon_eye: komodo_dragon_eye.svg
