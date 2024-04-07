@@ -102,6 +102,41 @@ amethyst_pickaxe:
         - near_fire
         - near_anvil
 
+lumber_axe:
+    duration: 40000
+    ingredients:
+        diamond_pickaxe: 1
+        amethyst: 40
+        diamond: 40
+        gold: 60
+        stone: 100
+        wood: 200
+
+    flags:
+        - near_crafting_table
+        - near_fire
+        - near_anvil
+
+butcher_knife:
+    duration: 15000
+    ingredients:
+        stone: 70
+        wood: 100
+        elephant_tusk: 2
+
+    flags:
+        - near_crafting_table
+        - near_anvil
+
+shovel:
+    duration: 12000
+    ingredients:
+        stone: 70
+        wood: 40
+
+    flags:
+        - near_crafting_table
+
 # * SPEARS
 
 stone_spear:
@@ -583,3 +618,11 @@ quick_diamond_spike:
     flags:
         - near_crafting_table
         - near_anvil
+
+meat_cooked:
+    duration: 2000
+    ingredients:
+        meat: 1
+
+    flags:
+        - near_fire

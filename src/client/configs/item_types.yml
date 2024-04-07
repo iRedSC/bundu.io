@@ -22,6 +22,14 @@ helmet:
         rotation: 0
         scale: 1.1
 
+hat:
+    body_display:
+        x: 0
+        y: 0
+        rotation: 0
+        scale: 1.1
+
+
 spear:
     hand_display:
         rotation: -135
@@ -36,6 +44,12 @@ hammer:
         y: -200
         scale: 2
 
+book:
+    hand_display:
+        rotation: -100
+        x: 150
+        y: -200
+        scale: 2
 wall:
     sprite: unknown_asset
 

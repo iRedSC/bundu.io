@@ -5,6 +5,8 @@ tools:
         - helmet
         - spear
         - hammer
+        - hat
+        - book
     items:
         - spyglass
 
