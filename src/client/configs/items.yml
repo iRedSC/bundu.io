@@ -3,9 +3,9 @@ unknown_asset:
     sprite: unknown_asset
 
 # Pickaxe
-wooden_pickaxe:
+wood_pickaxe:
     type: pickaxe
-    sprite: wooden_pickaxe
+    sprite: wood_pickaxe
 
 stone_pickaxe:
     type: pickaxe
@@ -24,9 +24,9 @@ amethyst_pickaxe:
     sprite: amethyst_pickaxe
 
 # Sword
-wooden_sword:
+wood_sword:
     type: sword
-    sprite: wooden_sword
+    sprite: wood_sword
 
 stone_sword:
     type: sword
