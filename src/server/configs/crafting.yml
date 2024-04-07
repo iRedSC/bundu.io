@@ -60,8 +60,8 @@ stone_pickaxe:
     duration: 8000
     ingredients:
          wood_pickaxe: 1
-        stone: 20
-        wood: 30
+         stone: 20
+         wood: 30
 
     flags:
      - near_crafting_table
