@@ -59,7 +59,7 @@ export function testForIntersection(
     polygon: SAT.Polygon,
     collisionTest: Set<GameObject>
 ) {
-    const hitObjects: Set<GameObject> = new Set();
+    const hitObjects: Map<number, GameObject> = new Map();
 
     for (const other of collisionTest) {
         const physics = Physics.get(other)?.data;
@@ -68,7 +68,7 @@ export function testForIntersection(
         }
         const overlap = SAT.testPolygonCircle(polygon, physics.collider);
         if (overlap) {
-            hitObjects.add(other);
+            hitObjects.set(other.id, other);
         }
     }
     return hitObjects;
@@ -114,11 +114,7 @@ export class AttackSystem extends System {
 
             const hits = testForIntersection(hitRange, nearby);
 
-            this.trigger(
-                "hurt",
-                new Set(Array.from(hits).map((obj) => obj.id)),
-                object
-            );
+            this.trigger("hurt", new Set(hits.keys()), object);
         }
     }
 }

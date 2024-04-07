@@ -57,7 +57,7 @@ export class World {
             const callbacks = events.get(event) || new Set();
             if (callbacks.size > 0) {
                 this.inject(system);
-                const objects = this.query(system.componentIds, objectIds);
+                const objects = this.query([], objectIds);
                 callbacks.forEach((callback) =>
                     callback(objects.values(), data)
                 );
