@@ -59,9 +59,9 @@ wood_pickaxe:
 stone_pickaxe:
     duration: 8000
     ingredients:
-         wood_pickaxe: 1
-         stone: 20
-         wood: 30
+            wood_pickaxe: 1
+            stone: 20
+            wood: 30
 
     flags:
      - near_crafting_table
@@ -102,6 +102,44 @@ amethyst_pickaxe:
      - near_crafting_table
      - near_fire
      - near_anvil
+
+lumber_axe:
+    duration: 40000
+    ingredients:
+        diamond_pickaxe: 1
+        amethyst: 40
+        diamond: 40
+        gold: 60
+        stone: 100
+        wood: 200
+
+    flags:
+     - near_crafting_table
+     - near_fire
+     - near_anvil
+
+
+butcher_knife:
+    duration: 15000
+    ingredients:
+        stone: 70
+        wood: 100
+        elephant_tusk: 2
+
+
+    flags:
+     - near_crafting_table
+     - near_anvil
+
+shovel:
+    duration: 12000
+    ingredients:
+        stone: 70
+        wood: 40
+
+
+    flags:
+     - near_crafting_table
 
 # * SPEARS
 
@@ -226,9 +264,9 @@ wood_helmet:
 stone_helmet:
     duration: 20000
     ingredients:
-         wood_helmet: 1
-        stone: 80
-        wood: 60
+            wood_helmet: 1
+            stone: 80
+            wood: 60
 
     flags:
      - near_crafting_table
@@ -424,7 +462,7 @@ amethyst_wall:
     ingredients:
         diamond_wall: 1
         amethyst: 17
-        diamond : 7
+        diamond: 7
     flags:
      - near_crafting_table
      - near_fire
@@ -438,7 +476,7 @@ wood_door:
         wood: 30
 
 stone_door:
-    3500
+    duration: 3500
     ingredients:
         wood_door: 1
         stone: 28
@@ -473,7 +511,7 @@ amethyst_door:
     ingredients:
         diamond_door: 1
         amethyst: 22
-        diamond : 12
+        diamond: 12
     flags:
      - near_crafting_table
      - near_fire
@@ -522,7 +560,7 @@ amethyst_spike:
     ingredients:
         diamond_spike: 1
         amethyst: 50
-        diamond : 40
+        diamond: 40
     flags:
      - near_crafting_table
      - near_fire
@@ -555,13 +593,13 @@ fire_big:
     duration: 4000
     ingredients:
         wood: 35
-        stone : 15
+        stone: 15
 
 fire_pit: 
     duration: 8000
     ingredients:
         wood: 50
-        stone : 50
+        stone: 50
     
     flags:
      - near_crafting_table
@@ -599,3 +637,11 @@ quick_diamond_spike:
     flags:
      - near_crafting_table
      - near_anvil
+
+meat_cooked:
+    duration: 2000
+    ingredients:
+        meat: 1
+    
+    flags:
+     - near_fire

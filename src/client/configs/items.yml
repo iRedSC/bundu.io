@@ -23,6 +23,18 @@ amethyst_pickaxe:
     type: pickaxe
     sprite: amethyst_pickaxe
 
+butcher_knife:
+    type: pickaxe
+    sprite: butcher_knife
+
+lumber_axe:
+    type: pickaxe
+    sprite: lumber_axe
+
+shovel:
+    type: pickaxe
+    sprite: shovel
+
 # Sword
 wood_sword:
     type: sword
@@ -199,3 +211,28 @@ fire_big:
 fire_small:
     type: building
     sprite: fire_small
+
+earmuffs:
+    type: hat
+    sprite: earmuffs
+
+beanie:
+    type: hat
+    sprite: beanie
+
+coat:
+    type: hat
+    sprite: coat
+
+book:
+    type: book
+    sprite: book
+
+resource_book:
+    type: book
+    sprite: resource_book
+
+time_book:
+    type: book
+    sprite: time_book
+
