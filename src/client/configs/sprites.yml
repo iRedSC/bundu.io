@@ -1,6 +1,8 @@
 unknown_asset: unknown_asset.svg
 
 player: player.svg
+player_hat: player_hat.svg
+player_dead: player_dead.svg
 hand: hand.svg
 
 item_button: item_button.svg
@@ -12,34 +14,40 @@ misc_toggle: misc_toggle.svg
 # * TOOLS
 
 # Pickaxe
-wooden_pickaxe: wooden_pickaxe.svg
+wood_pickaxe: wood_pickaxe.svg
 stone_pickaxe: stone_pickaxe.svg
 gold_pickaxe: gold_pickaxe.svg
 diamond_pickaxe: diamond_pickaxe.svg
 amethyst_pickaxe: amethyst_pickaxe.svg
 
 # Special Tools
-lumber_axe: lumber_axe.svg
+lumber_axe: hatchet.svg
 spyglass: spyglass.svg
-butcher_knife: butcher_knife.svg
+butcher_knife: knife.svg
+shovel: shovel.svg
 
 # Sword
-wooden_sword: wooden_sword.svg
+wood_sword: wood_sword.svg
 stone_sword: stone_sword.svg
 gold_sword: gold_sword.svg
 diamond_sword: diamond_sword.svg
 amethyst_sword: amethyst_sword.svg
 
+# Hammer
+stone_hammer: stone_hammer.svg
+gold_hammer: gold_hammer.svg
+diamond_hammer: diamond_hammer.svg
+amethyst_hammer: amethyst_hammer.svg
+
 # Spear
-wooden_spear: wooden_spear.svg
 stone_spear: stone_spear.svg
 gold_spear: gold_spear.svg
 diamond_spear: diamond_spear.svg
 amethyst_spear: amethyst_spear.svg
-tusk_spear: tusk_spear.svg
+tusk_spear: hunting_spear.svg
 
 # Helmet
-wooden_helmet: wooden_helmet.svg
+wood_helmet: wood_helmet.svg
 stone_helmet: stone_helmet.svg
 gold_helmet: gold_helmet.svg
 diamond_helmet: diamond_helmet.svg
@@ -47,8 +55,23 @@ amethyst_helmet: amethyst_helmet.svg
 
 # Hat
 earmuffs: earmuffs.svg
-cap_and_scarf: cap_and_scarf.svg
-chapka: chapka.svg
+beanie: beanie.svg
+coat: coat.svg
+
+# Special Items
+book: book.svg
+resource_book: resource_book.svg
+time_book: time_book.svg
+
+# Connsumable
+meat: meat.svg
+meat_cooked: meat_cooked.svg
+blue_berry: blue_berry.svg
+red_berry: red_berry.svg
+honey: honey.svg
+mango: mango.svg
+miracle_fruit: miracle_fruit.svg
+bandage: bandage.svg
 
 # Resources
 wood: pine_tree.svg
@@ -61,3 +84,45 @@ amethyst: amethyst.svg
 elephant: elephant.svg
 bear: bear.svg
 ram: ram.svg
+
+# * PLACEABLE
+
+#Walls
+friendly_wall: friendly_wall.svg
+wood_wall: wood_wall.svg
+stone_wall: stone_wall.svg
+gold_wall: gold_wall.svg
+diamond_wall: diamond_wall.svg
+amethyst_wall: amethyst_wall.svg
+
+#Spike
+wood_spike: wood_spike.svg
+stone_spike: stone_spike.svg
+gold_spike: gold_spike.svg
+diamond_spike: diamond_spike.svg
+amethyst_spike: amethyst_spike.svg
+
+#Door
+friendly_door: friendly_door.svg
+door_open: door_open.svg
+wood_door: wood_door.svg
+stone_door: stone_door.svg
+gold_door: gold_door.svg
+diamond_door: diamond_door.svg
+amethyst_door: amethyst_door.svg
+
+#Crafting
+workbench: workbench.svg
+fire_pit: fire_pit.svg
+anvil: anvil.svg
+fire_small: fire_big.svg
+fire_big: fire_small.svg
+
+#Quick buildings
+quick_wood_wall: quick_wood_wall.svg
+quick_stone_wall: quick_stone_wall.svg
+quick_stone_spike: quick_stone_spike.svg
+quick_diamond_spike: quick_diamond_spike.svg
+
+#* Map Objects
+
