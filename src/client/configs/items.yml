@@ -44,10 +44,7 @@ amethyst_sword:
     type: sword
     sprite: amethyst_sword
 
-# Spear
-wooden_spear:
-    type: spear
-    sprite: wooden_spear
+# spears
 
 stone_spear:
     type: spear
@@ -70,9 +67,9 @@ tusk_spear:
     sprite: tusk_spear
 
 # Helmet
-wooden_helmet:
+wood_helmet:
     type: helmet
-    sprite: wooden_helmet
+    sprite: wood_helmet
 
 stone_helmet:
     type: helmet
@@ -91,3 +88,114 @@ diamond_helmet:
 amethyst_helmet:
     type: helmet
     sprite: amethyst_helmet
+
+# Hammer
+wood_hammer:
+    type: hammer
+    sprite: wooden_hammer
+
+stone_hammer:
+    type: hammer
+    sprite: stone_hammer
+
+gold_hammer:
+    type: hammer
+    sprite: gold_hammer
+
+diamond_hammer:
+    type: hammer
+    sprite: diamond_hammer
+
+amethyst_hammer:
+    type: hammer
+    sprite: amethyst_hammer
+
+# * BUILDINGs
+
+# Walls
+
+wood_wall:
+    type: wall
+    sprite: wooden_wall
+
+stone_wall:
+    type: wall
+    sprite: stone_wall
+
+gold_wall:
+    type: wall
+    sprite: gold_wall
+
+diamond_wall:
+    type: wall
+    sprite: diamond_wall
+
+amethyst_wall:
+    type: wall
+    sprite: amethyst_wall
+
+# Door
+
+wood_door:
+    type: door
+    sprite: wooden_door
+
+stone_door:
+    type: door
+    sprite: stone_door
+
+gold_door:
+    type: door
+    sprite: gold_door
+
+diamond_door:
+    type: door
+    sprite: diamond_door
+
+amethyst_door:
+    type: door
+    sprite: amethyst_door
+
+# spike
+
+wood_spike:
+    type: spike
+    sprite: wooden_spike
+
+stone_spike:
+    type: spike
+    sprite: stone_spike
+
+gold_spike:
+    type: spike
+    sprite: gold_spike
+
+diamond_spike:
+    type: spike
+    sprite: diamond_spike
+
+amethyst_spike:
+    type: spike
+    sprite: amethyst_spike
+
+# buildings
+
+workbench:
+    type: building
+    sprite: workbench
+
+anvil:
+    type: building
+    sprite: anvil
+
+fire_pit:
+    type: building
+    sprite: fire_pit
+
+fire_big:
+    type: building
+    sprite: fire_big
+
+fire_small:
+    type: building
+    sprite: fire_small

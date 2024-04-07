@@ -2,7 +2,6 @@ none:
     sprite: unknown_asset
 
 pickaxe:
-    sprite: wooden_pickaxe
     hand_display:
         rotation: -100
         x: 150
@@ -29,3 +28,24 @@ spear:
         x: 0
         y: -400
         scale: 4.4
+
+hammer:
+    hand_display:
+        rotation: -100
+        x: 150
+        y: -200
+        scale: 2
+
+wall:
+    sprite: unknown_asset
+
+door:
+    sprite: unknown_asset
+
+spike:
+    sprite: unknown_asset
+
+building:
+    sprite: unknown_asset
+
+

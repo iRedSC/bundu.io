@@ -74,6 +74,9 @@ miracle_fruit: miracle_fruit.svg
 bandage: bandage.svg
 
 # Resources
+pinecone: pinecone.svg
+cloth: cloth.svg
+pitch: pitch.svg
 wood: wood.svg
 stone: stone.svg
 gold: gold.svg
@@ -180,6 +183,7 @@ elephant_angry: elephant_angry.svg
 bear_fur: bear_fur.svg
 deer_hide: deer_hide.svg
 ram_wool: ram_wool.svg
+tooth: tooth.svg
 elephant_tusk: elephant_tusk.svg
 alligator_skin: alligator_skin.svg
 komodo_dragon_eye: komodo_dragon_eye.svg
