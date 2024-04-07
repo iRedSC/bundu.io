@@ -10,15 +10,13 @@ export class ResourceSystem extends System {
         this.listen("hurt", this.hit.bind(this));
     }
 
-    hit(objects: IterableIterator<GameObject>, source: GameObject) {
+    hit(object: GameObject, source: GameObject) {
         const data = PlayerData.get(source)?.data;
-        for (const object of objects) {
-            const config = ResourceConfig.get(object)?.data;
-            if (!(data && config)) {
-                continue;
-            }
-            console.log("Resource hit" + config.item, config.amount);
-            this.trigger("giveItem", source.id, [[config.item, config.amount]]);
+        const config = ResourceConfig.get(object)?.data;
+        if (!(data && config)) {
+            return;
         }
+        console.log("Resource hit" + config.item, config.amount);
+        this.trigger("giveItem", source.id, [[config.item, config.amount]]);
     }
 }

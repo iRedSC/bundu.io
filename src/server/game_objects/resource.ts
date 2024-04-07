@@ -26,8 +26,8 @@ export class Resource extends GameObject {
                 OBJECT_CLASS.STRUCTURE,
                 [
                     this.id,
-                    physics.position.x,
-                    physics.position.y,
+                    round(physics.position.x),
+                    round(physics.position.y),
                     round(degrees(physics.rotation)),
                     type.id,
                     physics.size,
@@ -36,7 +36,12 @@ export class Resource extends GameObject {
         };
         this.pack[PACKET_TYPE.MOVE_OBJECT] = () => {
             const physics = Physics.get(this).data;
-            return [this.id, 50, physics.position.x, physics.position.y];
+            return [
+                this.id,
+                50,
+                round(physics.position.x),
+                round(physics.position.y),
+            ];
         };
 
         this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {

@@ -49,18 +49,25 @@ export class World {
             objectIds = new Set([objectIds]);
         }
         for (const system of this.systems.values()) {
-            const events: Map<string, Set<EventCallback>> = system.callbacks;
+            const events: Map<
+                string,
+                Map<EventCallback, number[]>
+            > = system.callbacks;
             if (!events.has(event)) {
                 continue;
             }
 
-            const callbacks = events.get(event) || new Set();
+            const callbacks: Map<EventCallback, number[]> =
+                events.get(event) || new Map();
+            const objects = this.query([], objectIds);
             if (callbacks.size > 0) {
                 this.inject(system);
-                const objects = this.query([], objectIds);
-                callbacks.forEach((callback) =>
-                    callback(objects.values(), data)
-                );
+                for (const [callback, components] of callbacks.entries())
+                    for (const object of objects) {
+                        if (object.hasComponents(components)) {
+                            callback(object, data);
+                        }
+                    }
             }
         }
     };
@@ -230,11 +237,10 @@ export class World {
         componentIds: number[] | Set<number>,
         ids?: Set<number>
     ): Set<GameObject> {
-        let _componentIds = componentIds as Set<number>;
-        if (componentIds instanceof Array) {
-            _componentIds = new Set(componentIds);
+        let _componentIds = componentIds as number[];
+        if (componentIds instanceof Set) {
+            _componentIds = Array.from(componentIds);
         }
-        const listAll = _componentIds.size === 0;
         const objects = ids ? ids.values() : this.objects.keys();
 
         const found = new Set<GameObject>();
@@ -243,10 +249,7 @@ export class World {
             if (!object) {
                 continue;
             }
-            if (listAll) {
-                found.add(object);
-            }
-            if (checkSubset(_componentIds, new Set(object.components.keys()))) {
+            if (object.hasComponents(_componentIds)) {
                 found.add(object);
             }
         }

@@ -1,4 +1,4 @@
-import { Component } from "./component.js";
+import { Component, ComponentFactory } from "./component.js";
 
 let NEXT_OBJECT_ID = 1;
 
@@ -46,6 +46,26 @@ export abstract class GameObject {
         this.subscriptions.forEach((handler) =>
             handler(this, undefined, component)
         );
+    }
+
+    public hasComponents(components: ComponentFactory<any>[] | number[]) {
+        if (components.length === 0) {
+            return true;
+        }
+        if (typeof components[0] === "number") {
+            for (const component of components as number[]) {
+                if (!this.components.has(component)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        for (const component of components as ComponentFactory<any>[]) {
+            if (!this.components.has(component.id)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public pack: { [key: string]: () => any[] } = {};

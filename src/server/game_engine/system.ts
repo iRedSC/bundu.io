@@ -4,10 +4,7 @@ import { World } from "./world.js";
 
 let NEXT_SYSTEM_ID = 1;
 
-export type EventCallback = (
-    objects: IterableIterator<GameObject>,
-    data?: any
-) => void;
+export type EventCallback = (objects: GameObject, data?: any) => void;
 
 export abstract class System {
     readonly id: number;
@@ -21,7 +18,7 @@ export abstract class System {
         data?: any
     ) => void = undefined as any;
 
-    readonly callbacks: Map<string, Set<EventCallback>> = new Map();
+    readonly callbacks: Map<string, Map<EventCallback, number[]>> = new Map();
 
     public beforeUpdate?(time: number): void;
 
@@ -51,18 +48,28 @@ export abstract class System {
         return this.world.query(componentTypes).values();
     }
 
-    public listen(event: string, callback: EventCallback, once?: boolean) {
+    public listen(
+        event: string,
+        callback: EventCallback,
+        components?: ComponentFactory<any>[],
+        once?: boolean
+    ) {
         if (!this.callbacks.has(event)) {
-            this.callbacks.set(event, new Set());
+            this.callbacks.set(event, new Map());
         }
         if (once) {
             const temp = callback.bind(callback);
 
-            callback = (data: any, objects: Iterator<GameObject>) => {
-                temp(data, objects);
+            callback = (object: GameObject, data: any) => {
+                temp(object, data);
                 this.callbacks.get(event)?.delete(callback);
             };
         }
-        this.callbacks.get(event)?.add(callback);
+        this.callbacks
+            .get(event)
+            ?.set(
+                callback,
+                components ? components.map((component) => component.id) : []
+            );
     }
 }

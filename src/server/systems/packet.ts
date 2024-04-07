@@ -51,114 +51,93 @@ export class PacketSystem extends System {
         updateHandler.clear();
     }
 
-    moveObject(objects: IterableIterator<GameObject>) {
-        updateHandler.add(objects, [PACKET_TYPE.MOVE_OBJECT]);
+    moveObject(object: GameObject) {
+        updateHandler.add(object, [PACKET_TYPE.MOVE_OBJECT]);
     }
 
-    rotateObject(objects: IterableIterator<GameObject>) {
-        updateHandler.add(objects, [PACKET_TYPE.ROTATE_OBJECT]);
+    rotateObject(object: GameObject) {
+        updateHandler.add(object, [PACKET_TYPE.ROTATE_OBJECT]);
     }
 
-    blocking(objects: IterableIterator<GameObject>, stop: boolean) {
+    blocking(object: GameObject, stop: boolean) {
         const players = this.world.query([PlayerData.id]);
-        for (const object of objects) {
-            for (const player of players) {
-                const data = PlayerData.get(player)?.data;
-                if (!data) {
-                    continue;
-                }
-                send(data.socket, [
-                    PACKET_TYPE.ACTION,
-                    [object.id, ACTION.BLOCK, stop],
-                ]);
-            }
-        }
-    }
-
-    attack(objects: IterableIterator<GameObject>) {
-        const players = this.world.query([PlayerData.id]);
-        for (const object of objects) {
-            for (const player of players) {
-                const data = PlayerData.get(player)?.data;
-                if (!data) {
-                    continue;
-                }
-                if (!data.visibleObjects.has(object.id)) {
-                    continue;
-                }
-                send(data.socket, [
-                    PACKET_TYPE.ACTION,
-                    [object.id, ACTION.ATTACK, false],
-                ]);
-            }
-        }
-    }
-
-    sendNewObjects(players: IterableIterator<GameObject>, objects?: number[]) {
-        if (!objects) {
-            return;
-        }
-        for (const player of players) {
-            const foundObjects = this.world.query([], new Set(objects));
-
-            updateHandler.send(player, [
-                foundObjects.values(),
-                [PACKET_TYPE.NEW_OBJECT],
-            ]);
-        }
-    }
-    sendUpdatedObjects(players: IterableIterator<GameObject>) {
-        for (const player of players) {
-            const data = PlayerData.get(player).data;
-            const newObjects = data.visibleObjects.getNew();
-            const objects = this.world.query([], newObjects);
-            updateHandler.send(player, [
-                objects.values(),
-                [PACKET_TYPE.MOVE_OBJECT, PACKET_TYPE.ROTATE_OBJECT],
-            ]);
-            data.visibleObjects.clear();
-        }
-    }
-
-    sendInventory(objects: IterableIterator<GameObject>) {
-        for (const object of objects) {
-            const data = PlayerData.get(object)?.data;
-            if (!data) {
-                continue;
-            }
-            const inventory = Inventory.get(object).data;
-            send(data.socket, [
-                PACKET_TYPE.UPDATE_INVENTORY,
-                [inventory.slots, Array.from(inventory.items.entries())],
-            ]);
-        }
-    }
-
-    updateGear(
-        players: IterableIterator<GameObject>,
-        items: [number, number, number, number]
-    ) {
-        console.log("update gear");
         for (const player of players) {
             const data = PlayerData.get(player)?.data;
             if (!data) {
                 continue;
             }
-            send(data.socket, [PACKET_TYPE.UPDATE_GEAR, [player.id, ...items]]);
+            send(data.socket, [
+                PACKET_TYPE.ACTION,
+                [object.id, ACTION.BLOCK, stop],
+            ]);
         }
     }
 
-    hurt(objects: IterableIterator<GameObject>, source: GameObject) {
-        const packet: any[] = [PACKET_TYPE.ACTION];
-        for (let object of objects) {
-            packet.push([object.id, ACTION.HURT, false]);
+    attack(object: GameObject) {
+        const players = this.world.query([PlayerData.id]);
+        for (const player of players) {
+            const data = PlayerData.get(player)?.data;
+            if (!data) {
+                continue;
+            }
+            if (!data.visibleObjects.has(object.id)) {
+                continue;
+            }
+            send(data.socket, [
+                PACKET_TYPE.ACTION,
+                [object.id, ACTION.ATTACK, false],
+            ]);
         }
-        console.log(packet);
-        if (packet.length <= 1) {
+    }
+
+    sendNewObjects(player: GameObject, objects?: number[]) {
+        if (!objects) {
             return;
         }
-        const players = this.world.query([PlayerData.id]);
+        const foundObjects = this.world.query([], new Set(objects));
 
+        updateHandler.send(player, [
+            foundObjects.values(),
+            [PACKET_TYPE.NEW_OBJECT],
+        ]);
+    }
+    sendUpdatedObjects(player: GameObject) {
+        const data = PlayerData.get(player).data;
+        const newObjects = data.visibleObjects.getNew();
+        const objects = this.world.query([], newObjects);
+        updateHandler.send(player, [
+            objects.values(),
+            [PACKET_TYPE.MOVE_OBJECT, PACKET_TYPE.ROTATE_OBJECT],
+        ]);
+        data.visibleObjects.clear();
+    }
+
+    sendInventory(object: GameObject) {
+        const data = PlayerData.get(object)?.data;
+        if (!data) {
+            return;
+        }
+        const inventory = Inventory.get(object).data;
+        send(data.socket, [
+            PACKET_TYPE.UPDATE_INVENTORY,
+            [inventory.slots, Array.from(inventory.items.entries())],
+        ]);
+    }
+
+    updateGear(player: GameObject, items: [number, number, number, number]) {
+        const data = PlayerData.get(player)?.data;
+        if (!data) {
+            return;
+        }
+        send(data.socket, [PACKET_TYPE.UPDATE_GEAR, [player.id, ...items]]);
+    }
+
+    hurt(object: GameObject, source: GameObject) {
+        const packet: any[] = [
+            PACKET_TYPE.ACTION,
+            [object.id, ACTION.HURT, false],
+        ];
+        const players = this.world.query([PlayerData.id]);
         for (let player of players.values()) {
             const data = PlayerData.get(player)?.data;
             send(data?.socket, packet);
