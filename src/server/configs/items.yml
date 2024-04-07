@@ -1,8 +1,9 @@
 wooden_pickaxe:
     type: pickaxe
     attack_damage: 3
-    mining_level: 0
+    level: 0
 
 wooden_helmet:
     type: helmet
     defense: 2
+    level: 0
