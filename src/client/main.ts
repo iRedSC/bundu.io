@@ -9,7 +9,7 @@ import {
     ServerPacketSchema,
 } from "../shared/enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
-import { animationManager } from "./animation_manager";
+import { animationManager } from "./animation/animation_manager";
 import { createPipeline } from "./packet_pipline";
 import { debugContainer } from "./debug";
 import { round } from "../lib/math";

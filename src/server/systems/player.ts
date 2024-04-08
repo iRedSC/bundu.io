@@ -125,7 +125,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        this.trigger("updateGear", player.id, [itemId, itemId, -1, -1]);
+        this.trigger("updateGear", player.id, [itemId, -1, -1, -1]);
     }
 
     craftItem(playerId: number, itemId: number) {

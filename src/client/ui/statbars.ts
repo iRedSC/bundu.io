@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
-import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { clamp, lerp } from "../../lib/transforms";
-import { animationManager } from "../animation_manager";
+import { animationManager } from "../animation/animation_manager";
+import { Animation, AnimationManager } from "../../lib/animations";
 
 class StatsDisplay {
     amount: number;
@@ -9,10 +9,11 @@ class StatsDisplay {
     decor: PIXI.Sprite;
     primaryBar: PIXI.Sprite;
     secondaryBar?: PIXI.Sprite;
-    animations: AnimationMap<StatsDisplay>;
+    animations: Map<number, Animation>;
 
     constructor(decor: string, bar1: string, bar2?: string) {
-        this.animations = loadAnimations(this);
+        this.animations = new Map();
+        this.animations.set(0, statsTransition(this));
         this.amount = 0;
         this.container = new PIXI.Container();
         this.container.scale.set(0.6);
@@ -44,12 +45,13 @@ class StatsDisplay {
     }
 }
 
-function loadAnimations(target: StatsDisplay) {
-    const transition: Keyframes<StatsDisplay> = new Keyframes();
+function statsTransition(target: StatsDisplay) {
+    const animation = new Animation(0);
+    let amount: number = 0;
 
-    transition.frame(0).set = ({ target, animation }) => {
-        if (animation.firstKeyframe) {
-            animation.meta.amount = target.primaryBar.width;
+    animation.keyframes[0] = (animation) => {
+        if (animation.isFirstKeyframe) {
+            amount = target.primaryBar.width;
             animation.goto(0, 200);
         }
         if (animation.keyframeEnded) {
@@ -57,22 +59,15 @@ function loadAnimations(target: StatsDisplay) {
         }
     };
 
-    transition.frame(1).set = ({ target, animation }) => {
-        target.primaryBar.width = lerp(
-            animation.meta.amount,
-            target.amount,
-            animation.t
-        );
+    animation.keyframes[1] = (animation) => {
+        target.primaryBar.width = lerp(amount, target.amount, animation.t);
 
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
     };
 
-    const animationMap = new AnimationMap(target);
-    animationMap.set(0, transition);
-
-    return animationMap;
+    return animation;
 }
 export const barContainer = new PIXI.Container();
 const hungerContainer = new StatsDisplay(

@@ -1,13 +1,13 @@
 import * as PIXI from "pixi.js";
 import { round } from "../../lib/math";
 import { lerp, rotationLerp } from "../../lib/transforms";
-import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { Line } from "./line";
 import { DebugWorldObject } from "../debug";
 import { Circle } from "./circle";
 import { z } from "zod";
 import { validate } from "../../shared/type_guard";
 import { TEXT_STYLE } from "../assets/text";
+import { Animation, AnimationManager } from "../../lib/animations";
 
 // TODO: There are too many properties related to rotation clogging up the object.
 
@@ -37,7 +37,7 @@ export class WorldObject extends PIXI.Container {
     };
     debug: DebugWorldObject;
 
-    animations?: AnimationMap<any>;
+    animations?: Map<number, Animation>;
 
     constructor(id: number, pos: PIXI.Point, rotation: number, size: number) {
         super();

@@ -1,14 +1,16 @@
 import * as PIXI from "pixi.js";
 import { radians, lerp, colorLerp } from "../../lib/transforms";
-import { Keyframes, AnimationManager, AnimationMap } from "../../lib/animation";
 import { itemConfigs } from "../configs/item_configs";
 import { WorldObject } from "./world_object";
 import { SpriteFactory } from "../assets/sprite_factory";
 import random from "../../lib/random";
 import { z } from "zod";
 import { validate } from "../../shared/type_guard";
-import { ANIMATION } from "./animations";
+import { ANIMATION } from "../animation/animations";
 import { idMap } from "../configs/id_map";
+import { cubicBezier, hurt } from "../animation/animation_testing";
+import { round } from "../../lib/math";
+import { Animation, AnimationManager } from "../../lib/animations";
 
 const Gear = z.tuple([
     z.number(), // mainHand
@@ -39,7 +41,7 @@ export class Player extends WorldObject {
     sprite: PlayerParts;
     name: string;
 
-    animations: AnimationMap<Player>;
+    animations: Map<number, Animation>;
 
     mainHand: string;
     offHand: string;
@@ -131,15 +133,21 @@ export class Player extends WorldObject {
 
         rightHand.item.anchor.set(1);
         rightHand.item.scale.set(1.8);
-        this.animations = loadAnimations(this);
-        this.trigger(ANIMATION.LEFT_HAND, manager);
-        this.trigger(ANIMATION.RIGHT_HAND, manager);
-
-        this.selectItem({
-            main: "amethyst_spear",
-            off: "amethyst_sword",
-            body: "amethyst_helmet",
-        });
+        this.animations = new Map();
+        this.animations.set(
+            ANIMATION.IDLE_HANDS,
+            PlayerAnimations.idleHands(
+                this.sprite.leftHand.container,
+                this.sprite.rightHand.container
+            )
+        );
+        this.animations.set(
+            ANIMATION.HURT,
+            hurt([rightHand.sprite, leftHand.sprite, body.sprite])
+        );
+        this.animations.set(ANIMATION.ATTACK, PlayerAnimations.attack(this));
+        this.animations.set(ANIMATION.BLOCK, PlayerAnimations.block(this));
+        this.trigger(ANIMATION.IDLE_HANDS, manager);
     }
 
     selectItem({
@@ -220,158 +228,114 @@ export class Player extends WorldObject {
     }
 }
 
-function loadAnimations(target: Player) {
-    let leftHandKeyframes: Keyframes<Player> = new Keyframes();
-    leftHandKeyframes.frame(0).set = ({ target, animation }) => {
-        const leftHand = target.sprite.leftHand.container;
-        if (animation.firstKeyframe) {
-            animation.meta.x = leftHand.x;
-            animation.goto(0, 2000);
-        }
+namespace PlayerAnimations {
+    export function idleHands(left: PIXI.Container, right: PIXI.Container) {
+        const leftX = left.x;
+        const rightX = right.x;
 
-        leftHand.x = animation.meta.x + Math.cos(animation.t * Math.PI * 2) * 5;
-        if (animation.keyframeEnded) {
-            animation.goto(0, 2000);
-        }
-    };
+        const animation = new Animation(ANIMATION.IDLE_HANDS);
+        animation.keyframes[0] = (animation) => {
+            if (animation.isFirstKeyframe) {
+                animation.goto(0, 2000);
+            }
 
-    let rightHandKeyframes: Keyframes<Player> = new Keyframes();
-    rightHandKeyframes.frame(0).set = ({ target, animation }) => {
-        const rightHand = target.sprite.rightHand.container;
-        if (animation.firstKeyframe) {
-            animation.meta.x = rightHand.x;
-            animation.goto(0, 2000);
-        }
+            left.x = leftX + Math.cos(animation.t * Math.PI * 2) * 5;
+            right.x = rightX - Math.cos(animation.t * Math.PI * 2) * 5;
+            if (animation.keyframeEnded) {
+                animation.goto(0, 2000);
+            }
+        };
+        return animation;
+    }
 
-        rightHand.x =
-            animation.meta.x - Math.cos(animation.t * Math.PI * 2) * 5;
-        if (animation.keyframeEnded) {
-            animation.goto(0, 2000);
-        }
-    };
-
-    const attackKeyframes: Keyframes<Player> = new Keyframes();
-    attackKeyframes.frame(0).set = ({ target, animation }) => {
-        if (target.blocking) {
-            return;
-        }
-        animation.meta.targetHand = random.integer(0, 1);
-        if (target.mainHand) {
-            animation.meta.targetHand = 1;
-        }
+    export function attack(target: Player) {
+        const timingFunction = cubicBezier(0.11, 0.25, 0.24, 0.81);
+        let targetHand: number;
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
-        if (leftHand.rotation !== 0) {
+
+        const animation = new Animation(ANIMATION.ATTACK);
+        animation.keyframes[0] = (animation) => {
+            if (target.blocking) {
+                return;
+            }
+            targetHand = !(target.mainHand === "" && target.offHand === "")
+                ? 1
+                : random.integer(0, 1);
+            if (leftHand.rotation !== 0) {
+                leftHand.rotation = 0;
+                rightHand.rotation = 0;
+            }
+            animation.next(200);
+        };
+        animation.keyframes[1] = (animation) => {
+            const t = timingFunction(animation.t);
+            if (targetHand) {
+                leftHand.rotation = lerp(radians(0), radians(-90), t);
+                rightHand.rotation = lerp(radians(0), radians(-15), t);
+            } else {
+                rightHand.rotation = lerp(radians(0), radians(90), t);
+                leftHand.rotation = lerp(radians(0), radians(15), t);
+            }
+            if (animation.keyframeEnded) {
+                animation.next(200);
+            }
+        };
+        animation.keyframes[2] = (animation) => {
+            const t = timingFunction(animation.t);
+            if (targetHand) {
+                leftHand.rotation = lerp(radians(-90), radians(0), t);
+                rightHand.rotation = lerp(radians(-15), radians(0), t);
+            } else {
+                rightHand.rotation = lerp(radians(90), radians(0), t);
+                leftHand.rotation = lerp(radians(15), radians(0), t);
+            }
+            if (animation.keyframeEnded) {
+                animation.expired = true;
+            }
+        };
+        animation.keyframes[-1] = () => {
             leftHand.rotation = 0;
             rightHand.rotation = 0;
-        }
-        animation.next(100);
-    };
-    attackKeyframes.frame(1).set = ({ target, animation }) => {
-        if (target.blocking) {
-            return;
-        }
+        };
+        return animation;
+    }
+
+    export function block(target: Player) {
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
-        if (animation.meta.targetHand) {
-            leftHand.rotation = lerp(radians(0), radians(-90), animation.t);
-            rightHand.rotation = lerp(radians(0), radians(-15), animation.t);
-        } else {
-            rightHand.rotation = lerp(radians(0), radians(90), animation.t);
-            leftHand.rotation = lerp(radians(0), radians(15), animation.t);
-        }
-        if (animation.keyframeEnded) {
-            animation.next(200);
-        }
-    };
-    attackKeyframes.frame(2).set = ({ target, animation }) => {
-        if (target.blocking) {
-            return;
-        }
-        const leftHand = target.sprite.leftHand.container;
-        const rightHand = target.sprite.rightHand.container;
-        if (animation.meta.targetHand) {
+        const leftHandRot = target.sprite.leftHand.container.rotation;
+        const rightHandRot = target.sprite.rightHand.container.rotation;
+        const animation = new Animation(ANIMATION.BLOCK);
+        animation.keyframes[0] = (animation) => {
+            animation.next(75);
+        };
+        animation.keyframes[1] = (animation) => {
+            leftHand.rotation = lerp(
+                radians(leftHandRot),
+                radians(-90),
+                animation.t
+            );
+            rightHand.rotation = lerp(
+                radians(rightHandRot),
+                radians(25),
+                animation.t
+            );
+            if (!target.blocking) {
+                animation.next(60);
+            }
+        };
+        animation.keyframes[2] = (animation) => {
             leftHand.rotation = lerp(radians(-90), radians(0), animation.t);
-            rightHand.rotation = lerp(radians(-15), radians(0), animation.t);
-        } else {
-            rightHand.rotation = lerp(radians(90), radians(0), animation.t);
-            leftHand.rotation = lerp(radians(15), radians(0), animation.t);
-        }
-        if (animation.keyframeEnded) {
-            animation.expired = true;
-        }
-    };
-    // attackKeyframes.frame(-1).set = ({ target }) => {
-    //     const leftHand = target.sprite.leftHand.container;
-    //     const rightHand = target.sprite.rightHand.container;
-
-    //     leftHand.rotation = 0;
-    //     rightHand.rotation = 0;
-    // };
-
-    const blockKeyframes: Keyframes<Player> = new Keyframes();
-    blockKeyframes.frame(0).set = ({ target, animation }) => {
-        animation.meta.leftHandRot = target.sprite.leftHand.container.rotation;
-        animation.meta.rightHandRot =
-            target.sprite.rightHand.container.rotation;
-
-        animation.next(75);
-    };
-    blockKeyframes.frame(1).set = ({ target, animation }) => {
-        const leftHand = target.sprite.leftHand.container;
-        const rightHand = target.sprite.rightHand.container;
-        leftHand.rotation = lerp(
-            radians(animation.meta.leftHandRot),
-            radians(-90),
-            animation.t
-        );
-        rightHand.rotation = lerp(
-            radians(animation.meta.rightHandRot),
-            radians(25),
-            animation.t
-        );
-        if (!target.blocking) {
-            animation.next(60);
-        }
-    };
-    blockKeyframes.frame(2).set = ({ target, animation }) => {
-        const leftHand = target.sprite.leftHand.container;
-        const rightHand = target.sprite.rightHand.container;
-        leftHand.rotation = lerp(radians(-90), radians(0), animation.t);
-        rightHand.rotation = lerp(radians(25), radians(0), animation.t);
-        if (animation.keyframeEnded) {
-            animation.expired = true;
-        }
-    };
-
-    const hurtKeyframes: Keyframes<Player> = new Keyframes();
-    hurtKeyframes.frame(0).set = ({ animation }) => {
-        if (animation.firstKeyframe) {
-            animation.goto(0, 100);
-        }
-        const color = colorLerp(0xffffff, 0xff0000, animation.t);
-        target.sprite.body.sprite.tint = color;
-        target.sprite.leftHand.sprite.tint = color;
-        target.sprite.rightHand.sprite.tint = color;
-        if (animation.keyframeEnded) {
-            animation.next(400);
-        }
-    };
-    hurtKeyframes.frame(1).set = ({ target, animation }) => {
-        const color = colorLerp(0xff0000, 0xffffff, animation.t);
-        target.sprite.body.sprite.tint = color;
-        target.sprite.leftHand.sprite.tint = color;
-        target.sprite.rightHand.sprite.tint = color;
-        if (animation.keyframeEnded) {
-            animation.expired = true;
-        }
-    };
-    const animations: AnimationMap<Player> = new AnimationMap(target);
-    animations.set(ANIMATION.LEFT_HAND, leftHandKeyframes);
-    animations.set(ANIMATION.RIGHT_HAND, rightHandKeyframes);
-    animations.set(ANIMATION.ATTACK, attackKeyframes);
-    animations.set(ANIMATION.BLOCK, blockKeyframes);
-    animations.set(ANIMATION.HURT, hurtKeyframes);
-
-    return animations;
+            rightHand.rotation = lerp(radians(25), radians(0), animation.t);
+            if (animation.keyframeEnded) {
+                animation.expired = true;
+            }
+        };
+        animation.keyframes[-1] = () => {
+            leftHand.rotation = leftHandRot;
+            rightHand.rotation = rightHandRot;
+        };
+        return animation;
+    }
 }

@@ -13,12 +13,12 @@ import { Sky } from "./sky";
 import { idMap } from "../configs/id_map";
 import { createGround } from "./ground";
 import { Entity } from "./entity";
-import { animationManager } from "../animation_manager";
+import { animationManager } from "../animation/animation_manager";
 import { Quadtree } from "../../lib/quadtree";
 import { requestIds } from "../main";
 import { BasicPoint } from "../../lib/types";
 import { radians } from "../../lib/transforms";
-import { ANIMATION } from "./animations";
+import { ANIMATION } from "../animation/animations";
 
 // TODO: This place is a freaking mess, needs a little tidying up
 

@@ -6,8 +6,8 @@ import {
     NIGHT_COLOR,
     WORLD_SIZE,
 } from "../constants";
-import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import { colorLerp } from "../../lib/transforms";
+import { Animation, AnimationManager } from "../../lib/animations";
 
 const times = new Map();
 times.set(0, MORNING_COLOR);
@@ -22,7 +22,7 @@ enum SKY_ANIMATION {
 export class Sky extends PIXI.Graphics {
     currentCycle: number;
     nextCycle: number;
-    animations: AnimationMap<Sky>;
+    animations: Map<number, Animation>;
 
     constructor() {
         super();
@@ -33,7 +33,8 @@ export class Sky extends PIXI.Graphics {
         this.zIndex = 100;
         this.blendMode = PIXI.BLEND_MODES.MULTIPLY;
 
-        this.animations = loadAnimations(this);
+        this.animations = new Map();
+        this.animations.set(SKY_ANIMATION.TRANSISTION, skyTransition(this));
     }
 
     setTime(time: number, manager: AnimationManager) {
@@ -45,11 +46,11 @@ export class Sky extends PIXI.Graphics {
     }
 }
 
-function loadAnimations(target: Sky) {
-    const transistionKeyframes: Keyframes<Sky> = new Keyframes();
+function skyTransition(target: Sky) {
+    const animation = new Animation(SKY_ANIMATION.TRANSISTION);
 
-    transistionKeyframes.frame(0).set = ({ target, animation }) => {
-        if (animation.firstKeyframe) {
+    animation.keyframes[0] = (animation) => {
+        if (animation.isFirstKeyframe) {
             animation.goto(0, 1000);
         }
         target.tint = colorLerp(
@@ -63,7 +64,5 @@ function loadAnimations(target: Sky) {
         }
     };
 
-    const animationMap = new AnimationMap(target);
-    animationMap.set(SKY_ANIMATION.TRANSISTION, transistionKeyframes);
-    return animationMap;
+    return animation;
 }

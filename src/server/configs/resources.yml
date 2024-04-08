@@ -1,34 +1,13 @@
 wood:
-    tool: pickaxe
+    score: 1
+    exclusive: true
+    multipliers:
+        pickaxe: 1
     level: 0
     regen_speed: 10
-    amount: 50
-    item: wood
-
-stone:
-    tool: pickaxe
-    level: 1
-    regen_speed: 20
-    amount: 40
-    item: stone
-
-gold:
-    tool: pickaxe
-    level: 2
-    regen_speed: 30
-    amount: 30
-    item: gold
-
-diamond:
-    tool: pickaxe
-    level: 3
-    regen_speed: 40
-    amount: 20
-    item: diamond
-
-amethyst:
-    tool: pickaxe
-    level: 4
-    regen_speed: 50
-    amount: 10
-    item: amethyst
+    items:
+        wood: 10
+        stone: 10
+        gold: 10
+        diamond: 10
+        amethyst: 10
