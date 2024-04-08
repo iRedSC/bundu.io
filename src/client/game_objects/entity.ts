@@ -1,18 +1,13 @@
 import * as PIXI from "pixi.js";
 import { colorLerp, radians } from "../../lib/transforms";
-import { AnimationManager, AnimationMap, Keyframes } from "../../lib/animation";
 import Random from "../../lib/random";
 import { WorldObject } from "./world_object";
 import { assets } from "../assets/load";
-
-enum ENTITY_ANIMATION {
-    IDLE = 0,
-    HURT = 1,
-}
+import { Animation, AnimationManager } from "../../lib/animations";
+import { ANIMATION } from "../animation/animations";
 
 export class Entity extends WorldObject {
     sprite: PIXI.Sprite;
-    animations: AnimationMap<Entity>;
 
     constructor(
         id: number,
@@ -30,53 +25,34 @@ export class Entity extends WorldObject {
         this.sprite.rotation = radians(-90);
         this.sprite.anchor.set(0.5);
 
-        this.animations = loadAnimations(this);
-        this.trigger(ENTITY_ANIMATION.IDLE, manager);
+        this.animations = new Map();
+        this.animations.set(ANIMATION.ENTITY_IDLE, entityIdle(this));
+        this.trigger(ANIMATION.ENTITY_IDLE, manager);
 
         this.addChild(this.sprite);
     }
 }
 
-function loadAnimations(target: Entity) {
-    const idleKeyframes: Keyframes<Entity> = new Keyframes();
-    idleKeyframes.frame(0).set = ({ target, animation }) => {
-        animation.meta.width = target.scale.x;
-        animation.meta.height = target.scale.y;
-        animation.meta.frameLength = Random.integer(1000, 2000);
+function entityIdle(target: Entity) {
+    let width: number;
+    let height: number;
 
-        animation.next(animation.meta.frameLength);
+    let frameLength: number;
+    const animation = new Animation(ANIMATION.ENTITY_IDLE);
+    animation.keyframes[0] = (animation) => {
+        width = target.scale.x;
+        height = target.scale.y;
+        frameLength = Random.integer(1000, 2000);
+
+        animation.next(frameLength);
     };
 
-    idleKeyframes.frame(1).set = ({ target, animation }) => {
-        target.scale.x =
-            animation.meta.width + Math.cos(animation.t * Math.PI * 2) * 0.06;
-        target.scale.y =
-            animation.meta.height - Math.cos(animation.t * Math.PI * 2) * 0.11;
+    animation.keyframes[1] = (animation) => {
+        target.scale.x = width + Math.cos(animation.t * Math.PI * 2) * 0.06;
+        target.scale.y = height - Math.cos(animation.t * Math.PI * 2) * 0.11;
         if (animation.keyframeEnded) {
-            animation.goto(1, animation.meta.frameLength);
+            animation.goto(1, frameLength);
         }
     };
-
-    const hurtKeyframes: Keyframes<Entity> = new Keyframes();
-    hurtKeyframes.frame(0).set = ({ animation }) => {
-        if (animation.firstKeyframe) {
-            animation.goto(0, 100);
-        }
-        target.sprite.tint = colorLerp(0xffffff, 0xff0000, animation.t);
-        if (animation.keyframeEnded) {
-            animation.next(400);
-        }
-    };
-    hurtKeyframes.frame(1).set = ({ target, animation }) => {
-        target.sprite.tint = colorLerp(0xff0000, 0xffffff, animation.t);
-        if (animation.keyframeEnded) {
-            animation.expired = true;
-        }
-    };
-
-    const animationMap = new AnimationMap(target);
-
-    animationMap.set(ENTITY_ANIMATION.IDLE, idleKeyframes);
-    animationMap.set(ENTITY_ANIMATION.HURT, hurtKeyframes);
-    return animationMap;
+    return animation;
 }

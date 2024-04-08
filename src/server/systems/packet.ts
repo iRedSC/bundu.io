@@ -133,6 +133,9 @@ export class PacketSystem extends System {
     }
 
     hurt(object: GameObject, source: GameObject) {
+        if (object.id === source.id) {
+            return;
+        }
         const packet: any[] = [
             PACKET_TYPE.ACTION,
             [object.id, ACTION.HURT, false],

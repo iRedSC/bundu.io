@@ -13,7 +13,7 @@ stone_sword:
         stone: 30
         wood: 40
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 gold_sword:
     score: 750
@@ -25,7 +25,7 @@ gold_sword:
         wood: 80
 
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_sword:
     score: 1250
@@ -37,8 +37,8 @@ diamond_sword:
         stone: 90
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_sword:
     score: 2000
@@ -46,13 +46,13 @@ amethyst_sword:
     ingredients:
         diamond_sword: 1
         amethyst: 60
-        diamond : 50
+        diamond: 50
         gold: 40
-        stone : 40
+        stone: 40
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #* PICKAXE
 
@@ -66,13 +66,12 @@ stone_pickaxe:
     score: 150
     duration: 8000
     ingredients:
-            wood_pickaxe: 1
-            stone: 20
-            wood: 30
+        wood_pickaxe: 1
+        stone: 20
+        wood: 30
 
     flags:
-     - near_crafting_table
-
+        - near_crafting_table
 
 gold_pickaxe:
     score: 500
@@ -84,7 +83,7 @@ gold_pickaxe:
         wood: 50
 
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_pickaxe:
     score: 1000
@@ -96,8 +95,8 @@ diamond_pickaxe:
         stone: 80
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_pickaxe:
     score: 1500
@@ -109,9 +108,9 @@ amethyst_pickaxe:
         gold: 60
         stone: 100
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 lumber_axe:
     score: 3000
@@ -125,10 +124,9 @@ lumber_axe:
         wood: 200
 
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
-
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 butcher_knife:
     score: 1500
@@ -138,10 +136,9 @@ butcher_knife:
         wood: 100
         elephant_tusk: 2
 
-
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 shovel:
     score: 150
@@ -150,12 +147,10 @@ shovel:
         stone: 70
         wood: 40
 
-
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 # * SPEARS
-
 
 stone_spear:
     score: 250
@@ -165,8 +160,7 @@ stone_spear:
         wood: 80
 
     flags:
-     - near_crafting_table
-
+        - near_crafting_table
 
 gold_spear:
     score: 750
@@ -178,7 +172,7 @@ gold_spear:
         wood: 100
 
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_spear:
     score: 1250
@@ -190,8 +184,8 @@ diamond_spear:
         wood: 120
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_spear:
     score: 2000
@@ -203,9 +197,9 @@ amethyst_spear:
         gold: 60
         stone: 140
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 tusk_spear:
     score: 4000
@@ -217,12 +211,11 @@ tusk_spear:
         gold: 60
         wood: 140
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 # * Hammers
-
 
 stone_hammer:
     score: 500
@@ -232,8 +225,7 @@ stone_hammer:
         wood: 60
 
     flags:
-     - near_crafting_table
-
+        - near_crafting_table
 
 gold_hammer:
     score: 1000
@@ -245,8 +237,8 @@ gold_hammer:
         wood: 60
 
     flags:
-     - near_anvil
-     - near_crafting_table
+        - near_anvil
+        - near_crafting_table
 
 diamond_hammer:
     score: 1500
@@ -258,8 +250,8 @@ diamond_hammer:
         stone: 80
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_hammer:
     score: 2500
@@ -272,9 +264,9 @@ amethyst_hammer:
         stone: 80
         wood: 80
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #* Helmets
 
@@ -288,13 +280,12 @@ stone_helmet:
     score: 200
     duration: 20000
     ingredients:
-            wood_helmet: 1
-            stone: 80
-            wood: 60
+        wood_helmet: 1
+        stone: 80
+        wood: 60
 
     flags:
-     - near_crafting_table
-
+        - near_crafting_table
 
 gold_helmet:
     score: 500
@@ -306,7 +297,7 @@ gold_helmet:
         wood: 40
 
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_helmet:
     score: 1250
@@ -318,8 +309,8 @@ diamond_helmet:
         stone: 40
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_helmet:
     score: 2500
@@ -331,9 +322,9 @@ amethyst_helmet:
         gold: 40
         stone: 80
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 # * Fur Crafts
 
@@ -345,7 +336,7 @@ pitch:
         honey: 1
 
     flags:
-     - near_fire
+        - near_fire
 
 cloth:
     score: 75
@@ -356,9 +347,8 @@ cloth:
         wood: 10
 
     flags:
-     - near_fire
-     - near_crafting_table
-
+        - near_fire
+        - near_crafting_table
 
 backpack:
     score: 600
@@ -369,7 +359,7 @@ backpack:
         bear_fur: 8
 
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 bandage:
     score: 75
@@ -378,7 +368,7 @@ bandage:
         cloth: 1
         honey: 1
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 book:
     score: 500
@@ -388,7 +378,7 @@ book:
         pitch: 2
         bear_fur: 4
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 resource_book:
     score: 4000
@@ -400,9 +390,9 @@ resource_book:
         stone: 140
         wood: 200
     flags:
-     - near_crafting_table
-     - near_anvil
-     - near_fire
+        - near_crafting_table
+        - near_anvil
+        - near_fire
 
 time_book:
     score: 4000
@@ -415,8 +405,8 @@ time_book:
         elephant_tusk: 2
         wood: 200
     flags:
-     - near_crafting_table
-     - near_fire
+        - near_crafting_table
+        - near_fire
 
 earmuffs:
     score: 250
@@ -425,7 +415,7 @@ earmuffs:
         bear_fur: 2
         deer_hide: 3
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 beanie:
     score: 300
@@ -436,7 +426,7 @@ beanie:
         cloth: 2
 
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 coat:
     score: 1200
@@ -447,12 +437,7 @@ coat:
         pitch: 2
 
     flags:
-     - near_crafting_table
-
-
-
-
-
+        - near_crafting_table
 
 # * BUILDINGS
 
@@ -472,7 +457,7 @@ stone_wall:
         stone: 23
         wood: 13
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 gold_wall:
     score: 65
@@ -482,9 +467,8 @@ gold_wall:
         gold: 21
         stone: 11
 
-
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_wall:
     score: 85
@@ -495,8 +479,8 @@ diamond_wall:
         gold: 9
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_wall:
     score: 100
@@ -506,9 +490,9 @@ amethyst_wall:
         amethyst: 17
         diamond: 7
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #Doors
 
@@ -526,7 +510,7 @@ stone_door:
         stone: 28
         wood: 18
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 gold_door:
     score: 75
@@ -536,9 +520,8 @@ gold_door:
         gold: 26
         stone: 16
 
-
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_door:
     score: 100
@@ -549,8 +532,8 @@ diamond_door:
         gold: 14
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_door:
     score: 125
@@ -560,9 +543,9 @@ amethyst_door:
         amethyst: 22
         diamond: 12
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #spike
 
@@ -580,7 +563,7 @@ stone_spike:
         stone: 60
         wood: 40
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 gold_spike:
     score: 150
@@ -592,7 +575,7 @@ gold_spike:
 
 
     flags:
-     - near_anvil
+        - near_anvil
 
 diamond_spike:
     score: 300
@@ -603,8 +586,8 @@ diamond_spike:
         gold: 50
 
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 amethyst_spike:
     score: 450
@@ -614,9 +597,9 @@ amethyst_spike:
         amethyst: 30
         diamond: 55
     flags:
-     - near_crafting_table
-     - near_fire
-     - near_anvil
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 
 #other buildings
 
@@ -633,9 +616,9 @@ anvil:
     ingredients:
         wood: 10
         stone: 30
-    
+
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 fire_small:
     score: 50
@@ -657,16 +640,15 @@ fire_pit:
     ingredients:
         wood: 50
         stone: 50
-    
+
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 quick_wood_wall: 
     score:  25
     duration: 1000
     ingredients:
         wood: 20
-    
 
 quick_stone_wall:
     score: 50
@@ -674,9 +656,9 @@ quick_stone_wall:
     ingredients:
         quick_wood_wall: 1
         stone: 20
-    
+
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 quick_stone_spike:
     score: 100
@@ -684,9 +666,9 @@ quick_stone_spike:
     ingredients:
         stone: 30
         tooth: 2
-    
+
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 quick_diamond_spike:
     score: 250
@@ -694,10 +676,10 @@ quick_diamond_spike:
     ingredients:
         diamond: 30
         tooth: 4
-    
+
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil
 
 meat_cooked:
     score: 35

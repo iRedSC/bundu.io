@@ -100,7 +100,7 @@ export class AttackSystem extends System {
                 moveInDirection(
                     physics.position,
                     physics.rotation + radians(90),
-                    50
+                    10
                 )
             ),
             physics.rotation + radians(90),
