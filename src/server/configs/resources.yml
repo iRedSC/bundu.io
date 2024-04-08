@@ -1,9 +1,32 @@
-wood:
+forest_tree:
     tool: pickaxe
     level: 0
     regen_speed: 10
     amount: 50
     item: wood
+
+pine_tree:
+    tool: pickaxe
+    level: 0
+    regen_speed: 10
+    amount: 50
+    item: wood
+
+savanah_tree:
+    tool: pickaxe
+    level: 0
+    regen_speed: 10
+    amount: 50
+    item: wood
+
+bush:
+    tool: pickaxe
+    level: 0
+    regen_speed: 10
+    amount: 50
+    item: wood
+
+
 
 stone:
     tool: pickaxe

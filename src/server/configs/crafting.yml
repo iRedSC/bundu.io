@@ -1,10 +1,12 @@
 #* SWORD
 wood_sword:
+    score: 75
     duration: 6000
     ingredients:
         wood: 20
 
 stone_sword:
+    score: 250
     duration: 12000
     ingredients:
         wood_sword: 1
@@ -14,6 +16,7 @@ stone_sword:
      - near_crafting_table
 
 gold_sword:
+    score: 750
     duration: 18000
     ingredients:
         stone_sword: 1
@@ -25,6 +28,7 @@ gold_sword:
      - near_anvil
 
 diamond_sword:
+    score: 1250
     duration: 25000
     ingredients:
         gold_sword: 1
@@ -37,6 +41,7 @@ diamond_sword:
      - near_anvil
 
 amethyst_sword:
+    score: 2000
     duration: 40000
     ingredients:
         diamond_sword: 1
@@ -52,11 +57,13 @@ amethyst_sword:
 #* PICKAXE
 
 wood_pickaxe:
+    score: 50
     duration: 3000
     ingredients:
         wood: 10
 
 stone_pickaxe:
+    score: 150
     duration: 8000
     ingredients:
             wood_pickaxe: 1
@@ -68,6 +75,7 @@ stone_pickaxe:
 
 
 gold_pickaxe:
+    score: 500
     duration: 12000
     ingredients:
         stone_pickaxe: 1
@@ -79,6 +87,7 @@ gold_pickaxe:
      - near_anvil
 
 diamond_pickaxe:
+    score: 1000
     duration: 18000
     ingredients:
         gold_pickaxe: 1
@@ -91,6 +100,7 @@ diamond_pickaxe:
      - near_anvil
 
 amethyst_pickaxe:
+    score: 1500
     duration: 25000
     ingredients:
         diamond_pickaxe: 1
@@ -104,6 +114,7 @@ amethyst_pickaxe:
      - near_anvil
 
 lumber_axe:
+    score: 3000
     duration: 40000
     ingredients:
         diamond_pickaxe: 1
@@ -120,6 +131,7 @@ lumber_axe:
 
 
 butcher_knife:
+    score: 1500
     duration: 15000
     ingredients:
         stone: 70
@@ -132,6 +144,7 @@ butcher_knife:
      - near_anvil
 
 shovel:
+    score: 150
     duration: 12000
     ingredients:
         stone: 70
@@ -145,6 +158,7 @@ shovel:
 
 
 stone_spear:
+    score: 250
     duration: 14000
     ingredients:
         stone: 20
@@ -155,6 +169,7 @@ stone_spear:
 
 
 gold_spear:
+    score: 750
     duration: 20000
     ingredients:
         stone_spear: 1
@@ -166,6 +181,7 @@ gold_spear:
      - near_anvil
 
 diamond_spear:
+    score: 1250
     duration: 25000
     ingredients:
         gold_spear: 1
@@ -178,6 +194,7 @@ diamond_spear:
      - near_anvil
 
 amethyst_spear:
+    score: 2000
     duration: 40000
     ingredients:
         diamond_spear: 1
@@ -191,6 +208,7 @@ amethyst_spear:
      - near_anvil
 
 tusk_spear:
+    score: 4000
     duration: 60000
     ingredients:
         diamond_spear: 1
@@ -207,6 +225,7 @@ tusk_spear:
 
 
 stone_hammer:
+    score: 500
     duration: 10000
     ingredients:
         stone: 100
@@ -217,6 +236,7 @@ stone_hammer:
 
 
 gold_hammer:
+    score: 1000
     duration: 18000
     ingredients:
         stone_hammer: 1
@@ -229,6 +249,7 @@ gold_hammer:
      - near_crafting_table
 
 diamond_hammer:
+    score: 1500
     duration: 30000
     ingredients:
         gold_hammer: 1
@@ -241,6 +262,7 @@ diamond_hammer:
      - near_anvil
 
 amethyst_hammer:
+    score: 2500
     duration: 50000
     ingredients:
         diamond_hammer: 1
@@ -257,11 +279,13 @@ amethyst_hammer:
 #* Helmets
 
 wood_helmet:
+    score: 75
     duration: 10000
     ingredients:
         wood: 50
 
 stone_helmet:
+    score: 200
     duration: 20000
     ingredients:
             wood_helmet: 1
@@ -273,6 +297,7 @@ stone_helmet:
 
 
 gold_helmet:
+    score: 500
     duration: 30000
     ingredients:
         stone_helmet: 1
@@ -284,6 +309,7 @@ gold_helmet:
      - near_anvil
 
 diamond_helmet:
+    score: 1250
     duration: 40000
     ingredients:
         gold_helmet: 1
@@ -296,6 +322,7 @@ diamond_helmet:
      - near_anvil
 
 amethyst_helmet:
+    score: 2500
     duration: 50000
     ingredients:
         diamond_helmet: 1
@@ -311,6 +338,7 @@ amethyst_helmet:
 # * Fur Crafts
 
 pitch:
+    score: 50
     duration: 1000
     ingredients:
         pinecone: 1
@@ -320,6 +348,7 @@ pitch:
      - near_fire
 
 cloth:
+    score: 75
     duration: 2000
     ingredients:
         pitch: 1
@@ -332,6 +361,7 @@ cloth:
 
 
 backpack:
+    score: 600
     duration: 14000
     ingredients:
         deer_hide: 2
@@ -342,6 +372,7 @@ backpack:
      - near_crafting_table
 
 bandage:
+    score: 75
     duration:  2000 
     ingredients:
         cloth: 1
@@ -350,6 +381,7 @@ bandage:
      - near_crafting_table
 
 book:
+    score: 500
     duration: 7000
     ingredients:
         deer_hide: 2
@@ -359,6 +391,7 @@ book:
      - near_crafting_table
 
 resource_book:
+    score: 4000
     duration: 40000
     ingredients:
         amethyst: 80
@@ -372,6 +405,7 @@ resource_book:
      - near_fire
 
 time_book:
+    score: 4000
     duration: 40000
     ingredients:
         cloth: 8
@@ -385,6 +419,7 @@ time_book:
      - near_fire
 
 earmuffs:
+    score: 250
     duration: 6000
     ingredients:
         bear_fur: 2
@@ -393,6 +428,7 @@ earmuffs:
      - near_crafting_table
 
 beanie:
+    score: 300
     duration: 12000
     ingredients:
         bear_fur: 6
@@ -403,6 +439,7 @@ beanie:
      - near_crafting_table
 
 coat:
+    score: 1200
     duration: 18000
     ingredients:
         ram_wool: 8
@@ -422,11 +459,13 @@ coat:
 #Walls
 
 wood_wall:
+    score: 15  
     duration: 2000
     ingredients:
         wood: 25
 
 stone_wall:
+    score: 50
     duration: 2500
     ingredients:
         wood_wall: 1
@@ -436,6 +475,7 @@ stone_wall:
      - near_crafting_table
 
 gold_wall:
+    score: 65
     duration: 3000
     ingredients:
         stone_wall: 1
@@ -447,6 +487,7 @@ gold_wall:
      - near_anvil
 
 diamond_wall:
+    score: 85
     duration: 5000
     ingredients:
         gold_wall: 1
@@ -458,6 +499,7 @@ diamond_wall:
      - near_anvil
 
 amethyst_wall:
+    score: 100
     duration: 6000
     ingredients:
         diamond_wall: 1
@@ -471,11 +513,13 @@ amethyst_wall:
 #Doors
 
 wood_door:
+    score: 25
     duration: 3000
     ingredients:
         wood: 30
 
 stone_door:
+    score: 50
     duration: 3500
     ingredients:
         wood_door: 1
@@ -485,6 +529,7 @@ stone_door:
      - near_crafting_table
 
 gold_door:
+    score: 75
     duration: 4500
     ingredients:
         stone_door: 1
@@ -496,6 +541,7 @@ gold_door:
      - near_anvil
 
 diamond_door:
+    score: 100
     duration: 6000
     ingredients:
         gold_door: 1
@@ -507,6 +553,7 @@ diamond_door:
      - near_anvil
 
 amethyst_door:
+    score: 125
     duration: 7000
     ingredients:
         diamond_door: 1
@@ -520,47 +567,52 @@ amethyst_door:
 #spike
 
 wood_spike:
+    score: 100
     duration: 6000
     ingredients:
-        wood: 30
+        wood: 70
 
 stone_spike:
+    score: 125
     duration: 7000
     ingredients:
         wood_spike: 1
-        stone: 35
-        wood: 25
+        stone: 60
+        wood: 40
     flags:
      - near_crafting_table
 
 gold_spike:
+    score: 150
     duration: 8000
     ingredients:
         stone_spike: 1
-        gold: 40
-        stone: 30
+        gold: 50
+        stone: 45
 
 
     flags:
      - near_anvil
 
 diamond_spike:
+    score: 300
     duration: 9000
     ingredients:
         gold_spike: 1
-        diamond: 45
-        gold: 35
+        diamond: 40
+        gold: 50
 
     flags:
      - near_crafting_table
      - near_anvil
 
 amethyst_spike:
+    score: 450
     duration: 10000
     ingredients:
         diamond_spike: 1
-        amethyst: 50
-        diamond: 40
+        amethyst: 30
+        diamond: 55
     flags:
      - near_crafting_table
      - near_fire
@@ -569,12 +621,14 @@ amethyst_spike:
 #other buildings
 
 workbench:
+    score: 75
     duration: 3000
     ingredients:
         wood: 20
         stone: 10
 
 anvil:
+    score: 200
     duration: 5000
     ingredients:
         wood: 10
@@ -584,18 +638,21 @@ anvil:
      - near_crafting_table
 
 fire_small:
+    score: 50
     duration: 3000
     ingredients:
-        wood: 25
-        stone : 10
+        wood: 15
+        stone : 5
 
 fire_big:
-    duration: 4000
+    score: 150
+    duration: 6000
     ingredients:
         wood: 35
         stone: 15
 
 fire_pit: 
+    score: 200
     duration: 8000
     ingredients:
         wood: 50
@@ -605,12 +662,14 @@ fire_pit:
      - near_crafting_table
 
 quick_wood_wall: 
+    score:  25
     duration: 1000
     ingredients:
         wood: 20
     
 
 quick_stone_wall:
+    score: 50
     duration: 2000
     ingredients:
         quick_wood_wall: 1
@@ -620,6 +679,7 @@ quick_stone_wall:
      - near_crafting_table
 
 quick_stone_spike:
+    score: 100
     duration: 5000
     ingredients:
         stone: 30
@@ -629,6 +689,7 @@ quick_stone_spike:
      - near_crafting_table
 
 quick_diamond_spike:
+    score: 250
     duration: 7000
     ingredients:
         diamond: 30
@@ -639,9 +700,29 @@ quick_diamond_spike:
      - near_anvil
 
 meat_cooked:
+    score: 35
     duration: 2000
     ingredients:
         meat: 1
     
     flags:
      - near_fire
+
+miracle_fruit:
+    score: 200
+    duration: 7000
+    ingredients:
+        blue_berry: 5
+        honey: 2
+        amethyst: 10
+        diamond: 15
+
+tooth:
+    score: 20
+    amount: 4
+    duration: 6000
+    ingredients:
+        elephant_tusk: 1
+    
+    flags:
+     - near_crafting_table

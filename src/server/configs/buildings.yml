@@ -1,0 +1,119 @@
+wood_wall:
+    type: wall
+    attack_damage: 15
+    level: 2000
+
+stone_wall:
+    type: wall
+    attack_damage: 50
+    level: 2500
+
+gold_wall:
+    type: wall
+    attack_damage: 65
+    level: 3000
+
+diamond_wall:
+    type: wall
+    attack_damage: 85
+    level: 5000
+
+amethyst_wall:
+    type: wall
+    attack_damage: 100
+    level: 6000
+
+wood_door:
+    type: door
+    attack_damage: 25
+    level: 3000
+
+stone_door:
+    type: door
+    attack_damage: 50
+    level: 3500
+
+gold_door:
+    type: door
+    attack_damage: 75
+    level: 4500
+
+diamond_door:
+    type: door
+    attack_damage: 100
+    level: 6000
+
+amethyst_door:
+    type: door
+    attack_damage: 125
+    level: 7000
+
+wood_spike:
+    type: spike
+    attack_damage: 100
+    level: 6000
+
+stone_spike:
+    type: spike
+    attack_damage: 125
+    level: 7000
+
+gold_spike:
+    type: spike
+    attack_damage: 150
+    level: 8000
+
+diamond_spike:
+    type: spike
+    attack_damage: 300
+    level: 9000
+
+amethyst_spike:
+    type: spike
+    attack_damage: 450
+    level: 10000
+
+workbench:
+    type: building
+    attack_damage: 75
+    level: 3000
+
+anvil:
+    type: building
+    attack_damage: 200
+    level: 5000
+
+fire_small:
+    type: building
+    attack_damage: 50
+    level: 3000
+
+fire_big:
+    type: building
+    attack_damage: 150
+    level: 6000
+
+fire_pit:
+    type: building
+    attack_damage: 200
+    level: 8000
+
+quick_wood_wall:
+    type: quick_building
+    attack_damage: 25
+    level: 1000
+
+quick_stone_wall:
+    type: quick_building
+    attack_damage: 50
+    level: 2000
+
+quick_stone_spike:
+    type: quick_building
+    attack_damage: 100
+    level: 5000
+
+quick_diamond_spike:
+    type: quick_building
+    attack_damage: 250
+    level: 7000

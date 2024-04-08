@@ -1,0 +1,8 @@
+book:
+    type: book
+
+resource_book:
+    type: book
+
+time_book:
+    type: book

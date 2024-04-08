@@ -1,0 +1,40 @@
+bandage:
+    type: food
+    healing: 3
+
+
+meat:
+    type: food
+    food: 10
+    self_damage: 5
+
+meat_cooked:
+    type: food
+    food: 20
+
+blue_berry:
+    type: food
+    food: 3
+
+red_berry:
+    type: food
+    food: 6
+    self_damage: 2
+
+honey:
+    type: food
+    food: 7
+
+mango:
+    type: food
+    food: 10
+
+komodo_dragon_eye:
+    type: food
+    food: 20
+    self_damage: 35
+
+miracle_fruit:
+    type: food
+    food: 35
+    healing: 10

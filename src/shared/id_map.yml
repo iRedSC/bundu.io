@@ -122,32 +122,21 @@ quick_diamond_spike: 83
 # * Map Objects
 
 # Trees
-forest_tree1: 84
-forest_tree2: 85
-forest_tree3: 86
-forest_tree4: 87
-forest_tree5: 88
-forest_tree6: 89
+forest_tree: 84
+
 
 pine_tree: 90
-pine_tree2: 91
-pine_tree3: 92
-pine_tree4: 93
-pine_tree5: 94
-pine_tree6: 95
-pine_tree_snow: 96
 
-savanah_tree1: 97
-savanah_tree2: 98
-savanah_bush1: 99
+
+savanah_tree: 97
+
 
 # Other
 berry_bush: 100
-berry_bush_overlay: 101
+
 mango_tree1: 102
-hive1: 103
-hive2: 104
-hive3: 105
+hive: 103
+
 
 # * Animals
 
