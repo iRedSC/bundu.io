@@ -1,4 +1,4 @@
-import SpriteMap from "../configs/sprites.yml";
+import SpriteMap from "../configs/sprite_map.yml";
 import { MIPMAP_MODES, Resource, Texture } from "pixi.js";
 
 /**

@@ -29,21 +29,22 @@ export class WorldObject extends PIXI.Container {
 
         this.id = id;
 
+        this.debug = new DebugWorldObject();
         this.position = pos;
         this.rotation = rotation;
         this.states = new States(() => {
             this.renderable = true;
+            this.debug.renderable = true;
         });
         this.states.set([Date.now(), pos.x, pos.y]);
         this.rotationProperties = new RotationHandler(true, 100);
-        this.debug = new DebugWorldObject();
         this.setRotation(rotation);
         this.size = size;
 
         const idText = new PIXI.Text(`ID: ${this.id}`, TEXT_STYLE);
         idText.scale.set(5);
         idText.position = pos;
-        this.debug.updateId(idText);
+        this.debug.update("id", idText);
     }
 
     move() {
@@ -56,12 +57,8 @@ export class WorldObject extends PIXI.Container {
             this.rotation = this.rotationProperties.interpolate(now);
         }
 
-        if (this.debug.hitbox) {
-            this.debug.hitbox.position.set(x, y);
-        }
-        if (this.debug.id) {
-            this.debug.id.position.set(x, y);
-        }
+        this.debug.containers.get("hitbox")?.position.set(x, y);
+        this.debug.containers.get("id")?.position.set(x, y);
     }
 
     setRotation(rotation: number) {
@@ -83,7 +80,7 @@ export class WorldObject extends PIXI.Container {
         this.scale.set(value / 15);
 
         const hitbox = new Circle(this.position, this._size, 0xff0000, 25);
-        this.debug.updateHitbox(hitbox);
+        this.debug.update("hitbox", hitbox);
     }
 
     get size() {

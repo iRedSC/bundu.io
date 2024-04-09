@@ -87,6 +87,7 @@ export class Inventory {
 
     update(update: ServerPacketSchema.updateInventory) {
         this.display.slotCount(update[0]);
+
         for (const [id, amount] of update[1]) {
             let exists = false;
             for (const item of this.slots) {
@@ -100,6 +101,9 @@ export class Inventory {
                 this.slots.push([id, amount]);
             }
         }
+        this.slots = this.slots.filter((item) =>
+            update[1].some((i) => i[0] === item[0])
+        );
         this.display.update(this.slots);
     }
 

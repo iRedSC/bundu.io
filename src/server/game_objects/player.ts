@@ -17,7 +17,7 @@ export class Player extends GameObject {
         this.add(new Physics(physics));
         this.add(new PlayerData(playerData));
         this.add(new CalculateCollisions({}));
-        this.add(new Inventory({ slots: 10, items: new Map() }));
+        this.add(new Inventory({ slots: 25, items: new Map() }));
         this.add(new Flags(new Set()));
 
         this.pack[PACKET_TYPE.NEW_OBJECT] = () => {

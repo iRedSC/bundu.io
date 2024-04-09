@@ -1,0 +1,17 @@
+helmet:
+    function: wear
+
+hat:
+    function: wear
+
+sword:
+    function: main_hand
+
+book:
+    function: off_hand
+
+wall:
+    function: building
+
+food:
+    function: consume

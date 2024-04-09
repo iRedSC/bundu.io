@@ -25,13 +25,14 @@ import {
 import { UI } from "./ui/layout";
 import { CraftingMenu, RecipeManager } from "./ui/crafting_menu";
 import { Grid } from "./ui/grid";
+import { Timer } from "./ui/timer";
 
 const { viewport } = createRenderer();
 const packetPipeline = new PacketPipeline();
 const socket = new WebSocket("ws://localhost:7777");
 const world = new World(viewport, animationManager);
 
-// viewport.addChild(debugContainer);
+viewport.addChild(debugContainer);
 debugContainer.zIndex = 1000;
 viewport.sortChildren();
 
@@ -167,6 +168,7 @@ function hideOutOfSight() {
                 continue;
             }
             object.renderable = false;
+            object.debug.renderable = false;
         }
     }
 }
@@ -215,18 +217,35 @@ setInterval(() => {
     craftingMenu.update();
 }, 500);
 
+function percentOf(percent: number, of: number) {
+    return (percent / 100) * of;
+}
+
+const timer = new Timer("sword_timer");
+
+UI.addChild(timer.container);
+
+timer.set(10000, animationManager);
+
+setInterval(() => {
+    timer.set(1000, animationManager);
+}, 1000);
 function resize() {
     craftingMenu.container.position.set(
         craftingGrid.spacingH * 4,
         craftingGrid.spacingV * 4
     );
     inventory.display.container.position.set(
-        window.innerWidth / 2 -
-            ((INVENTORY_SLOT_SIZE + INVENTORY_SLOT_PADDING) *
-                inventory.display.slotamount) /
-                2,
+        percentOf(50, window.innerWidth) -
+            percentOf(
+                50,
+                (INVENTORY_SLOT_SIZE + INVENTORY_SLOT_PADDING) *
+                    inventory.display.slotamount
+            ),
+
         window.innerHeight - INVENTORY_SLOT_SIZE
     );
+    timer.container.position.set(100, percentOf(75, window.innerHeight));
 }
 window.addEventListener("resize", resize);
 
