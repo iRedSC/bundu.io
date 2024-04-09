@@ -1,15 +1,13 @@
 import * as PIXI from "pixi.js";
-import { radians, lerp, colorLerp } from "../../../lib/transforms";
-import { itemConfigs } from "../../configs/item_configs";
+import { radians, lerp } from "../../../lib/transforms";
+import { spriteConfigs } from "../../configs/sprite_configs";
 import { WorldObject } from "./world_object";
-import { SpriteFactory } from "../../assets/sprite_factory";
+import { SpriteFactory, SpriteWrapper } from "../../assets/sprite_factory";
 import random from "../../../lib/random";
 import { z } from "zod";
 import { validate } from "../../../shared/type_guard";
-import { ANIMATION } from "../../animation/animations";
+import { ANIMATION, cubicBezier, hurt } from "../../animation/animations";
 import { idMap } from "../../configs/id_map";
-import { cubicBezier, hurt } from "../../animation/animation_testing";
-import { round } from "../../../lib/math";
 import { Animation, AnimationManager } from "../../../lib/animations";
 
 const Gear = z.tuple([
@@ -22,18 +20,18 @@ type Gear = z.infer<typeof Gear>;
 type PlayerParts = {
     body: {
         container: PIXI.Container;
-        sprite: PIXI.Sprite;
-        helmet: PIXI.Sprite;
+        sprite: SpriteWrapper;
+        helmet: SpriteWrapper;
     };
     leftHand: {
         container: PIXI.Container;
-        sprite: PIXI.Sprite;
-        item: PIXI.Sprite;
+        sprite: SpriteWrapper;
+        item: SpriteWrapper;
     };
     rightHand: {
         container: PIXI.Container;
-        sprite: PIXI.Sprite;
-        item: PIXI.Sprite;
+        sprite: SpriteWrapper;
+        item: SpriteWrapper;
     };
 };
 
@@ -111,7 +109,7 @@ export class Player extends WorldObject {
         body.container.addChild(body.helmet);
 
         body.sprite.anchor.set(0.5);
-        body.sprite.scale.set(0.9);
+        body.sprite.setScale(0.9);
         body.helmet.anchor.set(0.5);
 
         leftHand.container.x = -70;
@@ -119,20 +117,20 @@ export class Player extends WorldObject {
         leftHand.sprite.anchor.set(0.5);
         leftHand.container.pivot.set(300, 0);
         leftHand.container.scale.set(0.5);
-        leftHand.sprite.scale.set(0.5);
+        leftHand.sprite.setScale(0.5);
 
         leftHand.item.anchor.set(1);
-        leftHand.item.scale.set(1.8);
+        leftHand.item.setScale(1.8);
 
         rightHand.container.x = 70;
         rightHand.container.y = 45;
         rightHand.container.pivot.set(-300, 0);
         rightHand.sprite.anchor.set(0.5);
         rightHand.container.scale.set(0.5);
-        rightHand.sprite.scale.set(0.5);
+        rightHand.sprite.setScale(0.5);
 
         rightHand.item.anchor.set(1);
-        rightHand.item.scale.set(1.8);
+        rightHand.item.setScale(1.8);
         this.animations = new Map();
         this.animations.set(
             ANIMATION.IDLE_HANDS,
@@ -148,6 +146,8 @@ export class Player extends WorldObject {
         this.animations.set(ANIMATION.ATTACK, PlayerAnimations.attack(this));
         this.animations.set(ANIMATION.BLOCK, PlayerAnimations.block(this));
         this.trigger(ANIMATION.IDLE_HANDS, manager);
+
+        this.selectItem({ main: "wood_pickaxe" });
     }
 
     selectItem({
@@ -188,7 +188,8 @@ export class Player extends WorldObject {
 
         if (this.mainHand !== "") {
             this.sprite.leftHand.item.renderable = true;
-            const config = itemConfigs.get(this.mainHand);
+            const config = spriteConfigs.get(this.mainHand);
+            console.log(config);
             if (!config) {
                 return;
             }
@@ -201,7 +202,7 @@ export class Player extends WorldObject {
 
         if (this.offHand !== "") {
             this.sprite.rightHand.item.renderable = true;
-            const config = itemConfigs.get(this.offHand);
+            const config = spriteConfigs.get(this.offHand);
             if (!config) {
                 return;
             }
@@ -215,7 +216,7 @@ export class Player extends WorldObject {
 
         if (this.helmet !== "") {
             this.sprite.body.helmet.renderable = true;
-            const config = itemConfigs.get(this.helmet);
+            const config = spriteConfigs.get(this.helmet);
             if (!config) {
                 return;
             }

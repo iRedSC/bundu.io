@@ -1,13 +1,14 @@
 import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
-import { SpriteFactory } from "../assets/sprite_factory";
+import { SpriteFactory, SpriteWrapper } from "../assets/sprite_factory";
 import { idMap } from "../configs/id_map";
 
 export class ItemButton {
     button: Button;
-    background: PIXI.Sprite;
+    background: SpriteWrapper;
+    disableSprite: SpriteWrapper;
     item: number;
-    itemSprite: PIXI.Sprite;
+    itemSprite: SpriteWrapper;
     hovering: boolean;
     callback?: (item: number) => void;
 
@@ -21,11 +22,20 @@ export class ItemButton {
         this.callback = callback;
         // this.background = new PIXI.Graphics();
         this.background = SpriteFactory.build("item_button");
+        this.disableSprite = SpriteFactory.build("item_button");
+
+        this.disableSprite.width = 68;
+        this.disableSprite.height = 68;
+        this.disableSprite.tint = 0x000000;
+        this.disableSprite.alpha = 0.5;
+        this.disableSprite.zIndex = 1000;
+        this.disableSprite.visible = false;
 
         this.item = -1;
         this.itemSprite = SpriteFactory.build(this.item);
 
         this.button.view.addChild(this.background);
+        this.button.view.addChild(this.disableSprite);
 
         this.button.hover = () => {
             this.button.view.scale.set(1.1);
@@ -62,6 +72,16 @@ export class ItemButton {
         };
     }
 
+    disable() {
+        this.disableSprite.visible = true;
+        this.button.enabled = false;
+    }
+
+    enable() {
+        this.disableSprite.visible = false;
+        this.button.enabled = true;
+    }
+
     setItem(item: number) {
         const name = idMap.getv(item);
         if (!name) {
@@ -85,6 +105,7 @@ export class ItemButton {
             this.background.height / 2
         );
         this.button.view.addChild(this.itemSprite);
+        this.button.view.sortChildren();
     }
 
     update(tint: number) {

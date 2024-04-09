@@ -1,5 +1,0 @@
-gold_sword:
-    type: sword
-    attack_damage: 17
-    level: 3
-    block: 3

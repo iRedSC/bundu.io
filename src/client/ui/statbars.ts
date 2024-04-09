@@ -71,16 +71,16 @@ function statsTransition(target: StatsDisplay) {
 }
 export const barContainer = new PIXI.Container();
 const hungerContainer = new StatsDisplay(
-    "./assets/hunger.svg",
+    "./assets/hunger_bar_shell.svg",
     "./assets/hunger_bar.svg"
 );
 const heatContainer = new StatsDisplay(
-    "./assets/heat.svg",
+    "./assets/heat_bar_shell.svg",
     "./assets/heat_bar.svg",
     "./assets/heat_bar.svg"
 );
 const healthContainer = new StatsDisplay(
-    "./assets/health.svg",
+    "./assets/health_bar_shell.svg",
     "./assets/damage_bar.svg",
     "./assets/health_bar.svg"
 );

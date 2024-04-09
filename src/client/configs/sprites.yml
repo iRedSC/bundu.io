@@ -1,190 +1,266 @@
-unknown_asset: unknown_asset.svg
-
-player: player.svg
-player_hat: player_hat.svg
-player_dead: player_dead.svg
-hand: hand.svg
-
-item_button: item_button.svg
-
-weapon_toggle: weapon_toggle.svg
-build_toggle: build_toggle.svg
-misc_toggle: misc_toggle.svg
-
-# * TOOLS
+unknown_asset:
+    type: none
+    sprite: unknown_asset
 
 # Pickaxe
-wood_pickaxe: wood_pickaxe.svg
-stone_pickaxe: stone_pickaxe.svg
-gold_pickaxe: gold_pickaxe.svg
-diamond_pickaxe: diamond_pickaxe.svg
-amethyst_pickaxe: amethyst_pickaxe.svg
+wood_pickaxe:
+    type: pickaxe
+    sprite: wood_pickaxe
 
-# Special Tools
-lumber_axe: hatchet.svg
-spyglass: spyglass.svg
-butcher_knife: knife.svg
-shovel: shovel.svg
+stone_pickaxe:
+    type: pickaxe
+    sprite: stone_pickaxe
+
+gold_pickaxe:
+    type: pickaxe
+    sprite: gold_pickaxe
+
+diamond_pickaxe:
+    type: pickaxe
+    sprite: diamond_pickaxe
+
+amethyst_pickaxe:
+    type: pickaxe
+    sprite: amethyst_pickaxe
+
+butcher_knife:
+    type: pickaxe
+    sprite: butcher_knife
+
+lumber_axe:
+    type: pickaxe
+    sprite: lumber_axe
+
+shovel:
+    type: pickaxe
+    sprite: shovel
 
 # Sword
-wood_sword: wood_sword.svg
-stone_sword: stone_sword.svg
-gold_sword: gold_sword.svg
-diamond_sword: diamond_sword.svg
-amethyst_sword: amethyst_sword.svg
+wood_sword:
+    type: sword
+    sprite: wood_sword
 
-# Hammer
-stone_hammer: stone_hammer.svg
-gold_hammer: gold_hammer.svg
-diamond_hammer: diamond_hammer.svg
-amethyst_hammer: amethyst_hammer.svg
+stone_sword:
+    type: sword
+    sprite: stone_sword
 
-# Spear
-stone_spear: stone_spear.svg
-gold_spear: gold_spear.svg
-diamond_spear: diamond_spear.svg
-amethyst_spear: amethyst_spear.svg
-tusk_spear: hunting_spear.svg
+gold_sword:
+    type: sword
+    sprite: gold_sword
+
+diamond_sword:
+    type: sword
+    sprite: diamond_sword
+
+amethyst_sword:
+    type: sword
+    sprite: amethyst_sword
+
+# spears
+
+stone_spear:
+    type: spear
+    sprite: stone_spear
+
+gold_spear:
+    type: spear
+    sprite: gold_spear
+
+diamond_spear:
+    type: spear
+    sprite: diamond_spear
+
+amethyst_spear:
+    type: spear
+    sprite: amethyst_spear
+
+tusk_spear:
+    type: spear
+    sprite: tusk_spear
 
 # Helmet
-wood_helmet: wood_helmet.svg
-stone_helmet: stone_helmet.svg
-gold_helmet: gold_helmet.svg
-diamond_helmet: diamond_helmet.svg
-amethyst_helmet: amethyst_helmet.svg
+wood_helmet:
+    type: helmet
+    sprite: wood_helmet
 
-# Hat
-earmuffs: earmuffs.svg
-beanie: beanie.svg
-coat: coat.svg
-backpack: backpack.svg
+stone_helmet:
+    type: helmet
+    sprite: stone_helmet
 
-# Special Items
-book: book.svg
-resource_book: resource_book.svg
-time_book: time_book.svg
+gold_helmet:
+    type: helmet
+    sprite: gold_helmet
+    body_display:
+        y: 10
 
-# Connsumable
-meat: meat.svg
-meat_cooked: meat_cooked.svg
-blue_berry: blue_berry.svg
-red_berry: red_berry.svg
-honey: honey.svg
-mango: mango.svg
-miracle_fruit: miracle_fruit.svg
-bandage: bandage.svg
+diamond_helmet:
+    type: helmet
+    sprite: diamond_helmet
 
-# Resources
-pinecone: pinecone.svg
-cloth: cloth.svg
-pitch: pitch.svg
-wood: wood.svg
-stone: stone.svg
-gold: gold.svg
-diamond: diamond.svg
-amethyst: amethyst.svg
+amethyst_helmet:
+    type: helmet
+    sprite: amethyst_helmet
 
-# * PLACEABLE
+# Hammer
+wood_hammer:
+    type: hammer
+    sprite: wooden_hammer
 
-#Walls
-friendly_wall: friendly_wall.svg
-wood_wall: wood_wall.svg
-stone_wall: stone_wall.svg
-gold_wall: gold_wall.svg
-diamond_wall: diamond_wall.svg
-amethyst_wall: amethyst_wall.svg
+stone_hammer:
+    type: hammer
+    sprite: stone_hammer
 
-#Spike
-wood_spike: wood_spike.svg
-stone_spike: stone_spike.svg
-gold_spike: gold_spike.svg
-diamond_spike: diamond_spike.svg
-amethyst_spike: amethyst_spike.svg
+gold_hammer:
+    type: hammer
+    sprite: gold_hammer
 
-#Door
-friendly_door: friendly_door.svg
-door_open: door_open.svg
-wood_door: wood_door.svg
-stone_door: stone_door.svg
-gold_door: gold_door.svg
-diamond_door: diamond_door.svg
-amethyst_door: amethyst_door.svg
+diamond_hammer:
+    type: hammer
+    sprite: diamond_hammer
 
-#Crafting
-workbench: workbench.svg
-fire_pit: fire_pit.svg
-anvil: anvil.svg
-fire_small: fire_big.svg
-fire_big: fire_small.svg
+amethyst_hammer:
+    type: hammer
+    sprite: amethyst_hammer
 
-#Quick buildings
-quick_wood_wall: quick_wood_wall.svg
-quick_stone_wall: quick_stone_wall.svg
-quick_stone_spike: quick_stone_spike.svg
-quick_diamond_spike: quick_diamond_spike.svg
-#* Map Objects
+# * BUILDINGs
 
-#Trees
-forest_tree: forest_tree1.svg
-forest_tree1: forest_tree1.svg
-forest_tree2: forest_tree2.svg
-forest_tree3: forest_tree3.svg
-forest_tree4: forest_tree4.svg
-forest_tree5: forest_tree5.svg
-forest_tree6: forest_tree6.svg
+# Walls
+quick_wood_wall:
+    type: wall
+    sprite: quick_wood_wall
 
-pine_tree: pine_tree.svg
-pine_tree2: pine_tree2.svg
-pine_tree3: pine_tree3.svg
-pine_tree4: pine_tree4.svg
-pine_tree5: pine_tree5.svg
-pine_tree6: pine_tree6.svg
-pine_tree_snow: pine_tree_snow.svg
+quick_stone_wall:
+    type: wall
+    sprite: quick_stone_wall
 
-savanah_tree: savanah_tree1.svg
-savanah_tree1: savanah_tree1.svg
-savanah_tree2: savanah_tree2.svg
-savanah_bush1: savanah_bush1.svg
+wood_wall:
+    type: wall
+    sprite: wooden_wall
 
-#other
-berry_bush: berry_bush.svg
-berry_bush_overlay: berry_bush_overlay.svg
-mango_tree1: mango_tree1.svg
-hive_small: hive1.svg
-hive_medium: hive2.svg
-hive_large: hive3.svg
+stone_wall:
+    type: wall
+    sprite: stone_wall
 
-# * Aniamls
+gold_wall:
+    type: wall
+    sprite: gold_wall
 
-#Alive
-bear: bear.svg
-deer: deer.svg
-ram: ram.svg
-elephant: elephant.svg
-alligator: alligator.svg
-komodo_dragon: komodo_dragon.svg
-bee: bee.svg
-queen_bee: queen_bee.svg
+diamond_wall:
+    type: wall
+    sprite: diamond_wall
 
-#Dead
-bear_dead: bear_dead.svg
-deer_dead: deer_dead.svg
-ram_dead: ram_dead.svg
-elephant_dead: elephant_dead.svg
-alligator_dead: alligator_dead.svg
-komodo_dragon_dead: komodo_dragon_dead.svg
-bee_dead: bee_dead.svg
-queen_bee_dead: queen_bee_dead.svg
+amethyst_wall:
+    type: wall
+    sprite: amethyst_wall
 
-#Angry
-ram_angry: ram_angry.svg
-elephant_angry: elephant_angry.svg
+# Door
 
-#Animal Items
-bear_fur: bear_fur.svg
-deer_hide: deer_hide.svg
-ram_wool: ram_wool.svg
-tooth: tooth.svg
-elephant_tusk: elephant_tusk.svg
-alligator_skin: alligator_skin.svg
-komodo_dragon_eye: komodo_dragon_eye.svg
+wood_door:
+    type: door
+    sprite: wooden_door
+
+stone_door:
+    type: door
+    sprite: stone_door
+
+gold_door:
+    type: door
+    sprite: gold_door
+
+diamond_door:
+    type: door
+    sprite: diamond_door
+
+amethyst_door:
+    type: door
+    sprite: amethyst_door
+
+# spike
+quick_stone_spike:
+    type: spike
+    sprite: quick_stone_spike
+
+quick_diamond_spike:
+    type: spike
+    sprite: quick_diamond_spike
+
+wood_spike:
+    type: spike
+    sprite: wooden_spike
+
+stone_spike:
+    type: spike
+    sprite: stone_spike
+
+gold_spike:
+    type: spike
+    sprite: gold_spike
+
+diamond_spike:
+    type: spike
+    sprite: diamond_spike
+
+amethyst_spike:
+    type: spike
+    sprite: amethyst_spike
+
+# buildings
+
+workbench:
+    type: building
+    sprite: workbench
+
+anvil:
+    type: building
+    sprite: anvil
+
+fire_pit:
+    type: building
+    sprite: fire_pit
+
+fire_big:
+    type: building
+    sprite: fire_big
+
+fire_small:
+    type: building
+    sprite: fire_small
+
+earmuffs:
+    type: hat
+    sprite: earmuffs
+
+beanie:
+    type: hat
+    sprite: beanie
+
+coat:
+    type: hat
+    sprite: coat
+
+book:
+    type: book
+    sprite: book
+
+resource_book:
+    type: book
+    sprite: resource_book
+
+time_book:
+    type: book
+    sprite: time_book
+
+# Tree
+
+forest_tree:
+    type: tree
+    world_display:
+        scale: 0.7
+
+pine_tree:
+    type: tree
+
+amethyst:
+    type: none
+    world_display:
+        scale: 0.5

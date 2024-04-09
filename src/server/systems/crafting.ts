@@ -18,13 +18,13 @@ export class CraftingSystem extends System {
         if (!recipe) {
             return;
         }
-        console.log(`Recipe ${item} exists`);
-        for (const flag of recipe.flags) {
-            if (!flags.has(flag)) {
-                return;
-            }
-        }
-        console.log(`Passed flag check`);
+        // console.log(`Recipe ${item} exists`);
+        // for (const flag of recipe.flags) {
+        //     if (!flags.has(flag)) {
+        //         return;
+        //     }
+        // }
+        // console.log(`Passed flag check`);
         for (const [id, amount] of recipe.ingredients.entries()) {
             const item = inventory.items.get(id);
             if (!item) {

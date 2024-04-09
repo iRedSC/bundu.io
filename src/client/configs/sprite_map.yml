@@ -1,0 +1,193 @@
+unknown_asset: unknown_asset.svg
+
+player: player.svg
+player_hat: player_hat.svg
+player_dead: player_dead.svg
+hand: hand.svg
+
+item_button: item_button.svg
+
+weapon_toggle: weapon_toggle.svg
+build_toggle: build_toggle.svg
+misc_toggle: misc_toggle.svg
+
+# timer icons
+sword_timer: sword_timer.svg
+
+# * TOOLS
+
+# Pickaxe
+wood_pickaxe: wood_pickaxe.svg
+stone_pickaxe: stone_pickaxe.svg
+gold_pickaxe: gold_pickaxe.svg
+diamond_pickaxe: diamond_pickaxe.svg
+amethyst_pickaxe: amethyst_pickaxe.svg
+
+# Special Tools
+lumber_axe: hatchet.svg
+spyglass: spyglass.svg
+butcher_knife: knife.svg
+shovel: shovel.svg
+
+# Sword
+wood_sword: wood_sword.svg
+stone_sword: stone_sword.svg
+gold_sword: gold_sword.svg
+diamond_sword: diamond_sword.svg
+amethyst_sword: amethyst_sword.svg
+
+# Hammer
+stone_hammer: stone_hammer.svg
+gold_hammer: gold_hammer.svg
+diamond_hammer: diamond_hammer.svg
+amethyst_hammer: amethyst_hammer.svg
+
+# Spear
+stone_spear: stone_spear.svg
+gold_spear: gold_spear.svg
+diamond_spear: diamond_spear.svg
+amethyst_spear: amethyst_spear.svg
+tusk_spear: hunting_spear.svg
+
+# Helmet
+wood_helmet: wood_helmet.svg
+stone_helmet: stone_helmet.svg
+gold_helmet: gold_helmet.svg
+diamond_helmet: diamond_helmet.svg
+amethyst_helmet: amethyst_helmet.svg
+
+# Hat
+earmuffs: earmuffs.svg
+beanie: beanie.svg
+coat: coat.svg
+backpack: backpack.svg
+
+# Special Items
+book: book.svg
+resource_book: resource_book.svg
+time_book: time_book.svg
+
+# Connsumable
+meat: meat.svg
+meat_cooked: meat_cooked.svg
+blue_berry: blue_berry.svg
+red_berry: red_berry.svg
+honey: honey.svg
+mango: mango.svg
+miracle_fruit: miracle_fruit.svg
+bandage: bandage.svg
+
+# Resources
+pinecone: pinecone.svg
+cloth: cloth.svg
+pitch: pitch.svg
+wood: wood.svg
+stone: stone.svg
+gold: gold.svg
+diamond: diamond.svg
+amethyst: amethyst.svg
+
+# * PLACEABLE
+
+#Walls
+friendly_wall: friendly_wall.svg
+wood_wall: wood_wall.svg
+stone_wall: stone_wall.svg
+gold_wall: gold_wall.svg
+diamond_wall: diamond_wall.svg
+amethyst_wall: amethyst_wall.svg
+
+#Spike
+wood_spike: wood_spike.svg
+stone_spike: stone_spike.svg
+gold_spike: gold_spike.svg
+diamond_spike: diamond_spike.svg
+amethyst_spike: amethyst_spike.svg
+
+#Door
+friendly_door: friendly_door.svg
+door_open: door_open.svg
+wood_door: wood_door.svg
+stone_door: stone_door.svg
+gold_door: gold_door.svg
+diamond_door: diamond_door.svg
+amethyst_door: amethyst_door.svg
+
+#Crafting
+workbench: workbench.svg
+fire_pit: fire_pit.svg
+anvil: anvil.svg
+fire_small: fire_big.svg
+fire_big: fire_small.svg
+
+#Quick buildings
+quick_wood_wall: quick_wood_wall.svg
+quick_stone_wall: quick_stone_wall.svg
+quick_stone_spike: quick_stone_spike.svg
+quick_diamond_spike: quick_diamond_spike.svg
+#* Map Objects
+
+#Trees
+forest_tree: forest_tree1.svg
+forest_tree1: forest_tree1.svg
+forest_tree2: forest_tree2.svg
+forest_tree3: forest_tree3.svg
+forest_tree4: forest_tree4.svg
+forest_tree5: forest_tree5.svg
+forest_tree6: forest_tree6.svg
+
+pine_tree: pine_tree.svg
+pine_tree2: pine_tree2.svg
+pine_tree3: pine_tree3.svg
+pine_tree4: pine_tree4.svg
+pine_tree5: pine_tree5.svg
+pine_tree6: pine_tree6.svg
+pine_tree_snow: pine_tree_snow.svg
+
+savanah_tree: savanah_tree1.svg
+savanah_tree1: savanah_tree1.svg
+savanah_tree2: savanah_tree2.svg
+savanah_bush1: savanah_bush1.svg
+
+#other
+berry_bush: berry_bush.svg
+berry_bush_overlay: berry_bush_overlay.svg
+mango_tree1: mango_tree1.svg
+hive_small: hive1.svg
+hive_medium: hive2.svg
+hive_large: hive3.svg
+
+# * Aniamls
+
+#Alive
+bear: bear.svg
+deer: deer.svg
+ram: ram.svg
+elephant: elephant.svg
+alligator: alligator.svg
+komodo_dragon: komodo_dragon.svg
+bee: bee.svg
+queen_bee: queen_bee.svg
+
+#Dead
+bear_dead: bear_dead.svg
+deer_dead: deer_dead.svg
+ram_dead: ram_dead.svg
+elephant_dead: elephant_dead.svg
+alligator_dead: alligator_dead.svg
+komodo_dragon_dead: komodo_dragon_dead.svg
+bee_dead: bee_dead.svg
+queen_bee_dead: queen_bee_dead.svg
+
+#Angry
+ram_angry: ram_angry.svg
+elephant_angry: elephant_angry.svg
+
+#Animal Items
+bear_fur: bear_fur.svg
+deer_hide: deer_hide.svg
+ram_wool: ram_wool.svg
+tooth: tooth.svg
+elephant_tusk: elephant_tusk.svg
+alligator_skin: alligator_skin.svg
+komodo_dragon_eye: komodo_dragon_eye.svg

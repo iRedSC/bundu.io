@@ -3,17 +3,17 @@ none:
 
 pickaxe:
     hand_display:
-        rotation: -100
-        x: 150
-        y: -200
-        scale: 2
+        rotation: -75
+        x: 230
+        y: -100
+        scale: 0.4
 
 sword:
     hand_display:
         rotation: -135
         x: -50
-        y: -200
-        scale: 2.2
+        y: -280
+        scale: 0.6
 
 helmet:
     body_display:
@@ -29,13 +29,12 @@ hat:
         rotation: 0
         scale: 1.1
 
-
 spear:
     hand_display:
         rotation: -135
         x: 0
         y: -400
-        scale: 4.4
+        scale: 2.2
 
 hammer:
     hand_display:
@@ -62,4 +61,9 @@ spike:
 building:
     sprite: unknown_asset
 
-
+tree:
+    world_display:
+        x: 0
+        y: 0
+        rotation: 0
+        scale: 0.2

@@ -11,6 +11,7 @@ export function createRenderer() {
     const app = new PIXI.Application<HTMLCanvasElement>({
         resizeTo: window,
         backgroundColor: 0x0d5b73,
+        antialias: true,
     });
     document.body.appendChild(app.view);
 

@@ -31,7 +31,7 @@ export class PlayerSystem extends System implements PlayerController {
         const data = PlayerData.get(player).data;
 
         if (data.attacking && data.lastAttackTime && !data.blocking) {
-            if (data.lastAttackTime < time - 400) {
+            if (data.lastAttackTime < time - 500) {
                 this.trigger("attack", player.id);
                 data.lastAttackTime = time;
             }

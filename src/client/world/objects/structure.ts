@@ -1,13 +1,13 @@
 import * as PIXI from "pixi.js";
 import { radians } from "../../../lib/transforms";
 import { WorldObject } from "./world_object";
-import { assets } from "../../assets/load";
-import { ANIMATION } from "../../animation/animations";
-import { hit } from "../../animation/animation_testing";
+import { ANIMATION, hit } from "../../animation/animations";
+import { spriteConfigs } from "../../configs/sprite_configs";
+import { SpriteFactory, SpriteWrapper } from "../../assets/sprite_factory";
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 
 export class Structure extends WorldObject {
-    sprite: PIXI.Sprite;
+    sprite: SpriteWrapper;
 
     constructor(
         id: number,
@@ -17,11 +17,12 @@ export class Structure extends WorldObject {
         size: number
     ) {
         super(id, pos, rotation, size);
-        this.sprite = new PIXI.Sprite(assets(type));
+        const config = spriteConfigs.get(type);
+        this.sprite = SpriteFactory.build(type, config?.world_display);
 
         this.zIndex = 10;
         this.pivot.set(this.width / 2, this.height / 2);
-        this.sprite.rotation = rotation - radians(-90);
+        this.sprite.setRotation(rotation - radians(-90));
         this.sprite.anchor.set(0.5);
         this.addChild(this.sprite);
 

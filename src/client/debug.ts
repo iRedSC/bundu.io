@@ -1,6 +1,4 @@
 import * as PIXI from "pixi.js";
-import { Line } from "./world/debug/line";
-import { Circle } from "./world/debug/circle";
 
 // ! This thing kinda sucks. Causes a butt ton of lag, needs to be fixed.
 // Used for creating debug objects on the map, such as hitboxes or id text.
@@ -8,32 +6,28 @@ import { Circle } from "./world/debug/circle";
 export const debugContainer = new PIXI.Container();
 
 export class DebugWorldObject {
-    stateLine?: Line;
-    hitbox?: Circle;
-    id?: PIXI.Text;
+    containers: Map<string, PIXI.Container>;
 
-    constructor() {}
-
-    updateStateLine(line: Line) {
-        if (this.stateLine) {
-            debugContainer.removeChild(this.stateLine);
-        }
-        debugContainer.addChild(line);
-        this.stateLine = line;
-    }
-    updateHitbox(hitbox: Circle) {
-        if (this.hitbox) {
-            debugContainer.removeChild(this.hitbox);
-        }
-        this.hitbox = hitbox;
-        debugContainer.addChild(this.hitbox);
+    constructor() {
+        this.containers = new Map();
     }
 
-    updateId(id: PIXI.Text) {
-        if (this.id) {
-            debugContainer.removeChild(this.id);
+    update(value: string, container: PIXI.Container) {
+        const current = this.containers.get(value);
+        if (!current) {
+            this.containers.set(value, container);
+            debugContainer.addChild(container);
+            return;
         }
-        this.id = id;
-        debugContainer.addChild(this.id);
+        debugContainer.removeChild(current);
+        current.destroy();
+        this.containers.set(value, container);
+        debugContainer.addChild(container);
+    }
+
+    set renderable(value: boolean) {
+        for (const container of this.containers.values()) {
+            container.renderable = value;
+        }
     }
 }

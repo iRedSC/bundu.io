@@ -18,7 +18,7 @@ export class CollisionSystem extends System {
         this.listen("moved", this.collide.bind(this));
     }
 
-    collide(object: GameObject) {
+    collide(object: GameObject, tries: number = 0) {
         const physics = Physics.get(object).data;
 
         const bounds: [BasicPoint, BasicPoint] = [
@@ -29,6 +29,7 @@ export class CollisionSystem extends System {
         const nearby = this.world.query([Physics.id], quadtree.query(bounds));
 
         const response = new SAT.Response();
+        let retrigger = false;
         for (const other of nearby) {
             if (other.id === object.id || PlayerData.get(other)) {
                 continue;
@@ -40,9 +41,13 @@ export class CollisionSystem extends System {
                 response
             );
             if (collided) {
+                retrigger = true;
                 physics.position.sub(response.overlapV);
                 this.trigger("collided", object.id);
             }
+        }
+        if (retrigger && tries < 3) {
+            this.collide(object, tries + 1);
         }
     }
 }

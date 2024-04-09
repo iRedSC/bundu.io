@@ -42,14 +42,14 @@ export const resourceConfigs = createConfigMap<
     Component<ResourceConfig>
 >(_resourceConfigData, createResourceConfig);
 
-type RawItemConfig = { [key: string]: itemConfigData };
-const _itemConfigData: RawItemConfig = yaml.parse(
-    fs.readFileSync(`${__dirname}/items.yml`, "utf8")
-);
-export const itemConfigs = createConfigMap<
-    RawItemConfig,
-    Component<ItemConfig>
->(_itemConfigData, createItemConfig);
+// type RawItemConfig = { [key: string]: itemConfigData };
+// const _itemConfigData: RawItemConfig = yaml.parse(
+//     fs.readFileSync(`${__dirname}/items.yml`, "utf8")
+// );
+// export const itemConfigs = createConfigMap<
+//     RawItemConfig,
+//     Component<ItemConfig>
+// >(_itemConfigData, createItemConfig);
 
 type RawEntityConfig = { [key: string]: entityConfigData };
 const _entityConfigData: RawEntityConfig = yaml.parse(

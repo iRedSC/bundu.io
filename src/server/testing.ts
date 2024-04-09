@@ -9,7 +9,7 @@ import SAT from "sat";
 // This file is filled with test objects
 
 function getRandomPhysics(): Physics {
-    const size = Random.integer(30, 80);
+    const size = Random.integer(50, 120);
     const position = new SAT.Vector(
         Random.integer(1500, 19500),
         Random.integer(1500, 19500)
@@ -18,7 +18,7 @@ function getRandomPhysics(): Physics {
         position: position,
         collider: new SAT.Circle(position, size),
         size: size,
-        rotation: 0,
+        rotation: Random.integer(0, Math.PI * 2),
         solid: true,
         speed: 0,
     };
@@ -28,7 +28,8 @@ export function createResources(world: World, amount: number) {
     for (let i = 0; i < amount; i++) {
         const structure = new Resource(getRandomPhysics(), {
             id: Random.choice([
-                52, 53, 54, 55, 56, 84, 84, 90, 90, 90, 97, 97, 97,
+                114, 115, 116, 117, 118, 119, 103, 104, 105, 53, 54, 55, 56, 84,
+                84, 90, 90, 90, 97, 97, 97,
             ]),
         });
         world.addObject(structure);
