@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
-import { Line } from "./game_objects/line";
-import { Circle } from "./game_objects/circle";
+import { Line } from "./world/debug/line";
+import { Circle } from "./world/debug/circle";
 
 // ! This thing kinda sucks. Causes a butt ton of lag, needs to be fixed.
 // Used for creating debug objects on the map, such as hitboxes or id text.

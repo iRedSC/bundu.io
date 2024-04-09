@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { BasicPoint } from "../../lib/types";
+import { BasicPoint } from "../../../lib/types";
 
 export class Circle extends PIXI.Graphics {
     r: number;

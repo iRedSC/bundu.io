@@ -1,18 +1,18 @@
 import { Viewport } from "pixi-viewport";
-import { AnimationManager } from "../../lib/animation";
-import { WorldObject } from "./world_object";
+import { AnimationManager } from "../../lib/animations";
+import { WorldObject } from "./objects/world_object";
 import {
     ACTION,
     NewObjectSchema,
     ServerPacketSchema,
 } from "../../shared/enums";
-import { Structure } from "./structure";
+import { Structure } from "./objects/structure";
 import * as PIXI from "pixi.js";
-import { Player } from "./player";
+import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { idMap } from "../configs/id_map";
 import { createGround } from "./ground";
-import { Entity } from "./entity";
+import { Entity } from "./objects/entity";
 import { animationManager } from "../animation/animation_manager";
 import { Quadtree } from "../../lib/quadtree";
 import { requestIds } from "../main";
@@ -30,7 +30,6 @@ function scaleCoords(pos: { x: number; y: number }) {
 // This basically controls everything on the client
 // All packets (after being parsed) are sent to one of these methods
 export class World {
-    size: number;
     viewport: Viewport;
     animationManager: AnimationManager;
     user?: number;
@@ -53,7 +52,6 @@ export class World {
         this.quadtree = new Quadtree(new Map(), mapBounds, 10);
         this.dynamicObjs = new Map();
         this.updatingObjs = new Map();
-        this.size = 0;
 
         this.viewport.addChild(this.sky);
     }
@@ -65,11 +63,11 @@ export class World {
             ...this.dynamicObjs.entries(),
         ]) {
             object.move();
-            const lastState = object.states[-1];
+            const lastState = object.states.values[-1];
             if (!lastState) {
                 continue;
             }
-            if (object.states[-1][0] < Date.now()) {
+            if (object.states.values[-1][0] < Date.now()) {
                 this.updatingObjs.delete(id);
             }
         }
@@ -87,7 +85,7 @@ export class World {
             setTimeout(this.setPlayer.bind(this), 500);
             return;
         }
-        player.rotationProperties.interpolate = false;
+        player.rotationProperties._interpolate = false;
         this.viewport.follow(player, {
             speed: 0,
             acceleration: 1,
@@ -137,7 +135,7 @@ export class World {
             packet[3],
             packet[4]
         );
-        entity.setState([Date.now(), pos.x, pos.y]);
+        entity.states.set([Date.now(), pos.x, pos.y]);
         this.objects.set(entity.id, entity);
         this.quadtree.insert(entity.id, entity.position);
         this.viewport.addChild(entity);
@@ -161,7 +159,7 @@ export class World {
             pos,
             packet[3]
         );
-        player.rotationProperties.speed = 100;
+        player.rotationProperties.duration = 100;
         this.objects.set(player.id, player);
         this.quadtree.insert(player.id, player.position);
         this.dynamicObjs.set(id, player);
@@ -181,7 +179,7 @@ export class World {
             return;
         }
         object.renderable = true;
-        object.setState([Date.now() + time, packet[2] * 10, packet[3] * 10]);
+        object.states.set([Date.now() + time, packet[2] * 10, packet[3] * 10]);
         this.updatingObjs.set(id, object);
         this.quadtree.insert(object.id, object.position);
     }
@@ -194,10 +192,10 @@ export class World {
             requestIds.push(id);
             return;
         }
-        if (id !== this.user) {
-            object.setRotation(radians(packet[1]));
-            this.updatingObjs.set(id, object);
-        }
+        // if (id !== this.user) {
+        object.setRotation(radians(packet[1]));
+        this.updatingObjs.set(id, object);
+        // }
     }
 
     deleteObject(packet: ServerPacketSchema.deleteObject) {

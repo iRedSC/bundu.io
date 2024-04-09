@@ -1,10 +1,10 @@
 import * as PIXI from "pixi.js";
-import { colorLerp, radians } from "../../lib/transforms";
-import Random from "../../lib/random";
+import { colorLerp, radians } from "../../../lib/transforms";
+import Random from "../../../lib/random";
 import { WorldObject } from "./world_object";
-import { assets } from "../assets/load";
-import { Animation, AnimationManager } from "../../lib/animations";
-import { ANIMATION } from "../animation/animations";
+import { assets } from "../../assets/load";
+import { Animation, AnimationManager } from "../../../lib/animations";
+import { ANIMATION } from "../../animation/animations";
 
 export class Entity extends WorldObject {
     sprite: PIXI.Sprite;

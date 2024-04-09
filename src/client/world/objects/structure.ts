@@ -1,19 +1,13 @@
 import * as PIXI from "pixi.js";
-import {
-    radians,
-    lerp,
-    lookToward,
-    moveInDirection,
-} from "../../lib/transforms";
+import { radians } from "../../../lib/transforms";
 import { WorldObject } from "./world_object";
-import { assets } from "../assets/load";
-import { ANIMATION } from "../animation/animations";
-import { hit } from "../animation/animation_testing";
+import { assets } from "../../assets/load";
+import { ANIMATION } from "../../animation/animations";
+import { hit } from "../../animation/animation_testing";
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 
 export class Structure extends WorldObject {
     sprite: PIXI.Sprite;
-    lastHitSource: PIXI.Point;
 
     constructor(
         id: number,
@@ -24,7 +18,6 @@ export class Structure extends WorldObject {
     ) {
         super(id, pos, rotation, size);
         this.sprite = new PIXI.Sprite(assets(type));
-        this.lastHitSource = new PIXI.Point(0, 0);
 
         this.zIndex = 10;
         this.pivot.set(this.width / 2, this.height / 2);
