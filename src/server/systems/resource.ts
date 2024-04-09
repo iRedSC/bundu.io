@@ -4,10 +4,6 @@ import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import random from "../../lib/random.js";
 
-function choice(arr: any[]) {
-    return arr[random.integer(0, arr.length - 1)];
-}
-
 export class ResourceSystem extends System {
     constructor() {
         super([ResourceConfig]);
@@ -21,7 +17,7 @@ export class ResourceSystem extends System {
         if (!(data && config)) {
             return;
         }
-        const randomItem = choice(Array.from(config.items.keys()));
+        const randomItem = random.choice(Array.from(config.items.keys()));
         this.trigger("giveItem", source.id, [[randomItem, 1]]);
     }
 }

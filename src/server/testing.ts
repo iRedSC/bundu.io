@@ -9,7 +9,7 @@ import SAT from "sat";
 // This file is filled with test objects
 
 function getRandomPhysics(): Physics {
-    const size = Random.integer(15, 45);
+    const size = Random.integer(30, 80);
     const position = new SAT.Vector(
         Random.integer(1500, 19500),
         Random.integer(1500, 19500)
@@ -27,7 +27,9 @@ function getRandomPhysics(): Physics {
 export function createResources(world: World, amount: number) {
     for (let i = 0; i < amount; i++) {
         const structure = new Resource(getRandomPhysics(), {
-            id: Random.integer(52, 56),
+            id: Random.choice([
+                52, 53, 54, 55, 56, 84, 84, 90, 90, 90, 97, 97, 97,
+            ]),
         });
         world.addObject(structure);
     }
