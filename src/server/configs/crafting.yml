@@ -384,6 +384,7 @@ resource_book:
     score: 4000
     duration: 40000
     ingredients:
+        book: 1
         amethyst: 80
         diamond: 100
         gold: 120
@@ -398,6 +399,7 @@ time_book:
     score: 4000
     duration: 40000
     ingredients:
+        book: 1
         cloth: 8
         ram_wool: 12
         bear_fur: 12
