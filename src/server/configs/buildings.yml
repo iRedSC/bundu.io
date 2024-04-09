@@ -1,0 +1,114 @@
+wood_wall:
+    type: wall
+    health: 2000
+
+stone_wall:
+    type: wall
+    health: 3500
+
+
+gold_wall:
+    type: wall
+    health: 4500
+
+
+diamond_wall:
+    type: wall
+    health: 6000
+
+
+amethyst_wall:
+    type: wall
+    health: 7500
+
+
+wood_door:
+    type: door
+    health: 2000
+
+
+stone_door:
+    type: door
+    health: 3500
+
+
+gold_door:
+    type: door
+    health: 4500
+
+
+diamond_door:
+    type: door
+    health: 6000
+
+
+amethyst_door:
+    type: door
+    health: 7500
+
+
+wood_spike:
+    type: spike
+    damage: 20
+    on_hit_damage: 5
+    
+stone_spike:
+    type: spike
+    damage: 30
+    on_hit_damage: 10
+
+gold_spike:
+    type: spike
+    damage: 40
+    on_hit_damage: 15
+
+diamond_spike:
+    type: spike
+    damage: 50
+    on_hit_damage: 20
+
+amethyst_spike:
+    type: spike
+    damage: 60
+    on_hit_damage: 30
+
+workbench:
+    type: building
+    health: 800
+
+anvil:
+    type: building
+    health: 1000
+
+fire_small:
+    type: building
+    health: 500
+
+
+fire_big:
+    type: building
+    health: 600
+
+
+fire_pit:
+    type: building
+    health: 1000
+ 
+
+quick_wood_wall:
+    type: wall
+    health: 100
+
+quick_stone_wall:
+    type: wall
+    health: 300
+
+quick_stone_spike:
+    type: spike
+    health: 50
+    damage: 30
+
+quick_diamond_spike:
+    type: spike
+    health: 100
+    damage: 50

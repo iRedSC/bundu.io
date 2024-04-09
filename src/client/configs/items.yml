@@ -125,6 +125,13 @@ amethyst_hammer:
 # * BUILDINGs
 
 # Walls
+quick_wood_wall:
+    type: wall
+    sprite: quick_wood_wall
+
+quick_stone_wall:
+    type: wall
+    sprite: quick_stone_wall
 
 wood_wall:
     type: wall
@@ -169,6 +176,13 @@ amethyst_door:
     sprite: amethyst_door
 
 # spike
+quick_stone_spike:
+    type: spike
+    sprite: quick_stone_spike
+
+quick_diamond_spike:
+    type: spike
+    sprite: quick_diamond_spike
 
 wood_spike:
     type: spike

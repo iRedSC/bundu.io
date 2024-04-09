@@ -1,0 +1,117 @@
+wood_sword:
+    type: sword
+    attack_damage: 13
+    level: 1
+    block: 2
+
+stone_sword:
+    type: sword
+    attack_damage: 15
+    level: 2
+    block: 3
+
+gold_sword:
+    type: sword
+    attack_damage: 17
+    level: 3
+    block: 3
+
+diamond_sword:
+    type: sword
+    attack_damage: 20
+    level: 4
+    block: 4
+
+amethyst_sword:
+    type: sword
+    attack_damage: 22
+    level: 5
+    block: 5
+
+wood_pickaxe:
+    type: pickaxe
+    attack_damage: 2
+    level: 1
+
+stone_pickaxe:
+    type: pickaxe
+    attack_damage: 3
+    level: 2
+
+gold_pickaxe:
+    type: pickaxe
+    attack_damage: 4
+    level: 3
+
+diamond_pickaxe:
+    type: pickaxe
+    attack_damage: 5
+    level: 4
+amethyst_pickaxe:
+    type: pickaxe
+    attack_damage: 6
+    level: 5
+
+lumber_axe:
+    type: axe
+    attack_damage: 7
+    
+
+butcher_knife:
+    type: knife
+    attack_damage: 8
+
+
+shovel:
+    type: shovel
+    attack_damage: 3
+
+stone_spear:
+    type: spear
+    attack_damage: 10
+    block: 1
+    level: 2
+
+gold_spear:
+    type: spear
+    attack_damage: 12
+    block: 1
+    level: 3
+
+diamond_spear:
+    type: spear
+    attack_damage: 14
+    block: 2
+    level: 4
+
+amethyst_spear:
+    type: spear
+    attack_damage: 17
+    block: 3
+    level: 5
+
+tusk_spear:
+    type: spear
+    attack_damage: 18
+    block: 5
+    level: 5
+
+stone_hammer:
+    type: hammer
+    attack_damage: 4
+    level: 2
+
+gold_hammer:
+    type: hammer
+    attack_damage: 5
+    level: 3
+
+diamond_hammer:
+    type: hammer
+    attack_damage: 6
+    level: 4
+
+amethyst_hammer:
+    type: hammer
+    attack_damage: 7
+    level: 5

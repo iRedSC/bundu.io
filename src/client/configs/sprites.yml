@@ -149,9 +149,9 @@ savanah_bush1: savanah_bush1.svg
 berry_bush: berry_bush.svg
 berry_bush_overlay: berry_bush_overlay.svg
 mango_tree1: mango_tree1.svg
-hive1: hive1.svg
-hive2: hive2.svg
-hive3: hive3.svg
+hive_small: hive1.svg
+hive_medium: hive2.svg
+hive_large: hive3.svg
 
 
 # * Aniamls

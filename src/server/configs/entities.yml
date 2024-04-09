@@ -2,11 +2,15 @@
 
 elephant:
     anger: 2
-    speed: 0.5
-    attack_damage: 5
+    speed: 2
+    attack_damage: 50
     size: 6
     wander_range: 75
     rest_time: 1
+    spawns: elephant_dead
+
+
+
 
 bear:
     size: 4
