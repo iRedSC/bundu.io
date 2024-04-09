@@ -1,7 +1,7 @@
 import { radians, lookToward, degrees } from "../lib/transforms";
 import { InputHandler } from "./input/keyboard";
 import { createRenderer } from "./rendering/rendering";
-import { World } from "./game_objects/world";
+import { World } from "./world/world";
 import {
     CLIENT_ACTION,
     CLIENT_PACKET_TYPE,

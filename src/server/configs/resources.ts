@@ -4,6 +4,7 @@ import { Component } from "../game_engine/component.js";
 import Logger from "js-logger";
 
 export type resourceConfigData = {
+    destroy_on_empty: boolean;
     score: number;
     level: number;
     exclusive: boolean;
@@ -19,6 +20,7 @@ export type ResourceConfig = {
     decay: number;
     exclusive: boolean;
     level: number;
+    destroy_on_empty: boolean;
     regenSpeed: number;
     multipliers: Map<string, number>;
     items: Map<number, number>;
@@ -32,6 +34,7 @@ export function createResourceConfig(
     const config: any = {};
     config.id = id;
     config.score = data.score || 0;
+    config.destroyOnEmpty = data.destroy_on_empty || false;
     config.exclusive = data.exclusive || false;
     config.decay = data.decay || 0;
     config.level = data.level || 0;

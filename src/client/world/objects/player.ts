@@ -1,16 +1,16 @@
 import * as PIXI from "pixi.js";
-import { radians, lerp, colorLerp } from "../../lib/transforms";
-import { itemConfigs } from "../configs/item_configs";
+import { radians, lerp, colorLerp } from "../../../lib/transforms";
+import { itemConfigs } from "../../configs/item_configs";
 import { WorldObject } from "./world_object";
-import { SpriteFactory } from "../assets/sprite_factory";
-import random from "../../lib/random";
+import { SpriteFactory } from "../../assets/sprite_factory";
+import random from "../../../lib/random";
 import { z } from "zod";
-import { validate } from "../../shared/type_guard";
-import { ANIMATION } from "../animation/animations";
-import { idMap } from "../configs/id_map";
-import { cubicBezier, hurt } from "../animation/animation_testing";
-import { round } from "../../lib/math";
-import { Animation, AnimationManager } from "../../lib/animations";
+import { validate } from "../../../shared/type_guard";
+import { ANIMATION } from "../../animation/animations";
+import { idMap } from "../../configs/id_map";
+import { cubicBezier, hurt } from "../../animation/animation_testing";
+import { round } from "../../../lib/math";
+import { Animation, AnimationManager } from "../../../lib/animations";
 
 const Gear = z.tuple([
     z.number(), // mainHand
@@ -75,7 +75,7 @@ export class Player extends WorldObject {
             },
         };
 
-        this.rotationProperties.speed = 5;
+        this.rotationProperties.duration = 5;
         this.name = name;
 
         this.offHand = "";
