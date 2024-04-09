@@ -1,13 +1,157 @@
-wood:
-    score: 1
+pine_tree:
+    score: 5
     exclusive: true
     multipliers:
         pickaxe: 1
     level: 0
-    regen_speed: 10
+    regen_speed: 3
     items:
-        wood: 10
-        stone: 10
-        gold: 10
-        diamond: 10
-        amethyst: 10
+        wood: 60
+
+
+forest_tree:
+    score: 5
+    exclusive: true
+    multipliers:
+        pickaxe: 1
+    level: 0
+    regen_speed: 3
+    items:
+        wood: 60
+
+savanah_tree:
+    score: 5
+    exclusive: true
+    multipliers:
+        pickaxe: 1
+    level: 0
+    regen_speed: 3
+    items:
+        wood: 60
+
+
+
+stone:
+    score: 8
+    exclusive: true
+    multipliers:
+        pickaxe: 1
+    level: 1
+    regen_speed: 4
+    items:
+        stone: 50
+ 
+
+gold:
+    score: 10
+    exclusive: true
+    multipliers:
+        pickaxe: 1
+    level: 2
+    regen_speed: 5
+    items:
+        gold: 40
+
+diamond:
+    score: 20
+    exclusive: true
+    multipliers:
+        pickaxe: 1
+    level: 3
+    regen_speed: 6
+    items:
+        gold: 35
+ 
+amethyst:
+    score: 30
+    exclusive: true
+    multipliers:
+        pickaxe: 1
+    level: 4
+    regen_speed: 7
+    items:
+        amethyst: 30
+ 
+  
+bear:
+    duration: 30
+    multipliers:
+        knife: 2
+    items:
+        meat: 3
+        bear_fur: 1
+ 
+deer:
+    duration: 30
+    multipliers:
+        knife: 2
+    items:
+        meat: 2
+        deer_hide: 1
+ 
+ram:
+    duration: 30
+    multipliers:
+        knife: 2
+    items:
+        meat: 3
+        ram_wool: 1
+ 
+elephant:
+    duration: 30
+    multipliers:
+        knife: 2
+    items:
+        meat: 8
+        elephant_tusk: 1
+ 
+alligator:
+    duration: 30
+    multipliers:
+        knife: 2
+    items:
+        meat: 4
+        alligator_skin: 1
+        tooth: 2
+
+komodo_dragon:
+    duration: 30
+    multipliers:
+        knife: 2
+    items:
+        meat: 6
+        komodo_dragon_eye: 1
+        tooth: 4
+
+bee:
+    duration: 30
+
+
+queen_bee:
+    duration: 30
+    multipliers:
+        knife: 2
+    items:
+        meat: 2
+
+hive_small:
+    destroy_on_empty: true
+    score: 20
+    level: 0
+    items:
+        honey: 4
+
+hive_medium:
+    destroy_on_empty: true
+    score: 20
+    level: 0
+    items:
+        honey: 7
+
+hive_large:
+    destroy_on_empty: true
+    score: 20
+    level: 0
+    items:
+        honey: 10
+ 

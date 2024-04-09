@@ -135,7 +135,9 @@ savanah_tree: 97
 berry_bush: 100
 
 mango_tree1: 102
-hive: 103
+hive_small: 103
+hive_medium: 104
+hive_large: 105
 
 
 # * Animals
