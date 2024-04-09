@@ -35,11 +35,11 @@ export class RecipeManager {
         nextRecipe: for (const [recipeId, recipe] of this.recipes.entries()) {
             const ingredients = recipe[0];
             const itemFlags = new Set(flags);
-            for (const flag of recipe[1]) {
-                if (!itemFlags.has(flag)) {
-                    continue nextRecipe;
-                }
-            }
+            // for (const flag of recipe[1]) {
+            //     if (!itemFlags.has(flag)) {
+            //         continue nextRecipe;
+            //     }
+            // }
 
             for (const [id, recipeAmount] of ingredients.entries()) {
                 const itemsAmount = itemsMap.get(id);

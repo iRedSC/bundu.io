@@ -84,7 +84,6 @@ gold: gold.svg
 diamond: diamond.svg
 amethyst: amethyst.svg
 
-
 # * PLACEABLE
 
 #Walls
@@ -126,6 +125,7 @@ quick_diamond_spike: quick_diamond_spike.svg
 #* Map Objects
 
 #Trees
+forest_tree: forest_tree1.svg
 forest_tree1: forest_tree1.svg
 forest_tree2: forest_tree2.svg
 forest_tree3: forest_tree3.svg
@@ -141,6 +141,7 @@ pine_tree5: pine_tree5.svg
 pine_tree6: pine_tree6.svg
 pine_tree_snow: pine_tree_snow.svg
 
+savanah_tree: savanah_tree1.svg
 savanah_tree1: savanah_tree1.svg
 savanah_tree2: savanah_tree2.svg
 savanah_bush1: savanah_bush1.svg
@@ -152,7 +153,6 @@ mango_tree1: mango_tree1.svg
 hive_small: hive1.svg
 hive_medium: hive2.svg
 hive_large: hive3.svg
-
 
 # * Aniamls
 
