@@ -60,7 +60,7 @@ diamond:
     level: 3
     regen_speed: 6
     items:
-        gold: 35
+        diamond: 35
  
 amethyst:
     score: 30
@@ -73,7 +73,7 @@ amethyst:
         amethyst: 30
  
   
-bear:
+bear_dead:
     duration: 30
     multipliers:
         knife: 2
@@ -81,7 +81,7 @@ bear:
         meat: 3
         bear_fur: 1
  
-deer:
+deer_dead:
     duration: 30
     multipliers:
         knife: 2
@@ -89,7 +89,7 @@ deer:
         meat: 2
         deer_hide: 1
  
-ram:
+ram_dead:
     duration: 30
     multipliers:
         knife: 2
@@ -97,7 +97,7 @@ ram:
         meat: 3
         ram_wool: 1
  
-elephant:
+elephant_dead:
     duration: 30
     multipliers:
         knife: 2
@@ -105,7 +105,7 @@ elephant:
         meat: 8
         elephant_tusk: 1
  
-alligator:
+alligator_dead:
     duration: 30
     multipliers:
         knife: 2
@@ -114,7 +114,7 @@ alligator:
         alligator_skin: 1
         tooth: 2
 
-komodo_dragon:
+komodo_dragon_dead:
     duration: 30
     multipliers:
         knife: 2
@@ -123,11 +123,11 @@ komodo_dragon:
         komodo_dragon_eye: 1
         tooth: 4
 
-bee:
+bee_dead:
     duration: 30
 
 
-queen_bee:
+queen_bee_dead:
     duration: 30
     multipliers:
         knife: 2
