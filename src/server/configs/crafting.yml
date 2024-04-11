@@ -384,6 +384,7 @@ resource_book:
     score: 4000
     duration: 40000
     ingredients:
+        book: 1
         amethyst: 80
         diamond: 100
         gold: 120
@@ -398,6 +399,7 @@ time_book:
     score: 4000
     duration: 40000
     ingredients:
+        book: 1
         cloth: 8
         ram_wool: 12
         bear_fur: 12
@@ -708,3 +710,29 @@ tooth:
     
     flags:
      - near_crafting_table
+
+bird_skull:
+    score: 2000
+    duration: 15000
+    ingredients:
+        tooth: 1
+        cloth: 5
+        pitch: 8
+        deer_hide: 6
+        meat: 10
+    
+    flags:
+     - near_crafting_table
+     - near_fire
+
+repair_hammer:
+    score: 500
+    amount: 4
+    duration: 5000
+    ingredients:
+        stone: 50
+        wood: 75
+    
+    flags:
+     - near_crafting_table
+     - near_anvil

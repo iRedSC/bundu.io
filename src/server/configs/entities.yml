@@ -1,13 +1,27 @@
 # anger = 0: scared, 1: no reaction, 2: agressive
 
+
+
 elephant:
-    anger: 2
+    health: 4000
+    score: 4000
+    anger: 1
     speed: 2
     attack_damage: 50
     size: 6
     wander_range: 75
-    rest_time: 1
     spawns: elephant_dead
+
+bear:
+    health: 250
+    score: 500
+    anger: 2
+    speed: 2
+    attack_damage: 30
+    size: 3
+    wander_range: 75
+    spawns: bear_dead
+
 
 
 

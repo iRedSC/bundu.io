@@ -6,3 +6,6 @@ resource_book:
 
 time_book:
     type: book
+
+bird_skull:
+    type: book
