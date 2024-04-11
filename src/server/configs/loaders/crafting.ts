@@ -2,7 +2,7 @@ import fs from "fs";
 import yaml from "yaml";
 import { idMap, __dirname } from "./id_map.js";
 import { flagMap } from "./flag_map.js";
-import { PACKET_TYPE } from "../../shared/enums.js";
+import { PACKET_TYPE } from "../../../shared/enums.js";
 
 type craftingRecipeData = {
     duration: number;
@@ -25,7 +25,7 @@ export class CraftingRecipe {
             for (const [k, v] of Object.entries(data.ingredients)) {
                 const id = idMap.get(k);
                 if (!id) {
-                    console.log(`${k} not found in ID Map`);
+                    console.warn(`${k} not found in ID Map`);
                     continue;
                 }
                 this.ingredients.set(id, v);
@@ -35,7 +35,7 @@ export class CraftingRecipe {
         for (const flag of data.flags || []) {
             const flagId = flagMap.get(flag);
             if (!flagId) {
-                console.log(`${flag} not found in flag ID Map`);
+                console.warn(`${flag} not found in flag ID Map`);
                 continue;
             }
             this.flags.push(flagId);

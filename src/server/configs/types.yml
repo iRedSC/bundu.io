@@ -5,6 +5,7 @@ hat:
     function: wear
 
 sword:
+    speed_multiplier: 0.9
     function: main_hand
 
 book:

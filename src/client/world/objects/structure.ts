@@ -20,15 +20,17 @@ export class Structure extends WorldObject {
         const config = spriteConfigs.get(type);
         this.sprite = SpriteFactory.build(type, config?.world_display);
 
-        this.zIndex = 10;
-        this.pivot.set(this.width / 2, this.height / 2);
+        this.container.zIndex = 10;
+        this.container.pivot.set(
+            this.container.width / 2,
+            this.container.height / 2
+        );
         this.sprite.setRotation(rotation - radians(-90));
         this.sprite.anchor.set(0.5);
-        this.addChild(this.sprite);
+        this.container.addChild(this.sprite);
 
         this.rotation = rotation;
 
-        this.animations = new Map();
         this.animations.set(ANIMATION.HURT, hit(this));
     }
 }

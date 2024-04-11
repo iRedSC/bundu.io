@@ -65,7 +65,6 @@ export class ItemButton {
         };
 
         this.button.press = () => {
-            console.log(this.callback);
             if (this.callback) {
                 this.callback(this.item);
             }

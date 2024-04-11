@@ -22,5 +22,10 @@
         "forceConsistentCasingInFileNames": true,
         "types": ["@modyfi/vite-plugin-yaml/modules"]
     },
-    "include": ["src/client/**/*", "src/shared/**/*"]
+    "include": [
+        "src/client/**/*",
+        "src/shared/**/*",
+        "index.html",
+        "public/**/*"
+    ]
 }

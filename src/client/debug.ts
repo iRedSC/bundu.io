@@ -1,18 +1,18 @@
-import * as PIXI from "pixi.js";
+import { Container, Graphics } from "pixi.js";
+import { ServerPacketSchema } from "../shared/enums";
 
-// ! This thing kinda sucks. Causes a butt ton of lag, needs to be fixed.
 // Used for creating debug objects on the map, such as hitboxes or id text.
 
-export const debugContainer = new PIXI.Container();
+export const debugContainer = new Container();
 
 export class DebugWorldObject {
-    containers: Map<string, PIXI.Container>;
+    containers: Map<string, Container>;
 
     constructor() {
         this.containers = new Map();
     }
 
-    update(value: string, container: PIXI.Container) {
+    update(value: string, container: Container) {
         const current = this.containers.get(value);
         if (!current) {
             this.containers.set(value, container);
@@ -30,4 +30,23 @@ export class DebugWorldObject {
             container.renderable = value;
         }
     }
+}
+
+export function drawPolygon(packet: ServerPacketSchema.drawPolygon) {
+    const polygon = new Graphics();
+    polygon.lineStyle({ width: 20, color: "#FF0000" });
+    const start = { x: packet[0] * 10, y: packet[1] * 10 };
+    polygon.moveTo(start.x, start.y);
+    for (const rawPoint of packet[2]) {
+        const point = {
+            x: start.x + rawPoint[0] * 10,
+            y: start.y + rawPoint[1] * 10,
+        };
+        polygon.lineTo(point.x, point.y);
+    }
+    debugContainer.addChild(polygon);
+    setTimeout(() => {
+        debugContainer.removeChild(polygon);
+        polygon.destroy();
+    }, 1000);
 }

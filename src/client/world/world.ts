@@ -13,12 +13,12 @@ import { Sky } from "./sky";
 import { idMap } from "../configs/id_map";
 import { createGround } from "./ground";
 import { Entity } from "./objects/entity";
-import { animationManager } from "../animation/animation_manager";
 import { Quadtree } from "../../lib/quadtree";
 import { requestIds } from "../main";
 import { BasicPoint } from "../../lib/types";
 import { radians } from "../../lib/transforms";
 import { ANIMATION } from "../animation/animations";
+import { TEXT_STYLE } from "../assets/text";
 
 // TODO: This place is a freaking mess, needs a little tidying up
 
@@ -31,6 +31,7 @@ function scaleCoords(pos: { x: number; y: number }) {
 // All packets (after being parsed) are sent to one of these methods
 export class World {
     viewport: Viewport;
+    names: { container: PIXI.Container; values: Map<number, PIXI.Text> };
     animationManager: AnimationManager;
     user?: number;
     objects: Map<number, WorldObject>;
@@ -53,7 +54,17 @@ export class World {
         this.dynamicObjs = new Map();
         this.updatingObjs = new Map();
 
+        this.names = {
+            container: new PIXI.Container(),
+            values: new Map(),
+        };
+        this.viewport.addChild(this.names.container);
+        this.names.container.zIndex = 10;
+        this.viewport.sortChildren();
+
         this.viewport.addChild(this.sky);
+
+        setInterval(this.hideOutOfSight.bind(this), 2000);
     }
 
     tick() {
@@ -62,7 +73,7 @@ export class World {
             ...this.updatingObjs.entries(),
             ...this.dynamicObjs.entries(),
         ]) {
-            object.move();
+            object.interpolate();
             const lastState = object.states.values[-1];
             if (!lastState) {
                 continue;
@@ -86,7 +97,7 @@ export class World {
             return;
         }
         player.rotationProperties._interpolate = false;
-        this.viewport.follow(player, {
+        this.viewport.follow(player.container, {
             speed: 0,
             acceleration: 1,
             radius: 0,
@@ -97,7 +108,7 @@ export class World {
         const id = packet[0];
         const existing = this.objects.get(id);
         if (existing) {
-            this.viewport.removeChild(existing);
+            this.viewport.removeChild(existing.container);
             this.dynamicObjs.delete(existing.id);
             this.updatingObjs.delete(existing.id);
             this.objects.delete(existing.id);
@@ -113,14 +124,14 @@ export class World {
         );
         this.objects.set(structure.id, structure);
         this.quadtree.insert(structure.id, structure.position);
-        this.viewport.addChild(structure);
+        this.viewport.addChild(structure.container);
     }
 
     newEntity(packet: NewObjectSchema.newEntity) {
         const id = packet[0];
         const existing = this.objects.get(id);
         if (existing) {
-            this.viewport.removeChild(existing);
+            this.viewport.removeChild(existing.container);
             this.dynamicObjs.delete(existing.id);
             this.updatingObjs.delete(existing.id);
             this.objects.delete(existing.id);
@@ -138,32 +149,35 @@ export class World {
         entity.states.set([Date.now(), pos.x, pos.y]);
         this.objects.set(entity.id, entity);
         this.quadtree.insert(entity.id, entity.position);
-        this.viewport.addChild(entity);
+        this.viewport.addChild(entity.container);
     }
 
     newPlayer(packet: NewObjectSchema.newPlayer) {
         const id = packet[0];
         const existing = this.objects.get(id);
         if (existing) {
-            this.viewport.removeChild(existing);
+            this.viewport.removeChild(existing.container);
             this.dynamicObjs.delete(existing.id);
             this.updatingObjs.delete(existing.id);
             this.objects.delete(existing.id);
         }
         const pos = new PIXI.Point(packet[1], packet[2]);
         scaleCoords(pos);
+        const name = new PIXI.Text(packet[4], TEXT_STYLE);
         const player = new Player(
             id,
             this.animationManager,
-            packet[4],
+            name,
             pos,
             packet[3]
         );
+        this.names.container.addChild(name);
+        this.names.values.set(player.id, name);
         player.rotationProperties.duration = 100;
         this.objects.set(player.id, player);
         this.quadtree.insert(player.id, player.position);
         this.dynamicObjs.set(id, player);
-        this.viewport.addChild(player);
+        this.viewport.addChild(player.container);
         if (this.user === player.id) {
             this.setPlayer([this.user]);
         }
@@ -178,7 +192,7 @@ export class World {
             requestIds.push(id);
             return;
         }
-        object.renderable = true;
+        object.container.renderable = true;
         object.states.set([Date.now() + time, packet[2] * 10, packet[3] * 10]);
         this.updatingObjs.set(id, object);
         this.quadtree.insert(object.id, object.position);
@@ -192,10 +206,8 @@ export class World {
             requestIds.push(id);
             return;
         }
-        // if (id !== this.user) {
         object.setRotation(radians(packet[1]));
         this.updatingObjs.set(id, object);
-        // }
     }
 
     deleteObject(packet: ServerPacketSchema.deleteObject) {
@@ -203,7 +215,7 @@ export class World {
         const object = this.objects.get(id);
         if (object) {
             this.quadtree.delete(id);
-            this.viewport.removeChild(object);
+            this.viewport.removeChild(object.container);
             this.objects.delete(id);
             this.dynamicObjs.delete(id);
             this.updatingObjs.delete(id);
@@ -217,13 +229,20 @@ export class World {
         if (object) {
             switch (packet[1]) {
                 case ACTION.ATTACK:
-                    object.trigger(ANIMATION.ATTACK, animationManager, true);
+                    object.trigger(
+                        ANIMATION.ATTACK,
+                        this.animationManager,
+                        true
+                    );
                     break;
                 case ACTION.BLOCK:
                     if (!stop) {
                         if (object instanceof Player) {
                             object.blocking = true;
-                            object.trigger(ANIMATION.BLOCK, animationManager);
+                            object.trigger(
+                                ANIMATION.BLOCK,
+                                this.animationManager
+                            );
                         }
                         break;
                     }
@@ -232,13 +251,12 @@ export class World {
                     }
                     break;
                 case ACTION.HURT:
-                    object.trigger(ANIMATION.HURT, animationManager, true);
+                    object.trigger(ANIMATION.HURT, this.animationManager, true);
             }
         }
     }
 
     updateGear(packet: ServerPacketSchema.updateGear) {
-        console.log("setGear");
         const gear: [number, number, number, number] = [
             packet[1],
             packet[2],
@@ -256,7 +274,6 @@ export class World {
     // }
 
     loadGround(packet: ServerPacketSchema.loadGround) {
-        console.log("LOADING GROUND");
         const ground = createGround(
             packet[4],
             packet[0] * 10,
@@ -265,5 +282,34 @@ export class World {
             packet[3] * 10
         );
         this.viewport.addChild(ground);
+    }
+
+    hideOutOfSight() {
+        if (!this.user) {
+            return;
+        }
+        const player = this.objects.get(this.user);
+        if (player) {
+            const range: [BasicPoint, BasicPoint] = [
+                { x: player.position.x - 16000, y: player.position.y - 9000 },
+                { x: player.position.x + 16000, y: player.position.y + 9000 },
+            ];
+            const query = this.quadtree.query(range);
+            for (const object of this.objects.values()) {
+                const queryObject = query.has(object.id);
+                if (queryObject) {
+                    if (object.container.renderable === false) {
+                        requestIds.push(object.id);
+                    }
+                    continue;
+                }
+                const name = this.names.values.get(object.id);
+                if (name) {
+                    name.renderable = false;
+                }
+                object.container.renderable = false;
+                object.debug.renderable = false;
+            }
+        }
     }
 }

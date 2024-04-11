@@ -9,6 +9,7 @@ import { validate } from "../../../shared/type_guard";
 import { ANIMATION, cubicBezier, hurt } from "../../animation/animations";
 import { idMap } from "../../configs/id_map";
 import { Animation, AnimationManager } from "../../../lib/animations";
+import { TEXT_STYLE } from "../../assets/text";
 
 const Gear = z.tuple([
     z.number(), // mainHand
@@ -37,9 +38,7 @@ type PlayerParts = {
 
 export class Player extends WorldObject {
     sprite: PlayerParts;
-    name: string;
-
-    animations: Map<number, Animation>;
+    name: PIXI.Text;
 
     mainHand: string;
     offHand: string;
@@ -50,7 +49,7 @@ export class Player extends WorldObject {
     constructor(
         id: number,
         manager: AnimationManager,
-        name: string,
+        name: PIXI.Text,
         pos: PIXI.Point,
         rotation: number
     ) {
@@ -76,6 +75,9 @@ export class Player extends WorldObject {
         this.rotationProperties.duration = 5;
         this.name = name;
 
+        this.name.anchor.set(0.5, 2);
+        this.name.scale.set(3);
+
         this.offHand = "";
         this.mainHand = "";
         this.helmet = "";
@@ -83,9 +85,9 @@ export class Player extends WorldObject {
 
         this.blocking = false;
 
-        this.pivot.x = this.width / 2;
-        this.pivot.y = this.height / 2 + 15;
-        this.zIndex = 1;
+        this.container.pivot.x = this.container.width / 2;
+        this.container.pivot.y = this.container.height / 2 + 15;
+        this.container.zIndex = 1;
 
         const body = this.sprite.body;
         const leftHand = this.sprite.leftHand;
@@ -94,7 +96,7 @@ export class Player extends WorldObject {
         leftHand.item.renderable = false;
         rightHand.item.renderable = false;
 
-        this.addChild(body.container);
+        this.container.addChild(body.container);
 
         body.container.addChild(leftHand.container);
         body.container.addChild(rightHand.container);
@@ -131,7 +133,6 @@ export class Player extends WorldObject {
 
         rightHand.item.anchor.set(1);
         rightHand.item.setScale(1.8);
-        this.animations = new Map();
         this.animations.set(
             ANIMATION.IDLE_HANDS,
             PlayerAnimations.idleHands(
@@ -147,7 +148,16 @@ export class Player extends WorldObject {
         this.animations.set(ANIMATION.BLOCK, PlayerAnimations.block(this));
         this.trigger(ANIMATION.IDLE_HANDS, manager);
 
-        this.selectItem({ main: "wood_pickaxe" });
+        this.states.callback = () => {
+            this.name.renderable = true;
+            this.container.renderable = true;
+            this.debug.renderable = true;
+        };
+    }
+
+    interpolate(): void {
+        super.interpolate();
+        this.name.position = this.position;
     }
 
     selectItem({
@@ -189,7 +199,6 @@ export class Player extends WorldObject {
         if (this.mainHand !== "") {
             this.sprite.leftHand.item.renderable = true;
             const config = spriteConfigs.get(this.mainHand);
-            console.log(config);
             if (!config) {
                 return;
             }
@@ -250,7 +259,8 @@ namespace PlayerAnimations {
     }
 
     export function attack(target: Player) {
-        const timingFunction = cubicBezier(0.11, 0.25, 0.24, 0.81);
+        const backwardTiming = cubicBezier(0.78, -0.01, 0.52, 0.99);
+        const forwardTiming = cubicBezier(0, 0.74, 0.52, 0.99);
         let targetHand: number;
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
@@ -267,28 +277,28 @@ namespace PlayerAnimations {
                 leftHand.rotation = 0;
                 rightHand.rotation = 0;
             }
-            animation.next(200);
+            animation.next(150);
         };
         animation.keyframes[1] = (animation) => {
-            const t = timingFunction(animation.t);
+            const t = forwardTiming(animation.t);
             if (targetHand) {
-                leftHand.rotation = lerp(radians(0), radians(-90), t);
+                leftHand.rotation = lerp(radians(0), radians(-100), t);
                 rightHand.rotation = lerp(radians(0), radians(-15), t);
             } else {
-                rightHand.rotation = lerp(radians(0), radians(90), t);
+                rightHand.rotation = lerp(radians(0), radians(100), t);
                 leftHand.rotation = lerp(radians(0), radians(15), t);
             }
             if (animation.keyframeEnded) {
-                animation.next(200);
+                animation.next(150);
             }
         };
         animation.keyframes[2] = (animation) => {
-            const t = timingFunction(animation.t);
+            const t = backwardTiming(animation.t);
             if (targetHand) {
-                leftHand.rotation = lerp(radians(-90), radians(0), t);
+                leftHand.rotation = lerp(radians(-100), radians(0), t);
                 rightHand.rotation = lerp(radians(-15), radians(0), t);
             } else {
-                rightHand.rotation = lerp(radians(90), radians(0), t);
+                rightHand.rotation = lerp(radians(100), radians(0), t);
                 leftHand.rotation = lerp(radians(15), radians(0), t);
             }
             if (animation.keyframeEnded) {

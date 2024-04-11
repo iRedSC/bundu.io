@@ -1,4 +1,4 @@
-import { Component } from "../game_engine/component.js";
+import { Component } from "../../game_engine/component.js";
 
 export type entityConfigData = {
     anger: number;

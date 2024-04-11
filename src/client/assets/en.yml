@@ -1,0 +1,12 @@
+item:
+    wood_sword:
+        name: Wood Sword
+        desc: A little pokey stick.
+
+    stone_sword:
+        name: Stone Sword
+        desc: A bigger pokey stick.
+
+menu:
+    username_placeholder: username
+    play_button: Play

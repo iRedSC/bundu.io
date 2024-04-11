@@ -1,6 +1,6 @@
 import { Flags } from "../components/base.js";
 import { Inventory } from "../components/player.js";
-import { craftingList } from "../configs/crafting.js";
+import { craftingList } from "../configs/loaders/crafting.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 

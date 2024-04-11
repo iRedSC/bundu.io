@@ -14,6 +14,10 @@ misc_toggle: misc_toggle.svg
 # timer icons
 sword_timer: sword_timer.svg
 
+health_bar_decor: health_bar_shell.svg
+heat_bar_decor: heat_bar_shell.svg
+hunger_bar_decor: hunger_bar_shell.svg
+
 # * TOOLS
 
 # Pickaxe

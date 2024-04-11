@@ -5,6 +5,7 @@ import { TEXT_STYLE } from "../assets/text";
 import { SpriteFactory } from "../assets/sprite_factory";
 import { ServerPacketSchema } from "../../shared/enums";
 import { Grid } from "./grid";
+import { percentOf } from "../../lib/math";
 
 /**
  * Ah yes the inventory, not looking so good rn
@@ -195,6 +196,20 @@ class InventoryDisplay {
                 } catch {}
             }
         }
+        this.resize();
+    }
+
+    resize() {
+        this.container.position.set(
+            percentOf(50, window.innerWidth) -
+                percentOf(
+                    50,
+                    (INVENTORY_SLOT_SIZE + INVENTORY_SLOT_PADDING) *
+                        this.slotamount
+                ),
+
+            window.innerHeight - INVENTORY_SLOT_SIZE
+        );
     }
 }
 

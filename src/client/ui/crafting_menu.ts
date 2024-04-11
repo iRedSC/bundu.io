@@ -12,8 +12,6 @@ export class RecipeManager {
     }
 
     updateRecipes(update: ServerPacketSchema.craftingRecipes) {
-        console.log("updating recipes");
-        console.log(update);
         this.recipes.clear();
         for (const recipe of update) {
             const item = recipe[0];
@@ -86,6 +84,7 @@ export class CraftingMenu {
             this.buttons.push(button);
         }
         this.grid.arrange(this.buttons);
+        this.resize();
     }
 
     setCallback(value: Callback) {
@@ -95,8 +94,6 @@ export class CraftingMenu {
         }
     }
     set callback(value: Callback) {
-        console.log("SET CALLBACK");
-        console.log(value);
         this._callback = value;
         for (const button of this.buttons) {
             button.setCallback(value);
@@ -105,6 +102,13 @@ export class CraftingMenu {
 
     get callback(): Callback | undefined {
         return this._callback;
+    }
+
+    resize() {
+        this.container.position.set(
+            this.grid.spacingH * 4,
+            this.grid.spacingV * 4
+        );
     }
 }
 

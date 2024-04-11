@@ -24,5 +24,9 @@ export function createViewport(app: PIXI.Application, center: PIXI.Point) {
     viewport.wheel({ center: center });
     viewport.setZoom(0.2);
 
+    window.onresize = (_) => {
+        viewport.resize(window.innerWidth, window.innerHeight);
+    };
+
     return viewport;
 }

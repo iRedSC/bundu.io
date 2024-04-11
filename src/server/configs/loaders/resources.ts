@@ -1,6 +1,6 @@
 import { idMap } from "./id_map.js";
 
-import { Component } from "../game_engine/component.js";
+import { Component } from "../../game_engine/component.js";
 import Logger from "js-logger";
 
 export type resourceConfigData = {

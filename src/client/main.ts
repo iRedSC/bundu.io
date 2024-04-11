@@ -1,6 +1,5 @@
 import { radians, lookToward, degrees } from "../lib/transforms";
-import { InputHandler } from "./input/keyboard";
-import { createRenderer } from "./rendering/rendering";
+import { KeyboardInputListener } from "./input/keyboard";
 import { World } from "./world/world";
 import {
     CLIENT_ACTION,
@@ -9,30 +8,38 @@ import {
     ServerPacketSchema,
 } from "../shared/enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
-import { animationManager } from "./animation/animation_manager";
 import { createPipeline } from "./packet_pipline";
-import { debugContainer } from "./debug";
+import { debugContainer, drawPolygon } from "./debug";
 import { round } from "../lib/math";
-import { encode } from "@msgpack/msgpack";
 import { decodeFromBlob } from "./network/decode";
-import { BasicPoint } from "../lib/types";
-import { Graphics } from "pixi.js";
-import {
-    INVENTORY_SLOT_PADDING,
-    INVENTORY_SLOT_SIZE,
-    Inventory,
-} from "./ui/inventory";
-import { UI } from "./ui/layout";
-import { CraftingMenu, RecipeManager } from "./ui/crafting_menu";
-import { Grid } from "./ui/grid";
-import { Timer } from "./ui/timer";
+import { Container, Point } from "pixi.js";
+import { MouseInputListener } from "./input/mouse";
+import { createPixiApp } from "./rendering/app";
+import { createViewport } from "./rendering/viewport";
+import { AnimationManager } from "../lib/animations";
+import { createUI } from "./ui/ui";
+import { SocketHandler } from "./network/socket_handler";
+import { an } from "vitest/dist/reporters-5f784f42.js";
 
-const { viewport } = createRenderer();
+export const animationManager = new AnimationManager();
+
+const UI = new Container();
+
+const app = createPixiApp();
+app.view.classList.add("canvas");
+document.body.appendChild(app.view);
+const viewport = createViewport(app, new Point(0, 0));
+app.view.oncontextmenu = () => {
+    return false;
+};
+
+app.stage.addChild(viewport);
+app.stage.addChild(UI);
+
 const packetPipeline = new PacketPipeline();
-const socket = new WebSocket("ws://localhost:7777");
 const world = new World(viewport, animationManager);
 
-viewport.addChild(debugContainer);
+// viewport.addChild(debugContainer);
 debugContainer.zIndex = 1000;
 viewport.sortChildren();
 
@@ -45,34 +52,16 @@ packetPipeline.unpackers[PACKET_TYPE.PING] = new Unpacker(
     ServerPacketSchema.ping
 );
 
-function drawPolygon(packet: ServerPacketSchema.drawPolygon) {
-    console.log("Drawing poly");
-    const polygon = new Graphics();
-    polygon.lineStyle({ width: 20, color: "#FF0000" });
-    const start = { x: packet[0] * 10, y: packet[1] * 10 };
-    polygon.moveTo(start.x, start.y);
-    for (const rawPoint of packet[2]) {
-        const point = {
-            x: start.x + rawPoint[0] * 10,
-            y: start.y + rawPoint[1] * 10,
-        };
-        polygon.lineTo(point.x, point.y);
-    }
-    debugContainer.addChild(polygon);
-    setTimeout(() => {
-        debugContainer.removeChild(polygon);
-        polygon.destroy();
-    }, 1000);
-}
-
 packetPipeline.unpackers[PACKET_TYPE.DRAW_POLYGON] = new Unpacker(
     drawPolygon,
     ServerPacketSchema.drawPolygon
 );
 
+const socket = new SocketHandler();
 socket.onopen = () => {
-    console.log("CONNECTED");
-    socket.send(encode([CLIENT_PACKET_TYPE.JOIN, ["test", 0, 0, 0]]));
+    const nameInput = document.getElementById("name-input") as HTMLInputElement;
+    const name = nameInput.value;
+    socket.send([CLIENT_PACKET_TYPE.JOIN, [name || "unnamed", 0, 0, 0]]);
 };
 
 socket.onmessage = async (ev) => {
@@ -90,12 +79,17 @@ function tick() {
 
 requestAnimationFrame(tick);
 
+const keyboard = new KeyboardInputListener(moveUpdate, chat);
+const mouse = new MouseInputListener(mouseMoveCallback);
+
 function moveUpdate(move: [number, number]) {
+    if (keyboard.chatOpen) {
+        return;
+    }
     move[0] = Math.max(0, Math.min(2, move[0]));
     move[1] = Math.max(0, Math.min(2, move[1]));
     const dir = (move[0] << 2) | move[1];
-    console.log(dir);
-    socket.send(encode([CLIENT_PACKET_TYPE.MOVE_UPDATE, dir + 1]));
+    socket.send([CLIENT_PACKET_TYPE.MOVE_UPDATE, dir + 1]);
 }
 
 let updateTick = 0;
@@ -108,148 +102,82 @@ function mouseMoveCallback(mousePos: [number, number]) {
         updateTick++;
         if (Math.abs(player.rotation - rotation) > 0.2 || updateTick > 10) {
             updateTick = 0;
-            socket.send(
-                encode([CLIENT_PACKET_TYPE.ROTATE, round(degrees(rotation))])
-            );
+            socket.send([CLIENT_PACKET_TYPE.ROTATE, round(degrees(rotation))]);
         }
         player.rotation = rotation;
     }
 }
 
 viewport.addEventListener("pointerdown", (event) => {
-    console.log(event.button);
     if (event.button === 2) {
-        socket.send(
-            encode([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.BLOCK, false]])
-        );
+        socket.send([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.BLOCK, false]]);
     }
     if (event.button === 0) {
-        socket.send(
-            encode([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.ATTACK, false]])
-        );
+        socket.send([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.ATTACK, false]]);
     }
     viewport;
 });
 
 viewport.addEventListener("pointerup", (event) => {
     if (event.button == 2) {
-        socket.send(
-            encode([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.BLOCK, true]])
-        );
+        socket.send([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.BLOCK, true]]);
     }
     if (event.button === 0) {
-        socket.send(
-            encode([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.ATTACK, true]])
-        );
+        socket.send([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.ATTACK, true]]);
     }
 });
 
-new InputHandler(moveUpdate, mouseMoveCallback);
+function chat(message: string) {
+    console.log(message);
+}
 
 // interactions
 
-function hideOutOfSight() {
-    if (!world.user) {
-        return;
-    }
-    const player = world.objects.get(world.user);
-    if (player) {
-        const range: [BasicPoint, BasicPoint] = [
-            { x: player.position.x - 16000, y: player.position.y - 9000 },
-            { x: player.position.x + 16000, y: player.position.y + 9000 },
-        ];
-        const query = world.quadtree.query(range);
-        for (const object of world.objects.values()) {
-            const queryObject = query.has(object.id);
-            if (queryObject) {
-                if (object.renderable === false) {
-                    requestIds.push(object.id);
-                }
-                continue;
-            }
-            object.renderable = false;
-            object.debug.renderable = false;
-        }
-    }
-}
-
 setInterval(() => {
     if (requestIds.length > 0) {
-        socket.send(encode([CLIENT_PACKET_TYPE.REQUEST_OBJECT, requestIds]));
+        socket.send([CLIENT_PACKET_TYPE.REQUEST_OBJECT, requestIds]);
         requestIds = [];
     }
 }, 500);
 
-setInterval(hideOutOfSight, 2000);
+const { ui, inventory, craftingMenu, recipeManager, health } = createUI();
 
-export const inventory = new Inventory();
-inventory.callback = (item: number) => {
-    socket.send(encode([CLIENT_PACKET_TYPE.SELECT_ITEM, item]));
-};
+health.update(2000, animationManager);
+health.start(animationManager);
 
-UI.addChild(inventory.display.container);
-inventory.slots = [];
-inventory.display.update(inventory.slots);
+setInterval(() => {
+    health.update(health.amount - 100, animationManager);
+}, 500);
 
-packetPipeline.unpackers[PACKET_TYPE.UPDATE_INVENTORY] = new Unpacker(
-    inventory.update.bind(inventory),
-    ServerPacketSchema.updateInventory
-);
-
-const recipeManager = new RecipeManager();
-
-const craftingGrid = new Grid(6, 6, 68, 68, 3);
-export const craftingMenu = new CraftingMenu(craftingGrid);
 craftingMenu.setCallback((item: number) => {
-    socket.send(encode([CLIENT_PACKET_TYPE.CRAFT_ITEM, item]));
+    socket.send([CLIENT_PACKET_TYPE.CRAFT_ITEM, item]);
 });
-
-UI.addChild(craftingMenu.container);
 
 packetPipeline.unpackers[PACKET_TYPE.CRAFTING_RECIPES] = new Unpacker(
     recipeManager.updateRecipes.bind(recipeManager),
     ServerPacketSchema.craftingRecipes
 );
 
-setInterval(() => {
-    console.log(recipeManager.filter(inventory.slots, []));
-    craftingMenu.items = recipeManager.filter(inventory.slots, []);
-    craftingMenu.update();
-}, 500);
+packetPipeline.unpackers[PACKET_TYPE.UPDATE_INVENTORY] = new Unpacker(
+    (packet) => {
+        inventory.update(packet);
+        craftingMenu.items = recipeManager.filter(inventory.slots, []);
+        craftingMenu.update();
+    },
+    ServerPacketSchema.updateInventory
+);
 
-function percentOf(percent: number, of: number) {
-    return (percent / 100) * of;
-}
+inventory.callback = (item: number) => {
+    socket.send([CLIENT_PACKET_TYPE.SELECT_ITEM, item]);
+};
 
-const timer = new Timer("sword_timer");
+app.stage.addChild(ui);
 
-UI.addChild(timer.container);
+document.querySelector("button")?.addEventListener("click", () => {
+    const ws = new WebSocket("ws://localhost:7777");
+    socket.connect(ws);
 
-timer.set(10000, animationManager);
-
-setInterval(() => {
-    timer.set(1000, animationManager);
-}, 1000);
-function resize() {
-    craftingMenu.container.position.set(
-        craftingGrid.spacingH * 4,
-        craftingGrid.spacingV * 4
-    );
-    inventory.display.container.position.set(
-        percentOf(50, window.innerWidth) -
-            percentOf(
-                50,
-                (INVENTORY_SLOT_SIZE + INVENTORY_SLOT_PADDING) *
-                    inventory.display.slotamount
-            ),
-
-        window.innerHeight - INVENTORY_SLOT_SIZE
-    );
-    timer.container.position.set(100, percentOf(75, window.innerHeight));
-}
-window.addEventListener("resize", resize);
-
-setTimeout(() => {
-    inventory.display.update(inventory.slots);
-    resize();
-}, 50);
+    document
+        .querySelectorAll(".menu")
+        .forEach((item) => item.classList.add("hidden"));
+});

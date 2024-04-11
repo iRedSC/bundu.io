@@ -2,10 +2,10 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import fs from "fs";
 import yaml from "yaml";
-import { ReversableMap } from "../../shared/reverseable_map.js";
+import { ReversableMap } from "../../../shared/reverseable_map.js";
 
 const __filename = fileURLToPath(import.meta.url);
-export const __dirname = dirname(__filename);
+export const __dirname = `${dirname(__filename)}/..`;
 
 // Load the id map
 const _idMapData: { [key: string]: number } = yaml.parse(

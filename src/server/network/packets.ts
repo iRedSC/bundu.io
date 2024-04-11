@@ -17,7 +17,6 @@ export function createPacketPipeline(controller: PlayerController) {
             byte--;
             const y = (byte & 0b11) - 1;
             const x = ((byte >> 2) & 0b11) - 1;
-            console.log(x, y);
             controller.move?.call(controller, id, x, y);
         },
         ClientPacketSchema.moveUpdate

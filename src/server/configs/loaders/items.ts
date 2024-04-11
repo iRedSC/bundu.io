@@ -1,7 +1,7 @@
 import yaml from "yaml";
 import fs from "fs";
 import { idMap, __dirname } from "./id_map.js";
-import { Component } from "../game_engine/component.js";
+import { Component } from "../../game_engine/component.js";
 
 export type itemConfigData = {
     type: string;

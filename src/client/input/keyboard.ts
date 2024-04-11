@@ -1,24 +1,23 @@
 import { Keystrokes } from "@rwh/keystrokes";
 
-export let attacking = false;
-export let mousePos: [number, number] = [0, 0];
-
-export class InputHandler {
+export class KeyboardInputListener {
     keybinds: Keystrokes;
     move: [number, number];
-    mousePos: [number, number];
+    chatOpen: boolean;
 
-    constructor(moveCallback: Function, mouseMoveCallback: Function) {
+    constructor(moveCallback: Function, chatCallback: Function) {
         this.keybinds = new Keystrokes({
             keyRemap: {
                 w: "up",
                 a: "left",
                 s: "down",
                 d: "right",
+                enter: "chat",
             },
         });
+
+        this.chatOpen = false;
         this.move = [1, 1];
-        this.mousePos = [0, 0];
 
         this.keybinds.bindKey("up", {
             onPressed: () => {
@@ -61,16 +60,28 @@ export class InputHandler {
             },
         });
 
-        document.body.addEventListener("mousemove", (event) => {
-            this.mousePos[0] = event.clientX;
-            this.mousePos[1] = event.clientY;
-            mouseMoveCallback(this.mousePos);
-        });
-
-        document.body.addEventListener("touchmove", (event) => {
-            this.mousePos[0] = event.touches[0].clientX;
-            this.mousePos[1] = event.touches[0].clientY;
-            mouseMoveCallback(this.mousePos);
+        this.keybinds.bindKey("chat", {
+            onReleased: () => {
+                this.chatOpen = !this.chatOpen;
+                if (this.chatOpen === true) {
+                    document
+                        .querySelector(".chat-container")
+                        ?.classList.remove("hidden");
+                    document
+                        .querySelector<HTMLInputElement>("#chat-input")
+                        ?.focus();
+                    return;
+                }
+                const chat =
+                    document.querySelector<HTMLInputElement>("#chat-input");
+                if (chat) {
+                    chatCallback(chat.value);
+                    chat.value = "";
+                }
+                document
+                    .querySelector(".chat-container")
+                    ?.classList.add("hidden");
+            },
         });
     }
 }

@@ -2,8 +2,8 @@ import { round } from "../../lib/math.js";
 import { degrees } from "../../lib/transforms.js";
 import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
 import { Physics, Type } from "../components/base.js";
-import { createResourceConfig } from "../configs/resources.js";
-import { resourceConfigs } from "../configs/load.js";
+import { createResourceConfig } from "../configs/loaders/resources.js";
+import { resourceConfigs } from "../configs/loaders/load.js";
 import { GameObject } from "../game_engine/game_object.js";
 
 /**

@@ -1,5 +1,5 @@
 import { PlayerData } from "../components/player.js";
-import { ResourceConfig } from "../configs/resources.js";
+import { ResourceConfig } from "../configs/loaders/resources.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import random from "../../lib/random.js";

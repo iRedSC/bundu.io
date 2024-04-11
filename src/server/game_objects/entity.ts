@@ -1,5 +1,5 @@
-import { createEntityConfig } from "../configs/entity.js";
-import { entityConfigs } from "../configs/load.js";
+import { createEntityConfig } from "../configs/loaders/entity.js";
+import { entityConfigs } from "../configs/loaders/load.js";
 import {
     lerp,
     distance,

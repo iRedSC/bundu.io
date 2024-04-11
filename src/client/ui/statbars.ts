@@ -1,66 +1,191 @@
-import * as PIXI from "pixi.js";
-import { clamp, lerp } from "../../lib/transforms";
-import { animationManager } from "../animation/animation_manager";
+import { clamp, colorLerp, lerp } from "../../lib/transforms";
 import { Animation, AnimationManager } from "../../lib/animations";
+import { SpriteFactory } from "../assets/sprite_factory";
+import { ColorSource, Container, Graphics, Sprite } from "pixi.js";
 
-class StatsDisplay {
+export type StatBarOptions = {
+    min: number;
+    max: number;
+    median: number;
+    decor: string;
+    baseColor: ColorSource;
+    overlayColor: ColorSource;
+    diffColor: ColorSource;
+    warningColor: ColorSource;
+
+    warnOnLow?: boolean;
+    warnOnHigh?: boolean;
+};
+
+export class StatBar {
+    max: number;
     amount: number;
-    container: PIXI.Container;
-    decor: PIXI.Sprite;
-    primaryBar: PIXI.Sprite;
-    secondaryBar?: PIXI.Sprite;
-    animations: Map<number, Animation>;
+    min: number;
+    median: number;
+    lastAmount: number;
 
-    constructor(decor: string, bar1: string, bar2?: string) {
-        this.animations = new Map();
-        this.animations.set(0, statsTransition(this));
+    container: Container;
+    decor: Sprite;
+
+    base: Graphics;
+    baseDiff: Graphics;
+    overlay: Graphics;
+    overlayDiff: Graphics;
+
+    baseColor: ColorSource;
+    overlayColor: ColorSource;
+    diffColor: ColorSource;
+    warningColor: ColorSource;
+
+    warnOnLow: boolean;
+    warnOnHigh: boolean;
+
+    constructor({
+        min,
+        max,
+        median,
+        decor,
+        baseColor,
+        overlayColor,
+        diffColor,
+        warningColor,
+        warnOnLow = true,
+        warnOnHigh = true,
+    }: StatBarOptions) {
+        this.min = min;
+        this.max = max;
+        this.median = median;
+
+        this.warnOnHigh = warnOnHigh;
+        this.warnOnLow = warnOnLow;
+
+        this.baseColor = baseColor;
+        this.overlayColor = overlayColor;
+        this.diffColor = diffColor;
+        this.warningColor = warningColor;
+
+        this.lastAmount = 0;
         this.amount = 0;
-        this.container = new PIXI.Container();
+
+        this.decor = SpriteFactory.build(decor, { x: 120, y: 25 });
+        this.decor.anchor.set(0.5);
+
+        this.container = new Container();
         this.container.scale.set(0.6);
-        this.container.position.set(270, 0);
-        this.decor = PIXI.Sprite.from(decor);
+        this.container.pivot.set(
+            this.container.width / 2,
+            this.container.height / 2
+        );
 
-        this.primaryBar = PIXI.Sprite.from(bar1);
-        this.primaryBar.width = 290;
-        this.primaryBar.position.set(92, 0);
+        this.base = new Graphics();
+        this.baseDiff = new Graphics();
 
-        this.container.addChild(this.primaryBar);
-        if (bar2) {
-            this.secondaryBar = PIXI.Sprite.from(bar2);
-            this.secondaryBar.width = 290;
-            this.secondaryBar.position.set(92, 100);
-            this.secondaryBar.height = 200;
-            this.secondaryBar.tint = 0xaaaaaa;
-            this.container.addChild(this.secondaryBar);
-        }
+        this.overlay = new Graphics();
+        this.overlayDiff = new Graphics();
+
+        this.container.addChild(this.baseDiff);
+        this.container.addChild(this.base);
+        this.container.addChild(this.overlayDiff);
+        this.container.addChild(this.overlay);
         this.container.addChild(this.decor);
     }
 
     update(amount: number, manager: AnimationManager) {
-        const animation = this.animations.get(0);
-        this.amount = amount;
-        if (animation) {
-            manager.add(this, animation.run(true));
-        }
+        const animation = statsTransition(this);
+        this.lastAmount = this.amount;
+        this.amount = clamp(amount, this.min, this.max);
+        manager.add(this, animation.run(true));
+    }
+
+    start(manager: AnimationManager) {
+        const animation = statsWarning(this);
+        manager.add(this, animation.run(true));
     }
 }
 
-function statsTransition(target: StatsDisplay) {
+function statsTransition(target: StatBar) {
     const animation = new Animation(0);
-    let amount: number = 0;
+    let width = 300;
+    let baseBefore = 0;
+    let baseNow = 0;
+    let overlayBefore = 0;
+    let overlayNow = 0;
 
     animation.keyframes[0] = (animation) => {
-        if (animation.isFirstKeyframe) {
-            amount = target.primaryBar.width;
-            animation.goto(0, 200);
-        }
-        if (animation.keyframeEnded) {
-            animation.goto(1, 400);
-        }
+        baseBefore =
+            clamp(
+                (target.lastAmount - target.min) / (target.median - target.min),
+                0,
+                1
+            ) * width;
+        baseNow =
+            clamp(
+                (target.amount - target.min) / (target.median - target.min),
+                0,
+                1
+            ) * width;
+
+        overlayBefore =
+            clamp(
+                (target.lastAmount - target.median) /
+                    (target.max - target.median),
+                0,
+                1
+            ) * width;
+        overlayNow =
+            clamp(
+                (target.amount - target.median) / (target.max - target.median),
+                0,
+                1
+            ) * width;
+
+        animation.next(50);
     };
 
     animation.keyframes[1] = (animation) => {
-        target.primaryBar.width = lerp(amount, target.amount, animation.t);
+        target.base.clear();
+        target.base.beginFill(target.baseColor);
+        target.base.drawRoundedRect(
+            0,
+            0,
+            lerp(baseBefore, baseNow, animation.t),
+            50,
+            50
+        );
+        target.overlay.clear();
+        target.overlay.beginFill(target.overlayColor);
+        target.overlay.drawRoundedRect(
+            0,
+            0,
+            lerp(overlayBefore, overlayNow, animation.t),
+            50,
+            50
+        );
+        if (animation.keyframeEnded) {
+            animation.next(400);
+        }
+    };
+
+    animation.keyframes[2] = (animation) => {
+        target.baseDiff.clear();
+        target.baseDiff.beginFill(target.diffColor);
+        target.baseDiff.drawRoundedRect(
+            0,
+            0,
+            lerp(baseBefore, baseNow, animation.t),
+            50,
+            50
+        );
+
+        target.overlayDiff.clear();
+        target.overlayDiff.beginFill(target.diffColor);
+        target.overlayDiff.drawRoundedRect(
+            0,
+            0,
+            lerp(overlayBefore, overlayNow, animation.t),
+            50,
+            50
+        );
 
         if (animation.keyframeEnded) {
             animation.expired = true;
@@ -69,77 +194,62 @@ function statsTransition(target: StatsDisplay) {
 
     return animation;
 }
-export const barContainer = new PIXI.Container();
-const hungerContainer = new StatsDisplay(
-    "./assets/hunger_bar_shell.svg",
-    "./assets/hunger_bar.svg"
-);
-const heatContainer = new StatsDisplay(
-    "./assets/heat_bar_shell.svg",
-    "./assets/heat_bar.svg",
-    "./assets/heat_bar.svg"
-);
-const healthContainer = new StatsDisplay(
-    "./assets/health_bar_shell.svg",
-    "./assets/damage_bar.svg",
-    "./assets/health_bar.svg"
-);
-healthContainer.secondaryBar!.height = 400;
-healthContainer.secondaryBar!.position.set(92, 0);
-healthContainer.secondaryBar!.tint = 0xffffff;
-healthContainer.primaryBar!.tint = 0xffffff;
-healthContainer.container.position.set(-270, 0);
-heatContainer.container.position.set(270, 0);
-hungerContainer.container.position.set(0, 0);
-barContainer.addChild(
-    healthContainer.container,
-    heatContainer.container,
-    hungerContainer.container
-);
 
-function resize() {
-    barContainer.position.set(
-        (window.innerWidth - barContainer.width) / 2 + 270,
-        window.innerHeight - 280
-    );
-}
-window.addEventListener("resize", resize);
-resize();
+function statsWarning(target: StatBar) {
+    const animation = new Animation(1);
 
-let healthstat = 100;
-let hungerstat = 100;
-let heatstat = 200;
-export function updateStatBars(health: number, hunger: number, heat: number) {
-    health = clamp(health, 0, 100);
-    hunger = clamp(hunger, 0, 100);
-    heat = clamp(heat, 0, 200);
-    health = health * 2.9;
-    healthContainer.secondaryBar!.width = health;
-    healthContainer.update(health, animationManager);
-    hunger = hunger * 2.9;
-    hungerContainer.update(hunger, animationManager);
-    heat = heat * 2.9;
-    if (heat > 290) {
-        heatContainer.secondaryBar!.width = heat - 290;
-        heatContainer.primaryBar.width = 290;
-    } else {
-        heatContainer.secondaryBar!.width = 0;
-        heatContainer.primaryBar.width = heat;
-    }
-}
-//  window.addEventListener("click", updatestats);
-// window.addEventListener("contextmenu", updatestats2);
-updateStatBars(healthstat, hungerstat, heatstat);
+    animation.keyframes[0] = (animation) => {
+        animation.next(250);
+    };
 
-function updatestats() {
-    healthstat -= 20;
-    hungerstat -= 10;
-    heatstat -= 20;
-    updateStatBars(healthstat, hungerstat, heatstat);
-}
-function updatestats2() {
-    healthstat += 20;
-    hungerstat += 10;
-    heatstat += 20;
-    updateStatBars(healthstat, hungerstat, heatstat);
+    animation.keyframes[1] = (animation) => {
+        const percent =
+            (target.amount - target.min) / (target.max - target.min);
+        if (target.warnOnHigh && percent > 0.8) {
+            target.overlay.tint = colorLerp(
+                0xffffff,
+                target.warningColor as number,
+                animation.t
+            );
+        } else if (target.warnOnLow && percent < 0.2) {
+            target.base.tint = colorLerp(
+                0xffffff,
+                target.warningColor as number,
+                animation.t
+            );
+        } else {
+            target.base.tint = 0xffffff;
+            target.overlay.tint = 0xffffff;
+        }
+
+        if (animation.keyframeEnded) {
+            animation.next(250);
+        }
+    };
+
+    animation.keyframes[2] = (animation) => {
+        const percent =
+            (target.amount - target.min) / (target.max - target.min);
+        if (target.warnOnHigh && percent > 0.8) {
+            target.overlay.tint = colorLerp(
+                target.warningColor as number,
+                0xffffff,
+                animation.t
+            );
+        } else if (target.warnOnLow && percent < 0.2) {
+            target.base.tint = colorLerp(
+                target.warningColor as number,
+                0xffffff,
+                animation.t
+            );
+        } else {
+            target.base.tint = 0xffffff;
+            target.overlay.tint = 0xffffff;
+        }
+
+        if (animation.keyframeEnded) {
+            animation.previous(250);
+        }
+    };
+    return animation;
 }

@@ -5,9 +5,8 @@ import {
     createResourceConfig,
     resourceConfigData,
 } from "./resources.js";
-import { Component } from "../game_engine/component.js";
+import { Component } from "../../game_engine/component.js";
 import { idMap, __dirname } from "./id_map.js";
-import { ItemConfig, createItemConfig, itemConfigData } from "./items.js";
 import {
     EntityConfig,
     createEntityConfig,
@@ -26,7 +25,6 @@ export function createConfigMap<D extends object, C extends Component<any>>(
 
     for (let [k, v] of Object.entries(data)) {
         const numericId = idMap.get(k);
-        console.log(k, v);
         const resource = config(numericId, v);
         configMap.set(numericId, resource);
     }

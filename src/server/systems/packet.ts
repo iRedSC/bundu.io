@@ -34,7 +34,6 @@ export class PacketSystem extends System {
             const data = PlayerData.get(player).data;
             const physics = Physics.get(player).data;
             if (!physics) {
-                console.log("NONE PHYS");
                 return;
             }
             const bounds: [BasicPoint, BasicPoint] = [

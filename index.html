@@ -13,8 +13,25 @@
 
         <link rel="stylesheet" href="/style.css" />
         <title>Bundu.io</title>
+        <script type="module" defer src="/src/client/main.ts"></script>
     </head>
-    <body oncontextmenu="return false;">
-        <script type="module" src="/src/client/main.ts"></script>
+    <body>
+        <img
+            src="/assets/menu_background.png"
+            alt=""
+            class="menu-background blur-image menu"
+        />
+        <div class="centered-content menu">
+            <input type="text" id="name-input" placeholder="username" />
+            <button class="menu">Play</button>
+        </div>
+        <div class="chat-container hidden">
+            <input
+                type="text"
+                id="chat-input"
+                autocomplete="off"
+                placeholder="chat message"
+            />
+        </div>
     </body>
 </html>

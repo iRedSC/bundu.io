@@ -1,9 +1,9 @@
-import { moveToward } from "../../lib/transforms.js";
+import { clamp, moveToward } from "../../lib/transforms.js";
 import { BasicPoint } from "../../lib/types.js";
 import { PACKET_TYPE } from "../../shared/enums.js";
 import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
-import { packCraftingList } from "../configs/crafting.js";
+import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import { send } from "../send.js";
@@ -46,8 +46,8 @@ export class PlayerSystem extends System implements PlayerController {
             { x: newX, y: newY },
             delta / 5
         );
-        physics.position.x = target.x;
-        physics.position.y = target.y;
+        physics.position.x = clamp(target.x, 0, 20000);
+        physics.position.y = clamp(target.y, 0, 20000);
 
         this.trigger("moved", player.id);
     }
