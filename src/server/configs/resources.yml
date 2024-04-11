@@ -88,6 +88,14 @@ deer_dead:
     items:
         meat: 2
         deer_hide: 1
+
+raindeer_dead:
+    duration: 30
+    multipliers:
+        knife: 2
+    items:
+        meat: 4
+        deer_hide: 2
  
 ram_dead:
     duration: 30
@@ -154,4 +162,10 @@ hive_large:
     level: 0
     items:
         honey: 10
+
+player_dead:
+    destroy_on_empty: true
+    level: 0
+    items:
+        #player inventoy
  

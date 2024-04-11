@@ -66,6 +66,13 @@ shovel:
     type: shovel
     attack_damage: 3
 
+
+repair_hammer:
+    type: wrench
+    attack_damage: 4
+    repair: 10
+
+
 stone_spear:
     type: spear
     attack_damage: 10

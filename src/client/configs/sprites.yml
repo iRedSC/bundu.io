@@ -35,6 +35,11 @@ shovel:
     type: pickaxe
     sprite: shovel
 
+repair_hammer:
+    type: pickaxe
+    sprite: repair_hammer
+
+
 # Sword
 wood_sword:
     type: sword
@@ -249,6 +254,10 @@ resource_book:
 time_book:
     type: book
     sprite: time_book
+
+bird_skull:
+    type: book
+    sprite: bird_skull
 
 # Tree
 

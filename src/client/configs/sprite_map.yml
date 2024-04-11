@@ -13,6 +13,9 @@ misc_toggle: misc_toggle.svg
 
 # timer icons
 sword_timer: sword_timer.svg
+helmet_cooldown: helmet_cooldown.svg
+no_heal: no_heal.svg
+poison: poison.svg
 
 # * TOOLS
 
@@ -168,6 +171,7 @@ alligator: alligator.svg
 komodo_dragon: komodo_dragon.svg
 bee: bee.svg
 queen_bee: queen_bee.svg
+raindeer: raindeer.svg
 
 #Dead
 bear_dead: bear_dead.svg
@@ -178,6 +182,7 @@ alligator_dead: alligator_dead.svg
 komodo_dragon_dead: komodo_dragon_dead.svg
 bee_dead: bee_dead.svg
 queen_bee_dead: queen_bee_dead.svg
+raindeer_dead: raindeer_dead.svg
 
 #Angry
 ram_angry: ram_angry.svg
@@ -191,3 +196,4 @@ tooth: tooth.svg
 elephant_tusk: elephant_tusk.svg
 alligator_skin: alligator_skin.svg
 komodo_dragon_eye: komodo_dragon_eye.svg
+bird_skull: bird_skull.svg
