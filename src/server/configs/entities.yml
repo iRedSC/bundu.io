@@ -26,11 +26,6 @@ bear:
 
 
 
-bear:
-    size: 4
-    speed: 1
-    wander_range: 105
-    rest_time: 0.3
 
 ram:
     speed: 2
