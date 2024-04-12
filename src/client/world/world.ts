@@ -31,13 +31,18 @@ function scaleCoords(pos: { x: number; y: number }) {
 // All packets (after being parsed) are sent to one of these methods
 export class World {
     viewport: Viewport;
+
     names: { container: PIXI.Container; values: Map<number, PIXI.Text> };
-    animationManager: AnimationManager;
     user?: number;
+
+    animationManager: AnimationManager;
+
     objects: Map<number, WorldObject>;
-    quadtree: Quadtree;
     dynamicObjs: Map<number, WorldObject>;
     updatingObjs: Map<number, WorldObject>;
+
+    quadtree: Quadtree;
+
     sky: Sky;
 
     constructor(viewport: Viewport, animationManager: AnimationManager) {
@@ -49,10 +54,12 @@ export class World {
             { x: 0, y: 0 },
             { x: 200000, y: 200000 },
         ];
+
         this.objects = new Map();
-        this.quadtree = new Quadtree(new Map(), mapBounds, 10);
         this.dynamicObjs = new Map();
         this.updatingObjs = new Map();
+
+        this.quadtree = new Quadtree(new Map(), mapBounds, 10);
 
         this.names = {
             container: new PIXI.Container(),
@@ -314,10 +321,10 @@ export class World {
     }
 
     chatMessage(packet: ServerPacketSchema.chatMessage) {
-        const player = this.objects.get(packet[0]) as Player;
+        const player = this.objects.get(packet[0]) as any;
         if (!player) {
             return;
         }
-        console.log(player.name.text, packet[1]);
+        if (player.name) console.log(player.name.text, packet[1]);
     }
 }
