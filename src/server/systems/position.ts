@@ -12,6 +12,9 @@ export const quadtree = new Quadtree(
     10
 );
 
+/**
+ * Position system inserts objects into the quadtree when they move.
+ */
 export class PositionSystem extends System {
     constructor() {
         super([Physics]);
