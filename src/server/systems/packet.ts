@@ -130,7 +130,17 @@ export class PacketSystem extends System {
         if (!data) {
             return;
         }
-        send(data.socket, [PACKET_TYPE.UPDATE_GEAR, [player.id, ...items]]);
+        const players = this.world.query([PlayerData.id]);
+        for (let other of players.values()) {
+            const data = PlayerData.get(other).data;
+            if (data.visibleObjects.has(player.id)) {
+                const data = PlayerData.get(other)?.data;
+                send(data.socket, [
+                    PACKET_TYPE.UPDATE_GEAR,
+                    [player.id, ...items],
+                ]);
+            }
+        }
     }
 
     hurt(object: GameObject, source: GameObject) {
