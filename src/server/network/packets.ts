@@ -63,5 +63,12 @@ export function createPacketPipeline(controller: PlayerController) {
         ClientPacketSchema.craftItem
     );
 
+    packets.unpackers[CLIENT_PACKET_TYPE.CHAT_MESSAGE] = new Unpacker(
+        (packet: ClientPacketSchema.chatMessage, id: number) => {
+            controller.chatMessage?.call(controller, id, packet);
+        },
+        ClientPacketSchema.chatMessage
+    );
+
     return packets;
 }

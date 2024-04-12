@@ -150,7 +150,7 @@ function statsTransition(target: StatBar) {
             0,
             lerp(baseBefore, baseNow, animation.t),
             50,
-            50
+            5
         );
         target.overlay.clear();
         target.overlay.beginFill(target.overlayColor);
@@ -159,7 +159,7 @@ function statsTransition(target: StatBar) {
             0,
             lerp(overlayBefore, overlayNow, animation.t),
             50,
-            50
+            5
         );
         if (animation.keyframeEnded) {
             animation.next(400);
@@ -174,7 +174,7 @@ function statsTransition(target: StatBar) {
             0,
             lerp(baseBefore, baseNow, animation.t),
             50,
-            50
+            5
         );
 
         target.overlayDiff.clear();
@@ -184,7 +184,7 @@ function statsTransition(target: StatBar) {
             0,
             lerp(overlayBefore, overlayNow, animation.t),
             50,
-            50
+            5
         );
 
         if (animation.keyframeEnded) {

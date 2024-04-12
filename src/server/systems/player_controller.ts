@@ -62,4 +62,11 @@ export interface PlayerController {
      * @param objects id of requested objects
      */
     requestObjects?(id: number, objects: number[]): void;
+
+    /**
+     * Player sent a chat message.
+     * @param id player id
+     * @param message chat message
+     */
+    chatMessage?(id: number, message: string): void;
 }

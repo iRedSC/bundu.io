@@ -25,6 +25,8 @@ export class PacketSystem extends System {
 
         this.listen("inventoryUpdate", this.sendInventory.bind(this));
         this.listen("updateGear", this.updateGear.bind(this));
+
+        this.listen("chatMessage", this.chatMessage.bind(this));
     }
 
     update(time: number, delta: number, player: GameObject) {}
@@ -67,7 +69,7 @@ export class PacketSystem extends System {
             }
             send(data.socket, [
                 PACKET_TYPE.ACTION,
-                [object.id, ACTION.BLOCK, stop],
+                [ACTION.BLOCK, object.id, stop],
             ]);
         }
     }
@@ -84,7 +86,7 @@ export class PacketSystem extends System {
             }
             send(data.socket, [
                 PACKET_TYPE.ACTION,
-                [object.id, ACTION.ATTACK, false],
+                [ACTION.ATTACK, object.id, false],
             ]);
         }
     }
@@ -128,7 +130,17 @@ export class PacketSystem extends System {
         if (!data) {
             return;
         }
-        send(data.socket, [PACKET_TYPE.UPDATE_GEAR, [player.id, ...items]]);
+        const players = this.world.query([PlayerData.id]);
+        for (let other of players.values()) {
+            const data = PlayerData.get(other).data;
+            if (data.visibleObjects.has(player.id)) {
+                const data = PlayerData.get(other)?.data;
+                send(data.socket, [
+                    PACKET_TYPE.UPDATE_GEAR,
+                    [player.id, ...items],
+                ]);
+            }
+        }
     }
 
     hurt(object: GameObject, source: GameObject) {
@@ -137,12 +149,29 @@ export class PacketSystem extends System {
         }
         const packet: any[] = [
             PACKET_TYPE.ACTION,
-            [object.id, ACTION.HURT, false],
+            [ACTION.HURT, object.id, false],
         ];
         const players = this.world.query([PlayerData.id]);
         for (let player of players.values()) {
-            const data = PlayerData.get(player)?.data;
-            send(data?.socket, packet);
+            const data = PlayerData.get(player).data;
+            if (data.visibleObjects.has(object.id)) {
+                const data = PlayerData.get(player)?.data;
+                send(data?.socket, packet);
+            }
+        }
+    }
+
+    chatMessage(object: GameObject, message: string) {
+        const players = this.world.query([PlayerData.id]);
+        for (let player of players.values()) {
+            const data = PlayerData.get(player).data;
+            if (data.visibleObjects.has(object.id)) {
+                const data = PlayerData.get(player)?.data;
+                send(data?.socket, [
+                    PACKET_TYPE.CHAT_MESSAGE,
+                    [object.id, message],
+                ]);
+            }
         }
     }
 }

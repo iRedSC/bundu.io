@@ -135,4 +135,12 @@ export class PlayerSystem extends System implements PlayerController {
         }
         this.trigger("craftItem", player.id, itemId);
     }
+
+    chatMessage(playerId: number, message: string) {
+        const player = this.world.getObject(playerId);
+        if (!player) {
+            return;
+        }
+        this.trigger("chatMessage", player.id, message);
+    }
 }

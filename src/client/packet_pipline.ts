@@ -50,6 +50,11 @@ export function createPipeline(packetPipeline: PacketPipeline, world: World) {
         ServerPacketSchema.action
     );
 
+    packetPipeline.unpackers[PACKET_TYPE.CHAT_MESSAGE] = new Unpacker(
+        world.chatMessage.bind(world),
+        ServerPacketSchema.chatMessage
+    );
+
     newObjectPipeline.unpackers[OBJECT_CLASS.ENTITY] = new Unpacker(
         world.newEntity.bind(world),
         NewObjectSchema.newEntity

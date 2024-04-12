@@ -2,6 +2,12 @@ import { Viewport } from "pixi-viewport";
 import * as PIXI from "pixi.js";
 import { WORLD_SIZE } from "../constants";
 
+/**
+ * creates a pixi viewport and returns it
+ * @param app pixi.js application to attach viewport to
+ * @param center center point of the viewport
+ * @returns the viewport
+ */
 export function createViewport(app: PIXI.Application, center: PIXI.Point) {
     const viewport = new Viewport({
         worldHeight: WORLD_SIZE,

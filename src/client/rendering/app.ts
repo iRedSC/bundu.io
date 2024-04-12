@@ -4,6 +4,10 @@ declare module globalThis {
     var __PIXI_APP__: Application;
 }
 
+/**
+ * create pixi.js app and return it
+ * @returns pixi.js app
+ */
 export function createPixiApp() {
     const app = new Application<HTMLCanvasElement>({
         resizeTo: window,

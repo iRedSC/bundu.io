@@ -1,7 +1,5 @@
 # anger = 0: scared, 1: no reaction, 2: agressive
 
-
-
 elephant:
     health: 4000
     score: 4000
