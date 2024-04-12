@@ -1,7 +1,5 @@
 # anger = 0: scared, 1: no reaction, 2: agressive
 
-
-
 elephant:
     health: 4000
     score: 4000
@@ -21,19 +19,3 @@ bear:
     size: 3
     wander_range: 75
     spawns: bear_dead
-
-
-
-
-
-bear:
-    size: 4
-    speed: 1
-    wander_range: 105
-    rest_time: 0.3
-
-ram:
-    speed: 2
-    size: 3
-    wander_range: 110
-    rest_time: 0.25
