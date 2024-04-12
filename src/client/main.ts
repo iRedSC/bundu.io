@@ -137,7 +137,7 @@ viewport.addEventListener("pointerup", (event) => {
 
 // callback for when a chat message is sent.
 function chat(message: string) {
-    console.log(message);
+    socket.send([CLIENT_PACKET_TYPE.CHAT_MESSAGE, message]);
 }
 
 // request unknown object ids on interval

@@ -14,6 +14,7 @@ export enum PACKET_TYPE {
     LOAD_GROUND = 0x09,
     STARTING_INFO = 0x10,
     DRAW_POLYGON = 0x11,
+    CHAT_MESSAGE = 0x12,
 
     // SET_TIME = 600,
 }
@@ -166,6 +167,12 @@ export namespace ServerPacketSchema {
         ),
     ]);
     export type drawPolygon = z.infer<typeof drawPolygon>;
+
+    export const chatMessage = z.tuple([
+        z.number(), // player id
+        z.string(), // message
+    ]);
+    export type chatMessage = z.infer<typeof chatMessage>;
 }
 
 export enum CLIENT_PACKET_TYPE {
@@ -177,6 +184,7 @@ export enum CLIENT_PACKET_TYPE {
     JOIN = 0x05,
     SELECT_ITEM = 0x06,
     CRAFT_ITEM = 0x07,
+    CHAT_MESSAGE = 0x08,
 }
 
 export enum CLIENT_ACTION {
@@ -216,4 +224,7 @@ export namespace ClientPacketSchema {
 
     export const craftItem = z.number();
     export type craftItem = z.infer<typeof craftItem>;
+
+    export const chatMessage = z.string();
+    export type chatMessage = z.infer<typeof chatMessage>;
 }

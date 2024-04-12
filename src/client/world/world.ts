@@ -312,4 +312,12 @@ export class World {
             }
         }
     }
+
+    chatMessage(packet: ServerPacketSchema.chatMessage) {
+        const player = this.objects.get(packet[0]) as Player;
+        if (!player) {
+            return;
+        }
+        console.log(player.name.text, packet[1]);
+    }
 }

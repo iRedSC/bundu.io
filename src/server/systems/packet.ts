@@ -25,6 +25,8 @@ export class PacketSystem extends System {
 
         this.listen("inventoryUpdate", this.sendInventory.bind(this));
         this.listen("updateGear", this.updateGear.bind(this));
+
+        this.listen("chatMessage", this.chatMessage.bind(this));
     }
 
     update(time: number, delta: number, player: GameObject) {}
@@ -141,8 +143,25 @@ export class PacketSystem extends System {
         ];
         const players = this.world.query([PlayerData.id]);
         for (let player of players.values()) {
-            const data = PlayerData.get(player)?.data;
-            send(data?.socket, packet);
+            const data = PlayerData.get(player).data;
+            if (data.visibleObjects.has(object.id)) {
+                const data = PlayerData.get(player)?.data;
+                send(data?.socket, packet);
+            }
+        }
+    }
+
+    chatMessage(object: GameObject, message: string) {
+        const players = this.world.query([PlayerData.id]);
+        for (let player of players.values()) {
+            const data = PlayerData.get(player).data;
+            if (data.visibleObjects.has(object.id)) {
+                const data = PlayerData.get(player)?.data;
+                send(data?.socket, [
+                    PACKET_TYPE.CHAT_MESSAGE,
+                    [object.id, message],
+                ]);
+            }
         }
     }
 }
