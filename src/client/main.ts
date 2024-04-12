@@ -47,17 +47,6 @@ createPipeline(packetPipeline, world);
 // list of ids that the server sent updates for but the client doesn't have
 export let requestIds: number[] = [];
 
-// add some packets to the unpacker
-packetPipeline.unpackers[PACKET_TYPE.PING] = new Unpacker(
-    (_: ServerPacketSchema.ping) => {},
-    ServerPacketSchema.ping
-);
-
-packetPipeline.unpackers[PACKET_TYPE.DRAW_POLYGON] = new Unpacker(
-    drawPolygon,
-    ServerPacketSchema.drawPolygon
-);
-
 // create a socket handler
 // this wraps a WebSocket and allows for the setup of methods without
 // connecting.
@@ -73,6 +62,17 @@ socket.onmessage = async (ev) => {
     // console.log(Date.now(), data);
     packetPipeline.unpack(data);
 };
+
+// add some packets to the unpacker
+packetPipeline.unpackers[PACKET_TYPE.PING] = new Unpacker(
+    (_: ServerPacketSchema.ping) => {},
+    ServerPacketSchema.ping
+);
+
+packetPipeline.unpackers[PACKET_TYPE.DRAW_POLYGON] = new Unpacker(
+    drawPolygon,
+    ServerPacketSchema.drawPolygon
+);
 
 // tick updates
 function tick() {
