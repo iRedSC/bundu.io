@@ -41,6 +41,8 @@ export function createUI() {
         overlayColor: 0x37ad98,
         warningColor: 0xfa7a57,
         diffColor: 0xd4ffe4,
+
+        warnOnHigh: false,
     });
     health.container.position.set(
         percentOf(50, window.innerWidth),
