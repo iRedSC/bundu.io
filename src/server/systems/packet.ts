@@ -69,7 +69,7 @@ export class PacketSystem extends System {
             }
             send(data.socket, [
                 PACKET_TYPE.ACTION,
-                [object.id, ACTION.BLOCK, stop],
+                [ACTION.BLOCK, object.id, stop],
             ]);
         }
     }
@@ -86,7 +86,7 @@ export class PacketSystem extends System {
             }
             send(data.socket, [
                 PACKET_TYPE.ACTION,
-                [object.id, ACTION.ATTACK, false],
+                [ACTION.ATTACK, object.id, false],
             ]);
         }
     }
@@ -149,7 +149,7 @@ export class PacketSystem extends System {
         }
         const packet: any[] = [
             PACKET_TYPE.ACTION,
-            [object.id, ACTION.HURT, false],
+            [ACTION.HURT, object.id, false],
         ];
         const players = this.world.query([PlayerData.id]);
         for (let player of players.values()) {

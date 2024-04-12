@@ -75,8 +75,8 @@ export namespace ServerPacketSchema {
     export type ping = z.infer<typeof ping>;
 
     export const action = z.tuple([
-        z.number(), // id
         z.number(), // action
+        z.number(), // id
         z.boolean(), //stop
     ]);
     export type action = z.infer<typeof action>;
