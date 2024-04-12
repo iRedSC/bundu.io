@@ -19,6 +19,7 @@ import { createViewport } from "./rendering/viewport";
 import { AnimationManager } from "../lib/animations";
 import { createUI } from "./ui/ui";
 import { SocketHandler } from "./network/socket_handler";
+import random from "../lib/random";
 
 export const animationManager = new AnimationManager();
 
@@ -149,9 +150,18 @@ setInterval(() => {
 }, 500);
 
 // create ui and elements
-const { ui, inventory, craftingMenu, recipeManager, health } = createUI();
+const { ui, inventory, craftingMenu, recipeManager, health, hunger, heat } =
+    createUI();
 
 health.start(animationManager);
+hunger.start(animationManager);
+heat.start(animationManager);
+
+setInterval(() => {
+    health.update(random.integer(health.min, health.max), animationManager);
+    hunger.update(random.integer(hunger.min, hunger.max), animationManager);
+    heat.update(random.integer(heat.min, heat.max), animationManager);
+}, 1000);
 
 craftingMenu.setCallback((item: number) => {
     socket.send([CLIENT_PACKET_TYPE.CRAFT_ITEM, item]);
@@ -185,4 +195,7 @@ document.querySelector("button")?.addEventListener("click", () => {
     document
         .querySelectorAll(".menu")
         .forEach((item) => item.classList.add("hidden"));
+
+    const resize = new Event("resize");
+    window.dispatchEvent(resize);
 });
