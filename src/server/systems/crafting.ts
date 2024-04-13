@@ -8,7 +8,7 @@ export class CraftingSystem extends System {
     constructor() {
         super([Inventory]);
 
-        this.listen("craftItem", this.craftItem.bind(this));
+        this.listen("craft_item", this.craftItem.bind(this));
     }
 
     craftItem(player: GameObject, item: number) {
@@ -52,6 +52,6 @@ export class CraftingSystem extends System {
             inventory.items.set(item, existingItem + 1);
         }
         console.log("sending inventory");
-        this.trigger("inventoryUpdate", player.id);
+        this.trigger("update_inventory", player.id);
     }
 }

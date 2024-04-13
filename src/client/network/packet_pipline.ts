@@ -3,9 +3,9 @@ import {
     OBJECT_CLASS,
     PACKET_TYPE,
     ServerPacketSchema,
-} from "../shared/enums";
-import { PacketPipeline, Unpacker } from "../shared/unpack";
-import { World } from "./world/world";
+} from "../../shared/enums";
+import { PacketPipeline, Unpacker } from "../../shared/unpack";
+import { World } from "../world/world";
 
 export function createPipeline(packetPipeline: PacketPipeline, world: World) {
     const newObjectPipeline = new PacketPipeline();

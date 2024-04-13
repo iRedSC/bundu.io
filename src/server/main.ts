@@ -19,7 +19,7 @@ import random from "../lib/random.js";
 import { VisibleObjects } from "./components/player.js";
 import SAT from "sat";
 import { GameObject } from "./game_engine/game_object.js";
-import { send } from "./send.js";
+import { send } from "./network/send.js";
 import { GroundData } from "./components/base.js";
 import { Ground } from "./game_objects/ground.js";
 import { AttackSystem } from "./systems/attack.js";

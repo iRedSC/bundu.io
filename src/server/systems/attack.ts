@@ -6,7 +6,7 @@ import { AttackData } from "../components/combat.js";
 import { PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
-import { send } from "../send.js";
+import { send } from "../network/send.js";
 import { quadtree } from "./position.js";
 import SAT from "sat";
 

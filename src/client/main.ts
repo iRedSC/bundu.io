@@ -8,8 +8,8 @@ import {
     ServerPacketSchema,
 } from "../shared/enums";
 import { PacketPipeline, Unpacker } from "../shared/unpack";
-import { createPipeline } from "./packet_pipline";
-import { debugContainer, drawPolygon } from "./debug";
+import { createPipeline } from "./network/packet_pipline";
+import { debugContainer, drawPolygon } from "./rendering/debug";
 import { round } from "../lib/math";
 import { decodeFromBlob } from "./network/decode";
 import { Point } from "pixi.js";

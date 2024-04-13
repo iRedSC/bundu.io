@@ -28,6 +28,6 @@ export class InventorySystem extends System {
             }
             inventory.items.set(item, existing + amount);
         }
-        this.trigger("inventoryUpdate", object.id);
+        this.trigger("update_inventory", object.id);
     }
 }

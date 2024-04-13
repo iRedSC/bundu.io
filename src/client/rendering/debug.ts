@@ -1,5 +1,5 @@
 import { Container, Graphics } from "pixi.js";
-import { ServerPacketSchema } from "../shared/enums";
+import { ServerPacketSchema } from "../../shared/enums";
 
 // Used for creating debug objects on the map, such as hitboxes or id text.
 

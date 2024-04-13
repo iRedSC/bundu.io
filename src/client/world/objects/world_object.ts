@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { rotationLerp } from "../../../lib/transforms";
 import { Line } from "../debug/line";
-import { DebugWorldObject } from "../../debug";
+import { DebugWorldObject } from "../../rendering/debug";
 import { Circle } from "../debug/circle";
 import { TEXT_STYLE } from "../../assets/text";
 import { Animation, AnimationManager } from "../../../lib/animations";

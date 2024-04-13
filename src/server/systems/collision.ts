@@ -15,7 +15,7 @@ export class CollisionSystem extends System {
     constructor() {
         super([Physics, CalculateCollisions], 10);
 
-        this.listen("moved", this.collide.bind(this));
+        this.listen("move", this.collide.bind(this));
     }
 
     collide(object: GameObject, tries: number = 0) {
@@ -43,7 +43,7 @@ export class CollisionSystem extends System {
             if (collided) {
                 retrigger = true;
                 physics.position.sub(response.overlapV);
-                this.trigger("collided", object.id);
+                this.trigger("collide", object.id);
             }
         }
         if (retrigger && tries < 3) {

@@ -19,8 +19,8 @@ export class PositionSystem extends System {
     constructor() {
         super([Physics]);
 
-        this.listen("moved", this.insert);
-        this.listen("collided", this.insert);
+        this.listen("move", this.insert);
+        this.listen("collide", this.insert);
     }
 
     insert(object: GameObject) {

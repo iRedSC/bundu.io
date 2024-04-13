@@ -6,7 +6,7 @@ import { PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
-import { send } from "../send.js";
+import { send } from "../network/send.js";
 import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
 import { quadtree } from "./position.js";
@@ -49,7 +49,7 @@ export class PlayerSystem extends System implements PlayerController {
         physics.position.x = clamp(target.x, 0, 20000);
         physics.position.y = clamp(target.y, 0, 20000);
 
-        this.trigger("moved", player.id);
+        this.trigger("move", player.id);
     }
 
     enter(player: GameObject) {
@@ -80,7 +80,7 @@ export class PlayerSystem extends System implements PlayerController {
         }
         const data = Physics.get(player).data;
         data.rotation = rotation;
-        this.trigger("rotated", player.id);
+        this.trigger("rotate", player.id);
     }
 
     // Triggers event to send objects to selected player
@@ -90,7 +90,7 @@ export class PlayerSystem extends System implements PlayerController {
             return;
         }
 
-        this.trigger("sendNewObjects", player.id, objects);
+        this.trigger("send_new_objects", player.id, objects);
     }
 
     // starts or stops a player from attacking
@@ -117,7 +117,7 @@ export class PlayerSystem extends System implements PlayerController {
             data.attacking = false;
         }
         data.blocking = !stop;
-        this.trigger("blocking", player.id, stop);
+        this.trigger("block", player.id, stop);
     }
 
     selectItem(playerId: number, itemId: number) {
@@ -125,7 +125,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        this.trigger("updateGear", player.id, [itemId, -1, -1, -1]);
+        this.trigger("update_gear", player.id, [itemId, -1, -1, -1]);
     }
 
     craftItem(playerId: number, itemId: number) {
@@ -133,7 +133,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        this.trigger("craftItem", player.id, itemId);
+        this.trigger("craft", player.id, itemId);
     }
 
     chatMessage(playerId: number, message: string) {
@@ -141,6 +141,6 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        this.trigger("chatMessage", player.id, message);
+        this.trigger("send_chat", player.id, message);
     }
 }
