@@ -12,6 +12,9 @@ import {
     createEntityConfig,
     entityConfigData,
 } from "./entity.js";
+import { ItemConfig, createItemConfig, itemConfigData } from "./items.js";
+import { mergeObjs } from "../../../lib/object_utils.js";
+import { ItemType } from "./item_type.js";
 
 /**
  * This is where all the configs get loaded.
@@ -40,14 +43,17 @@ export const resourceConfigs = createConfigMap<
     Component<ResourceConfig>
 >(_resourceConfigData, createResourceConfig);
 
-// type RawItemConfig = { [key: string]: itemConfigData };
-// const _itemConfigData: RawItemConfig = yaml.parse(
-//     fs.readFileSync(`${__dirname}/items.yml`, "utf8")
-// );
-// export const itemConfigs = createConfigMap<
-//     RawItemConfig,
-//     Component<ItemConfig>
-// >(_itemConfigData, createItemConfig);
+type RawItemConfig = { [key: string]: itemConfigData };
+const _itemConfigData: RawItemConfig = mergeObjs(
+    yaml.parse(fs.readFileSync(`${__dirname}/consumable.yml`, "utf8")),
+    yaml.parse(fs.readFileSync(`${__dirname}/main_hand.yml`, "utf8")),
+    yaml.parse(fs.readFileSync(`${__dirname}/off_hand.yml`, "utf8")),
+    yaml.parse(fs.readFileSync(`${__dirname}/wearable.yml`, "utf8"))
+) as any;
+export const itemConfigs = createConfigMap<
+    RawItemConfig,
+    Component<ItemConfig>
+>(_itemConfigData, createItemConfig);
 
 type RawEntityConfig = { [key: string]: entityConfigData };
 const _entityConfigData: RawEntityConfig = yaml.parse(
@@ -58,3 +64,7 @@ export const entityConfigs = createConfigMap<
     RawEntityConfig,
     Component<EntityConfig>
 >(_entityConfigData, createEntityConfig);
+
+export const itemTypes: { [key: string]: ItemType } = yaml.parse(
+    fs.readFileSync(`${__dirname}/types.yml`, "utf8")
+);

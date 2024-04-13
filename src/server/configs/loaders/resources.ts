@@ -33,12 +33,13 @@ export function createResourceConfig(
 ) {
     const config: any = {};
     config.id = id;
-    config.score = data.score || 0;
-    config.destroyOnEmpty = data.destroy_on_empty || false;
-    config.exclusive = data.exclusive || false;
-    config.decay = data.decay || 0;
-    config.level = data.level || 0;
-    config.regenSpeed = data.regenSpeed || 10;
+    config.score = data.score !== undefined ? data.score : 0;
+    config.destroyOnEmpty =
+        data.destroy_on_empty !== undefined ? data.destroy_on_empty : false;
+    config.exclusive = data.exclusive !== undefined ? data.exclusive : false;
+    config.decay = data.decay !== undefined ? data.decay : 0;
+    config.level = data.level !== undefined ? data.level : -1;
+    config.regenSpeed = data.regenSpeed !== undefined ? data.regenSpeed : 10;
     config.multipliers = new Map();
     for (const [name, amount] of Object.entries(data.multipliers || {})) {
         config.multipliers.set(name, amount);

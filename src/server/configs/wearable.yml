@@ -1,28 +1,27 @@
 wood_helmet:
     type: helmet
-    defence: 2
+    defense: 2
     level: 1
 
 stone_helmet:
     type: helmet
-    defence: 3
+    defense: 3
     level: 2
 
 gold_helmet:
     type: helmet
-    defence: 5
+    defense: 5
     level: 3
 
 diamond_helmet:
     type: helmet
-    defence: 6
+    defense: 6
     level: 4
 
 amethyst_helmet:
     type: helmet
-    defence: 7
+    defense: 7
     level: 5
-
 
 earmuffs:
     type: hat

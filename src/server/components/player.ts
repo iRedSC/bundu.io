@@ -71,7 +71,8 @@ export type PlayerData = {
     backpackSkin: number;
     bookSkin: number;
 
-    selectedItem?: number;
+    mainHand?: number;
+    offHand?: number;
     helmet?: number;
     backpack?: boolean;
 
