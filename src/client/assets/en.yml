@@ -1,11 +1,385 @@
-item:
-    wood_sword:
-        name: Wood Sword
-        desc: A little pokey stick.
+unknown_asset:
+    name: Unknown Asset
+    desc: An asset of unknown origin.
 
-    stone_sword:
-        name: Stone Sword
-        desc: A bigger pokey stick.
+# Pickaxe
+wood_pickaxe:
+    name: Wood Pickaxe
+    desc: A pickaxe made of wood.
+
+stone_pickaxe:
+    name: Stone Pickaxe
+    desc: A pickaxe made of stone.
+
+gold_pickaxe:
+    name: Gold Pickaxe
+    desc: A pickaxe made of gold.
+
+diamond_pickaxe:
+    name: Diamond Pickaxe
+    desc: A pickaxe made of diamond.
+
+amethyst_pickaxe:
+    name: Amethyst Pickaxe
+    desc: A pickaxe made of amethyst.
+
+# Special Tools
+lumber_axe:
+    name: Lumber Axe
+    desc: Mine wood much faster.
+
+spyglass:
+    name: Spyglass
+    desc: A handheld optical instrument used for viewing distant objects.
+
+butcher_knife:
+    name: Butcher Knife
+    desc: Gather more resources from animals.
+
+shovel:
+    name: Shovel
+    desc: Start digging?
+
+# Sword
+wood_sword:
+    name: Wood Sword
+    desc: A basic wooden sword.
+
+stone_sword:
+    name: Stone Sword
+    desc: A sword made of stone.
+
+gold_sword:
+    name: Gold Sword
+    desc: A sword made of gold.
+
+diamond_sword:
+    name: Diamond Sword
+    desc: A sword made of diamond.
+
+amethyst_sword:
+    name: Amethyst Sword
+    desc: A sword made of amethyst.
+
+# Hammer
+stone_hammer:
+    name: Stone Hammer
+    desc: A hammer made of stone.
+
+gold_hammer:
+    name: Gold Hammer
+    desc: A hammer made of gold.
+
+diamond_hammer:
+    name: Diamond Hammer
+    desc: A hammer made of diamond.
+
+amethyst_hammer:
+    name: Amethyst Hammer
+    desc: A hammer made of amethyst.
+
+# Spear
+stone_spear:
+    name: Stone Spear
+    desc: A spear made of stone.
+
+gold_spear:
+    name: Gold Spear
+    desc: A spear made of gold.
+
+diamond_spear:
+    name: Diamond Spear
+    desc: A spear made of diamond.
+
+amethyst_spear:
+    name: Amethyst Spear
+    desc: A spear made of amethyst.
+
+tusk_spear:
+    name: Tusk Spear
+    desc: A spear made from a tusk.
+
+# Helmet
+wood_helmet:
+    name: Wood Helmet
+    desc: A helmet made of wood.
+
+stone_helmet:
+    name: Stone Helmet
+    desc: A helmet made of stone.
+
+gold_helmet:
+    name: Gold Helmet
+    desc: A helmet made of gold.
+
+diamond_helmet:
+    name: Diamond Helmet
+    desc: A helmet made of diamond.
+
+amethyst_helmet:
+    name: Amethyst Helmet
+    desc: A helmet made of amethyst.
+
+# Hat
+earmuffs:
+    name: Earmuffs
+    desc: A little protection from the cold.
+
+beanie:
+    name: Beanie
+    desc: Night-time is a breeze.
+
+coat:
+    name: Coat
+    desc: Keeps you very warm.
+
+# Special Items
+book:
+    name: Book
+    desc: Craft Faster.
+
+resource_book:
+    name: Resource Book
+    desc: Save basic resources when crafting.
+
+time_book:
+    name: Time Book
+    desc: Craft even faster.
+
+# Consumable
+meat:
+    name: Meat
+    desc: Raw meat obtained from animals.
+
+meat_cooked:
+    name: Cooked Meat
+    desc: Meat cooked over a fire.
+
+blue_berry:
+    name: Blue Berry
+    desc: A small edible fruit.
+
+red_berry:
+    name: Red Berry
+    desc: A small edible fruit.
+
+honey:
+    name: Honey
+    desc: Sweet, sticky liquid produced by bees.
+
+mango:
+    name: Mango
+    desc: A sweet and juicy tropical fruit.
+
+miracle_fruit:
+    name: Miracle Fruit
+    desc: A fruit that alters the taste perception temporarily.
+
+bandage:
+    name: Bandage
+    desc: A strip of cloth used to bind a wound.
+
+
+# * PLACEABLE
+
+# Walls
+friendly_wall:
+    name: Friendly Wall
+    desc: A wall that belongs to your faction.
+
+wood_wall:
+    name: Wooden Wall
+    desc: A wall made of wood.
+
+stone_wall:
+    name: Stone Wall
+    desc: A wall made of stone.
+
+gold_wall:
+    name: Gold Wall
+    desc: A wall made of gold.
+
+diamond_wall:
+    name: Diamond Wall
+    desc: A wall made of diamond.
+
+amethyst_wall:
+    name: Amethyst Wall
+    desc: A wall made of amethyst.
+
+# Spike
+wood_spike:
+    name: Wooden Spike
+    desc: A spike made of wood.
+
+stone_spike:
+    name: Stone Spike
+    desc: A spike made of stone.
+
+gold_spike:
+    name: Gold Spike
+    desc: A spike made of gold.
+
+diamond_spike:
+    name: Diamond Spike
+    desc: A spike made of diamond.
+
+amethyst_spike:
+    name: Amethyst Spike
+    desc: A spike made of amethyst.
+
+# Door
+friendly_door:
+    name: Friendly Door
+    desc: A door that belongs to your faction.
+
+door_open:
+    name: Open Door
+    desc: An open door.
+
+wood_door:
+    name: Wooden Door
+    desc: A door made of wood.
+
+stone_door:
+    name: Stone Door
+    desc: A door made of stone.
+
+gold_door:
+    name: Gold Door
+    desc: A door made of gold.
+
+diamond_door:
+    name: Diamond Door
+    desc: A door made of diamond.
+
+amethyst_door:
+    name: Amethyst Door
+    desc: A door made of amethyst.
+
+# Crafting
+workbench:
+    name: Workbench
+    desc: A bench used for working on various tasks.
+
+fire_pit:
+    name: Fire Pit
+    desc: A pit dug into the ground, usually containing a fire.
+
+anvil:
+    name: Anvil
+    desc: A heavy metal block on which metal objects are hammered and shaped.
+
+fire_small:
+    name: Small Fire
+    desc: A smaller, less intense fire.
+
+fire_big:
+    name: Big Fire
+    desc: A larger, more intense fire.
+
+# Quick buildings
+quick_wood_wall:
+    name: Quick Wood Wall
+    desc: A quickly built wall made of wood.
+
+quick_stone_wall:
+    name: Quick Stone Wall
+    desc: A quickly built wall made of stone.
+
+quick_stone_spike:
+    name: Quick Stone Spike
+    desc: A quickly constructed spike made of stone.
+
+quick_diamond_spike:
+    name: Quick Diamond Spike
+    desc: A quickly constructed spike made of diamond.
+
+# * Map Objects
+
+pinecone:
+    name: Pinecone
+    desc: The woody, conical fruit of a pine tree.
+
+pitch:
+    name: Pitch
+    desc: A dark, sticky substance obtained from the distillation of tar or turpentine.
+
+cloth:
+    name: Cloth
+    desc: A flexible material made from weaving fibers.
+
+tooth:
+    name: Tooth
+    desc: A hard, bonelike structure in the mouth.
+
+backpack:
+    name: Backpack
+    desc: A bag with shoulder straps used for carrying items.
+
+bird_skull:
+    name: Bird Skull
+    desc: The skull of a bird, often used for decorative purposes.
+
+repair_hammer:
+    name: Repair Hammer
+    desc: A hammer used for repairing.
+
+# * Animals
+
+
+
+# Animal Items
+bear_fur:
+    name: Bear Fur
+    desc: The thick fur of a bear.
+
+deer_hide:
+    name: Deer Hide
+    desc: The skin of a deer.
+
+ram_wool:
+    name: Ram Wool
+    desc: The wool of a ram.
+
+elephant_tusk:
+    name: Elephant Tusk
+    desc: The elongated, protruding tooth of an elephant.
+
+alligator_skin:
+    name: Alligator Skin
+    desc: The tough, leathery skin of an alligator.
+
+komodo_dragon_eye:
+    name: Komodo Dragon Eye
+    desc: The eye of a Komodo dragon.
+
+pinecone:
+    name: Pinecone
+    desc: The woody, conical fruit of a pine tree.
+
+pitch:
+    name: Pitch
+    desc: A dark, sticky substance obtained from the distillation of tar or turpentine.
+
+cloth:
+    name: Cloth
+    desc: A flexible material made from weaving fibers.
+
+tooth:
+    name: Tooth
+    desc: A hard, bonelike structure in the mouth.
+
+backpack:
+    name: Backpack
+    desc: A bag with shoulder straps used for carrying items.
+
+repair_hammer:
+    name: Repair Hammer
+    desc: A hammer used for repairing.
+
+
+
 
 menu:
     username_placeholder: username
