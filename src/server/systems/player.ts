@@ -125,7 +125,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        this.trigger("update_gear", player.id, [itemId, -1, -1, -1]);
+        this.trigger("select_item", player.id, itemId);
     }
 
     craftItem(playerId: number, itemId: number) {
@@ -133,7 +133,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        this.trigger("craft", player.id, itemId);
+        this.trigger("craft_item", player.id, itemId);
     }
 
     chatMessage(playerId: number, message: string) {

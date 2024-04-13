@@ -38,7 +38,8 @@ export namespace NewObjectSchema {
         z.number(), // y
         z.number(), // rot
         z.string(), // name
-        z.number().nullable(), // hand
+        z.number().nullable(), // main hand
+        z.number().nullable(), // offhand
         z.number().nullable(), // helm
         z.number().nullable(), // skin
         z.number().nullable(), // backpackSkin

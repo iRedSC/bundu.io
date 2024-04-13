@@ -1,5 +1,5 @@
 import { PACKET_TYPE } from "../../shared/enums.js";
-import { send } from "../send.js";
+import { send } from "../network/send.js";
 import { Player } from "./player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { PlayerData } from "../components/player.js";

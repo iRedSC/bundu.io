@@ -20,14 +20,14 @@ helmet:
         x: 0
         y: 0
         rotation: 0
-        scale: 1.1
+        scale: 0.2
 
 hat:
     body_display:
         x: 0
         y: 0
         rotation: 0
-        scale: 1.1
+        scale: 0.2
 
 spear:
     hand_display:
