@@ -5,7 +5,7 @@ import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import { BasicPoint } from "../game_engine/types.js";
 import { UpdateHandler } from "../game_objects/update_handler.js";
-import { send } from "../send.js";
+import { send } from "../network/send.js";
 import { quadtree } from "./position.js";
 
 export const updateHandler = new UpdateHandler();
