@@ -4,6 +4,7 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
+        "test": "vitest",
         "client": "npm i && vite",
         "build-client": "npm i && tsc && vite build",
         "preview": "vite preview",
@@ -18,7 +19,8 @@
         "js-logger": "^1.6.1",
         "nodemon": "^3.0.1",
         "typescript": "^5.0.2",
-        "vite": "^4.4.5"
+        "vite": "^4.4.5",
+        "vitest": "^1.5.0"
     },
     "dependencies": {
         "@msgpack/msgpack": "^3.0.0-beta2",
@@ -32,7 +34,6 @@
         "pixi.js": "^7.3.2",
         "sat": "^0.9.0",
         "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.33.0",
-        "vitest": "^0.34.6",
         "yaml": "^2.3.4",
         "zod": "^3.22.4"
     }
