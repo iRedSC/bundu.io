@@ -18,6 +18,6 @@ export class ResourceSystem extends System {
             return;
         }
         const randomItem = random.choice(Array.from(config.items.keys()));
-        this.trigger("giveItem", source.id, [[randomItem, 1]]);
+        this.trigger("give_items", source.id, [[randomItem, 1]]);
     }
 }

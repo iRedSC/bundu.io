@@ -14,19 +14,19 @@ export class PacketSystem extends System {
     constructor() {
         super([PlayerData], 20);
 
-        this.listen("moved", this.moveObject.bind(this));
+        this.listen("move", this.moveObject.bind(this));
         this.listen("hurt", this.hurt.bind(this));
-        this.listen("collided", this.moveObject.bind(this));
-        this.listen("blocking", this.blocking.bind(this));
+        this.listen("collide", this.moveObject.bind(this));
+        this.listen("block", this.blocking.bind(this));
         this.listen("attack", this.attack.bind(this));
-        this.listen("rotated", this.rotateObject.bind(this));
-        this.listen("sendNewObjects", this.sendNewObjects.bind(this));
-        this.listen("sendUpdatedObjects", this.sendUpdatedObjects.bind(this));
+        this.listen("rotate", this.rotateObject.bind(this));
+        this.listen("send_new_objects", this.sendNewObjects.bind(this));
+        this.listen("send_object_updates", this.sendUpdatedObjects.bind(this));
 
-        this.listen("inventoryUpdate", this.sendInventory.bind(this));
-        this.listen("updateGear", this.updateGear.bind(this));
+        this.listen("update_inventory", this.sendInventory.bind(this));
+        this.listen("update_gear", this.updateGear.bind(this));
 
-        this.listen("chatMessage", this.chatMessage.bind(this));
+        this.listen("send_chat", this.chatMessage.bind(this));
     }
 
     update(time: number, delta: number, player: GameObject) {}
@@ -45,7 +45,7 @@ export class PacketSystem extends System {
             const nearby = quadtree.query(bounds);
             data.visibleObjects.update(nearby);
             if (data.visibleObjects.new.size > 0) {
-                this.trigger("sendUpdatedObjects", player.id);
+                this.trigger("send_object_updates", player.id);
             }
             updateHandler.send(player);
         }
