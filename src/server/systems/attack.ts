@@ -109,7 +109,10 @@ export class AttackSystem extends System {
         );
 
         const hits = testForIntersection(hitRange, nearby);
-
-        this.trigger("hurt", new Set(hits.keys()), object);
+        hits.delete(object.id);
+        this.trigger("hurt", new Set(hits.keys()), {
+            source: object,
+            damage: data.damage,
+        });
     }
 }

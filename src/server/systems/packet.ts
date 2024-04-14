@@ -1,5 +1,6 @@
 import { ACTION, PACKET_TYPE } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
+import { Health } from "../components/combat.js";
 import { Inventory, PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
@@ -20,13 +21,22 @@ export class PacketSystem extends System {
         this.listen("block", this.blocking.bind(this));
         this.listen("attack", this.attack.bind(this));
         this.listen("rotate", this.rotateObject.bind(this));
-        this.listen("send_new_objects", this.sendNewObjects.bind(this));
-        this.listen("send_object_updates", this.sendUpdatedObjects.bind(this));
+        this.listen("send_new_objects", this.sendNewObjects.bind(this)),
+            [PlayerData];
+        this.listen("send_object_updates", this.sendUpdatedObjects.bind(this), [
+            PlayerData,
+        ]);
 
-        this.listen("update_inventory", this.sendInventory.bind(this));
-        this.listen("update_gear", this.updateGear.bind(this));
+        this.listen("update_inventory", this.sendInventory.bind(this), [
+            PlayerData,
+        ]);
+        this.listen("update_gear", this.updateGear.bind(this), [PlayerData]);
 
-        this.listen("send_chat", this.chatMessage.bind(this));
+        this.listen("send_chat", this.chatMessage.bind(this), [PlayerData]);
+
+        this.listen("health_update", this.healthUpdate.bind(this), [
+            PlayerData,
+        ]);
     }
 
     update(time: number, delta: number, player: GameObject) {}
@@ -143,7 +153,7 @@ export class PacketSystem extends System {
         }
     }
 
-    hurt(object: GameObject, source: GameObject) {
+    hurt(object: GameObject, { source }: { source: GameObject }) {
         if (object.id === source.id) {
             return;
         }
@@ -173,5 +183,11 @@ export class PacketSystem extends System {
                 ]);
             }
         }
+    }
+
+    healthUpdate(player: GameObject) {
+        const health = Health.get(player).data;
+        const data = PlayerData.get(player).data;
+        send(data?.socket, [PACKET_TYPE.UPDATE_STATS, [health.value, 0, 0]]);
     }
 }

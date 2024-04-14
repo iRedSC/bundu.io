@@ -26,6 +26,8 @@ import { AttackSystem } from "./systems/attack.js";
 import { InventorySystem } from "./systems/inventory.js";
 import { ResourceSystem } from "./systems/resource.js";
 import { CraftingSystem } from "./systems/crafting.js";
+import { HealthSystem } from "./systems/health.js";
+import { SpawnerSystem } from "./systems/spawner.js";
 
 Logger.useDefaults();
 
@@ -48,7 +50,9 @@ world
     .addSystem(attackSystem)
     .addSystem(inventorySystem)
     .addSystem(new ResourceSystem())
-    .addSystem(new CraftingSystem());
+    .addSystem(new CraftingSystem())
+    .addSystem(new HealthSystem())
+    .addSystem(new SpawnerSystem());
 
 const ground: GroundData = {
     collider: new SAT.Box(new SAT.Vector(1000, 1000), 15000, 15000),

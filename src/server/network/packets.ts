@@ -70,5 +70,11 @@ export function createPacketPipeline(controller: PlayerController) {
         ClientPacketSchema.chatMessage
     );
 
+    packets.unpackers[CLIENT_PACKET_TYPE.DROP_ITEM] = new Unpacker(
+        (packet: ClientPacketSchema.dropItem, id: number) => {
+            controller.dropItem?.call(controller, id, packet[0], packet[1]);
+        },
+        ClientPacketSchema.dropItem
+    );
     return packets;
 }

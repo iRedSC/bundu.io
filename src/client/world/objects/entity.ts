@@ -4,7 +4,7 @@ import Random from "../../../lib/random";
 import { WorldObject } from "./world_object";
 import { assets } from "../../assets/load";
 import { Animation, AnimationManager } from "../../../lib/animations";
-import { ANIMATION } from "../../animation/animations";
+import { ANIMATION, hurt } from "../../animation/animations";
 
 export class Entity extends WorldObject {
     sprite: PIXI.Sprite;
@@ -29,6 +29,7 @@ export class Entity extends WorldObject {
         this.sprite.anchor.set(0.5);
 
         this.animations.set(ANIMATION.ENTITY_IDLE, entityIdle(this));
+        this.animations.set(ANIMATION.HURT, hurt([this.sprite]));
         this.trigger(ANIMATION.ENTITY_IDLE, manager);
 
         this.container.addChild(this.sprite);

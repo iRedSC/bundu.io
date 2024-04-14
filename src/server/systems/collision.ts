@@ -31,7 +31,7 @@ export class CollisionSystem extends System {
         const response = new SAT.Response();
         let retrigger = false;
         for (const other of nearby) {
-            if (other.id === object.id || PlayerData.get(other)) {
+            if (other.id === object.id || !Physics.get(other).data.solid) {
                 continue;
             }
             const otherPhysics = Physics.get(other).data;

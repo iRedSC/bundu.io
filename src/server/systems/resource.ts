@@ -12,7 +12,7 @@ export class ResourceSystem extends System {
         this.listen("hurt", this.hit.bind(this));
     }
 
-    hit(object: GameObject, source: GameObject) {
+    hit(object: GameObject, { source }: { source: GameObject }) {
         const data = PlayerData.get(source)?.data;
         const config = ResourceConfig.get(object)?.data;
         if (!(data && config)) {

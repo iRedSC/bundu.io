@@ -204,7 +204,7 @@ export class World {
 
                 const interval = 1000 / system.tps;
                 if (elapsed < interval) {
-                    return;
+                    continue;
                 }
                 objectLastUpdateRT?.set(system.id, now - (elapsed % interval));
                 objectLastUpdateGT?.set(system.id, this.gameTime);

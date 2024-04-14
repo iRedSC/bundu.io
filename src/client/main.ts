@@ -157,11 +157,15 @@ health.start(animationManager);
 hunger.start(animationManager);
 heat.start(animationManager);
 
-setInterval(() => {
-    health.update(random.integer(health.min, health.max), animationManager);
-    hunger.update(random.integer(hunger.min, hunger.max), animationManager);
-    heat.update(random.integer(heat.min, heat.max), animationManager);
-}, 1000);
+packetPipeline.unpackers[PACKET_TYPE.UPDATE_STATS] = new Unpacker(
+    (packet: ServerPacketSchema.updateStats) => {
+        console.log(packet);
+        health.update(packet[0], animationManager);
+        hunger.update(packet[1], animationManager);
+        heat.update(packet[2], animationManager);
+    },
+    ServerPacketSchema.updateStats
+);
 
 craftingMenu.setCallback((item: number) => {
     socket.send([CLIENT_PACKET_TYPE.CRAFT_ITEM, item]);
@@ -182,7 +186,7 @@ packetPipeline.unpackers[PACKET_TYPE.UPDATE_INVENTORY] = new Unpacker(
 );
 
 inventory.callback = (item: number) => {
-    socket.send([CLIENT_PACKET_TYPE.SELECT_ITEM, item]);
+    socket.send([CLIENT_PACKET_TYPE.DROP_ITEM, [item, false]]);
 };
 
 app.stage.addChild(ui);

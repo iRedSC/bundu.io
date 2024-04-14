@@ -60,6 +60,7 @@ export class PlayerSystem extends System implements PlayerController {
             [PACKET_TYPE.LOAD_GROUND],
         ]);
         send(data.socket, packCraftingList());
+        this.trigger("health_update", player.id);
     }
 
     // Sets selected player's moveDir property.
@@ -142,5 +143,13 @@ export class PlayerSystem extends System implements PlayerController {
             return;
         }
         this.trigger("send_chat", player.id, message);
+    }
+
+    dropItem(playerId: number, itemId: number, all: boolean) {
+        const player = this.world.getObject(playerId);
+        if (!player) {
+            return;
+        }
+        this.trigger("spawn_item", player.id, itemId);
     }
 }

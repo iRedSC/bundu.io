@@ -15,6 +15,7 @@ export enum PACKET_TYPE {
     STARTING_INFO = 0x10,
     DRAW_POLYGON = 0x11,
     CHAT_MESSAGE = 0x12,
+    UPDATE_STATS = 0x13,
 
     // SET_TIME = 600,
 }
@@ -81,6 +82,13 @@ export namespace ServerPacketSchema {
         z.boolean(), //stop
     ]);
     export type action = z.infer<typeof action>;
+
+    export const updateStats = z.tuple([
+        z.number(), // health
+        z.number(), // hunger
+        z.number(), // heat
+    ]);
+    export type updateStats = z.infer<typeof updateStats>;
 
     export const startingInfo = z.tuple([
         z.number(), // player's id
@@ -186,6 +194,7 @@ export enum CLIENT_PACKET_TYPE {
     SELECT_ITEM = 0x06,
     CRAFT_ITEM = 0x07,
     CHAT_MESSAGE = 0x08,
+    DROP_ITEM = 0x09,
 }
 
 export enum CLIENT_ACTION {
@@ -228,4 +237,10 @@ export namespace ClientPacketSchema {
 
     export const chatMessage = z.string();
     export type chatMessage = z.infer<typeof chatMessage>;
+
+    export const dropItem = z.tuple([
+        z.number(), // item id
+        z.boolean(), // drop all?
+    ]);
+    export type dropItem = z.infer<typeof dropItem>;
 }

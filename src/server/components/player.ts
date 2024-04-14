@@ -1,4 +1,3 @@
-import { intersection } from "../../lib/set_transforms.js";
 import { Component } from "../game_engine/component.js";
 import { GameWS } from "../network/websockets.js";
 
