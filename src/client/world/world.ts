@@ -298,8 +298,8 @@ export class World {
         const player = this.objects.get(this.user);
         if (player) {
             const range: [BasicPoint, BasicPoint] = [
-                { x: player.position.x - 15000, y: player.position.y - 8000 },
-                { x: player.position.x + 15000, y: player.position.y + 8000 },
+                { x: player.position.x - 17000, y: player.position.y - 10000 },
+                { x: player.position.x + 17000, y: player.position.y + 10000 },
             ];
             const query = this.quadtree.query(range);
             for (const object of this.objects.values()) {
