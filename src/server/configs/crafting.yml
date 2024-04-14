@@ -363,7 +363,7 @@ backpack:
 
 bandage:
     score: 75
-    duration:  2000 
+    duration: 2000
     ingredients:
         cloth: 1
         honey: 1
@@ -446,7 +446,7 @@ coat:
 #Walls
 
 wood_wall:
-    score: 15  
+    score: 15
     duration: 2000
     ingredients:
         wood: 25
@@ -575,7 +575,6 @@ gold_spike:
         gold: 50
         stone: 45
 
-
     flags:
         - near_anvil
 
@@ -627,7 +626,7 @@ fire_small:
     duration: 3000
     ingredients:
         wood: 15
-        stone : 5
+        stone: 5
 
 fire_big:
     score: 150
@@ -636,7 +635,7 @@ fire_big:
         wood: 35
         stone: 15
 
-fire_pit: 
+fire_pit:
     score: 200
     duration: 8000
     ingredients:
@@ -646,8 +645,8 @@ fire_pit:
     flags:
         - near_crafting_table
 
-quick_wood_wall: 
-    score:  25
+quick_wood_wall:
+    score: 25
     duration: 1000
     ingredients:
         wood: 20
@@ -688,9 +687,9 @@ meat_cooked:
     duration: 2000
     ingredients:
         meat: 1
-    
+
     flags:
-     - near_fire
+        - near_fire
 
 miracle_fruit:
     score: 200
@@ -707,9 +706,9 @@ tooth:
     duration: 6000
     ingredients:
         elephant_tusk: 1
-    
+
     flags:
-     - near_crafting_table
+        - near_crafting_table
 
 bird_skull:
     score: 2000
@@ -720,10 +719,10 @@ bird_skull:
         pitch: 8
         deer_hide: 6
         meat: 10
-    
+
     flags:
-     - near_crafting_table
-     - near_fire
+        - near_crafting_table
+        - near_fire
 
 repair_hammer:
     score: 500
@@ -732,7 +731,7 @@ repair_hammer:
     ingredients:
         stone: 50
         wood: 75
-    
+
     flags:
-     - near_crafting_table
-     - near_anvil
+        - near_crafting_table
+        - near_anvil

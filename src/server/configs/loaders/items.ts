@@ -1,24 +1,28 @@
 import { __dirname } from "./id_map.js";
 import { Component } from "../../game_engine/component.js";
 import { mergeObjects } from "../../../lib/object_utils.js";
+import { z } from "zod";
 
-export type itemConfigData = {
-    type: string;
-    attack_damage: number;
+export const ItemConfigData = z
+    .object({
+        type: z.string(),
+        attack_damage: z.number(),
 
-    block: number;
-    defense: number;
+        block: z.number(),
+        defense: z.number(),
 
-    level: number;
-    repair: number;
+        level: z.number(),
+        repair: z.number(),
 
-    eat_heal: number;
-    eat_damage: number;
-    food: number;
+        eat_heal: z.number(),
+        eat_damage: z.number(),
+        food: z.number(),
 
-    warmth: number;
-    insulation: number;
-};
+        warmth: z.number(),
+        insulation: z.number(),
+    })
+    .partial();
+export type ItemConfigData = z.infer<typeof ItemConfigData>;
 
 export type ItemConfig = {
     id: number;
@@ -55,7 +59,7 @@ const defaultItemConfig: ItemConfig = {
     insulation: 0,
 };
 
-export function createItemConfig(id: number, data: Partial<itemConfigData>) {
+export function createItemConfig(id: number, data: ItemConfigData) {
     const config = mergeObjects<ItemConfig>(
         undefined,
         { id: id, ...data },

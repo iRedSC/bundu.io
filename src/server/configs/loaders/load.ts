@@ -12,7 +12,7 @@ import {
     createEntityConfig,
     entityConfigData,
 } from "./entity.js";
-import { ItemConfig, createItemConfig, itemConfigData } from "./items.js";
+import { ItemConfig, createItemConfig, ItemConfigData } from "./items.js";
 import { mergeObjs } from "../../../lib/object_utils.js";
 import { ItemType } from "./item_type.js";
 
@@ -43,7 +43,7 @@ export const resourceConfigs = createConfigMap<
     Component<ResourceConfig>
 >(_resourceConfigData, createResourceConfig);
 
-type RawItemConfig = { [key: string]: itemConfigData };
+type RawItemConfig = { [key: string]: ItemConfigData };
 const _itemConfigData: RawItemConfig = mergeObjs(
     yaml.parse(fs.readFileSync(`${__dirname}/consumable.yml`, "utf8")),
     yaml.parse(fs.readFileSync(`${__dirname}/main_hand.yml`, "utf8")),

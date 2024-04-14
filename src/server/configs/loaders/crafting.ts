@@ -3,12 +3,17 @@ import yaml from "yaml";
 import { idMap, __dirname } from "./id_map.js";
 import { flagMap } from "./flag_map.js";
 import { PACKET_TYPE } from "../../../shared/enums.js";
+import { z } from "zod";
 
-type craftingRecipeData = {
-    duration: number;
-    ingredients: { [key: string]: number };
-    flags: string[];
-};
+const CraftingRecipeData = z.object({
+    duration: z.number(),
+    ingredients: z.record(z.string(), z.number()),
+    flags: z.string().array().nullish(),
+});
+type CraftingRecipeData = z.infer<typeof CraftingRecipeData>;
+
+const CraftingConfigSchema = z.record(z.string(), CraftingRecipeData);
+type CraftingConfigSchema = z.infer<typeof CraftingConfigSchema>;
 
 export class CraftingRecipe {
     id: number;
@@ -16,7 +21,7 @@ export class CraftingRecipe {
     ingredients: Map<number, number>;
     flags: number[];
 
-    constructor(id: number, data: Partial<craftingRecipeData>) {
+    constructor(id: number, data: Partial<CraftingRecipeData>) {
         this.id = id;
         this.duration = data.duration || 0;
 
@@ -47,8 +52,8 @@ export class CraftingRecipe {
     }
 }
 
-const _craftingRecipeData: { [key: string]: craftingRecipeData } = yaml.parse(
-    fs.readFileSync(`${__dirname}/crafting.yml`, "utf8")
+const _craftingRecipeData: CraftingConfigSchema = CraftingConfigSchema.parse(
+    yaml.parse(fs.readFileSync(`${__dirname}/crafting.yml`, "utf8"))
 );
 export const craftingList: Map<number, CraftingRecipe> = new Map();
 
