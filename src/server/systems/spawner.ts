@@ -5,6 +5,7 @@ import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import { GroundItem } from "../game_objects/ground_item.js";
 import SAT from "sat";
+import { SpawnItemEvent } from "./events.js";
 
 export class SpawnerSystem extends System {
     constructor() {
@@ -13,7 +14,7 @@ export class SpawnerSystem extends System {
         this.listen("spawn_item", this.spawnItem.bind(this), [Physics]);
     }
 
-    spawnItem(origin: GameObject, itemId: number) {
+    spawnItem(origin: GameObject, { id, amount }: SpawnItemEvent) {
         const physics = Physics.get(origin).data;
 
         const spawnPos = physics.position.clone();
@@ -25,11 +26,10 @@ export class SpawnerSystem extends System {
             solid: false,
             speed: 0,
         };
-        const itemType = { id: itemId };
+        const itemType = { id: id, amount: amount };
 
         const item = new GroundItem(itemPhysics, itemType);
 
-        console.log("spawning item " + itemId);
         this.world.addObject(item);
     }
 }

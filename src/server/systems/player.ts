@@ -150,6 +150,6 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        this.trigger("spawn_item", player.id, itemId);
+        this.trigger("spawn_item", player.id, { id: itemId, amount: 10000 });
     }
 }

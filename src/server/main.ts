@@ -28,6 +28,7 @@ import { ResourceSystem } from "./systems/resource.js";
 import { CraftingSystem } from "./systems/crafting.js";
 import { HealthSystem } from "./systems/health.js";
 import { SpawnerSystem } from "./systems/spawner.js";
+import { GroundItemSystem } from "./systems/ground_item.js";
 
 Logger.useDefaults();
 
@@ -52,7 +53,8 @@ world
     .addSystem(new ResourceSystem())
     .addSystem(new CraftingSystem())
     .addSystem(new HealthSystem())
-    .addSystem(new SpawnerSystem());
+    .addSystem(new SpawnerSystem())
+    .addSystem(new GroundItemSystem());
 
 const ground: GroundData = {
     collider: new SAT.Box(new SAT.Vector(1000, 1000), 15000, 15000),
@@ -96,7 +98,7 @@ pipeline.unpackers[CLIENT_PACKET_TYPE.JOIN] = new Unpacker(
         const collider = new SAT.Circle(position, size);
 
         const player = new Player(
-            { position, collider, size, solid: true, rotation: 0, speed: 10 },
+            { position, collider, size, solid: false, rotation: 0, speed: 10 },
             {
                 socket: socket,
                 name: packet[0],

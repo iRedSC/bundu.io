@@ -35,3 +35,9 @@ export const GroundData = Component.register<GroundData>();
 
 export type Flags = Set<number>;
 export const Flags = Component.register<Flags>();
+
+export type GroundItemData = {
+    id: number;
+    amount: number;
+};
+export const GroundItemData = Component.register<GroundItemData>();

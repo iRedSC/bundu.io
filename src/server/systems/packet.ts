@@ -26,6 +26,7 @@ export class PacketSystem extends System {
         this.listen("send_object_updates", this.sendUpdatedObjects.bind(this), [
             PlayerData,
         ]);
+        this.listen("delete_object", this.deleteObject.bind(this));
 
         this.listen("update_inventory", this.sendInventory.bind(this), [
             PlayerData,
@@ -68,6 +69,16 @@ export class PacketSystem extends System {
 
     rotateObject(object: GameObject) {
         updateHandler.add(object, [PACKET_TYPE.ROTATE_OBJECT]);
+    }
+    deleteObject(object: GameObject) {
+        const players = this.world.query([PlayerData.id]);
+        for (const player of players) {
+            const data = PlayerData.get(player)?.data;
+            if (!data) {
+                continue;
+            }
+            send(data.socket, [PACKET_TYPE.DELETE_OBJECT, object.id]);
+        }
     }
 
     blocking(object: GameObject, stop: boolean) {

@@ -26,7 +26,7 @@ export class InventoryButton extends ItemButton {
         super();
         this.amount = new PIXI.Text("", TEXT_STYLE);
         this.amount.position.set(55, 65);
-        this.amount.scale.set(0.75);
+        this.amount.scale.set(0.4);
         this.amount.anchor.set(1, 0.5);
         this.amount.zIndex = 2;
         this.selected = false;
@@ -87,11 +87,15 @@ export class Inventory {
     }
 
     update(update: ServerPacketSchema.updateInventory) {
+        console.log(this.slots);
         this.display.slotCount(update[0]);
 
         for (const [id, amount] of update[1]) {
             let exists = false;
             for (const item of this.slots) {
+                if (item === undefined) {
+                    this.slots.splice(this.slots.indexOf(item), 1);
+                }
                 if (item[0] === id) {
                     item[1] = amount;
                     exists = true;

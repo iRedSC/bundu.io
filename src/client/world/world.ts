@@ -59,7 +59,7 @@ export class World {
         this.dynamicObjs = new Map();
         this.updatingObjs = new Map();
 
-        this.quadtree = new Quadtree(new Map(), mapBounds, 10);
+        this.quadtree = new Quadtree(new Map(), mapBounds, 100);
 
         this.names = {
             container: new PIXI.Container(),
@@ -218,7 +218,7 @@ export class World {
     }
 
     deleteObject(packet: ServerPacketSchema.deleteObject) {
-        const id = packet[0];
+        const id = packet;
         const object = this.objects.get(id);
         if (object) {
             this.quadtree.delete(id);

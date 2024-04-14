@@ -196,6 +196,7 @@ class InternalQuadtree {
     insert(id: number, objectList: QuadtreeObjectList): boolean {
         const position = objectList.get(id);
         if (!position) {
+            console.error("CANNOT ADD OBJECT " + id + " TO TREE");
             return false;
         }
         if (!this.bounds.contains(position)) {

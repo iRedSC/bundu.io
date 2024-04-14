@@ -115,9 +115,7 @@ export namespace ServerPacketSchema {
     ]);
     export type rotateObject = z.infer<typeof rotateObject>;
 
-    export const deleteObject = z.tuple([
-        z.number(), // id
-    ]);
+    export const deleteObject = z.number(); // id
     export type deleteObject = z.infer<typeof deleteObject>;
 
     export const loadGround = z.tuple([
