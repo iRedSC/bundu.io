@@ -2,6 +2,7 @@ import { Inventory, PlayerData } from "../components/player.js";
 import { itemConfigs, itemTypes } from "../configs/loaders/load.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
+import { DropItemEvent } from "./events.js";
 
 export class InventorySystem extends System {
     constructor() {
@@ -12,6 +13,7 @@ export class InventorySystem extends System {
             Inventory,
             PlayerData,
         ]);
+        this.listen("drop_item", this.dropItem.bind(this), [Inventory]);
     }
 
     giveItems(object: GameObject, items: [number, number][]) {
@@ -58,5 +60,21 @@ export class InventorySystem extends System {
             data.helmet || -1,
             data.backpack || -1,
         ]);
+    }
+
+    dropItem(object: GameObject, { id, all }: DropItemEvent) {
+        const inventory = Inventory.get(object).data;
+        if (!inventory.items.has(id)) {
+            return;
+        }
+        const amount = inventory.items.get(id)!;
+        if (all || amount - 1 === 0) {
+            inventory.items.delete(id);
+            this.trigger("spawn_item", object.id, { id: id, amount: amount });
+        } else {
+            inventory.items.set(id, amount - 1);
+            this.trigger("spawn_item", object.id, { id: id, amount: 1 });
+        }
+        this.trigger("update_inventory", object.id);
     }
 }

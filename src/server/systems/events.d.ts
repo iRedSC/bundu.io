@@ -9,3 +9,8 @@ export type SpawnItemEvent = {
     id: number;
     amount: number;
 };
+
+export type DropItemEvent = {
+    id: number;
+    all: boolean;
+};
