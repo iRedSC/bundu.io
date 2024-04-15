@@ -7,7 +7,7 @@ import {
     PACKET_TYPE,
     ServerPacketSchema,
 } from "../shared/enums";
-import { PacketPipeline, Unpacker } from "../shared/unpack";
+import { PacketParser } from "../shared/unpack";
 import { createPipeline } from "./network/packet_pipline";
 import { debugContainer, drawPolygon } from "./rendering/debug";
 import { round } from "../lib/math";
@@ -19,7 +19,6 @@ import { createViewport } from "./rendering/viewport";
 import { AnimationManager } from "../lib/animations";
 import { createUI } from "./ui/ui";
 import { SocketHandler } from "./network/socket_handler";
-import random from "../lib/random";
 
 export const animationManager = new AnimationManager();
 
@@ -41,9 +40,9 @@ debugContainer.zIndex = 1000;
 viewport.sortChildren();
 
 // create a packet pipeline and world
-const packetPipeline = new PacketPipeline();
+const parser = new PacketParser();
 const world = new World(viewport, animationManager);
-createPipeline(packetPipeline, world);
+createPipeline(parser, world);
 
 // list of ids that the server sent updates for but the client doesn't have
 export let requestIds: number[] = [];
@@ -61,18 +60,20 @@ socket.onopen = () => {
 socket.onmessage = async (ev) => {
     const data = await decodeFromBlob(ev.data);
     // console.log(Date.now(), data);
-    packetPipeline.unpack(data);
+    parser.unpack(data);
 };
 
 // add some packets to the unpacker
-packetPipeline.unpackers[PACKET_TYPE.PING] = new Unpacker(
-    (_: ServerPacketSchema.ping) => {},
-    ServerPacketSchema.ping
+parser.set(
+    PACKET_TYPE.PING,
+    ServerPacketSchema.ping,
+    (_: ServerPacketSchema.ping) => {}
 );
 
-packetPipeline.unpackers[PACKET_TYPE.DRAW_POLYGON] = new Unpacker(
-    drawPolygon,
-    ServerPacketSchema.drawPolygon
+parser.set(
+    PACKET_TYPE.DRAW_POLYGON,
+    ServerPacketSchema.drawPolygon,
+    drawPolygon
 );
 
 // tick updates
@@ -157,14 +158,15 @@ health.start(animationManager);
 hunger.start(animationManager);
 heat.start(animationManager);
 
-packetPipeline.unpackers[PACKET_TYPE.UPDATE_STATS] = new Unpacker(
+parser.set(
+    PACKET_TYPE.UPDATE_STATS,
+    ServerPacketSchema.updateStats,
     (packet: ServerPacketSchema.updateStats) => {
         console.log(packet);
         health.update(packet[0], animationManager);
         hunger.update(packet[1], animationManager);
         heat.update(packet[2], animationManager);
-    },
-    ServerPacketSchema.updateStats
+    }
 );
 
 const craftItemCB = (item: number) => {
@@ -173,18 +175,20 @@ const craftItemCB = (item: number) => {
 
 craftingMenu.setCallbacks(craftItemCB, craftItemCB);
 
-packetPipeline.unpackers[PACKET_TYPE.CRAFTING_RECIPES] = new Unpacker(
-    recipeManager.updateRecipes.bind(recipeManager),
-    ServerPacketSchema.craftingRecipes
+parser.set(
+    PACKET_TYPE.CRAFTING_RECIPES,
+    ServerPacketSchema.craftingRecipes,
+    recipeManager.updateRecipes.bind(recipeManager)
 );
 
-packetPipeline.unpackers[PACKET_TYPE.UPDATE_INVENTORY] = new Unpacker(
-    (packet) => {
+parser.set(
+    PACKET_TYPE.UPDATE_INVENTORY,
+    ServerPacketSchema.updateInventory,
+    (packet: ServerPacketSchema.updateInventory) => {
         inventory.update(packet);
         craftingMenu.items = recipeManager.filter(inventory.slots, []);
         craftingMenu.update();
-    },
-    ServerPacketSchema.updateInventory
+    }
 );
 
 const inventoryLeftClickCB = (item: number) => {

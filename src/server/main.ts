@@ -13,7 +13,6 @@ import {
     ClientPacketSchema,
     PACKET_TYPE,
 } from "../shared/enums.js";
-import { Unpacker } from "../shared/unpack.js";
 import { Player } from "./game_objects/player.js";
 import random from "../lib/random.js";
 import { VisibleObjects } from "./components/player.js";
@@ -36,7 +35,7 @@ const world = new World();
 
 const positionSystem = new PositionSystem();
 const playerSystem = new PlayerSystem();
-const pipeline = createPacketPipeline(playerSystem);
+const parser = createPacketPipeline(playerSystem);
 
 const packetSystem = new PacketSystem();
 const collisionSystem = new CollisionSystem();
@@ -73,7 +72,7 @@ const players = new Map<number, GameObject>();
 
 controller.connect = (socket: GameWS) => {};
 controller.message = (socket: GameWS, message: unknown) => {
-    pipeline.unpack(message, socket.id);
+    parser.unpack(message, socket.id);
 };
 controller.disconnect = (socket: GameWS) => {
     const player = players.get(socket.id!);
@@ -84,7 +83,9 @@ controller.disconnect = (socket: GameWS) => {
     players.delete(socket.id!);
 };
 
-pipeline.unpackers[CLIENT_PACKET_TYPE.JOIN] = new Unpacker(
+parser.set(
+    CLIENT_PACKET_TYPE.JOIN,
+    ClientPacketSchema.join,
     (packet: ClientPacketSchema.join, id: number) => {
         const socket = controller.sockets.get(id);
         if (!socket) {
@@ -114,8 +115,7 @@ pipeline.unpackers[CLIENT_PACKET_TYPE.JOIN] = new Unpacker(
         players.set(player.id, player);
         world.addObject(player);
         send(socket, [PACKET_TYPE.STARTING_INFO, [player.id]]);
-    },
-    ClientPacketSchema.join
+    }
 );
 
 // * Check memory usage, could be put in a better spot.

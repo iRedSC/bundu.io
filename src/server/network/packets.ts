@@ -4,31 +4,35 @@ import {
     CLIENT_PACKET_TYPE,
     ClientPacketSchema,
 } from "../../shared/enums.js";
-import { PacketPipeline, Unpacker } from "../../shared/unpack.js";
+import { PacketParser } from "../../shared/unpack.js";
 import { PlayerController } from "../systems/player_controller.js";
 
 export function createPacketPipeline(controller: PlayerController) {
-    const packets = new PacketPipeline();
-    packets.unpackers[CLIENT_PACKET_TYPE.PING] = new Unpacker(() => {},
-    ClientPacketSchema.ping);
+    const parser = new PacketParser();
 
-    packets.unpackers[CLIENT_PACKET_TYPE.MOVE_UPDATE] = new Unpacker(
+    parser.set(CLIENT_PACKET_TYPE.PING, ClientPacketSchema.ping, () => {});
+
+    parser.set(
+        CLIENT_PACKET_TYPE.MOVE_UPDATE,
+        ClientPacketSchema.moveUpdate,
         (byte: ClientPacketSchema.moveUpdate, id: number) => {
             byte--;
             const y = (byte & 0b11) - 1;
             const x = ((byte >> 2) & 0b11) - 1;
             controller.move?.call(controller, id, x, y);
-        },
-        ClientPacketSchema.moveUpdate
+        }
     );
 
-    packets.unpackers[CLIENT_PACKET_TYPE.ROTATE] = new Unpacker(
+    parser.set(
+        CLIENT_PACKET_TYPE.ROTATE,
+        ClientPacketSchema.rotate,
         (rotation: ClientPacketSchema.rotate, id: number) => {
             controller.rotate?.call(controller, id, radians(rotation));
-        },
-        ClientPacketSchema.rotate
+        }
     );
-    packets.unpackers[CLIENT_PACKET_TYPE.ACTION] = new Unpacker(
+    parser.set(
+        CLIENT_PACKET_TYPE.ACTION,
+        ClientPacketSchema.action,
         (packet: ClientPacketSchema.action, id: number) => {
             switch (packet[0]) {
                 case CLIENT_ACTION.ATTACK:
@@ -38,43 +42,47 @@ export function createPacketPipeline(controller: PlayerController) {
                     controller.block?.call(controller, id, packet[1]);
                     break;
             }
-        },
-        ClientPacketSchema.action
+        }
     );
 
-    packets.unpackers[CLIENT_PACKET_TYPE.REQUEST_OBJECT] = new Unpacker(
+    parser.set(
+        CLIENT_PACKET_TYPE.REQUEST_OBJECT,
+        ClientPacketSchema.requestObjects,
         (packet: ClientPacketSchema.requestObjects, id: number) => {
             controller.requestObjects?.call(controller, id, packet);
-        },
-        ClientPacketSchema.requestObjects
+        }
     );
 
-    packets.unpackers[CLIENT_PACKET_TYPE.SELECT_ITEM] = new Unpacker(
+    parser.set(
+        CLIENT_PACKET_TYPE.SELECT_ITEM,
+        ClientPacketSchema.selectItem,
         (packet: ClientPacketSchema.selectItem, id: number) => {
             controller.selectItem?.call(controller, id, packet);
-        },
-        ClientPacketSchema.selectItem
+        }
     );
 
-    packets.unpackers[CLIENT_PACKET_TYPE.CRAFT_ITEM] = new Unpacker(
+    parser.set(
+        CLIENT_PACKET_TYPE.CRAFT_ITEM,
+        ClientPacketSchema.craftItem,
         (packet: ClientPacketSchema.craftItem, id: number) => {
             controller.craftItem?.call(controller, id, packet);
-        },
-        ClientPacketSchema.craftItem
+        }
     );
 
-    packets.unpackers[CLIENT_PACKET_TYPE.CHAT_MESSAGE] = new Unpacker(
+    parser.set(
+        CLIENT_PACKET_TYPE.CHAT_MESSAGE,
+        ClientPacketSchema.chatMessage,
         (packet: ClientPacketSchema.chatMessage, id: number) => {
             controller.chatMessage?.call(controller, id, packet);
-        },
-        ClientPacketSchema.chatMessage
+        }
     );
 
-    packets.unpackers[CLIENT_PACKET_TYPE.DROP_ITEM] = new Unpacker(
+    parser.set(
+        CLIENT_PACKET_TYPE.DROP_ITEM,
+        ClientPacketSchema.dropItem,
         (packet: ClientPacketSchema.dropItem, id: number) => {
             controller.dropItem?.call(controller, id, packet[0], packet[1]);
-        },
-        ClientPacketSchema.dropItem
+        }
     );
-    return packets;
+    return parser;
 }

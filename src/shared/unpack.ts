@@ -3,14 +3,18 @@ import Logger from "js-logger";
 
 const logger = Logger.get("Packet");
 
-export class PacketPipeline {
-    unpackers: { [key: number]: Unpacker };
+type Parser = (data: unknown[], ...args: unknown[]) => void;
+
+export class PacketParser {
+    parsers: { [key: number]: Parser };
+    callbacks: { [key: number]: Function };
 
     constructor() {
-        this.unpackers = {};
+        this.parsers = {};
+        this.callbacks = {};
     }
 
-    unpack(packet: unknown, data?: any) {
+    unpack(packet: unknown, ...data: any[]) {
         // find packet id
         if (!(packet instanceof Array)) {
             logger.error(`Packet ${packet} is not an array.`);
@@ -23,40 +27,40 @@ export class PacketPipeline {
         }
 
         // find unpacker linked to packet id
-        const unpacker = this.unpackers[id];
-        if (!unpacker) {
+        const parser = this.parsers[id];
+        if (!parser) {
             return;
         }
         // feed packet data to unpacker
-        unpacker.unpack(packet.slice(1), data);
-    }
-}
-
-type UnpackerCallback<T> = (packet: T, data: any) => void;
-export class Unpacker {
-    callback: Function;
-    guard: ZodTypeAny;
-
-    constructor(callback: UnpackerCallback<any>, guard: ZodTypeAny) {
-        this.guard = guard;
-        this.callback = callback;
+        parser(packet.slice(1), ...data);
     }
 
-    unpack(data: unknown[], playerId?: number) {
-        const packet = data[0];
-
-        if (!packet) {
-            return;
-        }
-        const parsedPacket = this.guard.safeParse(packet);
-        if (parsedPacket.success === true) {
-            this.callback(parsedPacket.data, playerId);
+    set(id: number, guard: ZodTypeAny, callback?: Function) {
+        if (callback === undefined) {
+            callback = this.callbacks[id];
         } else {
-            console.error(packet);
-            console.error(parsedPacket.error.message);
+            this.callbacks[id] = callback;
         }
-        if (!playerId && data.length > 0) {
-            this.unpack(data.slice(1));
+        function parser(data: unknown[], ...args: unknown[]) {
+            const packet = data[0];
+
+            if (!packet) {
+                return;
+            }
+            const parsedPacket = guard.safeParse(packet);
+
+            if (parsedPacket.success === true) {
+                if (callback) {
+                    callback(packet, ...args);
+                }
+            } else {
+                console.error(packet);
+                console.error(parsedPacket.error.message);
+            }
+            if (data.length > 0) {
+                parser(data.slice(1), ...args);
+            }
         }
+        this.parsers[id] = parser;
     }
 }

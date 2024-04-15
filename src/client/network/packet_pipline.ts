@@ -4,69 +4,81 @@ import {
     PACKET_TYPE,
     ServerPacketSchema,
 } from "../../shared/enums";
-import { PacketPipeline, Unpacker } from "../../shared/unpack";
+import { PacketParser } from "../../shared/unpack";
 import { World } from "../world/world";
 
-export function createPipeline(packetPipeline: PacketPipeline, world: World) {
-    const newObjectPipeline = new PacketPipeline();
+export function createPipeline(packetPipeline: PacketParser, world: World) {
+    const newObjectPipeline = new PacketParser();
 
-    packetPipeline.unpackers[PACKET_TYPE.MOVE_OBJECT] = new Unpacker(
-        world.moveObject.bind(world),
-        ServerPacketSchema.moveObject
+    packetPipeline.set(
+        PACKET_TYPE.MOVE_OBJECT,
+        ServerPacketSchema.moveObject,
+        world.moveObject.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.ROTATE_OBJECT] = new Unpacker(
-        world.rotateObject.bind(world),
-        ServerPacketSchema.rotateObject
+    packetPipeline.set(
+        PACKET_TYPE.ROTATE_OBJECT,
+        ServerPacketSchema.rotateObject,
+        world.rotateObject.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.DELETE_OBJECT] = new Unpacker(
-        world.deleteObject.bind(world),
-        ServerPacketSchema.deleteObject
+    packetPipeline.set(
+        PACKET_TYPE.DELETE_OBJECT,
+        ServerPacketSchema.deleteObject,
+        world.deleteObject.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.NEW_OBJECT] = new Unpacker(
-        newObjectPipeline.unpack.bind(newObjectPipeline),
-        ServerPacketSchema.newObject
+    packetPipeline.set(
+        PACKET_TYPE.NEW_OBJECT,
+        ServerPacketSchema.newObject,
+        newObjectPipeline.unpack.bind(newObjectPipeline)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.LOAD_GROUND] = new Unpacker(
-        world.loadGround.bind(world),
-        ServerPacketSchema.loadGround
+    packetPipeline.set(
+        PACKET_TYPE.LOAD_GROUND,
+        ServerPacketSchema.loadGround,
+        world.loadGround.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.STARTING_INFO] = new Unpacker(
-        world.setPlayer.bind(world),
-        ServerPacketSchema.startingInfo
+    packetPipeline.set(
+        PACKET_TYPE.STARTING_INFO,
+        ServerPacketSchema.startingInfo,
+        world.setPlayer.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.UPDATE_GEAR] = new Unpacker(
-        world.updateGear.bind(world),
-        ServerPacketSchema.updateGear
+    packetPipeline.set(
+        PACKET_TYPE.UPDATE_GEAR,
+        ServerPacketSchema.updateGear,
+        world.updateGear.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.ACTION] = new Unpacker(
-        world.action.bind(world),
-        ServerPacketSchema.action
+    packetPipeline.set(
+        PACKET_TYPE.ACTION,
+        ServerPacketSchema.action,
+        world.action.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.CHAT_MESSAGE] = new Unpacker(
-        world.chatMessage.bind(world),
-        ServerPacketSchema.chatMessage
+    packetPipeline.set(
+        PACKET_TYPE.CHAT_MESSAGE,
+        ServerPacketSchema.chatMessage,
+        world.chatMessage.bind(world)
     );
 
-    newObjectPipeline.unpackers[OBJECT_CLASS.ENTITY] = new Unpacker(
-        world.newEntity.bind(world),
-        NewObjectSchema.newEntity
+    newObjectPipeline.set(
+        OBJECT_CLASS.ENTITY,
+        NewObjectSchema.newEntity,
+        world.newEntity.bind(world)
     );
 
-    newObjectPipeline.unpackers[OBJECT_CLASS.PLAYER] = new Unpacker(
-        world.newPlayer.bind(world),
-        NewObjectSchema.newPlayer
+    newObjectPipeline.set(
+        OBJECT_CLASS.PLAYER,
+        NewObjectSchema.newPlayer,
+        world.newPlayer.bind(world)
     );
 
-    newObjectPipeline.unpackers[OBJECT_CLASS.STRUCTURE] = new Unpacker(
-        world.newStructure.bind(world),
-        NewObjectSchema.newStructure
+    newObjectPipeline.set(
+        OBJECT_CLASS.STRUCTURE,
+        NewObjectSchema.newStructure,
+        world.newStructure.bind(world)
     );
 }

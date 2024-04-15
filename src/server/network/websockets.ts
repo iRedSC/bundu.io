@@ -1,7 +1,7 @@
 import * as uWS from "uWebSockets.js";
 import Logger from "js-logger";
 import { decode } from "@msgpack/msgpack";
-import { PacketPipeline } from "../../shared/unpack.js";
+import { PacketParser } from "../../shared/unpack.js";
 
 const logger = Logger.get("Network");
 
