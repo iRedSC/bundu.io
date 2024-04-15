@@ -130,6 +130,7 @@ export class World {
             packet[5]
         );
         this.objects.set(structure.id, structure);
+        this.updatingObjs.set(structure.id, structure);
         this.quadtree.insert(structure.id, structure.position);
         this.viewport.addChild(structure.container);
     }
@@ -154,6 +155,7 @@ export class World {
             packet[4]
         );
         entity.states.set([Date.now(), pos.x, pos.y]);
+        this.updatingObjs.set(entity.id, entity);
         this.objects.set(entity.id, entity);
         this.quadtree.insert(entity.id, entity.position);
         this.viewport.addChild(entity.container);
