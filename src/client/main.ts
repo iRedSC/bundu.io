@@ -167,9 +167,11 @@ packetPipeline.unpackers[PACKET_TYPE.UPDATE_STATS] = new Unpacker(
     ServerPacketSchema.updateStats
 );
 
-craftingMenu.setCallback((item: number) => {
+const craftItemCB = (item: number) => {
     socket.send([CLIENT_PACKET_TYPE.CRAFT_ITEM, item]);
-});
+};
+
+craftingMenu.setCallbacks(craftItemCB, craftItemCB);
 
 packetPipeline.unpackers[PACKET_TYPE.CRAFTING_RECIPES] = new Unpacker(
     recipeManager.updateRecipes.bind(recipeManager),
@@ -185,9 +187,15 @@ packetPipeline.unpackers[PACKET_TYPE.UPDATE_INVENTORY] = new Unpacker(
     ServerPacketSchema.updateInventory
 );
 
-inventory.callback = (item: number) => {
-    socket.send([CLIENT_PACKET_TYPE.DROP_ITEM, [item, false]]);
+const inventoryLeftClickCB = (item: number) => {
+    socket.send([CLIENT_PACKET_TYPE.SELECT_ITEM, item]);
 };
+
+const inventoryRightClickCB = (item: number, shift: boolean = false) => {
+    socket.send([CLIENT_PACKET_TYPE.DROP_ITEM, [item, shift]]);
+};
+
+inventory.display.setCallbacks(inventoryLeftClickCB, inventoryRightClickCB);
 
 app.stage.addChild(ui);
 

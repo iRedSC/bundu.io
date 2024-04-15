@@ -14,6 +14,11 @@ export class InventorySystem extends System {
             PlayerData,
         ]);
         this.listen("drop_item", this.dropItem.bind(this), [Inventory]);
+
+        this.listen("update_inventory", this.changed.bind(this), [
+            PlayerData,
+            Inventory,
+        ]);
     }
 
     giveItems(object: GameObject, items: [number, number][]) {
@@ -76,5 +81,32 @@ export class InventorySystem extends System {
             this.trigger("spawn_item", object.id, { id: id, amount: 1 });
         }
         this.trigger("update_inventory", object.id);
+    }
+
+    changed(player: GameObject) {
+        const data = PlayerData.get(player)?.data;
+        const inventory = Inventory.get(player)?.data;
+
+        if (data.mainHand) {
+            if (!inventory.items.has(data.mainHand)) {
+                data.mainHand = -1;
+            }
+        }
+        if (data.offHand) {
+            if (!inventory.items.has(data.offHand)) {
+                data.offHand = -1;
+            }
+        }
+        if (data.helmet) {
+            if (!inventory.items.has(data.helmet)) {
+                data.helmet = -1;
+            }
+        }
+        this.trigger("update_gear", player.id, [
+            data.mainHand || -1,
+            data.offHand || -1,
+            data.helmet || -1,
+            data.backpack || -1,
+        ]);
     }
 }

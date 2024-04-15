@@ -64,7 +64,8 @@ export class CraftingMenu {
     container: PIXI.Container;
     rows: number;
     grid: Grid;
-    private _callback?: Callback;
+    rightclick?: Callback;
+    leftclick?: Callback;
 
     constructor(grid: Grid) {
         this.grid = grid;
@@ -77,31 +78,25 @@ export class CraftingMenu {
         this.container.removeChildren();
         this.buttons = [];
         for (let item of this.items) {
-            const button = new ItemButton(this._callback);
+            const button = new ItemButton();
+            button.rightclick = this.rightclick;
+            button.leftclick = this.leftclick;
             button.setItem(item);
             button.update(0x777777);
-            this.container.addChild(button.button.view);
+            this.container.addChild(button.button);
             this.buttons.push(button);
         }
         this.grid.arrange(this.buttons);
         this.resize();
     }
 
-    setCallback(value: Callback) {
-        this._callback = value;
+    setCallbacks(leftclick?: Callback, rightclick?: Callback) {
+        this.rightclick = rightclick;
+        this.leftclick = leftclick;
         for (const button of this.buttons) {
-            button.setCallback(value);
+            button.rightclick = rightclick;
+            button.leftclick = leftclick;
         }
-    }
-    set callback(value: Callback) {
-        this._callback = value;
-        for (const button of this.buttons) {
-            button.setCallback(value);
-        }
-    }
-
-    get callback(): Callback | undefined {
-        return this._callback;
     }
 
     resize() {
