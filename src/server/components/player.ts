@@ -1,5 +1,5 @@
+import { WebSocket } from "uWebSockets.js";
 import { Component } from "../game_engine/component.js";
-import { GameWS } from "../network/websockets.js";
 
 // update: 7, 1, 5, 2
 
@@ -62,7 +62,7 @@ export class VisibleObjects {
 }
 
 export type PlayerData = {
-    socket: GameWS;
+    socket: WebSocket<any>;
     name: string;
     visibleObjects: VisibleObjects;
 

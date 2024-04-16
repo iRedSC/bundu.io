@@ -1,4 +1,4 @@
-import { GameWS, ServerController } from "./network/websockets.js";
+import { ServerController, SocketManager } from "./network/websockets.js";
 import { World } from "./game_engine/world.js";
 import { round } from "../lib/math.js";
 import Logger from "js-logger";
@@ -28,27 +28,22 @@ import { CraftingSystem } from "./systems/crafting.js";
 import { HealthSystem } from "./systems/health.js";
 import { SpawnerSystem } from "./systems/spawner.js";
 import { GroundItemSystem } from "./systems/ground_item.js";
+import { WebSocket } from "uWebSockets.js";
 
 Logger.useDefaults();
 
 const world = new World();
 
-const positionSystem = new PositionSystem();
 const playerSystem = new PlayerSystem();
 const parser = createPacketPipeline(playerSystem);
 
-const packetSystem = new PacketSystem();
-const collisionSystem = new CollisionSystem();
-const attackSystem = new AttackSystem();
-const inventorySystem = new InventorySystem();
-
 world
-    .addSystem(positionSystem)
     .addSystem(playerSystem)
-    .addSystem(packetSystem)
-    .addSystem(collisionSystem)
-    .addSystem(attackSystem)
-    .addSystem(inventorySystem)
+    .addSystem(new PositionSystem())
+    .addSystem(new PacketSystem())
+    .addSystem(new CollisionSystem())
+    .addSystem(new AttackSystem())
+    .addSystem(new InventorySystem())
     .addSystem(new ResourceSystem())
     .addSystem(new CraftingSystem())
     .addSystem(new HealthSystem())
@@ -70,27 +65,28 @@ controller.start(7777);
 
 const players = new Map<number, GameObject>();
 
-controller.connect = (socket: GameWS) => {};
-controller.message = (socket: GameWS, message: unknown) => {
-    parser.unpack(message, socket.id);
+controller.connect = (socket: WebSocket<any>) => {};
+controller.message = (socket: WebSocket<any>, message: unknown) => {
+    const id = SocketManager.instance.sockets.get(socket);
+    parser.unpack(message, { socket: socket, id: id });
 };
-controller.disconnect = (socket: GameWS) => {
-    const player = players.get(socket.id!);
-    if (!player) {
-        return;
-    }
-    world.removeObject(player);
-    players.delete(socket.id!);
-};
+// controller.disconnect = (socket: WebSocket<any>) => {
+//     const id = SocketManager.instance.sockets.get(socket) || -1;
+//     const player = players.get(id);
+//     if (!player) {
+//         return;
+//     }
+//     world.removeObject(player);
+//     players.delete(id);
+// };
 
 parser.set(
     CLIENT_PACKET_TYPE.JOIN,
     ClientPacketSchema.join,
-    (packet: ClientPacketSchema.join, id: number) => {
-        const socket = controller.sockets.get(id);
-        if (!socket) {
-            return;
-        }
+    (
+        packet: ClientPacketSchema.join,
+        { socket }: { socket: WebSocket<any> }
+    ) => {
         const position = new SAT.Vector(
             random.integer(7000, 8000),
             random.integer(7000, 8000)
@@ -111,7 +107,7 @@ parser.set(
                 moveDir: [0, 0],
             }
         );
-        socket.id = player.id;
+        SocketManager.instance.sockets.set(socket, player.id);
         players.set(player.id, player);
         world.addObject(player);
         send(socket, [PACKET_TYPE.STARTING_INFO, [player.id]]);

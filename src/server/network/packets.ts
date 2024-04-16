@@ -7,6 +7,8 @@ import {
 import { PacketParser } from "../../shared/unpack.js";
 import { PlayerController } from "../systems/player_controller.js";
 
+type PlayerID = { id: number };
+
 export function createPacketPipeline(controller: PlayerController) {
     const parser = new PacketParser();
 
@@ -15,7 +17,7 @@ export function createPacketPipeline(controller: PlayerController) {
     parser.set(
         CLIENT_PACKET_TYPE.MOVE_UPDATE,
         ClientPacketSchema.moveUpdate,
-        (byte: ClientPacketSchema.moveUpdate, id: number) => {
+        (byte: ClientPacketSchema.moveUpdate, { id }: PlayerID) => {
             byte--;
             const y = (byte & 0b11) - 1;
             const x = ((byte >> 2) & 0b11) - 1;
@@ -26,14 +28,14 @@ export function createPacketPipeline(controller: PlayerController) {
     parser.set(
         CLIENT_PACKET_TYPE.ROTATE,
         ClientPacketSchema.rotate,
-        (rotation: ClientPacketSchema.rotate, id: number) => {
+        (rotation: ClientPacketSchema.rotate, { id }: PlayerID) => {
             controller.rotate?.call(controller, id, radians(rotation));
         }
     );
     parser.set(
         CLIENT_PACKET_TYPE.ACTION,
         ClientPacketSchema.action,
-        (packet: ClientPacketSchema.action, id: number) => {
+        (packet: ClientPacketSchema.action, { id }: PlayerID) => {
             switch (packet[0]) {
                 case CLIENT_ACTION.ATTACK:
                     controller.attack?.call(controller, id, packet[1]);
@@ -48,7 +50,7 @@ export function createPacketPipeline(controller: PlayerController) {
     parser.set(
         CLIENT_PACKET_TYPE.REQUEST_OBJECT,
         ClientPacketSchema.requestObjects,
-        (packet: ClientPacketSchema.requestObjects, id: number) => {
+        (packet: ClientPacketSchema.requestObjects, { id }: PlayerID) => {
             controller.requestObjects?.call(controller, id, packet);
         }
     );
@@ -56,7 +58,7 @@ export function createPacketPipeline(controller: PlayerController) {
     parser.set(
         CLIENT_PACKET_TYPE.SELECT_ITEM,
         ClientPacketSchema.selectItem,
-        (packet: ClientPacketSchema.selectItem, id: number) => {
+        (packet: ClientPacketSchema.selectItem, { id }: PlayerID) => {
             controller.selectItem?.call(controller, id, packet);
         }
     );
@@ -64,7 +66,7 @@ export function createPacketPipeline(controller: PlayerController) {
     parser.set(
         CLIENT_PACKET_TYPE.CRAFT_ITEM,
         ClientPacketSchema.craftItem,
-        (packet: ClientPacketSchema.craftItem, id: number) => {
+        (packet: ClientPacketSchema.craftItem, { id }: PlayerID) => {
             controller.craftItem?.call(controller, id, packet);
         }
     );
@@ -72,7 +74,7 @@ export function createPacketPipeline(controller: PlayerController) {
     parser.set(
         CLIENT_PACKET_TYPE.CHAT_MESSAGE,
         ClientPacketSchema.chatMessage,
-        (packet: ClientPacketSchema.chatMessage, id: number) => {
+        (packet: ClientPacketSchema.chatMessage, { id }: PlayerID) => {
             controller.chatMessage?.call(controller, id, packet);
         }
     );
@@ -80,7 +82,7 @@ export function createPacketPipeline(controller: PlayerController) {
     parser.set(
         CLIENT_PACKET_TYPE.DROP_ITEM,
         ClientPacketSchema.dropItem,
-        (packet: ClientPacketSchema.dropItem, id: number) => {
+        (packet: ClientPacketSchema.dropItem, { id }: PlayerID) => {
             controller.dropItem?.call(controller, id, packet[0], packet[1]);
         }
     );

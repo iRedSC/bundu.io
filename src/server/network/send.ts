@@ -7,5 +7,8 @@ interface Socket {
 export function send(socket: Socket, data: any) {
     try {
         socket.send(Buffer.from(msgpack.encode(data)), true);
-    } catch {}
+        return true;
+    } catch {
+        return false;
+    }
 }
