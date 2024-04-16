@@ -3,6 +3,7 @@ import { GameObject } from "../game_engine/game_object.js";
 import { GroundItemData, Physics, Type } from "../components/base.js";
 import { round } from "../../lib/math.js";
 import { degrees } from "../../lib/transforms.js";
+import { Health } from "../components/combat.js";
 
 export class GroundItem extends GameObject {
     constructor(physics: Physics, itemData: GroundItemData) {
@@ -10,6 +11,7 @@ export class GroundItem extends GameObject {
 
         this.add(new Physics(physics));
         this.add(new GroundItemData(itemData));
+        this.add(new Health({ max: 1, value: 1 }));
 
         this.pack[PACKET_TYPE.NEW_OBJECT] = () => {
             const physics = Physics.get(this).data;

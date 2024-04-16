@@ -26,7 +26,6 @@ import { InventorySystem } from "./systems/inventory.js";
 import { ResourceSystem } from "./systems/resource.js";
 import { CraftingSystem } from "./systems/crafting.js";
 import { HealthSystem } from "./systems/health.js";
-import { SpawnerSystem } from "./systems/spawner.js";
 import { GroundItemSystem } from "./systems/ground_item.js";
 import { WebSocket } from "uWebSockets.js";
 
@@ -47,7 +46,6 @@ world
     .addSystem(new ResourceSystem())
     .addSystem(new CraftingSystem())
     .addSystem(new HealthSystem())
-    .addSystem(new SpawnerSystem())
     .addSystem(new GroundItemSystem());
 
 const ground: GroundData = {

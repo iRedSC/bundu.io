@@ -21,11 +21,14 @@ export class HealthSystem extends System {
         }
     }
 
-    hurt(object: GameObject, { damage }: { damage: number }) {
+    hurt(
+        object: GameObject,
+        { source, damage }: { source: GameObject; damage: number }
+    ) {
         const health = Health.get(object).data;
         health.value -= damage;
         if (health.value <= 0) {
-            this.trigger("kill", object.id);
+            this.trigger("kill", object.id, { source });
         }
         this.trigger("health_update", object.id);
     }
