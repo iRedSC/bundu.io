@@ -9,7 +9,7 @@ import { validate } from "../../../shared/type_guard";
 import { ANIMATION, cubicBezier, hurt } from "../../animation/animations";
 import { idMap } from "../../configs/id_map";
 import { Animation, AnimationManager } from "../../../lib/animations";
-import { TEXT_STYLE } from "../../assets/text";
+import { IDContainer } from "./id_container";
 
 const Gear = z.tuple([
     z.number(), // mainHand
@@ -56,17 +56,17 @@ export class Player extends WorldObject {
         super(id, pos, rotation, 15);
         this.sprite = {
             body: {
-                container: new PIXI.Container(),
+                container: new IDContainer(id),
                 sprite: SpriteFactory.build("player"),
                 helmet: SpriteFactory.build(""),
             },
             leftHand: {
-                container: new PIXI.Container(),
+                container: new IDContainer(id),
                 sprite: SpriteFactory.build("hand"),
                 item: SpriteFactory.build(""),
             },
             rightHand: {
-                container: new PIXI.Container(),
+                container: new IDContainer(id),
                 sprite: SpriteFactory.build("hand"),
                 item: SpriteFactory.build(""),
             },

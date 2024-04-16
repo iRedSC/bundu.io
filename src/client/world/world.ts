@@ -228,6 +228,7 @@ export class World {
             this.objects.delete(id);
             this.dynamicObjs.delete(id);
             this.updatingObjs.delete(id);
+            this.animationManager.remove(object);
         }
     }
 

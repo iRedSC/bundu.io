@@ -127,6 +127,10 @@ export class AnimationManager {
         source.set(animation.id, animation);
     }
 
+    remove(target: any) {
+        this.sources.delete(target);
+    }
+
     update() {
         for (let animations of this.sources.values()) {
             for (let [name, animation] of animations.entries()) {

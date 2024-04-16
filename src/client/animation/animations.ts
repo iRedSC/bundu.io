@@ -1,3 +1,14 @@
+export class Animations {
+    private static _instance: Animations;
+
+    static get instance() {
+        if (!Animations._instance) {
+            Animations._instance = new AnimationManager();
+        }
+        return Animations._instance;
+    }
+}
+
 export enum ANIMATION {
     HURT = 100,
     ENTITY_IDLE = 101,
@@ -67,7 +78,7 @@ export const cubicBezier = (
 };
 
 import { ColorSource } from "pixi.js";
-import { Animation } from "../../lib/animations.js";
+import { Animation, AnimationManager } from "../../lib/animations.js";
 import { colorLerp, lerp } from "../../lib/transforms";
 
 type Tintable = { tint: ColorSource };

@@ -7,6 +7,7 @@ import { TEXT_STYLE } from "../../assets/text";
 import { Animation, AnimationManager } from "../../../lib/animations";
 import { States } from "../states";
 import { RotationHandler } from "../rotation";
+import { IDContainer } from "./id_container";
 
 // TODO: There are too many properties related to rotation clogging up the object.
 
@@ -16,7 +17,7 @@ import { RotationHandler } from "../rotation";
  * Separate system for interpolating rotation
  */
 export class WorldObject {
-    container: PIXI.Container;
+    container: IDContainer;
 
     id: number;
 
@@ -30,7 +31,7 @@ export class WorldObject {
     animations: Map<number, Animation>;
 
     constructor(id: number, pos: PIXI.Point, rotation: number, size: number) {
-        this.container = new PIXI.Container();
+        this.container = new IDContainer(id);
 
         this.id = id;
 
@@ -54,6 +55,10 @@ export class WorldObject {
         idText.scale.set(5);
         idText.position = pos;
         this.debug.update("id", idText);
+    }
+
+    containers() {
+        return [this.container];
     }
 
     interpolate() {
