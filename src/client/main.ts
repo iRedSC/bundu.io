@@ -109,7 +109,7 @@ function mouseMoveCallback(mousePos: [number, number]) {
         const rotation =
             lookToward(player.position, mouseToWorld) - radians(90);
         updateTick++;
-        if (Math.abs(player.rotation - rotation) > 0.2 || updateTick > 10) {
+        if (Math.abs(player.rotation - rotation) > 0.1 || updateTick > 5) {
             updateTick = 0;
             socket.send([CLIENT_PACKET_TYPE.ROTATE, round(degrees(rotation))]);
         }

@@ -223,7 +223,7 @@ export class World {
             pos,
             packet[3]
         );
-        player.rotationProperties.duration = 100;
+        player.rotationProperties.duration = 50;
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
 
