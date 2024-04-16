@@ -1,4 +1,3 @@
-import * as PIXI from "pixi.js";
 import { radians, lerp } from "../../../lib/transforms";
 import { spriteConfigs } from "../../configs/sprite_configs";
 import { WorldObject } from "./world_object";
@@ -9,7 +8,7 @@ import { validate } from "../../../shared/type_guard";
 import { ANIMATION, cubicBezier, hurt } from "../../animation/animations";
 import { idMap } from "../../configs/id_map";
 import { Animation, AnimationManager } from "../../../lib/animations";
-import { IDContainer } from "./id_container";
+import { Container, Point, Text } from "pixi.js";
 
 const Gear = z.tuple([
     z.number(), // mainHand
@@ -20,17 +19,17 @@ const Gear = z.tuple([
 type Gear = z.infer<typeof Gear>;
 type PlayerParts = {
     body: {
-        container: PIXI.Container;
+        container: Container;
         sprite: SpriteWrapper;
         helmet: SpriteWrapper;
     };
     leftHand: {
-        container: PIXI.Container;
+        container: Container;
         sprite: SpriteWrapper;
         item: SpriteWrapper;
     };
     rightHand: {
-        container: PIXI.Container;
+        container: Container;
         sprite: SpriteWrapper;
         item: SpriteWrapper;
     };
@@ -38,7 +37,7 @@ type PlayerParts = {
 
 export class Player extends WorldObject {
     sprite: PlayerParts;
-    name: PIXI.Text;
+    name: Text;
 
     mainHand: string;
     offHand: string;
@@ -49,24 +48,24 @@ export class Player extends WorldObject {
     constructor(
         id: number,
         manager: AnimationManager,
-        name: PIXI.Text,
-        pos: PIXI.Point,
+        name: Text,
+        pos: Point,
         rotation: number
     ) {
         super(id, pos, rotation, 15);
         this.sprite = {
             body: {
-                container: new IDContainer(id),
+                container: new Container(),
                 sprite: SpriteFactory.build("player"),
                 helmet: SpriteFactory.build(""),
             },
             leftHand: {
-                container: new IDContainer(id),
+                container: new Container(),
                 sprite: SpriteFactory.build("hand"),
                 item: SpriteFactory.build(""),
             },
             rightHand: {
-                container: new IDContainer(id),
+                container: new Container(),
                 sprite: SpriteFactory.build("hand"),
                 item: SpriteFactory.build(""),
             },
@@ -77,6 +76,7 @@ export class Player extends WorldObject {
 
         this.name.anchor.set(0.5, 2);
         this.name.scale.set(3);
+        this.name.zIndex = 10;
 
         this.offHand = "";
         this.mainHand = "";
@@ -155,9 +155,14 @@ export class Player extends WorldObject {
         };
     }
 
-    interpolate(): void {
-        super.interpolate();
+    get containers(): Container[] {
+        return [this.container, this.name];
+    }
+
+    update(): boolean {
+        const done = super.update();
         this.name.position = this.position;
+        return done;
     }
 
     selectItem({
@@ -239,7 +244,7 @@ export class Player extends WorldObject {
 }
 
 namespace PlayerAnimations {
-    export function idleHands(left: PIXI.Container, right: PIXI.Container) {
+    export function idleHands(left: Container, right: Container) {
         const leftX = left.x;
         const rightX = right.x;
 

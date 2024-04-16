@@ -7,7 +7,6 @@ import {
     ServerPacketSchema,
 } from "../../shared/enums";
 import { Structure } from "./objects/structure";
-import * as PIXI from "pixi.js";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { idMap } from "../configs/id_map";
@@ -19,8 +18,95 @@ import { BasicPoint } from "../../lib/types";
 import { radians } from "../../lib/transforms";
 import { ANIMATION } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
+import { Container, Point, Text } from "pixi.js";
+import { RotationHandler } from "./rotation";
+import { LayeredRenderer } from "./layered_renderer";
+import { States } from "./states";
+interface GameObject {
+    id: number;
 
-// TODO: This place is a freaking mess, needs a little tidying up
+    position: BasicPoint;
+    rotation: number;
+    rotationProperties: RotationHandler;
+    renderable: boolean;
+
+    states: States;
+
+    /**
+     * Update the object.
+     * Returns true if is done updating.
+     */
+    update(): boolean;
+
+    get containers(): Container[];
+}
+
+class ObjectContainer {
+    objects: Map<number, GameObject>;
+    updating: Set<GameObject>;
+    quadtree: Quadtree;
+
+    constructor(bounds: [BasicPoint, BasicPoint]) {
+        this.objects = new Map();
+        this.updating = new Set();
+        this.quadtree = new Quadtree(new Map(), bounds, 100);
+    }
+
+    /**
+     * Add an object to this container.
+     * @param object Object to add to container
+     */
+    add(object: GameObject): void {
+        this.objects.set(object.id, object);
+        this.quadtree.insert(object.id, object.position);
+        this.updating.add(object);
+    }
+
+    /**
+     * Remove an object from this container
+     * @param object Object or ID to remove from container
+     */
+    delete(object: GameObject | number): void {
+        if (typeof object === "number") {
+            const existing = this.objects.get(object);
+            if (!existing) {
+                return;
+            }
+            this.updating.delete(existing);
+            this.quadtree.delete(object);
+            this.objects.delete(object);
+            return;
+        }
+
+        this.updating.delete(object);
+        this.quadtree.delete(object.id);
+        this.objects.delete(object.id);
+    }
+
+    /**
+     * Update objects in the updating set.
+     */
+    update(): void {
+        for (const object of this.updating.values()) {
+            const done = object.update();
+            if (done) {
+                this.updating.delete(object);
+            }
+        }
+    }
+
+    get(id: number) {
+        return this.objects.get(id);
+    }
+
+    query(bounds: [BasicPoint, BasicPoint]) {
+        return this.quadtree.query(bounds);
+    }
+
+    all() {
+        return this.objects.values();
+    }
+}
 
 function scaleCoords(pos: { x: number; y: number }) {
     pos.x *= 10;
@@ -32,16 +118,12 @@ function scaleCoords(pos: { x: number; y: number }) {
 export class World {
     viewport: Viewport;
 
-    names: { container: PIXI.Container; values: Map<number, PIXI.Text> };
     user?: number;
 
     animationManager: AnimationManager;
 
-    objects: Map<number, WorldObject>;
-    dynamicObjs: Map<number, WorldObject>;
-    updatingObjs: Map<number, WorldObject>;
-
-    quadtree: Quadtree;
+    objects: ObjectContainer;
+    renderer: LayeredRenderer;
 
     sky: Sky;
 
@@ -50,45 +132,25 @@ export class World {
         this.sky = new Sky();
         this.animationManager = animationManager;
 
+        this.renderer = new LayeredRenderer();
+
         const mapBounds: [BasicPoint, BasicPoint] = [
             { x: 0, y: 0 },
             { x: 200000, y: 200000 },
         ];
 
-        this.objects = new Map();
-        this.dynamicObjs = new Map();
-        this.updatingObjs = new Map();
+        this.objects = new ObjectContainer(mapBounds);
 
-        this.quadtree = new Quadtree(new Map(), mapBounds, 100);
-
-        this.names = {
-            container: new PIXI.Container(),
-            values: new Map(),
-        };
-        this.viewport.addChild(this.names.container);
-        this.names.container.zIndex = 10;
-        this.viewport.sortChildren();
-
+        this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
+        this.viewport.sortChildren();
 
         setInterval(this.hideOutOfSight.bind(this), 2000);
     }
 
     tick() {
         this.animationManager.update();
-        for (let [id, object] of [
-            ...this.updatingObjs.entries(),
-            ...this.dynamicObjs.entries(),
-        ]) {
-            object.interpolate();
-            const lastState = object.states.values[-1];
-            if (!lastState) {
-                continue;
-            }
-            if (object.states.values[-1][0] < Date.now()) {
-                this.updatingObjs.delete(id);
-            }
-        }
+        this.objects.update();
     }
 
     setPlayer(packet?: ServerPacketSchema.startingInfo) {
@@ -98,13 +160,13 @@ export class World {
         if (!this.user) {
             return;
         }
-        const player = this.dynamicObjs.get(this.user);
+        const player = this.objects.get(this.user);
         if (!player) {
             setTimeout(this.setPlayer.bind(this), 500);
             return;
         }
         player.rotationProperties._interpolate = false;
-        this.viewport.follow(player.container, {
+        this.viewport.follow(player.containers[0], {
             speed: 0,
             acceleration: 1,
             radius: 0,
@@ -113,14 +175,9 @@ export class World {
 
     newStructure(packet: NewObjectSchema.newStructure) {
         const id = packet[0];
-        const existing = this.objects.get(id);
-        if (existing) {
-            this.viewport.removeChild(existing.container);
-            this.dynamicObjs.delete(existing.id);
-            this.updatingObjs.delete(existing.id);
-            this.objects.delete(existing.id);
-        }
-        const pos = new PIXI.Point(packet[1], packet[2]);
+        this.renderer.delete(id);
+
+        const pos = new Point(packet[1], packet[2]);
         scaleCoords(pos);
         const structure = new Structure(
             id,
@@ -129,22 +186,15 @@ export class World {
             packet[3],
             packet[5]
         );
-        this.objects.set(structure.id, structure);
-        this.updatingObjs.set(structure.id, structure);
-        this.quadtree.insert(structure.id, structure.position);
-        this.viewport.addChild(structure.container);
+        this.objects.add(structure);
+        this.renderer.add(structure.id, ...structure.containers);
     }
 
     newEntity(packet: NewObjectSchema.newEntity) {
         const id = packet[0];
-        const existing = this.objects.get(id);
-        if (existing) {
-            this.viewport.removeChild(existing.container);
-            this.dynamicObjs.delete(existing.id);
-            this.updatingObjs.delete(existing.id);
-            this.objects.delete(existing.id);
-        }
-        const pos = new PIXI.Point(packet[1], packet[2]);
+        this.renderer.delete(id);
+
+        const pos = new Point(packet[1], packet[2]);
         scaleCoords(pos);
         const entity = new Entity(
             id,
@@ -155,24 +205,17 @@ export class World {
             packet[4]
         );
         entity.states.set([Date.now(), pos.x, pos.y]);
-        this.updatingObjs.set(entity.id, entity);
-        this.objects.set(entity.id, entity);
-        this.quadtree.insert(entity.id, entity.position);
-        this.viewport.addChild(entity.container);
+        this.objects.add(entity);
+        this.renderer.add(entity.id, ...entity.containers);
     }
 
     newPlayer(packet: NewObjectSchema.newPlayer) {
         const id = packet[0];
-        const existing = this.objects.get(id);
-        if (existing) {
-            this.viewport.removeChild(existing.container);
-            this.dynamicObjs.delete(existing.id);
-            this.updatingObjs.delete(existing.id);
-            this.objects.delete(existing.id);
-        }
-        const pos = new PIXI.Point(packet[1], packet[2]);
+        this.renderer.delete(id);
+
+        const pos = new Point(packet[1], packet[2]);
         scaleCoords(pos);
-        const name = new PIXI.Text(packet[4], TEXT_STYLE);
+        const name = new Text(packet[4], TEXT_STYLE);
         const player = new Player(
             id,
             this.animationManager,
@@ -180,13 +223,10 @@ export class World {
             pos,
             packet[3]
         );
-        this.names.container.addChild(name);
-        this.names.values.set(player.id, name);
         player.rotationProperties.duration = 100;
-        this.objects.set(player.id, player);
-        this.quadtree.insert(player.id, player.position);
-        this.dynamicObjs.set(id, player);
-        this.viewport.addChild(player.container);
+        this.objects.add(player);
+        this.renderer.add(player.id, ...player.containers);
+
         if (this.user === player.id) {
             this.setPlayer([this.user]);
         }
@@ -201,10 +241,10 @@ export class World {
             requestIds.push(id);
             return;
         }
-        object.container.renderable = true;
+        object.renderable = true;
         object.states.set([Date.now() + time, packet[2] * 10, packet[3] * 10]);
-        this.updatingObjs.set(id, object);
-        this.quadtree.insert(object.id, object.position);
+        this.objects.updating.add(object);
+        this.objects.add(object);
     }
 
     rotateObject(packet: ServerPacketSchema.rotateObject) {
@@ -215,21 +255,16 @@ export class World {
             requestIds.push(id);
             return;
         }
-        object.setRotation(radians(packet[1]));
-        this.updatingObjs.set(id, object);
+        object.rotation = radians(packet[1]);
+        this.objects.updating.add(object);
     }
 
     deleteObject(packet: ServerPacketSchema.deleteObject) {
         const id = packet;
         const object = this.objects.get(id);
-        if (object) {
-            this.quadtree.delete(id);
-            this.viewport.removeChild(object.container);
-            this.objects.delete(id);
-            this.dynamicObjs.delete(id);
-            this.updatingObjs.delete(id);
-            this.animationManager.remove(object);
-        }
+        this.objects.delete(id);
+        this.animationManager.remove(object);
+        this.renderer.delete(id);
     }
 
     action(packet: ServerPacketSchema.action) {
@@ -273,7 +308,7 @@ export class World {
             packet[3],
             packet[4],
         ];
-        const player = this.dynamicObjs.get(packet[0]);
+        const player = this.objects.get(packet[0]);
         if (player instanceof Player) {
             player.setGear(gear);
         }
@@ -291,7 +326,7 @@ export class World {
             packet[2] * 10,
             packet[3] * 10
         );
-        this.viewport.addChild(ground);
+        this.renderer.add(-10, ground);
     }
 
     hideOutOfSight() {
@@ -304,21 +339,16 @@ export class World {
                 { x: player.position.x - 17000, y: player.position.y - 10000 },
                 { x: player.position.x + 17000, y: player.position.y + 10000 },
             ];
-            const query = this.quadtree.query(range);
-            for (const object of this.objects.values()) {
+            const query = this.objects.query(range);
+            for (const object of this.objects.all()) {
                 const queryObject = query.has(object.id);
                 if (queryObject) {
-                    if (object.container.renderable === false) {
+                    if (object.renderable === false) {
                         requestIds.push(object.id);
                     }
                     continue;
                 }
-                const name = this.names.values.get(object.id);
-                if (name) {
-                    name.renderable = false;
-                }
-                object.container.renderable = false;
-                object.debug.renderable = false;
+                object.renderable = false;
             }
         }
     }

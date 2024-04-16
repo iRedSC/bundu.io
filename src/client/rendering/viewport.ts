@@ -16,14 +16,14 @@ export function createViewport(app: PIXI.Application, center: PIXI.Point) {
         events: app.renderer.events,
     });
 
-    viewport.clampZoom({ minScale: 0.1, maxScale: 1 });
-    viewport.clamp({
-        direction: "all",
-        left: true,
-        right: true,
-        top: true,
-        bottom: true,
-    });
+    // viewport.clampZoom({ minScale: 0.1, maxScale: 1 });
+    // viewport.clamp({
+    //     direction: "all",
+    //     left: true,
+    //     right: true,
+    //     top: true,
+    //     bottom: true,
+    // });
 
     viewport.sortableChildren = true;
 

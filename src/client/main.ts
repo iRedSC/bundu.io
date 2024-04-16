@@ -103,7 +103,7 @@ function moveUpdate(move: [number, number]) {
 // only sends if the movement was significant or 10 attempts
 let updateTick = 0;
 function mouseMoveCallback(mousePos: [number, number]) {
-    const player = world.dynamicObjs.get(world.user || -1);
+    const player = world.objects.get(world.user || -1);
     if (player) {
         let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
         const rotation =
