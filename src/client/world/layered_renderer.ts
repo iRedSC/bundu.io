@@ -43,4 +43,29 @@ export class LayeredRenderer {
             layer.container.addChild(container);
         }
     }
+
+    cleanLayer(layerId: number) {
+        const layer = this.layer(layerId);
+        for (const object of layer.map.values()) {
+            for (const container of object.values()) {
+                if (container.destroyed === true) {
+                    object.delete(container);
+                }
+            }
+        }
+    }
+
+    cleanObject(objectId: number) {
+        for (const layer of this.layers.values()) {
+            const object = layer.map.get(objectId);
+            if (!object) {
+                continue;
+            }
+            for (const container of object.values()) {
+                if (container.destroyed === true) {
+                    object.delete(container);
+                }
+            }
+        }
+    }
 }

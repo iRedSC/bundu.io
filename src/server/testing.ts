@@ -26,7 +26,7 @@ function getRandomPhysics(_size: number): Physics {
 
 export function createResources(world: World, amount: number) {
     for (let i = 0; i < amount; i++) {
-        const structure = new Resource(getRandomPhysics(30), {
+        const structure = new Resource(getRandomPhysics(60), {
             id: Random.choice([
                 114, 115, 116, 117, 118, 119, 103, 104, 105, 53, 54, 55, 56, 84,
                 84, 90, 90, 90, 97, 97, 97,

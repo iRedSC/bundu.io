@@ -6,5 +6,5 @@ export const TEXT_STYLE = new TextStyle({
     fill: "#ffffff",
     strokeThickness: 4,
     dropShadow: false,
-    fontSize: 40,
+    fontSize: 32,
 });

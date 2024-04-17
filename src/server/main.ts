@@ -86,8 +86,8 @@ parser.set(
         { socket }: { socket: WebSocket<any> }
     ) => {
         const position = new SAT.Vector(
-            random.integer(7000, 8000),
-            random.integer(7000, 8000)
+            random.integer(7500, 7500),
+            random.integer(7500, 7500)
         );
         const size = 15;
         const collider = new SAT.Circle(position, size);
