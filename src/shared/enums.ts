@@ -16,6 +16,7 @@ export enum PACKET_TYPE {
     DRAW_POLYGON = 0x11,
     CHAT_MESSAGE = 0x12,
     UPDATE_STATS = 0x13,
+    UNLOAD_OBJECT = 0x14,
 
     // SET_TIME = 600,
 }
@@ -98,6 +99,9 @@ export namespace ServerPacketSchema {
         z.number(), // heat
     ]);
     export type updateStats = z.infer<typeof updateStats>;
+
+    export const unloadObject = z.number();
+    export type unloadObject = z.infer<typeof unloadObject>;
 
     export const startingInfo = z.tuple([
         z.number(), // player's id

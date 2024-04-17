@@ -97,19 +97,26 @@ type ValidActiveAnimation = {
     end(): void;
 };
 
+type AnimationSource = {
+    active?: boolean;
+    renderable?: boolean;
+    visible?: boolean;
+    [key: string]: any;
+};
+
 function getSource(
-    sources: Map<any, any>,
-    source: any
+    sources: Map<AnimationSource, Map<string, ValidActiveAnimation>>,
+    source: AnimationSource
 ): Map<any, ValidActiveAnimation> {
     const value = sources.get(source);
     if (value === undefined) {
         sources.set(source, new Map());
     }
-    return sources.get(source);
+    return sources.get(source)!;
 }
 
 export class AnimationManager {
-    sources: Map<any, Map<string, ValidActiveAnimation>>;
+    sources: Map<AnimationSource, Map<string, ValidActiveAnimation>>;
 
     constructor() {
         this.sources = new Map();
@@ -132,7 +139,14 @@ export class AnimationManager {
     }
 
     update() {
-        for (let animations of this.sources.values()) {
+        for (let [source, animations] of this.sources.entries()) {
+            if (
+                source.active === false ||
+                source.renderable === false ||
+                source.visible === false
+            ) {
+                continue;
+            }
             for (let [name, animation] of animations.entries()) {
                 if (animation.expired) {
                     animation.end();

@@ -31,6 +31,7 @@ export class WorldObject {
     debug: DebugWorldObject;
 
     animations: Map<number, Animation>;
+    active?: boolean;
 
     constructor(id: number, pos: Point, rotation: number, size: number) {
         this.container = new Container();

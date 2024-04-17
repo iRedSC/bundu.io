@@ -96,10 +96,9 @@ export class Player extends WorldObject {
         leftHand.item.renderable = false;
         rightHand.item.renderable = false;
 
-        this.container.addChild(body.container);
-
         this.container.addChild(leftHand.container);
         this.container.addChild(rightHand.container);
+        this.container.addChild(body.container);
         body.container.addChild(body.sprite);
 
         leftHand.container.addChild(leftHand.item);
@@ -331,12 +330,18 @@ namespace PlayerAnimations {
     }
 
     export function block(target: Player) {
+        const body = target.sprite.body.container;
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
-        const leftHandRot = target.sprite.leftHand.container.rotation;
-        const rightHandRot = target.sprite.rightHand.container.rotation;
+        let bodyRot = 0;
+        let leftHandRot = 0;
+        let rightHandRot = 0;
+
         const animation = new Animation(ANIMATION.BLOCK);
         animation.keyframes[0] = (animation) => {
+            bodyRot = target.sprite.body.container.rotation;
+            leftHandRot = target.sprite.leftHand.container.rotation;
+            rightHandRot = target.sprite.rightHand.container.rotation;
             animation.next(75);
         };
         animation.keyframes[1] = (animation) => {
@@ -347,16 +352,19 @@ namespace PlayerAnimations {
             );
             rightHand.rotation = lerp(
                 radians(rightHandRot),
-                radians(25),
+                radians(45),
                 animation.t
             );
+
+            body.rotation = lerp(radians(bodyRot), radians(15), animation.t);
             if (!target.blocking) {
                 animation.next(60);
             }
         };
         animation.keyframes[2] = (animation) => {
             leftHand.rotation = lerp(radians(-90), radians(0), animation.t);
-            rightHand.rotation = lerp(radians(25), radians(0), animation.t);
+            rightHand.rotation = lerp(radians(45), radians(0), animation.t);
+            body.rotation = lerp(radians(15), radians(0), animation.t);
             if (animation.keyframeEnded) {
                 animation.expired = true;
             }
@@ -364,6 +372,7 @@ namespace PlayerAnimations {
         animation.keyframes[-1] = () => {
             leftHand.rotation = leftHandRot;
             rightHand.rotation = rightHandRot;
+            body.rotation = bodyRot;
         };
         return animation;
     }

@@ -23,6 +23,7 @@ import { RotationHandler } from "./rotation";
 import { LayeredRenderer } from "./layered_renderer";
 import { States } from "./states";
 import { Pond } from "./objects/pond";
+import { WORLD_SIZE } from "../constants";
 interface GameObject {
     id: number;
 
@@ -137,7 +138,7 @@ export class World {
 
         const mapBounds: [BasicPoint, BasicPoint] = [
             { x: 0, y: 0 },
-            { x: 200000, y: 200000 },
+            { x: WORLD_SIZE, y: WORLD_SIZE },
         ];
 
         this.objects = new ObjectContainer(mapBounds);
@@ -145,8 +146,6 @@ export class World {
         this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
         this.viewport.sortChildren();
-
-        setInterval(this.hideOutOfSight.bind(this), 2000);
 
         this.newPond([10000, 7500, 7500, 450]);
         this.newPond([10001, 7000, 7000, 100]);
@@ -350,27 +349,10 @@ export class World {
         this.renderer.add(-10, ground);
     }
 
-    hideOutOfSight() {
-        if (!this.user) {
-            return;
-        }
-        const player = this.objects.get(this.user);
-        if (player) {
-            const range: [BasicPoint, BasicPoint] = [
-                { x: player.position.x - 1600, y: player.position.y - 900 },
-                { x: player.position.x + 1600, y: player.position.y + 900 },
-            ];
-            const query = this.objects.query(range);
-            for (const object of this.objects.all()) {
-                const queryObject = query.has(object.id);
-                if (queryObject) {
-                    if (object.renderable === false) {
-                        requestIds.push(object.id);
-                    }
-                    continue;
-                }
-                object.renderable = false;
-            }
+    unloadObject(id: ServerPacketSchema.unloadObject) {
+        const object = this.objects.get(id);
+        if (object) {
+            object.renderable = false;
         }
     }
 

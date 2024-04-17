@@ -7,7 +7,7 @@ export const quadtree = new Quadtree(
     new Map(),
     [
         { x: 0, y: 0 },
-        { x: 20000, y: 20000 },
+        { x: 50000, y: 50000 },
     ],
     10
 );

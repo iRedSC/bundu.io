@@ -64,6 +64,12 @@ export function createPipeline(packetPipeline: PacketParser, world: World) {
         world.chatMessage.bind(world)
     );
 
+    packetPipeline.set(
+        PACKET_TYPE.UNLOAD_OBJECT,
+        ServerPacketSchema.unloadObject,
+        world.unloadObject.bind(world)
+    );
+
     newObjectPipeline.set(
         OBJECT_CLASS.ENTITY,
         NewObjectSchema.newEntity,

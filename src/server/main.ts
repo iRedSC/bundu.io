@@ -49,14 +49,14 @@ world
     .addSystem(new GroundItemSystem());
 
 const ground: GroundData = {
-    collider: new SAT.Box(new SAT.Vector(1000, 1000), 15000, 15000),
+    collider: new SAT.Box(new SAT.Vector(0, 0), 50000, 50000),
     type: 0,
     speedMultiplier: 1,
 };
 
 world.addObject(new Ground(ground));
 // createEntities(world, 5);
-createResources(world, 3000);
+createResources(world, 30000);
 
 const controller = new ServerController();
 controller.start(7777);

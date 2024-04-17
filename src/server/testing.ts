@@ -11,8 +11,8 @@ import SAT from "sat";
 function getRandomPhysics(_size: number): Physics {
     const size = Random.integer(_size - 5, _size + 5);
     const position = new SAT.Vector(
-        Random.integer(1500, 19500),
-        Random.integer(1500, 19500)
+        Math.floor(Random.integer(1500, 50000) / 100) * 100,
+        Math.floor(Random.integer(1500, 50000) / 100) * 100
     );
     return {
         position: position,

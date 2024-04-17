@@ -12,9 +12,11 @@ import { quadtree } from "./position.js";
 export const updateHandler = new UpdateHandler();
 
 export class PacketSystem extends System {
+    lastUpdate: number;
     constructor() {
         super([PlayerData], 20);
 
+        this.lastUpdate = 0;
         this.listen("move", this.moveObject.bind(this));
         this.listen("hurt", this.hurt.bind(this));
         this.listen("collide", this.moveObject.bind(this));
@@ -49,14 +51,30 @@ export class PacketSystem extends System {
             if (!physics) {
                 return;
             }
-            const bounds: [BasicPoint, BasicPoint] = [
-                { x: physics.position.x - 1600, y: physics.position.y - 900 },
-                { x: physics.position.x + 1600, y: physics.position.y + 900 },
-            ];
-            const nearby = quadtree.query(bounds);
-            data.visibleObjects.update(nearby);
-            if (data.visibleObjects.new.size > 0) {
-                this.trigger("send_object_updates", player.id);
+            if (this.lastUpdate < Date.now()) {
+                const bounds: [BasicPoint, BasicPoint] = [
+                    {
+                        x: physics.position.x - 1600,
+                        y: physics.position.y - 900,
+                    },
+                    {
+                        x: physics.position.x + 1600,
+                        y: physics.position.y + 900,
+                    },
+                ];
+                const nearby = quadtree.query(bounds);
+                const unload = data.visibleObjects.update(nearby);
+
+                if (unload.size > 0) {
+                    send(data.socket, [
+                        PACKET_TYPE.UNLOAD_OBJECT,
+                        ...Array.from(unload),
+                    ]);
+                }
+                if (data.visibleObjects.new.size > 0) {
+                    this.trigger("send_object_updates", player.id);
+                }
+                this.lastUpdate = Date.now() + 1000;
             }
             updateHandler.send(player);
         }

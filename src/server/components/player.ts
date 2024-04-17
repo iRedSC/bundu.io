@@ -1,5 +1,6 @@
 import { WebSocket } from "uWebSockets.js";
 import { Component } from "../game_engine/component.js";
+import { intersection } from "../../lib/set_transforms.js";
 
 // update: 7, 1, 5, 2
 
@@ -25,6 +26,7 @@ export class VisibleObjects {
         for (const object of objects.values()) {
             this.add(object);
         }
+        return intersection(this.old, this.objects, true);
     }
 
     add(id: number): boolean {
