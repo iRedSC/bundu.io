@@ -290,7 +290,7 @@ namespace PlayerAnimations {
                 leftHand.rotation = 0;
                 rightHand.rotation = 0;
             }
-            animation.next(200);
+            animation.next(125);
         };
         animation.keyframes[1] = (animation) => {
             const t = forwardTiming(animation.t);
@@ -304,7 +304,7 @@ namespace PlayerAnimations {
                 body.rotation = lerp(radians(0), radians(25), t);
             }
             if (animation.keyframeEnded) {
-                animation.next(200);
+                animation.next(275);
             }
         };
         animation.keyframes[2] = (animation) => {
