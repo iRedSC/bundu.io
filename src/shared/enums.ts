@@ -30,6 +30,7 @@ export enum OBJECT_CLASS {
     PLAYER = 0x01,
     ENTITY = 0x02,
     STRUCTURE = 0x03,
+    POND = 0x04,
 }
 
 export namespace NewObjectSchema {
@@ -68,6 +69,14 @@ export namespace NewObjectSchema {
         z.number(), // size
     ]);
     export type newStructure = z.infer<typeof newStructure>;
+
+    export const Pond = z.tuple([
+        z.number(), // id
+        z.number(), // x
+        z.number(), // y
+        z.number(), // size
+    ]);
+    export type Pond = z.infer<typeof Pond>;
 }
 
 export namespace ServerPacketSchema {

@@ -132,7 +132,7 @@ export class WorldObject {
 
     set size(value: number) {
         this._size = value;
-        this.container.scale.set(value / 15);
+        this.container.scale.set(value / 150);
     }
 
     get size() {

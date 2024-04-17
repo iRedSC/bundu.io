@@ -5,6 +5,8 @@ player_hat: player_hat.svg
 player_dead: player_dead.svg
 hand: hand.svg
 
+circle: circle_3.svg
+
 item_button: item_button.svg
 
 weapon_toggle: weapon_toggle.svg

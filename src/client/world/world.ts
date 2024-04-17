@@ -22,6 +22,7 @@ import { Container, Point, Text } from "pixi.js";
 import { RotationHandler } from "./rotation";
 import { LayeredRenderer } from "./layered_renderer";
 import { States } from "./states";
+import { Pond } from "./objects/pond";
 interface GameObject {
     id: number;
 
@@ -109,8 +110,8 @@ class ObjectContainer {
 }
 
 function scaleCoords(pos: { x: number; y: number }) {
-    pos.x *= 10;
-    pos.y *= 10;
+    pos.x *= 1;
+    pos.y *= 1;
 }
 
 // This basically controls everything on the client
@@ -146,6 +147,14 @@ export class World {
         this.viewport.sortChildren();
 
         setInterval(this.hideOutOfSight.bind(this), 2000);
+
+        this.newPond([10000, 7500, 7500, 450]);
+        this.newPond([10001, 7000, 7000, 100]);
+        this.newPond([10002, 8000, 7500, 500]);
+        this.newPond([10003, 7000, 7500, 500]);
+        this.newPond([10004, 7000, 7100, 100]);
+        this.newPond([10005, 8000, 8000, 200]);
+        this.newPond([10006, 7000, 8000, 500]);
     }
 
     tick() {
@@ -232,6 +241,18 @@ export class World {
         }
     }
 
+    newPond(packet: NewObjectSchema.Pond) {
+        const id = packet[0];
+        this.renderer.delete(id);
+
+        const pos = new Point(packet[1], packet[2]);
+        scaleCoords(pos);
+        const pond = new Pond(id, pos, packet[3], this.animationManager);
+        this.objects.add(pond);
+        this.renderer.add(pond.id, ...pond.containers);
+        console.log("created pond");
+    }
+
     moveObject(packet: ServerPacketSchema.moveObject) {
         const id = packet[0];
         const time = packet[1];
@@ -242,7 +263,7 @@ export class World {
             return;
         }
         object.renderable = true;
-        object.states.set([Date.now() + time, packet[2] * 10, packet[3] * 10]);
+        object.states.set([Date.now() + time, packet[2], packet[3]]);
         this.objects.updating.add(object);
         this.objects.add(object);
     }
@@ -321,10 +342,10 @@ export class World {
     loadGround(packet: ServerPacketSchema.loadGround) {
         const ground = createGround(
             packet[4],
-            packet[0] * 10,
-            packet[1] * 10,
-            packet[2] * 10,
-            packet[3] * 10
+            packet[0],
+            packet[1],
+            packet[2],
+            packet[3]
         );
         this.renderer.add(-10, ground);
     }
@@ -336,8 +357,8 @@ export class World {
         const player = this.objects.get(this.user);
         if (player) {
             const range: [BasicPoint, BasicPoint] = [
-                { x: player.position.x - 17000, y: player.position.y - 10000 },
-                { x: player.position.x + 17000, y: player.position.y + 10000 },
+                { x: player.position.x - 1600, y: player.position.y - 900 },
+                { x: player.position.x + 1600, y: player.position.y + 900 },
             ];
             const query = this.objects.query(range);
             for (const object of this.objects.all()) {
