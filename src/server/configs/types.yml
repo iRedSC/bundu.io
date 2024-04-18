@@ -22,3 +22,9 @@ wall:
 
 food:
     function: consume
+
+spear:
+    function: main_hand
+
+hammer:
+    function: main_hand

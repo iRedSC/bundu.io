@@ -73,7 +73,7 @@ export class Player extends WorldObject {
 
         this.rotationProperties.duration = 5;
         this.name = name;
-        this.name.scale.set(0.4);
+        this.name.scale.set(0.34);
 
         this.name.anchor.set(0.5, 2);
         this.name.zIndex = 10;

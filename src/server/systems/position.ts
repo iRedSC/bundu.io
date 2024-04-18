@@ -37,6 +37,7 @@ export class PositionSystem extends System {
             return;
         }
         quadtree.insert(object.id, physics.position);
+        this.trigger("new_object", object.id);
     }
 
     exit(object: GameObject) {

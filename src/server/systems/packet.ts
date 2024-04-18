@@ -1,3 +1,4 @@
+import { Range } from "../../lib/quadtree.js";
 import { ACTION, PACKET_TYPE } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
 import { Health } from "../components/combat.js";
@@ -17,6 +18,8 @@ export class PacketSystem extends System {
         super([PlayerData], 20);
 
         this.lastUpdate = 0;
+
+        this.listen("new_object", this.newObject.bind(this));
         this.listen("move", this.moveObject.bind(this));
         this.listen("hurt", this.hurt.bind(this));
         this.listen("collide", this.moveObject.bind(this));
@@ -74,11 +77,41 @@ export class PacketSystem extends System {
                 if (data.visibleObjects.new.size > 0) {
                     this.trigger("send_object_updates", player.id);
                 }
-                this.lastUpdate = Date.now() + 1000;
             }
             updateHandler.send(player);
         }
+        if (this.lastUpdate < Date.now()) {
+            this.lastUpdate = Date.now() + 1000;
+        }
         updateHandler.clear();
+    }
+
+    newObject(object: GameObject) {
+        const objPhys = Physics.get(object)?.data;
+        if (!objPhys) {
+            return;
+        }
+        const players = this.world.query([PlayerData.id]);
+        for (const player of players.values()) {
+            const data = PlayerData.get(player).data;
+            const physics = Physics.get(player).data;
+
+            const bounds = new Range(
+                {
+                    x: physics.position.x - 1600,
+                    y: physics.position.y - 900,
+                },
+                {
+                    x: physics.position.x + 1600,
+                    y: physics.position.y + 900,
+                }
+            );
+
+            if (bounds.contains(objPhys.position)) {
+                data.visibleObjects.add(object.id);
+                updateHandler.add(object, [PACKET_TYPE.NEW_OBJECT]);
+            }
+        }
     }
 
     moveObject(object: GameObject) {
@@ -147,7 +180,11 @@ export class PacketSystem extends System {
         const objects = this.world.query([], newObjects);
         updateHandler.send(player, [
             objects.values(),
-            [PACKET_TYPE.MOVE_OBJECT, PACKET_TYPE.ROTATE_OBJECT],
+            [
+                PACKET_TYPE.MOVE_OBJECT,
+                PACKET_TYPE.ROTATE_OBJECT,
+                PACKET_TYPE.UPDATE_GEAR,
+            ],
         ]);
         data.visibleObjects.clear();
     }
