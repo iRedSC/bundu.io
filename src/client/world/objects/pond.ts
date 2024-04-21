@@ -1,30 +1,29 @@
 import { WorldObject } from "./world_object";
 import { cubicBezier } from "../../animation/animations";
-import { Graphics, Point } from "pixi.js";
+import { Point } from "pixi.js";
 import { Animation, AnimationManager } from "../../../lib/animations";
 import { lerp } from "../../../lib/transforms";
 import { SpriteFactory, SpriteWrapper } from "../../assets/sprite_factory";
-// type StructureData = [id: number, pos: number, size: number, rotation: number];
 
-function createGraphic(
+function createSprite(
     color: number,
     pos: Point,
     size: number,
     z: number,
     a?: number
 ) {
-    const graphic = SpriteFactory.build("circle");
-    graphic.position = pos;
-    graphic.zIndex = z;
-    graphic.alpha = a === undefined ? 1 : a;
-    graphic.scale.set(size / 5000);
-    graphic.tint = color;
-    graphic.anchor.set(0.5);
-    return graphic;
+    const sprite = SpriteFactory.build("circle");
+    sprite.position = pos;
+    sprite.zIndex = z;
+    sprite.alpha = a === undefined ? 1 : a;
+    sprite.scale.set(size / 5000);
+    sprite.tint = color;
+    sprite.anchor.set(0.5);
+    return sprite;
 }
 
 export class Pond extends WorldObject {
-    graphics: [
+    sprites: [
         SpriteWrapper,
         SpriteWrapper,
         SpriteWrapper,
@@ -41,13 +40,13 @@ export class Pond extends WorldObject {
     ) {
         super(id, pos, 0, size);
 
-        this.graphics = [
-            createGraphic(0x6d614e, pos, size + 60, -8),
-            createGraphic(0x564c3c, pos, size + 30, -7),
-            createGraphic(0x699dba, pos, size, -6),
-            createGraphic(0x5a8eab, pos, Math.max(size - 30, 0), -5),
-            createGraphic(0x4d809d, pos, Math.max(size - 60, 0), -4),
-            createGraphic(0x467691, pos, Math.max(size - 170, 0), -3),
+        this.sprites = [
+            createSprite(0x6d614e, pos, size + 60, -8),
+            createSprite(0x564c3c, pos, size + 30, -7),
+            createSprite(0x699dba, pos, size, -6),
+            createSprite(0x5a8eab, pos, Math.max(size - 30, 0), -5),
+            createSprite(0x4d809d, pos, Math.max(size - 60, 0), -4),
+            createSprite(0x467691, pos, Math.max(size - 170, 0), -3),
         ];
 
         this.container.zIndex = 10;
@@ -56,14 +55,14 @@ export class Pond extends WorldObject {
             this.container.height / 2
         );
 
-        manager.add(this.graphics[5], wave(this.graphics[5], 8500).run());
-        manager.add(this.graphics[4], wave(this.graphics[4], 4300).run());
-        manager.add(this.graphics[3], wave(this.graphics[3], 6200).run());
-        manager.add(this.graphics[2], wave(this.graphics[2], 8100).run());
+        manager.add(this.sprites[5], wave(this.sprites[5], 8500).run());
+        manager.add(this.sprites[4], wave(this.sprites[4], 4300).run());
+        manager.add(this.sprites[3], wave(this.sprites[3], 6200).run());
+        manager.add(this.sprites[2], wave(this.sprites[2], 8100).run());
     }
 
     get containers() {
-        return this.graphics;
+        return this.sprites;
     }
 }
 
