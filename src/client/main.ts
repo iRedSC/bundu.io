@@ -1,12 +1,7 @@
 import { radians, lookToward, degrees } from "../lib/transforms";
 import { KeyboardInputListener } from "./input/keyboard";
 import { World } from "./world/world";
-import {
-    CLIENT_ACTION,
-    CLIENT_PACKET_TYPE,
-    PACKET_TYPE,
-    Schema.Server,
-} from "../shared/enums";
+import { PACKET, SCHEMA } from "../shared/enums";
 import { PacketParser } from "../shared/unpack";
 import { createPipeline } from "./network/packet_pipline";
 import { debugContainer, drawPolygon } from "./rendering/debug";
@@ -54,7 +49,7 @@ const socket = new SocketHandler();
 socket.onopen = () => {
     const nameInput = document.getElementById("name-input") as HTMLInputElement;
     const name = nameInput.value;
-    socket.send([CLIENT_PACKET_TYPE.JOIN, [name || "unnamed", 0, 0, 0]]);
+    socket.send([PACKET.CLIENT.JOIN, [name || "unnamed", 0, 0, 0]]);
 };
 
 socket.onmessage = async (ev) => {
@@ -64,9 +59,13 @@ socket.onmessage = async (ev) => {
 };
 
 // add some packets to the unpacker
-parser.set(PACKET_TYPE.PING, Schema.Server.ping, (_: Schema.Server.ping) => {});
+parser.set(
+    PACKET.SERVER.PING,
+    SCHEMA.SERVER.PING,
+    (_: SCHEMA.SERVER.PING) => {}
+);
 
-parser.set(PACKET_TYPE.DRAW_POLYGON, Schema.Server.drawPolygon, drawPolygon);
+parser.set(PACKET.SERVER.DRAW_POLYGON, SCHEMA.SERVER.DRAW_POLYGON, drawPolygon);
 
 // tick updates
 function tick() {
@@ -88,7 +87,7 @@ function moveUpdate(move: [number, number]) {
     move[0] = Math.max(0, Math.min(2, move[0]));
     move[1] = Math.max(0, Math.min(2, move[1]));
     const dir = (move[0] << 2) | move[1];
-    socket.send([CLIENT_PACKET_TYPE.MOVE_UPDATE, dir + 1]);
+    socket.send([PACKET.CLIENT.MOVE_UPDATE, dir + 1]);
 }
 
 // sends a rotation update packet to the server
@@ -103,7 +102,7 @@ function mouseMoveCallback(mousePos: [number, number]) {
         updateTick++;
         if (Math.abs(player.rotation - rotation) > 0.1 || updateTick > 5) {
             updateTick = 0;
-            socket.send([CLIENT_PACKET_TYPE.ROTATE, round(degrees(rotation))]);
+            socket.send([PACKET.CLIENT.ROTATE, round(degrees(rotation))]);
         }
         player.rotation = rotation;
     }
@@ -112,35 +111,32 @@ function mouseMoveCallback(mousePos: [number, number]) {
 // send attack/block action when the user clicks on the viewport
 viewport.addEventListener("pointerdown", (event) => {
     if (event.button === 2) {
-        socket.send([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.BLOCK, false]]);
+        socket.send([PACKET.CLIENT.ACTION, [PACKET.ACTION.BLOCK, false]]);
     }
     if (event.button === 0) {
-        socket.send([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.ATTACK, false]]);
+        socket.send([PACKET.CLIENT.ACTION, [PACKET.ACTION.ATTACK, false]]);
     }
     viewport;
 });
 
 viewport.addEventListener("pointerup", (event) => {
     if (event.button == 2) {
-        socket.send([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.BLOCK, true]]);
+        socket.send([PACKET.CLIENT.ACTION, [PACKET.ACTION.BLOCK, true]]);
     }
     if (event.button === 0) {
-        socket.send([CLIENT_PACKET_TYPE.ACTION, [CLIENT_ACTION.ATTACK, true]]);
+        socket.send([PACKET.CLIENT.ACTION, [PACKET.ACTION.ATTACK, true]]);
     }
 });
 
 // callback for when a chat message is sent.
 function chat(message: string) {
-    socket.send([CLIENT_PACKET_TYPE.CHAT_MESSAGE, message]);
+    socket.send([PACKET.CLIENT.CHAT_MESSAGE, message]);
 }
 
 // request unknown object ids on interval
 setInterval(() => {
     if (requestIds.size > 0) {
-        socket.send([
-            CLIENT_PACKET_TYPE.REQUEST_OBJECT,
-            Array.from(requestIds),
-        ]);
+        socket.send([PACKET.CLIENT.REQUEST_OBJECTS, Array.from(requestIds)]);
         requestIds.clear();
     }
 }, 500);
@@ -154,9 +150,9 @@ hunger.start(animationManager);
 heat.start(animationManager);
 
 parser.set(
-    PACKET_TYPE.UPDATE_STATS,
-    Schema.Server.updateStats,
-    (packet: Schema.Server.updateStats) => {
+    PACKET.SERVER.UPDATE_STATS,
+    SCHEMA.SERVER.UPDATE_STATS,
+    (packet: SCHEMA.SERVER.UPDATE_STATS) => {
         console.log(packet);
         health.update(packet[0], animationManager);
         hunger.update(packet[1], animationManager);
@@ -165,21 +161,21 @@ parser.set(
 );
 
 const craftItemCB = (item: number) => {
-    socket.send([CLIENT_PACKET_TYPE.CRAFT_ITEM, item]);
+    socket.send([PACKET.CLIENT.CRAFT_ITEM, item]);
 };
 
 craftingMenu.setCallbacks(craftItemCB, craftItemCB);
 
 parser.set(
-    PACKET_TYPE.CRAFTING_RECIPES,
-    Schema.Server.craftingRecipes,
+    PACKET.SERVER.CRAFTING_RECIPES,
+    SCHEMA.SERVER.CRAFTING_RECIPES,
     recipeManager.updateRecipes.bind(recipeManager)
 );
 
 parser.set(
-    PACKET_TYPE.UPDATE_INVENTORY,
-    Schema.Server.updateInventory,
-    (packet: Schema.Server.updateInventory) => {
+    PACKET.SERVER.UPDATE_INVENTORY,
+    SCHEMA.SERVER.UPDATE_INVENTORY,
+    (packet: SCHEMA.SERVER.UPDATE_INVENTORY) => {
         inventory.update(packet);
         craftingMenu.items = recipeManager.filter(inventory.slots, []);
         craftingMenu.update();
@@ -187,11 +183,11 @@ parser.set(
 );
 
 const inventoryLeftClickCB = (item: number) => {
-    socket.send([CLIENT_PACKET_TYPE.SELECT_ITEM, item]);
+    socket.send([PACKET.CLIENT.SELECT_ITEM, item]);
 };
 
 const inventoryRightClickCB = (item: number, shift: boolean = false) => {
-    socket.send([CLIENT_PACKET_TYPE.DROP_ITEM, [item, shift]]);
+    socket.send([PACKET.CLIENT.DROP_ITEM, [item, shift]]);
 };
 
 inventory.display.setCallbacks(inventoryLeftClickCB, inventoryRightClickCB);

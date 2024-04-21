@@ -1,9 +1,4 @@
-import {
-    NewObjectSchema,
-    OBJECT_CLASS,
-    PACKET_TYPE,
-    Schema.Server,
-} from "../../shared/enums";
+import { SCHEMA, OBJECT_CLASS, PACKET } from "../../shared/enums";
 import { PacketParser } from "../../shared/unpack";
 import { World } from "../world/world";
 
@@ -11,80 +6,80 @@ export function createPipeline(packetPipeline: PacketParser, world: World) {
     const newObjectPipeline = new PacketParser();
 
     packetPipeline.set(
-        PACKET_TYPE.MOVE_OBJECT,
-        Schema.Server.moveObject,
+        PACKET.SERVER.MOVE_OBJECT,
+        SCHEMA.SERVER.MOVE_OBJECT,
         world.moveObject.bind(world)
     );
 
     packetPipeline.set(
-        PACKET_TYPE.ROTATE_OBJECT,
-        Schema.Server.rotateObject,
+        PACKET.SERVER.ROTATE_OBJECT,
+        SCHEMA.SERVER.ROTATE_OBJECT,
         world.rotateObject.bind(world)
     );
 
     packetPipeline.set(
-        PACKET_TYPE.DELETE_OBJECT,
-        Schema.Server.deleteObject,
+        PACKET.SERVER.DELETE_OBJECT,
+        SCHEMA.SERVER.DELETE_OBJECT,
         world.deleteObject.bind(world)
     );
 
     packetPipeline.set(
-        PACKET_TYPE.NEW_OBJECT,
-        Schema.Server.newObject,
+        PACKET.SERVER.NEW_OBJECT,
+        SCHEMA.SERVER.NEW_OBJECT,
         newObjectPipeline.unpack.bind(newObjectPipeline)
     );
 
     packetPipeline.set(
-        PACKET_TYPE.LOAD_GROUND,
-        Schema.Server.loadGround,
+        PACKET.SERVER.LOAD_GROUND,
+        SCHEMA.SERVER.LOAD_GROUND,
         world.loadGround.bind(world)
     );
 
     packetPipeline.set(
-        PACKET_TYPE.STARTING_INFO,
-        Schema.Server.startingInfo,
+        PACKET.SERVER.STARTING_INFO,
+        SCHEMA.SERVER.STARTING_INFO,
         world.setPlayer.bind(world)
     );
 
     packetPipeline.set(
-        PACKET_TYPE.UPDATE_GEAR,
-        Schema.Server.updateGear,
+        PACKET.SERVER.UPDATE_GEAR,
+        SCHEMA.SERVER.UPDATE_GEAR,
         world.updateGear.bind(world)
     );
 
     packetPipeline.set(
-        PACKET_TYPE.ACTION,
-        Schema.Server.action,
+        PACKET.SERVER.ACTION,
+        SCHEMA.SERVER.EVENT,
         world.action.bind(world)
     );
 
     packetPipeline.set(
-        PACKET_TYPE.CHAT_MESSAGE,
-        Schema.Server.chatMessage,
+        PACKET.SERVER.CHAT_MESSAGE,
+        SCHEMA.SERVER.CHAT_MESSAGE,
         world.chatMessage.bind(world)
     );
 
     packetPipeline.set(
-        PACKET_TYPE.UNLOAD_OBJECT,
-        Schema.Server.unloadObject,
+        PACKET.SERVER.UNLOAD_OBJECT,
+        SCHEMA.SERVER.UNLOAD_OBJECT,
         world.unloadObject.bind(world)
     );
 
     newObjectPipeline.set(
         OBJECT_CLASS.ENTITY,
-        NewObjectSchema.newEntity,
+        SCHEMA.NEW_OBJECT.ENTITY,
         world.newEntity.bind(world)
     );
 
     newObjectPipeline.set(
         OBJECT_CLASS.PLAYER,
-        NewObjectSchema.newPlayer,
+        SCHEMA.NEW_OBJECT.PLAYER,
         world.newPlayer.bind(world)
     );
 
     newObjectPipeline.set(
         OBJECT_CLASS.STRUCTURE,
-        NewObjectSchema.newStructure,
+        SCHEMA.NEW_OBJECT.STRUCTURE,
         world.newStructure.bind(world)
     );
 }

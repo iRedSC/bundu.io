@@ -1,5 +1,5 @@
 import { Container, Graphics } from "pixi.js";
-import { Schema.Server } from "../../shared/enums";
+import { SCHEMA } from "../../shared/enums";
 
 // Used for creating debug objects on the map, such as hitboxes or id text.
 
@@ -32,7 +32,7 @@ export class DebugWorldObject {
     }
 }
 
-export function drawPolygon(packet: Schema.Server.drawPolygon) {
+export function drawPolygon(packet: SCHEMA.SERVER.DRAW_POLYGON) {
     const polygon = new Graphics();
     polygon.lineStyle({ width: 20, color: "#FF0000" });
     const start = { x: packet[0] * 10, y: packet[1] * 10 };

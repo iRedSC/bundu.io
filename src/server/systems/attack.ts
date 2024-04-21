@@ -1,6 +1,6 @@
 import { radians, moveInDirection } from "../../lib/transforms.js";
 import { BasicPoint } from "../../lib/types.js";
-import { PACKET_TYPE } from "../../shared/enums.js";
+import { PACKET } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
 import { AttackData } from "../components/combat.js";
 import { GameObject } from "../game_engine/game_object.js";
@@ -10,7 +10,7 @@ import SAT from "sat";
 
 function packPolygon(polygon: SAT.Polygon) {
     return [
-        PACKET_TYPE.DRAW_POLYGON,
+        PACKET.SERVER.DRAW_POLYGON,
         [
             polygon.pos.x,
             polygon.pos.y,
