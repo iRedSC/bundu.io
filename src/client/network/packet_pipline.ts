@@ -2,7 +2,7 @@ import {
     NewObjectSchema,
     OBJECT_CLASS,
     PACKET_TYPE,
-    ServerPacketSchema,
+    Schema.Server,
 } from "../../shared/enums";
 import { PacketParser } from "../../shared/unpack";
 import { World } from "../world/world";
@@ -12,61 +12,61 @@ export function createPipeline(packetPipeline: PacketParser, world: World) {
 
     packetPipeline.set(
         PACKET_TYPE.MOVE_OBJECT,
-        ServerPacketSchema.moveObject,
+        Schema.Server.moveObject,
         world.moveObject.bind(world)
     );
 
     packetPipeline.set(
         PACKET_TYPE.ROTATE_OBJECT,
-        ServerPacketSchema.rotateObject,
+        Schema.Server.rotateObject,
         world.rotateObject.bind(world)
     );
 
     packetPipeline.set(
         PACKET_TYPE.DELETE_OBJECT,
-        ServerPacketSchema.deleteObject,
+        Schema.Server.deleteObject,
         world.deleteObject.bind(world)
     );
 
     packetPipeline.set(
         PACKET_TYPE.NEW_OBJECT,
-        ServerPacketSchema.newObject,
+        Schema.Server.newObject,
         newObjectPipeline.unpack.bind(newObjectPipeline)
     );
 
     packetPipeline.set(
         PACKET_TYPE.LOAD_GROUND,
-        ServerPacketSchema.loadGround,
+        Schema.Server.loadGround,
         world.loadGround.bind(world)
     );
 
     packetPipeline.set(
         PACKET_TYPE.STARTING_INFO,
-        ServerPacketSchema.startingInfo,
+        Schema.Server.startingInfo,
         world.setPlayer.bind(world)
     );
 
     packetPipeline.set(
         PACKET_TYPE.UPDATE_GEAR,
-        ServerPacketSchema.updateGear,
+        Schema.Server.updateGear,
         world.updateGear.bind(world)
     );
 
     packetPipeline.set(
         PACKET_TYPE.ACTION,
-        ServerPacketSchema.action,
+        Schema.Server.action,
         world.action.bind(world)
     );
 
     packetPipeline.set(
         PACKET_TYPE.CHAT_MESSAGE,
-        ServerPacketSchema.chatMessage,
+        Schema.Server.chatMessage,
         world.chatMessage.bind(world)
     );
 
     packetPipeline.set(
         PACKET_TYPE.UNLOAD_OBJECT,
-        ServerPacketSchema.unloadObject,
+        Schema.Server.unloadObject,
         world.unloadObject.bind(world)
     );
 

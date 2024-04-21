@@ -5,7 +5,7 @@ import {
     CLIENT_ACTION,
     CLIENT_PACKET_TYPE,
     PACKET_TYPE,
-    ServerPacketSchema,
+    Schema.Server,
 } from "../shared/enums";
 import { PacketParser } from "../shared/unpack";
 import { createPipeline } from "./network/packet_pipline";
@@ -64,17 +64,9 @@ socket.onmessage = async (ev) => {
 };
 
 // add some packets to the unpacker
-parser.set(
-    PACKET_TYPE.PING,
-    ServerPacketSchema.ping,
-    (_: ServerPacketSchema.ping) => {}
-);
+parser.set(PACKET_TYPE.PING, Schema.Server.ping, (_: Schema.Server.ping) => {});
 
-parser.set(
-    PACKET_TYPE.DRAW_POLYGON,
-    ServerPacketSchema.drawPolygon,
-    drawPolygon
-);
+parser.set(PACKET_TYPE.DRAW_POLYGON, Schema.Server.drawPolygon, drawPolygon);
 
 // tick updates
 function tick() {
@@ -163,8 +155,8 @@ heat.start(animationManager);
 
 parser.set(
     PACKET_TYPE.UPDATE_STATS,
-    ServerPacketSchema.updateStats,
-    (packet: ServerPacketSchema.updateStats) => {
+    Schema.Server.updateStats,
+    (packet: Schema.Server.updateStats) => {
         console.log(packet);
         health.update(packet[0], animationManager);
         hunger.update(packet[1], animationManager);
@@ -180,14 +172,14 @@ craftingMenu.setCallbacks(craftItemCB, craftItemCB);
 
 parser.set(
     PACKET_TYPE.CRAFTING_RECIPES,
-    ServerPacketSchema.craftingRecipes,
+    Schema.Server.craftingRecipes,
     recipeManager.updateRecipes.bind(recipeManager)
 );
 
 parser.set(
     PACKET_TYPE.UPDATE_INVENTORY,
-    ServerPacketSchema.updateInventory,
-    (packet: ServerPacketSchema.updateInventory) => {
+    Schema.Server.updateInventory,
+    (packet: Schema.Server.updateInventory) => {
         inventory.update(packet);
         craftingMenu.items = recipeManager.filter(inventory.slots, []);
         craftingMenu.update();

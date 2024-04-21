@@ -1,11 +1,7 @@
 import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animations";
 import { WorldObject } from "./objects/world_object";
-import {
-    ACTION,
-    NewObjectSchema,
-    ServerPacketSchema,
-} from "../../shared/enums";
+import { EVENT, NewObjectSchema, Schema.Server } from "../../shared/enums";
 import { Structure } from "./objects/structure";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
@@ -161,7 +157,7 @@ export class World {
         this.objects.update();
     }
 
-    setPlayer(packet?: ServerPacketSchema.startingInfo) {
+    setPlayer(packet?: Schema.Server.startingInfo) {
         if (packet) {
             this.user = packet[0];
         }
@@ -252,7 +248,7 @@ export class World {
         console.log("created pond");
     }
 
-    moveObject(packet: ServerPacketSchema.moveObject) {
+    moveObject(packet: Schema.Server.moveObject) {
         const id = packet[0];
         const time = packet[1];
 
@@ -267,7 +263,7 @@ export class World {
         this.objects.add(object);
     }
 
-    rotateObject(packet: ServerPacketSchema.rotateObject) {
+    rotateObject(packet: Schema.Server.rotateObject) {
         const id = packet[0];
 
         const object = this.objects.get(id);
@@ -279,7 +275,7 @@ export class World {
         this.objects.updating.add(object);
     }
 
-    deleteObject(packet: ServerPacketSchema.deleteObject) {
+    deleteObject(packet: Schema.Server.deleteObject) {
         const id = packet;
         const object = this.objects.get(id);
         this.objects.delete(id);
@@ -287,20 +283,20 @@ export class World {
         this.renderer.delete(id);
     }
 
-    action(packet: ServerPacketSchema.action) {
+    action(packet: Schema.Server.action) {
         const id = packet[1];
         const stop = packet[2];
         const object = this.objects.get(id) as WorldObject;
         if (object) {
             switch (packet[0]) {
-                case ACTION.ATTACK:
+                case EVENT.ATTACK:
                     object.trigger(
                         ANIMATION.ATTACK,
                         this.animationManager,
                         true
                     );
                     break;
-                case ACTION.BLOCK:
+                case EVENT.BLOCK:
                     if (!stop) {
                         if (object instanceof Player) {
                             object.blocking = true;
@@ -315,13 +311,13 @@ export class World {
                         object.blocking = false;
                     }
                     break;
-                case ACTION.HURT:
+                case EVENT.HURT:
                     object.trigger(ANIMATION.HURT, this.animationManager, true);
             }
         }
     }
 
-    updateGear(packet: ServerPacketSchema.updateGear) {
+    updateGear(packet: Schema.Server.updateGear) {
         const gear: [number, number, number, boolean] = [
             packet[1],
             packet[2],
@@ -338,7 +334,7 @@ export class World {
     //     this.sky.setTime(packet[0], this.animationManager);
     // }
 
-    loadGround(packet: ServerPacketSchema.loadGround) {
+    loadGround(packet: Schema.Server.loadGround) {
         const ground = createGround(
             packet[4],
             packet[0],
@@ -349,14 +345,14 @@ export class World {
         this.renderer.add(-10, ground);
     }
 
-    unloadObject(id: ServerPacketSchema.unloadObject) {
+    unloadObject(id: Schema.Server.unloadObject) {
         const object = this.objects.get(id);
         if (object) {
             object.renderable = false;
         }
     }
 
-    chatMessage(packet: ServerPacketSchema.chatMessage) {
+    chatMessage(packet: Schema.Server.chatMessage) {
         const player = this.objects.get(packet[0]) as any;
         if (!player) {
             return;

@@ -2,7 +2,7 @@ import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
 import { Grid } from "./grid";
-import { ServerPacketSchema } from "../../shared/enums";
+import { Schema.Server } from "../../shared/enums";
 
 export class RecipeManager {
     recipes: Map<number, [Map<number, number>, number[]]>;
@@ -11,7 +11,7 @@ export class RecipeManager {
         this.recipes = new Map();
     }
 
-    updateRecipes(update: ServerPacketSchema.craftingRecipes) {
+    updateRecipes(update: Schema.Server.craftingRecipes) {
         this.recipes.clear();
         for (const recipe of update) {
             const item = recipe[0];

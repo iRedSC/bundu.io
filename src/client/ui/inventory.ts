@@ -3,7 +3,7 @@ import { ItemButton } from "./button";
 import { colorLerp } from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
 import { SpriteFactory } from "../assets/sprite_factory";
-import { ServerPacketSchema } from "../../shared/enums";
+import { Schema.Server } from "../../shared/enums";
 import { Grid } from "./grid";
 import { percentOf } from "../../lib/math";
 
@@ -64,7 +64,7 @@ export class Inventory {
         this.display = new InventoryDisplay(this);
     }
 
-    update(update: ServerPacketSchema.updateInventory) {
+    update(update: Schema.Server.updateInventory) {
         console.log(this.slots);
         this.display.slotCount(update[0]);
 
