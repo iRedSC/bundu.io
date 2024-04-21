@@ -8,11 +8,31 @@ export type Subscription = (
     removed?: Component<any>
 ) => void;
 
+function getComponents<T>(component: ComponentFactory<T>): T;
+function getComponents<T>(
+    component: ComponentFactory<T>,
+    all: true
+): Component<T>[];
+function getComponents<T>(
+    this: GameObject,
+    component: ComponentFactory<T>,
+    all?: boolean
+) {
+    if (all) {
+        return this.components
+            .filter((listComponent) => listComponent.id === component.id)
+            .map((listComponent) => listComponent.data);
+    }
+    return this.components.find(
+        (listComponent) => listComponent.id === component.id
+    )?.data;
+}
+
 /**
  * A game object holds different components, and can be put into a world.
  */
 export abstract class GameObject {
-    public components: Map<number, Component<any>> = new Map();
+    public components: Component<any>[] = [];
     private subscriptions: Set<Subscription> = new Set();
 
     public id: number;
@@ -22,7 +42,7 @@ export abstract class GameObject {
         this.id = NEXT_OBJECT_ID++;
     }
 
-    public subscribe(handler: Subscription) {
+    public subscribe(handler: Subscription): () => GameObject {
         this.subscriptions.add(handler);
 
         return () => {
@@ -34,39 +54,40 @@ export abstract class GameObject {
         };
     }
 
-    public add(component: Component<any>) {
-        this.components.set(component.id, component);
+    public add(component: Component<any>): GameObject {
+        this.components.push(component);
         this.subscriptions.forEach((handler) =>
             handler(this, component, undefined)
         );
+        return this;
     }
 
-    public remove(component: Component<any>) {
-        this.components.delete(component.id);
+    public remove(component: Component<any>): GameObject {
+        this.components = this.components.filter(
+            (listComponent) => listComponent.id !== component.id
+        );
         this.subscriptions.forEach((handler) =>
             handler(this, undefined, component)
         );
+        return this;
     }
 
-    public hasComponents(components: ComponentFactory<any>[] | number[]) {
+    public hasComponents(components: ComponentFactory<any>[]): boolean {
         if (components.length === 0) {
             return true;
         }
-        if (typeof components[0] === "number") {
-            for (const component of components as number[]) {
-                if (!this.components.has(component)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        for (const component of components as ComponentFactory<any>[]) {
-            if (!this.components.has(component.id)) {
+        const componentSet = new Set(
+            this.components.map((component) => component.id)
+        );
+        for (const component of components) {
+            if (!componentSet.has(component.id)) {
                 return false;
             }
         }
         return true;
     }
 
-    public pack: { [key: string]: () => any[] } = {};
+    public get: typeof getComponents = getComponents.bind(this);
+
+    public pack: Record<number, () => any[]> = {};
 }

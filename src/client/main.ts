@@ -45,7 +45,7 @@ const world = new World(viewport, animationManager);
 createPipeline(parser, world);
 
 // list of ids that the server sent updates for but the client doesn't have
-export let requestIds: number[] = [];
+export let requestIds: Set<number> = new Set();
 
 // create a socket handler
 // this wraps a WebSocket and allows for the setup of methods without
@@ -59,7 +59,7 @@ socket.onopen = () => {
 
 socket.onmessage = async (ev) => {
     const data = await decodeFromBlob(ev.data);
-    // console.log(Date.now(), data);
+    console.log(data);
     parser.unpack(data);
 };
 
@@ -144,9 +144,12 @@ function chat(message: string) {
 
 // request unknown object ids on interval
 setInterval(() => {
-    if (requestIds.length > 0) {
-        socket.send([CLIENT_PACKET_TYPE.REQUEST_OBJECT, requestIds]);
-        requestIds = [];
+    if (requestIds.size > 0) {
+        socket.send([
+            CLIENT_PACKET_TYPE.REQUEST_OBJECT,
+            Array.from(requestIds),
+        ]);
+        requestIds.clear();
     }
 }, 500);
 

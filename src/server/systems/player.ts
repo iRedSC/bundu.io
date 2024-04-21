@@ -1,5 +1,4 @@
 import { clamp, moveToward } from "../../lib/transforms.js";
-import { BasicPoint } from "../../lib/types.js";
 import { PACKET_TYPE } from "../../shared/enums.js";
 import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
@@ -9,7 +8,6 @@ import { System } from "../game_engine/system.js";
 import { send } from "../network/send.js";
 import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
-import { quadtree } from "./position.js";
 
 /**
  * This is the system that controls players.
@@ -27,8 +25,8 @@ export class PlayerSystem extends System implements PlayerController {
      * Sends attack event if attacking is true.
      */
     update(time: number, delta: number, player: GameObject): void {
-        const physics = Physics.get(player).data;
-        const data = PlayerData.get(player).data;
+        const physics = Physics.get(player);
+        const data = PlayerData.get(player);
 
         if (data.attacking && data.lastAttackTime && !data.blocking) {
             if (data.lastAttackTime < time - 500) {
@@ -53,12 +51,9 @@ export class PlayerSystem extends System implements PlayerController {
     }
 
     enter(player: GameObject) {
-        const ground = this.world.query([GroundData.id]);
-        const data = PlayerData.get(player).data;
-        updateHandler.send(player, [
-            ground.values(),
-            [PACKET_TYPE.LOAD_GROUND],
-        ]);
+        const ground = this.world.query([GroundData]);
+        const data = PlayerData.get(player);
+        updateHandler.send(player, [ground, [PACKET_TYPE.LOAD_GROUND]]);
         send(data.socket, packCraftingList());
         this.trigger("health_update", player.id);
     }
@@ -69,7 +64,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        const data = PlayerData.get(player).data;
+        const data = PlayerData.get(player);
         data.moveDir = [x, y];
     }
 
@@ -79,7 +74,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        const data = Physics.get(player).data;
+        const data = Physics.get(player);
         data.rotation = rotation;
         this.trigger("rotate", player.id);
     }
@@ -100,7 +95,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        const data = PlayerData.get(player).data;
+        const data = PlayerData.get(player);
         data.attacking = !stop;
         if (data.lastAttackTime === undefined) {
             data.lastAttackTime = this.world.gameTime;
@@ -113,7 +108,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        const data = PlayerData.get(player).data;
+        const data = PlayerData.get(player);
         if (!stop && data.attacking) {
             data.attacking = false;
         }
@@ -142,7 +137,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        this.trigger("send_chat", player.id, message);
+        this.trigger("chat_message", player.id, message);
     }
 
     dropItem(playerId: number, itemId: number, all: boolean) {

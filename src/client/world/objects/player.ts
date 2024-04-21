@@ -14,7 +14,7 @@ const Gear = z.tuple([
     z.number(), // mainHand
     z.number(), // offHand
     z.number(), // helmet
-    z.number(), // backpack
+    z.boolean(), // backpack
 ]);
 type Gear = z.infer<typeof Gear>;
 type PlayerParts = {
@@ -42,7 +42,7 @@ export class Player extends WorldObject {
     mainHand: string;
     offHand: string;
     helmet: string;
-    backpack: number;
+    backpack: boolean;
 
     blocking: boolean;
     constructor(
@@ -81,7 +81,7 @@ export class Player extends WorldObject {
         this.offHand = "";
         this.mainHand = "";
         this.helmet = "";
-        this.backpack = -1;
+        this.backpack = false;
 
         this.blocking = false;
 

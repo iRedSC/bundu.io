@@ -20,13 +20,13 @@ export class VisibleObjects {
         this.old = new Set();
     }
 
-    update(objects: Set<number>) {
+    update(objects: number[]) {
         this.old = structuredClone(this.objects);
         this.objects.clear();
-        for (const object of objects.values()) {
+        for (const object of objects) {
             this.add(object);
         }
-        return intersection(this.old, this.objects, true);
+        return Array.from(intersection(this.old, this.objects, true));
     }
 
     add(id: number): boolean {
@@ -57,7 +57,7 @@ export class VisibleObjects {
     }
 
     getNew() {
-        const value = structuredClone(this.new);
+        const value = Array.from(this.new);
         this.new.clear();
         return value;
     }

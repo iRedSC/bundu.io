@@ -1,10 +1,15 @@
 import { Component, ComponentFactory } from "./component.js";
 import { GameObject } from "./game_object.js";
 import { World } from "./world.js";
+import { GameEventMap } from "./event_map.js";
 
 let NEXT_SYSTEM_ID = 1;
 
-export type EventCallback = (objects: GameObject, data?: any) => void;
+export type EventCallback<T extends keyof GameEventMap> = (
+    object: GameObject,
+    data: GameEventMap[T],
+    ...args: any[]
+) => void;
 
 export abstract class System {
     readonly id: number;
@@ -12,19 +17,23 @@ export abstract class System {
     readonly componentIds: Set<number> = new Set();
 
     public world: World = undefined as any;
-    public trigger: (
-        event: string,
-        objectIds?: Set<number> | number,
-        data?: any
+
+    public trigger: <T extends keyof GameEventMap>(
+        event: T,
+        objectIds: number | number[],
+        data?: GameEventMap[T]
     ) => void = undefined as any;
 
-    readonly callbacks: Map<string, Map<EventCallback, number[]>> = new Map();
+    readonly callbacks: Map<
+        string,
+        Map<EventCallback<any>, ComponentFactory<any>[]>
+    > = new Map();
 
     public beforeUpdate?(time: number): void;
 
     public update?(time: number, delta: number, object: GameObject): void;
 
-    public afterUpdate?(time: number, objects: Set<GameObject>): void;
+    public afterUpdate?(time: number, objects: GameObject[]): void;
 
     public change?(
         object: GameObject,
@@ -44,13 +53,13 @@ export abstract class System {
         this.tps = tps;
     }
 
-    protected query(componentTypes: number[]): Iterator<GameObject> {
-        return this.world.query(componentTypes).values();
+    protected query(componentTypes: ComponentFactory<any>[]): GameObject[] {
+        return this.world.query(componentTypes);
     }
 
-    public listen(
-        event: string,
-        callback: EventCallback,
+    public listen<T extends keyof GameEventMap>(
+        event: T,
+        callback: EventCallback<T>,
         components?: ComponentFactory<any>[],
         once?: boolean
     ) {
@@ -65,11 +74,6 @@ export abstract class System {
                 this.callbacks.get(event)?.delete(callback);
             };
         }
-        this.callbacks
-            .get(event)
-            ?.set(
-                callback,
-                components ? components.map((component) => component.id) : []
-            );
+        this.callbacks.get(event)?.set(callback, components || []);
     }
 }

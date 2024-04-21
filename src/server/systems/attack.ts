@@ -1,12 +1,10 @@
 import { radians, moveInDirection } from "../../lib/transforms.js";
 import { BasicPoint } from "../../lib/types.js";
-import { ACTION, PACKET_TYPE } from "../../shared/enums.js";
+import { PACKET_TYPE } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
 import { AttackData } from "../components/combat.js";
-import { PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
-import { System } from "../game_engine/system.js";
-import { send } from "../network/send.js";
+import { EventCallback, System } from "../game_engine/system.js";
 import { quadtree } from "./position.js";
 import SAT from "sat";
 
@@ -57,12 +55,12 @@ export function attackBox(
 
 export function testForIntersection(
     polygon: SAT.Polygon,
-    collisionTest: Set<GameObject>
+    collisionTest: GameObject[]
 ) {
     const hitObjects: Map<number, GameObject> = new Map();
 
     for (const other of collisionTest) {
-        const physics = Physics.get(other)?.data;
+        const physics = other.get(Physics);
         if (!physics) {
             continue;
         }
@@ -78,12 +76,12 @@ export class AttackSystem extends System {
     constructor() {
         super([AttackData, Physics]);
 
-        this.listen("attack", this.attack.bind(this));
+        this.listen("attack", this.attack);
     }
 
-    attack(object: GameObject) {
-        const data = AttackData.get(object)?.data;
-        const physics = Physics.get(object)?.data;
+    attack: EventCallback<"attack"> = (object: GameObject) => {
+        const data = AttackData.get(object);
+        const physics = Physics.get(object);
         if (!(data && physics)) {
             return;
         }
@@ -93,7 +91,7 @@ export class AttackSystem extends System {
             { x: physics.position.x + 500, y: physics.position.y + 500 },
         ];
 
-        const nearby = this.world.query([Physics.id], quadtree.query(bounds));
+        const nearby = this.world.query([Physics], quadtree.query(bounds));
 
         const hitRange = attackBox(
             pointToVec(
@@ -110,9 +108,9 @@ export class AttackSystem extends System {
 
         const hits = testForIntersection(hitRange, nearby);
         hits.delete(object.id);
-        this.trigger("hurt", new Set(hits.keys()), {
+        this.trigger("hurt", Array.from(hits.keys()), {
             source: object,
             damage: data.damage,
         });
-    }
+    };
 }

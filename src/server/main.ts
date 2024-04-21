@@ -56,14 +56,13 @@ const ground: GroundData = {
 
 world.addObject(new Ground(ground));
 // createEntities(world, 5);
-createResources(world, 30000);
+createResources(world, 10000);
 
 const controller = new ServerController();
 controller.start(7777);
 
 const players = new Map<number, GameObject>();
 
-controller.connect = (socket: WebSocket<any>) => {};
 controller.message = (socket: WebSocket<any>, message: unknown) => {
     const id = SocketManager.instance.sockets.get(socket);
     parser.unpack(message, { socket: socket, id: id });
@@ -108,6 +107,7 @@ parser.set(
         SocketManager.instance.sockets.set(socket, player.id);
         players.set(player.id, player);
         world.addObject(player);
+
         send(socket, [PACKET_TYPE.STARTING_INFO, [player.id]]);
     }
 );

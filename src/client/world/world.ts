@@ -258,7 +258,7 @@ export class World {
 
         const object = this.objects.get(id);
         if (!object) {
-            requestIds.push(id);
+            requestIds.add(id);
             return;
         }
         object.renderable = true;
@@ -272,7 +272,7 @@ export class World {
 
         const object = this.objects.get(id);
         if (!object) {
-            requestIds.push(id);
+            requestIds.add(id);
             return;
         }
         object.rotation = radians(packet[1]);
@@ -322,7 +322,7 @@ export class World {
     }
 
     updateGear(packet: ServerPacketSchema.updateGear) {
-        const gear: [number, number, number, number] = [
+        const gear: [number, number, number, boolean] = [
             packet[1],
             packet[2],
             packet[3],

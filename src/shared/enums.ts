@@ -156,7 +156,7 @@ export namespace ServerPacketSchema {
         z.number(), // mainHand
         z.number(), // offHand
         z.number(), // helmet,
-        z.number(), // backpack
+        z.boolean(), // backpack
     ]);
     export type updateGear = z.infer<typeof updateGear>;
 

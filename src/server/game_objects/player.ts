@@ -13,17 +13,17 @@ export class Player extends GameObject {
     constructor(physics: Physics, playerData: PlayerData) {
         super();
 
-        this.add(new AttackData({ speed: 10, damage: 10, reach: 5 }));
-        this.add(new Physics(physics));
-        this.add(new PlayerData(playerData));
-        this.add(new CalculateCollisions({}));
-        this.add(new Inventory({ slots: 10, items: new Map() }));
-        this.add(new Flags(new Set()));
-        this.add(new Health({ max: 200, value: 200 }));
+        this.add(new AttackData({ speed: 10, damage: 10, reach: 5 }))
+            .add(new Physics(physics))
+            .add(new PlayerData(playerData))
+            .add(new CalculateCollisions({}))
+            .add(new Inventory({ slots: 10, items: new Map() }))
+            .add(new Flags(new Set()))
+            .add(new Health({ max: 200, value: 200 }));
 
         this.pack[PACKET_TYPE.NEW_OBJECT] = () => {
-            const physics = Physics.get(this).data;
-            const playerData = PlayerData.get(this).data;
+            const physics = Physics.get(this);
+            const playerData = PlayerData.get(this);
             return [
                 OBJECT_CLASS.PLAYER,
                 [
@@ -43,7 +43,7 @@ export class Player extends GameObject {
         };
 
         this.pack[PACKET_TYPE.MOVE_OBJECT] = () => {
-            const physics = Physics.get(this).data;
+            const physics = Physics.get(this);
             return [
                 this.id,
                 100,
@@ -53,7 +53,7 @@ export class Player extends GameObject {
         };
 
         this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {
-            const physics = Physics.get(this).data;
+            const physics = Physics.get(this);
             return [this.id, round(degrees(physics.rotation))];
         };
     }

@@ -1,9 +1,8 @@
 import { BasicPoint } from "../../lib/types.js";
 import { CalculateCollisions, Physics } from "../components/base.js";
-import { PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
-import { System } from "../game_engine/system.js";
-import { quadtree } from "./position.js";
+import { EventCallback, System } from "../game_engine/system.js";
+import { getSizedBounds, quadtree } from "./position.js";
 import SAT from "sat";
 
 /**
@@ -15,26 +14,27 @@ export class CollisionSystem extends System {
     constructor() {
         super([Physics, CalculateCollisions], 10);
 
-        this.listen("move", this.collide.bind(this));
+        this.listen("move", this.collide);
     }
 
-    collide(object: GameObject, tries: number = 0) {
-        const physics = Physics.get(object).data;
+    collide: EventCallback<"move"> = (
+        object: GameObject,
+        _,
+        tries: number = 0
+    ) => {
+        const physics = object.get(Physics);
 
-        const bounds: [BasicPoint, BasicPoint] = [
-            { x: physics.position.x - 500, y: physics.position.y - 500 },
-            { x: physics.position.x + 500, y: physics.position.y + 500 },
-        ];
+        const bounds = getSizedBounds(physics.position, 500, 500);
 
-        const nearby = this.world.query([Physics.id], quadtree.query(bounds));
+        const nearby = this.world.query([Physics], quadtree.query(bounds));
 
         const response = new SAT.Response();
         let retrigger = false;
         for (const other of nearby) {
-            if (other.id === object.id || !Physics.get(other).data.solid) {
+            if (other.id === object.id || !Physics.get(other).solid) {
                 continue;
             }
-            const otherPhysics = Physics.get(other).data;
+            const otherPhysics = Physics.get(other);
             const collided = SAT.testCircleCircle(
                 physics.collider,
                 otherPhysics.collider,
@@ -47,7 +47,7 @@ export class CollisionSystem extends System {
             }
         }
         if (retrigger && tries < 3) {
-            this.collide(object, tries + 1);
+            this.collide(object, undefined, tries + 1);
         }
-    }
+    };
 }

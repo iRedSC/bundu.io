@@ -1,7 +1,7 @@
 import { GameObject } from "./game_object.js";
 import { EventCallback, System } from "./system.js";
 import { NOW } from "./now.js";
-import { Component } from "./component.js";
+import { Component, ComponentFactory } from "./component.js";
 import Logger from "js-logger";
 
 function checkSubset<T>(subSet: Set<T>, superSet: Set<T>) {
@@ -42,32 +42,35 @@ export class World {
 
     private triggerSystems = (
         event: string,
-        objectIds?: Set<number> | number,
+        objectIds: number | number[],
         data?: any
     ) => {
         if (typeof objectIds === "number") {
-            objectIds = new Set([objectIds]);
+            objectIds = [objectIds];
         }
         for (const system of this.systems.values()) {
             const events: Map<
                 string,
-                Map<EventCallback, number[]>
+                Map<EventCallback<any>, ComponentFactory<any>[]>
             > = system.callbacks;
+
             if (!events.has(event)) {
                 continue;
             }
 
-            const callbacks: Map<EventCallback, number[]> =
-                events.get(event) || new Map();
+            const callbacks: Map<
+                EventCallback<any>,
+                ComponentFactory<any>[]
+            > = events.get(event) || new Map();
             const objects = this.query([], objectIds);
             if (callbacks.size > 0) {
-                this.inject(system);
-                for (const [callback, components] of callbacks.entries())
+                for (const [callback, components] of callbacks.entries()) {
                     for (const object of objects) {
                         if (object.hasComponents(components)) {
                             callback(object, data);
                         }
                     }
+                }
             }
         }
     };
@@ -130,6 +133,10 @@ export class World {
     }
 
     addSystem(system: System) {
+        if (system.world) {
+            throw new Error("System already in use.");
+        }
+        this.inject(system);
         this.systems.set(system.id, system);
 
         for (const object of this.objects.values()) {
@@ -139,7 +146,6 @@ export class World {
                     system.enter &&
                     this.objectSystems.get(object.id)?.has(system)
                 ) {
-                    this.inject(system);
                     system.enter(object);
                 }
             }
@@ -178,7 +184,7 @@ export class World {
         this.gameTime += (now - this.lastUpdate) * this.timeScale;
         this.lastUpdate = now;
 
-        const afterUpdateListeners: Map<System, Set<GameObject>> = new Map();
+        const afterUpdateListeners: Map<System, GameObject[]> = new Map();
 
         for (const [objectId, object] of this.objects.entries()) {
             if (!object.active) {
@@ -193,10 +199,17 @@ export class World {
             const objectLastUpdateGT = this.objectLastUpdateGT.get(objectId);
 
             for (const system of systems.values()) {
+                if (!afterUpdateListeners.get(system)) {
+                    if (system.beforeUpdate) {
+                        system.beforeUpdate(this.gameTime);
+                    }
+                    afterUpdateListeners.set(system, []);
+                }
+                afterUpdateListeners.get(system)?.push(object);
+
                 if (!system.update) {
                     continue;
                 }
-                this.inject(system);
 
                 const elapsed = now - objectLastUpdateRT?.get(system.id)!;
                 const elapsedScaled =
@@ -208,14 +221,6 @@ export class World {
                 }
                 objectLastUpdateRT?.set(system.id, now - (elapsed % interval));
                 objectLastUpdateGT?.set(system.id, this.gameTime);
-
-                if (!afterUpdateListeners.get(system)) {
-                    if (system.beforeUpdate) {
-                        system.beforeUpdate(this.gameTime);
-                    }
-                    afterUpdateListeners.set(system, new Set());
-                }
-                afterUpdateListeners.get(system)?.add(object);
 
                 system.update(this.gameTime, elapsedScaled, object);
             }
@@ -234,26 +239,21 @@ export class World {
      * @returns generator that gives requested objects
      */
     public query(
-        componentIds: number[] | Set<number>,
-        ids?: Set<number>
-    ): Set<GameObject> {
-        let _componentIds = componentIds as number[];
-        if (componentIds instanceof Set) {
-            _componentIds = Array.from(componentIds);
-        }
+        components: ComponentFactory<any>[],
+        ids?: number[]
+    ): GameObject[] {
         const objects = ids ? ids.values() : this.objects.keys();
 
-        const found = new Set<GameObject>();
+        const found: GameObject[] = [];
         for (const id of objects) {
             const object = this.objects.get(id);
             if (!object) {
                 continue;
             }
-            if (object.hasComponents(_componentIds)) {
-                found.add(object);
+            if (object.hasComponents(components)) {
+                found.push(object);
             }
         }
-
         return found;
     }
 
@@ -265,14 +265,14 @@ export class World {
 
     private onObjectComponentChange(
         object: GameObject,
-        added?: Component<any>,
-        removed?: Component<any>
+        added?: Component<unknown>,
+        removed?: Component<unknown>
     ) {
         if (!this.objectSystems.get(object.id)) {
             return;
         }
 
-        const systemsToNotify: Set<System> = new Set();
+        const systemsToNotify: System[] = [];
 
         for (const system of this.objectSystems.get(object.id)!.values()) {
             if (system.componentIds.size === 0) {
@@ -286,14 +286,14 @@ export class World {
             if (removed && !system.componentIds.has(removed.id)) {
                 continue;
             }
-            systemsToNotify.add(system);
+            systemsToNotify.push(system);
         }
 
-        for (const system of systemsToNotify.values()) {
-            this.inject(system);
+        for (const system of systemsToNotify) {
             const componentIds = system.componentIds;
             const all = componentIds.size === 0;
-            (system.change as any)(
+            system.change?.call(
+                system,
                 object,
                 all
                     ? added
@@ -328,20 +328,9 @@ export class World {
 
         const componentIds = system.componentIds;
 
-        // Logger.log(
-        //     `System needs ${Array.from(
-        //         componentIds.values()
-        //     )}, \nObject has ${Array.from(
-        //         new Set(object.components.keys()).values()
-        //     )} \nSuccess: ${checkSubset(
-        //         componentIds,
-        //         new Set(object.components.keys())
-        //     )}`
-        // );
-
         const HasAllComponents = checkSubset(
             componentIds,
-            new Set(object.components.keys())
+            new Set(object.components.map((component) => component.id))
         );
         if (!HasAllComponents) {
             if (objectSystem.has(system)) {
@@ -362,7 +351,6 @@ export class World {
                 ?.set(system.id, this.gameTime);
 
             if (system.enter) {
-                this.inject(system);
                 system.enter(object);
             }
         }

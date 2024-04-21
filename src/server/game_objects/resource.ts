@@ -16,13 +16,11 @@ export class Resource extends GameObject {
         const config =
             resourceConfigs.get(type.id) || createResourceConfig(type.id, {});
 
-        this.add(config);
-        this.add(new Physics(physics));
-        this.add(new Type(type));
+        this.add(config).add(new Physics(physics)).add(new Type(type));
 
         this.pack[PACKET_TYPE.NEW_OBJECT] = () => {
-            const physics = Physics.get(this).data;
-            const type = Type.get(this).data;
+            const physics = Physics.get(this);
+            const type = Type.get(this);
             return [
                 OBJECT_CLASS.STRUCTURE,
                 [
@@ -36,7 +34,7 @@ export class Resource extends GameObject {
             ];
         };
         this.pack[PACKET_TYPE.MOVE_OBJECT] = () => {
-            const physics = Physics.get(this).data;
+            const physics = Physics.get(this);
             return [
                 this.id,
                 50,
@@ -46,7 +44,7 @@ export class Resource extends GameObject {
         };
 
         this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {
-            const physics = Physics.get(this).data;
+            const physics = Physics.get(this);
             return [this.id, round(degrees(physics.rotation))];
         };
     }

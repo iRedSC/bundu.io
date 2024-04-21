@@ -24,7 +24,7 @@ export class UpdateHandler {
      * @param types Packet types to send out of each object
      */
     public add(
-        objects: IterableIterator<GameObject> | GameObject,
+        objects: IterableIterator<GameObject> | GameObject[] | GameObject,
         types: PACKET_TYPE[],
         giveList: boolean = false
     ): Map<GameObject, UpdateTypes> {
@@ -49,7 +49,7 @@ export class UpdateHandler {
      */
     send(
         player: Player,
-        objects?: [IterableIterator<GameObject>, PACKET_TYPE[]]
+        objects?: [IterableIterator<GameObject> | GameObject[], PACKET_TYPE[]]
     ) {
         let list = this.objects;
         let ignoreVisible = false;
@@ -57,7 +57,7 @@ export class UpdateHandler {
             ignoreVisible = true;
             list = this.add(objects[0], objects[1], true)!;
         }
-        const playerData = PlayerData.get(player).data;
+        const playerData = PlayerData.get(player);
         const packets: Map<PACKET_TYPE, any[]> = new Map();
         for (const [object, packetTypes] of list.entries()) {
             if (!ignoreVisible && !playerData.visibleObjects.has(object.id)) {
@@ -70,11 +70,11 @@ export class UpdateHandler {
 
                 let packet = packets.get(packetType);
                 if (packet) {
-                    packet.push(object.pack[packetType]());
+                    packet.push(object.pack[packetType]!());
                 } else {
                     packets.set(packetType, [
                         packetType,
-                        object.pack[packetType](),
+                        object.pack[packetType]!(),
                     ]);
                 }
             }

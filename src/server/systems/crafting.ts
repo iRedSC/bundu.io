@@ -2,18 +2,21 @@ import { Flags } from "../components/base.js";
 import { Inventory } from "../components/player.js";
 import { craftingList } from "../configs/loaders/crafting.js";
 import { GameObject } from "../game_engine/game_object.js";
-import { System } from "../game_engine/system.js";
+import { EventCallback, System } from "../game_engine/system.js";
 
 export class CraftingSystem extends System {
     constructor() {
         super([Inventory]);
 
-        this.listen("craft_item", this.craftItem.bind(this));
+        this.listen("craft_item", this.craftItem);
     }
 
-    craftItem(player: GameObject, item: number) {
-        const inventory = Inventory.get(player).data;
-        const flags = Flags.get(player).data;
+    craftItem: EventCallback<"craft_item"> = (
+        player: GameObject,
+        item: number
+    ) => {
+        const inventory = Inventory.get(player);
+        const flags = Flags.get(player);
         const recipe = craftingList.get(item);
         if (!recipe) {
             return;
@@ -53,5 +56,5 @@ export class CraftingSystem extends System {
         }
         console.log("sending inventory");
         this.trigger("update_inventory", player.id);
-    }
+    };
 }
