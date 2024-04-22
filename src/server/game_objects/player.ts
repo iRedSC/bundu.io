@@ -1,6 +1,6 @@
 import { round } from "../../lib/math.js";
 import { degrees } from "../../lib/transforms.js";
-import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
+import { OBJECT_CLASS, PACKET } from "../../shared/enums.js";
 import { CalculateCollisions, Flags, Physics } from "../components/base.js";
 import { AttackData, Health } from "../components/combat.js";
 import { Inventory, PlayerData } from "../components/player.js";
@@ -21,7 +21,7 @@ export class Player extends GameObject {
             .add(new Flags(new Set()))
             .add(new Health({ max: 200, value: 200 }));
 
-        this.pack[PACKET_TYPE.NEW_OBJECT] = () => {
+        this.pack[PACKET.SERVER.NEW_OBJECT] = () => {
             const physics = Physics.get(this);
             const playerData = PlayerData.get(this);
             return [
@@ -42,7 +42,7 @@ export class Player extends GameObject {
             ];
         };
 
-        this.pack[PACKET_TYPE.MOVE_OBJECT] = () => {
+        this.pack[PACKET.SERVER.MOVE_OBJECT] = () => {
             const physics = Physics.get(this);
             return [
                 this.id,
@@ -52,7 +52,7 @@ export class Player extends GameObject {
             ];
         };
 
-        this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {
+        this.pack[PACKET.SERVER.ROTATE_OBJECT] = () => {
             const physics = Physics.get(this);
             return [this.id, round(degrees(physics.rotation))];
         };

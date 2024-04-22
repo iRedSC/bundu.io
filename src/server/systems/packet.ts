@@ -1,5 +1,5 @@
 import { Range } from "../../lib/quadtree.js";
-import { ACTION, PACKET_TYPE } from "../../shared/enums.js";
+import { PACKET } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
 import { Health } from "../components/combat.js";
 import { Inventory, PlayerData } from "../components/player.js";
@@ -57,7 +57,7 @@ export class PacketSystem extends System {
             const unload = data.visibleObjects.update(nearby);
 
             if (unload.length > 0) {
-                send(data.socket, [PACKET_TYPE.UNLOAD_OBJECT, unload]);
+                send(data.socket, [PACKET.SERVER.UNLOAD_OBJECT, unload]);
             }
             if (data.visibleObjects.new.size > 0) {
                 this.trigger("send_object_updates", player.id);
@@ -92,17 +92,17 @@ export class PacketSystem extends System {
 
             if (bounds.contains(objPhys.position)) {
                 data.visibleObjects.add(object.id);
-                updateHandler.add(object, [PACKET_TYPE.NEW_OBJECT]);
+                updateHandler.add(object, [PACKET.SERVER.NEW_OBJECT]);
             }
         }
     };
 
     moveObject: EventCallback<"move" | "collide"> = (object: GameObject) => {
-        updateHandler.add(object, [PACKET_TYPE.MOVE_OBJECT]);
+        updateHandler.add(object, [PACKET.SERVER.MOVE_OBJECT]);
     };
 
     rotateObject: EventCallback<"rotate"> = (object: GameObject) => {
-        updateHandler.add(object, [PACKET_TYPE.ROTATE_OBJECT]);
+        updateHandler.add(object, [PACKET.SERVER.ROTATE_OBJECT]);
     };
     deleteObject: EventCallback<"delete_object"> = (object: GameObject) => {
         const players = this.world.query([PlayerData]);
@@ -111,7 +111,7 @@ export class PacketSystem extends System {
             if (!data) {
                 continue;
             }
-            send(data.socket, [PACKET_TYPE.DELETE_OBJECT, object.id]);
+            send(data.socket, [PACKET.SERVER.DELETE_OBJECT, object.id]);
         }
     };
 
@@ -123,8 +123,8 @@ export class PacketSystem extends System {
                 continue;
             }
             send(data.socket, [
-                PACKET_TYPE.ACTION,
-                [ACTION.BLOCK, object.id, stop],
+                PACKET.SERVER.ACTION,
+                [PACKET.EVENT.BLOCK, object.id, stop],
             ]);
         }
     };
@@ -140,8 +140,8 @@ export class PacketSystem extends System {
                 continue;
             }
             send(data.socket, [
-                PACKET_TYPE.ACTION,
-                [ACTION.ATTACK, object.id, false],
+                PACKET.SERVER.ACTION,
+                [PACKET.EVENT.ATTACK, object.id, false],
             ]);
         }
     };
@@ -155,7 +155,7 @@ export class PacketSystem extends System {
         }
         const foundObjects = this.world.query([], objects);
 
-        updateHandler.send(player, [foundObjects, [PACKET_TYPE.NEW_OBJECT]]);
+        updateHandler.send(player, [foundObjects, [PACKET.SERVER.NEW_OBJECT]]);
     };
 
     sendUpdatedObjects: EventCallback<"send_object_updates"> = (
@@ -167,9 +167,9 @@ export class PacketSystem extends System {
         updateHandler.send(player, [
             objects,
             [
-                PACKET_TYPE.MOVE_OBJECT,
-                PACKET_TYPE.ROTATE_OBJECT,
-                PACKET_TYPE.UPDATE_GEAR,
+                PACKET.SERVER.MOVE_OBJECT,
+                PACKET.SERVER.ROTATE_OBJECT,
+                PACKET.SERVER.UPDATE_GEAR,
             ],
         ]);
         data.visibleObjects.clear();
@@ -182,7 +182,7 @@ export class PacketSystem extends System {
         }
         const inventory = player.get(Inventory);
         send(data.socket, [
-            PACKET_TYPE.UPDATE_INVENTORY,
+            PACKET.SERVER.UPDATE_INVENTORY,
             [inventory.slots, Array.from(inventory.items.entries())],
         ]);
     };
@@ -198,7 +198,7 @@ export class PacketSystem extends System {
             if (data.visibleObjects.has(player.id)) {
                 const data = PlayerData.get(other);
                 send(data.socket, [
-                    PACKET_TYPE.UPDATE_GEAR,
+                    PACKET.SERVER.UPDATE_GEAR,
                     [player.id, ...items],
                 ]);
             }
@@ -210,8 +210,8 @@ export class PacketSystem extends System {
             return;
         }
         const packet: any[] = [
-            PACKET_TYPE.ACTION,
-            [ACTION.HURT, object.id, false],
+            PACKET.SERVER.ACTION,
+            [PACKET.EVENT.HURT, object.id, false],
         ];
         const players = this.world.query([PlayerData]);
         for (let player of players) {
@@ -233,7 +233,7 @@ export class PacketSystem extends System {
             if (data.visibleObjects.has(object.id)) {
                 const data = PlayerData.get(player);
                 send(data?.socket, [
-                    PACKET_TYPE.CHAT_MESSAGE,
+                    PACKET.SERVER.CHAT_MESSAGE,
                     [object.id, message],
                 ]);
             }
@@ -243,6 +243,6 @@ export class PacketSystem extends System {
     healthUpdate: EventCallback<"health_update"> = (player: GameObject) => {
         const health = Health.get(player);
         const data = PlayerData.get(player);
-        send(data?.socket, [PACKET_TYPE.UPDATE_STATS, [health.value, 0, 0]]);
+        send(data?.socket, [PACKET.SERVER.UPDATE_STATS, [health.value, 0, 0]]);
     };
 }

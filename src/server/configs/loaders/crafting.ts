@@ -2,7 +2,7 @@ import fs from "fs";
 import yaml from "yaml";
 import { idMap, __dirname } from "./id_map.js";
 import { flagMap } from "./flag_map.js";
-import { PACKET_TYPE } from "../../../shared/enums.js";
+import { PACKET } from "../../../shared/enums.js";
 import { z } from "zod";
 
 const CraftingRecipeData = z.object({
@@ -69,5 +69,5 @@ export function packCraftingList() {
     for (const recipe of craftingList.values()) {
         packet.push(recipe.pack());
     }
-    return [PACKET_TYPE.CRAFTING_RECIPES, packet];
+    return [PACKET.SERVER.CRAFTING_RECIPES, packet];
 }

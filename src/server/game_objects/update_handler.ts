@@ -1,10 +1,10 @@
-import { PACKET_TYPE } from "../../shared/enums.js";
+import { PACKET } from "../../shared/enums.js";
 import { send } from "../network/send.js";
 import { Player } from "./player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { PlayerData } from "../components/player.js";
 
-type UpdateTypes = Set<PACKET_TYPE>;
+type UpdateTypes = Set<PACKET.SERVER>;
 
 /**
  * UpdateHandler deals with sending packets to players.
@@ -25,7 +25,7 @@ export class UpdateHandler {
      */
     public add(
         objects: IterableIterator<GameObject> | GameObject[] | GameObject,
-        types: PACKET_TYPE[],
+        types: PACKET.SERVER[],
         giveList: boolean = false
     ): Map<GameObject, UpdateTypes> {
         const list = giveList ? new Map() : this.objects;
@@ -49,7 +49,7 @@ export class UpdateHandler {
      */
     send(
         player: Player,
-        objects?: [IterableIterator<GameObject> | GameObject[], PACKET_TYPE[]]
+        objects?: [IterableIterator<GameObject> | GameObject[], PACKET.SERVER[]]
     ) {
         let list = this.objects;
         let ignoreVisible = false;
@@ -58,7 +58,7 @@ export class UpdateHandler {
             list = this.add(objects[0], objects[1], true)!;
         }
         const playerData = PlayerData.get(player);
-        const packets: Map<PACKET_TYPE, any[]> = new Map();
+        const packets: Map<PACKET.SERVER, any[]> = new Map();
         for (const [object, packetTypes] of list.entries()) {
             if (!ignoreVisible && !playerData.visibleObjects.has(object.id)) {
                 continue;

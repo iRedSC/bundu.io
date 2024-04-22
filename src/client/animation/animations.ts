@@ -83,7 +83,7 @@ import { colorLerp, lerp } from "../../lib/transforms";
 
 type Tintable = { tint: ColorSource };
 export function hurt(targets: Tintable[]) {
-    const animation = new Animation(ANIMATION.HURT);
+    const animation = new Animation();
 
     animation.keyframes[0] = (animation) => {
         if (animation.isFirstKeyframe) {
@@ -115,7 +115,7 @@ type ObjectWithSize = { size: number };
 export function hit(target: ObjectWithSize) {
     const timingFunction = cubicBezier(0.5, 0, 0.09, 1.51);
     const scale = target.size;
-    const animation = new Animation(ANIMATION.HURT);
+    const animation = new Animation();
     animation.keyframes[0] = (animation) => {
         if (animation.isFirstKeyframe) {
             animation.goto(0, 100);

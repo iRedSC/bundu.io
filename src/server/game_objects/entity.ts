@@ -9,7 +9,7 @@ import {
 } from "../../lib/transforms.js";
 import Random from "../../lib/random.js";
 import SAT from "sat";
-import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
+import { OBJECT_CLASS, PACKET } from "../../shared/enums.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { EntityAI, Physics, Type } from "../components/base.js";
 

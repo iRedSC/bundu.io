@@ -1,4 +1,4 @@
-import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
+import { OBJECT_CLASS, PACKET } from "../../shared/enums.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { GroundItemData, Physics } from "../components/base.js";
 import { round } from "../../lib/math.js";
@@ -13,7 +13,7 @@ export class GroundItem extends GameObject {
             .add(new GroundItemData(itemData))
             .add(new Health({ max: 1, value: 1 }));
 
-        this.pack[PACKET_TYPE.NEW_OBJECT] = () => {
+        this.pack[PACKET.SERVER.NEW_OBJECT] = () => {
             const physics = Physics.get(this);
             const data = GroundItemData.get(this);
             return [
@@ -29,12 +29,12 @@ export class GroundItem extends GameObject {
                 ],
             ];
         };
-        this.pack[PACKET_TYPE.MOVE_OBJECT] = () => {
+        this.pack[PACKET.SERVER.MOVE_OBJECT] = () => {
             const physics = Physics.get(this);
             return [this.id, 100, physics.position.x, physics.position.y];
         };
 
-        this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {
+        this.pack[PACKET.SERVER.ROTATE_OBJECT] = () => {
             const physics = Physics.get(this);
             return [this.id, round(degrees(physics.rotation))];
         };

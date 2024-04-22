@@ -6,7 +6,6 @@ import { TEXT_STYLE } from "../../assets/text";
 import { Animation, AnimationManager } from "../../../lib/animations";
 import { States } from "../states";
 import { RotationHandler } from "../rotation";
-import { IDContainer } from "./id_container";
 import { Container, Point, Text } from "pixi.js";
 
 // TODO: There are too many properties related to rotation clogging up the object.
@@ -110,7 +109,7 @@ export class WorldObject {
         }
         const animation = this.animations.get(id);
         if (animation) {
-            manager.add(this, animation.run(replace));
+            manager.set(this, id, animation.run(), replace);
         }
     }
 

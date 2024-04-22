@@ -41,7 +41,7 @@ function entityIdle(target: Entity) {
     let height: number;
 
     let frameLength: number;
-    const animation = new Animation(ANIMATION.ENTITY_IDLE);
+    const animation = new Animation();
     animation.keyframes[0] = (animation) => {
         width = target.container.scale.x;
         height = target.container.scale.y;

@@ -8,11 +8,7 @@ import { PlayerSystem } from "./systems/player.js";
 import { PacketSystem } from "./systems/packet.js";
 import { CollisionSystem } from "./systems/collision.js";
 import { createEntities, createResources } from "./testing.js";
-import {
-    CLIENT_PACKET_TYPE,
-    ClientPacketSchema,
-    PACKET_TYPE,
-} from "../shared/enums.js";
+import { PACKET, SCHEMA } from "../shared/enums.js";
 import { Player } from "./game_objects/player.js";
 import random from "../lib/random.js";
 import { VisibleObjects } from "./components/player.js";
@@ -78,12 +74,9 @@ controller.message = (socket: WebSocket<any>, message: unknown) => {
 // };
 
 parser.set(
-    CLIENT_PACKET_TYPE.JOIN,
-    ClientPacketSchema.join,
-    (
-        packet: ClientPacketSchema.join,
-        { socket }: { socket: WebSocket<any> }
-    ) => {
+    PACKET.CLIENT.JOIN,
+    SCHEMA.CLIENT.JOIN,
+    (packet: SCHEMA.CLIENT.JOIN, { socket }: { socket: WebSocket<any> }) => {
         const position = new SAT.Vector(
             random.integer(7500, 7500),
             random.integer(7500, 7500)
@@ -108,7 +101,7 @@ parser.set(
         players.set(player.id, player);
         world.addObject(player);
 
-        send(socket, [PACKET_TYPE.STARTING_INFO, [player.id]]);
+        send(socket, [PACKET.SERVER.STARTING_INFO, [player.id]]);
     }
 );
 

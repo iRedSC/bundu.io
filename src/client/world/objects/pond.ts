@@ -55,10 +55,10 @@ export class Pond extends WorldObject {
             this.container.height / 2
         );
 
-        manager.add(this.sprites[5], wave(this.sprites[5], 8500).run());
-        manager.add(this.sprites[4], wave(this.sprites[4], 4300).run());
-        manager.add(this.sprites[3], wave(this.sprites[3], 6200).run());
-        manager.add(this.sprites[2], wave(this.sprites[2], 8100).run());
+        manager.add(this, 0, wave(this.sprites[5], 8500).run());
+        manager.add(this, 0, wave(this.sprites[4], 4300).run());
+        manager.add(this, 0, wave(this.sprites[3], 6200).run());
+        manager.add(this, 0, wave(this.sprites[2], 8100).run());
     }
 
     get containers() {
@@ -69,7 +69,7 @@ export class Pond extends WorldObject {
 export function wave(target: SpriteWrapper, time: number) {
     const timingFunction = cubicBezier(0.68, 0.3, 0.32, 0.74);
     const size = target.scale.x;
-    const animation = new Animation(0);
+    const animation = new Animation();
     animation.keyframes[0] = (animation) => {
         animation.next(time);
     };

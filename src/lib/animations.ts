@@ -2,32 +2,42 @@ export type Keyframes = { [key: string | number]: Keyframe };
 
 export type Keyframe = (animation: ActiveAnimation) => void;
 
+/**
+ * Represents a stored animation.
+ *
+ * Use the `Animation.run()` method to retrieve an {@link ActiveAnimation}.
+ */
 export class Animation {
-    id: number;
     keyframes: Keyframes;
 
-    constructor(id: number) {
-        this.id = id;
+    constructor() {
         this.keyframes = {};
     }
 
-    run(replace: boolean = false) {
-        return new ActiveAnimation(this.id, this.keyframes, replace);
+    /**
+     * Retrieve a new {@link ActiveAnimation}.
+     * @returns new {@link ActiveAnimation}
+     */
+    run() {
+        return new ActiveAnimation(this.keyframes);
     }
 }
 
+/**
+ * An active animation.
+ *
+ * @prop `id` animation id
+ * @prop `keyframes` the {@link Keyframes} that make up the animation
+ */
 class ActiveAnimation {
-    id: number;
+    id?: number;
     keyframes: Keyframes;
-    replace: boolean;
     currentKeyframe: number;
     expired: boolean;
     start: number;
     duration: number;
 
-    constructor(id: number, keyframes: Keyframes, replace: boolean = false) {
-        this.id = id;
-        this.replace = replace;
+    constructor(keyframes: Keyframes) {
         this.start = Date.now();
         this.duration = -1;
         this.expired = false;
@@ -90,9 +100,8 @@ class ActiveAnimation {
 }
 
 type ValidActiveAnimation = {
+    id?: number;
     expired: boolean;
-    replace: boolean;
-    id: number;
     update(): void;
     end(): void;
 };
@@ -105,37 +114,79 @@ type AnimationSource = {
 };
 
 function getSource(
-    sources: Map<AnimationSource, Map<string, ValidActiveAnimation>>,
+    sources: Map<AnimationSource, ValidActiveAnimation[]>,
     source: AnimationSource
-): Map<any, ValidActiveAnimation> {
+): ValidActiveAnimation[] {
     const value = sources.get(source);
     if (value === undefined) {
-        sources.set(source, new Map());
+        sources.set(source, []);
     }
     return sources.get(source)!;
 }
 
 export class AnimationManager {
-    sources: Map<AnimationSource, Map<string, ValidActiveAnimation>>;
+    sources: Map<AnimationSource, ValidActiveAnimation[]>;
 
     constructor() {
         this.sources = new Map();
     }
 
-    add(target: any, animation: ValidActiveAnimation) {
-        const source = getSource(this.sources, target);
-        const existing = source.get(animation.id);
-        if (!animation.replace && existing) {
-            return;
-        }
-        if (existing) {
-            existing.end();
-        }
-        source.set(animation.id, animation);
+    /**
+     * Add an animation to the manager without replacing existing ones.
+     * This allows multiple animations with the same id.
+     *
+     * Use the `set()` method if you would like the manager to ignore the request in the
+     * event of an existing animation with the same id.
+     * @param source animation source
+     * @param id the id of the animation, for removing and replacing
+     * @param animation the ActiveAnimation
+     */
+    add(source: AnimationSource, id: number, animation: ValidActiveAnimation) {
+        animation.id = id;
+        getSource(this.sources, source).push(animation);
     }
 
-    remove(target: any) {
-        this.sources.delete(target);
+    set(
+        source: AnimationSource,
+        id: number,
+        animation: ValidActiveAnimation,
+        replace: boolean = false
+    ) {
+        animation.id = id;
+
+        const existingSource = getSource(this.sources, source);
+
+        if (replace) {
+            existingSource.forEach((animation) => {
+                if (animation.id === id) {
+                    animation.end();
+                }
+            });
+            const filteredAnimations = existingSource.filter(
+                (animation) => animation.id !== id
+            );
+            filteredAnimations.push(animation);
+            this.sources.set(source, filteredAnimations);
+            return;
+        }
+        if (!existingSource.find((animation) => animation.id === id)) {
+            existingSource.push(animation);
+        }
+    }
+
+    remove(source: AnimationSource, id?: number) {
+        if (id === undefined) {
+            this.sources.delete(source);
+            return;
+        }
+        const foundSource = this.sources.get(source);
+        if (!foundSource) {
+            return;
+        }
+        this.sources.set(
+            source,
+            foundSource.filter((animation) => animation.id !== id)
+        );
     }
 
     update() {
@@ -147,10 +198,10 @@ export class AnimationManager {
             ) {
                 continue;
             }
-            for (let [name, animation] of animations.entries()) {
+            for (let [index, animation] of animations.entries()) {
                 if (animation.expired) {
                     animation.end();
-                    animations.delete(name);
+                    animations.splice(index, 1);
                 } else {
                     animation.update();
                 }

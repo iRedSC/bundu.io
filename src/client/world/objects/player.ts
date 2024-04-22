@@ -253,7 +253,7 @@ namespace PlayerAnimations {
         const rightX = right.x;
         const bodyY = body.y;
 
-        const animation = new Animation(ANIMATION.IDLE_HANDS);
+        const animation = new Animation();
         animation.keyframes[0] = (animation) => {
             if (animation.isFirstKeyframe) {
                 animation.goto(0, 2000);
@@ -277,7 +277,7 @@ namespace PlayerAnimations {
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
 
-        const animation = new Animation(ANIMATION.ATTACK);
+        const animation = new Animation();
         animation.keyframes[0] = (animation) => {
             if (target.blocking) {
                 return;
@@ -337,7 +337,7 @@ namespace PlayerAnimations {
         let leftHandRot = 0;
         let rightHandRot = 0;
 
-        const animation = new Animation(ANIMATION.BLOCK);
+        const animation = new Animation();
         animation.keyframes[0] = (animation) => {
             bodyRot = target.sprite.body.container.rotation;
             leftHandRot = target.sprite.leftHand.container.rotation;
