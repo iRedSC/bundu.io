@@ -1,13 +1,6 @@
-export class Animations {
-    private static _instance: Animations;
-
-    static get instance() {
-        if (!Animations._instance) {
-            Animations._instance = new AnimationManager();
-        }
-        return Animations._instance;
-    }
-}
+import { ColorSource } from "pixi.js";
+import { Animation } from "../../lib/animations.js";
+import { colorLerp, lerp } from "../../lib/transforms";
 
 export enum ANIMATION {
     HURT = 100,
@@ -76,10 +69,6 @@ export const cubicBezier = (
     }
     return calculateTime;
 };
-
-import { ColorSource } from "pixi.js";
-import { Animation, AnimationManager } from "../../lib/animations.js";
-import { colorLerp, lerp } from "../../lib/transforms";
 
 type Tintable = { tint: ColorSource };
 export function hurt(targets: Tintable[]) {

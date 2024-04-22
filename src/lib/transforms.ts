@@ -1,10 +1,9 @@
-type Point = {
-    x: number;
-    y: number;
-    [key: string]: any;
-};
+import { BasicPoint } from "./types";
 
-export function distance(point1: Point, point2: Point): number {
+/**
+ * Returns the distance between two points
+ */
+export function distance(point1: BasicPoint, point2: BasicPoint): number {
     const deltaX = point2.x - point1.x;
     const deltaY = point2.y - point1.y;
 
@@ -29,25 +28,33 @@ export function rotationLerp(a: number, b: number, t: number): number {
     return a + delta * t;
 }
 
+/**
+ * Converts degrees to radians.
+ * @param degrees degrees to convert
+ */
 export function radians(degrees: number) {
     return (Math.PI / 180) * degrees;
 }
 
+/**
+ * Converts radians to degrees.
+ * @param radians radians to convert
+ */
 export function degrees(radians: number) {
     return (180 / Math.PI) * radians;
 }
 
-export function lookToward(origin: Point, toward: Point) {
+export function lookToward(origin: BasicPoint, toward: BasicPoint) {
     let x = toward.x - origin.x;
     let y = toward.y - origin.y;
     return Math.atan2(y, x);
 }
 
 export function moveToward(
-    current: Point,
-    target: Point,
+    current: BasicPoint,
+    target: BasicPoint,
     distance: number
-): Point {
+): BasicPoint {
     const angle = Math.atan2(target.y - current.y, target.x - current.x);
 
     return {
@@ -57,17 +64,17 @@ export function moveToward(
 }
 
 export function moveInDirection(
-    origin: Point,
+    origin: BasicPoint,
     angle: number,
     distance: number
-): Point {
+): BasicPoint {
     return {
         x: origin.x + distance * Math.cos(angle),
         y: origin.y + distance * Math.sin(angle),
     };
 }
 
-export function subPoints(a: Point, b: Point): Point {
+export function subPoints(a: BasicPoint, b: BasicPoint): BasicPoint {
     return { x: a.x - b.x, y: a.y - b.y };
 }
 
