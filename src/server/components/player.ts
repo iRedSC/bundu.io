@@ -1,4 +1,3 @@
-import { WebSocket } from "uWebSockets.js";
 import { Component } from "../game_engine/component.js";
 import { intersection } from "../../lib/set_transforms.js";
 
@@ -64,7 +63,6 @@ export class VisibleObjects {
 }
 
 export type PlayerData = {
-    socket: WebSocket<any>;
     name: string;
     visibleObjects: VisibleObjects;
 
