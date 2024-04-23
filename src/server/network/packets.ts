@@ -3,9 +3,50 @@ import { PACKET, SCHEMA } from "../../shared/enums.js";
 import { PacketParser } from "../../shared/unpack.js";
 import { PlayerController } from "../systems/player_controller.js";
 
+export class ClientPacketHandler {
+    players: Map<number, { [key: number]: any[] }>;
+
+    constructor() {
+        this.players = new Map();
+    }
+
+    get(player: number) {
+        if (!this.players.get(player)) {
+            this.players.set(player, {});
+        }
+        return this.players.get(player)!;
+    }
+
+    add(player: number, packet: [number, ...unknown[]]) {
+        console.log("PACKET");
+        console.log(packet);
+        const id = packet.splice(0, 1)[0] as number;
+        this.get(player)[id] = packet;
+    }
+    clear() {
+        this.players.clear();
+    }
+
+    unpack(parser: PacketParser, player?: number) {
+        if (player === undefined) {
+            for (const [playerId, packets] of this.players.entries()) {
+                for (const [id, packet] of Object.entries(packets)) {
+                    console.log(id, packet);
+                    parser.parsers[id](packet, { id: playerId });
+                }
+            }
+            return;
+        }
+        const packets = this.get(player);
+        for (const [id, packet] of Object.entries(packets)) {
+            parser.parsers[id](packet, { id: player });
+        }
+    }
+}
+
 type PlayerID = { id: number };
 
-export function createPacketPipeline(controller: PlayerController) {
+export function createParser(controller: PlayerController) {
     const parser = new PacketParser();
 
     parser.set(PACKET.CLIENT.PING, SCHEMA.CLIENT.PING, () => {});
