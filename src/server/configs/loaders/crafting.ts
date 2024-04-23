@@ -69,5 +69,5 @@ export function packCraftingList() {
     for (const recipe of craftingList.values()) {
         packet.push(recipe.pack());
     }
-    return [PACKET.SERVER.CRAFTING_RECIPES, packet];
+    return packet;
 }
