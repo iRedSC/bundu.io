@@ -1,5 +1,4 @@
 import { Component } from "../game_engine/component.js";
-import { BasicPoint } from "../game_engine/types.js";
 
 export type Physics = {
     position: SAT.Vector;

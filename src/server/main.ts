@@ -99,7 +99,6 @@ parser.set(
                 visibleObjects: new VisibleObjects(),
                 playerSkin: packet[1],
                 backpackSkin: packet[2],
-                bookSkin: packet[3],
 
                 moveDir: [0, 0],
             }
