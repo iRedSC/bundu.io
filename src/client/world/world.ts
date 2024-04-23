@@ -1,7 +1,6 @@
 import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animations";
-import { WorldObject } from "./objects/world_object";
-import { PACKET, SCHEMA } from "../../shared/enums";
+import { SCHEMA } from "../../shared/enums";
 import { Structure } from "./objects/structure";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
@@ -35,6 +34,8 @@ interface GameObject {
      * Returns true if is done updating.
      */
     update(): boolean;
+
+    trigger(id: number, manager: AnimationManager, replace?: boolean): void;
 
     get containers(): Container[];
 }
@@ -265,7 +266,9 @@ export class World {
 
     rotateObject(packet: SCHEMA.SERVER.ROTATE_OBJECT) {
         const id = packet[0];
-
+        if (id === this.user) {
+            return;
+        }
         const object = this.objects.get(id);
         if (!object) {
             requestIds.add(id);
@@ -283,38 +286,37 @@ export class World {
         this.renderer.delete(id);
     }
 
-    action(packet: SCHEMA.SERVER.EVENT) {
-        const id = packet[1];
-        const stop = packet[2];
-        const object = this.objects.get(id) as WorldObject;
-        if (object) {
-            switch (packet[0]) {
-                case PACKET.EVENT.ATTACK:
-                    object.trigger(
-                        ANIMATION.ATTACK,
-                        this.animationManager,
-                        true
-                    );
-                    break;
-                case PACKET.EVENT.BLOCK:
-                    if (!stop) {
-                        if (object instanceof Player) {
-                            object.blocking = true;
-                            object.trigger(
-                                ANIMATION.BLOCK,
-                                this.animationManager
-                            );
-                        }
-                        break;
-                    }
-                    if (object instanceof Player) {
-                        object.blocking = false;
-                    }
-                    break;
-                case PACKET.EVENT.HURT:
-                    object.trigger(ANIMATION.HURT, this.animationManager, true);
-            }
+    attack(id: SCHEMA.EVENT.ATTACK) {
+        console.log("attack");
+        const object = this.objects.get(id);
+        if (!object) {
+            return;
         }
+        console.log("attack triggered");
+        object.trigger(ANIMATION.ATTACK, this.animationManager, true);
+    }
+
+    block(packet: SCHEMA.EVENT.BLOCK) {
+        const id = packet[0];
+        const stop = packet[1];
+        const object = this.objects.get(id);
+        if (!object || !(object instanceof Player)) {
+            return;
+        }
+        if (stop) {
+            object.blocking = false;
+            return;
+        }
+        object.blocking = true;
+        object.trigger(ANIMATION.BLOCK, this.animationManager);
+    }
+
+    hurt(id: SCHEMA.EVENT.HURT) {
+        const object = this.objects.get(id);
+        if (!object) {
+            return;
+        }
+        object.trigger(ANIMATION.HURT, this.animationManager, true);
     }
 
     updateGear(packet: SCHEMA.SERVER.UPDATE_GEAR) {
@@ -345,10 +347,12 @@ export class World {
         this.renderer.add(-10, ground);
     }
 
-    unloadObject(id: SCHEMA.SERVER.UNLOAD_OBJECT) {
-        const object = this.objects.get(id);
-        if (object) {
-            object.renderable = false;
+    unloadObject(objects: SCHEMA.SERVER.UNLOAD_OBJECT) {
+        for (const id of objects) {
+            const object = this.objects.get(id);
+            if (object) {
+                object.renderable = false;
+            }
         }
     }
 

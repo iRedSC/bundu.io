@@ -3,7 +3,7 @@ import { KeyboardInputListener } from "./input/keyboard";
 import { World } from "./world/world";
 import { PACKET, SCHEMA } from "../shared/enums";
 import { PacketParser } from "../shared/unpack";
-import { createPipeline } from "./network/packet_pipline";
+import { createParser } from "./network/packet_pipline";
 import { debugContainer, drawPolygon } from "./rendering/debug";
 import { round } from "../lib/math";
 import { decodeFromBlob } from "./network/decode";
@@ -14,6 +14,9 @@ import { createViewport } from "./rendering/viewport";
 import { AnimationManager } from "../lib/animations";
 import { createUI } from "./ui/ui";
 import { SocketHandler } from "./network/socket_handler";
+import { validate } from "../shared/type_guard";
+import { z } from "zod";
+import { Player } from "./world/objects/player";
 
 export const animationManager = new AnimationManager();
 
@@ -37,7 +40,7 @@ viewport.sortChildren();
 // create a packet pipeline and world
 const parser = new PacketParser();
 const world = new World(viewport, animationManager);
-createPipeline(parser, world);
+createParser(parser, world);
 
 // list of ids that the server sent updates for but the client doesn't have
 export let requestIds: Set<number> = new Set();
@@ -54,8 +57,11 @@ socket.onopen = () => {
 
 socket.onmessage = async (ev) => {
     const data = await decodeFromBlob(ev.data);
+    if (!validate(data, z.array(z.any()))) {
+        return;
+    }
     console.log(data);
-    parser.unpack(data);
+    parser.unpackMany(data);
 };
 
 // add some packets to the unpacker
