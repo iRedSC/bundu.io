@@ -1,10 +1,10 @@
 import { clamp, moveToward } from "../../lib/transforms.js";
 import { PACKET } from "../../shared/enums.js";
 import { GroundData, Physics } from "../components/base.js";
-import { PlayerData } from "../components/player.js";
+import { Inventory, PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject } from "../game_engine/game_object.js";
-import { System } from "../game_engine/system.js";
+import { EventCallback, System } from "../game_engine/system.js";
 import { GlobalPacketFactory } from "../globals.js";
 import { send } from "../network/send.js";
 import { updateHandler } from "./packet.js";
@@ -17,6 +17,8 @@ import { PlayerController } from "./player_controller.js";
 export class PlayerSystem extends System implements PlayerController {
     constructor() {
         super([PlayerData, Physics]);
+
+        this.listen("kill", this.kill, [PlayerData]);
     }
 
     /**
@@ -61,6 +63,17 @@ export class PlayerSystem extends System implements PlayerController {
         );
         this.trigger("health_update", player.id);
     }
+
+    kill: EventCallback<"kill"> = (player: GameObject) => {
+        const inventory = player.get(Inventory);
+
+        for (const [id, amount] of inventory.items.entries()) {
+            this.trigger("spawn_item", player.id, { id, amount });
+        }
+
+        this.trigger("delete_object", player.id);
+        player.active = false;
+    };
 
     // Sets selected player's moveDir property.
     move(playerId: number, x: number, y: number) {
