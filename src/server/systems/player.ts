@@ -5,6 +5,7 @@ import { PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
+import { GlobalPacketFactory } from "../globals.js";
 import { send } from "../network/send.js";
 import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
@@ -52,9 +53,12 @@ export class PlayerSystem extends System implements PlayerController {
 
     enter(player: GameObject) {
         const ground = this.world.query([GroundData]);
-        const data = PlayerData.get(player);
         updateHandler.send(player, [ground, [PACKET.SERVER.LOAD_GROUND]]);
-        send(data.socket, packCraftingList());
+        GlobalPacketFactory.add(
+            player.id,
+            [PACKET.SERVER.CRAFTING_RECIPES],
+            () => packCraftingList()
+        );
         this.trigger("health_update", player.id);
     }
 

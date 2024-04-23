@@ -3,6 +3,7 @@ import { send } from "../network/send.js";
 import { Player } from "./player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { PlayerData } from "../components/player.js";
+import { GlobalPacketFactory } from "../globals.js";
 
 type UpdateTypes = Set<PACKET.SERVER>;
 
@@ -58,7 +59,6 @@ export class UpdateHandler {
             list = this.add(objects[0], objects[1], true)!;
         }
         const playerData = PlayerData.get(player);
-        const packets: Map<PACKET.SERVER, any[]> = new Map();
         for (const [object, packetTypes] of list.entries()) {
             if (!ignoreVisible && !playerData.visibleObjects.has(object.id)) {
                 continue;
@@ -67,20 +67,10 @@ export class UpdateHandler {
                 if (!object.pack[packetType]) {
                     continue;
                 }
-
-                let packet = packets.get(packetType);
-                if (packet) {
-                    packet.push(object.pack[packetType]!());
-                } else {
-                    packets.set(packetType, [
-                        packetType,
-                        object.pack[packetType]!(),
-                    ]);
-                }
+                GlobalPacketFactory.add(player.id, [packetType], () =>
+                    object.pack[packetType]!()
+                );
             }
-        }
-        for (const packet of packets.values()) {
-            send(playerData.socket, packet);
         }
     }
 

@@ -6,28 +6,9 @@ import {
 } from "uWebSockets.js";
 import Logger from "js-logger";
 import { decode } from "@msgpack/msgpack";
+import { GlobalSocketManager } from "../globals.js";
 
 const logger = Logger.get("Network");
-
-export class SocketManager {
-    private static _instance: SocketManager;
-
-    static get instance() {
-        if (SocketManager._instance === undefined) {
-            SocketManager._instance = new SocketManager();
-        }
-        return SocketManager._instance;
-    }
-
-    sockets: Map<WebSocket<any>, number>;
-
-    constructor() {
-        if (SocketManager._instance) {
-            return;
-        }
-        this.sockets = new Map();
-    }
-}
 
 /* 
 The server controller coordinates between the Websockets and the actual game logic.
@@ -67,7 +48,7 @@ export class ServerController {
                 },
                 close: (ws: WebSocket<any>, _code, _message) => {
                     this.disconnect(ws);
-                    SocketManager.instance.sockets.delete(ws);
+                    GlobalSocketManager.sockets.delete(ws);
                     logger.info(`Socket disconnected.`);
                 },
             })
