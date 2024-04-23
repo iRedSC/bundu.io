@@ -35,6 +35,16 @@ export class PacketParser {
         parser(packet.slice(1), ...data);
     }
 
+    unpackMany(packets: unknown, ...data: any[]) {
+        if (!(packets instanceof Array)) {
+            logger.error(`Packet ${packets} is not an array.`);
+            return;
+        }
+        for (const packet of packets) {
+            this.unpack(packet, ...data);
+        }
+    }
+
     set(id: number, guard: ZodTypeAny, callback?: Function) {
         if (callback === undefined) {
             callback = this.callbacks[id];
