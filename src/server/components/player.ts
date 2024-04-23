@@ -68,7 +68,6 @@ export type PlayerData = {
 
     playerSkin: number;
     backpackSkin: number;
-    bookSkin: number;
 
     mainHand?: number;
     offHand?: number;
@@ -87,3 +86,16 @@ export type Inventory = {
     items: Map<number, number>;
 };
 export const Inventory = Component.register<Inventory>();
+
+export type Hunger = {
+    value: number;
+    max: number;
+};
+export const Hunger = Component.register<Hunger>();
+
+export type Temperature = {
+    value: number;
+    coldMax: number;
+    hotMax: number;
+};
+export const Temperature = Component.register<Temperature>();

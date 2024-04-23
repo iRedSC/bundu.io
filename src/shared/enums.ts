@@ -252,14 +252,8 @@ export namespace SCHEMA {
             z.string(), // name,
             z.number(), // skin
             z.number(), // backpack skin,
-            z.number(), // bookskin
         ]);
-        export type JOIN = [
-            name: string,
-            skin: number,
-            backpackSkin: number,
-            bookSkin: number
-        ];
+        export type JOIN = [name: string, skin: number, backpackSkin: number];
 
         export const MOVE_UPDATE = z.number();
         export type MOVE_UPDATE = z.infer<typeof MOVE_UPDATE>;

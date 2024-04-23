@@ -16,7 +16,6 @@ import { createUI } from "./ui/ui";
 import { SocketHandler } from "./network/socket_handler";
 import { validate } from "../shared/type_guard";
 import { z } from "zod";
-import { Player } from "./world/objects/player";
 
 export const animationManager = new AnimationManager();
 
@@ -52,7 +51,7 @@ const socket = new SocketHandler();
 socket.onopen = () => {
     const nameInput = document.getElementById("name-input") as HTMLInputElement;
     const name = nameInput.value;
-    socket.send([PACKET.CLIENT.JOIN, [name || "unnamed", 0, 0, 0]]);
+    socket.send([PACKET.CLIENT.JOIN, [name || "unnamed", 0, 0]]);
 };
 
 socket.onmessage = async (ev) => {
