@@ -161,7 +161,7 @@ class InventoryDisplay {
     }
 
     /**
-     * Update's the inventory display!
+     * Update's the inventory display.
      * @param items List of items to put in the display
      */
     update(items: Item[]) {
