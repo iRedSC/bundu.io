@@ -143,14 +143,6 @@ export class World {
         this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
         this.viewport.sortChildren();
-
-        this.newPond([10000, 7500, 7500, 450]);
-        this.newPond([10001, 7000, 7000, 100]);
-        this.newPond([10002, 8000, 7500, 500]);
-        this.newPond([10003, 7000, 7500, 500]);
-        this.newPond([10004, 7000, 7100, 100]);
-        this.newPond([10005, 8000, 8000, 200]);
-        this.newPond([10006, 7000, 8000, 500]);
     }
 
     tick() {
@@ -228,6 +220,12 @@ export class World {
             pos,
             packet[3]
         );
+        player.setGear([
+            packet[5] || -1,
+            packet[6] || -1,
+            packet[7] || -1,
+            packet[10] || false,
+        ]);
         player.rotationProperties.duration = 50;
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);

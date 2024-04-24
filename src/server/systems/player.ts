@@ -1,14 +1,17 @@
 import { clamp, moveToward } from "../../lib/transforms.js";
 import { PACKET } from "../../shared/enums.js";
 import { GroundData, Physics } from "../components/base.js";
-import { Inventory, PlayerData } from "../components/player.js";
+import { PlayerData } from "../components/player.js";
+import { Inventory } from "../components/inventory.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
-import { GlobalPacketFactory } from "../globals.js";
+import { GlobalPacketFactory, GlobalSocketManager } from "../globals.js";
 import { send } from "../network/send.js";
 import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
+import { itemConfigs } from "../configs/loaders/load.js";
+import { idMap } from "../configs/loaders/id_map.js";
 
 /**
  * This is the system that controls players.
@@ -28,29 +31,31 @@ export class PlayerSystem extends System implements PlayerController {
      * Sends attack event if attacking is true.
      */
     update(time: number, delta: number, player: GameObject): void {
-        const physics = Physics.get(player);
         const data = PlayerData.get(player);
 
         if (data.attacking && data.lastAttackTime && !data.blocking) {
             if (data.lastAttackTime < time - 500) {
-                this.trigger("attack", player.id);
+                let damage = 1;
+                const config = itemConfigs.get(data.mainHand || -1);
+                if (config) {
+                    damage = config.data.attack_damage;
+                }
+                this.trigger("attack", player.id, {
+                    weapon: data.mainHand,
+                    damage,
+                });
                 data.lastAttackTime = time;
             }
         }
         if (data.moveDir[0] === 0 && data.moveDir[1] === 0) {
             return;
         }
-        const newX = physics.position.x - data.moveDir[0];
-        const newY = physics.position.y - data.moveDir[1];
         const target = moveToward(
-            physics.position,
-            { x: newX, y: newY },
+            { x: 0, y: 0 },
+            { x: data.moveDir[0], y: data.moveDir[1] },
             delta / 5
         );
-        physics.position.x = clamp(target.x, 0, 20000);
-        physics.position.y = clamp(target.y, 0, 20000);
-
-        this.trigger("move", player.id);
+        this.trigger("move", player.id, target);
     }
 
     enter(player: GameObject) {
@@ -72,6 +77,9 @@ export class PlayerSystem extends System implements PlayerController {
         }
 
         this.trigger("delete_object", player.id);
+        const socket = GlobalSocketManager.sockets.getv(player.id);
+        socket?.end();
+        GlobalSocketManager.sockets.deletev(player.id);
         player.active = false;
     };
 
@@ -91,9 +99,7 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) {
             return;
         }
-        const data = Physics.get(player);
-        data.rotation = rotation;
-        this.trigger("rotate", player.id);
+        this.trigger("rotate", player.id, { rotation });
     }
 
     // Triggers event to send objects to selected player
@@ -152,6 +158,18 @@ export class PlayerSystem extends System implements PlayerController {
     chatMessage(playerId: number, message: string) {
         const player = this.world.getObject(playerId);
         if (!player) {
+            return;
+        }
+        if (message.startsWith("/")) {
+            const command = message.replace("/", "").split(" ");
+            if (command[0] === "give") {
+                const item = idMap.get(command[1]);
+                const amount = Number(command[2]);
+                this.trigger("give_item", player.id, {
+                    id: item,
+                    amount: amount,
+                });
+            }
             return;
         }
         this.trigger("chat_message", player.id, message);

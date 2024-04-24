@@ -5,20 +5,30 @@ import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
 import { GroundItem } from "../game_objects/ground_item.js";
 import SAT from "sat";
+import { getSizedBounds, quadtree } from "./position.js";
 
 export class GroundItemSystem extends System {
     constructor() {
-        super([GroundItemData]);
+        super([GroundItemData], 1);
 
         this.listen("kill", this.kill, [GroundItemData]);
         this.listen("spawn_item", this.spawnItem, [Physics]);
     }
 
+    update(time: number, delta: number, item: GameObject) {
+        const data = item.get(GroundItemData);
+        if (data.despawnTime < Date.now()) {
+            this.trigger("kill", item.id, {});
+        }
+    }
+
     kill: EventCallback<"kill"> = (item: GameObject, { source }) => {
         const data = GroundItemData.get(item);
-        this.trigger("give_items", source.id, [[data.id, data.amount]]);
         this.trigger("delete_object", item.id);
-        item.active = false;
+        this.world.removeObject(item);
+        if (source) {
+            this.trigger("give_item", source.id, data);
+        }
     };
 
     spawnItem: EventCallback<"spawn_item"> = (
@@ -26,6 +36,20 @@ export class GroundItemSystem extends System {
         { id, amount }
     ) => {
         const physics = Physics.get(origin);
+
+        const stackCheckBounds = getSizedBounds(physics.position, 50, 50);
+
+        const nearby = quadtree.query(stackCheckBounds);
+        const items = this.world.query([GroundItemData], nearby);
+
+        for (const item of items) {
+            const data = item.get(GroundItemData);
+            if (data.id === id) {
+                data.amount += amount;
+                data.despawnTime = Date.now() + 15000 + amount * 1000;
+                return;
+            }
+        }
 
         const spawnPos = physics.position.clone();
         const itemPhysics = {
@@ -36,7 +60,11 @@ export class GroundItemSystem extends System {
             solid: false,
             speed: 0,
         };
-        const itemType = { id: id, amount: amount };
+        const itemType = {
+            id: id,
+            amount: amount,
+            despawnTime: Date.now() + 15000 + amount * 1000,
+        };
 
         const item = new GroundItem(itemPhysics, itemType);
 

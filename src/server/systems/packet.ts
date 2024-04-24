@@ -3,7 +3,8 @@ import { moveToward } from "../../lib/transforms.js";
 import { PACKET } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
 import { Health } from "../components/combat.js";
-import { Inventory, PlayerData } from "../components/player.js";
+import { PlayerData } from "../components/player.js";
+import { Inventory } from "../components/inventory.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
 import { UpdateHandler } from "../game_objects/update_handler.js";
@@ -217,10 +218,10 @@ export class PacketSystem extends System {
         }
         const players = this.world.query([PlayerData]);
         for (let other of players) {
-            const data = PlayerData.get(other);
-            if (data.visibleObjects.has(player.id)) {
+            const othersData = PlayerData.get(other);
+            if (othersData.visibleObjects.has(player.id)) {
                 GlobalPacketFactory.add(
-                    player.id,
+                    other.id,
                     [PACKET.SERVER.UPDATE_GEAR],
                     () => [player.id, ...items]
                 );
@@ -229,7 +230,7 @@ export class PacketSystem extends System {
     };
 
     hurt: EventCallback<"hurt"> = (object: GameObject, { source }) => {
-        if (object.id === source.id) {
+        if (object.id === source?.id) {
             return;
         }
         const players = this.world.query([PlayerData]);

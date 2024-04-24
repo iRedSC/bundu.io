@@ -50,7 +50,8 @@ export class WorldObject {
         this.states.set([Date.now(), pos.x, pos.y]);
 
         this.rotationProperties = new RotationHandler(true, 100);
-        this.rotation = rotation;
+        this._rotation = rotation;
+        this.container.rotation = rotation;
 
         this.animations = new Map();
 

@@ -137,7 +137,7 @@ function statsTransition(target: StatBar) {
                 1
             ) * width;
 
-        animation.next(50);
+        animation.next(120);
     };
 
     animation.keyframes[1] = (animation) => {

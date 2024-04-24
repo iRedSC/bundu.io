@@ -69,7 +69,7 @@ export abstract class System {
         if (once) {
             const temp = callback.bind(callback);
 
-            callback = (object: GameObject, data: any) => {
+            callback = (object: GameObject, data?: any) => {
                 temp(object, data);
                 this.callbacks.get(event)?.delete(callback);
             };

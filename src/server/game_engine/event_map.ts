@@ -1,12 +1,13 @@
 import { GameObject } from "./game_object";
 
 export interface GameEventMap {
-    attack: undefined;
+    attack: { damage?: number; weapon?: number };
+
     block: boolean;
 
-    move: undefined;
+    move: { x: number; y: number };
     collide: undefined;
-    rotate: undefined;
+    rotate: { rotation: number };
 
     new_object: undefined;
     send_new_objects: number[];
@@ -27,11 +28,12 @@ export interface GameEventMap {
     ];
 
     hurt: {
-        source: GameObject;
-        damage: number;
+        source?: GameObject;
+        damage?: number;
+        weapon?: number;
     };
     kill: {
-        source: GameObject;
+        source?: GameObject;
     };
 
     chat_message: string;
@@ -43,5 +45,5 @@ export interface GameEventMap {
     };
     craft_item: number;
     select_item: number;
-    give_items: [id: number, amount: number][];
+    give_item: { id: number; amount: number };
 }

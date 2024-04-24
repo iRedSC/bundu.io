@@ -79,10 +79,12 @@ export class AttackSystem extends System {
         this.listen("attack", this.attack);
     }
 
-    attack: EventCallback<"attack"> = (object: GameObject) => {
-        const data = AttackData.get(object);
+    attack: EventCallback<"attack"> = (
+        object: GameObject,
+        { damage, weapon }
+    ) => {
         const physics = Physics.get(object);
-        if (!(data && physics)) {
+        if (!physics) {
             return;
         }
 
@@ -110,7 +112,8 @@ export class AttackSystem extends System {
         hits.delete(object.id);
         this.trigger("hurt", Array.from(hits.keys()), {
             source: object,
-            damage: data.damage,
+            damage,
+            weapon,
         });
     };
 }

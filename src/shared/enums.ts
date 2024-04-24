@@ -81,7 +81,19 @@ export namespace SCHEMA {
             z.number().nullable(), // backpackSkin
             z.boolean().nullable(), // hasBackpack
         ]);
-        export type PLAYER = z.infer<typeof PLAYER>;
+        export type PLAYER = [
+            id: number,
+            x: number,
+            y: number,
+            rotation: number,
+            name: string,
+            mainHand?: number,
+            offHand?: number,
+            helmet?: number,
+            skin?: number,
+            backpackSkin?: number,
+            hasBackpack?: boolean
+        ];
 
         export const ENTITY = z.tuple([
             z.number(), // id

@@ -1,4 +1,5 @@
-import { Inventory, PlayerData } from "../components/player.js";
+import { PlayerData } from "../components/player.js";
+import { Inventory } from "../components/inventory.js";
 import { itemConfigs, itemTypes } from "../configs/loaders/load.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
@@ -7,36 +8,36 @@ export class InventorySystem extends System {
     constructor() {
         super([Inventory]);
 
-        this.listen("give_items", this.giveItems, [Inventory]);
+        this.listen("give_item", this.giveItem);
         this.listen("select_item", this.selectItem, [Inventory, PlayerData]);
         this.listen("drop_item", this.dropItem, [Inventory]);
 
         this.listen("update_inventory", this.changed, [PlayerData, Inventory]);
     }
 
-    giveItems: EventCallback<"give_items"> = (
+    giveItem: EventCallback<"give_item"> = (
         object: GameObject,
-        items: [number, number][]
+        { id, amount }
     ) => {
-        const inventory = Inventory.get(object);
-        if (!inventory) {
+        if (amount <= 0 || id === undefined) {
             return;
         }
-        for (const [item, amount] of items) {
-            if (!(item >= 0) || amount <= 0) {
-                continue;
-            }
-            const existing = inventory.items.get(item);
-            if (!existing) {
-                if (inventory.items.size >= inventory.slots) {
-                    continue;
-                }
-                inventory.items.set(item, amount);
-                continue;
-            }
-            inventory.items.set(item, existing + amount);
+        const inventory = Inventory.get(object);
+        if (!inventory) {
+            this.trigger("spawn_item", object.id, { id, amount });
+            return;
         }
         this.trigger("update_inventory", object.id);
+        const existing = inventory.items.get(id);
+        if (!existing) {
+            if (inventory.items.size >= inventory.slots) {
+                this.trigger("spawn_item", object.id, { id, amount });
+                return;
+            }
+            inventory.items.set(id, amount);
+            return;
+        }
+        inventory.items.set(id, existing + amount);
     };
 
     selectItem: EventCallback<"select_item"> = (
@@ -50,12 +51,17 @@ export class InventorySystem extends System {
         if (!inventory.items.has(item) || !config) {
             return;
         }
-        if (itemTypes[config.type]?.function === "wear") {
-            data.helmet = data.helmet === item ? -1 : item;
-        } else if (itemTypes[config.type]?.function === "main_hand") {
-            data.mainHand = data.mainHand === item ? -1 : item;
-        } else if (itemTypes[config.type]?.function === "off_hand") {
-            data.offHand = data.offHand === item ? -1 : item;
+
+        switch (itemTypes[config.type]?.function) {
+            case "wear":
+                data.helmet = data.helmet === item ? -1 : item;
+                break;
+            case "main_hand":
+                data.mainHand = data.mainHand === item ? -1 : item;
+                break;
+            case "off_hand":
+                data.offHand = data.offHand === item ? -1 : item;
+                break;
         }
 
         this.trigger("update_gear", object.id, [

@@ -3,6 +3,7 @@ import { EventCallback, System } from "../game_engine/system.js";
 import { Quadtree } from "../../lib/quadtree.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { BasicPoint } from "../game_engine/types.js";
+import { clamp } from "../../lib/transforms.js";
 
 export const quadtree = new Quadtree(
     new Map(),
@@ -29,8 +30,9 @@ export class PositionSystem extends System {
     constructor() {
         super([Physics]);
 
-        this.listen("move", this.insert);
-        this.listen("collide", this.insert);
+        this.listen("rotate", this.rotate, [Physics]);
+        this.listen("move", this.move, [Physics]);
+        this.listen("collide", this.insert, [Physics]);
     }
 
     enter(object: GameObject) {
@@ -46,11 +48,23 @@ export class PositionSystem extends System {
         quadtree.delete(object.id);
     }
 
-    insert: EventCallback<"move" | "collide"> = (object: GameObject) => {
+    insert: EventCallback<"collide"> = (object: GameObject) => {
         const physics = Physics.get(object);
         if (!physics) {
             return;
         }
         quadtree.insert(object.id, physics.position);
+    };
+
+    move: EventCallback<"move"> = (object: GameObject, { x, y }) => {
+        const physics = object.get(Physics);
+        physics.position.x = clamp(physics.position.x - x, 0, 20000);
+        physics.position.y = clamp(physics.position.y - y, 0, 20000);
+        this.insert(object, undefined);
+    };
+
+    rotate: EventCallback<"rotate"> = (object: GameObject, { rotation }) => {
+        const physics = object.get(Physics);
+        physics.rotation = rotation;
     };
 }

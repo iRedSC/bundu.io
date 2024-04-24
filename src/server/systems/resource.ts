@@ -13,6 +13,9 @@ export class ResourceSystem extends System {
     }
 
     hit: EventCallback<"hurt"> = (object: GameObject, { source }) => {
+        if (!source) {
+            return;
+        }
         const data = PlayerData.get(source);
         const config = ResourceConfig.get(object);
         if (!(data && config)) {
@@ -32,6 +35,6 @@ export class ResourceSystem extends System {
         }
 
         const randomItem = random.choice(Array.from(config.items.keys()));
-        this.trigger("give_items", source.id, [[randomItem, amount]]);
+        this.trigger("give_item", source.id, { id: randomItem, amount });
     };
 }

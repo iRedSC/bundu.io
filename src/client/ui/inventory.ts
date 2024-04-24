@@ -5,7 +5,7 @@ import { TEXT_STYLE } from "../assets/text";
 import { SpriteFactory } from "../assets/sprite_factory";
 import { SCHEMA } from "../../shared/enums";
 import { Grid } from "./grid";
-import { percentOf } from "../../lib/math";
+import { percentOf, round } from "../../lib/math";
 
 /**
  * Ah yes the inventory, not looking so good rn
@@ -168,7 +168,21 @@ class InventoryDisplay {
         for (let i = 0; i < items.length; i++) {
             if (items[i]) {
                 try {
-                    this.buttons[i].amount.text = `${items[i][1]}`;
+                    const amount = items[i][1];
+                    let displayAmount = `${amount}`;
+                    if (amount / 1000 >= 1) {
+                        displayAmount = `${round(amount / 1000, 2)}K`;
+                    }
+                    if (amount / 1000000 >= 1) {
+                        displayAmount = `${round(amount / 1000000, 2)}M`;
+                    }
+                    if (amount / 1000000000 >= 1) {
+                        displayAmount = `${round(amount / 1000000000, 2)}B`;
+                    }
+                    if (amount / 1000000000000 >= 1) {
+                        displayAmount = `${round(amount / 1000000000000, 2)}T`;
+                    }
+                    this.buttons[i].amount.text = displayAmount;
                     this.buttons[i].setItem(items[i][0]);
                 } catch {}
             }

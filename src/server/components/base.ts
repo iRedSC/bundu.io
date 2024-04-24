@@ -38,5 +38,6 @@ export const Flags = Component.register<Flags>();
 export type GroundItemData = {
     id: number;
     amount: number;
+    despawnTime: number;
 };
 export const GroundItemData = Component.register<GroundItemData>();

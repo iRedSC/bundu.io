@@ -173,6 +173,10 @@ export class AnimationManager {
         this.sources = new Map();
     }
 
+    clear() {
+        this.sources.clear();
+    }
+
     /**
      * Add an animation to the manager without replacing existing ones.
      * This allows multiple animations with the same id.

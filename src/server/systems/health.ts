@@ -24,7 +24,7 @@ export class HealthSystem extends System {
 
     hurt: EventCallback<"hurt"> = (object: GameObject, { source, damage }) => {
         const health = Health.get(object);
-        health.value -= damage;
+        health.value -= damage || 0;
         if (health.value <= 0) {
             this.trigger("kill", object.id, { source });
         }

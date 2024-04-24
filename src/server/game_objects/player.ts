@@ -3,7 +3,8 @@ import { degrees } from "../../lib/transforms.js";
 import { OBJECT_CLASS, PACKET } from "../../shared/enums.js";
 import { CalculateCollisions, Flags, Physics } from "../components/base.js";
 import { AttackData, Health } from "../components/combat.js";
-import { Inventory, PlayerData } from "../components/player.js";
+import { Inventory } from "../components/inventory.js";
+import { PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
 
 // Player should have the following properties:
@@ -55,6 +56,17 @@ export class Player extends GameObject {
         this.pack[PACKET.SERVER.ROTATE_OBJECT] = () => {
             const physics = Physics.get(this);
             return [this.id, round(degrees(physics.rotation))];
+        };
+
+        this.pack[PACKET.SERVER.UPDATE_GEAR] = () => {
+            const data = this.get(PlayerData);
+            return [
+                this.id,
+                data.mainHand || -1,
+                data.offHand || -1,
+                data.helmet || -1,
+                data.backpack || false,
+            ];
         };
     }
 }

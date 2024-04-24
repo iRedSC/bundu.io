@@ -5,7 +5,6 @@ let NEXT_COMPONENT_ID = 1;
 export type ComponentFactory<D> = (new (data: D) => Component<D>) & {
     id: number;
     data: D;
-
     /**
      * Get component belonging to a specific GameObject.
      *
@@ -44,6 +43,7 @@ export abstract class Component<D> {
                 return object.get<C>(this as unknown as ComponentFactory<C>);
             }
         }
+
         return RegisteredComponent as any as ComponentFactory<C>;
     }
 }
