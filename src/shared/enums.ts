@@ -38,14 +38,21 @@ export namespace PACKET {
     export const CLIENT = {
         ROTATE: 0x00,
         MOVE_UPDATE: 0x01,
+
         REQUEST_OBJECTS: 0x02,
         REQUEST_PLACEMENT_VALIDITY: 0x03,
+
         ACTION: 0x04,
         SELECT_ITEM: 0x05,
+
         PING: 0x06,
+
         CRAFT_ITEM: 0x07,
+
         CHAT_MESSAGE: 0x08,
+
         DROP_ITEM: 0x09,
+
         PLACE_STRUCTURE: 0x0a,
         JOIN: 0x0b,
     } as const;
