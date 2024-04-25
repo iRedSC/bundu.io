@@ -45,15 +45,12 @@ export class PacketSystem extends System {
         for (const player of players) {
             updateHandler.send(player);
 
-            if (this.lastUpdate > Date.now()) {
-                continue;
-            }
+            if (this.lastUpdate > Date.now()) continue;
 
             const data = PlayerData.get(player);
             const physics = Physics.get(player);
-            if (!physics) {
-                return;
-            }
+            if (!physics) return;
+
             const bounds = getSizedBounds(physics.position, 1600, 900);
             const nearby = quadtree.query(bounds);
             const unload = data.visibleObjects.update(nearby);
@@ -73,28 +70,24 @@ export class PacketSystem extends System {
             // }
             // this.trigger("move", nearby);
 
-            if (unload.length > 0) {
+            if (unload.length > 0)
                 GlobalPacketFactory.add(
                     player.id,
                     [PACKET.SERVER.UNLOAD_OBJECT],
                     () => unload
                 );
-            }
-            if (data.visibleObjects.new.size > 0) {
+
+            if (data.visibleObjects.new.size > 0)
                 this.trigger("send_object_updates", player.id);
-            }
         }
-        if (this.lastUpdate < Date.now()) {
-            this.lastUpdate = Date.now() + 1000;
-        }
+        if (this.lastUpdate < Date.now()) this.lastUpdate = Date.now() + 1000;
+
         updateHandler.clear();
     }
 
     newObject: EventCallback<"new_object"> = (object: GameObject) => {
         const objPhys = Physics.get(object);
-        if (!objPhys) {
-            return;
-        }
+        if (!objPhys) return;
         const players = this.world.query([PlayerData]);
         for (const player of players) {
             const data = PlayerData.get(player);
@@ -128,10 +121,6 @@ export class PacketSystem extends System {
     deleteObject: EventCallback<"delete_object"> = (object: GameObject) => {
         const players = this.world.query([PlayerData]);
         for (const player of players) {
-            const data = PlayerData.get(player);
-            if (!data) {
-                continue;
-            }
             GlobalPacketFactory.add(
                 player.id,
                 [PACKET.SERVER.DELETE_OBJECT],
@@ -143,10 +132,6 @@ export class PacketSystem extends System {
     blocking: EventCallback<"block"> = (object: GameObject, stop: boolean) => {
         const players = this.world.query([PlayerData]);
         for (const player of players) {
-            const data = PlayerData.get(player);
-            if (!data) {
-                continue;
-            }
             GlobalPacketFactory.add(
                 player.id,
                 [PACKET.SERVER.EVENT, PACKET.EVENT.BLOCK],
@@ -159,12 +144,7 @@ export class PacketSystem extends System {
         const players = this.world.query([PlayerData]);
         for (const player of players) {
             const data = PlayerData.get(player);
-            if (!data) {
-                continue;
-            }
-            if (!data.visibleObjects.has(object.id)) {
-                continue;
-            }
+            if (!data.visibleObjects?.has(object.id)) continue;
             GlobalPacketFactory.add(
                 player.id,
                 [PACKET.SERVER.EVENT, PACKET.EVENT.ATTACK],
@@ -177,9 +157,7 @@ export class PacketSystem extends System {
         player: GameObject,
         objects?: number[]
     ) => {
-        if (!objects) {
-            return;
-        }
+        if (!objects) return;
         const foundObjects = this.world.query([], objects);
 
         updateHandler.send(player, [foundObjects, [PACKET.SERVER.NEW_OBJECT]]);

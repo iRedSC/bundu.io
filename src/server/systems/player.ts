@@ -86,9 +86,7 @@ export class PlayerSystem extends System implements PlayerController {
     // Sets selected player's moveDir property.
     move(playerId: number, x: number, y: number) {
         const player = this.world.getObject(playerId);
-        if (!player) {
-            return;
-        }
+        if (!player) return;
         const data = PlayerData.get(player);
         data.moveDir = [x, y];
     }
@@ -96,18 +94,14 @@ export class PlayerSystem extends System implements PlayerController {
     // Sets selected player's rotation
     rotate(playerId: number, rotation: number) {
         const player = this.world.getObject(playerId);
-        if (!player) {
-            return;
-        }
+        if (!player) return;
         this.trigger("rotate", player.id, { rotation });
     }
 
     // Triggers event to send objects to selected player
     requestObjects(playerId: number, objects: number[]) {
         const player = this.world.getObject(playerId);
-        if (!player) {
-            return;
-        }
+        if (!player) return;
 
         this.trigger("send_new_objects", player.id, objects);
     }
@@ -115,9 +109,7 @@ export class PlayerSystem extends System implements PlayerController {
     // starts or stops a player from attacking
     attack(playerId: number, stop: boolean) {
         const player = this.world.getObject(playerId);
-        if (!player) {
-            return;
-        }
+        if (!player) return;
         const data = PlayerData.get(player);
         data.attacking = !stop;
         if (data.lastAttackTime === undefined) {
@@ -128,9 +120,7 @@ export class PlayerSystem extends System implements PlayerController {
     // starts or stops a player from blocking
     block(playerId: number, stop: boolean) {
         const player = this.world.getObject(playerId);
-        if (!player) {
-            return;
-        }
+        if (!player) return;
         const data = PlayerData.get(player);
         if (!stop && data.attacking) {
             data.attacking = false;
@@ -141,25 +131,20 @@ export class PlayerSystem extends System implements PlayerController {
 
     selectItem(playerId: number, itemId: number) {
         const player = this.world.getObject(playerId);
-        if (!player) {
-            return;
-        }
+        if (!player) return;
         this.trigger("select_item", player.id, itemId);
     }
 
     craftItem(playerId: number, itemId: number) {
         const player = this.world.getObject(playerId);
-        if (!player) {
-            return;
-        }
+        if (!player) return;
         this.trigger("craft_item", player.id, itemId);
     }
 
     chatMessage(playerId: number, message: string) {
         const player = this.world.getObject(playerId);
-        if (!player) {
-            return;
-        }
+        if (!player) return;
+
         if (message.startsWith("/")) {
             const command = message.replace("/", "").split(" ");
             if (command[0] === "give") {
@@ -177,9 +162,8 @@ export class PlayerSystem extends System implements PlayerController {
 
     dropItem(playerId: number, itemId: number, all: boolean) {
         const player = this.world.getObject(playerId);
-        if (!player) {
-            return;
-        }
+        if (!player) return;
+
         this.trigger("drop_item", player.id, { id: itemId, all: all });
     }
 }

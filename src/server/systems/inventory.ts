@@ -19,9 +19,8 @@ export class InventorySystem extends System {
         object: GameObject,
         { id, amount }
     ) => {
-        if (amount <= 0 || id === undefined) {
-            return;
-        }
+        if (amount <= 0 || id === undefined) return;
+
         const inventory = Inventory.get(object);
         if (!inventory) {
             this.trigger("spawn_item", object.id, { id, amount });
@@ -48,9 +47,7 @@ export class InventorySystem extends System {
         const inventory = Inventory.get(object);
         const config = itemConfigs.get(item)?.data;
 
-        if (!inventory.items.has(item) || !config) {
-            return;
-        }
+        if (!inventory.items.has(item) || !config) return;
 
         switch (itemTypes[config.type]?.function) {
             case "wear":
@@ -77,9 +74,8 @@ export class InventorySystem extends System {
         { id, all }
     ) => {
         const inventory = Inventory.get(object);
-        if (!inventory.items.has(id)) {
-            return;
-        }
+        if (!inventory.items.has(id)) return;
+
         const amount = inventory.items.get(id)!;
         if (all || amount - 1 === 0) {
             inventory.items.delete(id);
@@ -95,21 +91,15 @@ export class InventorySystem extends System {
         const data = PlayerData.get(player);
         const inventory = Inventory.get(player);
 
-        if (data.mainHand) {
-            if (!inventory.items.has(data.mainHand)) {
-                data.mainHand = -1;
-            }
-        }
-        if (data.offHand) {
-            if (!inventory.items.has(data.offHand)) {
-                data.offHand = -1;
-            }
-        }
-        if (data.helmet) {
-            if (!inventory.items.has(data.helmet)) {
-                data.helmet = -1;
-            }
-        }
+        if (data.mainHand)
+            if (!inventory.items.has(data.mainHand)) data.mainHand = -1;
+
+        if (data.offHand)
+            if (!inventory.items.has(data.offHand)) data.offHand = -1;
+
+        if (data.helmet)
+            if (!inventory.items.has(data.helmet)) data.helmet = -1;
+
         this.trigger("update_gear", player.id, [
             data.mainHand || -1,
             data.offHand || -1,

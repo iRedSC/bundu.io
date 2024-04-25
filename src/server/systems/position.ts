@@ -37,9 +37,7 @@ export class PositionSystem extends System {
 
     enter(object: GameObject) {
         const physics = Physics.get(object);
-        if (!physics) {
-            return;
-        }
+        if (!physics) return;
         quadtree.insert(object.id, physics.position);
         this.trigger("new_object", object.id);
     }
@@ -50,9 +48,8 @@ export class PositionSystem extends System {
 
     insert: EventCallback<"collide"> = (object: GameObject) => {
         const physics = Physics.get(object);
-        if (!physics) {
-            return;
-        }
+        if (!physics) return;
+
         quadtree.insert(object.id, physics.position);
     };
 
