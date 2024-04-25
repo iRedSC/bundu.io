@@ -8,11 +8,11 @@ import SAT from "sat";
 
 // This file is filled with test objects
 
-function getRandomPhysics(): Physics {
-    const size = Random.integer(50, 120);
+function getRandomPhysics(_size: number): Physics {
+    const size = Random.integer(_size - 5, _size + 5);
     const position = new SAT.Vector(
-        Random.integer(1500, 19500),
-        Random.integer(1500, 19500)
+        Math.floor(Random.integer(1500, 50000) / 100) * 100,
+        Math.floor(Random.integer(1500, 50000) / 100) * 100
     );
     return {
         position: position,
@@ -26,7 +26,7 @@ function getRandomPhysics(): Physics {
 
 export function createResources(world: World, amount: number) {
     for (let i = 0; i < amount; i++) {
-        const structure = new Resource(getRandomPhysics(), {
+        const structure = new Resource(getRandomPhysics(60), {
             id: Random.choice([
                 114, 115, 116, 117, 118, 119, 103, 104, 105, 53, 54, 55, 56, 84,
                 84, 90, 90, 90, 97, 97, 97,
@@ -38,24 +38,9 @@ export function createResources(world: World, amount: number) {
 
 export function createEntities(world: World, amount: number) {
     for (let i = 0; i < amount; i++) {
-        const entity = new Entity(getRandomPhysics(), {
+        const entity = new Entity(getRandomPhysics(30), {
             id: Random.integer(400, 402),
         });
         world.addObject(entity);
     }
 }
-
-// export function createGround(world: World) {
-//     const ground1 = new Ground(
-//         new SAT.Vector(1500, 1500),
-//         new SAT.Vector(19500, 19500),
-//         0
-//     );
-//     const ground2 = new Ground(
-//         new SAT.Vector(15000, 1500),
-//         new SAT.Vector(19500, 15000),
-//         1
-//     );
-
-//     world.ground.push(ground1, ground2);
-// }

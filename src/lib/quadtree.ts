@@ -164,10 +164,10 @@ class InternalQuadtree {
     query(
         range: Range,
         objectList: QuadtreeObjectList,
-        found?: Set<number>
-    ): Set<number> {
+        found?: number[]
+    ): number[] {
         if (!found) {
-            found = new Set();
+            found = [];
         }
         if (!this.bounds.intersects(range)) {
             return found;
@@ -179,7 +179,7 @@ class InternalQuadtree {
                 }
                 if (this.bounds.contains(position)) {
                     if (range.contains(position)) {
-                        found.add(id);
+                        found.push(id);
                     }
                 } else {
                     this.objects.delete(id);
@@ -196,6 +196,7 @@ class InternalQuadtree {
     insert(id: number, objectList: QuadtreeObjectList): boolean {
         const position = objectList.get(id);
         if (!position) {
+            console.error("CANNOT ADD OBJECT " + id + " TO TREE");
             return false;
         }
         if (!this.bounds.contains(position)) {

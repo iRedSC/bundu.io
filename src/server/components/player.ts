@@ -1,6 +1,5 @@
-import { intersection } from "../../lib/set_transforms.js";
 import { Component } from "../game_engine/component.js";
-import { GameWS } from "../network/websockets.js";
+import { intersection } from "../../lib/set_transforms.js";
 
 // update: 7, 1, 5, 2
 
@@ -20,12 +19,13 @@ export class VisibleObjects {
         this.old = new Set();
     }
 
-    update(objects: Set<number>) {
+    update(objects: number[]) {
         this.old = structuredClone(this.objects);
         this.objects.clear();
-        for (const object of objects.values()) {
+        for (const object of objects) {
             this.add(object);
         }
+        return Array.from(intersection(this.old, this.objects, true));
     }
 
     add(id: number): boolean {
@@ -56,22 +56,21 @@ export class VisibleObjects {
     }
 
     getNew() {
-        const value = structuredClone(this.new);
+        const value = Array.from(this.new);
         this.new.clear();
         return value;
     }
 }
 
 export type PlayerData = {
-    socket: GameWS;
     name: string;
     visibleObjects: VisibleObjects;
 
     playerSkin: number;
     backpackSkin: number;
-    bookSkin: number;
 
-    selectedItem?: number;
+    mainHand?: number;
+    offHand?: number;
     helmet?: number;
     backpack?: boolean;
 
@@ -82,8 +81,15 @@ export type PlayerData = {
 };
 export const PlayerData = Component.register<PlayerData>();
 
-export type Inventory = {
-    slots: number;
-    items: Map<number, number>;
+export type Hunger = {
+    value: number;
+    max: number;
 };
-export const Inventory = Component.register<Inventory>();
+export const Hunger = Component.register<Hunger>();
+
+export type Temperature = {
+    value: number;
+    coldMax: number;
+    hotMax: number;
+};
+export const Temperature = Component.register<Temperature>();

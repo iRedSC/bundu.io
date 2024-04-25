@@ -1,25 +1,25 @@
-import { Button } from "@pixi/ui";
+// import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
 import { SpriteFactory, SpriteWrapper } from "../assets/sprite_factory";
 import { idMap } from "../configs/id_map";
 
 export class ItemButton {
-    button: Button;
+    button: PIXI.Container;
     background: SpriteWrapper;
     disableSprite: SpriteWrapper;
     item: number;
     itemSprite: SpriteWrapper;
     hovering: boolean;
-    callback?: (item: number) => void;
+    rightclick?: (item: number, shift?: boolean) => void;
+    leftclick?: (item: number, shift?: boolean) => void;
 
-    constructor(callback?: (item: number) => void) {
-        const container = new PIXI.Container();
-        container.sortableChildren = true;
+    constructor() {
+        this.button = new PIXI.Container();
+        this.button.sortableChildren = true;
+        this.button.eventMode = "static";
 
-        this.button = new Button(container);
         this.hovering = false;
 
-        this.callback = callback;
         // this.background = new PIXI.Graphics();
         this.background = SpriteFactory.build("item_button");
         this.disableSprite = SpriteFactory.build("item_button");
@@ -34,51 +34,54 @@ export class ItemButton {
         this.item = -1;
         this.itemSprite = SpriteFactory.build(this.item);
 
-        this.button.view.addChild(this.background);
-        this.button.view.addChild(this.disableSprite);
+        this.button.addChild(this.background);
+        this.button.addChild(this.disableSprite);
 
-        this.button.hover = () => {
-            this.button.view.scale.set(1.1);
+        this.button.onmouseover = () => {
+            this.button.scale.set(1.1);
             this.update(0x999999);
             this.hovering = true;
         };
 
-        this.button.out = () => {
-            this.button.view.scale.set(1);
+        this.button.onmouseleave = () => {
+            this.button.scale.set(1);
             this.update(0x777777);
             this.hovering = false;
         };
 
-        this.button.down = () => {
-            this.button.view.scale.set(0.9);
+        this.button.onpointerdown = () => {
+            this.button.scale.set(0.9);
             this.update(0x777777);
         };
-
-        this.button.up = () => {
-            this.button.view.scale.set(1);
+        this.button.onpointerup = (ev) => {
+            console.log(ev?.button);
+            if (ev?.button === 2) {
+                if (this.rightclick) {
+                    this.rightclick(this.item, ev?.shiftKey);
+                }
+            } else if (ev?.button === 0) {
+                if (this.leftclick) {
+                    this.leftclick(this.item, ev?.shiftKey);
+                }
+            }
+            this.button.scale.set(1);
 
             if (this.hovering) {
-                this.button.hover();
+                this.button.emit("hover");
             } else {
                 this.update(0x777777);
-            }
-        };
-
-        this.button.press = () => {
-            if (this.callback) {
-                this.callback(this.item);
             }
         };
     }
 
     disable() {
         this.disableSprite.visible = true;
-        this.button.enabled = false;
+        this.button.eventMode = "none";
     }
 
     enable() {
         this.disableSprite.visible = false;
-        this.button.enabled = true;
+        this.button.eventMode = "static";
     }
 
     setItem(item: number) {
@@ -87,7 +90,7 @@ export class ItemButton {
             return;
         }
         if (this.itemSprite) {
-            this.button.view.removeChild(this.itemSprite);
+            this.button.removeChild(this.itemSprite);
         }
         this.item = item;
         this.itemSprite = SpriteFactory.update(
@@ -103,8 +106,8 @@ export class ItemButton {
             this.background.width / 2,
             this.background.height / 2
         );
-        this.button.view.addChild(this.itemSprite);
-        this.button.view.sortChildren();
+        this.button.addChild(this.itemSprite);
+        this.button.sortChildren();
     }
 
     update(tint: number) {
@@ -115,16 +118,9 @@ export class ItemButton {
             this.background.width / 2,
             this.background.height / 2
         );
-        this.button.view.pivot.set(
-            this.button.view.width / 4,
-            this.button.view.height / 4
-        );
+        this.button.pivot.set(this.button.width / 4, this.button.height / 4);
     }
     get position() {
-        return this.button.view.position;
-    }
-
-    setCallback(callback: (item: number) => void) {
-        this.callback = callback;
+        return this.button.position;
     }
 }

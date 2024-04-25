@@ -8,7 +8,6 @@ pine_tree:
     items:
         wood: 60
 
-
 forest_tree:
     score: 5
     exclusive: true
@@ -29,8 +28,6 @@ savanah_tree:
     items:
         wood: 60
 
-
-
 stone:
     score: 8
     exclusive: true
@@ -40,7 +37,6 @@ stone:
     regen_speed: 4
     items:
         stone: 50
- 
 
 gold:
     score: 10
@@ -61,7 +57,7 @@ diamond:
     regen_speed: 6
     items:
         diamond: 35
- 
+
 amethyst:
     score: 30
     exclusive: true
@@ -71,8 +67,7 @@ amethyst:
     regen_speed: 7
     items:
         amethyst: 30
- 
-  
+
 bear_dead:
     duration: 30
     multipliers:
@@ -80,7 +75,7 @@ bear_dead:
     items:
         meat: 3
         bear_fur: 1
- 
+
 deer_dead:
     duration: 30
     multipliers:
@@ -96,7 +91,7 @@ raindeer_dead:
     items:
         meat: 4
         deer_hide: 2
- 
+
 ram_dead:
     duration: 30
     multipliers:
@@ -104,7 +99,7 @@ ram_dead:
     items:
         meat: 3
         ram_wool: 1
- 
+
 elephant_dead:
     duration: 30
     multipliers:
@@ -112,7 +107,7 @@ elephant_dead:
     items:
         meat: 8
         elephant_tusk: 1
- 
+
 alligator_dead:
     duration: 30
     multipliers:
@@ -134,7 +129,6 @@ komodo_dragon_dead:
 bee_dead:
     duration: 30
 
-
 queen_bee_dead:
     duration: 30
     multipliers:
@@ -145,27 +139,22 @@ queen_bee_dead:
 hive_small:
     destroy_on_empty: true
     score: 20
-    level: 0
     items:
         honey: 4
 
 hive_medium:
     destroy_on_empty: true
     score: 20
-    level: 0
     items:
         honey: 7
 
 hive_large:
     destroy_on_empty: true
     score: 20
-    level: 0
     items:
         honey: 10
 
 player_dead:
     destroy_on_empty: true
-    level: 0
     items:
         #player inventoy
- 

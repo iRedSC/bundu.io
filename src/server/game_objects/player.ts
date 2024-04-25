@@ -1,9 +1,10 @@
 import { round } from "../../lib/math.js";
 import { degrees } from "../../lib/transforms.js";
-import { OBJECT_CLASS, PACKET_TYPE } from "../../shared/enums.js";
+import { OBJECT_CLASS, PACKET } from "../../shared/enums.js";
 import { CalculateCollisions, Flags, Physics } from "../components/base.js";
-import { AttackData } from "../components/combat.js";
-import { Inventory, PlayerData } from "../components/player.js";
+import { AttackData, Health } from "../components/combat.js";
+import { Inventory } from "../components/inventory.js";
+import { PlayerData } from "../components/player.js";
 import { GameObject } from "../game_engine/game_object.js";
 
 // Player should have the following properties:
@@ -13,16 +14,17 @@ export class Player extends GameObject {
     constructor(physics: Physics, playerData: PlayerData) {
         super();
 
-        this.add(new AttackData({ speed: 10, damage: 1, reach: 5 }));
-        this.add(new Physics(physics));
-        this.add(new PlayerData(playerData));
-        this.add(new CalculateCollisions({}));
-        this.add(new Inventory({ slots: 10, items: new Map() }));
-        this.add(new Flags(new Set()));
+        this.add(new AttackData({ speed: 10, damage: 10, reach: 5 }))
+            .add(new Physics(physics))
+            .add(new PlayerData(playerData))
+            .add(new CalculateCollisions({}))
+            .add(new Inventory({ slots: 10, items: new Map() }))
+            .add(new Flags(new Set()))
+            .add(new Health({ max: 200, value: 200 }));
 
-        this.pack[PACKET_TYPE.NEW_OBJECT] = () => {
-            const physics = Physics.get(this).data;
-            const playerData = PlayerData.get(this).data;
+        this.pack[PACKET.SERVER.NEW_OBJECT] = () => {
+            const physics = Physics.get(this);
+            const playerData = PlayerData.get(this);
             return [
                 OBJECT_CLASS.PLAYER,
                 [
@@ -31,7 +33,8 @@ export class Player extends GameObject {
                     physics.position.y,
                     round(degrees(physics.rotation)),
                     playerData.name,
-                    playerData.selectedItem,
+                    playerData.mainHand,
+                    playerData.offHand,
                     playerData.helmet,
                     playerData.playerSkin,
                     playerData.backpackSkin,
@@ -40,8 +43,8 @@ export class Player extends GameObject {
             ];
         };
 
-        this.pack[PACKET_TYPE.MOVE_OBJECT] = () => {
-            const physics = Physics.get(this).data;
+        this.pack[PACKET.SERVER.MOVE_OBJECT] = () => {
+            const physics = Physics.get(this);
             return [
                 this.id,
                 100,
@@ -50,9 +53,20 @@ export class Player extends GameObject {
             ];
         };
 
-        this.pack[PACKET_TYPE.ROTATE_OBJECT] = () => {
-            const physics = Physics.get(this).data;
+        this.pack[PACKET.SERVER.ROTATE_OBJECT] = () => {
+            const physics = Physics.get(this);
             return [this.id, round(degrees(physics.rotation))];
+        };
+
+        this.pack[PACKET.SERVER.UPDATE_GEAR] = () => {
+            const data = this.get(PlayerData);
+            return [
+                this.id,
+                data.mainHand || -1,
+                data.offHand || -1,
+                data.helmet || -1,
+                data.backpack || false,
+            ];
         };
     }
 }

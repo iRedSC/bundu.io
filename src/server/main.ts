@@ -1,115 +1,117 @@
-import { GameWS, ServerController } from "./network/websockets.js";
+import { ServerController } from "./network/websockets.js";
 import { World } from "./game_engine/world.js";
 import { round } from "../lib/math.js";
 import Logger from "js-logger";
-import { createPacketPipeline } from "./network/packets.js";
+import { createParser } from "./network/packets.js";
 import { PositionSystem } from "./systems/position.js";
 import { PlayerSystem } from "./systems/player.js";
 import { PacketSystem } from "./systems/packet.js";
 import { CollisionSystem } from "./systems/collision.js";
 import { createEntities, createResources } from "./testing.js";
-import {
-    CLIENT_PACKET_TYPE,
-    ClientPacketSchema,
-    PACKET_TYPE,
-} from "../shared/enums.js";
-import { Unpacker } from "../shared/unpack.js";
+import { PACKET, SCHEMA } from "../shared/enums.js";
 import { Player } from "./game_objects/player.js";
 import random from "../lib/random.js";
 import { VisibleObjects } from "./components/player.js";
 import SAT from "sat";
 import { GameObject } from "./game_engine/game_object.js";
-import { send } from "./network/send.js";
+import { PacketFactory, send } from "./network/send.js";
 import { GroundData } from "./components/base.js";
 import { Ground } from "./game_objects/ground.js";
 import { AttackSystem } from "./systems/attack.js";
 import { InventorySystem } from "./systems/inventory.js";
 import { ResourceSystem } from "./systems/resource.js";
 import { CraftingSystem } from "./systems/crafting.js";
+import { HealthSystem } from "./systems/health.js";
+import { GroundItemSystem } from "./systems/ground_item.js";
+import { WebSocket } from "uWebSockets.js";
+import { z } from "zod";
+import { validate } from "../shared/type_guard.js";
+import {
+    GlobalClientPacketHandler,
+    GlobalPacketFactory,
+    GlobalSocketManager,
+} from "./globals.js";
 
 Logger.useDefaults();
 
 const world = new World();
 
-const positionSystem = new PositionSystem();
 const playerSystem = new PlayerSystem();
-const pipeline = createPacketPipeline(playerSystem);
-
-const packetSystem = new PacketSystem();
-const collisionSystem = new CollisionSystem();
-const attackSystem = new AttackSystem();
-const inventorySystem = new InventorySystem();
+const parser = createParser(playerSystem);
 
 world
-    .addSystem(positionSystem)
     .addSystem(playerSystem)
-    .addSystem(packetSystem)
-    .addSystem(collisionSystem)
-    .addSystem(attackSystem)
-    .addSystem(inventorySystem)
+    .addSystem(new PositionSystem())
+    .addSystem(new PacketSystem())
+    .addSystem(new CollisionSystem())
+    .addSystem(new AttackSystem())
+    .addSystem(new InventorySystem())
     .addSystem(new ResourceSystem())
-    .addSystem(new CraftingSystem());
+    .addSystem(new CraftingSystem())
+    .addSystem(new HealthSystem())
+    .addSystem(new GroundItemSystem());
 
 const ground: GroundData = {
-    collider: new SAT.Box(new SAT.Vector(1000, 1000), 15000, 15000),
+    collider: new SAT.Box(new SAT.Vector(0, 0), 50000, 50000),
     type: 0,
     speedMultiplier: 1,
 };
 
 world.addObject(new Ground(ground));
 // createEntities(world, 5);
-createResources(world, 3000);
+createResources(world, 10000);
 
 const controller = new ServerController();
 controller.start(7777);
 
-const players = new Map<number, GameObject>();
+const Packet = z.tuple([z.number()]).rest(z.any());
+type Packet = z.infer<typeof Packet>;
 
-controller.connect = (socket: GameWS) => {};
-controller.message = (socket: GameWS, message: unknown) => {
-    pipeline.unpack(message, socket.id);
-};
-controller.disconnect = (socket: GameWS) => {
-    const player = players.get(socket.id!);
-    if (!player) {
+controller.message = (socket: WebSocket<any>, message: unknown) => {
+    const id = GlobalSocketManager.sockets.get(socket);
+    if (id && validate(message, Packet)) {
+        GlobalClientPacketHandler.add(id, message);
         return;
     }
-    world.removeObject(player);
-    players.delete(socket.id!);
+
+    parser.unpack(message, { socket: socket });
 };
 
-pipeline.unpackers[CLIENT_PACKET_TYPE.JOIN] = new Unpacker(
-    (packet: ClientPacketSchema.join, id: number) => {
-        const socket = controller.sockets.get(id);
-        if (!socket) {
-            return;
-        }
+controller.disconnect = (socket: WebSocket<any>) => {
+    GlobalSocketManager.sockets.delete(socket);
+};
+
+parser.set(
+    PACKET.CLIENT.JOIN,
+    SCHEMA.CLIENT.JOIN,
+    (packet: SCHEMA.CLIENT.JOIN, { socket }: { socket: WebSocket<any> }) => {
         const position = new SAT.Vector(
-            random.integer(7000, 8000),
-            random.integer(7000, 8000)
+            random.integer(7500, 7500),
+            random.integer(7500, 7500)
         );
         const size = 15;
         const collider = new SAT.Circle(position, size);
 
         const player = new Player(
-            { position, collider, size, solid: true, rotation: 0, speed: 10 },
+            { position, collider, size, solid: false, rotation: 0, speed: 10 },
             {
-                socket: socket,
                 name: packet[0],
                 visibleObjects: new VisibleObjects(),
                 playerSkin: packet[1],
                 backpackSkin: packet[2],
-                bookSkin: packet[3],
 
                 moveDir: [0, 0],
             }
         );
-        socket.id = player.id;
-        players.set(player.id, player);
+        GlobalSocketManager.sockets.set(socket, player.id);
         world.addObject(player);
-        send(socket, [PACKET_TYPE.STARTING_INFO, [player.id]]);
-    },
-    ClientPacketSchema.join
+
+        GlobalPacketFactory.add(
+            player.id,
+            [PACKET.SERVER.STARTING_INFO],
+            () => [player.id]
+        );
+    }
 );
 
 // * Check memory usage, could be put in a better spot.
@@ -120,5 +122,34 @@ setInterval(() => {
 }, 10000);
 
 setInterval(() => {
+    // run all client requests for this tick
+    GlobalClientPacketHandler.unpack(parser);
+
+    // update the world
     world.update();
-}, 100);
+
+    // send accumulated packet data to each client
+    for (const player of GlobalPacketFactory.players.keys()) {
+        const socket = GlobalSocketManager.sockets.getv(player);
+        if (socket !== undefined) {
+            send(socket, GlobalPacketFactory.pack(player));
+        }
+    }
+
+    // clear packet handlers
+    GlobalClientPacketHandler.clear();
+    GlobalPacketFactory.clear();
+}, 50);
+
+// import { PacketFactory } from "./network/send.js";
+// import util from "util";
+
+// const factory = new PacketFactory();
+
+// factory.add(0, [2, 1], () => 100);
+// factory.add(0, [2, 1], () => 101);
+
+// factory.add(0, [2, 2], () => 100);
+// factory.add(0, [2, 2], () => 101);
+
+// console.log(util.inspect(factory.pack(0), false, null, true));

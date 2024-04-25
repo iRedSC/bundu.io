@@ -1,30 +1,69 @@
-import yaml from "yaml";
-import fs from "fs";
-import { idMap, __dirname } from "./id_map.js";
+import { __dirname } from "./id_map.js";
 import { Component } from "../../game_engine/component.js";
+import { mergeObjects } from "../../../lib/object_utils.js";
+import { z } from "zod";
 
-export type itemConfigData = {
-    type: string;
-    attack_damage: number;
-    defense: number;
-    mining_level: number;
-};
+export const ItemConfigData = z
+    .object({
+        type: z.string(),
+        attack_damage: z.number(),
+
+        block: z.number(),
+        defense: z.number(),
+
+        level: z.number(),
+        repair: z.number(),
+
+        eat_heal: z.number(),
+        eat_damage: z.number(),
+        food: z.number(),
+
+        warmth: z.number(),
+        insulation: z.number(),
+    })
+    .partial();
+export type ItemConfigData = z.infer<typeof ItemConfigData>;
 
 export type ItemConfig = {
     id: number;
     type: string;
-    attackDamage: number;
+    attack_damage: number;
+
+    block: number;
     defense: number;
+
     level: number;
+    repair: number;
+
+    eat_heal: number;
+    eat_damage: number;
+    food: number;
+
+    warmth: number;
+    insulation: number;
 };
 export const ItemConfig = Component.register<ItemConfig>();
 
-export function createItemConfig(id: number, data: Partial<itemConfigData>) {
-    const config: any = {};
-    config.id = id;
-    config.type = data.type || "none";
-    config.attackDamage = data.attack_damage || 0;
-    config.defense = data.defense || 0;
-    config.level = data.mining_level || 0;
+const defaultItemConfig: ItemConfig = {
+    id: 0,
+    type: "none",
+    attack_damage: 0,
+    block: 0,
+    defense: 0,
+    level: 0,
+    repair: 0,
+    eat_damage: 0,
+    eat_heal: 0,
+    food: 0,
+    warmth: 0,
+    insulation: 0,
+};
+
+export function createItemConfig(id: number, data: ItemConfigData) {
+    const config = mergeObjects<ItemConfig>(
+        undefined,
+        { id: id, ...data },
+        defaultItemConfig
+    );
     return new ItemConfig(config);
 }

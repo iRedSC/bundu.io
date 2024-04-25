@@ -3,9 +3,9 @@ import { ItemButton } from "./button";
 import { colorLerp } from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
 import { SpriteFactory } from "../assets/sprite_factory";
-import { ServerPacketSchema } from "../../shared/enums";
+import { SCHEMA } from "../../shared/enums";
 import { Grid } from "./grid";
-import { percentOf } from "../../lib/math";
+import { percentOf, round } from "../../lib/math";
 
 /**
  * Ah yes the inventory, not looking so good rn
@@ -26,35 +26,14 @@ export class InventoryButton extends ItemButton {
         super();
         this.amount = new PIXI.Text("", TEXT_STYLE);
         this.amount.position.set(55, 65);
-        this.amount.scale.set(0.75);
+        this.amount.scale.set(0.4);
         this.amount.anchor.set(1, 0.5);
         this.amount.zIndex = 2;
         this.selected = false;
-        this.button.view.addChild(this.amount);
-        this.button.view.sortChildren();
+        this.button.addChild(this.amount);
+        this.button.sortChildren();
         this.setItem(-1);
         this.update(0x777777);
-
-        this.button.down = () => {
-            this.button.view.scale.set(1.1);
-            this.update(0x777777);
-        };
-
-        this.button.up = () => {
-            if (!this.button.isDown) {
-                return;
-            }
-            this.button.view.scale.set(1);
-
-            if (this.hovering) {
-                this.button.hover();
-                if (this.callback) {
-                    this.callback(this.item);
-                }
-            } else {
-                this.update(0x777777);
-            }
-        };
     }
 
     /**
@@ -79,19 +58,22 @@ type Callback = (item: number) => void;
 export class Inventory {
     slots: Item[];
     display: InventoryDisplay;
-    private _callback?: Callback;
 
     constructor() {
         this.slots = [];
         this.display = new InventoryDisplay(this);
     }
 
-    update(update: ServerPacketSchema.updateInventory) {
+    update(update: SCHEMA.SERVER.UPDATE_INVENTORY) {
+        console.log(this.slots);
         this.display.slotCount(update[0]);
 
         for (const [id, amount] of update[1]) {
             let exists = false;
             for (const item of this.slots) {
+                if (item === undefined) {
+                    this.slots.splice(this.slots.indexOf(item), 1);
+                }
                 if (item[0] === id) {
                     item[1] = amount;
                     exists = true;
@@ -106,15 +88,6 @@ export class Inventory {
             update[1].some((i) => i[0] === item[0])
         );
         this.display.update(this.slots);
-    }
-
-    set callback(value: Callback) {
-        this._callback = value;
-        this.display.callback = value;
-    }
-
-    get callback(): Callback | undefined {
-        return this._callback;
     }
 }
 
@@ -137,7 +110,9 @@ class InventoryDisplay {
     buttons: InventoryButton[];
     slotamount: number;
     inventory: Inventory;
-    private _callback?: (item: number) => void;
+    rightclick?: (item: number) => void;
+    leftclick?: (item: number) => void;
+
     constructor(inventory: Inventory) {
         this.inventory = inventory;
         this.container = new PIXI.Container();
@@ -155,16 +130,20 @@ class InventoryDisplay {
         this.slotamount = count;
         for (let i = 0; i < count; i++) {
             const button = new InventoryButton();
-            button.callback = this.callback;
+            button.leftclick = this.leftclick;
+            button.rightclick = this.rightclick;
             this.buttons.push(button);
-            this.container.addChild(button.button.view);
-            button.button.view.on("pointerdown", () =>
+            this.container.addChild(button.button);
+            button.button.on("pointerdown", () =>
                 dragStart(button, this.inventory)
             );
-            button.button.press = () => {
+            button.button.onpointertap = () => {
                 for (let _button of this.buttons) {
                     _button.selected = false;
-                    _button.button.up();
+                    _button.button.emit(
+                        "pointerup",
+                        new PIXI.FederatedPointerEvent(new PIXI.EventBoundary())
+                    );
                 }
                 button.selected = true;
             };
@@ -172,26 +151,38 @@ class InventoryDisplay {
         inventoryGrid.arrange(this.buttons);
     }
 
-    set callback(value: Callback) {
+    setCallbacks(leftclick?: Callback, rightclick?: Callback) {
+        this.leftclick = leftclick;
+        this.rightclick = rightclick;
         for (const button of this.buttons) {
-            button.callback = value;
+            button.leftclick = leftclick;
+            button.rightclick = rightclick;
         }
-        this._callback = value;
-    }
-
-    get callback(): Callback | undefined {
-        return this._callback;
     }
 
     /**
-     * Update's the inventory display!
+     * Update's the inventory display.
      * @param items List of items to put in the display
      */
     update(items: Item[]) {
         for (let i = 0; i < items.length; i++) {
             if (items[i]) {
                 try {
-                    this.buttons[i].amount.text = `${items[i][1]}`;
+                    const amount = items[i][1];
+                    let displayAmount = `${amount}`;
+                    if (amount / 1000 >= 1) {
+                        displayAmount = `${round(amount / 1000, 2)}K`;
+                    }
+                    if (amount / 1000000 >= 1) {
+                        displayAmount = `${round(amount / 1000000, 2)}M`;
+                    }
+                    if (amount / 1000000000 >= 1) {
+                        displayAmount = `${round(amount / 1000000000, 2)}B`;
+                    }
+                    if (amount / 1000000000000 >= 1) {
+                        displayAmount = `${round(amount / 1000000000000, 2)}T`;
+                    }
+                    this.buttons[i].amount.text = displayAmount;
                     this.buttons[i].setItem(items[i][0]);
                 } catch {}
             }

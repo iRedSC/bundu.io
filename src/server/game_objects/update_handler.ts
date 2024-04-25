@@ -1,10 +1,11 @@
-import { PACKET_TYPE } from "../../shared/enums.js";
-import { send } from "../send.js";
+import { PACKET } from "../../shared/enums.js";
+import { send } from "../network/send.js";
 import { Player } from "./player.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { PlayerData } from "../components/player.js";
+import { GlobalPacketFactory } from "../globals.js";
 
-type UpdateTypes = Set<PACKET_TYPE>;
+type UpdateTypes = Set<PACKET.SERVER>;
 
 /**
  * UpdateHandler deals with sending packets to players.
@@ -24,8 +25,8 @@ export class UpdateHandler {
      * @param types Packet types to send out of each object
      */
     public add(
-        objects: IterableIterator<GameObject> | GameObject,
-        types: PACKET_TYPE[],
+        objects: IterableIterator<GameObject> | GameObject[] | GameObject,
+        types: PACKET.SERVER[],
         giveList: boolean = false
     ): Map<GameObject, UpdateTypes> {
         const list = giveList ? new Map() : this.objects;
@@ -49,7 +50,7 @@ export class UpdateHandler {
      */
     send(
         player: Player,
-        objects?: [IterableIterator<GameObject>, PACKET_TYPE[]]
+        objects?: [IterableIterator<GameObject> | GameObject[], PACKET.SERVER[]]
     ) {
         let list = this.objects;
         let ignoreVisible = false;
@@ -57,8 +58,7 @@ export class UpdateHandler {
             ignoreVisible = true;
             list = this.add(objects[0], objects[1], true)!;
         }
-        const playerData = PlayerData.get(player).data;
-        const packets: Map<PACKET_TYPE, any[]> = new Map();
+        const playerData = PlayerData.get(player);
         for (const [object, packetTypes] of list.entries()) {
             if (!ignoreVisible && !playerData.visibleObjects.has(object.id)) {
                 continue;
@@ -67,20 +67,10 @@ export class UpdateHandler {
                 if (!object.pack[packetType]) {
                     continue;
                 }
-
-                let packet = packets.get(packetType);
-                if (packet) {
-                    packet.push(object.pack[packetType]());
-                } else {
-                    packets.set(packetType, [
-                        packetType,
-                        object.pack[packetType](),
-                    ]);
-                }
+                GlobalPacketFactory.add(player.id, [packetType], () =>
+                    object.pack[packetType]!()
+                );
             }
-        }
-        for (const packet of packets.values()) {
-            send(playerData.socket, packet);
         }
     }
 

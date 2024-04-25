@@ -1,4 +1,4 @@
-export const WORLD_SIZE = 200_000;
+export const WORLD_SIZE = 50_000;
 
 export const NIGHT_COLOR = 0x6850ff;
 export const EVENING_COLOR = 0xf5c95b;

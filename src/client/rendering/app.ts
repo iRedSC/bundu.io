@@ -12,7 +12,7 @@ export function createPixiApp() {
     const app = new Application<HTMLCanvasElement>({
         resizeTo: window,
         backgroundColor: 0x0d5b73,
-        antialias: true,
+        antialias: false,
     });
 
     globalThis.__PIXI_APP__ = app;

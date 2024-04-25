@@ -91,20 +91,18 @@ export class StatBar {
     }
 
     update(amount: number, manager: AnimationManager) {
-        const animation = statsTransition(this);
         this.lastAmount = this.amount;
         this.amount = clamp(amount, this.min, this.max);
-        manager.add(this, animation.run(true));
+        manager.set(this, 0, statsTransition(this).run(), true);
     }
 
     start(manager: AnimationManager) {
-        const animation = statsWarning(this);
-        manager.add(this, animation.run(true));
+        manager.set(this, 1, statsWarning(this).run(), true);
     }
 }
 
 function statsTransition(target: StatBar) {
-    const animation = new Animation(0);
+    const animation = new Animation();
     let width = 300;
     let baseBefore = 0;
     let baseNow = 0;
@@ -139,7 +137,7 @@ function statsTransition(target: StatBar) {
                 1
             ) * width;
 
-        animation.next(50);
+        animation.next(120);
     };
 
     animation.keyframes[1] = (animation) => {
@@ -196,7 +194,7 @@ function statsTransition(target: StatBar) {
 }
 
 function statsWarning(target: StatBar) {
-    const animation = new Animation(1);
+    const animation = new Animation();
 
     animation.keyframes[0] = (animation) => {
         animation.next(250);

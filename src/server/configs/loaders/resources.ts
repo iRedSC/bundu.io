@@ -33,18 +33,18 @@ export function createResourceConfig(
 ) {
     const config: any = {};
     config.id = id;
-    config.score = data.score || 0;
-    config.destroyOnEmpty = data.destroy_on_empty || false;
-    config.exclusive = data.exclusive || false;
-    config.decay = data.decay || 0;
-    config.level = data.level || 0;
-    config.regenSpeed = data.regenSpeed || 10;
+    config.score = data.score ?? 0;
+    config.destroyOnEmpty = data.destroy_on_empty ?? false;
+    config.exclusive = data.exclusive ?? false;
+    config.decay = data.decay ?? 0;
+    config.level = data.level ?? -1;
+    config.regenSpeed = data.regenSpeed ?? 10;
     config.multipliers = new Map();
-    for (const [name, amount] of Object.entries(data.multipliers || {})) {
+    for (const [name, amount] of Object.entries(data.multipliers ?? {})) {
         config.multipliers.set(name, amount);
     }
     config.items = new Map();
-    for (const [name, amount] of Object.entries(data.items || {})) {
+    for (const [name, amount] of Object.entries(data.items ?? {})) {
         const id = idMap.get(name);
         if (!id) {
             Logger.error(`Item name ${name} couldn't be found in ID map.`);

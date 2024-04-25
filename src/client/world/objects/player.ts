@@ -1,4 +1,3 @@
-import * as PIXI from "pixi.js";
 import { radians, lerp } from "../../../lib/transforms";
 import { spriteConfigs } from "../../configs/sprite_configs";
 import { WorldObject } from "./world_object";
@@ -9,28 +8,28 @@ import { validate } from "../../../shared/type_guard";
 import { ANIMATION, cubicBezier, hurt } from "../../animation/animations";
 import { idMap } from "../../configs/id_map";
 import { Animation, AnimationManager } from "../../../lib/animations";
-import { TEXT_STYLE } from "../../assets/text";
+import { Container, Point, Text } from "pixi.js";
 
 const Gear = z.tuple([
     z.number(), // mainHand
     z.number(), // offHand
     z.number(), // helmet
-    z.number(), // backpack
+    z.boolean(), // backpack
 ]);
 type Gear = z.infer<typeof Gear>;
 type PlayerParts = {
     body: {
-        container: PIXI.Container;
+        container: Container;
         sprite: SpriteWrapper;
         helmet: SpriteWrapper;
     };
     leftHand: {
-        container: PIXI.Container;
+        container: Container;
         sprite: SpriteWrapper;
         item: SpriteWrapper;
     };
     rightHand: {
-        container: PIXI.Container;
+        container: Container;
         sprite: SpriteWrapper;
         item: SpriteWrapper;
     };
@@ -38,35 +37,35 @@ type PlayerParts = {
 
 export class Player extends WorldObject {
     sprite: PlayerParts;
-    name: PIXI.Text;
+    name: Text;
 
     mainHand: string;
     offHand: string;
     helmet: string;
-    backpack: number;
+    backpack: boolean;
 
     blocking: boolean;
     constructor(
         id: number,
         manager: AnimationManager,
-        name: PIXI.Text,
-        pos: PIXI.Point,
+        name: Text,
+        pos: Point,
         rotation: number
     ) {
         super(id, pos, rotation, 15);
         this.sprite = {
             body: {
-                container: new PIXI.Container(),
+                container: new Container(),
                 sprite: SpriteFactory.build("player"),
                 helmet: SpriteFactory.build(""),
             },
             leftHand: {
-                container: new PIXI.Container(),
+                container: new Container(),
                 sprite: SpriteFactory.build("hand"),
                 item: SpriteFactory.build(""),
             },
             rightHand: {
-                container: new PIXI.Container(),
+                container: new Container(),
                 sprite: SpriteFactory.build("hand"),
                 item: SpriteFactory.build(""),
             },
@@ -74,14 +73,15 @@ export class Player extends WorldObject {
 
         this.rotationProperties.duration = 5;
         this.name = name;
+        this.name.scale.set(0.34);
 
         this.name.anchor.set(0.5, 2);
-        this.name.scale.set(3);
+        this.name.zIndex = 10;
 
         this.offHand = "";
         this.mainHand = "";
         this.helmet = "";
-        this.backpack = -1;
+        this.backpack = false;
 
         this.blocking = false;
 
@@ -96,10 +96,9 @@ export class Player extends WorldObject {
         leftHand.item.renderable = false;
         rightHand.item.renderable = false;
 
+        this.container.addChild(leftHand.container);
+        this.container.addChild(rightHand.container);
         this.container.addChild(body.container);
-
-        body.container.addChild(leftHand.container);
-        body.container.addChild(rightHand.container);
         body.container.addChild(body.sprite);
 
         leftHand.container.addChild(leftHand.item);
@@ -137,7 +136,8 @@ export class Player extends WorldObject {
             ANIMATION.IDLE_HANDS,
             PlayerAnimations.idleHands(
                 this.sprite.leftHand.container,
-                this.sprite.rightHand.container
+                this.sprite.rightHand.container,
+                this.sprite.body.container
             )
         );
         this.animations.set(
@@ -155,9 +155,14 @@ export class Player extends WorldObject {
         };
     }
 
-    interpolate(): void {
-        super.interpolate();
+    get containers(): Container[] {
+        return [this.container, this.name];
+    }
+
+    update(): boolean {
+        const done = super.update();
         this.name.position = this.position;
+        return done;
     }
 
     selectItem({
@@ -239,11 +244,16 @@ export class Player extends WorldObject {
 }
 
 namespace PlayerAnimations {
-    export function idleHands(left: PIXI.Container, right: PIXI.Container) {
+    export function idleHands(
+        left: Container,
+        right: Container,
+        body: Container
+    ) {
         const leftX = left.x;
         const rightX = right.x;
+        const bodyY = body.y;
 
-        const animation = new Animation(ANIMATION.IDLE_HANDS);
+        const animation = new Animation();
         animation.keyframes[0] = (animation) => {
             if (animation.isFirstKeyframe) {
                 animation.goto(0, 2000);
@@ -251,8 +261,9 @@ namespace PlayerAnimations {
 
             left.x = leftX + Math.cos(animation.t * Math.PI * 2) * 5;
             right.x = rightX - Math.cos(animation.t * Math.PI * 2) * 5;
+            body.y = bodyY + Math.sin(animation.t * Math.PI * 2) * 2;
             if (animation.keyframeEnded) {
-                animation.goto(0, 2000);
+                animation.goto(0, random.integer(1500, 2500));
             }
         };
         return animation;
@@ -262,10 +273,11 @@ namespace PlayerAnimations {
         const backwardTiming = cubicBezier(0.78, -0.01, 0.52, 0.99);
         const forwardTiming = cubicBezier(0, 0.74, 0.52, 0.99);
         let targetHand: number;
+        const body = target.sprite.body.container;
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
 
-        const animation = new Animation(ANIMATION.ATTACK);
+        const animation = new Animation();
         animation.keyframes[0] = (animation) => {
             if (target.blocking) {
                 return;
@@ -277,29 +289,33 @@ namespace PlayerAnimations {
                 leftHand.rotation = 0;
                 rightHand.rotation = 0;
             }
-            animation.next(150);
+            animation.next(125);
         };
         animation.keyframes[1] = (animation) => {
             const t = forwardTiming(animation.t);
             if (targetHand) {
                 leftHand.rotation = lerp(radians(0), radians(-100), t);
-                rightHand.rotation = lerp(radians(0), radians(-15), t);
+                rightHand.rotation = lerp(radians(0), radians(-10), t);
+                body.rotation = lerp(radians(0), radians(-25), t);
             } else {
                 rightHand.rotation = lerp(radians(0), radians(100), t);
-                leftHand.rotation = lerp(radians(0), radians(15), t);
+                leftHand.rotation = lerp(radians(0), radians(10), t);
+                body.rotation = lerp(radians(0), radians(25), t);
             }
             if (animation.keyframeEnded) {
-                animation.next(150);
+                animation.next(275);
             }
         };
         animation.keyframes[2] = (animation) => {
             const t = backwardTiming(animation.t);
             if (targetHand) {
                 leftHand.rotation = lerp(radians(-100), radians(0), t);
-                rightHand.rotation = lerp(radians(-15), radians(0), t);
+                rightHand.rotation = lerp(radians(-10), radians(0), t);
+                body.rotation = lerp(radians(-25), radians(0), t);
             } else {
                 rightHand.rotation = lerp(radians(100), radians(0), t);
-                leftHand.rotation = lerp(radians(15), radians(0), t);
+                leftHand.rotation = lerp(radians(10), radians(0), t);
+                body.rotation = lerp(radians(25), radians(0), t);
             }
             if (animation.keyframeEnded) {
                 animation.expired = true;
@@ -308,17 +324,24 @@ namespace PlayerAnimations {
         animation.keyframes[-1] = () => {
             leftHand.rotation = 0;
             rightHand.rotation = 0;
+            body.rotation = 0;
         };
         return animation;
     }
 
     export function block(target: Player) {
+        const body = target.sprite.body.container;
         const leftHand = target.sprite.leftHand.container;
         const rightHand = target.sprite.rightHand.container;
-        const leftHandRot = target.sprite.leftHand.container.rotation;
-        const rightHandRot = target.sprite.rightHand.container.rotation;
-        const animation = new Animation(ANIMATION.BLOCK);
+        let bodyRot = 0;
+        let leftHandRot = 0;
+        let rightHandRot = 0;
+
+        const animation = new Animation();
         animation.keyframes[0] = (animation) => {
+            bodyRot = target.sprite.body.container.rotation;
+            leftHandRot = target.sprite.leftHand.container.rotation;
+            rightHandRot = target.sprite.rightHand.container.rotation;
             animation.next(75);
         };
         animation.keyframes[1] = (animation) => {
@@ -329,16 +352,19 @@ namespace PlayerAnimations {
             );
             rightHand.rotation = lerp(
                 radians(rightHandRot),
-                radians(25),
+                radians(45),
                 animation.t
             );
+
+            body.rotation = lerp(radians(bodyRot), radians(15), animation.t);
             if (!target.blocking) {
                 animation.next(60);
             }
         };
         animation.keyframes[2] = (animation) => {
             leftHand.rotation = lerp(radians(-90), radians(0), animation.t);
-            rightHand.rotation = lerp(radians(25), radians(0), animation.t);
+            rightHand.rotation = lerp(radians(45), radians(0), animation.t);
+            body.rotation = lerp(radians(15), radians(0), animation.t);
             if (animation.keyframeEnded) {
                 animation.expired = true;
             }
@@ -346,6 +372,7 @@ namespace PlayerAnimations {
         animation.keyframes[-1] = () => {
             leftHand.rotation = leftHandRot;
             rightHand.rotation = rightHandRot;
+            body.rotation = bodyRot;
         };
         return animation;
     }

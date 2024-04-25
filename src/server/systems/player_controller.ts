@@ -69,4 +69,12 @@ export interface PlayerController {
      * @param message chat message
      */
     chatMessage?(id: number, message: string): void;
+
+    /**
+     * Player wants to drop an item
+     * @param id player id
+     * @param itemId id of item being dropped
+     * @param all whether or not to drop all of the items
+     */
+    dropItem?(id: number, itemId: number, all: boolean): void;
 }

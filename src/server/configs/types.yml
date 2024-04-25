@@ -4,6 +4,12 @@ helmet:
 hat:
     function: wear
 
+pickaxe:
+    function: main_hand
+
+knife:
+    function: main_hand
+
 sword:
     speed_multiplier: 0.9
     function: main_hand
@@ -16,3 +22,9 @@ wall:
 
 food:
     function: consume
+
+spear:
+    function: main_hand
+
+hammer:
+    function: main_hand

@@ -4,7 +4,7 @@ import Random from "../../../lib/random";
 import { WorldObject } from "./world_object";
 import { assets } from "../../assets/load";
 import { Animation, AnimationManager } from "../../../lib/animations";
-import { ANIMATION } from "../../animation/animations";
+import { ANIMATION, hurt } from "../../animation/animations";
 
 export class Entity extends WorldObject {
     sprite: PIXI.Sprite;
@@ -29,6 +29,7 @@ export class Entity extends WorldObject {
         this.sprite.anchor.set(0.5);
 
         this.animations.set(ANIMATION.ENTITY_IDLE, entityIdle(this));
+        this.animations.set(ANIMATION.HURT, hurt([this.sprite]));
         this.trigger(ANIMATION.ENTITY_IDLE, manager);
 
         this.container.addChild(this.sprite);
@@ -40,7 +41,7 @@ function entityIdle(target: Entity) {
     let height: number;
 
     let frameLength: number;
-    const animation = new Animation(ANIMATION.ENTITY_IDLE);
+    const animation = new Animation();
     animation.keyframes[0] = (animation) => {
         width = target.container.scale.x;
         height = target.container.scale.y;
@@ -51,9 +52,9 @@ function entityIdle(target: Entity) {
 
     animation.keyframes[1] = (animation) => {
         target.container.scale.x =
-            width + Math.cos(animation.t * Math.PI * 2) * 0.06;
+            width + Math.cos(animation.t * Math.PI * 2) * 0.01;
         target.container.scale.y =
-            height - Math.cos(animation.t * Math.PI * 2) * 0.11;
+            height - Math.cos(animation.t * Math.PI * 2) * 0.02;
         if (animation.keyframeEnded) {
             animation.goto(1, frameLength);
         }

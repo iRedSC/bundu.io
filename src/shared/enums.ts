@@ -1,230 +1,322 @@
 import { z } from "zod";
 
-export enum PACKET_TYPE {
-    PING = 0x00,
-    ACTION = 0x01,
-    MOVE_OBJECT = 0x02,
-    ROTATE_OBJECT = 0x03,
-    NEW_OBJECT = 0x04,
-    DELETE_OBJECT = 0x05,
-    UPDATE_INVENTORY = 0x06,
-    UPDATE_GEAR = 0x07,
-    CRAFTING_RECIPES = 0x08,
+export namespace PACKET {
+    export const SERVER = {
+        ROTATE_OBJECT: 0x00,
+        MOVE_OBJECT: 0x01,
+        EVENT: 0x02,
 
-    LOAD_GROUND = 0x09,
-    STARTING_INFO = 0x10,
-    DRAW_POLYGON = 0x11,
-    CHAT_MESSAGE = 0x12,
+        PLACEMENT_VALIDITY: 0x03,
 
-    // SET_TIME = 600,
+        NEW_OBJECT: 0x04,
+        UNLOAD_OBJECT: 0x05,
+
+        UPDATE_STATS: 0x06,
+        UPDATE_INVENTORY: 0x07,
+        UPDATE_GEAR: 0x08,
+
+        DELETE_OBJECT: 0x09,
+
+        PING: 0x0a,
+
+        DRAW_POLYGON: 0x0b,
+        CHAT_MESSAGE: 0x0c,
+
+        LOAD_GROUND: 0x0d,
+        STARTING_INFO: 0x0e,
+        CRAFTING_RECIPES: 0x0f,
+    } as const;
+    export type SERVER = (typeof SERVER)[keyof typeof SERVER];
+
+    export const EVENT = {
+        ATTACK: 0x01,
+        BLOCK: 0x02,
+        HURT: 0x03,
+    } as const;
+    export type EVENT = (typeof EVENT)[keyof typeof EVENT];
+
+    export const CLIENT = {
+        ROTATE: 0x00,
+        MOVE_UPDATE: 0x01,
+
+        REQUEST_OBJECTS: 0x02,
+        REQUEST_PLACEMENT_VALIDITY: 0x03,
+
+        ACTION: 0x04,
+        SELECT_ITEM: 0x05,
+
+        PING: 0x06,
+
+        CRAFT_ITEM: 0x07,
+
+        CHAT_MESSAGE: 0x08,
+
+        DROP_ITEM: 0x09,
+
+        PLACE_STRUCTURE: 0x0a,
+        JOIN: 0x0b,
+    } as const;
+    export type CLIENT = (typeof CLIENT)[keyof typeof CLIENT];
+
+    export const ACTION = {
+        ATTACK: 0x01,
+        BLOCK: 0x02,
+    } as const;
+    export type ACTION = (typeof ACTION)[keyof typeof ACTION];
 }
 
-export enum ACTION {
-    ATTACK = 0x01,
-    BLOCK = 0x02,
-    HURT = 0x03,
-}
+export const OBJECT_CLASS = {
+    PLAYER: 0x01,
+    ENTITY: 0x02,
+    STRUCTURE: 0x03,
+    POND: 0x04,
+} as const;
+type OBJECT_CLASS = (typeof OBJECT_CLASS)[keyof typeof OBJECT_CLASS];
 
-export enum OBJECT_CLASS {
-    PLAYER = 0x01,
-    ENTITY = 0x02,
-    STRUCTURE = 0x03,
-}
+export namespace SCHEMA {
+    export namespace NEW_OBJECT {
+        export const PLAYER = z.tuple([
+            z.number(), // id
+            z.number(), // x
+            z.number(), // y
+            z.number(), // rot
+            z.string(), // name
+            z.number().nullable(), // main hand
+            z.number().nullable(), // offhand
+            z.number().nullable(), // helm
+            z.number().nullable(), // skin
+            z.number().nullable(), // backpackSkin
+            z.boolean().nullable(), // hasBackpack
+        ]);
+        export type PLAYER = [
+            id: number,
+            x: number,
+            y: number,
+            rotation: number,
+            name: string,
+            mainHand?: number,
+            offHand?: number,
+            helmet?: number,
+            skin?: number,
+            backpackSkin?: number,
+            hasBackpack?: boolean
+        ];
 
-export namespace NewObjectSchema {
-    export const newPlayer = z.tuple([
-        z.number(), // id
-        z.number(), // x
-        z.number(), // y
-        z.number(), // rot
-        z.string(), // name
-        z.number().nullable(), // hand
-        z.number().nullable(), // helm
-        z.number().nullable(), // skin
-        z.number().nullable(), // backpackSkin
-        z.boolean().nullable(), // hasBackpack
-    ]);
-    export type newPlayer = z.infer<typeof newPlayer>;
+        export const ENTITY = z.tuple([
+            z.number(), // id
+            z.number(), // x
+            z.number(), // y
+            z.number(), // rot
+            z.number(), // size
+            z.number(), // type
+            z.boolean(), // angry
+        ]);
+        export type ENTITY = z.infer<typeof ENTITY>;
 
-    export const newEntity = z.tuple([
-        z.number(), // id
-        z.number(), // x
-        z.number(), // y
-        z.number(), // rot
-        z.number(), // size
-        z.number(), // type
-        z.boolean(), // angry
-    ]);
-    export type newEntity = z.infer<typeof newEntity>;
+        export const STRUCTURE = z.tuple([
+            z.number(), // id
+            z.number(), // x
+            z.number(), // y
+            z.number(), // rot
+            z.number(), // type
+            z.number(), // size
+        ]);
+        export type STRUCTURE = z.infer<typeof STRUCTURE>;
 
-    export const newStructure = z.tuple([
-        z.number(), // id
-        z.number(), // x
-        z.number(), // y
-        z.number(), // rot
-        z.number(), // type
-        z.number(), // size
-    ]);
-    export type newStructure = z.infer<typeof newStructure>;
-}
+        export const POND = z.tuple([
+            z.number(), // id
+            z.number(), // x
+            z.number(), // y
+            z.number(), // size
+        ]);
+        export type POND = z.infer<typeof POND>;
+    }
+    export namespace EVENT {
+        export const HURT = z.number(); // id
+        export type HURT = z.infer<typeof HURT>;
 
-export namespace ServerPacketSchema {
-    export const ping = z.tuple([
-        z.number(), // server time
-    ]);
-    export type ping = z.infer<typeof ping>;
+        export const ATTACK = z.number(); // id
+        export type ATTACK = z.infer<typeof ATTACK>;
 
-    export const action = z.tuple([
-        z.number(), // action
-        z.number(), // id
-        z.boolean(), //stop
-    ]);
-    export type action = z.infer<typeof action>;
+        export const BLOCK = z.tuple([
+            z.number(), // id
+            z.boolean(), // stop
+        ]);
+        export type BLOCK = z.infer<typeof BLOCK>;
+    }
 
-    export const startingInfo = z.tuple([
-        z.number(), // player's id
-    ]);
-    export type startingInfo = z.infer<typeof startingInfo>;
+    export namespace SERVER {
+        export const PING = z.tuple([
+            z.number(), // server time
+        ]);
+        export type PING = z.infer<typeof PING>;
 
-    export const newObject = z.tuple([
-        z.number(), // object class
-        z.unknown().array(), // object info
-    ]);
-    export type newObject = z.infer<typeof newObject>;
+        export const UPDATE_STATS = z.tuple([
+            z.number(), // health
+            z.number(), // hunger
+            z.number(), // heat
+        ]);
+        export type UPDATE_STATS = z.infer<typeof UPDATE_STATS>;
 
-    export const moveObject = z.tuple([
-        z.number(), // id
-        z.number(), // time
-        z.number(), // x
-        z.number(), // y
-    ]);
-    export type moveObject = z.infer<typeof moveObject>;
+        export const UNLOAD_OBJECT = z.number().array();
+        export type UNLOAD_OBJECT = z.infer<typeof UNLOAD_OBJECT>;
 
-    export const rotateObject = z.tuple([
-        z.number(), // id
-        z.number(), // rotation
-    ]);
-    export type rotateObject = z.infer<typeof rotateObject>;
+        export const STARTING_INFO = z.tuple([
+            z.number(), // player's id
+        ]);
+        export type STARTING_INFO = z.infer<typeof STARTING_INFO>;
 
-    export const deleteObject = z.tuple([
-        z.number(), // id
-    ]);
-    export type deleteObject = z.infer<typeof deleteObject>;
+        export const NEW_OBJECT = z.tuple([
+            z.number(), // object class
+            z.unknown().array(), // object info
+        ]);
+        export type NEW_OBJECT = z.infer<typeof NEW_OBJECT>;
 
-    export const loadGround = z.tuple([
-        z.number(), // x
-        z.number(), // y
-        z.number(), // w
-        z.number(), // h
-        z.number(), // type
-    ]);
-    export type loadGround = z.infer<typeof loadGround>;
-
-    export const updateInventory = z.tuple([
-        z.number(), // slot count;
-        z.array(
-            z.tuple([
-                z.number(), // item id
-                z.number(), // count
+        export const EVENT = z
+            .tuple([
+                z.number(), // event
             ])
-        ),
-    ]);
-    export type updateInventory = z.infer<typeof updateInventory>;
+            .rest(z.unknown()); // data;
+        export type EVENT = z.infer<typeof EVENT>;
 
-    export const updateGear = z.tuple([
-        z.number(), // player id
-        z.number(), // mainHand
-        z.number(), // offHand
-        z.number(), // helmet,
-        z.number(), // backpack
-    ]);
-    export type updateGear = z.infer<typeof updateGear>;
+        export const MOVE_OBJECT = z.tuple([
+            z.number(), // id
+            z.number(), // time
+            z.number(), // x
+            z.number(), // y
+        ]);
+        export type MOVE_OBJECT = z.infer<typeof MOVE_OBJECT>;
 
-    export const craftingRecipes = z.array(
-        z.tuple([
-            z.number(), // item id
+        export const ROTATE_OBJECT = z.tuple([
+            z.number(), // id
+            z.number(), // rotation
+        ]);
+        export type ROTATE_OBJECT = z.infer<typeof ROTATE_OBJECT>;
+
+        export const DELETE_OBJECT = z.number(); // id
+        export type DELETE_OBJECT = z.infer<typeof DELETE_OBJECT>;
+
+        export const LOAD_GROUND = z.tuple([
+            z.number(), // x
+            z.number(), // y
+            z.number(), // w
+            z.number(), // h
+            z.number(), // type
+        ]);
+        export type LOAD_GROUND = z.infer<typeof LOAD_GROUND>;
+
+        export const UPDATE_INVENTORY = z.tuple([
+            z.number(), // slot count;
             z.array(
                 z.tuple([
-                    z.number(), // required item id
-                    z.number(), // required item amount
+                    z.number(), // item id
+                    z.number(), // count
                 ])
             ),
-            z.array(
-                z.number() // crafting flags
-            ),
-        ])
-    );
-    export type craftingRecipes = z.infer<typeof craftingRecipes>;
+        ]);
+        export type UPDATE_INVENTORY = z.infer<typeof UPDATE_INVENTORY>;
 
-    export const drawPolygon = z.tuple([
-        z.number(), // start x
-        z.number(), // start y
-        z.array(
+        export const UPDATE_GEAR = z.tuple([
+            z.number(), // player id
+            z.number(), // mainHand
+            z.number(), // offHand
+            z.number(), // helmet,
+            z.boolean(), // backpack
+        ]);
+        export type UPDATE_GEAR = z.infer<typeof UPDATE_GEAR>;
+
+        export const CRAFTING_RECIPES = z.array(
             z.tuple([
-                z.number(), // x
-                z.number(), // y
+                z.number(), // item id
+                z.array(
+                    z.tuple([
+                        z.number(), // required item id
+                        z.number(), // required item amount
+                    ])
+                ),
+                z.array(
+                    z.number() // crafting flags
+                ),
             ])
-        ),
-    ]);
-    export type drawPolygon = z.infer<typeof drawPolygon>;
+        );
+        export type CRAFTING_RECIPES = z.infer<typeof CRAFTING_RECIPES>;
 
-    export const chatMessage = z.tuple([
-        z.number(), // player id
-        z.string(), // message
-    ]);
-    export type chatMessage = z.infer<typeof chatMessage>;
-}
+        export const DRAW_POLYGON = z.tuple([
+            z.number(), // start x
+            z.number(), // start y
+            z.array(
+                z.tuple([
+                    z.number(), // x
+                    z.number(), // y
+                ])
+            ),
+        ]);
+        export type DRAW_POLYGON = z.infer<typeof DRAW_POLYGON>;
 
-export enum CLIENT_PACKET_TYPE {
-    PING = 0x00,
-    MOVE_UPDATE = 0x01,
-    ROTATE = 0x02,
-    ACTION = 0x03,
-    REQUEST_OBJECT = 0x04,
-    JOIN = 0x05,
-    SELECT_ITEM = 0x06,
-    CRAFT_ITEM = 0x07,
-    CHAT_MESSAGE = 0x08,
-}
+        export const CHAT_MESSAGE = z.tuple([
+            z.number(), // player id
+            z.string(), // message
+        ]);
+        export type CHAT_MESSAGE = z.infer<typeof CHAT_MESSAGE>;
 
-export enum CLIENT_ACTION {
-    ATTACK = 0x01,
-    BLOCK = 0x02,
-}
+        export const PLACEMENT_VALIDITY = z.boolean();
+        export type PLACEMENT_VALIDITY = boolean;
+    }
 
-export namespace ClientPacketSchema {
-    export const ping = z.undefined();
-    export type ping = z.infer<typeof ping>;
+    export namespace CLIENT {
+        export const PING = z.undefined();
+        export type PING = z.infer<typeof PING>;
 
-    export const join = z.tuple([
-        z.string(), // name,
-        z.number(), // skin
-        z.number(), // backpack skin,
-        z.number(), // bookskin
-    ]);
-    export type join = z.infer<typeof join>;
+        export const JOIN = z.tuple([
+            z.string(), // name,
+            z.number(), // skin
+            z.number(), // backpack skin,
+        ]);
+        export type JOIN = [name: string, skin: number, backpackSkin: number];
 
-    export const moveUpdate = z.number();
-    export type moveUpdate = z.infer<typeof moveUpdate>;
+        export const MOVE_UPDATE = z.number();
+        export type MOVE_UPDATE = z.infer<typeof MOVE_UPDATE>;
 
-    export const rotate = z.number(); // rotation
-    export type rotate = z.infer<typeof rotate>;
+        export const ROTATE = z.number(); // rotation
+        export type ROTATE = z.infer<typeof ROTATE>;
 
-    export const action = z.tuple([
-        z.number(), // ACTION
-        z.boolean(), // stop
-    ]);
-    export type action = z.infer<typeof action>;
+        export const ACTION = z.tuple([
+            z.number(), // ACTION
+            z.boolean(), // stop
+        ]);
+        export type ACTION = [action: number, stop: boolean];
 
-    export const requestObjects = z.number().array();
-    export type requestObjects = z.infer<typeof requestObjects>;
+        export const REQUEST_OBJECTS = z.number().array();
+        export type REQUEST_OBJECTS = z.infer<typeof REQUEST_OBJECTS>;
 
-    export const selectItem = z.number();
-    export type selectItem = z.infer<typeof selectItem>;
+        export const SELECT_ITEM = z.number();
+        export type SELECT_ITEM = z.infer<typeof SELECT_ITEM>;
 
-    export const craftItem = z.number();
-    export type craftItem = z.infer<typeof craftItem>;
+        export const CRAFT_ITEM = z.number();
+        export type CRAFT_ITEM = z.infer<typeof CRAFT_ITEM>;
 
-    export const chatMessage = z.string();
-    export type chatMessage = z.infer<typeof chatMessage>;
+        export const CHAT_MESSAGE = z.string();
+        export type CHAT_MESSAGE = z.infer<typeof CHAT_MESSAGE>;
+
+        export const DROP_ITEM = z.tuple([
+            z.number(), // item id
+            z.boolean(), // drop all?
+        ]);
+        export type DROP_ITEM = [itemId: number, dropAll: boolean];
+
+        export const REQUEST_PLACEMENT_VALIDITY = z.tuple([
+            z.number(), // item id
+            z.boolean(), // on grid
+        ]);
+        export type REQUEST_PLACEMENT_VALIDITY = [
+            itemId: number,
+            onGrid: boolean
+        ];
+
+        export const PLACE_STRUCTURE = z.tuple([
+            z.number(), // item id
+            z.boolean(), // on grid
+        ]);
+        export type PLACE_STRUCTURE = [itemId: number, onGrid: boolean];
+    }
 }

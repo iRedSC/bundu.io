@@ -2,7 +2,7 @@ import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
 import { Grid } from "./grid";
-import { ServerPacketSchema } from "../../shared/enums";
+import { SCHEMA } from "../../shared/enums";
 
 export class RecipeManager {
     recipes: Map<number, [Map<number, number>, number[]]>;
@@ -11,7 +11,7 @@ export class RecipeManager {
         this.recipes = new Map();
     }
 
-    updateRecipes(update: ServerPacketSchema.craftingRecipes) {
+    updateRecipes(update: SCHEMA.SERVER.CRAFTING_RECIPES) {
         this.recipes.clear();
         for (const recipe of update) {
             const item = recipe[0];
@@ -64,7 +64,8 @@ export class CraftingMenu {
     container: PIXI.Container;
     rows: number;
     grid: Grid;
-    private _callback?: Callback;
+    rightclick?: Callback;
+    leftclick?: Callback;
 
     constructor(grid: Grid) {
         this.grid = grid;
@@ -77,31 +78,25 @@ export class CraftingMenu {
         this.container.removeChildren();
         this.buttons = [];
         for (let item of this.items) {
-            const button = new ItemButton(this._callback);
+            const button = new ItemButton();
+            button.rightclick = this.rightclick;
+            button.leftclick = this.leftclick;
             button.setItem(item);
             button.update(0x777777);
-            this.container.addChild(button.button.view);
+            this.container.addChild(button.button);
             this.buttons.push(button);
         }
         this.grid.arrange(this.buttons);
         this.resize();
     }
 
-    setCallback(value: Callback) {
-        this._callback = value;
+    setCallbacks(leftclick?: Callback, rightclick?: Callback) {
+        this.rightclick = rightclick;
+        this.leftclick = leftclick;
         for (const button of this.buttons) {
-            button.setCallback(value);
+            button.rightclick = rightclick;
+            button.leftclick = leftclick;
         }
-    }
-    set callback(value: Callback) {
-        this._callback = value;
-        for (const button of this.buttons) {
-            button.setCallback(value);
-        }
-    }
-
-    get callback(): Callback | undefined {
-        return this._callback;
     }
 
     resize() {

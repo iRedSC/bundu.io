@@ -5,14 +5,13 @@ let NEXT_COMPONENT_ID = 1;
 export type ComponentFactory<D> = (new (data: D) => Component<D>) & {
     id: number;
     data: D;
-
     /**
      * Get component belonging to a specific GameObject.
      *
      * @param object GameObject to get component from.
      * @returns Component belonging to the GameObject
      */
-    get(object: GameObject): Component<D>;
+    get(object: GameObject): D;
 };
 
 /**
@@ -40,13 +39,11 @@ export abstract class Component<D> {
                 super(id, data);
             }
 
-            static get(object: GameObject): RegisteredComponent | undefined {
-                const component: RegisteredComponent = (
-                    object as any
-                ).components.get(this.id);
-                return component;
+            static get(object: GameObject): C {
+                return object.get<C>(this as unknown as ComponentFactory<C>);
             }
         }
+
         return RegisteredComponent as any as ComponentFactory<C>;
     }
 }

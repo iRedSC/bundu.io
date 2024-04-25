@@ -1,72 +1,103 @@
-import {
-    NewObjectSchema,
-    OBJECT_CLASS,
-    PACKET_TYPE,
-    ServerPacketSchema,
-} from "../../shared/enums";
-import { PacketPipeline, Unpacker } from "../../shared/unpack";
+import { SCHEMA, OBJECT_CLASS, PACKET } from "../../shared/enums";
+import { PacketParser } from "../../shared/unpack";
 import { World } from "../world/world";
 
-export function createPipeline(packetPipeline: PacketPipeline, world: World) {
-    const newObjectPipeline = new PacketPipeline();
+export function createParser(parser: PacketParser, world: World) {
+    const newObjectParser = new PacketParser();
 
-    packetPipeline.unpackers[PACKET_TYPE.MOVE_OBJECT] = new Unpacker(
-        world.moveObject.bind(world),
-        ServerPacketSchema.moveObject
+    parser.set(
+        PACKET.SERVER.NEW_OBJECT,
+        SCHEMA.SERVER.NEW_OBJECT,
+        newObjectParser.unpack.bind(newObjectParser)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.ROTATE_OBJECT] = new Unpacker(
-        world.rotateObject.bind(world),
-        ServerPacketSchema.rotateObject
+    newObjectParser.set(
+        OBJECT_CLASS.ENTITY,
+        SCHEMA.NEW_OBJECT.ENTITY,
+        world.newEntity.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.DELETE_OBJECT] = new Unpacker(
-        world.deleteObject.bind(world),
-        ServerPacketSchema.deleteObject
+    newObjectParser.set(
+        OBJECT_CLASS.PLAYER,
+        SCHEMA.NEW_OBJECT.PLAYER,
+        world.newPlayer.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.NEW_OBJECT] = new Unpacker(
-        newObjectPipeline.unpack.bind(newObjectPipeline),
-        ServerPacketSchema.newObject
+    newObjectParser.set(
+        OBJECT_CLASS.STRUCTURE,
+        SCHEMA.NEW_OBJECT.STRUCTURE,
+        world.newStructure.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.LOAD_GROUND] = new Unpacker(
-        world.loadGround.bind(world),
-        ServerPacketSchema.loadGround
+    const eventParser = new PacketParser();
+
+    parser.set(
+        PACKET.SERVER.EVENT,
+        SCHEMA.SERVER.EVENT,
+        eventParser.unpack.bind(eventParser)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.STARTING_INFO] = new Unpacker(
-        world.setPlayer.bind(world),
-        ServerPacketSchema.startingInfo
+    eventParser.set(
+        PACKET.EVENT.ATTACK,
+        SCHEMA.EVENT.ATTACK,
+        world.attack.bind(world)
+    );
+    eventParser.set(
+        PACKET.EVENT.BLOCK,
+        SCHEMA.EVENT.BLOCK,
+        world.block.bind(world)
+    );
+    eventParser.set(
+        PACKET.EVENT.HURT,
+        SCHEMA.EVENT.HURT,
+        world.hurt.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.UPDATE_GEAR] = new Unpacker(
-        world.updateGear.bind(world),
-        ServerPacketSchema.updateGear
+    parser.set(
+        PACKET.SERVER.MOVE_OBJECT,
+        SCHEMA.SERVER.MOVE_OBJECT,
+        world.moveObject.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.ACTION] = new Unpacker(
-        world.action.bind(world),
-        ServerPacketSchema.action
+    parser.set(
+        PACKET.SERVER.ROTATE_OBJECT,
+        SCHEMA.SERVER.ROTATE_OBJECT,
+        world.rotateObject.bind(world)
     );
 
-    packetPipeline.unpackers[PACKET_TYPE.CHAT_MESSAGE] = new Unpacker(
-        world.chatMessage.bind(world),
-        ServerPacketSchema.chatMessage
+    parser.set(
+        PACKET.SERVER.DELETE_OBJECT,
+        SCHEMA.SERVER.DELETE_OBJECT,
+        world.deleteObject.bind(world)
     );
 
-    newObjectPipeline.unpackers[OBJECT_CLASS.ENTITY] = new Unpacker(
-        world.newEntity.bind(world),
-        NewObjectSchema.newEntity
+    parser.set(
+        PACKET.SERVER.LOAD_GROUND,
+        SCHEMA.SERVER.LOAD_GROUND,
+        world.loadGround.bind(world)
     );
 
-    newObjectPipeline.unpackers[OBJECT_CLASS.PLAYER] = new Unpacker(
-        world.newPlayer.bind(world),
-        NewObjectSchema.newPlayer
+    parser.set(
+        PACKET.SERVER.STARTING_INFO,
+        SCHEMA.SERVER.STARTING_INFO,
+        world.setPlayer.bind(world)
     );
 
-    newObjectPipeline.unpackers[OBJECT_CLASS.STRUCTURE] = new Unpacker(
-        world.newStructure.bind(world),
-        NewObjectSchema.newStructure
+    parser.set(
+        PACKET.SERVER.UPDATE_GEAR,
+        SCHEMA.SERVER.UPDATE_GEAR,
+        world.updateGear.bind(world)
+    );
+
+    parser.set(
+        PACKET.SERVER.CHAT_MESSAGE,
+        SCHEMA.SERVER.CHAT_MESSAGE,
+        world.chatMessage.bind(world)
+    );
+
+    parser.set(
+        PACKET.SERVER.UNLOAD_OBJECT,
+        SCHEMA.SERVER.UNLOAD_OBJECT,
+        world.unloadObject.bind(world)
     );
 }

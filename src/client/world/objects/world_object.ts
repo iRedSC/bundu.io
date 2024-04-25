@@ -1,4 +1,3 @@
-import * as PIXI from "pixi.js";
 import { rotationLerp } from "../../../lib/transforms";
 import { Line } from "../debug/line";
 import { DebugWorldObject } from "../../rendering/debug";
@@ -7,6 +6,7 @@ import { TEXT_STYLE } from "../../assets/text";
 import { Animation, AnimationManager } from "../../../lib/animations";
 import { States } from "../states";
 import { RotationHandler } from "../rotation";
+import { Container, Point, Text } from "pixi.js";
 
 // TODO: There are too many properties related to rotation clogging up the object.
 
@@ -16,11 +16,13 @@ import { RotationHandler } from "../rotation";
  * Separate system for interpolating rotation
  */
 export class WorldObject {
-    container: PIXI.Container;
+    container: Container;
 
     id: number;
 
     private _size?: number;
+    private _renderable: boolean = true;
+    private _rotation: number = 0;
 
     states: States;
     rotationProperties: RotationHandler;
@@ -28,9 +30,11 @@ export class WorldObject {
     debug: DebugWorldObject;
 
     animations: Map<number, Animation>;
+    active?: boolean;
 
-    constructor(id: number, pos: PIXI.Point, rotation: number, size: number) {
-        this.container = new PIXI.Container();
+    constructor(id: number, pos: Point, rotation: number, size: number) {
+        this.container = new Container();
+        this.container.zIndex = 0;
 
         this.id = id;
 
@@ -46,33 +50,58 @@ export class WorldObject {
         this.states.set([Date.now(), pos.x, pos.y]);
 
         this.rotationProperties = new RotationHandler(true, 100);
-        this.setRotation(rotation);
+        this._rotation = rotation;
+        this.container.rotation = rotation;
 
         this.animations = new Map();
 
-        const idText = new PIXI.Text(`ID: ${this.id}`, TEXT_STYLE);
+        const idText = new Text(`ID: ${this.id}`, TEXT_STYLE);
         idText.scale.set(5);
         idText.position = pos;
         this.debug.update("id", idText);
+
+        const hitbox = new Circle(this.position, 5, 0xff0000, 25);
+        this.debug.update("hitbox", hitbox);
     }
 
-    interpolate() {
+    get containers(): Container[] {
+        // ...Array.from(this.debug.containers.values())
+        return [this.container];
+    }
+
+    set renderable(value: boolean) {
+        this._renderable = value;
+        for (const container of this.containers) {
+            container.renderable = value;
+        }
+    }
+
+    get renderable() {
+        return this._renderable;
+    }
+
+    update() {
         const now = Date.now() - 50;
 
         const [x, y] = this.states.interpolate(now);
         this.position.set(x, y);
 
         if (this.rotationProperties._interpolate) {
-            this.rotation = this.rotationProperties.interpolate(now);
-            this.container.rotation = this.rotation;
+            this._rotation = this.rotationProperties.interpolate(now);
+            this.container.rotation = this._rotation;
         }
 
         this.debug.containers.get("hitbox")?.position.set(x, y);
         this.debug.containers.get("id")?.position.set(x, y);
-    }
 
-    setRotation(rotation: number) {
-        this.rotationProperties.set(this.rotation, rotation);
+        const lastState = this.states.values[-1];
+        if (!lastState) {
+            return false;
+        }
+        if (this.states.values[-1][0] < Date.now()) {
+            return true;
+        }
+        return false;
     }
 
     trigger(id: number, manager: AnimationManager, replace: boolean = false) {
@@ -81,12 +110,17 @@ export class WorldObject {
         }
         const animation = this.animations.get(id);
         if (animation) {
-            manager.add(this, animation.run(replace));
+            manager.set(this, id, animation.run(), replace);
         }
     }
 
-    set rotation(value: number) {
-        this.container.rotation = value;
+    set rotation(rotation: number) {
+        if (!this.rotationProperties._interpolate) {
+            this._rotation = rotation;
+            this.container.rotation = rotation;
+            return;
+        }
+        this.rotationProperties.set(this._rotation, rotation);
     }
 
     get rotation() {
@@ -99,10 +133,7 @@ export class WorldObject {
 
     set size(value: number) {
         this._size = value;
-        this.container.scale.set(value / 15);
-
-        const hitbox = new Circle(this.position, this._size, 0xff0000, 25);
-        this.debug.update("hitbox", hitbox);
+        this.container.scale.set(value / 150);
     }
 
     get size() {
