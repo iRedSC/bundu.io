@@ -55,23 +55,19 @@ amethyst_pickaxe:
 lumber_axe:
     type: axe
     attack_damage: 7
-    
 
 butcher_knife:
     type: knife
     attack_damage: 8
 
-
 shovel:
     type: shovel
     attack_damage: 3
-
 
 repair_hammer:
     type: wrench
     attack_damage: 4
     repair: 10
-
 
 stone_spear:
     type: spear

@@ -7,7 +7,6 @@ import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
 import { GlobalPacketFactory, GlobalSocketManager } from "../globals.js";
-import { send } from "../network/send.js";
 import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
 import { itemConfigs } from "../configs/loaders/load.js";
@@ -122,6 +121,10 @@ export class PlayerSystem extends System implements PlayerController {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
+        const config = itemConfigs.get(data.mainHand ?? -1)?.data;
+        if (!config?.block) {
+            return;
+        }
         if (!stop && data.attacking) {
             data.attacking = false;
         }
