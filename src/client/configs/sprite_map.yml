@@ -96,6 +96,8 @@ gold: gold.svg
 diamond: diamond.svg
 amethyst: amethyst.svg
 
+stone_barrier: stone_barrier.svg
+
 # * PLACEABLE
 
 #Walls

@@ -124,12 +124,9 @@ quick_diamond_spike: 83
 # Trees
 forest_tree: 84
 
-
 pine_tree: 90
 
-
 savanah_tree: 97
-
 
 # Other
 berry_bush: 100
@@ -138,7 +135,6 @@ mango_tree1: 102
 hive_small: 103
 hive_medium: 104
 hive_large: 105
-
 
 # * Animals
 
@@ -180,3 +176,6 @@ tooth: 133
 backpack: 134
 bird_skull: 135
 repair_hammer: 136
+
+stone_barrier: 137
+pine_tree_snow: 138

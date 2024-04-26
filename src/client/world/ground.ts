@@ -2,8 +2,10 @@ import * as PIXI from "pixi.js";
 
 const types = new Map();
 
-types.set(0, 0x2a462b);
-types.set(1, 0x72084f);
+types.set(1, 0x2a462b);
+types.set(2, 0xcedfe3);
+types.set(3, 0xb5a478);
+types.set(4, 0xc3b47a);
 
 export function createGround(
     type: number,

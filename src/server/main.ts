@@ -31,6 +31,7 @@ import {
     GlobalPacketFactory,
     GlobalSocketManager,
 } from "./globals.js";
+import { createMap } from "./map_loader.js";
 
 Logger.useDefaults();
 
@@ -51,15 +52,7 @@ world
     .addSystem(new HealthSystem())
     .addSystem(new GroundItemSystem());
 
-const ground: GroundData = {
-    collider: new SAT.Box(new SAT.Vector(0, 0), 50000, 50000),
-    type: 0,
-    speedMultiplier: 1,
-};
-
-world.addObject(new Ground(ground));
-// createEntities(world, 5);
-createResources(world, 10000);
+createMap(world);
 
 const controller = new ServerController();
 controller.start(7777);
