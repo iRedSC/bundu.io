@@ -1,32 +1,93 @@
 # anger = 0: scared, 1: no reaction, 2: agressive
 
 elephant:
-    health: 4000
-    score: 4000
+    health: 2500
+    score: 2500
     anger: 1
-    speed: 2
-    attack_damage: 50
+    speed: 1
+    attack_damage: 90
     size: 6
     wander_range: 75
     spawns: elephant_dead
 
 bear:
-    health: 250
+    health: 350
     score: 500
     anger: 2
-    speed: 2
-    attack_damage: 30
-    size: 3
+    speed: 1
+    attack_damage: 35
+    size: 4
     wander_range: 75
     spawns: bear_dead
 
-
-
-
-
-
 ram:
-    speed: 2
+    health: 500
+    score: 800
+    anger: 1
+    speed: 1
+    attack_damage: 45
+    size: 4
+    wander_range: 75
+    spawns: ram_dead
+
+deer:
+    health: 100
+    score: 250
+    anger: 0
+    speed: 1
     size: 3
-    wander_range: 110
-    rest_time: 0.25
+    wander_range: 75
+    spawns: deer_dead
+
+
+raindeer:
+    health: 175
+    score: 500
+    anger: 0
+    speed: 1
+    size: 3
+    wander_range: 75
+    spawns: raindeer_dead
+
+komodo_dragon:
+    health: 800
+    score: 2000
+    anger: 2
+    speed: 1
+    attack_damage: 65
+    size: 4
+    wander_range: 75
+    spawns: komodo_dragon_dead
+
+alligator:
+    health: 700
+    score: 1500
+    anger: 2
+    speed: 1
+    attack_damage: 45
+    size: 4
+    wander_range: 75
+    spawns: alligator_dead
+
+bee:
+    health: 200
+    score: 200
+    anger: 2
+    speed: 1
+    attack_damage: 15
+    size: 2
+    wander_range: 75
+    spawns: bee_dead
+
+queen_bee:
+    health: 250
+    score: 500
+    anger: 2
+    speed: 1
+    attack_damage: 60
+    size: 8
+    wander_range: 75
+    spawns: queen_bee_dead
+
+
+
