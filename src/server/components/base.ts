@@ -48,3 +48,11 @@ export type ResourceData = {
     lastRegen: number;
 };
 export const ResourceData = Component.register<ResourceData>();
+
+export type ModifierType = "add" | "multiply";
+
+export type Modifiers = Record<
+    string,
+    Record<string, { type: ModifierType; value: number }>
+>;
+export const Modifiers = Component.register<Modifiers>();
