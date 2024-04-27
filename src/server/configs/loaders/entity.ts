@@ -1,36 +1,25 @@
+import { z } from "zod";
 import { Component } from "../../game_engine/component.js";
+import { ConfigLoader } from "./loader.js";
+import { idMap } from "./id_map.js";
 
-export type entityConfigData = {
-    anger: number;
-    speed: number;
-    attack_damage: number;
-    size: number;
-    wander_range: number;
-    rest_time: number;
+const EntityConfig = z.object({
+    anger: z.number(),
+    speed: z.number(),
+    attack_damage: z.number(),
+    size: z.number(),
+    wander_range: z.number(),
+    rest_time: z.number(),
+});
+export type EntityConfig = z.infer<typeof EntityConfig>;
+
+const fallback = {
+    anger: 0,
+    speed: 1,
+    attack_damage: 5,
+    size: 25,
+    wander_range: 50,
+    rest_time: 10,
 };
 
-export type EntityConfig = {
-    id: number;
-    anger: number;
-    speed: number;
-    attackDamage: number;
-    size: number;
-    wanderRange: number;
-    restTime: number;
-};
-export const EntityConfig = Component.register<EntityConfig>();
-
-export function createEntityConfig(
-    id: number,
-    data: Partial<entityConfigData>
-) {
-    const config: any = {};
-    config.id = id;
-    config.wanderRange = data.wander_range ?? 1000;
-    config.anger = data.anger ?? 1;
-    config.speed = data.speed ?? 1;
-    config.attackDamage = data.attack_damage ?? 0;
-    config.size = data.size ?? 2;
-    config.restTime = data.rest_time ?? 1000;
-    return new EntityConfig(config);
-}
+export const EntityConfigs = new ConfigLoader(EntityConfig, fallback, idMap);

@@ -47,7 +47,7 @@ export class CollisionSystem extends System {
             }
         }
         if (retrigger && tries < 3) {
-            this.collide(object, undefined, tries + 1);
+            this.collide(object, { x: 0, y: 0 }, tries + 1);
         }
     };
 }

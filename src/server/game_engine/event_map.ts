@@ -45,5 +45,5 @@ export interface GameEventMap {
     };
     craft_item: number;
     select_item: number;
-    give_item: { id: number; amount: number };
+    give_item: { id?: number; amount?: number };
 }

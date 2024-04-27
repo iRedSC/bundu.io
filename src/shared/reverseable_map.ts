@@ -1,4 +1,4 @@
-export class ReversableMap<K, V> extends Map {
+export class ReversableMap<K, V> extends Map<K, V> {
     _valueMap: Map<V, K>;
 
     constructor() {

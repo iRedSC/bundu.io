@@ -1,5 +1,4 @@
-import { createEntityConfig } from "../configs/loaders/entity.js";
-import { entityConfigs } from "../configs/loaders/load.js";
+import { EntityConfigs } from "../configs/loaders/entity.js";
 import {
     lerp,
     distance,
@@ -17,9 +16,7 @@ export class Entity extends GameObject {
     constructor(physics: Physics, type: Type) {
         super();
 
-        const config =
-            entityConfigs.get(type.id) || createEntityConfig(type.id, {});
-        this.add(config);
+        const config = EntityConfigs.get(type.id);
         this.add(new Physics(physics));
         this.add(new Type(type));
         this.add(

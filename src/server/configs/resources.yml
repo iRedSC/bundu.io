@@ -4,9 +4,19 @@ pine_tree:
     multipliers:
         pickaxe: 1
     level: 0
-    regen_speed: 3
+    regen_speed: 5
     items:
-        wood: 60
+        wood: 30
+
+pine_tree_snow:
+    score: 5
+    exclusive: true
+    multipliers:
+        pickaxe: 1
+    level: 0
+    regen_speed: 5
+    items:
+        wood: 30
 
 forest_tree:
     score: 5
@@ -14,9 +24,9 @@ forest_tree:
     multipliers:
         pickaxe: 1
     level: 0
-    regen_speed: 3
+    regen_speed: 5
     items:
-        wood: 60
+        wood: 40
 
 savanah_tree:
     score: 5
@@ -24,9 +34,9 @@ savanah_tree:
     multipliers:
         pickaxe: 1
     level: 0
-    regen_speed: 3
+    regen_speed: 7
     items:
-        wood: 60
+        wood: 80
 
 stone:
     score: 8
@@ -34,9 +44,9 @@ stone:
     multipliers:
         pickaxe: 1
     level: 1
-    regen_speed: 4
+    regen_speed: 8
     items:
-        stone: 50
+        stone: 30
 
 gold:
     score: 10
@@ -44,9 +54,9 @@ gold:
     multipliers:
         pickaxe: 1
     level: 2
-    regen_speed: 5
+    regen_speed: 10
     items:
-        gold: 40
+        gold: 20
 
 diamond:
     score: 20
@@ -54,9 +64,9 @@ diamond:
     multipliers:
         pickaxe: 1
     level: 3
-    regen_speed: 6
+    regen_speed: 14
     items:
-        diamond: 35
+        diamond: 20
 
 amethyst:
     score: 30
@@ -64,9 +74,9 @@ amethyst:
     multipliers:
         pickaxe: 1
     level: 4
-    regen_speed: 7
+    regen_speed: 17
     items:
-        amethyst: 30
+        amethyst: 20
 
 bear_dead:
     duration: 30

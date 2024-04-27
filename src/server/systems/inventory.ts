@@ -1,8 +1,10 @@
 import { PlayerData } from "../components/player.js";
 import { Inventory } from "../components/inventory.js";
-import { itemConfigs, itemTypes } from "../configs/loaders/load.js";
+import { ItemConfigs } from "../configs/loaders/items.js";
+
 import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
+import { ItemTypeConfigs } from "../configs/loaders/item_type.js";
 
 export class InventorySystem extends System {
     constructor() {
@@ -19,6 +21,7 @@ export class InventorySystem extends System {
         object: GameObject,
         { id, amount }
     ) => {
+        if (amount === undefined) amount = 1;
         if (amount <= 0 || id === undefined) return;
 
         const inventory = Inventory.get(object);
@@ -45,11 +48,11 @@ export class InventorySystem extends System {
     ) => {
         const data = PlayerData.get(object);
         const inventory = Inventory.get(object);
-        const config = itemConfigs.get(item)?.data;
+        const config = ItemConfigs.get(item);
 
-        if (!inventory.items.has(item) || !config) return;
+        if (!inventory.items.has(item) || !config.type) return;
 
-        switch (itemTypes[config.type]?.function) {
+        switch (ItemTypeConfigs.get(config.type)?.function) {
             case "wear":
                 data.helmet = data.helmet === item ? -1 : item;
                 break;

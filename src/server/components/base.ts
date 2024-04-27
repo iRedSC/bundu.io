@@ -41,3 +41,10 @@ export type GroundItemData = {
     despawnTime: number;
 };
 export const GroundItemData = Component.register<GroundItemData>();
+
+export type ResourceData = {
+    items: Record<number, number>;
+    decayAt: number | null;
+    lastRegen: number;
+};
+export const ResourceData = Component.register<ResourceData>();

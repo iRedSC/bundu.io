@@ -32,10 +32,12 @@ import {
     GlobalSocketManager,
 } from "./globals.js";
 import { createMap } from "./map_loader.js";
+import { loadConfigs } from "./configs/loaders/load.js";
 
 Logger.useDefaults();
 
 const world = new World();
+loadConfigs();
 
 const playerSystem = new PlayerSystem();
 const parser = createParser(playerSystem);

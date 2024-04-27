@@ -1,4 +1,4 @@
-import { clamp, moveToward } from "../../lib/transforms.js";
+import { moveToward } from "../../lib/transforms.js";
 import { PACKET } from "../../shared/enums.js";
 import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
@@ -9,7 +9,7 @@ import { EventCallback, System } from "../game_engine/system.js";
 import { GlobalPacketFactory, GlobalSocketManager } from "../globals.js";
 import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
-import { itemConfigs } from "../configs/loaders/load.js";
+import { ItemConfigs } from "../configs/loaders/items.js";
 import { idMap } from "../configs/loaders/id_map.js";
 
 /**
@@ -34,10 +34,10 @@ export class PlayerSystem extends System implements PlayerController {
 
         if (data.attacking && data.lastAttackTime && !data.blocking) {
             if (data.lastAttackTime < time - 500) {
-                let damage = 1;
-                const config = itemConfigs.get(data.mainHand || -1);
+                let damage = 3;
+                const config = ItemConfigs.get(data.mainHand);
                 if (config) {
-                    damage = config.data.attack_damage;
+                    damage = config.attack_damage ?? 3;
                 }
                 this.trigger("attack", player.id, {
                     weapon: data.mainHand,
@@ -121,7 +121,7 @@ export class PlayerSystem extends System implements PlayerController {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
-        const config = itemConfigs.get(data.mainHand ?? -1)?.data;
+        const config = ItemConfigs.get(data.mainHand);
         if (!config?.block) {
             return;
         }

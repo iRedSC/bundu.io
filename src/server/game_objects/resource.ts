@@ -1,9 +1,8 @@
 import { round } from "../../lib/math.js";
 import { degrees } from "../../lib/transforms.js";
 import { OBJECT_CLASS, PACKET } from "../../shared/enums.js";
-import { Physics, Type } from "../components/base.js";
-import { createResourceConfig } from "../configs/loaders/resources.js";
-import { resourceConfigs } from "../configs/loaders/load.js";
+import { Physics, ResourceData, Type } from "../components/base.js";
+import { ResourceConfigs } from "../configs/loaders/resources.js";
 import { GameObject } from "../game_engine/game_object.js";
 
 /**
@@ -13,10 +12,16 @@ export class Resource extends GameObject {
     constructor(physics: Physics, type: Type) {
         super();
 
-        const config =
-            resourceConfigs.get(type.id) || createResourceConfig(type.id, {});
-
-        this.add(config).add(new Physics(physics)).add(new Type(type));
+        const config = ResourceConfigs.get(type.id);
+        this.add(
+            new ResourceData({
+                items: structuredClone(config.items),
+                decayAt: config.decay,
+                lastRegen: 0,
+            })
+        )
+            .add(new Physics(physics))
+            .add(new Type(type));
 
         this.pack[PACKET.SERVER.NEW_OBJECT] = () => {
             const physics = Physics.get(this);

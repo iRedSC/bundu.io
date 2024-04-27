@@ -1,53 +1,29 @@
-import { __dirname } from "./id_map.js";
-import { Component } from "../../game_engine/component.js";
-import { mergeObjects } from "../../../lib/object_utils.js";
+import { __dirname, idMap } from "./id_map.js";
 import { z } from "zod";
+import { ConfigLoader } from "./loader.js";
 
-export const ItemConfigData = z
-    .object({
-        type: z.string(),
-        attack_damage: z.number(),
+export const ItemConfig = z.object({
+    type: z.string().nullable(),
+    attack_damage: z.number().nullable(),
 
-        block: z.number(),
-        defense: z.number(),
+    block: z.number(),
+    defense: z.number(),
 
-        level: z.number(),
-        repair: z.number(),
+    level: z.number(),
+    repair: z.number(),
 
-        eat_heal: z.number(),
-        eat_damage: z.number(),
-        food: z.number(),
+    eat_heal: z.number(),
+    eat_damage: z.number(),
+    food: z.number(),
 
-        warmth: z.number(),
-        insulation: z.number(),
-    })
-    .partial();
-export type ItemConfigData = z.infer<typeof ItemConfigData>;
+    warmth: z.number(),
+    insulation: z.number(),
+});
+export type ItemConfig = z.infer<typeof ItemConfig>;
 
-export type ItemConfig = {
-    id: number;
-    type: string;
-    attack_damage: number;
-
-    block: number;
-    defense: number;
-
-    level: number;
-    repair: number;
-
-    eat_heal: number;
-    eat_damage: number;
-    food: number;
-
-    warmth: number;
-    insulation: number;
-};
-export const ItemConfig = Component.register<ItemConfig>();
-
-const defaultItemConfig: ItemConfig = {
-    id: 0,
-    type: "none",
-    attack_damage: 0,
+const fallback: ItemConfig = {
+    type: null,
+    attack_damage: null,
     block: 0,
     defense: 0,
     level: 0,
@@ -59,11 +35,8 @@ const defaultItemConfig: ItemConfig = {
     insulation: 0,
 };
 
-export function createItemConfig(id: number, data: ItemConfigData) {
-    const config = mergeObjects<ItemConfig>(
-        undefined,
-        { id: id, ...data },
-        defaultItemConfig
-    );
-    return new ItemConfig(config);
-}
+export const ItemConfigs = new ConfigLoader<ItemConfig>(
+    ItemConfig,
+    fallback,
+    idMap
+);
