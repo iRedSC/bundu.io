@@ -4,8 +4,11 @@ import { ItemConfigs } from "../configs/loaders/items.js";
 
 import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
-import { ItemTypeConfigs } from "../configs/loaders/item_type.js";
-import { Attributes } from "../components/attributes.js";
+import {
+    AttributeType,
+    Attributes,
+    AttributesData,
+} from "../components/attributes.js";
 
 export class InventorySystem extends System {
     constructor() {
@@ -47,62 +50,62 @@ export class InventorySystem extends System {
         object: GameObject,
         item: number
     ) => {
+        const setAttrs = (
+            name: string,
+            attributes: AttributesData,
+            attrs: Partial<Record<AttributeType, ["add" | "multiply", number]>>
+        ) => {
+            for (const [type, attr] of Object.entries(attrs) as [
+                AttributeType,
+                ["add" | "multiply", number]
+            ][]) {
+                attributes.set(type, name, attr[0], attr[1]);
+            }
+        };
+
         const data = PlayerData.get(object);
         const inventory = Inventory.get(object);
         const config = ItemConfigs.get(item);
         const attributes = object.get(Attributes);
 
         if (!inventory.items.has(item) || !config.type) return;
-        const type = ItemTypeConfigs.get(config.type);
-        if (!type) return;
 
-        switch (type.function) {
+        const attrMap: Partial<
+            Record<AttributeType, ["add" | "multiply", number]>
+        > = {
+            "attack.damage": ["add", config.attack_damage ?? 0],
+            "attack.origin": ["add", config.attack_origin ?? 0],
+            "attack.reach": ["add", config.attack_reach ?? 0],
+            "attack.sweep": ["add", config.attack_sweep ?? 0],
+            "attack.speed": ["multiply", config.attack_speed_mult ?? 0],
+            "health.defense": ["add", config.defense],
+            "movement.speed": ["multiply", config.speed_multiplier],
+        };
+        console.log(config);
+        switch (config.function) {
             case "wear":
                 data.helmet = data.helmet === item ? undefined : item;
-                if (data.helmet === undefined) {
-                    attributes?.clear("helmet");
+                if (data.helmet !== undefined) {
+                    setAttrs("helmet", attributes, attrMap);
                     break;
                 }
-                attributes?.set(
-                    "health.defense",
-                    "helmet",
-                    "add",
-                    config.defense
-                );
-                attributes?.set(
-                    "temperature.warmth",
-                    "helmet",
-                    "add",
-                    config.warmth
-                );
-                attributes?.set(
-                    "temperature.insulation",
-                    "helmet",
-                    "add",
-                    config.insulation
-                );
+                attributes?.clear("helmet");
                 break;
             case "main_hand":
                 data.mainHand = data.mainHand === item ? undefined : item;
-                if (data.mainHand === undefined) {
-                    attributes?.clear("main_hand");
+                if (data.mainHand !== undefined) {
+                    setAttrs("main_hand", attributes, attrMap);
                     break;
                 }
-                attributes?.set(
-                    "attack.damage",
-                    "main_hand",
-                    "add",
-                    config.attack_damage ?? 0
-                );
-                attributes?.set(
-                    "movement.speed",
-                    "main_hand",
-                    "multiply",
-                    type.speed_multiplier
-                );
+                attributes?.clear("main_hand");
                 break;
             case "off_hand":
                 data.offHand = data.offHand === item ? undefined : item;
+                if (data.helmet !== undefined) {
+                    setAttrs("off_hand", attributes, attrMap);
+                    break;
+                }
+                attributes?.clear("off_hand");
                 break;
         }
 

@@ -1,4 +1,4 @@
-import { Modifiers } from "../components/base.js";
+import { Attributes } from "../components/attributes.js";
 import { Health } from "../components/combat.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
@@ -25,8 +25,8 @@ export class HealthSystem extends System {
 
     hurt: EventCallback<"hurt"> = (object: GameObject, { source, damage }) => {
         const health = object.get(Health);
-        const modifiers = object.get(Modifiers);
-        let defense = modifiers?.calc(0, "defense") ?? 0;
+        const attributes = object.get(Attributes);
+        let defense = attributes?.get("health.defense") ?? 0;
 
         damage = damage ?? 0;
         health.value -= Math.round(Math.max(0, damage - defense));

@@ -2,20 +2,17 @@ import { radians, moveInDirection } from "../../lib/transforms.js";
 import { BasicPoint } from "../../lib/types.js";
 import { PACKET } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
-import { AttackData } from "../components/combat.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
+import { GlobalPacketFactory } from "../globals.js";
 import { quadtree } from "./position.js";
 import SAT from "sat";
 
 function packPolygon(polygon: SAT.Polygon) {
     return [
-        PACKET.SERVER.DRAW_POLYGON,
-        [
-            polygon.pos.x,
-            polygon.pos.y,
-            polygon.points.map((vec) => [vec.x, vec.y]),
-        ],
+        polygon.pos.x,
+        polygon.pos.y,
+        polygon.points.map((vec) => [vec.x, vec.y]),
     ];
 }
 
@@ -74,14 +71,14 @@ export function testForIntersection(
 
 export class AttackSystem extends System {
     constructor() {
-        super([AttackData, Physics]);
+        super([Physics]);
 
         this.listen("attack", this.attack);
     }
 
     attack: EventCallback<"attack"> = (
         object: GameObject,
-        { damage, weapon }
+        { damage, weapon, hitbox }
     ) => {
         const physics = Physics.get(object);
         if (!physics) {
@@ -95,17 +92,30 @@ export class AttackSystem extends System {
 
         const nearby = this.world.query([Physics], quadtree.query(bounds));
 
+        let start = 0;
+        let length = 5;
+        let width = 5;
+        if (hitbox) {
+            start = hitbox.start;
+            length = hitbox.length;
+            width = hitbox.width;
+        }
+
         const hitRange = attackBox(
             pointToVec(
                 moveInDirection(
                     physics.position,
                     physics.rotation + radians(90),
-                    10
+                    start
                 )
             ),
             physics.rotation + radians(90),
-            50,
-            50
+            length,
+            width
+        );
+
+        GlobalPacketFactory.add(object.id, [PACKET.SERVER.DRAW_POLYGON], () =>
+            packPolygon(hitRange)
         );
 
         const hits = testForIntersection(hitRange, nearby);

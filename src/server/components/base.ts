@@ -63,7 +63,7 @@ export type GroundItemData = {
     amount: number;
     despawnTime: number;
 };
-export const GroundItem = Component.register<GroundItemData>(() => ({
+export const GroundItemData = Component.register<GroundItemData>(() => ({
     id: 0,
     amount: 0,
     despawnTime: 0,
@@ -74,7 +74,7 @@ export type ResourceData = {
     decayAt: number | null;
     lastRegen: number;
 };
-export const Resource = Component.register<ResourceData>(() => ({
+export const ResourceData = Component.register<ResourceData>(() => ({
     items: {},
     decayAt: null,
     lastRegen: 0,

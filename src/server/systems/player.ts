@@ -11,7 +11,11 @@ import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { idMap } from "../configs/loaders/id_map.js";
-import { Attributes } from "../components/attributes.js";
+import {
+    AttributeList,
+    Attributes,
+    AttributeType,
+} from "../components/attributes.js";
 
 /**
  * This is the system that controls players.
@@ -35,12 +39,19 @@ export class PlayerSystem extends System implements PlayerController {
         const attributes = player.get(Attributes);
 
         if (data.attacking && data.lastAttackTime && !data.blocking) {
-            if (data.lastAttackTime < time - 500) {
-                const damage = attributes?.get("attack.damage", 1) ?? 1;
+            if (
+                data.lastAttackTime <
+                time - (1 / attributes.get("attack.speed")) * 1000
+            ) {
+                const damage = attributes.get("attack.damage") ?? 1;
+                const start = attributes.get("attack.origin") ?? 0;
+                const length = attributes.get("attack.reach") ?? 5;
+                const width = attributes.get("attack.sweep") ?? 5;
 
                 this.trigger("attack", player.id, {
                     weapon: data.mainHand,
                     damage,
+                    hitbox: { start, length, width },
                 });
                 attributes?.set(
                     "movement.speed",
@@ -55,11 +66,12 @@ export class PlayerSystem extends System implements PlayerController {
         if (data.moveDir[0] === 0 && data.moveDir[1] === 0) {
             return;
         }
-        const baseSpeed = delta / 5;
+        const baseSpeed = delta / this.tps;
         const target = moveToward(
             { x: 0, y: 0 },
             { x: data.moveDir[0], y: data.moveDir[1] },
-            attributes?.get("movement.speed", baseSpeed) ?? baseSpeed
+            baseSpeed * attributes?.get("movement.speed", baseSpeed) ??
+                baseSpeed
         );
         this.trigger("move", player.id, target);
     }
@@ -164,13 +176,26 @@ export class PlayerSystem extends System implements PlayerController {
 
         if (message.startsWith("/")) {
             const command = message.replace("/", "").split(" ");
-            if (command[0] === "give") {
-                const item = idMap.get(command[1]);
-                const amount = Number(command[2]);
-                this.trigger("give_item", player.id, {
-                    id: item,
-                    amount: amount,
-                });
+            switch (command[0]) {
+                case "give":
+                    const item = idMap.get(command[1]);
+                    const amount = Number(command[2]);
+                    this.trigger("give_item", player.id, {
+                        id: item,
+                        amount: amount,
+                    });
+                    break;
+                case "attribute":
+                    const type = command[1] as AttributeType;
+                    if (!AttributeList.includes(type)) return;
+                    const operation = command[2] as "add" | "multiply";
+                    if (!["add", "multiply"].includes(operation)) return;
+                    const value = Number(command[3]);
+                    let duration;
+                    if (command[4]) duration = Number(command[4]);
+                    player
+                        .get(Attributes)
+                        .set(type, "command", operation, value, duration);
             }
             return;
         }
