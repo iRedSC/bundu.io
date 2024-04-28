@@ -26,6 +26,7 @@ amethyst_helmet:
 earmuffs:
     type: hat
     warmth: 7
+    speed_multiplier: 2
 
 beanie:
     type: hat

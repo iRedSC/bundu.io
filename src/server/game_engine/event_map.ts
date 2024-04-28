@@ -1,7 +1,15 @@
 import { GameObject } from "./game_object";
 
 export interface GameEventMap {
-    attack: { damage?: number; weapon?: number };
+    attack: {
+        damage?: number;
+        weapon?: number;
+        hitbox?: {
+            start: number;
+            length: number;
+            width: number;
+        };
+    };
 
     block: boolean;
 

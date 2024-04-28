@@ -18,8 +18,6 @@ export class ClientPacketHandler {
     }
 
     add(player: number, packet: [number, ...unknown[]]) {
-        console.log("PACKET");
-        console.log(packet);
         const id = packet.splice(0, 1)[0] as number;
         this.get(player)[id] = packet;
     }
@@ -31,7 +29,6 @@ export class ClientPacketHandler {
         if (player === undefined) {
             for (const [playerId, packets] of this.players.entries()) {
                 for (const [id, packet] of Object.entries(packets)) {
-                    console.log(id, packet);
                     parser.parsers[id](packet, { id: playerId });
                 }
             }

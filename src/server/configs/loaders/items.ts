@@ -4,7 +4,15 @@ import { ConfigLoader } from "./loader.js";
 
 export const ItemConfig = z.object({
     type: z.string().nullable(),
+    function: z.string(),
     attack_damage: z.number().nullable(),
+
+    speed_multiplier: z.number(),
+
+    attack_origin: z.number().nullable(),
+    attack_reach: z.number().nullable(),
+    attack_sweep: z.number().nullable(),
+    attack_speed_mult: z.number(),
 
     block: z.number(),
     defense: z.number(),
@@ -23,7 +31,13 @@ export type ItemConfig = z.infer<typeof ItemConfig>;
 
 const fallback: ItemConfig = {
     type: null,
+    function: "none",
     attack_damage: null,
+    attack_origin: null,
+    attack_reach: null,
+    attack_sweep: null,
+    attack_speed_mult: 1,
+    speed_multiplier: 1,
     block: 0,
     defense: 0,
     level: 0,

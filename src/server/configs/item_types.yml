@@ -6,6 +6,9 @@ hat:
 
 pickaxe:
     function: main_hand
+    attack_reach: 10
+    attack_sweep: 30
+    attack_origin: 15
 
 knife:
     speed_multiplier: 0.8
@@ -14,11 +17,14 @@ knife:
 sword:
     speed_multiplier: 0.8
     function: main_hand
+    attack_origin: 15
+    attack_reach: 15
+    attack_sweep: 30
 
 book:
     function: off_hand
 
-wall:
+building:
     function: building
 
 food:
@@ -27,6 +33,9 @@ food:
 spear:
     speed_multiplier: 0.8
     function: main_hand
+    attack_reach: 15
+    attack_sweep: 30
+    attack_origin: 45
 
 hammer:
     function: main_hand

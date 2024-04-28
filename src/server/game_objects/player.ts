@@ -15,13 +15,28 @@ export class Player extends GameObject {
     constructor(physics: Physics, playerData: PlayerData) {
         super();
 
+        const attributes = new Attributes();
+        attributes.data.set("attack.damage", "base", "add", 1);
+        attributes.data.set("attack.origin", "base", "add", 10);
+        attributes.data.set("attack.reach", "base", "add", 15);
+        attributes.data.set("attack.sweep", "base", "add", 5);
+        attributes.data.set("attack.speed", "base", "add", 2);
+        attributes.data.set("health.max", "base", "add", 200);
+        attributes.data.set("health.regen_amount", "base", "add", 10);
+        attributes.data.set("hunger.depletion_amount", "base", "add", 10);
+        attributes.data.set("hunger.max", "base", "add", 100);
+        attributes.data.set("movement.speed", "base", "add", 1);
+        attributes.data.set("temperature.max", "base", "add", 200);
+        attributes.data.set("water.depletion_amount", "base", "add", 5);
+        attributes.data.set("water.max", "base", "add", 100);
+
         this.add(new Physics(physics))
             .add(new PlayerData(playerData))
             .add(new CalculateCollisions())
             .add(new Inventory({ slots: 10, items: new Map() }))
             .add(new Flags())
             .add(new Health({ max: 200, value: 200 }))
-            .add(new Attributes());
+            .add(attributes);
 
         this.pack[PACKET.SERVER.NEW_OBJECT] = () => {
             const physics = Physics.get(this);

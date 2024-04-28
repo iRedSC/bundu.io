@@ -5,7 +5,7 @@ export function mergeObjs(...arr: object[]) {
 }
 
 export function mergeObjects<T extends object>(
-    base: T | undefined,
+    base: Partial<T> | undefined,
     override: Partial<T> | undefined,
     fallback: T
 ): T {

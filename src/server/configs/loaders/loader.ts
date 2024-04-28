@@ -21,9 +21,19 @@ export class ConfigLoader<D extends object> {
         this.fallback = fallback;
     }
 
-    parse(records: Record<string, Partial<D>>) {
+    parse(
+        records: Record<string, Partial<D>>,
+        base?: Record<string, Partial<D>>,
+        map?: string
+    ) {
+        base = base ?? {};
         for (const [id, record] of Object.entries(records)) {
-            const fullRecord = mergeObjects(undefined, record, this.fallback);
+            let baseRecord = base[id];
+            if (map) {
+                const val = record[map] ?? {};
+                baseRecord = base[val];
+            }
+            const fullRecord = mergeObjects(baseRecord, record, this.fallback);
             this.entries.set(id, fullRecord);
         }
     }
