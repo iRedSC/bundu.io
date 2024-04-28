@@ -5,6 +5,7 @@ import { ItemConfigs } from "../configs/loaders/items.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
 import { ItemTypeConfigs } from "../configs/loaders/item_type.js";
+import { Modifiers } from "../components/base.js";
 
 export class InventorySystem extends System {
     constructor() {
@@ -49,18 +50,49 @@ export class InventorySystem extends System {
         const data = PlayerData.get(object);
         const inventory = Inventory.get(object);
         const config = ItemConfigs.get(item);
+        const modifiers = object.get(Modifiers);
 
         if (!inventory.items.has(item) || !config.type) return;
+        const type = ItemTypeConfigs.get(config.type);
+        if (!type) return;
 
-        switch (ItemTypeConfigs.get(config.type)?.function) {
+        switch (type.function) {
             case "wear":
-                data.helmet = data.helmet === item ? -1 : item;
+                data.helmet = data.helmet === item ? undefined : item;
+                if (data.helmet === undefined) {
+                    modifiers?.clear("helmet");
+                    break;
+                }
+                modifiers?.set("defense", "helmet", "add", config.defense);
+                modifiers?.set("warmth", "helmet", "add", config.warmth);
+                modifiers?.set(
+                    "insulation",
+                    "helmet",
+                    "add",
+                    config.insulation
+                );
                 break;
             case "main_hand":
-                data.mainHand = data.mainHand === item ? -1 : item;
+                data.mainHand = data.mainHand === item ? undefined : item;
+                if (data.mainHand === undefined) {
+                    modifiers?.clear("main_hand");
+                    break;
+                }
+                modifiers?.set(
+                    "attack_damage",
+                    "main_hand",
+                    "add",
+                    config.attack_damage ?? 0
+                );
+                modifiers?.set(
+                    "movement_speed",
+                    "main_hand",
+                    "multiply",
+                    type.speed_multiplier
+                );
                 break;
             case "off_hand":
-                data.offHand = data.offHand === item ? -1 : item;
+                data.offHand = data.offHand === item ? undefined : item;
                 break;
         }
 

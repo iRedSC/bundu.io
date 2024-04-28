@@ -8,10 +8,11 @@ pickaxe:
     function: main_hand
 
 knife:
+    speed_multiplier: 0.8
     function: main_hand
 
 sword:
-    speed_multiplier: 0.9
+    speed_multiplier: 0.8
     function: main_hand
 
 book:
@@ -24,6 +25,7 @@ food:
     function: consume
 
 spear:
+    speed_multiplier: 0.8
     function: main_hand
 
 hammer:

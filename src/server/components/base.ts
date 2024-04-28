@@ -51,8 +51,63 @@ export const ResourceData = Component.register<ResourceData>();
 
 export type ModifierType = "add" | "multiply";
 
-export type Modifiers = Record<
-    string,
-    Record<string, { type: ModifierType; value: number }>
->;
-export const Modifiers = Component.register<Modifiers>();
+export class ModifiersData {
+    types: Record<
+        string,
+        Record<
+            string,
+            { operation: ModifierType; value: number; expires?: number }
+        >
+    > = {};
+
+    clear(name: string, type?: string) {
+        if (type) {
+            const modType = this.types[type];
+            if (modType) delete modType[name];
+            return;
+        }
+        for (const modType of Object.values(this.types)) {
+            delete modType[name];
+        }
+    }
+
+    calc(base: number, type: string) {
+        const modType = this.types[type];
+        if (modType === undefined) return base;
+
+        const add: number[] = [];
+        const multiply: number[] = [];
+        for (const [key, modifier] of Object.entries(modType)) {
+            if (modifier.expires) {
+                if (modifier.expires < Date.now()) {
+                    delete modType[key];
+                }
+            }
+            if (modifier.operation === "add") {
+                add.push(modifier.value);
+                continue;
+            }
+            multiply.push(modifier.value);
+        }
+        for (const value of add) {
+            base += value;
+        }
+        for (const value of multiply) {
+            base *= value;
+        }
+        return base;
+    }
+
+    set(
+        type: string,
+        name: string,
+        operation: "add" | "multiply",
+        value: number,
+        duration?: number
+    ) {
+        if (!this.types[type]) this.types[type] = {};
+        this.types[type][name] = { operation, value };
+        if (duration) this.types[type][name].expires = Date.now() + duration;
+    }
+}
+export const Modifiers = Component.register<ModifiersData>();

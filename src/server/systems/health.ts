@@ -1,3 +1,4 @@
+import { Modifiers } from "../components/base.js";
 import { Health } from "../components/combat.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
@@ -23,8 +24,12 @@ export class HealthSystem extends System {
     }
 
     hurt: EventCallback<"hurt"> = (object: GameObject, { source, damage }) => {
-        const health = Health.get(object);
-        health.value -= damage || 0;
+        const health = object.get(Health);
+        const modifiers = object.get(Modifiers);
+        let defense = modifiers?.calc(0, "defense") ?? 0;
+
+        damage = damage ?? 0;
+        health.value -= Math.round(Math.max(0, damage - defense));
         if (health.value <= 0) {
             this.trigger("kill", object.id, { source });
         }

@@ -1,7 +1,13 @@
 import { round } from "../../lib/math.js";
 import { degrees } from "../../lib/transforms.js";
 import { OBJECT_CLASS, PACKET } from "../../shared/enums.js";
-import { CalculateCollisions, Flags, Physics } from "../components/base.js";
+import {
+    CalculateCollisions,
+    Flags,
+    Modifiers,
+    ModifiersData,
+    Physics,
+} from "../components/base.js";
 import { AttackData, Health } from "../components/combat.js";
 import { Inventory } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
@@ -20,7 +26,8 @@ export class Player extends GameObject {
             .add(new CalculateCollisions({}))
             .add(new Inventory({ slots: 10, items: new Map() }))
             .add(new Flags(new Set()))
-            .add(new Health({ max: 200, value: 200 }));
+            .add(new Health({ max: 200, value: 200 }))
+            .add(new Modifiers(new ModifiersData()));
 
         this.pack[PACKET.SERVER.NEW_OBJECT] = () => {
             const physics = Physics.get(this);
