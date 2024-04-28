@@ -5,7 +5,7 @@ import { ItemConfigs } from "../configs/loaders/items.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { EventCallback, System } from "../game_engine/system.js";
 import { ItemTypeConfigs } from "../configs/loaders/item_type.js";
-import { Modifiers } from "../components/base.js";
+import { Attributes } from "../components/attributes.js";
 
 export class InventorySystem extends System {
     constructor() {
@@ -50,7 +50,7 @@ export class InventorySystem extends System {
         const data = PlayerData.get(object);
         const inventory = Inventory.get(object);
         const config = ItemConfigs.get(item);
-        const modifiers = object.get(Modifiers);
+        const attributes = object.get(Attributes);
 
         if (!inventory.items.has(item) || !config.type) return;
         const type = ItemTypeConfigs.get(config.type);
@@ -60,13 +60,23 @@ export class InventorySystem extends System {
             case "wear":
                 data.helmet = data.helmet === item ? undefined : item;
                 if (data.helmet === undefined) {
-                    modifiers?.clear("helmet");
+                    attributes?.clear("helmet");
                     break;
                 }
-                modifiers?.set("defense", "helmet", "add", config.defense);
-                modifiers?.set("warmth", "helmet", "add", config.warmth);
-                modifiers?.set(
-                    "insulation",
+                attributes?.set(
+                    "health.defense",
+                    "helmet",
+                    "add",
+                    config.defense
+                );
+                attributes?.set(
+                    "temperature.warmth",
+                    "helmet",
+                    "add",
+                    config.warmth
+                );
+                attributes?.set(
+                    "temperature.insulation",
                     "helmet",
                     "add",
                     config.insulation
@@ -75,17 +85,17 @@ export class InventorySystem extends System {
             case "main_hand":
                 data.mainHand = data.mainHand === item ? undefined : item;
                 if (data.mainHand === undefined) {
-                    modifiers?.clear("main_hand");
+                    attributes?.clear("main_hand");
                     break;
                 }
-                modifiers?.set(
-                    "attack_damage",
+                attributes?.set(
+                    "attack.damage",
                     "main_hand",
                     "add",
                     config.attack_damage ?? 0
                 );
-                modifiers?.set(
-                    "movement_speed",
+                attributes?.set(
+                    "movement.speed",
                     "main_hand",
                     "multiply",
                     type.speed_multiplier

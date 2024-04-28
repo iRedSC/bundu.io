@@ -8,13 +8,26 @@ export type Physics = {
     solid: boolean;
     speed: number;
 };
-export const Physics = Component.register<Physics>();
+export const Physics = Component.register<Physics>(() => {
+    const position = new SAT.Vector();
+
+    return {
+        position,
+        collider: new SAT.Circle(position, 15),
+        size: 15,
+        solid: false,
+        speed: 0,
+        rotation: 0,
+    };
+});
 
 export type CalculateCollisions = {};
-export const CalculateCollisions = Component.register<CalculateCollisions>();
+export const CalculateCollisions = Component.register<CalculateCollisions>(
+    () => ({})
+);
 
 export type Type = { id: number; variant?: number };
-export const Type = Component.register<Type>();
+export const Type = Component.register<Type>(() => ({ id: 0 }));
 
 export type EntityAI = {
     target: SAT.Vector;
@@ -23,91 +36,46 @@ export type EntityAI = {
     lastPosition: SAT.Vector;
     lastMoveTime: number;
 };
-export const EntityAI = Component.register<EntityAI>();
+export const EntityAI = Component.register<EntityAI>(() => ({
+    target: new SAT.Vector(),
+    arriveTime: 0,
+    travelTime: 0,
+    lastPosition: new SAT.Vector(),
+    lastMoveTime: 0,
+}));
 
 export type GroundData = {
     collider: SAT.Box;
     type: number;
     speedMultiplier: number;
 };
-export const GroundData = Component.register<GroundData>();
+export const GroundData = Component.register<GroundData>(() => ({
+    collider: new SAT.Box(new SAT.Vector(), 100, 100),
+    type: 1,
+    speedMultiplier: 1,
+}));
 
 export type Flags = Set<number>;
-export const Flags = Component.register<Flags>();
+export const Flags = Component.register<Flags>(() => new Set<number>());
 
 export type GroundItemData = {
     id: number;
     amount: number;
     despawnTime: number;
 };
-export const GroundItemData = Component.register<GroundItemData>();
+export const GroundItem = Component.register<GroundItemData>(() => ({
+    id: 0,
+    amount: 0,
+    despawnTime: 0,
+}));
 
 export type ResourceData = {
     items: Record<number, number>;
     decayAt: number | null;
     lastRegen: number;
 };
-export const ResourceData = Component.register<ResourceData>();
-
-export type ModifierType = "add" | "multiply";
-
-export class ModifiersData {
-    types: Record<
-        string,
-        Record<
-            string,
-            { operation: ModifierType; value: number; expires?: number }
-        >
-    > = {};
-
-    clear(name: string, type?: string) {
-        if (type) {
-            const modType = this.types[type];
-            if (modType) delete modType[name];
-            return;
-        }
-        for (const modType of Object.values(this.types)) {
-            delete modType[name];
-        }
-    }
-
-    calc(base: number, type: string) {
-        const modType = this.types[type];
-        if (modType === undefined) return base;
-
-        const add: number[] = [];
-        const multiply: number[] = [];
-        for (const [key, modifier] of Object.entries(modType)) {
-            if (modifier.expires) {
-                if (modifier.expires < Date.now()) {
-                    delete modType[key];
-                }
-            }
-            if (modifier.operation === "add") {
-                add.push(modifier.value);
-                continue;
-            }
-            multiply.push(modifier.value);
-        }
-        for (const value of add) {
-            base += value;
-        }
-        for (const value of multiply) {
-            base *= value;
-        }
-        return base;
-    }
-
-    set(
-        type: string,
-        name: string,
-        operation: "add" | "multiply",
-        value: number,
-        duration?: number
-    ) {
-        if (!this.types[type]) this.types[type] = {};
-        this.types[type][name] = { operation, value };
-        if (duration) this.types[type][name].expires = Date.now() + duration;
-    }
-}
-export const Modifiers = Component.register<ModifiersData>();
+export const Resource = Component.register<ResourceData>(() => ({
+    items: {},
+    decayAt: null,
+    lastRegen: 0,
+}));

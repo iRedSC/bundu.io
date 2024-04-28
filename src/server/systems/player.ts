@@ -1,6 +1,6 @@
 import { moveToward } from "../../lib/transforms.js";
 import { PACKET } from "../../shared/enums.js";
-import { GroundData, Modifiers, Physics } from "../components/base.js";
+import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { Inventory } from "../components/inventory.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
@@ -11,6 +11,7 @@ import { updateHandler } from "./packet.js";
 import { PlayerController } from "./player_controller.js";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { idMap } from "../configs/loaders/id_map.js";
+import { Attributes } from "../components/attributes.js";
 
 /**
  * This is the system that controls players.
@@ -31,18 +32,18 @@ export class PlayerSystem extends System implements PlayerController {
      */
     update(time: number, delta: number, player: GameObject): void {
         const data = player.get(PlayerData);
-        const modifiers = player.get(Modifiers);
+        const attributes = player.get(Attributes);
 
         if (data.attacking && data.lastAttackTime && !data.blocking) {
             if (data.lastAttackTime < time - 500) {
-                const damage = modifiers?.calc(1, "attack_damage") ?? 1;
+                const damage = attributes?.get("attack.damage", 1) ?? 1;
 
                 this.trigger("attack", player.id, {
                     weapon: data.mainHand,
                     damage,
                 });
-                modifiers?.set(
-                    "movement_speed",
+                attributes?.set(
+                    "movement.speed",
                     "attacking",
                     "multiply",
                     0.7,
@@ -58,7 +59,7 @@ export class PlayerSystem extends System implements PlayerController {
         const target = moveToward(
             { x: 0, y: 0 },
             { x: data.moveDir[0], y: data.moveDir[1] },
-            modifiers?.calc(baseSpeed, "movement_speed") ?? baseSpeed
+            attributes?.get("movement.speed", baseSpeed) ?? baseSpeed
         );
         this.trigger("move", player.id, target);
     }
@@ -127,7 +128,7 @@ export class PlayerSystem extends System implements PlayerController {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
-        const modifiers = player.get(Modifiers);
+        const attributes = player.get(Attributes);
         const config = ItemConfigs.get(data.mainHand);
         if (!config?.block) {
             return;
@@ -137,10 +138,10 @@ export class PlayerSystem extends System implements PlayerController {
         }
         data.blocking = !stop;
         if (data.blocking) {
-            modifiers?.set("movement_speed", "blocking", "multiply", 0.6);
-            modifiers?.set("defense", "blocking", "add", config.block);
+            attributes?.set("movement.speed", "blocking", "multiply", 0.6);
+            attributes?.set("health.defense", "blocking", "add", config.block);
         } else {
-            modifiers?.clear("blocking");
+            attributes?.clear("blocking");
         }
         this.trigger("block", player.id, stop);
     }
