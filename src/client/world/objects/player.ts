@@ -261,7 +261,7 @@ namespace PlayerAnimations {
 
             left.x = leftX + Math.cos(animation.t * Math.PI * 2) * 5;
             right.x = rightX - Math.cos(animation.t * Math.PI * 2) * 5;
-            body.y = bodyY + Math.sin(animation.t * Math.PI * 2) * 2;
+            body.y = bodyY + Math.sin(animation.t * Math.PI * 2) * 5;
             if (animation.keyframeEnded) {
                 animation.goto(0, random.integer(1500, 2500));
             }
