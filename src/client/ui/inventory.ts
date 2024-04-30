@@ -1,11 +1,11 @@
 import * as PIXI from "pixi.js";
 import { ItemButton } from "./button";
-import { colorLerp } from "../../lib/transforms";
+import { colorLerp, prettifyNumber } from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
 import { SpriteFactory } from "../assets/sprite_factory";
 import { SCHEMA } from "../../shared/enums";
 import { Grid } from "./grid";
-import { percentOf, round } from "../../lib/math";
+import { percentOf } from "../../lib/math";
 
 /**
  * Ah yes the inventory, not looking so good rn
@@ -169,20 +169,7 @@ class InventoryDisplay {
             if (items[i]) {
                 try {
                     const amount = items[i][1];
-                    let displayAmount = `${amount}`;
-                    if (amount / 1000 >= 1) {
-                        displayAmount = `${round(amount / 1000, 2)}K`;
-                    }
-                    if (amount / 1000000 >= 1) {
-                        displayAmount = `${round(amount / 1000000, 2)}M`;
-                    }
-                    if (amount / 1000000000 >= 1) {
-                        displayAmount = `${round(amount / 1000000000, 2)}B`;
-                    }
-                    if (amount / 1000000000000 >= 1) {
-                        displayAmount = `${round(amount / 1000000000000, 2)}T`;
-                    }
-                    this.buttons[i].amount.text = displayAmount;
+                    this.buttons[i].amount.text = prettifyNumber(amount);
                     this.buttons[i].setItem(items[i][0]);
                 } catch {}
             }

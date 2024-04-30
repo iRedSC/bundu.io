@@ -5,11 +5,16 @@ import { idMap } from "../configs/id_map";
 
 export class ItemButton {
     button: PIXI.Container;
+
     background: SpriteWrapper;
-    disableSprite: SpriteWrapper;
+
     item: number;
+
+    disableSprite: SpriteWrapper;
     itemSprite: SpriteWrapper;
+
     hovering: boolean;
+
     rightclick?: (item: number, shift?: boolean) => void;
     leftclick?: (item: number, shift?: boolean) => void;
 

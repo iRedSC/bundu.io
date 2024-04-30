@@ -56,11 +56,11 @@ export class WorldObject {
         this.animations = new Map();
 
         const idText = new Text(`ID: ${this.id}`, TEXT_STYLE);
-        idText.scale.set(5);
+        idText.scale.set(0.34);
         idText.position = pos;
         this.debug.update("id", idText);
 
-        const hitbox = new Circle(this.position, 5, 0xff0000, 25);
+        const hitbox = new Circle(this.position, size / 10, 0xff0000, 2);
         this.debug.update("hitbox", hitbox);
     }
 

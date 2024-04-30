@@ -1,0 +1,17 @@
+
+
+
+
+The ui needs these items:
+
+ 1. Crafting Menu
+ 2. Inventory
+ 3. Stat Bars
+ 4. Leaderboard
+ 5. Minimap
+ 6. Announcement Text
+ 7. Action Bar Text
+ 8. Recipe book
+ 9. Effect icons
+ 10. Time clock
+ 11. Settings button

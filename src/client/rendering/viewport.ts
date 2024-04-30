@@ -8,7 +8,10 @@ import { WORLD_SIZE } from "../constants";
  * @param center center point of the viewport
  * @returns the viewport
  */
-export function createViewport(app: PIXI.Application, center: PIXI.Point) {
+export function createViewport(
+    app: PIXI.Application<HTMLCanvasElement>,
+    center: PIXI.Point
+) {
     const viewport = new Viewport({
         worldHeight: WORLD_SIZE,
         worldWidth: WORLD_SIZE,
@@ -16,7 +19,7 @@ export function createViewport(app: PIXI.Application, center: PIXI.Point) {
         events: app.renderer.events,
     });
 
-    // viewport.clampZoom({ minScale: 0.1, maxScale: 1 });
+    viewport.clampZoom({ minScale: 0.7, maxScale: 3 });
     // viewport.clamp({
     //     direction: "all",
     //     left: true,
@@ -28,7 +31,6 @@ export function createViewport(app: PIXI.Application, center: PIXI.Point) {
     viewport.sortableChildren = true;
 
     viewport.wheel({ center: center });
-    viewport.setZoom(0.2);
 
     window.onresize = (_) => {
         viewport.resize(window.innerWidth, window.innerHeight);

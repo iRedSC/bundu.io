@@ -91,7 +91,7 @@ export function createUI() {
     ui.addChild(craftingMenu.container);
 
     return {
-        ui,
+        container: ui,
         inventory,
         craftingMenu,
         recipeManager,

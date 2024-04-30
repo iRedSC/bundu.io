@@ -33,14 +33,15 @@ export class DebugWorldObject {
 }
 
 export function drawPolygon(packet: SCHEMA.SERVER.DRAW_POLYGON) {
+    console.log("drawing poly", packet);
     const polygon = new Graphics();
-    polygon.lineStyle({ width: 20, color: "#FF0000" });
-    const start = { x: packet[0] * 10, y: packet[1] * 10 };
+    polygon.lineStyle({ width: 2, color: "#FF0000" });
+    const start = { x: packet[0], y: packet[1] };
     polygon.moveTo(start.x, start.y);
     for (const rawPoint of packet[2]) {
         const point = {
-            x: start.x + rawPoint[0] * 10,
-            y: start.y + rawPoint[1] * 10,
+            x: start.x + rawPoint[0],
+            y: start.y + rawPoint[1],
         };
         polygon.lineTo(point.x, point.y);
     }

@@ -1,4 +1,5 @@
-import { BasicPoint } from "./types";
+import { round } from "./math.js";
+import { BasicPoint } from "./types.js";
 
 /**
  * Returns the distance between two points
@@ -124,4 +125,22 @@ export function coordsToRect(
     const height = Math.abs(y1 - y2);
 
     return { x: x, y: y, width: width, height: height };
+}
+
+export function prettifyNumber(num: number) {
+    let display = `${num}`;
+    const prettyMap = {
+        [10 ** 3]: "K",
+        [10 ** 6]: "M",
+        [10 ** 9]: "B",
+        [10 ** 12]: "T",
+        [10 ** 15]: "Qu",
+    };
+    for (const [amountStr, symbol] of Object.entries(prettyMap)) {
+        const amount = Number(amountStr);
+        if (num / amount >= 1) {
+            display = `${round(num / amount, 2)}${symbol}`;
+        }
+    }
+    return display;
 }

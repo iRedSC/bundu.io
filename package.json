@@ -25,6 +25,9 @@
     "dependencies": {
         "@msgpack/msgpack": "^3.0.0-beta2",
         "@pixi/filter-advanced-bloom": "^5.1.1",
+        "@pixi/filter-bloom": "^5.1.1",
+        "@pixi/filter-drop-shadow": "^5.2.0",
+        "@pixi/filter-reflection": "^5.1.1",
         "@pixi/layout": "^0.3.2",
         "@pixi/ui": "^0.10.1",
         "@rwh/keystrokes": "^1.4.0",

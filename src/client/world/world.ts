@@ -8,7 +8,7 @@ import { idMap } from "../configs/id_map";
 import { createGround } from "./ground";
 import { Entity } from "./objects/entity";
 import { Quadtree } from "../../lib/quadtree";
-import { requestIds } from "../main";
+import { requestIds } from "../client";
 import { BasicPoint } from "../../lib/types";
 import { radians } from "../../lib/transforms";
 import { ANIMATION } from "../animation/animations";
