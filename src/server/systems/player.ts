@@ -141,8 +141,8 @@ export class PlayerSystem extends System implements PlayerController {
         if (!player) return;
         const data = PlayerData.get(player);
         const attributes = player.get(Attributes);
-        const config = ItemConfigs.get(data.mainHand);
-        if (!config?.block) {
+        const blocking = attributes.get("health.defense.blocking");
+        if (blocking <= 0) {
             return;
         }
         if (!stop && data.attacking) {
@@ -151,7 +151,7 @@ export class PlayerSystem extends System implements PlayerController {
         data.blocking = !stop;
         if (data.blocking) {
             attributes?.set("movement.speed", "blocking", "multiply", 0.6);
-            attributes?.set("health.defense", "blocking", "add", config.block);
+            attributes?.set("health.defense", "blocking", "add", blocking);
         } else {
             attributes?.clear("blocking");
         }

@@ -3,8 +3,8 @@ import yaml from "yaml";
 import { ResourceConfigs } from "./resources.js";
 import { idMap, __dirname } from "./id_map.js";
 import { EntityConfigs } from "./entity.js";
-import { ItemConfigs } from "./items.js";
-import { mergeObjs } from "../../../lib/object_utils.js";
+import { ItemConfig, ItemConfigs } from "./items.js";
+import { mergeObjects, mergeObjs } from "../../../lib/object_utils.js";
 import { BuildingConfigs } from "./buildings.js";
 
 /**
@@ -28,7 +28,29 @@ export function loadConfigs() {
         config.items = numericItems;
     }
 
-    const types = loadConfig("item_types.yml");
+    const types: Partial<Record<string, ItemConfig>> =
+        loadConfig("item_types.yml");
+    const typesCallback = (
+        id: string,
+        record: Partial<ItemConfig>,
+        fallback: ItemConfig
+    ): ItemConfig => {
+        let typeRecord = types[record.type ?? "none"];
+        if (!typeRecord) typeRecord = fallback;
+
+        record.attributes = mergeObjects(
+            typeRecord.attributes,
+            record.attributes,
+            {}
+        );
+        record.stats = mergeObjects(typeRecord.stats, record.stats, {});
+        record.flags = [...(typeRecord.flags ?? []), ...(record.flags ?? [])];
+
+        const fullRecord = mergeObjects(typeRecord, record, fallback);
+
+        return fullRecord;
+    };
+
     const itemConfigData = mergeObjs(
         loadConfig("consumable.yml"),
         loadConfig("main_hand.yml"),
@@ -36,7 +58,8 @@ export function loadConfigs() {
         loadConfig("wearable.yml"),
         loadConfig("placeable.yml")
     ) as any;
-    ItemConfigs.parse(itemConfigData, types, "type");
+    ItemConfigs.parse(itemConfigData, typesCallback);
+    console.log(ItemConfigs.entries);
 
     EntityConfigs.parse(loadConfig("entities.yml"));
 

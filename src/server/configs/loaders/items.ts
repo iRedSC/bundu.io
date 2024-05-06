@@ -4,7 +4,7 @@ import { ConfigLoader } from "./loader.js";
 
 export const ItemConfig = z.object({
     type: z.string().nullable(),
-    function: z.string(),
+    function: z.string().nullable(),
     level: z.number(),
 
     attributes: z.record(
@@ -14,14 +14,19 @@ export const ItemConfig = z.object({
             value: z.number(),
         })
     ),
+
+    stats: z.record(z.string(), z.number()),
+    flags: z.string().array(),
 });
 export type ItemConfig = z.infer<typeof ItemConfig>;
 
 const fallback: ItemConfig = {
     type: null,
-    function: "none",
+    function: null,
     level: 0,
     attributes: {},
+    stats: {},
+    flags: [],
 };
 
 export const ItemConfigs = new ConfigLoader<ItemConfig>(

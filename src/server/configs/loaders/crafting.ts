@@ -59,6 +59,7 @@ export const craftingList: Map<number, CraftingRecipe> = new Map();
 
 for (let [k, v] of Object.entries(_craftingRecipeData)) {
     const numericId = idMap.get(k);
+    if (!numericId) throw new Error("No ID matching: " + k);
     const recipe = new CraftingRecipe(numericId, v);
     craftingList.set(numericId, recipe);
 }

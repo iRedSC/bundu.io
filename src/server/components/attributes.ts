@@ -12,6 +12,7 @@ export const AttributeList = [
     "health.max",
     "health.regen_amount",
     "health.defense",
+    "health.defense.blocking",
 
     "hunger.max",
     "hunger.depletion_amount",

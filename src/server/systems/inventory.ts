@@ -10,11 +10,23 @@ import {
     AttributesData,
 } from "../components/attributes.js";
 
+const UUID = () => {
+    return String("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx").replace(
+        /[xy]/g,
+        (character) => {
+            const random = (Math.random() * 16) | 0;
+            const value = character === "x" ? random : (random & 0x3) | 0x8;
+
+            return value.toString(16);
+        }
+    );
+};
 export class InventorySystem extends System {
     constructor() {
         super([Inventory]);
 
         this.listen("give_item", this.giveItem);
+        this.listen("remove_item", this.removeItem);
         this.listen("select_item", this.selectItem, [Inventory, PlayerData]);
         this.listen("drop_item", this.dropItem, [Inventory]);
 
@@ -46,6 +58,26 @@ export class InventorySystem extends System {
         inventory.items.set(id, existing + amount);
     };
 
+    removeItem: EventCallback<"remove_item"> = (
+        object: GameObject,
+        { id, amount }
+    ) => {
+        if (amount === undefined) amount = 1;
+        if (amount <= 0 || id === undefined) return;
+
+        const inventory = Inventory.get(object);
+        if (!inventory) return;
+
+        this.trigger("update_inventory", object.id);
+        const existing = inventory.items.get(id);
+        if (!existing) return;
+        if (existing - amount <= 0) {
+            inventory.items.delete(id);
+        } else {
+            inventory.items.set(id, existing - amount);
+        }
+    };
+
     selectItem: EventCallback<"select_item"> = (
         object: GameObject,
         item: number
@@ -53,13 +85,16 @@ export class InventorySystem extends System {
         const setAttrs = (
             name: string,
             attributes: AttributesData,
-            attrs: Partial<Record<AttributeType, ["add" | "multiply", number]>>
+            attrs: Partial<
+                Record<AttributeType, { op: "add" | "multiply"; value: number }>
+            >,
+            duration?: number
         ) => {
             for (const [type, attr] of Object.entries(attrs) as [
                 AttributeType,
-                ["add" | "multiply", number]
+                { op: "add" | "multiply"; value: number }
             ][]) {
-                attributes.set(type, name, attr[0], attr[1]);
+                attributes.set(type, name, attr.op, attr.value, duration);
             }
         };
 
@@ -70,23 +105,11 @@ export class InventorySystem extends System {
 
         if (!inventory.items.has(item) || !config.type) return;
 
-        const attrMap: Partial<
-            Record<AttributeType, ["add" | "multiply", number]>
-        > = {
-            "attack.damage": ["add", config.attack_damage ?? 0],
-            "attack.origin": ["add", config.attack_origin ?? 0],
-            "attack.reach": ["add", config.attack_reach ?? 0],
-            "attack.sweep": ["add", config.attack_sweep ?? 0],
-            "attack.speed": ["multiply", config.attack_speed_mult ?? 0],
-            "health.defense": ["add", config.defense],
-            "movement.speed": ["multiply", config.speed_multiplier],
-        };
-        console.log(config);
         switch (config.function) {
             case "wear":
                 data.helmet = data.helmet === item ? undefined : item;
                 if (data.helmet !== undefined) {
-                    setAttrs("helmet", attributes, attrMap);
+                    setAttrs("helmet", attributes, config.attributes);
                     break;
                 }
                 attributes?.clear("helmet");
@@ -94,7 +117,7 @@ export class InventorySystem extends System {
             case "main_hand":
                 data.mainHand = data.mainHand === item ? undefined : item;
                 if (data.mainHand !== undefined) {
-                    setAttrs("main_hand", attributes, attrMap);
+                    setAttrs("main_hand", attributes, config.attributes);
                     break;
                 }
                 attributes?.clear("main_hand");
@@ -102,10 +125,14 @@ export class InventorySystem extends System {
             case "off_hand":
                 data.offHand = data.offHand === item ? undefined : item;
                 if (data.helmet !== undefined) {
-                    setAttrs("off_hand", attributes, attrMap);
+                    setAttrs("off_hand", attributes, config.attributes);
                     break;
                 }
                 attributes?.clear("off_hand");
+                break;
+            case "consume":
+                this.trigger("remove_item", object.id, { id: item, amount: 1 });
+                setAttrs(UUID(), attributes, config.attributes, 5000);
                 break;
         }
 

@@ -79,8 +79,10 @@ export function subPoints(a: BasicPoint, b: BasicPoint): BasicPoint {
     return { x: a.x - b.x, y: a.y - b.y };
 }
 
-export function clamp(value: number, min: number, max: number) {
-    return Math.min(Math.max(value, min), max);
+export function clamp(value: number, min: number | null, max: number | null) {
+    const clampedMin = min ? Math.max(value, min) : value;
+    const clampedMax = max ? Math.min(value, clampedMin) : clampedMin;
+    return clampedMax;
 }
 
 function hexToRgb(hex: number) {

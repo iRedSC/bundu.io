@@ -1,39 +1,52 @@
 bandage:
     type: food
-    eat_heal: 3
+    stats:
+        heal_ticks: 2
 
 meat:
     type: food
-    food: 10
-    eat_damage: 5
+    stats:
+        hunger: 10
+        health: -5
+    attributes:
+        movement.speed:
+            op: add
+            value: 1
 
 meat_cooked:
     type: food
-    food: 20
+    stats:
+        hunger: 20
 
 blue_berry:
     type: food
-    food: 3
+    stats:
+        hunger: 3
 
 red_berry:
     type: food
-    food: 6
-    eat_damage: 2
+    stats:
+        hunger: 6
+        health: -2
 
 honey:
     type: food
-    food: 7
+    stats:
+        hunger: 7
 
 mango:
     type: food
-    food: 10
+    stats:
+        hunger: 10
 
 komodo_dragon_eye:
     type: food
-    food: 20
-    eat_damage: 35
+    stats:
+        hunger: 20
+        health: -35
 
 miracle_fruit:
     type: food
-    food: 35
-    eat_heal: 10
+    stats:
+        hunger: 35
+        health: -10

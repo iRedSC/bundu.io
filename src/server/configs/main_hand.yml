@@ -1,120 +1,213 @@
 wood_sword:
     type: sword
-    attack_damage: 13
     level: 1
-    block: 2
+
+    attributes:
+        attack.damage:
+            op: add
+            value: 13
+        health.defense.blocking:
+            op: add
+            value: 2
 
 stone_sword:
     type: sword
-    attack_damage: 15
     level: 2
-    block: 3
+
+    attributes:
+        attack.damage:
+            op: add
+            value: 15
+        health.defense.blocking:
+            op: add
+            value: 3
 
 gold_sword:
     type: sword
-    attack_damage: 17
     level: 3
-    block: 3
+    attributes:
+        attack.damage:
+            op: add
+            value: 17
+        health.defense.blocking:
+            op: add
+            value: 3
 
 diamond_sword:
     type: sword
-    attack_damage: 20
     level: 4
-    block: 4
+    attributes:
+        attack.damage:
+            op: add
+            value: 20
+        health.defense.blocking:
+            op: add
+            value: 4
 
 amethyst_sword:
     type: sword
-    attack_damage: 22
     level: 5
-    block: 5
+    attributes:
+        attack.damage:
+            op: add
+            value: 22
+        health.defense.blocking:
+            op: add
+            value: 5
 
 wood_pickaxe:
     type: pickaxe
-    attack_damage: 2
     level: 1
+    attributes:
+        attack.damage:
+            op: add
+            value: 2
 
 stone_pickaxe:
     type: pickaxe
-    attack_damage: 3
     level: 2
+    attributes:
+        attack.damage:
+            op: add
+            value: 3
 
 gold_pickaxe:
     type: pickaxe
-    attack_damage: 4
     level: 3
+    attributes:
+        attack.damage:
+            op: add
+            value: 4
 
 diamond_pickaxe:
     type: pickaxe
-    attack_damage: 5
     level: 4
+    attributes:
+        attack.damage:
+            op: add
+            value: 5
 amethyst_pickaxe:
     type: pickaxe
-    attack_damage: 6
     level: 5
+    attributes:
+        attack.damage:
+            op: add
+            value: 6
 
 lumber_axe:
     type: axe
-    attack_damage: 7
+    attributes:
+        attack.damage:
+            op: add
+            value: 7
 
 butcher_knife:
     type: knife
-    attack_damage: 8
+    attributes:
+        attack.damage:
+            op: add
+            value: 8
 
 shovel:
     type: shovel
-    attack_damage: 3
+    attributes:
+        attack.damage:
+            op: add
+            value: 3
 
 repair_hammer:
     type: wrench
-    attack_damage: 4
-    repair: 10
+    attributes:
+        attack.damage:
+            op: add
+            value: 4
+        attack.building_damage:
+            op: add
+            value: -14
 
 stone_spear:
     type: spear
-    attack_damage: 10
-    block: 1
     level: 2
+    attributes:
+        attack.damage:
+            op: add
+            value: 10
+        health.defense.blocking:
+            op: add
+            value: 1
 
 gold_spear:
     type: spear
-    attack_damage: 12
-    block: 1
     level: 3
+    attributes:
+        attack.damage:
+            op: add
+            value: 12
+        health.defense.blocking:
+            op: add
+            value: 1
 
 diamond_spear:
     type: spear
-    attack_damage: 14
-    block: 2
     level: 4
+    attributes:
+        attack.damage:
+            op: add
+            value: 14
+        health.defense.blocking:
+            op: add
+            value: 2
 
 amethyst_spear:
     type: spear
-    attack_damage: 17
-    block: 3
     level: 5
+    attributes:
+        attack.damage:
+            op: add
+            value: 17
+        health.defense.blocking:
+            op: add
+            value: 3
 
 tusk_spear:
     type: spear
-    attack_damage: 18
-    block: 5
     level: 5
+    attributes:
+        attack.damage:
+            op: add
+            value: 18
+        health.defense.blocking:
+            op: add
+            value: 5
 
 stone_hammer:
     type: hammer
-    attack_damage: 4
     level: 2
+    attributes:
+        attack.damage:
+            op: add
+            value: 4
 
 gold_hammer:
     type: hammer
-    attack_damage: 5
     level: 3
+    attributes:
+        attack.damage:
+            op: add
+            value: 5
 
 diamond_hammer:
     type: hammer
-    attack_damage: 6
     level: 4
+    attributes:
+        attack.damage:
+            op: add
+            value: 6
 
 amethyst_hammer:
     type: hammer
-    attack_damage: 7
     level: 5
+    attributes:
+        attack.damage:
+            op: add
+            value: 7

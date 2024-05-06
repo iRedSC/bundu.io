@@ -6,20 +6,39 @@ hat:
 
 pickaxe:
     function: main_hand
-    attack_reach: 10
-    attack_sweep: 30
-    attack_origin: 15
+    attributes:
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
 
 knife:
-    speed_multiplier: 0.8
     function: main_hand
+    attributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
 
 sword:
-    speed_multiplier: 0.8
     function: main_hand
-    attack_origin: 15
-    attack_reach: 15
-    attack_sweep: 30
+    attributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
+        attack.origin:
+            op: add
+            value: 15
+        attack.reach:
+            op: add
+            value: 15
+        attack.sweep:
+            op: add
+            value: 30
 
 book:
     function: off_hand
@@ -31,11 +50,20 @@ food:
     function: consume
 
 spear:
-    speed_multiplier: 0.8
     function: main_hand
-    attack_reach: 15
-    attack_sweep: 30
-    attack_origin: 45
+    attributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
+        attack.reach:
+            op: add
+            value: 15
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 45
 
 hammer:
     function: main_hand
