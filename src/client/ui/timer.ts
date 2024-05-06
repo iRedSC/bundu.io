@@ -29,12 +29,12 @@ export class Timer {
 
     set(duration: number, manager: AnimationManager) {
         this.duration = duration;
-        manager.add(this, this.animation.run(true));
+        manager.set(this, 0, this.animation.run(), true);
     }
 }
 
 function timerAnimation(timer: Timer) {
-    const animation = new Animation(0);
+    const animation = new Animation();
 
     animation.keyframes[0] = (animation) => {
         animation.next(timer.duration);

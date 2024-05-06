@@ -1,18 +1,18 @@
-import * as PIXI from "pixi.js";
+import { Sprite, Texture } from "pixi.js";
 import { assets } from "./load";
 import { idMap } from "../configs/id_map";
 import { mergeObjects } from "../../lib/object_utils";
 import { BasicPoint } from "../../lib/types";
 import { radians } from "../../lib/transforms";
 
-export class SpriteWrapper extends PIXI.Sprite {
+export class SpriteWrapper extends Sprite {
     config: DisplayConfig;
 
     private _position: { x: number; y: number };
     private _rotation: number;
     private _scale: { x: number; y?: number };
 
-    constructor(texture: PIXI.Texture, config: DisplayConfig) {
+    constructor(texture: Texture, config: DisplayConfig) {
         super(texture);
 
         this._scale = { x: 0, y: 0 };

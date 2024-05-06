@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
-import { ItemButton } from "./button";
-import { colorLerp, prettifyNumber } from "../../lib/transforms";
+import { ItemButton } from "./item_button";
+import { prettifyNumber } from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
 import { SpriteFactory } from "../assets/sprite_factory";
 import { SCHEMA } from "../../shared/enums";
@@ -20,7 +20,6 @@ type Item = [id: number, amount: number];
  * or you can drag the item to a new slot to rearrange.
  */
 export class InventoryButton extends ItemButton {
-    selected: boolean;
     amount: PIXI.Text;
     constructor() {
         super();
@@ -29,24 +28,8 @@ export class InventoryButton extends ItemButton {
         this.amount.scale.set(0.4);
         this.amount.anchor.set(1, 0.5);
         this.amount.zIndex = 2;
-        this.selected = false;
         this.button.addChild(this.amount);
         this.button.sortChildren();
-        this.setItem(-1);
-        this.update(0x777777);
-    }
-
-    /**
-     * Update the button with a specific style.
-     * @param fillColor Button's fill color
-     * @param borderColor Buttons' border color
-     */
-    override update(tint: number) {
-        let newTint = tint;
-        if (this.selected) {
-            newTint = colorLerp(tint, 0xffffff, 0.5);
-        }
-        super.update(newTint);
     }
 }
 
@@ -65,10 +48,13 @@ export class Inventory {
     }
 
     update(update: SCHEMA.SERVER.UPDATE_INVENTORY) {
-        console.log(this.slots);
         this.display.slotCount(update[0]);
 
+        console.log(update);
         for (const [id, amount] of update[1]) {
+            if (typeof id !== "number" || typeof amount !== "number") {
+                continue;
+            }
             let exists = false;
             for (const item of this.slots) {
                 if (item === undefined) {
@@ -134,19 +120,11 @@ class InventoryDisplay {
             button.rightclick = this.rightclick;
             this.buttons.push(button);
             this.container.addChild(button.button);
-            button.button.on("pointerdown", () =>
-                dragStart(button, this.inventory)
-            );
-            button.button.onpointertap = () => {
-                for (let _button of this.buttons) {
-                    _button.selected = false;
-                    _button.button.emit(
-                        "pointerup",
-                        new PIXI.FederatedPointerEvent(new PIXI.EventBoundary())
-                    );
-                }
-                button.selected = true;
+            button.button.onpointerdown = () => {
+                button.down = true;
+                dragStart(button, this.inventory);
             };
+            button.down = false;
         }
         inventoryGrid.arrange(this.buttons);
     }
@@ -170,7 +148,7 @@ class InventoryDisplay {
                 try {
                     const amount = items[i][1];
                     this.buttons[i].amount.text = prettifyNumber(amount);
-                    this.buttons[i].setItem(items[i][0]);
+                    this.buttons[i].item = items[i][0];
                 } catch {}
             }
         }
@@ -196,10 +174,10 @@ class InventoryDisplay {
  * @param button The button that is being draged
  */
 function dragStart(button: InventoryButton, inventory: Inventory) {
-    if (button.item === -1) {
+    if (button.item === null) {
         return;
     }
-    const sprite = SpriteFactory.build(button.item);
+    const sprite = SpriteFactory.build(button.item ?? -1);
     sprite.scale.set(0.12);
     sprite.anchor.set(0.5);
     sprite.alpha = 0.8;

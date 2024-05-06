@@ -1,0 +1,19 @@
+
+
+-20 - base ground
+-18 - islands
+-16 - ground circles
+
+
+-14 - pond ground 1
+-13 - pond ground 2
+-12 - pond water 1
+-11 - pond water 2
+-10 - pond water 3
+-9 - pond water 4
+-8 - underwater decor (special filter)
+
+
+-4 - ground decor
+
+0 - player level

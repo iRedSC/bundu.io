@@ -20,7 +20,6 @@ diamond_helmet:
 
 amethyst_helmet:
     type: helmet
-    defense: 7
     level: 5
 
 alligator_helmet:
@@ -39,13 +38,21 @@ scuba:
 
 earmuffs:
     type: hat
-    warmth: 7
-    speed_multiplier: 2
+    attributes:
+        temperature.warmth:
+            op: add
+            value: 7
 
 beanie:
     type: hat
-    warmth: 15
+    attributes:
+        temperature.warmth:
+            op: add
+            value: 12
 
 coat:
     type: hat
-    warmth: 24
+    attributes:
+        temperature.warmth:
+            op: add
+            value: 24

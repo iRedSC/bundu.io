@@ -1,6 +1,6 @@
 import { Button } from "@pixi/ui";
 import * as PIXI from "pixi.js";
-import { ItemButton } from "./button";
+import { ItemButton } from "./item_button";
 import { Grid } from "./grid";
 import { SCHEMA } from "../../shared/enums";
 
@@ -81,7 +81,7 @@ export class CraftingMenu {
             const button = new ItemButton();
             button.rightclick = this.rightclick;
             button.leftclick = this.leftclick;
-            button.setItem(item);
+            button.item = item;
             button.update(0x777777);
             this.container.addChild(button.button);
             this.buttons.push(button);

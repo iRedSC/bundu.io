@@ -101,29 +101,53 @@ export function hurt(targets: Tintable[]) {
 }
 
 type ObjectWithSize = { size: number };
+
 export function hit(target: ObjectWithSize) {
+    // set up a timing function that transforms the t value
     const timingFunction = cubicBezier(0.5, 0, 0.09, 1.51);
+
+    // same the current target's size for use in the animation
     const scale = target.size;
+
     const animation = new Animation();
+
     animation.keyframes[0] = (animation) => {
+        // if this is the first keyframe the animation has played, restart it with
+        // a duration of 100ms (when the animation is first called it does not have a duration)
         if (animation.isFirstKeyframe) {
             animation.goto(0, 100);
         }
+
+        // call the timing function and get transformed t value
         const t = timingFunction(animation.t);
+
+        // lerp the target's size based on the previously saved scale value
         target.size = lerp(scale, scale / 1.1, t);
+
+        //if this keyframe ended, goto the next one with a duration of 400ms
         if (animation.keyframeEnded) {
             animation.next(400);
         }
     };
+
     animation.keyframes[1] = (animation) => {
+        // we just do the reverse of the first one here
+
         const t = timingFunction(animation.t);
+
         target.size = lerp(scale / 1.1, scale, t);
+
+        // once this keyframe ends, set the animation to expired
         if (animation.keyframeEnded) {
             animation.expired = true;
         }
     };
+
+    // in case the animation is cut short in some way, reset the targets siz
     animation.keyframes[-1] = () => {
         target.size = scale;
     };
+
+    // return the animation, storing the curried values from the function
     return animation;
 }
