@@ -50,3 +50,7 @@ miracle_fruit:
     stats:
         hunger: 35
         health: -10
+
+bottle_water:
+    type: food
+    water: 35

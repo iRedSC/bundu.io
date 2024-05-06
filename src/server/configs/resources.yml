@@ -139,6 +139,15 @@ komodo_dragon_dead:
 bee_dead:
     duration: 30
 
+fish_dead:
+    duration: 30
+    multipliers:
+        knife: 2
+    items:
+        meat: 1
+        fish_scale: 1
+
+
 queen_bee_dead:
     duration: 30
     multipliers:

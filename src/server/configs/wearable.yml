@@ -48,6 +48,24 @@ earmuffs:
             op: add
             value: 7
 
+alligator_helmet:
+    type: helmet
+    attributes:
+        health.defense:
+            op: add
+            value: 5
+    flags:
+        - scuba
+
+scuba:
+    type: helmet
+    attributes:
+        health.defense:
+            op: add
+            value: 5
+    flags:
+        - scuba
+
 beanie:
     type: hat
     attributes:
