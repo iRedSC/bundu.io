@@ -23,6 +23,20 @@ amethyst_helmet:
     defense: 7
     level: 5
 
+alligator_helmet:
+    type: helmet
+    defense: 5
+    flags:
+     - scuba
+
+scuba:
+    type: helmet
+    defense: 3
+    flags:
+     - scuba
+
+    
+
 earmuffs:
     type: hat
     warmth: 7

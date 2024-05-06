@@ -1,12 +1,11 @@
-<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_341_24)">
-<rect x="0.916985" y="12.0035" width="389.736" height="57.4858" rx="16.0224" transform="matrix(0.749471 0.662037 -0.640211 0.768199 95.1294 46.3735)" fill="#573333" stroke="#482C2C" stroke-width="16.7854"/>
-<rect x="9.95111" y="6.52702" width="378.787" height="58.3744" rx="16.0224" transform="matrix(0.979625 -0.200836 0.206061 0.978539 -1.14221 281.043)" fill="#573333" stroke="#482C2C" stroke-width="16.7854"/>
-<rect x="10.4923" y="-5.61595" width="378.787" height="58.3744" rx="16.0224" transform="matrix(0.292291 -0.956329 0.957876 0.287183 72.8693 384.328)" fill="#573333" stroke="#482C2C" stroke-width="16.7854"/>
+<svg width="1000" height="1000" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_621_70852)">
+<rect x="-23.3916" y="-19.6564" width="959.073" height="152.931" rx="42.6015" transform="matrix(0.997397 -0.0721104 0.100762 0.994911 38.9197 453.3)" fill="#5A4848" stroke="#382D2D" stroke-width="42.6015"/>
+<rect x="-30.2016" y="0.391943" width="934.388" height="158.349" rx="42.6015" transform="matrix(0.69978 -0.714358 0.718083 0.695958 113.538 733.753)" fill="#5A4848" stroke="#382D2D" stroke-width="42.6015"/>
 </g>
 <defs>
-<clipPath id="clip0_341_24">
-<rect width="400" height="400" fill="white"/>
+<clipPath id="clip0_621_70852">
+<rect width="1000" height="1000" fill="white"/>
 </clipPath>
 </defs>
 </svg>

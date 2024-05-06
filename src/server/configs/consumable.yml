@@ -37,3 +37,7 @@ miracle_fruit:
     type: food
     food: 35
     eat_heal: 10
+
+bottle_water:
+    type: food
+    water: 35

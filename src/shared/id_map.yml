@@ -5,11 +5,7 @@ player_hat: 3
 player_dead: 4
 hand: 5
 
-item_button: 6
 
-weapon_toggle: 7
-build_toggle: 8
-misc_toggle: 9
 
 # * TOOLS
 
@@ -179,3 +175,25 @@ repair_hammer: 136
 
 stone_barrier: 137
 pine_tree_snow: 138
+forest_ground_circle: 139
+savannah_ground_circle: 140
+island: 141
+cave_ground: 142
+pond_forest: 143
+pond_winter: 144
+pond_savannah: 145
+bottle_water: 146
+bottle_empty: 147
+chest: 148
+chest_open: 149
+tent: 150
+scuba: 151
+alligator_helmet: 152
+fish_0: 153
+fish_1: 154
+fish_2: 155
+fish_3: 156
+fish_4: 157
+fish_dead: 158
+sand: 159
+fish_scale: 160

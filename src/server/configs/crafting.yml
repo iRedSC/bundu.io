@@ -718,7 +718,7 @@ bird_skull:
         cloth: 5
         pitch: 8
         deer_hide: 6
-        meat: 10
+        meat: 25
 
     flags:
         - near_crafting_table
@@ -726,12 +726,74 @@ bird_skull:
 
 repair_hammer:
     score: 500
-    amount: 4
-    duration: 5000
+    duration: 8000
     ingredients:
         stone: 50
         wood: 75
 
     flags:
         - near_crafting_table
+        - near_anvil
+
+bottle_empty:
+    score: 150
+    duration: 5000
+    ingredients:
+        sand: 40
+
+    flags:
+        - near_crafting_table
+        - near_fire
+
+bottle_water:
+    score: 0
+    duration: 2500
+
+    flags:
+        - in_water
+
+bottle_water:
+    score: 50
+    duration: 3000
+    ingredients:
+        ice: 15
+
+    flags:
+        - near_fire
+
+tent:
+    score: 500
+    duration: 12000
+    ingredients:
+        wood: 300
+        cloth: 10
+
+    flags:
+        - near_crafting_table
+
+scuba:
+    score: 2500
+    duration: 20000
+    ingredients:
+        fish_scale: 15
+        diamond: 50
+        stone: 75
+        
+
+    flags:
+        - near_crafting_table
+        - near_anvil
+
+alligator_helmet:
+    score: 5000
+    duration: 35000
+    ingredients:
+        alligator_skin: 6
+        fish_scale: 6
+        komodo_dragon_eye: 2
+        gold_helmet: 1
+        
+    flags:
+        - near_crafting_table
+        - in_water
         - near_anvil
