@@ -745,12 +745,12 @@ bottle_empty:
         - near_crafting_table
         - near_fire
 
-bottle_water:
-    score: 0
-    duration: 2500
+# bottle_water:
+#     score: 0
+#     duration: 2500
 
-    flags:
-        - in_water
+#     flags:
+#         - in_water
 
 bottle_water:
     score: 50
@@ -778,7 +778,6 @@ scuba:
         fish_scale: 15
         diamond: 50
         stone: 75
-        
 
     flags:
         - near_crafting_table
@@ -792,7 +791,7 @@ alligator_helmet:
         fish_scale: 6
         komodo_dragon_eye: 2
         gold_helmet: 1
-        
+
     flags:
         - near_crafting_table
         - in_water

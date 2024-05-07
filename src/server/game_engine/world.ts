@@ -45,31 +45,25 @@ export class World {
         objectIds: number | number[],
         data?: any
     ) => {
-        if (typeof objectIds === "number") {
-            objectIds = [objectIds];
-        }
+        if (typeof objectIds === "number") objectIds = [objectIds];
         for (const system of this.systems.values()) {
             const events: Map<
                 string,
                 Map<EventCallback<any>, ComponentFactory<any>[]>
             > = system.callbacks;
 
-            if (!events.has(event)) {
-                continue;
-            }
+            if (!events.has(event)) continue;
 
             const callbacks: Map<
                 EventCallback<any>,
                 ComponentFactory<any>[]
             > = events.get(event) || new Map();
             const objects = this.query([], objectIds);
-            if (callbacks.size > 0) {
-                for (const [callback, components] of callbacks.entries()) {
-                    for (const object of objects) {
-                        if (object.hasComponents(components)) {
-                            callback(object, data);
-                        }
-                    }
+            if (callbacks.size <= 0) continue;
+            for (const [callback, components] of callbacks.entries()) {
+                for (const object of objects) {
+                    if (!object.hasComponents(components)) continue;
+                    callback(object, data);
                 }
             }
         }

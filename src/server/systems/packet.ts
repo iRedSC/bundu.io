@@ -2,7 +2,6 @@ import { Range } from "../../lib/quadtree.js";
 import { moveToward } from "../../lib/transforms.js";
 import { PACKET } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
-import { Health } from "../components/combat.js";
 import { PlayerData } from "../components/player.js";
 import { Inventory } from "../components/inventory.js";
 import { GameObject } from "../game_engine/game_object.js";
@@ -10,6 +9,7 @@ import { EventCallback, System } from "../game_engine/system.js";
 import { UpdateHandler } from "../game_objects/update_handler.js";
 import { GlobalPacketFactory } from "../globals.js";
 import { getSizedBounds, quadtree } from "./position.js";
+import { Stats } from "../components/stats.js";
 
 export const updateHandler = new UpdateHandler();
 
@@ -242,11 +242,11 @@ export class PacketSystem extends System {
     };
 
     healthUpdate: EventCallback<"health_update"> = (player: GameObject) => {
-        const health = Health.get(player);
+        const stats = player.get(Stats);
         GlobalPacketFactory.add(player.id, [PACKET.SERVER.UPDATE_STATS], () => [
-            health.value,
-            0,
-            0,
+            stats.get("health").value,
+            stats.get("hunger").value,
+            stats.get("temperature").value,
         ]);
     };
 }

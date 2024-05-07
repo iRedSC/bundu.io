@@ -3,15 +3,18 @@ import { GameObject } from "../game_engine/game_object.js";
 import { GroundItemData, Physics } from "../components/base.js";
 import { round } from "../../lib/math.js";
 import { degrees } from "../../lib/transforms.js";
-import { Health } from "../components/combat.js";
+import { Stats } from "../components/stats.js";
 
 export class GroundItem extends GameObject {
     constructor(physics: Physics, itemData: GroundItemData) {
         super();
 
+        const stats = new Stats();
+        stats.data.set("health", { value: 1, min: 0, max: 1 });
+
         this.add(new Physics(physics))
             .add(new GroundItemData(itemData))
-            .add(new Health({ max: 1, value: 1 }));
+            .add(stats);
 
         this.pack[PACKET.SERVER.NEW_OBJECT] = () => {
             const physics = Physics.get(this);

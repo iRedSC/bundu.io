@@ -8,10 +8,6 @@ meat:
     stats:
         hunger: 10
         health: -5
-    attributes:
-        movement.speed:
-            op: add
-            value: 1
 
 meat_cooked:
     type: food

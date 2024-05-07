@@ -28,6 +28,8 @@ export type AttributeType = (typeof AttributeList)[number];
 
 export type AttributeOperations = "add" | "multiply";
 
+type AttributeCallback = (value: number) => void;
+
 /**
  * Container for arbitrary attributes.
  *
@@ -48,8 +50,11 @@ export class AttributesData {
         >
     >;
 
+    private callbacks: Partial<Record<AttributeType, Set<AttributeCallback>>>;
+
     constructor() {
         this.types = {};
+        this.callbacks = {};
     }
 
     /**
@@ -61,10 +66,20 @@ export class AttributesData {
         if (type) {
             const modType = this.types[type];
             if (modType) delete modType[id];
+
+            const callbacks = this.callbacks[type];
+            if (!callbacks) return;
+            for (const callback of callbacks?.values())
+                callback(this.get(type));
             return;
         }
-        for (const modType of Object.values(this.types)) {
-            delete modType[id];
+        for (const [name, record] of Object.entries(this.types)) {
+            delete record[id];
+
+            const callbacks = this.callbacks[name];
+            if (!callbacks) return;
+            for (const callback of callbacks?.values())
+                callback(this.get(name as AttributeType));
         }
     }
 
@@ -119,7 +134,28 @@ export class AttributesData {
     ) {
         if (!this.types[type]) this.types[type] = {};
         this.types[type]![id] = { operation, value };
-        if (duration) this.types[type]![id].expires = Date.now() + duration;
+        if (duration) {
+            this.types[type]![id].expires = Date.now() + duration;
+            setTimeout(() => {
+                this.clear(id, type);
+            }, duration);
+        }
+
+        const callbacks = this.callbacks[type];
+        if (!callbacks) return;
+        for (const callback of callbacks?.values()) callback(this.get(type));
+    }
+
+    addEventListener(type: AttributeType, callback: AttributeCallback): void {
+        if (!this.callbacks[type]) this.callbacks[type] = new Set();
+        this.callbacks[type]?.add(callback);
+    }
+
+    removeEventListener(
+        type: AttributeType,
+        callback: AttributeCallback
+    ): void {
+        this.callbacks[type]?.delete(callback);
     }
 }
 

@@ -16,6 +16,7 @@ import {
     Attributes,
     AttributeType,
 } from "../components/attributes.js";
+import { StatList, StatType, Stats } from "../components/stats.js";
 
 /**
  * This is the system that controls players.
@@ -85,6 +86,11 @@ export class PlayerSystem extends System implements PlayerController {
             () => packCraftingList()
         );
         this.trigger("health_update", player.id);
+
+        const attributes = player.get(Attributes);
+        attributes.addEventListener("health.defense", () => {
+            this.trigger("give_item", player.id, { id: 56, amount: 1 });
+        });
     }
 
     kill: EventCallback<"kill"> = (player: GameObject) => {
@@ -185,7 +191,7 @@ export class PlayerSystem extends System implements PlayerController {
                         amount: amount,
                     });
                     break;
-                case "attribute":
+                case "attribute": {
                     const type = command[1] as AttributeType;
                     if (!AttributeList.includes(type)) return;
                     const operation = command[2] as "add" | "multiply";
@@ -196,6 +202,15 @@ export class PlayerSystem extends System implements PlayerController {
                     player
                         .get(Attributes)
                         .set(type, "command", operation, value, duration);
+                    break;
+                }
+                case "stat": {
+                    const type = command[1] as StatType;
+                    if (!StatList.includes(type)) return;
+                    const value = Number(command[2]);
+                    player.get(Stats).set(type, { value });
+                    break;
+                }
             }
             return;
         }

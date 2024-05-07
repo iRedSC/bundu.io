@@ -64,6 +64,7 @@ export class VisibleObjects {
 
 export type PlayerData = {
     name: string;
+    score: number;
     visibleObjects: VisibleObjects;
 
     playerSkin: number;
@@ -81,28 +82,9 @@ export type PlayerData = {
 };
 export const PlayerData = Component.register<PlayerData>(() => ({
     name: "unnamed",
+    score: 0,
     visibleObjects: new VisibleObjects(),
     playerSkin: 0,
     backpackSkin: 0,
     moveDir: [0, 0],
-}));
-
-export type Hunger = {
-    value: number;
-    max: number;
-};
-export const Hunger = Component.register<Hunger>(() => ({
-    value: 100,
-    max: 100,
-}));
-
-export type Temperature = {
-    value: number;
-    coldMax: number;
-    hotMax: number;
-};
-export const Temperature = Component.register<Temperature>(() => ({
-    value: 100,
-    coldMax: 100,
-    hotMax: 200,
 }));
