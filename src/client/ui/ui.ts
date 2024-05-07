@@ -71,10 +71,10 @@ export function createUI() {
 
     function resize() {
         craftingMenu.resize();
-        inventory.display.resize();
+        inventory.resize();
         statContainer.position.set(
             percentOf(50, window.innerWidth) - percentOf(46, (250 + 6) * 3),
-            inventory.display.container.position.y -
+            inventory.container.position.y -
                 INVENTORY_SLOT_SIZE -
                 statsGrid.spacingV
         );
@@ -86,7 +86,7 @@ export function createUI() {
     window.addEventListener("resize", resize);
 
     ui.addChild(statContainer);
-    ui.addChild(inventory.display.container);
+    ui.addChild(inventory.container);
     ui.addChild(swordTimer.container);
     ui.addChild(craftingMenu.container);
 

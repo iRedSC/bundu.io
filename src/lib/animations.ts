@@ -43,6 +43,7 @@ class ActiveAnimation {
     expired: boolean;
     start: number;
     duration: number;
+    firstFrameTrigger: boolean;
 
     constructor(keyframes: Keyframes) {
         this.start = Date.now();
@@ -50,6 +51,7 @@ class ActiveAnimation {
         this.expired = false;
         this.keyframes = keyframes;
         this.currentKeyframe = 0;
+        this.firstFrameTrigger = true;
     }
 
     /**
@@ -59,6 +61,7 @@ class ActiveAnimation {
         let frame = this.keyframes[this.currentKeyframe];
         if (frame && this.expired === false) {
             frame(this);
+            this.firstFrameTrigger = false;
         }
     }
 
@@ -71,6 +74,7 @@ class ActiveAnimation {
             this.start = Date.now();
             this.duration = durationMS;
             this.currentKeyframe++;
+            this.firstFrameTrigger = true;
         }
     }
 
@@ -83,6 +87,7 @@ class ActiveAnimation {
             this.start = Date.now();
             this.duration = durationMS;
             this.currentKeyframe--;
+            this.firstFrameTrigger = true;
         }
     }
 
@@ -96,6 +101,7 @@ class ActiveAnimation {
             this.start = Date.now();
             this.duration = durationMS;
             this.currentKeyframe = frame;
+            this.firstFrameTrigger = true;
         }
     }
 
@@ -108,6 +114,7 @@ class ActiveAnimation {
             this.start = Date.now();
             this.duration = 0;
             this.currentKeyframe = -1;
+            this.firstFrameTrigger = true;
             this.update();
         }
     }

@@ -27,9 +27,8 @@ export class RecipeManager {
         }
     }
 
-    filter(items: [number, number][], flags: number[]): number[] {
+    filter(items: Map<number, number>, flags: number[]): number[] {
         const craftable: number[] = [];
-        const itemsMap = new Map(items);
         nextRecipe: for (const [recipeId, recipe] of this.recipes.entries()) {
             const ingredients = recipe[0];
             const itemFlags = new Set(flags);
@@ -40,7 +39,7 @@ export class RecipeManager {
             // }
 
             for (const [id, recipeAmount] of ingredients.entries()) {
-                const itemsAmount = itemsMap.get(id);
+                const itemsAmount = items.get(id);
                 if (!itemsAmount) {
                     continue nextRecipe;
                 }
@@ -82,7 +81,6 @@ export class CraftingMenu {
             button.rightclick = this.rightclick;
             button.leftclick = this.leftclick;
             button.item = item;
-            button.update(0x777777);
             this.container.addChild(button.button);
             this.buttons.push(button);
         }
@@ -101,8 +99,8 @@ export class CraftingMenu {
 
     resize() {
         this.container.position.set(
-            this.grid.spacingH * 4,
-            this.grid.spacingV * 4
+            68 / 2 + this.grid.spacingH,
+            68 / 2 + this.grid.spacingV
         );
     }
 }

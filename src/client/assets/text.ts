@@ -4,7 +4,10 @@ const fontFamily = "'Aoboshi One', sans-serif";
 export const TEXT_STYLE = new TextStyle({
     fontFamily: fontFamily,
     fill: "#ffffff",
-    strokeThickness: 4,
-    dropShadow: false,
+    dropShadow: true,
+    dropShadowBlur: 0,
+    dropShadowAlpha: 0.7,
+    dropShadowAngle: 90,
+    dropShadowDistance: 3,
     fontSize: 40,
 });
