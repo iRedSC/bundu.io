@@ -28,6 +28,8 @@ stat_bar_circle: stat_bar_circle.svg
 stat_bar: stat_bar.svg
 
 bottle_water: bottle_water.svg
+
+minimap: map.png
 # * TOOLS
 
 # Pickaxe

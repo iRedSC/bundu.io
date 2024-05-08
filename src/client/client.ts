@@ -16,12 +16,14 @@ import { encode } from "@msgpack/msgpack";
 import { createUI } from "./ui/ui";
 import { Application } from "pixi.js";
 import { UIAnimationManager } from "./ui/animation_manager";
+import { Minimap } from "./ui/minimap";
 
 let updateTick = 0;
 function mouseMoveCallback(
     socket: WebSocket,
     viewport: Viewport,
     world: World,
+    minimap: Minimap,
     mousePos: [number, number]
 ) {
     const player = world.objects.get(world.user || -1);
@@ -37,6 +39,7 @@ function mouseMoveCallback(
             );
         }
         player.rotation = rotation;
+        minimap.rotate(rotation);
     }
 }
 
@@ -109,6 +112,9 @@ export class BunduClient {
             parser.unpackMany(data);
         };
 
+        // create ui and elements
+        this.ui = createUI();
+
         const keyboard = new KeyboardInputListener(
             moveUpdate.bind(moveUpdate, this.socket),
             chat.bind(chat, this.socket)
@@ -118,12 +124,12 @@ export class BunduClient {
                 mouseMoveCallback,
                 this.socket,
                 this.viewport,
-                this.world
+                this.world,
+                this.ui.minimap
             )
         );
 
-        // create ui and elements
-        this.ui = createUI();
+        this.world.onUserMove = this.ui.minimap.set.bind(this.ui.minimap);
 
         const craftItemCB = (item: number) => {
             this.socket.send(encode([PACKET.CLIENT.CRAFT_ITEM, item]));

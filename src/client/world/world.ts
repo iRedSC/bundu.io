@@ -126,6 +126,8 @@ export class World {
 
     sky: Sky;
 
+    onUserMove?: (x: number, y: number) => void;
+
     constructor(viewport: Viewport, animationManager: AnimationManager) {
         this.viewport = viewport;
         this.sky = new Sky();
@@ -255,6 +257,9 @@ export class World {
         if (!object) {
             requestIds.add(id);
             return;
+        }
+        if (id === this.user && this.onUserMove) {
+            this.onUserMove(packet[2], packet[3]);
         }
         object.renderable = true;
         object.states.set([Date.now() + time, packet[2], packet[3]]);

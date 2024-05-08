@@ -10,6 +10,7 @@ import { CraftingMenu, RecipeManager } from "./crafting_menu";
 import { Inventory } from "./inventory";
 import { StatBar } from "./statbars";
 import { ITEM_BUTTON_SIZE } from "../constants";
+import { Minimap } from "./minimap";
 
 export function createUI() {
     const ui = new Container();
@@ -69,7 +70,10 @@ export function createUI() {
 
     statsGrid.arrange([health.container, hunger.container, heat.container]);
 
+    const minimap = new Minimap();
+
     function resize() {
+        minimap.resize();
         craftingMenu.resize();
         inventory.resize();
         statContainer.position.set(
@@ -85,6 +89,7 @@ export function createUI() {
     }
     window.addEventListener("resize", resize);
 
+    ui.addChild(minimap.container);
     ui.addChild(statContainer);
     ui.addChild(inventory.container);
     ui.addChild(swordTimer.container);
@@ -99,5 +104,6 @@ export function createUI() {
         health,
         hunger,
         heat,
+        minimap,
     };
 }
