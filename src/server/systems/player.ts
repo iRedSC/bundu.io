@@ -148,14 +148,11 @@ export class PlayerSystem extends System implements PlayerController {
         const data = PlayerData.get(player);
         const attributes = player.get(Attributes);
         const blocking = attributes.get("health.defense.blocking");
-        if (blocking <= 0) {
-            return;
-        }
         if (!stop && data.attacking) {
             data.attacking = false;
         }
         data.blocking = !stop;
-        if (data.blocking) {
+        if (data.blocking && blocking > 0) {
             attributes?.set("movement.speed", "blocking", "multiply", 0.6);
             attributes?.set("health.defense", "blocking", "add", blocking);
         } else {

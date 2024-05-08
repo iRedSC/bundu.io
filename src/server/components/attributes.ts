@@ -77,7 +77,7 @@ export class AttributesData {
             delete record[id];
 
             const callbacks = this.callbacks[name];
-            if (!callbacks) return;
+            if (!callbacks) continue;
             for (const callback of callbacks?.values())
                 callback(this.get(name as AttributeType));
         }
