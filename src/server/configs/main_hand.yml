@@ -121,9 +121,19 @@ repair_hammer:
         attack.damage:
             op: add
             value: 4
-        attack.building_damage:
+        attack.building.damage:
             op: add
-            value: -14
+            value: -50
+
+diamond_repair_hammer:
+    type: wrench
+    attributes:
+        attack.damage:
+            op: add
+            value: 4
+        attack.building.damage:
+            op: add
+            value: -70
 
 stone_spear:
     type: spear
@@ -187,6 +197,9 @@ stone_hammer:
         attack.damage:
             op: add
             value: 4
+        attack.damage.building:
+            op: add
+            value: 30
 
 gold_hammer:
     type: hammer
@@ -195,6 +208,9 @@ gold_hammer:
         attack.damage:
             op: add
             value: 5
+        attack.damage.building:
+            op: add
+            value: 40
 
 diamond_hammer:
     type: hammer
@@ -203,6 +219,9 @@ diamond_hammer:
         attack.damage:
             op: add
             value: 6
+        attack.damage.building:
+            op: add
+            value: 50
 
 amethyst_hammer:
     type: hammer
@@ -211,3 +230,6 @@ amethyst_hammer:
         attack.damage:
             op: add
             value: 7
+        attack.damage.building:
+            op: add
+            value: 60

@@ -9,3 +9,8 @@ time_book:
 
 bird_skull:
     type: book
+    function: off_hand
+    atributes:
+        attack.damage.animal:
+            op: add
+            value: 15

@@ -726,7 +726,7 @@ bird_skull:
 
 repair_hammer:
     score: 500
-    duration: 8000
+    duration: 6000
     ingredients:
         stone: 50
         wood: 75
@@ -734,6 +734,21 @@ repair_hammer:
     flags:
         - near_crafting_table
         - near_anvil
+
+diamond_repair_hammer:
+    score: 1000
+    duration: 15000
+    ingredients:
+        repair_hammer: 1
+        stone: 100
+        diamond: 40
+
+
+    flags:
+        - near_crafting_table
+        - near_anvil
+        - near_fire
+
 
 bottle_empty:
     score: 150

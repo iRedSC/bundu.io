@@ -23,6 +23,15 @@ knife:
         movement.speed:
             op: multiply
             value: 0.8
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
 
 sword:
     function: main_hand
@@ -67,3 +76,46 @@ spear:
 
 hammer:
     function: main_hand
+    atributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
+
+axe:
+    function: main_hand
+    atributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
+
+shovel:
+    function: main_hand
+    atributes:
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
+
