@@ -76,7 +76,7 @@ export class Player extends WorldObject {
         this.name.scale.set(0.34);
 
         this.name.anchor.set(0.5, 2);
-        this.name.zIndex = 10;
+        this.name.zIndex = 100;
 
         this.offHand = "";
         this.mainHand = "";
