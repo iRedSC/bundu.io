@@ -1,5 +1,4 @@
 import { Range } from "../../lib/quadtree.js";
-import { moveToward } from "../../lib/transforms.js";
 import { PACKET } from "../../shared/enums.js";
 import { Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";

@@ -125,10 +125,6 @@ export class BunduClient {
         // create ui and elements
         this.ui = createUI();
 
-        this.ui.health.start(this.animations);
-        this.ui.hunger.start(this.animations);
-        this.ui.heat.start(this.animations);
-
         const craftItemCB = (item: number) => {
             this.socket.send(encode([PACKET.CLIENT.CRAFT_ITEM, item]));
         };

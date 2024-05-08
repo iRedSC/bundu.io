@@ -6,6 +6,7 @@ import { SCHEMA } from "../../shared/enums";
 import { Animation } from "../../lib/animations";
 import { colorLerp, lerp, radians, rotationLerp } from "../../lib/transforms";
 import { UIAnimationManager } from "./animation_manager";
+import { ITEM_BUTTON_SIZE } from "../constants";
 
 export class RecipeManager {
     recipes: Map<number, [Map<number, number>, number[]]>;
@@ -118,8 +119,8 @@ export class CraftingMenu {
 
     resize() {
         this.container.position.set(
-            68 / 2 + this.grid.spacingH,
-            68 / 2 + this.grid.spacingV
+            ITEM_BUTTON_SIZE / 2 + this.grid.spacingH,
+            ITEM_BUTTON_SIZE / 2 + this.grid.spacingV
         );
     }
 }

@@ -52,9 +52,9 @@ function entityIdle(target: Entity) {
 
     animation.keyframes[1] = (animation) => {
         target.container.scale.x =
-            width + Math.cos(animation.t * Math.PI * 2) * 0.01;
+            width + Math.cos(animation.t * Math.PI * 2) * 0.001;
         target.container.scale.y =
-            height - Math.cos(animation.t * Math.PI * 2) * 0.02;
+            height - Math.cos(animation.t * Math.PI * 2) * 0.002;
         if (animation.keyframeEnded) {
             animation.goto(1, frameLength);
         }

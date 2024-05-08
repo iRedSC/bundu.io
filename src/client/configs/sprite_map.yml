@@ -19,10 +19,15 @@ helmet_cooldown: helmet_cooldown.svg
 no_heal: no_heal.svg
 poison: poison.svg
 
-health_bar_decor: health_bar_shell.svg
-heat_bar_decor: heat_bar_shell.svg
-hunger_bar_decor: hunger_bar_shell.svg
+health_bar_icon: health_bar_icon.svg
+heat_bar_icon: heat_bar_icon.svg
+hunger_bar_icon: hunger_bar_icon.svg
 
+stat_bar_outline: stat_bar_outline.svg
+stat_bar_circle: stat_bar_circle.svg
+stat_bar: stat_bar.svg
+
+bottle_water: bottle_water.svg
 # * TOOLS
 
 # Pickaxe

@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 import { ItemButton } from "./item_button";
 import {
     colorLerp,
+    distance,
     lerp,
     prettifyNumber,
     radians,
@@ -14,6 +15,7 @@ import { Grid } from "./grid";
 import { percentOf } from "../../lib/math";
 import { Animation } from "../../lib/animations";
 import { UIAnimationManager } from "./animation_manager";
+import { ITEM_BUTTON_SIZE } from "../constants";
 
 /**
  * Ah yes the inventory, not looking so good rn
@@ -32,7 +34,12 @@ export class InventoryButton extends ItemButton {
     constructor() {
         super();
 
-        UIAnimationManager.set(this, 0, buttonAnimation(this).run(), true);
+        UIAnimationManager.set(
+            this,
+            0,
+            inventoryButtonAnimation(this).run(),
+            true
+        );
         this.amount = new PIXI.Text("", TEXT_STYLE);
         this.amount.style.align = "right";
         this.amount.position.set(
@@ -52,7 +59,15 @@ export class InventoryButton extends ItemButton {
     }
 }
 
-function buttonAnimation(button: ItemButton) {
+const INVENTORY_COLORS = {
+    EMPTY: 0x222910,
+    DEFAULT: 0x4a5235,
+    HOVER: 0x818f5d,
+    DOWN: 0x222910,
+    RIGHT_DOWN: 0xb54731,
+};
+
+function inventoryButtonAnimation(button: ItemButton) {
     const animation = new Animation();
     let y: number;
 
@@ -60,11 +75,11 @@ function buttonAnimation(button: ItemButton) {
         if (animation.firstFrameTrigger) {
             y = button.button.position.y;
         }
-        if (button.rightDown) {
+        if (button.rightDown && button.item) {
             button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
             button.background.tint = colorLerp(
                 Number(button.background.tint),
-                0x333333,
+                INVENTORY_COLORS.RIGHT_DOWN,
                 0.2
             );
             button.background.position.y = lerp(
@@ -101,11 +116,11 @@ function buttonAnimation(button: ItemButton) {
             0.2
         );
 
-        if (button.down) {
+        if (button.down && button.item) {
             button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
             button.background.tint = colorLerp(
                 Number(button.background.tint),
-                0x333333,
+                INVENTORY_COLORS.DOWN,
                 0.2
             );
             return;
@@ -117,18 +132,28 @@ function buttonAnimation(button: ItemButton) {
                 0.2
             );
             button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));
-            button.background.tint = colorLerp(
-                Number(button.background.tint),
-                0x999999,
-                0.1
-            );
+            if (button.item)
+                button.background.tint = colorLerp(
+                    Number(button.background.tint),
+                    INVENTORY_COLORS.HOVER,
+                    0.1
+                );
+
             return;
         }
 
         button.button.scale.set(lerp(button.button.scale.x, 1, 0.1));
+        if (button.item) {
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                INVENTORY_COLORS.DEFAULT,
+                0.1
+            );
+            return;
+        }
         button.background.tint = colorLerp(
             Number(button.background.tint),
-            0x777777,
+            INVENTORY_COLORS.EMPTY,
             0.1
         );
     };
@@ -142,14 +167,11 @@ function buttonAnimation(button: ItemButton) {
 
 type Callback = (item: number) => void;
 
-export const INVENTORY_SLOT_SIZE = 60;
-export const INVENTORY_SLOT_PADDING = 15;
-
 const inventoryGrid = new Grid(
-    INVENTORY_SLOT_PADDING,
-    INVENTORY_SLOT_PADDING,
-    INVENTORY_SLOT_SIZE,
-    INVENTORY_SLOT_SIZE,
+    percentOf(10, ITEM_BUTTON_SIZE),
+    percentOf(10, ITEM_BUTTON_SIZE),
+    ITEM_BUTTON_SIZE,
+    ITEM_BUTTON_SIZE,
     1
 );
 
@@ -250,11 +272,13 @@ export class Inventory {
             percentOf(50, window.innerWidth) -
                 percentOf(
                     50,
-                    (INVENTORY_SLOT_SIZE + INVENTORY_SLOT_PADDING) *
+                    (ITEM_BUTTON_SIZE + percentOf(10, ITEM_BUTTON_SIZE)) *
                         (this.slotCount - 1)
                 ),
 
-            window.innerHeight - INVENTORY_SLOT_SIZE
+            window.innerHeight -
+                ITEM_BUTTON_SIZE / 2 -
+                percentOf(10, ITEM_BUTTON_SIZE)
         );
     }
 }
@@ -271,13 +295,26 @@ function dragStart(button: InventoryButton, display: Inventory) {
     sprite.scale.set(0.05);
     sprite.anchor.set(0.5);
     sprite.alpha = 0.8;
-    const _dragMove = (event: PointerEvent) => dragMove(sprite, event, display);
+    let canDrag = false;
+    const _dragMove = (event: PointerEvent) => {
+        if (
+            distance(
+                { x: event.clientX, y: event.clientY },
+                button.button.getGlobalPosition()
+            ) > 25 ||
+            canDrag
+        ) {
+            canDrag = true;
+            dragMove(sprite, event, display);
+        }
+    };
 
     function dragEnd() {
         window.removeEventListener("pointermove", _dragMove);
         window.removeEventListener("pointerup", dragEnd);
         display.container.removeChild(sprite);
         findswap(button, display);
+        display.buttons.forEach((button) => (button.sendEvents = true));
     }
 
     window.addEventListener("pointermove", _dragMove);
@@ -297,6 +334,7 @@ function dragMove(
     let isActive: boolean = false;
     if (isActive === false) {
         display.container.addChild(sprite);
+        display.buttons.forEach((button) => (button.sendEvents = false));
     }
     const pos = sprite.parent.toLocal(
         new PIXI.Point(event.clientX, event.clientY),

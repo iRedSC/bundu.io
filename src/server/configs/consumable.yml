@@ -50,3 +50,8 @@ miracle_fruit:
 bottle_water:
     type: food
     water: 35
+
+    commands:
+        give_item:
+            id: empty_bottle
+            amount: 1

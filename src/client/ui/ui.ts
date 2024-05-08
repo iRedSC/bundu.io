@@ -7,8 +7,9 @@ import { percentOf } from "../../lib/math";
 import { Timer } from "./timer";
 import { Grid } from "./grid";
 import { CraftingMenu, RecipeManager } from "./crafting_menu";
-import { INVENTORY_SLOT_SIZE, Inventory } from "./inventory";
+import { Inventory } from "./inventory";
 import { StatBar } from "./statbars";
+import { ITEM_BUTTON_SIZE } from "../constants";
 
 export function createUI() {
     const ui = new Container();
@@ -17,48 +18,47 @@ export function createUI() {
 
     const recipeManager = new RecipeManager();
 
-    const craftingGrid = new Grid(6, 6, 68, 68, 3);
+    const craftingGrid = new Grid(
+        percentOf(10, ITEM_BUTTON_SIZE),
+        percentOf(10, ITEM_BUTTON_SIZE),
+        ITEM_BUTTON_SIZE,
+        ITEM_BUTTON_SIZE,
+        3
+    );
     const craftingMenu = new CraftingMenu(craftingGrid);
 
     const swordTimer = new Timer("sword_timer");
 
-    const statsGrid = new Grid(6, 16, 250, 60, 1);
+    const statsGrid = new Grid(60, 5, 150, 60, 1);
 
     const health = new StatBar({
-        min: 0,
         max: 200,
-        median: 200,
-        decor: "health_bar_decor",
-        baseColor: 0x88fa57,
-        overlayColor: 0x37ad98,
-        warningColor: 0xfa7a57,
-        diffColor: 0xd4ffe4,
-
+        icon: "health_bar_icon",
+        tint: 0x88fa57,
+        overlayTint: 0x37ad98,
+        diffTint: 0xd4ffe4,
         warnOnHigh: false,
+        split: false,
     });
 
     const hunger = new StatBar({
-        min: 0,
-        max: 200,
-        median: 200,
-        decor: "hunger_bar_decor",
-        baseColor: 0xb06b30,
-        overlayColor: 0xd48457,
-        warningColor: 0x757474,
-        diffColor: 0x6e5648,
+        max: 100,
+        split: false,
+        icon: "hunger_bar_icon",
+        tint: 0xb06b30,
+        overlayTint: 0xd48457,
+        diffTint: 0x6e5648,
 
         warnOnHigh: false,
     });
 
     const heat = new StatBar({
-        min: 0,
         max: 200,
-        median: 100,
-        decor: "heat_bar_decor",
-        baseColor: 0xb85a48,
-        overlayColor: 0xb02a2a,
-        warningColor: 0xbc44c7,
-        diffColor: 0x5f7b85,
+        split: true,
+        icon: "heat_bar_icon",
+        tint: 0xb85a48,
+        overlayTint: 0xb02a2a,
+        diffTint: 0x5f7b85,
     });
 
     const statContainer = new Container();
@@ -73,9 +73,9 @@ export function createUI() {
         craftingMenu.resize();
         inventory.resize();
         statContainer.position.set(
-            percentOf(50, window.innerWidth) - percentOf(46, (250 + 6) * 3),
+            percentOf(50, window.innerWidth) - percentOf(46, (150 + 60) * 3),
             inventory.container.position.y -
-                INVENTORY_SLOT_SIZE -
+                ITEM_BUTTON_SIZE -
                 statsGrid.spacingV
         );
         swordTimer.container.position.set(
