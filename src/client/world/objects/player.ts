@@ -116,18 +116,18 @@ export class Player extends WorldObject {
         leftHand.container.x = -70;
         leftHand.container.y = 45;
         leftHand.sprite.anchor.set(0.5);
-        leftHand.container.pivot.set(300, 0);
-        leftHand.container.scale.set(0.5);
+        leftHand.container.pivot.set(800, 0);
+        leftHand.container.scale.set(0.6);
         leftHand.sprite.setScale(0.5);
 
         leftHand.item.anchor.set(1);
-        leftHand.item.setScale(1.8);
+        // leftHand.item.setScale(1.5);
 
         rightHand.container.x = 70;
         rightHand.container.y = 45;
-        rightHand.container.pivot.set(-300, 0);
+        rightHand.container.pivot.set(-800, 0);
         rightHand.sprite.anchor.set(0.5);
-        rightHand.container.scale.set(0.5);
+        rightHand.container.scale.set(0.6);
         rightHand.sprite.setScale(0.5);
 
         rightHand.item.anchor.set(1);

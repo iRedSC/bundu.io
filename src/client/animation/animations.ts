@@ -73,14 +73,15 @@ export const cubicBezier = (
 type Tintable = { tint: ColorSource };
 export function hurt(targets: Tintable[]) {
     const animation = new Animation();
+    let tints: ColorSource[] = [];
 
     animation.keyframes[0] = (animation) => {
         if (animation.isFirstKeyframe) {
+            tints = targets.map((target) => target.tint);
             animation.goto(0, 100);
         }
-        const color = colorLerp(0xffffff, 0xff0000, animation.t);
-        for (const target of targets) {
-            target.tint = color;
+        for (const [i, target] of targets.entries()) {
+            target.tint = colorLerp(Number(tints[i]), 0xff0000, animation.t);
         }
         if (animation.keyframeEnded) {
             animation.next(400);
@@ -88,9 +89,8 @@ export function hurt(targets: Tintable[]) {
     };
 
     animation.keyframes[1] = (animation) => {
-        const color = colorLerp(0xff0000, 0xffffff, animation.t);
         for (const target of targets) {
-            target.tint = color;
+            target.tint = colorLerp(0xff0000, 0xffffff, animation.t);
         }
         if (animation.keyframeEnded) {
             animation.expired = true;

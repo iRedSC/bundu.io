@@ -1,5 +1,5 @@
 import { Attributes } from "../components/attributes.js";
-import { Health } from "../components/combat.js";
+import { Stats } from "../components/stats.js";
 import { GameObject } from "../game_engine/game_object.js";
 import { System } from "../game_engine/system.js";
 import { EventCallback } from "../game_engine/system.js";
@@ -7,24 +7,33 @@ import { EventCallback } from "../game_engine/system.js";
 export class HealthSystem extends System {
     tick: number;
     constructor() {
-        super([Health], 1);
+        super([Stats], 1);
 
         this.tick = 0;
 
-        this.listen("hurt", this.hurt, [Health]);
+        this.listen("hurt", this.hurt, [Stats]);
     }
 
     update(time: number, delta: number, object: GameObject) {
-        const health = Health.get(object);
+        const stats = object.get(Stats);
+        const attributes = object.get(Attributes);
+        if (!attributes) return;
+
+        const health = stats.get("health");
+        const regen = attributes.get("health.regen_amount");
         this.tick = (this.tick + 1) % 5;
         if (this.tick === 0) {
-            health.value = Math.min(health.value + 20, health.max);
+            const healthUpdate = health.max
+                ? Math.min(health.value + regen, health.max)
+                : health.value + regen;
+            stats.set("health", { value: healthUpdate });
             this.trigger("health_update", object.id);
         }
     }
 
     hurt: EventCallback<"hurt"> = (object: GameObject, { source, damage }) => {
-        const health = object.get(Health);
+        const stats = object.get(Stats);
+        const health = stats.get("health");
         const attributes = object.get(Attributes);
         let defense = attributes?.get("health.defense") ?? 0;
 

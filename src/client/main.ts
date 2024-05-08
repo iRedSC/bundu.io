@@ -38,7 +38,7 @@ document.querySelector("button")?.addEventListener("click", () => {
 
     // setInterval(() => (filter.time = filter.time + (0.05 % 1)));
     // add debug container to the viewport (shows hitboxes and ids)
-    viewport.addChild(debugContainer);
+    // viewport.addChild(debugContainer);
     debugContainer.zIndex = 1000;
     viewport.sortChildren();
 

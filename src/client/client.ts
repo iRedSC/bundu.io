@@ -15,6 +15,7 @@ import { round } from "../lib/math";
 import { encode } from "@msgpack/msgpack";
 import { createUI } from "./ui/ui";
 import { Application } from "pixi.js";
+import { UIAnimationManager } from "./ui/animation_manager";
 
 let updateTick = 0;
 function mouseMoveCallback(
@@ -124,17 +125,13 @@ export class BunduClient {
         // create ui and elements
         this.ui = createUI();
 
-        this.ui.health.start(this.animations);
-        this.ui.hunger.start(this.animations);
-        this.ui.heat.start(this.animations);
-
         const craftItemCB = (item: number) => {
             this.socket.send(encode([PACKET.CLIENT.CRAFT_ITEM, item]));
         };
 
         this.ui.craftingMenu.setCallbacks(craftItemCB, craftItemCB);
 
-        this.ui.inventory.display.setCallbacks(
+        this.ui.inventory.setCallbacks(
             inventoryLeftClickCB.bind(undefined, this.socket),
             inventoryRightClickCB.bind(undefined, this.socket)
         );
@@ -185,6 +182,7 @@ export class BunduClient {
 
         function tick() {
             world.tick();
+            UIAnimationManager.update();
             requestAnimationFrame(tick);
         }
         requestAnimationFrame(tick);
@@ -236,7 +234,7 @@ export class BunduClient {
             (packet: SCHEMA.SERVER.UPDATE_INVENTORY) => {
                 this.ui.inventory.update(packet);
                 this.ui.craftingMenu.items = this.ui.recipeManager.filter(
-                    this.ui.inventory.slots,
+                    this.ui.inventory.items,
                     []
                 );
                 this.ui.craftingMenu.update();

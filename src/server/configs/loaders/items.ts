@@ -17,6 +17,8 @@ export const ItemConfig = z.object({
 
     stats: z.record(z.string(), z.number()),
     flags: z.string().array(),
+
+    unequip_delay: z.number(),
 });
 export type ItemConfig = z.infer<typeof ItemConfig>;
 
@@ -27,6 +29,7 @@ const fallback: ItemConfig = {
     attributes: {},
     stats: {},
     flags: [],
+    unequip_delay: 0,
 };
 
 export const ItemConfigs = new ConfigLoader<ItemConfig>(

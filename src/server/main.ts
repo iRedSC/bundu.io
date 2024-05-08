@@ -87,6 +87,7 @@ parser.set(
             { position, collider, size, solid: false, rotation: 0, speed: 10 },
             {
                 name: packet[0],
+                score: 0,
                 visibleObjects: new VisibleObjects(),
                 playerSkin: packet[1],
                 backpackSkin: packet[2],

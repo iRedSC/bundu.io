@@ -1,11 +1,21 @@
 import * as PIXI from "pixi.js";
 import { ItemButton } from "./item_button";
-import { prettifyNumber } from "../../lib/transforms";
+import {
+    colorLerp,
+    distance,
+    lerp,
+    prettifyNumber,
+    radians,
+    rotationLerp,
+} from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
 import { SpriteFactory } from "../assets/sprite_factory";
 import { SCHEMA } from "../../shared/enums";
 import { Grid } from "./grid";
 import { percentOf } from "../../lib/math";
+import { Animation } from "../../lib/animations";
+import { UIAnimationManager } from "./animation_manager";
+import { ITEM_BUTTON_SIZE } from "../constants";
 
 /**
  * Ah yes the inventory, not looking so good rn
@@ -23,14 +33,132 @@ export class InventoryButton extends ItemButton {
     amount: PIXI.Text;
     constructor() {
         super();
+
+        UIAnimationManager.set(
+            this,
+            0,
+            inventoryButtonAnimation(this).run(),
+            true
+        );
         this.amount = new PIXI.Text("", TEXT_STYLE);
-        this.amount.position.set(55, 65);
-        this.amount.scale.set(0.4);
-        this.amount.anchor.set(1, 0.5);
+        this.amount.style.align = "right";
+        this.amount.position.set(
+            this.background.width / 2,
+            this.background.height / 2
+        );
+        this.amount.scale.set(0.45);
+        this.amount.anchor.set(1);
         this.amount.zIndex = 2;
         this.button.addChild(this.amount);
         this.button.sortChildren();
     }
+
+    clear() {
+        this.amount.text = "";
+        this.item = null;
+    }
+}
+
+const INVENTORY_COLORS = {
+    EMPTY: 0x222910,
+    DEFAULT: 0x4a5235,
+    HOVER: 0x818f5d,
+    DOWN: 0x222910,
+    RIGHT_DOWN: 0xb54731,
+};
+
+function inventoryButtonAnimation(button: ItemButton) {
+    const animation = new Animation();
+    let y: number;
+
+    animation.keyframes[0] = (animation) => {
+        if (animation.firstFrameTrigger) {
+            y = button.button.position.y;
+        }
+        if (button.rightDown && button.item) {
+            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                INVENTORY_COLORS.RIGHT_DOWN,
+                0.2
+            );
+            button.background.position.y = lerp(
+                button.background.position.y,
+                y - 10,
+                0.2
+            );
+            button.itemSprite.position.y = lerp(
+                button.itemSprite.position.y,
+                y - 10,
+                0.2
+            );
+            button.background.rotation = lerp(
+                button.background.rotation,
+                radians(45),
+                0.2
+            );
+            return;
+        }
+
+        button.background.rotation = lerp(
+            button.background.rotation,
+            radians(0),
+            0.2
+        );
+        button.background.position.y = lerp(
+            button.background.position.y,
+            y,
+            0.2
+        );
+        button.itemSprite.position.y = lerp(
+            button.itemSprite.position.y,
+            y,
+            0.2
+        );
+
+        if (button.down && button.item) {
+            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                INVENTORY_COLORS.DOWN,
+                0.2
+            );
+            return;
+        }
+        if (button.hovering) {
+            button.background.rotation = rotationLerp(
+                button.background.rotation,
+                Math.sin(Date.now() / 500) * 0.3,
+                0.2
+            );
+            button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));
+            if (button.item)
+                button.background.tint = colorLerp(
+                    Number(button.background.tint),
+                    INVENTORY_COLORS.HOVER,
+                    0.1
+                );
+
+            return;
+        }
+
+        button.button.scale.set(lerp(button.button.scale.x, 1, 0.1));
+        if (button.item) {
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                INVENTORY_COLORS.DEFAULT,
+                0.1
+            );
+            return;
+        }
+        button.background.tint = colorLerp(
+            Number(button.background.tint),
+            INVENTORY_COLORS.EMPTY,
+            0.1
+        );
+    };
+
+    return animation;
 }
 
 /**
@@ -38,95 +166,66 @@ export class InventoryButton extends ItemButton {
  */
 
 type Callback = (item: number) => void;
-export class Inventory {
-    slots: Item[];
-    display: InventoryDisplay;
-
-    constructor() {
-        this.slots = [];
-        this.display = new InventoryDisplay(this);
-    }
-
-    update(update: SCHEMA.SERVER.UPDATE_INVENTORY) {
-        this.display.slotCount(update[0]);
-
-        console.log(update);
-        for (const [id, amount] of update[1]) {
-            if (typeof id !== "number" || typeof amount !== "number") {
-                continue;
-            }
-            let exists = false;
-            for (const item of this.slots) {
-                if (item === undefined) {
-                    this.slots.splice(this.slots.indexOf(item), 1);
-                }
-                if (item[0] === id) {
-                    item[1] = amount;
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) {
-                this.slots.push([id, amount]);
-            }
-        }
-        this.slots = this.slots.filter((item) =>
-            update[1].some((i) => i[0] === item[0])
-        );
-        this.display.update(this.slots);
-    }
-}
-
-export const INVENTORY_SLOT_SIZE = 60;
-export const INVENTORY_SLOT_PADDING = 15;
 
 const inventoryGrid = new Grid(
-    INVENTORY_SLOT_PADDING,
-    INVENTORY_SLOT_PADDING,
-    INVENTORY_SLOT_SIZE,
-    INVENTORY_SLOT_SIZE,
+    percentOf(10, ITEM_BUTTON_SIZE),
+    percentOf(10, ITEM_BUTTON_SIZE),
+    ITEM_BUTTON_SIZE,
+    ITEM_BUTTON_SIZE,
     1
 );
 
 /**
  * The display side of the inventory, holds all of the buttons.
  */
-class InventoryDisplay {
+export class Inventory {
     container: PIXI.Container;
     buttons: InventoryButton[];
-    slotamount: number;
-    inventory: Inventory;
+    itemsArray: Item[];
+    items: Map<number, number>;
     rightclick?: (item: number) => void;
     leftclick?: (item: number) => void;
 
-    constructor(inventory: Inventory) {
-        this.inventory = inventory;
+    constructor() {
+        this.items = new Map();
+        this.itemsArray = [];
         this.container = new PIXI.Container();
         this.buttons = [];
-        this.slotamount = 0;
+        this.slotCount = 0;
     }
 
     /**
      * Change the slot count of the display
      * @param count Number of slots to display
      */
-    slotCount(count: number) {
-        this.container.removeChildren();
-        this.buttons = [];
-        this.slotamount = count;
-        for (let i = 0; i < count; i++) {
+    set slotCount(count: number) {
+        if (this.buttons.length >= count) {
+            const remove = this.buttons.length - count;
+            this.buttons.slice(0, -remove);
+            return;
+        }
+        const add = count - this.buttons.length;
+        for (let i = 0; i < add; i++) {
             const button = new InventoryButton();
             button.leftclick = this.leftclick;
             button.rightclick = this.rightclick;
             this.buttons.push(button);
             this.container.addChild(button.button);
-            button.button.onpointerdown = () => {
+            button.button.onpointerdown = (ev) => {
+                if (ev?.button === 2) {
+                    button.rightDown = true;
+                } else {
+                    dragStart(button, this);
+                }
                 button.down = true;
-                dragStart(button, this.inventory);
             };
             button.down = false;
         }
         inventoryGrid.arrange(this.buttons);
+    }
+
+    get slotCount() {
+        return this.buttons.length;
     }
 
     setCallbacks(leftclick?: Callback, rightclick?: Callback) {
@@ -138,19 +237,32 @@ class InventoryDisplay {
         }
     }
 
-    /**
-     * Update's the inventory display.
-     * @param items List of items to put in the display
-     */
-    update(items: Item[]) {
-        for (let i = 0; i < items.length; i++) {
-            if (items[i]) {
-                try {
-                    const amount = items[i][1];
-                    this.buttons[i].amount.text = prettifyNumber(amount);
-                    this.buttons[i].item = items[i][0];
-                } catch {}
+    update(update: SCHEMA.SERVER.UPDATE_INVENTORY) {
+        this.slotCount = update[0];
+
+        const incoming = update[1].filter((item) => !!item);
+        this.items.clear();
+        for (const [id, amount] of incoming) {
+            this.items.set(id, amount);
+            const existing = this.itemsArray.findIndex(
+                (item) => item[0] === id
+            );
+            if (existing >= 0) {
+                this.itemsArray[existing][1] = amount;
+                continue;
             }
+            this.itemsArray.push([id, amount]);
+        }
+        this.itemsArray = this.itemsArray.filter((item) =>
+            incoming.some((i) => i[0] === item[0])
+        );
+        for (const [i, button] of this.buttons.entries()) {
+            button.clear();
+            const item = this.itemsArray[i];
+            if (!item) break;
+            const amount = item[1];
+            button.amount.text = prettifyNumber(amount);
+            button.item = item[0];
         }
         this.resize();
     }
@@ -160,11 +272,13 @@ class InventoryDisplay {
             percentOf(50, window.innerWidth) -
                 percentOf(
                     50,
-                    (INVENTORY_SLOT_SIZE + INVENTORY_SLOT_PADDING) *
-                        this.slotamount
+                    (ITEM_BUTTON_SIZE + percentOf(10, ITEM_BUTTON_SIZE)) *
+                        (this.slotCount - 1)
                 ),
 
-            window.innerHeight - INVENTORY_SLOT_SIZE
+            window.innerHeight -
+                ITEM_BUTTON_SIZE / 2 -
+                percentOf(10, ITEM_BUTTON_SIZE)
         );
     }
 }
@@ -173,22 +287,34 @@ class InventoryDisplay {
  * You started dragging a button, good job!
  * @param button The button that is being draged
  */
-function dragStart(button: InventoryButton, inventory: Inventory) {
+function dragStart(button: InventoryButton, display: Inventory) {
     if (button.item === null) {
         return;
     }
     const sprite = SpriteFactory.build(button.item ?? -1);
-    sprite.scale.set(0.12);
+    sprite.scale.set(0.05);
     sprite.anchor.set(0.5);
     sprite.alpha = 0.8;
-    const _dragMove = (event: PointerEvent) =>
-        dragMove(sprite, event, inventory);
+    let canDrag = false;
+    const _dragMove = (event: PointerEvent) => {
+        if (
+            distance(
+                { x: event.clientX, y: event.clientY },
+                button.button.getGlobalPosition()
+            ) > 25 ||
+            canDrag
+        ) {
+            canDrag = true;
+            dragMove(sprite, event, display);
+        }
+    };
 
     function dragEnd() {
         window.removeEventListener("pointermove", _dragMove);
         window.removeEventListener("pointerup", dragEnd);
-        inventory.display.container.removeChild(sprite);
-        findswap(button, inventory);
+        display.container.removeChild(sprite);
+        findswap(button, display);
+        display.buttons.forEach((button) => (button.sendEvents = true));
     }
 
     window.addEventListener("pointermove", _dragMove);
@@ -203,11 +329,12 @@ function dragStart(button: InventoryButton, inventory: Inventory) {
 function dragMove(
     sprite: PIXI.Sprite,
     event: PointerEvent,
-    inventory: Inventory
+    display: Inventory
 ) {
     let isActive: boolean = false;
     if (isActive === false) {
-        inventory.display.container.addChild(sprite);
+        display.container.addChild(sprite);
+        display.buttons.forEach((button) => (button.sendEvents = false));
     }
     const pos = sprite.parent.toLocal(
         new PIXI.Point(event.clientX, event.clientY),
@@ -221,26 +348,26 @@ function dragMove(
  * Find which button to swap with.
  * @param button Orginal button that is going to be swapped with another
  */
-function findswap(button: InventoryButton, inventory: Inventory) {
-    for (let item of inventory.display.buttons) {
+function findswap(button: InventoryButton, display: Inventory) {
+    for (let item of display.buttons) {
         if (item.hovering) {
-            const currentButton = inventory.display.buttons.indexOf(item);
-            const oldButton = inventory.display.buttons.indexOf(button);
+            const currentButton = display.buttons.indexOf(item);
+            const oldButton = display.buttons.indexOf(button);
 
-            const oldItem = inventory.slots[oldButton];
+            const oldItem = display.itemsArray[oldButton];
 
-            inventory.slots.splice(oldButton, 1);
-            inventory.slots.splice(currentButton, 0, oldItem);
+            display.itemsArray.splice(oldButton, 1);
+            display.itemsArray.splice(currentButton, 0, oldItem);
 
-            for (let i = inventory.slots.length - 1; i >= 0; i--) {
-                const currentItem = inventory.slots[i];
+            for (let i = display.itemsArray.length - 1; i >= 0; i--) {
+                const currentItem = display.itemsArray[i];
 
                 if (!currentItem) {
-                    inventory.slots.push(inventory.slots.splice(i, 1)[0]);
+                    display.itemsArray.push(display.itemsArray.splice(i, 1)[0]);
                 }
             }
 
-            inventory.update([inventory.display.slotamount, inventory.slots]);
+            display.update([display.slotCount, display.itemsArray]);
         }
     }
 }

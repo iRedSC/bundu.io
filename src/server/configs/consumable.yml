@@ -8,10 +8,6 @@ meat:
     stats:
         hunger: 10
         health: -5
-    attributes:
-        movement.speed:
-            op: add
-            value: 1
 
 meat_cooked:
     type: food
@@ -54,3 +50,8 @@ miracle_fruit:
 bottle_water:
     type: food
     water: 35
+
+    commands:
+        give_item:
+            id: empty_bottle
+            amount: 1

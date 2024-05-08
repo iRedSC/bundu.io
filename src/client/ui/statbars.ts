@@ -2,16 +2,17 @@ import { clamp, colorLerp, lerp } from "../../lib/transforms";
 import { Animation, AnimationManager } from "../../lib/animations";
 import { SpriteFactory } from "../assets/sprite_factory";
 import { ColorSource, Container, Graphics, Sprite } from "pixi.js";
+import { UIAnimationManager } from "./animation_manager";
 
 export type StatBarOptions = {
-    min: number;
     max: number;
-    median: number;
-    decor: string;
-    baseColor: ColorSource;
-    overlayColor: ColorSource;
-    diffColor: ColorSource;
-    warningColor: ColorSource;
+    split: boolean;
+
+    icon: string;
+    tint: ColorSource;
+
+    overlayTint: ColorSource;
+    diffTint: ColorSource;
 
     warnOnLow?: boolean;
     warnOnHigh?: boolean;
@@ -19,235 +20,197 @@ export type StatBarOptions = {
 
 export class StatBar {
     max: number;
+    split: boolean;
     amount: number;
-    min: number;
-    median: number;
-    lastAmount: number;
+    displayAmount: number;
 
     container: Container;
-    decor: Sprite;
+    circle: Sprite;
+    outline: Sprite;
+    icon: Sprite;
 
-    base: Graphics;
-    baseDiff: Graphics;
-    overlay: Graphics;
-    overlayDiff: Graphics;
+    base: Sprite;
+    baseDiff: Sprite;
+    overlay: Sprite;
+    overlayDiff: Sprite;
 
-    baseColor: ColorSource;
-    overlayColor: ColorSource;
-    diffColor: ColorSource;
-    warningColor: ColorSource;
+    tint: ColorSource;
 
     warnOnLow: boolean;
     warnOnHigh: boolean;
 
     constructor({
-        min,
         max,
-        median,
-        decor,
-        baseColor,
-        overlayColor,
-        diffColor,
-        warningColor,
+        icon,
+        tint,
+        overlayTint,
+        diffTint,
+
+        split = false,
         warnOnLow = true,
         warnOnHigh = true,
     }: StatBarOptions) {
-        this.min = min;
         this.max = max;
-        this.median = median;
+        this.split = split;
 
         this.warnOnHigh = warnOnHigh;
         this.warnOnLow = warnOnLow;
 
-        this.baseColor = baseColor;
-        this.overlayColor = overlayColor;
-        this.diffColor = diffColor;
-        this.warningColor = warningColor;
+        this.tint = tint;
 
-        this.lastAmount = 0;
+        this.displayAmount = 0;
         this.amount = 0;
 
-        this.decor = SpriteFactory.build(decor, { x: 120, y: 25 });
-        this.decor.anchor.set(0.5);
+        this.icon = SpriteFactory.build(icon);
+        this.icon.anchor.set(0.5);
+        this.icon.scale.set(0.25);
+
+        this.outline = SpriteFactory.build("stat_bar_outline");
+        this.outline.anchor.set(0, 0.5);
+        this.outline.scale.set(1.2);
+        this.outline.tint = tint;
+
+        this.circle = SpriteFactory.build("stat_bar_circle");
+        this.circle.anchor.set(0.5);
+        this.circle.scale.set(0.25);
+        this.circle.tint = tint;
 
         this.container = new Container();
-        this.container.scale.set(0.6);
+        this.container.scale.set(0.15);
         this.container.pivot.set(
             this.container.width / 2,
             this.container.height / 2
         );
 
-        this.base = new Graphics();
-        this.baseDiff = new Graphics();
+        this.base = SpriteFactory.build("stat_bar");
+        // this.base.scale.set(0.1);
+        this.base.anchor.set(0, 0.5);
+        this.base.tint = tint;
 
-        this.overlay = new Graphics();
-        this.overlayDiff = new Graphics();
+        this.baseDiff = SpriteFactory.build("stat_bar");
+        // this.baseDiff.scale.set(0.1);
+        this.baseDiff.anchor.set(0, 0.5);
+        this.baseDiff.tint = diffTint;
+
+        this.overlay = SpriteFactory.build("stat_bar");
+        // this.overlay.scale.set(0.1);
+        this.overlay.anchor.set(0, 0.5);
+        this.overlay.tint = overlayTint;
+
+        this.overlayDiff = SpriteFactory.build("stat_bar");
+        // this.overlayDiff.scale.set(0.1);
+        this.overlayDiff.anchor.set(0, 0.5);
+        this.overlayDiff.tint = diffTint;
 
         this.container.addChild(this.baseDiff);
         this.container.addChild(this.base);
         this.container.addChild(this.overlayDiff);
         this.container.addChild(this.overlay);
-        this.container.addChild(this.decor);
+        this.container.addChild(this.outline);
+        this.container.addChild(this.circle);
+        this.container.addChild(this.icon);
+        UIAnimationManager.set(this, 0, statAnimation(this).run(), true);
     }
 
-    update(amount: number, manager: AnimationManager) {
-        this.lastAmount = this.amount;
-        this.amount = clamp(amount, this.min, this.max);
-        manager.set(this, 0, statsTransition(this).run(), true);
-    }
-
-    start(manager: AnimationManager) {
-        manager.set(this, 1, statsWarning(this).run(), true);
+    update(amount: number) {
+        this.amount = clamp(amount, 0, this.max);
     }
 }
 
-function statsTransition(target: StatBar) {
+function statAnimation(target: StatBar) {
     const animation = new Animation();
-    let width = 300;
-    let baseBefore = 0;
-    let baseNow = 0;
-    let overlayBefore = 0;
-    let overlayNow = 0;
+    let width = 1000 * 1.175;
 
     animation.keyframes[0] = (animation) => {
-        baseBefore =
-            clamp(
-                (target.lastAmount - target.min) / (target.median - target.min),
-                0,
-                1
-            ) * width;
-        baseNow =
-            clamp(
-                (target.amount - target.min) / (target.median - target.min),
-                0,
-                1
-            ) * width;
+        let base;
+        let overlay;
+        if (target.split) {
+            base = clamp(target.amount / (target.max / 2), 0, 1) * width;
+            overlay =
+                clamp(
+                    (target.amount - target.max / 2) / (target.max / 2),
+                    0,
+                    1
+                ) * width;
+        } else {
+            base = clamp(target.amount / target.max, 0, 1) * width;
+            overlay = 0;
+        }
 
-        overlayBefore =
-            clamp(
-                (target.lastAmount - target.median) /
-                    (target.max - target.median),
-                0,
-                1
-            ) * width;
-        overlayNow =
-            clamp(
-                (target.amount - target.median) / (target.max - target.median),
-                0,
-                1
-            ) * width;
+        target.base.width = lerp(target.base.width, base, 0.05);
+        if (Math.abs(target.base.width - base) < 2) {
+            target.baseDiff.width = lerp(target.baseDiff.width, base, 0.02);
+        }
+        target.overlay.width = lerp(target.overlay.width, overlay, 0.05);
+        if (Math.abs(target.overlay.width - overlay) < 2) {
+            target.overlayDiff.width = lerp(
+                target.overlayDiff.width,
+                overlay,
+                0.02
+            );
+        }
 
         animation.next(120);
     };
 
-    animation.keyframes[1] = (animation) => {
-        target.base.clear();
-        target.base.beginFill(target.baseColor);
-        target.base.drawRoundedRect(
-            0,
-            0,
-            lerp(baseBefore, baseNow, animation.t),
-            50,
-            5
-        );
-        target.overlay.clear();
-        target.overlay.beginFill(target.overlayColor);
-        target.overlay.drawRoundedRect(
-            0,
-            0,
-            lerp(overlayBefore, overlayNow, animation.t),
-            50,
-            5
-        );
-        if (animation.keyframeEnded) {
-            animation.next(400);
-        }
-    };
-
-    animation.keyframes[2] = (animation) => {
-        target.baseDiff.clear();
-        target.baseDiff.beginFill(target.diffColor);
-        target.baseDiff.drawRoundedRect(
-            0,
-            0,
-            lerp(baseBefore, baseNow, animation.t),
-            50,
-            5
-        );
-
-        target.overlayDiff.clear();
-        target.overlayDiff.beginFill(target.diffColor);
-        target.overlayDiff.drawRoundedRect(
-            0,
-            0,
-            lerp(overlayBefore, overlayNow, animation.t),
-            50,
-            5
-        );
-
-        if (animation.keyframeEnded) {
-            animation.expired = true;
-        }
-    };
-
     return animation;
 }
 
-function statsWarning(target: StatBar) {
-    const animation = new Animation();
+// function statsWarning(target: StatBar) {
+//     const animation = new Animation();
 
-    animation.keyframes[0] = (animation) => {
-        animation.next(250);
-    };
+//     animation.keyframes[0] = (animation) => {
+//         animation.next(250);
+//     };
 
-    animation.keyframes[1] = (animation) => {
-        const percent =
-            (target.amount - target.min) / (target.max - target.min);
-        if (target.warnOnHigh && percent > 0.8) {
-            target.overlay.tint = colorLerp(
-                0xffffff,
-                target.warningColor as number,
-                animation.t
-            );
-        } else if (target.warnOnLow && percent < 0.2) {
-            target.base.tint = colorLerp(
-                0xffffff,
-                target.warningColor as number,
-                animation.t
-            );
-        } else {
-            target.base.tint = 0xffffff;
-            target.overlay.tint = 0xffffff;
-        }
+//     animation.keyframes[1] = (animation) => {
+//         const percent =
+//             (target.amount - target.min) / (target.max - target.min);
+//         if (target.warnOnHigh && percent > 0.8) {
+//             target.overlay.tint = colorLerp(
+//                 0xffffff,
+//                 target.warningColor as number,
+//                 animation.t
+//             );
+//         } else if (target.warnOnLow && percent < 0.2) {
+//             target.base.tint = colorLerp(
+//                 0xffffff,
+//                 target.warningColor as number,
+//                 animation.t
+//             );
+//         } else {
+//             target.base.tint = 0xffffff;
+//             target.overlay.tint = 0xffffff;
+//         }
 
-        if (animation.keyframeEnded) {
-            animation.next(250);
-        }
-    };
+//         if (animation.keyframeEnded) {
+//             animation.next(250);
+//         }
+//     };
 
-    animation.keyframes[2] = (animation) => {
-        const percent =
-            (target.amount - target.min) / (target.max - target.min);
-        if (target.warnOnHigh && percent > 0.8) {
-            target.overlay.tint = colorLerp(
-                target.warningColor as number,
-                0xffffff,
-                animation.t
-            );
-        } else if (target.warnOnLow && percent < 0.2) {
-            target.base.tint = colorLerp(
-                target.warningColor as number,
-                0xffffff,
-                animation.t
-            );
-        } else {
-            target.base.tint = 0xffffff;
-            target.overlay.tint = 0xffffff;
-        }
+//     animation.keyframes[2] = (animation) => {
+//         const percent =
+//             (target.amount - target.min) / (target.max - target.min);
+//         if (target.warnOnHigh && percent > 0.8) {
+//             target.overlay.tint = colorLerp(
+//                 target.warningColor as number,
+//                 0xffffff,
+//                 animation.t
+//             );
+//         } else if (target.warnOnLow && percent < 0.2) {
+//             target.base.tint = colorLerp(
+//                 target.warningColor as number,
+//                 0xffffff,
+//                 animation.t
+//             );
+//         } else {
+//             target.base.tint = 0xffffff;
+//             target.overlay.tint = 0xffffff;
+//         }
 
-        if (animation.keyframeEnded) {
-            animation.previous(250);
-        }
-    };
-    return animation;
-}
+//         if (animation.keyframeEnded) {
+//             animation.previous(250);
+//         }
+//     };
+//     return animation;
+// }

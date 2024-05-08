@@ -3,6 +3,10 @@ import * as PIXI from "pixi.js";
 import { ItemButton } from "./item_button";
 import { Grid } from "./grid";
 import { SCHEMA } from "../../shared/enums";
+import { Animation } from "../../lib/animations";
+import { colorLerp, lerp, radians, rotationLerp } from "../../lib/transforms";
+import { UIAnimationManager } from "./animation_manager";
+import { ITEM_BUTTON_SIZE } from "../constants";
 
 export class RecipeManager {
     recipes: Map<number, [Map<number, number>, number[]]>;
@@ -27,9 +31,8 @@ export class RecipeManager {
         }
     }
 
-    filter(items: [number, number][], flags: number[]): number[] {
+    filter(items: Map<number, number>, flags: number[]): number[] {
         const craftable: number[] = [];
-        const itemsMap = new Map(items);
         nextRecipe: for (const [recipeId, recipe] of this.recipes.entries()) {
             const ingredients = recipe[0];
             const itemFlags = new Set(flags);
@@ -40,7 +43,7 @@ export class RecipeManager {
             // }
 
             for (const [id, recipeAmount] of ingredients.entries()) {
-                const itemsAmount = itemsMap.get(id);
+                const itemsAmount = items.get(id);
                 if (!itemsAmount) {
                     continue nextRecipe;
                 }
@@ -74,20 +77,35 @@ export class CraftingMenu {
         this.container = new PIXI.Container();
         this.rows = 0;
     }
+
     update() {
-        this.container.removeChildren();
-        this.buttons = [];
-        for (let item of this.items) {
-            const button = new ItemButton();
-            button.rightclick = this.rightclick;
-            button.leftclick = this.leftclick;
-            button.item = item;
-            button.update(0x777777);
-            this.container.addChild(button.button);
-            this.buttons.push(button);
+        if (this.buttons.length >= this.items.length) {
+            const remove = this.buttons.length - this.items.length;
+            this.buttons
+                .splice(-remove, remove)
+                .forEach((button) => this.container.removeChild(button.button));
+        } else {
+            console.log(this.buttons.length, this.items.length);
+            const add = this.items.length - this.buttons.length;
+            for (let i = 0; i < add; i++) {
+                const button = new ItemButton();
+                button.rightclick = this.rightclick;
+                button.leftclick = this.leftclick;
+                this.container.addChild(button.button);
+                this.buttons.push(button);
+            }
         }
         this.grid.arrange(this.buttons);
         this.resize();
+        for (const [i, button] of this.buttons.entries()) {
+            button.item = this.items[i];
+            UIAnimationManager.set(
+                button,
+                0,
+                craftingButtonAnimation(button).run(),
+                true
+            );
+        }
     }
 
     setCallbacks(leftclick?: Callback, rightclick?: Callback) {
@@ -101,8 +119,8 @@ export class CraftingMenu {
 
     resize() {
         this.container.position.set(
-            this.grid.spacingH * 4,
-            this.grid.spacingV * 4
+            ITEM_BUTTON_SIZE / 2 + this.grid.spacingH,
+            ITEM_BUTTON_SIZE / 2 + this.grid.spacingV
         );
     }
 }
@@ -189,3 +207,63 @@ export class Filter {
 //         (craftingMenu.buttonSize + craftingMenu.padding) +
 //         craftingMenu.padding * 2
 // );
+
+function craftingButtonAnimation(button: ItemButton) {
+    const animation = new Animation();
+
+    animation.keyframes[0] = () => {
+        if (button.rightDown) {
+            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                0x333333,
+                0.2
+            );
+            button.background.rotation = lerp(
+                button.background.rotation,
+                radians(45),
+                0.2
+            );
+            return;
+        }
+
+        button.background.rotation = lerp(
+            button.background.rotation,
+            radians(0),
+            0.2
+        );
+
+        if (button.down) {
+            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                0x333333,
+                0.2
+            );
+            return;
+        }
+        if (button.hovering) {
+            button.background.rotation = rotationLerp(
+                button.background.rotation,
+                Math.sin(Date.now() / 500) * 0.3,
+                0.2
+            );
+            button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                0x999999,
+                0.1
+            );
+            return;
+        }
+
+        button.button.scale.set(lerp(button.button.scale.x, 1, 0.1));
+        button.background.tint = colorLerp(
+            Number(button.background.tint),
+            0x777777,
+            0.1
+        );
+    };
+
+    return animation;
+}
