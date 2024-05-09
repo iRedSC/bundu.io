@@ -19,7 +19,7 @@ import { LayeredRenderer } from "./layered_renderer";
 import { States } from "./states";
 import { Pond } from "./objects/pond";
 import { WORLD_SIZE } from "../constants";
-import { WorldObject } from "./objects/world_object";
+import { DefaultMap } from "../../lib/default_map";
 interface GameObject {
     id: number;
 
@@ -113,6 +113,18 @@ function scaleCoords(pos: { x: number; y: number }) {
     pos.y *= 1;
 }
 
+export type WorldEvent = {
+    new_object: GameObject;
+    object_move: GameObject;
+
+    new_player: Player;
+    user_move: { x: number; y: number };
+};
+
+type WorldEventCallback<T extends keyof WorldEvent> = (
+    ev: WorldEvent[T]
+) => void;
+
 // This basically controls everything on the client
 // All packets (after being parsed) are sent to one of these methods
 export class World {
@@ -127,12 +139,10 @@ export class World {
 
     sky: Sky;
 
-    onUserMove?: (x: number, y: number) => void;
-    onObjectMove?: (object: GameObject) => void;
-
-    onNewPlayer?: (player: Player) => void;
+    listeners: DefaultMap<keyof WorldEvent, Function[]>;
 
     constructor(viewport: Viewport, animationManager: AnimationManager) {
+        this.listeners = new DefaultMap(() => []);
         this.viewport = viewport;
         this.sky = new Sky();
         this.animationManager = animationManager;
@@ -149,6 +159,27 @@ export class World {
         this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
         this.viewport.sortChildren();
+    }
+
+    addEventListener<T extends keyof WorldEvent>(
+        event: T,
+        callback: WorldEventCallback<T>
+    ) {
+        this.listeners.get(event).push(callback);
+    }
+
+    removeEventListener<T extends keyof WorldEvent>(
+        event: T,
+        callback: WorldEventCallback<T>
+    ) {
+        this.listeners.set(
+            event,
+            this.listeners.get(event).filter((cb) => cb !== callback)
+        );
+    }
+
+    emitEvent<T extends keyof WorldEvent>(event: T, data: WorldEvent[T]) {
+        this.listeners.get(event).forEach((cb) => cb(data));
     }
 
     tick() {
@@ -239,7 +270,8 @@ export class World {
         if (this.user === player.id) {
             this.setPlayer([this.user]);
         }
-        if (this.onNewPlayer) this.onNewPlayer(player);
+
+        this.emitEvent("new_player", player);
     }
 
     newPond(packet: SCHEMA.NEW_OBJECT.POND) {
@@ -251,7 +283,6 @@ export class World {
         const pond = new Pond(id, pos, packet[3], this.animationManager);
         this.objects.add(pond);
         this.renderer.add(pond.id, ...pond.containers);
-        console.log("created pond");
     }
 
     moveObject(packet: SCHEMA.SERVER.MOVE_OBJECT) {
@@ -263,12 +294,11 @@ export class World {
             requestIds.add(id);
             return;
         }
-        if (id === this.user && this.onUserMove) {
-            this.onUserMove(packet[2], packet[3]);
-        }
+        if (id === this.user)
+            this.emitEvent("user_move", { x: packet[2], y: packet[3] });
         object.renderable = true;
         object.states.set([Date.now() + time, packet[2], packet[3]]);
-        if (this.onObjectMove) this.onObjectMove(object);
+        this.emitEvent("object_move", object);
         this.objects.updating.add(object);
         this.objects.add(object);
     }

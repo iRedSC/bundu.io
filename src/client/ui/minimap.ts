@@ -142,7 +142,7 @@ function minimapAnimation(minimap: Minimap) {
 
         if (minimap.hovering) {
             minimap.container.scale.set(
-                lerp(minimap.container.scale.x, 0.2, 0.05)
+                lerp(minimap.container.scale.x, 0.16, 0.05)
             );
             return;
         }

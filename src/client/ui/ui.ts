@@ -16,6 +16,7 @@ export function createUI() {
     const ui = new Container();
 
     const inventory = new Inventory();
+    inventory.update([10, []]);
 
     const recipeManager = new RecipeManager();
 
