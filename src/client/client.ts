@@ -17,6 +17,8 @@ import { createUI } from "./ui/ui";
 import { Application } from "pixi.js";
 import { UIAnimationManager } from "./ui/animation_manager";
 import { Minimap } from "./ui/minimap";
+import random from "../lib/random";
+import { Player } from "./world/objects/player";
 
 let updateTick = 0;
 function mouseMoveCallback(
@@ -39,7 +41,7 @@ function mouseMoveCallback(
             );
         }
         player.rotation = rotation;
-        minimap.rotate(rotation);
+        minimap.setPlayerRotation(player.id, rotation);
     }
 }
 
@@ -129,7 +131,20 @@ export class BunduClient {
             )
         );
 
-        this.world.onUserMove = this.ui.minimap.set.bind(this.ui.minimap);
+        this.world.onObjectMove = (object) =>
+            this.ui.minimap.setPlayerPosition(
+                object.id,
+                object.position.x,
+                object.position.y
+            );
+        this.world.onNewPlayer = (player: Player) =>
+            this.ui.minimap.addPlayer(
+                player.id,
+                player.name.text,
+                random.hexColor(),
+                player.position.x,
+                player.position.y
+            );
 
         const craftItemCB = (item: number) => {
             this.socket.send(encode([PACKET.CLIENT.CRAFT_ITEM, item]));

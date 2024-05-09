@@ -19,6 +19,7 @@ import { LayeredRenderer } from "./layered_renderer";
 import { States } from "./states";
 import { Pond } from "./objects/pond";
 import { WORLD_SIZE } from "../constants";
+import { WorldObject } from "./objects/world_object";
 interface GameObject {
     id: number;
 
@@ -127,6 +128,9 @@ export class World {
     sky: Sky;
 
     onUserMove?: (x: number, y: number) => void;
+    onObjectMove?: (object: GameObject) => void;
+
+    onNewPlayer?: (player: Player) => void;
 
     constructor(viewport: Viewport, animationManager: AnimationManager) {
         this.viewport = viewport;
@@ -235,6 +239,7 @@ export class World {
         if (this.user === player.id) {
             this.setPlayer([this.user]);
         }
+        if (this.onNewPlayer) this.onNewPlayer(player);
     }
 
     newPond(packet: SCHEMA.NEW_OBJECT.POND) {
@@ -263,6 +268,7 @@ export class World {
         }
         object.renderable = true;
         object.states.set([Date.now() + time, packet[2], packet[3]]);
+        if (this.onObjectMove) this.onObjectMove(object);
         this.objects.updating.add(object);
         this.objects.add(object);
     }
