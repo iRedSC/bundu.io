@@ -1,11 +1,11 @@
-<svg width="1000" height="1000" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="501" height="500" viewBox="0 0 501 500" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_621_70852)">
-<rect x="-23.3916" y="-19.6564" width="959.073" height="152.931" rx="42.6015" transform="matrix(0.997397 -0.0721104 0.100762 0.994911 38.9197 453.3)" fill="#5A4848" stroke="#382D2D" stroke-width="42.6015"/>
-<rect x="-30.2016" y="0.391943" width="934.388" height="158.349" rx="42.6015" transform="matrix(0.69978 -0.714358 0.718083 0.695958 113.538 733.753)" fill="#5A4848" stroke="#382D2D" stroke-width="42.6015"/>
+<rect x="-11.6958" y="-9.82818" width="479.536" height="76.4653" rx="21.3008" transform="matrix(0.997397 -0.0721104 0.100762 0.994911 19.9599 226.657)" fill="#5A4848" stroke="#382D2D" stroke-width="21.3008"/>
+<rect x="-15.1008" y="0.195972" width="467.194" height="79.1747" rx="21.3008" transform="matrix(0.69978 -0.714358 0.718083 0.695958 57.2691 366.884)" fill="#5A4848" stroke="#382D2D" stroke-width="21.3008"/>
 </g>
 <defs>
 <clipPath id="clip0_621_70852">
-<rect width="1000" height="1000" fill="white"/>
+<rect width="500" height="500" fill="white" transform="translate(0.5 0.00683594)"/>
 </clipPath>
 </defs>
 </svg>

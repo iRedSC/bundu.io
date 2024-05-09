@@ -1,10 +1,10 @@
-<svg width="1001" height="1001" viewBox="0 0 1001 1001" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect x="55.75" y="57.75" width="887.5" height="887.5" rx="20" fill="#543838" stroke="#312222" stroke-width="30"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M118.25 879L123.25 190.25L118.25 152.75H900.75L909.5 887.75L118.25 879ZM199.5 690.25L389.5 502.75L199.5 315.25V690.25ZM492 391.5L305.75 200.25H698.25L492 391.5ZM609.5 502.75L799.5 696.5V314L609.5 502.75ZM297 802.75C294 802.75 429.917 671.917 498.25 606.5L692 802.75H297Z" fill="#332525"/>
-<rect x="931.291" y="853.742" width="112.5" height="1108.03" transform="rotate(135 931.291 853.742)" fill="#472E2E"/>
-<rect width="112.5" height="1108.03" transform="matrix(-0.707107 -0.707107 -0.707107 0.707107 931.292 147.3)" fill="#472E2E"/>
-<rect width="112.5" height="862.5" transform="matrix(-1 0 0 1 180.75 70.25)" fill="#472F2F"/>
-<rect width="112.5" height="862.5" transform="matrix(-1 0 0 1 930.75 70.25)" fill="#472F2F"/>
-<rect x="930.75" y="70.25" width="112.5" height="862.5" transform="rotate(90 930.75 70.25)" fill="#472F2F"/>
-<rect x="928.25" y="822.75" width="107.5" height="857.5" transform="rotate(90 928.25 822.75)" fill="#472F2F" stroke="#472E2E" stroke-width="5"/>
+<svg width="501" height="501" viewBox="0 0 501 501" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="28.125" y="29.125" width="443.75" height="443.75" rx="10" fill="#543838" stroke="#312222" stroke-width="15"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M59.375 439.75L61.875 95.375L59.375 76.625H450.625L455 444.125L59.375 439.75ZM100 345.375L195 251.625L100 157.875V345.375ZM246.25 196L153.125 100.375H349.375L246.25 196ZM305 251.625L400 348.5V157.25L305 251.625ZM148.75 401.625C147.25 401.625 215.208 336.208 249.375 303.5L346.25 401.625H148.75Z" fill="#332525"/>
+<rect x="465.896" y="427.121" width="56.25" height="554.013" transform="rotate(135 465.896 427.121)" fill="#472E2E"/>
+<rect width="56.25" height="554.013" transform="matrix(-0.707107 -0.707107 -0.707107 0.707107 465.896 73.8999)" fill="#472E2E"/>
+<rect width="56.25" height="431.25" transform="matrix(-1 0 0 1 90.625 35.375)" fill="#472F2F"/>
+<rect width="56.25" height="431.25" transform="matrix(-1 0 0 1 465.625 35.375)" fill="#472F2F"/>
+<rect x="465.625" y="35.375" width="56.25" height="431.25" transform="rotate(90 465.625 35.375)" fill="#472F2F"/>
+<rect x="464.375" y="411.625" width="53.75" height="428.75" transform="rotate(90 464.375 411.625)" fill="#472F2F" stroke="#472E2E" stroke-width="2.5"/>
 </svg>
