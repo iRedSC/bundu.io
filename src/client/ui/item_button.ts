@@ -52,11 +52,11 @@ export class ItemButton {
         this.button.addChild(this.disableSprite);
         this.button.sortChildren();
 
-        this.button.onmouseover = () => {
+        this.button.onpointerenter = () => {
             this.hovering = true;
         };
 
-        this.button.onmouseleave = () => {
+        this.button.onpointerleave = () => {
             this.hovering = false;
         };
 

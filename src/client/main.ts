@@ -17,7 +17,6 @@ document.querySelector("button")?.addEventListener("click", () => {
     // create pixi.js app and add it to the document.
     const app = createPixiApp();
     app.view.classList.add("canvas");
-    app.view.id = "viewport";
     document.body.appendChild(app.view);
 
     // create pixi viewport and add it to app.
@@ -26,17 +25,7 @@ document.querySelector("button")?.addEventListener("click", () => {
         return false;
     };
     app.stage.addChild(viewport);
-    // const filter = new ReflectionFilter({
-    //     mirror: false,
-    //     boundary: 0.3,
-    //     amplitude: [0, 5],
-    //     waveLength: [30, 95],
-    //     alpha: [1, 1],
-    //     time: 0,
-    // });
-    // viewport.filters = [filter];
 
-    // setInterval(() => (filter.time = filter.time + (0.05 % 1)));
     // add debug container to the viewport (shows hitboxes and ids)
     // viewport.addChild(debugContainer);
     debugContainer.zIndex = 1000;
@@ -49,7 +38,8 @@ document.querySelector("button")?.addEventListener("click", () => {
         .forEach((item) => item.classList.add("hidden"));
 
     const resize = new Event("resize");
-    window.dispatchEvent(resize);
+
+    setTimeout(() => window.dispatchEvent(resize), 50);
 
     const client = new BunduClient(
         app,

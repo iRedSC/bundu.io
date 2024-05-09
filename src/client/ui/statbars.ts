@@ -119,22 +119,26 @@ export class StatBar {
 
 function statAnimation(target: StatBar) {
     const animation = new Animation();
-    let width = 1000 * 1.175;
+    const buffer = 0;
+    let width = 1000 * 1.175 - buffer;
 
     animation.keyframes[0] = (animation) => {
         let base;
         let overlay;
         if (target.split) {
-            base = clamp(target.amount / (target.max / 2), 0, 1) * width;
+            base =
+                clamp(target.amount / (target.max / 2), 0, 1) * width + buffer;
             overlay =
                 clamp(
                     (target.amount - target.max / 2) / (target.max / 2),
                     0,
                     1
-                ) * width;
+                ) *
+                    width +
+                buffer;
         } else {
-            base = clamp(target.amount / target.max, 0, 1) * width;
-            overlay = 0;
+            base = clamp(target.amount / target.max, 0, 1) * width + buffer;
+            overlay = buffer;
         }
 
         target.base.width = lerp(target.base.width, base, 0.05);

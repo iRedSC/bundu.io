@@ -17,6 +17,8 @@ import { createUI } from "./ui/ui";
 import { Application } from "pixi.js";
 import { UIAnimationManager } from "./ui/animation_manager";
 import { Minimap } from "./ui/minimap";
+import random from "../lib/random";
+import { Player } from "./world/objects/player";
 
 let updateTick = 0;
 function mouseMoveCallback(
@@ -39,7 +41,7 @@ function mouseMoveCallback(
             );
         }
         player.rotation = rotation;
-        minimap.rotate(rotation);
+        minimap.setPlayerRotation(player.id, rotation);
     }
 }
 
@@ -87,7 +89,7 @@ export class BunduClient {
 
     requestIdsInterval: NodeJS.Timeout;
 
-    ui: any;
+    ui: ReturnType<typeof createUI>;
 
     constructor(
         app: Application<HTMLCanvasElement>,
@@ -115,11 +117,12 @@ export class BunduClient {
         // create ui and elements
         this.ui = createUI();
 
-        const keyboard = new KeyboardInputListener(
+        new KeyboardInputListener(
             moveUpdate.bind(moveUpdate, this.socket),
             chat.bind(chat, this.socket)
         );
-        const mouse = new MouseInputListener(
+
+        new MouseInputListener(
             mouseMoveCallback.bind(
                 mouseMoveCallback,
                 this.socket,
@@ -129,7 +132,22 @@ export class BunduClient {
             )
         );
 
-        this.world.onUserMove = this.ui.minimap.set.bind(this.ui.minimap);
+        this.world.addEventListener("object_move", (object) => {
+            this.ui.minimap.setPlayerPosition(
+                object.id,
+                object.position.x,
+                object.position.y
+            );
+        });
+        this.world.addEventListener("new_player", (player: Player) =>
+            this.ui.minimap.addPlayer(
+                player.id,
+                player.name.text,
+                random.hexColor(),
+                player.position.x,
+                player.position.y
+            )
+        );
 
         const craftItemCB = (item: number) => {
             this.socket.send(encode([PACKET.CLIENT.CRAFT_ITEM, item]));
@@ -222,9 +240,9 @@ export class BunduClient {
             SCHEMA.SERVER.UPDATE_STATS,
             (packet: SCHEMA.SERVER.UPDATE_STATS) => {
                 console.log(packet);
-                this.ui.health.update(packet[0], this.animations);
-                this.ui.hunger.update(packet[1], this.animations);
-                this.ui.heat.update(packet[2], this.animations);
+                this.ui.health.update(packet[0]);
+                this.ui.hunger.update(packet[1]);
+                this.ui.heat.update(packet[2]);
             }
         );
 
