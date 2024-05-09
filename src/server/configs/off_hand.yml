@@ -62,3 +62,6 @@ ruby_medallion:
         hunger.depletion_amount:
             op: add
             value: 30
+        health.max:
+            op: multiply
+            value: .7

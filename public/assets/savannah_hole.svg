@@ -1,4 +1,11 @@
-<svg width="1000" height="1000" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
-<circle cx="500.5" cy="500.5" r="499.5" fill="#AE9D72"/>
-<circle cx="500.497" cy="500.524" r="382.95" fill="#AA996D"/>
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_524_1364)">
+<circle cx="250.25" cy="250.257" r="249.75" fill="#AE9D72"/>
+<circle cx="250.248" cy="250.269" r="191.475" fill="#AA996D"/>
+</g>
+<defs>
+<clipPath id="clip0_524_1364">
+<rect width="500" height="500" fill="white" transform="translate(0 0.00683594)"/>
+</clipPath>
+</defs>
 </svg>
