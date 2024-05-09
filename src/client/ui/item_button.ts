@@ -20,8 +20,8 @@ export class ItemButton {
     rightDown: boolean = false;
     private _item: number | null = null;
 
-    rightclick?: (item: number, shift?: boolean) => void;
-    leftclick?: (item: number, shift?: boolean) => void;
+    rightclick?: (item: number, shift: boolean) => void;
+    leftclick?: (item: number, shift: boolean) => void;
 
     constructor() {
         this.button = new Container();
@@ -70,11 +70,11 @@ export class ItemButton {
         this.button.onpointerup = (ev) => {
             if (ev?.button === 2) {
                 if (this.rightclick && this.item !== null && this.sendEvents) {
-                    this.rightclick(this.item, ev?.shiftKey);
+                    this.rightclick(this.item, ev?.shiftKey ?? false);
                 }
             } else if (ev?.button === 0 && this.sendEvents) {
                 if (this.leftclick && this.item !== null) {
-                    this.leftclick(this.item, ev?.shiftKey);
+                    this.leftclick(this.item, ev?.shiftKey ?? false);
                 }
             }
             this.down = false;

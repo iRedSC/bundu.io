@@ -1,8 +1,8 @@
-import { clamp, colorLerp, lerp } from "../../lib/transforms";
-import { Animation, AnimationManager } from "../../lib/animations";
+import { clamp, lerp } from "../../lib/transforms";
+import { Animation } from "../../lib/animations";
 import { SpriteFactory } from "../assets/sprite_factory";
-import { ColorSource, Container, Graphics, Sprite } from "pixi.js";
-import { UIAnimationManager } from "./animation_manager";
+import { ColorSource, Container, Sprite } from "pixi.js";
+import { UIAnimationManager } from "../animation/animations";
 
 export type StatBarOptions = {
     max: number;

@@ -5,7 +5,7 @@ import { Grid } from "./grid";
 import { SCHEMA } from "../../shared/enums";
 import { Animation } from "../../lib/animations";
 import { colorLerp, lerp, radians, rotationLerp } from "../../lib/transforms";
-import { UIAnimationManager } from "./animation_manager";
+import { UIAnimationManager } from "../animation/animations";
 import { ITEM_BUTTON_SIZE } from "../constants";
 
 export class RecipeManager {
@@ -60,15 +60,15 @@ export class RecipeManager {
 type Item = number;
 
 // const craftingGrid = new Grid(6, 6, 68, 68, 3);
-type Callback = (item: number) => void;
+type Callback = (item: number, shift: boolean) => void;
 export class CraftingMenu {
     buttons: ItemButton[];
     items: Item[];
     container: PIXI.Container;
     rows: number;
     grid: Grid;
-    rightclick?: Callback;
-    leftclick?: Callback;
+    private rightClickCB?: Callback;
+    private leftClickCB?: Callback;
 
     constructor(grid: Grid) {
         this.grid = grid;
@@ -89,8 +89,8 @@ export class CraftingMenu {
             const add = this.items.length - this.buttons.length;
             for (let i = 0; i < add; i++) {
                 const button = new ItemButton();
-                button.rightclick = this.rightclick;
-                button.leftclick = this.leftclick;
+                button.rightclick = this.rightClickCB;
+                button.leftclick = this.leftClickCB;
                 this.container.addChild(button.button);
                 this.buttons.push(button);
             }
@@ -108,13 +108,14 @@ export class CraftingMenu {
         }
     }
 
-    setCallbacks(leftclick?: Callback, rightclick?: Callback) {
-        this.rightclick = rightclick;
-        this.leftclick = leftclick;
-        for (const button of this.buttons) {
-            button.rightclick = rightclick;
-            button.leftclick = leftclick;
-        }
+    set rightclick(value: Callback) {
+        this.rightClickCB = value;
+        this.buttons.forEach((b) => (b.rightclick = value));
+    }
+
+    set leftclick(value: Callback) {
+        this.leftClickCB = value;
+        this.buttons.forEach((b) => (b.leftclick = value));
     }
 
     resize() {

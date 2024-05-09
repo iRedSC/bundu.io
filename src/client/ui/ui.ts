@@ -12,6 +12,18 @@ import { StatBar } from "./statbars";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { Minimap } from "./minimap";
 
+export type UI = {
+    container: Container;
+    inventory: Inventory;
+    craftingMenu: CraftingMenu;
+    recipeManager: RecipeManager;
+    swordTimer: Timer;
+    health: StatBar;
+    hunger: StatBar;
+    heat: StatBar;
+    minimap: Minimap;
+};
+
 export function createUI() {
     const ui = new Container();
 

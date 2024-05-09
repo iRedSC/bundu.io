@@ -1,6 +1,9 @@
 import { ColorSource } from "pixi.js";
-import { Animation } from "../../lib/animations.js";
+import { Animation, AnimationManager } from "../../lib/animations.js";
 import { colorLerp, lerp } from "../../lib/transforms";
+
+export const UIAnimationManager = new AnimationManager();
+export const WorldAnimationManager = new AnimationManager();
 
 export enum ANIMATION {
     HURT = 100,

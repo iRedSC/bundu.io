@@ -7,9 +7,10 @@ import { MIPMAP_MODES, Resource, Texture } from "pixi.js";
  * @returns
  */
 async function getTexture(name: string): Promise<Texture<Resource>> {
-    return Texture.from(`./assets/${name}`, {
+    const texture = Texture.from(`./assets/${name}`, {
         mipmap: MIPMAP_MODES.ON,
     });
+    return texture;
 }
 
 async function loadAssets(): Promise<Map<string, Texture>> {

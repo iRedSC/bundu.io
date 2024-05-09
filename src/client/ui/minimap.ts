@@ -1,20 +1,34 @@
-import { Container, Sprite, Text } from "pixi.js";
+import {
+    BaseRenderTexture,
+    BlurFilter,
+    Container,
+    MIPMAP_MODES,
+    RenderTexture,
+    SCALE_MODES,
+    Sprite,
+    Text,
+    autoDetectRenderer,
+} from "pixi.js";
 import { SpriteFactory } from "../assets/sprite_factory";
 import { OutlineFilter } from "@pixi/filter-outline";
 import { Animation } from "../../lib/animations";
 import { distance, lerp } from "../../lib/transforms";
-import { UIAnimationManager } from "./animation_manager";
+import { UIAnimationManager } from "../animation/animations";
 import { percentOf } from "../../lib/math";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { TEXT_STYLE } from "../assets/text";
+import { PixiApp } from "../rendering/app";
 
+type MinimapPlayer = {
+    name: Text;
+    sprite: Sprite;
+    color: number;
+    hovering: boolean;
+};
 export class Minimap {
     container: Container;
     sprite: Sprite;
-    players: Map<
-        number,
-        { name: Text; sprite: Sprite; color: number; hovering: boolean }
-    >;
+    players: Map<number, MinimapPlayer>;
 
     large: boolean = false;
     hovering: boolean = false;
@@ -53,10 +67,29 @@ export class Minimap {
     }
 
     addPlayer(id: number, name: string, color: number, x: number, y: number) {
-        const player = {
+        const genSprite = SpriteFactory.build("player");
+        genSprite.tint = color;
+        genSprite.filters = [new OutlineFilter(20, color)];
+
+        var baseRenderTex = new BaseRenderTexture({
+            width: 1000,
+            height: 1000,
+            scaleMode: SCALE_MODES.LINEAR,
+        });
+        baseRenderTex.mipmap = MIPMAP_MODES.ON;
+        const playerTexture = new RenderTexture(baseRenderTex);
+        const renderer = PixiApp.app.renderer;
+        renderer.render(genSprite, {
+            renderTexture: playerTexture,
+        });
+        const sprite = new Sprite(playerTexture);
+
+        genSprite.destroy();
+
+        const player: MinimapPlayer = {
             name: new Text(name, TEXT_STYLE),
             color: color,
-            sprite: SpriteFactory.build("player"),
+            sprite: sprite,
             hovering: false,
         };
         this.players.set(id, player);
@@ -66,10 +99,12 @@ export class Minimap {
         player.name.anchor.set(0.5, 1.5);
         player.name.scale.set(1.5);
         // 0xfcba03
-        player.sprite.filters = [new OutlineFilter(2, color)];
+
         this.container.addChild(player.sprite);
         this.container.addChild(player.name);
         this.setPlayerPosition(id, x, y);
+
+        player.sprite.scale.set(1);
 
         player.sprite.eventMode = "static";
         player.sprite.onpointerenter = () => {
@@ -81,6 +116,15 @@ export class Minimap {
         };
 
         UIAnimationManager.set(player, 0, playerAnimation(player).run(), true);
+    }
+
+    clear() {
+        for (const [id, player] of this.players.entries()) {
+            UIAnimationManager.remove(player);
+            player.name.destroy();
+            player.sprite.destroy();
+            this.players.delete(id);
+        }
     }
 
     setPlayerPosition(id: number, x: number, y: number) {

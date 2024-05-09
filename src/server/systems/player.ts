@@ -208,6 +208,10 @@ export class PlayerSystem extends System implements PlayerController {
                     player.get(Stats).set(type, { value });
                     break;
                 }
+                case "kill": {
+                    this.trigger("kill", player.id);
+                    break;
+                }
             }
             return;
         }

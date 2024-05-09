@@ -8,10 +8,9 @@ import { idMap } from "../configs/id_map";
 import { createGround } from "./ground";
 import { Entity } from "./objects/entity";
 import { Quadtree } from "../../lib/quadtree";
-import { requestIds } from "../client";
 import { BasicPoint } from "../../lib/types";
 import { radians } from "../../lib/transforms";
-import { ANIMATION } from "../animation/animations";
+import { ANIMATION, WorldAnimationManager } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { Container, Point, Text } from "pixi.js";
 import { RotationHandler } from "./rotation";
@@ -132,8 +131,6 @@ export class World {
 
     user?: number;
 
-    animationManager: AnimationManager;
-
     objects: ObjectContainer;
     renderer: LayeredRenderer;
 
@@ -141,11 +138,13 @@ export class World {
 
     listeners: DefaultMap<keyof WorldEvent, Function[]>;
 
-    constructor(viewport: Viewport, animationManager: AnimationManager) {
+    requestIds: Set<number>;
+
+    constructor(viewport: Viewport) {
+        this.requestIds = new Set();
         this.listeners = new DefaultMap(() => []);
         this.viewport = viewport;
         this.sky = new Sky();
-        this.animationManager = animationManager;
 
         this.renderer = new LayeredRenderer();
 
@@ -159,6 +158,13 @@ export class World {
         this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
         this.viewport.sortChildren();
+    }
+
+    clear() {
+        for (const object of this.objects.all()) {
+            this.deleteObject(object.id);
+            this.objects.delete(object.id);
+        }
     }
 
     addEventListener<T extends keyof WorldEvent>(
@@ -183,7 +189,7 @@ export class World {
     }
 
     tick() {
-        this.animationManager.update();
+        WorldAnimationManager.update();
         this.objects.update();
     }
 
@@ -232,7 +238,7 @@ export class World {
         scaleCoords(pos);
         const entity = new Entity(
             id,
-            this.animationManager,
+            WorldAnimationManager,
             idMap.getv(packet[5]) || "stone",
             pos,
             packet[3],
@@ -252,7 +258,7 @@ export class World {
         const name = new Text(packet[4], TEXT_STYLE);
         const player = new Player(
             id,
-            this.animationManager,
+            WorldAnimationManager,
             name,
             pos,
             packet[3]
@@ -280,7 +286,7 @@ export class World {
 
         const pos = new Point(packet[1], packet[2]);
         scaleCoords(pos);
-        const pond = new Pond(id, pos, packet[3], this.animationManager);
+        const pond = new Pond(id, pos, packet[3], WorldAnimationManager);
         this.objects.add(pond);
         this.renderer.add(pond.id, ...pond.containers);
     }
@@ -291,7 +297,7 @@ export class World {
 
         const object = this.objects.get(id);
         if (!object) {
-            requestIds.add(id);
+            this.requestIds.add(id);
             return;
         }
         if (id === this.user)
@@ -310,7 +316,7 @@ export class World {
         }
         const object = this.objects.get(id);
         if (!object) {
-            requestIds.add(id);
+            this.requestIds.add(id);
             return;
         }
         object.rotation = radians(packet[1]);
@@ -321,7 +327,7 @@ export class World {
         const id = packet;
         const object = this.objects.get(id);
         this.objects.delete(id);
-        this.animationManager.remove(object);
+        WorldAnimationManager.remove(object);
         this.renderer.delete(id);
     }
 
@@ -332,7 +338,7 @@ export class World {
             return;
         }
         console.log("attack triggered");
-        object.trigger(ANIMATION.ATTACK, this.animationManager, true);
+        object.trigger(ANIMATION.ATTACK, WorldAnimationManager, true);
     }
 
     block(packet: SCHEMA.EVENT.BLOCK) {
@@ -347,7 +353,7 @@ export class World {
             return;
         }
         object.blocking = true;
-        object.trigger(ANIMATION.BLOCK, this.animationManager);
+        object.trigger(ANIMATION.BLOCK, WorldAnimationManager);
     }
 
     hurt(id: SCHEMA.EVENT.HURT) {
@@ -355,7 +361,7 @@ export class World {
         if (!object) {
             return;
         }
-        object.trigger(ANIMATION.HURT, this.animationManager, true);
+        object.trigger(ANIMATION.HURT, WorldAnimationManager, true);
     }
 
     updateGear(packet: SCHEMA.SERVER.UPDATE_GEAR) {
