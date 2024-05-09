@@ -714,15 +714,73 @@ bird_skull:
     score: 2000
     duration: 15000
     ingredients:
-        tooth: 1
-        cloth: 5
-        pitch: 8
-        deer_hide: 6
-        meat: 25
+        tooth: 2
+        cloth: 6
+        meat: 5
 
     flags:
         - near_crafting_table
         - near_fire
+
+bird_foot:
+    score: 400
+    duration: 6000
+    ingredients:
+        deer_hide: 2
+        meat_cooked: 10
+
+    flags:
+        - near_crafting_table
+
+canteen:
+    score: 400
+    duration: 3000
+    ingredients:
+        fish_scale: 4
+        cloth: 2
+        bottle_water: 4
+
+    flags:
+        - near_crafting_table
+
+bananna:
+    score: 400
+    duration: 3000
+    ingredients:
+        blue_berry: 10
+        honey: 10
+        meat: 10
+
+    flags:
+        - near_fire
+
+amethyst_medallion:
+    score: 5000
+    duration: 17000
+    ingredients:
+        gold: 150
+        amethyst: 40
+
+    flags:
+        - near_fire
+        - near_anvil
+        - near_crafting_table
+
+ruby_medallion:
+    score: 7000
+    duration: 25000
+    ingredients:
+        gold: 200
+        diamond: 20
+        fish_scale: 2
+        komodo_dragon_eye: 1
+
+    flags:
+        - near_fire
+        - near_anvil
+        - near_crafting_table
+        - in_water
+
 
 repair_hammer:
     score: 500
@@ -771,6 +829,7 @@ bottle_water:
     score: 50
     duration: 3000
     ingredients:
+        bottle_empty: 1
         ice: 15
 
     flags:
