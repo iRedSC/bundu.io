@@ -5,7 +5,7 @@ import { Grid } from "./grid";
 import { SCHEMA } from "../../shared/enums";
 import { Animation } from "../../lib/animations";
 import { colorLerp, lerp, radians, rotationLerp } from "../../lib/transforms";
-import { UIAnimationManager } from "../animation/animations";
+import { AnimationManagers } from "../animation/animations";
 import { ITEM_BUTTON_SIZE } from "../constants";
 
 export class RecipeManager {
@@ -99,7 +99,7 @@ export class CraftingMenu {
         this.resize();
         for (const [i, button] of this.buttons.entries()) {
             button.item = this.items[i];
-            UIAnimationManager.set(
+            AnimationManagers.UI.set(
                 button,
                 0,
                 craftingButtonAnimation(button).run(),

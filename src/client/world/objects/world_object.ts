@@ -81,7 +81,7 @@ export class WorldObject {
     }
 
     update() {
-        const now = Date.now() - 50;
+        const now = Date.now() - 45;
 
         const [x, y] = this.states.interpolate(now);
         this.position.set(x, y);
@@ -133,7 +133,7 @@ export class WorldObject {
 
     set size(value: number) {
         this._size = value;
-        this.container.scale.set(value / 400);
+        this.container.scale.set(value * 2.5);
     }
 
     get size() {

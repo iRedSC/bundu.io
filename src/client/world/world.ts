@@ -10,7 +10,7 @@ import { Entity } from "./objects/entity";
 import { Quadtree } from "../../lib/quadtree";
 import { BasicPoint } from "../../lib/types";
 import { radians } from "../../lib/transforms";
-import { ANIMATION, WorldAnimationManager } from "../animation/animations";
+import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { Container, Point, Text } from "pixi.js";
 import { RotationHandler } from "./rotation";
@@ -118,6 +118,7 @@ export type WorldEvent = {
 
     new_player: Player;
     user_move: { x: number; y: number };
+    set_user: Player;
 };
 
 type WorldEventCallback<T extends keyof WorldEvent> = (
@@ -127,7 +128,7 @@ type WorldEventCallback<T extends keyof WorldEvent> = (
 // This basically controls everything on the client
 // All packets (after being parsed) are sent to one of these methods
 export class World {
-    viewport: Viewport;
+    viewport: Container;
 
     user?: number;
 
@@ -140,7 +141,7 @@ export class World {
 
     requestIds: Set<number>;
 
-    constructor(viewport: Viewport) {
+    constructor(viewport: Container) {
         this.requestIds = new Set();
         this.listeners = new DefaultMap(() => []);
         this.viewport = viewport;
@@ -189,7 +190,7 @@ export class World {
     }
 
     tick() {
-        WorldAnimationManager.update();
+        AnimationManagers.World.update();
         this.objects.update();
     }
 
@@ -206,11 +207,18 @@ export class World {
             return;
         }
         player.rotationProperties._interpolate = false;
-        this.viewport.follow(player.containers[0], {
-            speed: 0,
-            acceleration: 1,
-            radius: 0,
-        });
+
+        this.emitEvent("set_user", player as Player);
+
+        // this.viewport.follow(player.containers[0], {
+        //     speed: 1,
+        //     acceleration: 0.01,
+        //     radius: 1,
+        // });
+    }
+
+    getUser() {
+        return this.objects.get(this.user ?? -1) as Player;
     }
 
     newStructure(packet: SCHEMA.NEW_OBJECT.STRUCTURE) {
@@ -238,7 +246,7 @@ export class World {
         scaleCoords(pos);
         const entity = new Entity(
             id,
-            WorldAnimationManager,
+            AnimationManagers.World,
             idMap.getv(packet[5]) || "stone",
             pos,
             packet[3],
@@ -258,7 +266,7 @@ export class World {
         const name = new Text(packet[4], TEXT_STYLE);
         const player = new Player(
             id,
-            WorldAnimationManager,
+            AnimationManagers.World,
             name,
             pos,
             packet[3]
@@ -286,7 +294,7 @@ export class World {
 
         const pos = new Point(packet[1], packet[2]);
         scaleCoords(pos);
-        const pond = new Pond(id, pos, packet[3], WorldAnimationManager);
+        const pond = new Pond(id, pos, packet[3], AnimationManagers.World);
         this.objects.add(pond);
         this.renderer.add(pond.id, ...pond.containers);
     }
@@ -327,7 +335,7 @@ export class World {
         const id = packet;
         const object = this.objects.get(id);
         this.objects.delete(id);
-        WorldAnimationManager.remove(object);
+        AnimationManagers.World.remove(object);
         this.renderer.delete(id);
     }
 
@@ -338,7 +346,7 @@ export class World {
             return;
         }
         console.log("attack triggered");
-        object.trigger(ANIMATION.ATTACK, WorldAnimationManager, true);
+        object.trigger(ANIMATION.ATTACK, AnimationManagers.World, true);
     }
 
     block(packet: SCHEMA.EVENT.BLOCK) {
@@ -353,7 +361,7 @@ export class World {
             return;
         }
         object.blocking = true;
-        object.trigger(ANIMATION.BLOCK, WorldAnimationManager);
+        object.trigger(ANIMATION.BLOCK, AnimationManagers.World);
     }
 
     hurt(id: SCHEMA.EVENT.HURT) {
@@ -361,7 +369,7 @@ export class World {
         if (!object) {
             return;
         }
-        object.trigger(ANIMATION.HURT, WorldAnimationManager, true);
+        object.trigger(ANIMATION.HURT, AnimationManagers.World, true);
     }
 
     updateGear(packet: SCHEMA.SERVER.UPDATE_GEAR) {

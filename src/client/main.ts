@@ -1,7 +1,7 @@
 import { World } from "./world/world";
 import { PacketParser } from "../shared/unpack";
 import { debugContainer } from "./rendering/debug";
-import { Point } from "pixi.js";
+import { Container, Point } from "pixi.js";
 import { createViewport } from "./rendering/viewport";
 import { encode } from "@msgpack/msgpack";
 import { decodeFromBlob } from "./network/decode";
@@ -11,13 +11,15 @@ import { createUI } from "./ui/ui";
 import { KeyboardInputListener } from "./input/keyboard";
 import { MouseInputListener } from "./input/mouse";
 import { PACKET } from "../shared/enums";
-import { degrees, lookToward, radians } from "../lib/transforms";
+import { degrees, lerp, lookToward, radians } from "../lib/transforms";
 import { round } from "../lib/math";
 import random from "../lib/random";
-import { UIAnimationManager } from "./animation/animations";
+import { AnimationManagers } from "./animation/animations";
 import { Player } from "./world/objects/player";
 import { setupUIParser, setupWorldParser } from "./network/packet_pipline";
 import { PixiApp } from "./rendering/app";
+import Stats from "stats.js";
+import { Camera } from "./rendering/camera";
 // import { ReflectionFilter } from "@pixi/filter-reflection";
 
 let socket: WebSocket;
@@ -32,11 +34,31 @@ app.view.classList.add("canvas");
 document.body.appendChild(app.view);
 
 // create pixi viewport and add it to app.
-const viewport = createViewport(app, new Point(0, 0));
+// const viewport = createViewport(app, new Point(0, 0));
+const viewport = new Container();
 app.view.oncontextmenu = () => {
     return false;
 };
 app.stage.addChild(viewport);
+
+const camera = new Camera(viewport, {
+    worldWidth: 20000,
+
+    worldHeight: 20000,
+
+    ticker: app.ticker,
+
+    zoomSpeed: 0.05,
+    minZoom: 0.75,
+    maxZoom: 2.5,
+    // autoZoom: true,
+
+    padding: 100,
+
+    speed: 0.05,
+    // peek: 0.1,
+    // deadZone: 25,
+});
 
 // add debug container to the viewport (shows hitboxes and ids)
 // viewport.addChild(debugContainer);
@@ -46,6 +68,25 @@ viewport.sortChildren();
 const world = new World(viewport);
 const parser = new PacketParser();
 setupWorldParser(parser, world);
+
+world.addEventListener("set_user", (player) => {
+    camera.targets.push(player.position);
+    camera.snap();
+});
+
+// world.addEventListener("new_player", (player) => {
+//     camera.targets.push(player.position);
+// });
+
+// setInterval(() => {
+//     const user = world.getUser();
+//     if (!user) return;
+//     const query = world.objects.query([
+//         { x: user.position.x - 500, y: user.position.y - 500 },
+//         { x: user.position.x + 500, y: user.position.y + 500 },
+//     ]);
+//     camera.targets = query.map((id) => world.objects.get(id)!.position);
+// });
 
 const resize = new Event("resize");
 setTimeout(() => window.dispatchEvent(resize), 50);
@@ -76,7 +117,7 @@ let updateTick: number = 0;
 mouse.onMouseMove = (mousePos: [number, number]) => {
     const player = world.objects.get(world.user || -1);
     if (player) {
-        let mouseToWorld = viewport.toWorld(mousePos[0], mousePos[1]);
+        let mouseToWorld = viewport.toLocal({ x: mousePos[0], y: mousePos[1] });
         const rotation =
             lookToward(player.position, mouseToWorld) - radians(90);
         updateTick++;
@@ -146,9 +187,22 @@ setInterval(() => {
     }
 }, 500);
 
+const stats = new Stats();
+stats.showPanel(0);
+document.body.appendChild(stats.dom);
+stats.dom.style.top = "";
+stats.dom.style.left = "";
+stats.dom.style.bottom = "50%";
+stats.dom.style.right = "0px";
+
 function tick() {
-    world.tick();
-    UIAnimationManager.update();
+    stats.begin();
+    const player = world.objects.get(world.user ?? -1);
+    if (player) {
+        world.tick();
+        AnimationManagers.UI.update();
+    }
+    stats.end();
     requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);

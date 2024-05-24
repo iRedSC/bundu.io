@@ -1,5 +1,11 @@
 import SpriteMap from "../configs/sprite_map.yml";
-import { MIPMAP_MODES, Resource, Texture } from "pixi.js";
+import {
+    MIPMAP_MODES,
+    Resource,
+    SCALE_MODES,
+    Texture,
+    autoDetectResource,
+} from "pixi.js";
 
 /**
  *
@@ -9,6 +15,12 @@ import { MIPMAP_MODES, Resource, Texture } from "pixi.js";
 async function getTexture(name: string): Promise<Texture<Resource>> {
     const texture = Texture.from(`./assets/${name}`, {
         mipmap: MIPMAP_MODES.ON,
+        scaleMode: SCALE_MODES.LINEAR,
+        anisotropicLevel: 16,
+        resourceOptions: {
+            width: 500,
+            height: 500,
+        },
     });
     return texture;
 }

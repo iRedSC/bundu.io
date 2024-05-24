@@ -39,7 +39,6 @@ repair_hammer:
     type: pickaxe
     sprite: repair_hammer
 
-
 # Sword
 wood_sword:
     type: sword
@@ -95,8 +94,6 @@ stone_helmet:
 gold_helmet:
     type: helmet
     sprite: gold_helmet
-    body_display:
-        y: 10
 
 diamond_helmet:
     type: helmet
@@ -263,11 +260,11 @@ bird_skull:
 
 forest_tree:
     type: tree
-    world_display:
-        scale: 0.7
+    # world_display:
+    #     scale: 0.7
 
-pine_tree:
-    type: tree
+# pine_tree:
+#     type: tree
 
 amethyst:
     type: none

@@ -1,4 +1,4 @@
-import { Application } from "pixi.js";
+import { Application, Ticker } from "pixi.js";
 
 declare module globalThis {
     var __PIXI_APP__: Application;
@@ -12,8 +12,12 @@ export class PixiApp {
     static app = new Application<HTMLCanvasElement>({
         resizeTo: window,
         backgroundColor: 0x0d5b73,
-        antialias: true,
+        antialias: false,
+        autoDensity: true,
     });
 }
+const ticker = Ticker.shared;
+ticker.autoStart = false;
+ticker.stop();
 
 globalThis.__PIXI_APP__ = PixiApp.app;

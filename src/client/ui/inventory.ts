@@ -9,12 +9,12 @@ import {
     rotationLerp,
 } from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
-import { SpriteFactory } from "../assets/sprite_factory";
+import { ContaineredSprite, SpriteFactory } from "../assets/sprite_factory";
 import { SCHEMA } from "../../shared/enums";
 import { Grid } from "./grid";
 import { percentOf } from "../../lib/math";
 import { Animation } from "../../lib/animations";
-import { UIAnimationManager } from "../animation/animations";
+import { AnimationManagers } from "../animation/animations";
 import { ITEM_BUTTON_SIZE } from "../constants";
 
 /**
@@ -34,7 +34,7 @@ export class InventoryButton extends ItemButton {
     constructor() {
         super();
 
-        UIAnimationManager.set(
+        AnimationManagers.UI.set(
             this,
             0,
             inventoryButtonAnimation(this).run(),
@@ -293,7 +293,7 @@ function dragStart(button: InventoryButton, display: Inventory) {
         return;
     }
     const sprite = SpriteFactory.build(button.item ?? -1);
-    sprite.scale.set(0.05);
+    sprite.scale.set(50);
     sprite.anchor.set(0.5);
     sprite.alpha = 0.8;
     let canDrag = false;
@@ -328,7 +328,7 @@ function dragStart(button: InventoryButton, display: Inventory) {
  * @param event The mouseMove event
  */
 function dragMove(
-    sprite: PIXI.Sprite,
+    sprite: ContaineredSprite,
     event: PointerEvent,
     display: Inventory
 ) {

@@ -1,5 +1,5 @@
 import { ColorSource, Container, Graphics } from "pixi.js";
-import { SpriteFactory, SpriteWrapper } from "../assets/sprite_factory";
+import { SpriteFactory, ConfiguredSprite } from "../assets/sprite_factory";
 import { Animation, AnimationManager } from "../../lib/animations";
 import { lerp, radians } from "../../lib/transforms";
 
@@ -8,7 +8,7 @@ export class Timer {
     animation: Animation;
 
     container: Container;
-    sprite: SpriteWrapper;
+    sprite: ConfiguredSprite;
     arc: Graphics;
     color: ColorSource;
 

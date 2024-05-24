@@ -1,7 +1,7 @@
 import { radians, lerp } from "../../../lib/transforms";
 import { spriteConfigs } from "../../configs/sprite_configs";
 import { WorldObject } from "./world_object";
-import { SpriteFactory, SpriteWrapper } from "../../assets/sprite_factory";
+import { SpriteFactory, ContaineredSprite } from "../../assets/sprite_factory";
 import random from "../../../lib/random";
 import { z } from "zod";
 import { validate } from "../../../shared/type_guard";
@@ -20,18 +20,18 @@ type Gear = z.infer<typeof Gear>;
 type PlayerParts = {
     body: {
         container: Container;
-        sprite: SpriteWrapper;
-        helmet: SpriteWrapper;
+        sprite: ContaineredSprite;
+        helmet: ContaineredSprite;
     };
     leftHand: {
         container: Container;
-        sprite: SpriteWrapper;
-        item: SpriteWrapper;
+        sprite: ContaineredSprite;
+        item: ContaineredSprite;
     };
     rightHand: {
         container: Container;
-        sprite: SpriteWrapper;
-        item: SpriteWrapper;
+        sprite: ContaineredSprite;
+        item: ContaineredSprite;
     };
 };
 
@@ -62,7 +62,7 @@ export class Player extends WorldObject {
             leftHand: {
                 container: new Container(),
                 sprite: SpriteFactory.build("hand"),
-                item: SpriteFactory.build(""),
+                item: SpriteFactory.build("diamond_sword"),
             },
             rightHand: {
                 container: new Container(),
@@ -74,6 +74,7 @@ export class Player extends WorldObject {
         this.rotationProperties.duration = 5;
         this.name = name;
         this.name.scale.set(0.34);
+        this.name.roundPixels = true;
 
         this.name.anchor.set(0.5, 2);
         this.name.zIndex = 100;
@@ -85,8 +86,9 @@ export class Player extends WorldObject {
 
         this.blocking = false;
 
-        this.container.pivot.x = this.container.width / 2;
-        this.container.pivot.y = this.container.height / 2 + 15;
+        // this.container.pivot.x = this.container.width / 2;
+        // this.container.pivot.y = this.container.height / 2 + 15;
+        // this.container.pivot.y = -0.1;
         this.container.zIndex = 1;
 
         const body = this.sprite.body;
@@ -110,28 +112,26 @@ export class Player extends WorldObject {
         body.container.addChild(body.helmet);
 
         body.sprite.anchor.set(0.5);
-        body.sprite.setScale(0.9);
+        // body.sprite.scale.set(0.9);
         body.helmet.anchor.set(0.5);
 
-        leftHand.container.x = -70;
-        leftHand.container.y = 45;
+        // leftHand.container.x = -0.05;
         leftHand.sprite.anchor.set(0.5);
-        leftHand.container.pivot.set(800, 0);
-        leftHand.container.scale.set(0.6);
-        leftHand.sprite.setScale(0.5);
+        leftHand.container.pivot.set(1, 0);
+        leftHand.container.scale.set(0.5);
+        leftHand.sprite.scale.set(0.5);
 
-        leftHand.item.anchor.set(1);
-        // leftHand.item.setScale(1.5);
+        // leftHand.item.anchor.set(1);
+        leftHand.item.scale.set(5);
 
-        rightHand.container.x = 70;
-        rightHand.container.y = 45;
-        rightHand.container.pivot.set(-800, 0);
+        // rightHand.container.x = 0.05;
+        rightHand.container.pivot.set(-1, 0);
         rightHand.sprite.anchor.set(0.5);
-        rightHand.container.scale.set(0.6);
-        rightHand.sprite.setScale(0.5);
+        rightHand.container.scale.set(0.5);
+        rightHand.sprite.scale.set(0.5);
 
         rightHand.item.anchor.set(1);
-        rightHand.item.setScale(1.8);
+        rightHand.item.scale.set(1.8);
         this.animations.set(
             ANIMATION.IDLE_HANDS,
             PlayerAnimations.idleHands(
@@ -212,6 +212,7 @@ export class Player extends WorldObject {
                 config.hand_display,
                 this.mainHand
             );
+            console.log(this.sprite.leftHand.item.position);
         }
 
         if (this.offHand !== "") {
@@ -244,6 +245,7 @@ export class Player extends WorldObject {
 }
 
 namespace PlayerAnimations {
+    const IDLE_WAVE_DISTANCE = 0.01;
     export function idleHands(
         left: Container,
         right: Container,
@@ -259,9 +261,15 @@ namespace PlayerAnimations {
                 animation.goto(0, 2000);
             }
 
-            left.x = leftX + Math.cos(animation.t * Math.PI * 2) * 5;
-            right.x = rightX - Math.cos(animation.t * Math.PI * 2) * 5;
-            body.y = bodyY + Math.sin(animation.t * Math.PI * 2) * 5;
+            left.x =
+                leftX +
+                Math.cos(animation.t * Math.PI * 2) * IDLE_WAVE_DISTANCE;
+            right.x =
+                rightX -
+                Math.cos(animation.t * Math.PI * 2) * IDLE_WAVE_DISTANCE;
+            body.y =
+                bodyY +
+                Math.sin(animation.t * Math.PI * 2) * IDLE_WAVE_DISTANCE;
             if (animation.keyframeEnded) {
                 animation.goto(0, random.integer(1500, 2500));
             }
