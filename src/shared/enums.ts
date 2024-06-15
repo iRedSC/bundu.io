@@ -163,6 +163,7 @@ export namespace SCHEMA {
 
         export const STARTING_INFO = z.tuple([
             z.number(), // player's id
+            z.number(), // server start time
         ]);
         export type STARTING_INFO = z.infer<typeof STARTING_INFO>;
 

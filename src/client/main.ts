@@ -48,14 +48,14 @@ const camera = new Camera(viewport, {
     ticker: app.ticker,
 
     zoomSpeed: 0.05,
-    minZoom: 0.75,
+    // minZoom: 0.75,
     maxZoom: 2.5,
     // autoZoom: true,
 
     padding: 100,
 
     speed: 0.05,
-    // peek: 0.1,
+    peek: 0.1,
     // deadZone: 25,
 });
 
@@ -219,7 +219,8 @@ document.querySelector("button")?.addEventListener("click", () => {
         if (!validate(data, z.array(z.any()))) {
             return;
         }
-        parser.unpackMany(data);
+        const time = data.splice(0, 1)[0] / 10;
+        parser.unpackMany(data[0], time);
     };
 
     document

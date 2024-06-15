@@ -275,7 +275,7 @@ export class Camera {
             zoomT = 1;
         }
 
-        console.log(zoomT, this.center, this.target);
+        // console.log(zoomT, this.center, this.target);
         this.world.scale.set(lerp(this.world.scale.x, this.zoom, zoomT));
 
         const x = lerp(this.center.x, this.target.x, moveT);

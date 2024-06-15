@@ -20,7 +20,6 @@ export class PacketParser {
             logger.error(`Packet ${packet} is not an array.`);
             return;
         }
-
         const id = packet[0];
         if (typeof id !== "number") {
             return;

@@ -159,8 +159,8 @@ export class Player extends WorldObject {
         return [this.container, this.name];
     }
 
-    update(): boolean {
-        const done = super.update();
+    update(now: number): boolean {
+        const done = super.update(now);
         this.name.position = this.position;
         return done;
     }

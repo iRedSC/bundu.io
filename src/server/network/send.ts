@@ -27,11 +27,8 @@ function getPacketPath(id: number, map: Map<number, PacketPath>) {
 }
 
 export class PacketFactory {
-    players: Map<number, PacketPath>;
-
-    constructor() {
-        this.players = new Map();
-    }
+    players: Map<number, PacketPath> = new Map();
+    startTime: number = Date.now();
 
     add(player: number, packetPath: number[], callback: PacketCallback): void {
         let path = getPacketPath(player, this.players);
@@ -54,7 +51,6 @@ export class PacketFactory {
         if (path === undefined) {
             path = getPacketPath(player, this.players);
         }
-
         const packet: any[] = [];
         if (key) {
             packet.push(Number(key));
@@ -67,6 +63,7 @@ export class PacketFactory {
         for (const [key, child] of Object.entries(path.children)) {
             packet.push(this.pack(player, child, key));
         }
+
         return packet;
     }
 

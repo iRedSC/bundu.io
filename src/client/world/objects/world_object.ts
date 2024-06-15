@@ -7,6 +7,7 @@ import { Animation, AnimationManager } from "../../../lib/animations";
 import { States } from "../states";
 import { RotationHandler } from "../rotation";
 import { Container, Point, Text } from "pixi.js";
+import { serverTime } from "../../globals";
 
 // TODO: There are too many properties related to rotation clogging up the object.
 
@@ -47,7 +48,7 @@ export class WorldObject {
             this.container.renderable = true;
             this.debug.renderable = true;
         });
-        this.states.set([Date.now(), pos.x, pos.y]);
+        this.states.set([serverTime.now(), pos.x, pos.y]);
 
         this.rotationProperties = new RotationHandler(true, 100);
         this._rotation = rotation;
@@ -80,11 +81,11 @@ export class WorldObject {
         return this._renderable;
     }
 
-    update() {
-        const now = Date.now();
-
+    update(now: number) {
+        // if (!now) return true;
         const [x, y] = this.states.interpolate(now);
         this.position.set(x, y);
+        console.log(this.position);
 
         if (this.rotationProperties._interpolate) {
             this._rotation = this.rotationProperties.interpolate(now);
@@ -94,11 +95,11 @@ export class WorldObject {
         this.debug.containers.get("hitbox")?.position.set(x, y);
         this.debug.containers.get("id")?.position.set(x, y);
 
-        const lastState = this.states.values[-1];
+        const lastState = this.states.values.at(-1);
         if (!lastState) {
             return false;
         }
-        if (this.states.values[-1][0] < Date.now()) {
+        if (this.states.values.at(-1)![0] < now) {
             return true;
         }
         return false;

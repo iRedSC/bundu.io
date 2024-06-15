@@ -28,7 +28,6 @@ export class ItemButton {
         this.button = new Container();
         this.button.sortableChildren = true;
         this.button.eventMode = "static";
-        this.button.interactive = true;
 
         // this.background = new PIXI.Graphics();
         this.background = SpriteFactory.build("item_button");

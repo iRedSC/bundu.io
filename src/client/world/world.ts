@@ -18,6 +18,7 @@ import { States } from "./states";
 import { Pond } from "./objects/pond";
 import { WORLD_SIZE } from "../constants";
 import { DefaultMap } from "../../lib/default_map";
+import { serverTime } from "../globals";
 interface GameObject {
     id: number;
 
@@ -32,7 +33,7 @@ interface GameObject {
      * Update the object.
      * Returns true if is done updating.
      */
-    update(): boolean;
+    update(now: number): boolean;
 
     trigger(id: number, manager: AnimationManager, replace?: boolean): void;
 
@@ -84,9 +85,9 @@ class ObjectContainer {
     /**
      * Update objects in the updating set.
      */
-    update(): void {
+    update(now: number): void {
         for (const object of this.updating.values()) {
-            const done = object.update();
+            const done = object.update(now);
             if (done) {
                 this.updating.delete(object);
             }
@@ -140,11 +141,7 @@ export class World {
 
     requestIds: Set<number>;
 
-    serverStartTime: number;
-
     constructor(viewport: Container) {
-        this.serverStartTime = 0;
-
         this.requestIds = new Set();
         this.listeners = new DefaultMap(() => []);
         this.viewport = viewport;
@@ -194,12 +191,14 @@ export class World {
 
     tick() {
         AnimationManagers.World.update();
-        this.objects.update();
+        this.objects.update(serverTime.now());
     }
 
     setPlayer(packet?: SCHEMA.SERVER.STARTING_INFO) {
         if (packet) {
             this.user = packet[0];
+            console.log(packet);
+            serverTime.start = packet[1];
         }
         if (!this.user) {
             return;
@@ -212,12 +211,6 @@ export class World {
         player.rotationProperties._interpolate = false;
 
         this.emitEvent("set_user", player as Player);
-
-        // this.viewport.follow(player.containers[0], {
-        //     speed: 1,
-        //     acceleration: 0.01,
-        //     radius: 1,
-        // });
     }
 
     getUser() {
@@ -284,10 +277,6 @@ export class World {
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
 
-        if (this.user === player.id) {
-            this.setPlayer([this.user]);
-        }
-
         this.emitEvent("new_player", player);
     }
 
@@ -302,7 +291,7 @@ export class World {
         this.renderer.add(pond.id, ...pond.containers);
     }
 
-    moveObject(packet: SCHEMA.SERVER.MOVE_OBJECT) {
+    moveObject(packet: SCHEMA.SERVER.MOVE_OBJECT, now: number) {
         const id = packet[0];
         const time = packet[1];
 
@@ -314,7 +303,7 @@ export class World {
         if (id === this.user)
             this.emitEvent("user_move", { x: packet[2], y: packet[3] });
         object.renderable = true;
-        object.states.set([Date.now() + time, packet[2], packet[3]]);
+        object.states.set([now, packet[2], packet[3]]);
         this.emitEvent("object_move", object);
         this.objects.updating.add(object);
         this.objects.add(object);
@@ -388,7 +377,7 @@ export class World {
         }
     }
 
-    // setTime(_: number, packet: PACKET.SET_TIME) {
+    // setTime(packet: PACKET.SET_TIME) {
     //     this.sky.setTime(packet[0], this.animationManager);
     // }
 
