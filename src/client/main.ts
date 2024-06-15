@@ -1,8 +1,7 @@
 import { World } from "./world/world";
 import { PacketParser } from "../shared/unpack";
 import { debugContainer } from "./rendering/debug";
-import { Container, Point } from "pixi.js";
-import { createViewport } from "./rendering/viewport";
+import { Container } from "pixi.js";
 import { encode } from "@msgpack/msgpack";
 import { decodeFromBlob } from "./network/decode";
 import { validate } from "../shared/type_guard";
@@ -42,9 +41,9 @@ app.view.oncontextmenu = () => {
 app.stage.addChild(viewport);
 
 const camera = new Camera(viewport, {
-    worldWidth: 20000,
+    // worldWidth: 20000,
 
-    worldHeight: 20000,
+    // worldHeight: 20000,
 
     ticker: app.ticker,
 
@@ -70,7 +69,7 @@ const parser = new PacketParser();
 setupWorldParser(parser, world);
 
 world.addEventListener("set_user", (player) => {
-    camera.targets.push(player.position);
+    camera.targets = [player.position];
     camera.snap();
 });
 

@@ -81,7 +81,7 @@ export class WorldObject {
     }
 
     update() {
-        const now = Date.now() - 45;
+        const now = Date.now();
 
         const [x, y] = this.states.interpolate(now);
         this.position.set(x, y);
