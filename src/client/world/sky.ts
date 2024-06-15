@@ -41,13 +41,13 @@ export class Sky extends PIXI.Graphics {
         this.nextCycle = time;
         const animation = this.animations.get(SKY_ANIMATION.TRANSISTION);
         if (animation !== undefined) {
-            manager.add(this, animation.run());
+            manager.add(this, 0, animation.run());
         }
     }
 }
 
 function skyTransition(target: Sky) {
-    const animation = new Animation(SKY_ANIMATION.TRANSISTION);
+    const animation = new Animation();
 
     animation.keyframes[0] = (animation) => {
         if (animation.isFirstKeyframe) {

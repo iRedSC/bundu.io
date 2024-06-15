@@ -1,4 +1,3 @@
-import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animations";
 import { SCHEMA } from "../../shared/enums";
 import { Structure } from "./objects/structure";
@@ -141,7 +140,11 @@ export class World {
 
     requestIds: Set<number>;
 
+    serverStartTime: number;
+
     constructor(viewport: Container) {
+        this.serverStartTime = 0;
+
         this.requestIds = new Set();
         this.listeners = new DefaultMap(() => []);
         this.viewport = viewport;
