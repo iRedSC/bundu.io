@@ -208,6 +208,16 @@ export class PlayerSystem extends System implements PlayerController {
                     player.get(Stats).set(type, { value });
                     break;
                 }
+                case "kill": {
+                    this.trigger("kill", player.id);
+                    break;
+                }
+                case "godmode": {
+                    player
+                        .get(Attributes)
+                        .set("attack.speed", "godmode", "add", 100)
+                        .set("attack.reach", "godmode", "add", 500);
+                }
             }
             return;
         }

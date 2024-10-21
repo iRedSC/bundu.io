@@ -19,7 +19,7 @@ export function createViewport(
         events: app.renderer.events,
     });
 
-    viewport.clampZoom({ minScale: 0.7, maxScale: 3 });
+    // viewport.clampZoom({ minScale: 0.7, maxScale: 3 });
     // viewport.clamp({
     //     direction: "all",
     //     left: true,
@@ -30,7 +30,7 @@ export function createViewport(
 
     viewport.sortableChildren = true;
 
-    viewport.wheel({ center: center });
+    viewport.wheel({ center: viewport.center });
 
     window.onresize = (_) => {
         viewport.resize(window.innerWidth, window.innerHeight);

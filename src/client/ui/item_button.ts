@@ -1,6 +1,6 @@
 // import { Button } from "@pixi/ui";
 import { Container } from "pixi.js";
-import { SpriteFactory, SpriteWrapper } from "../assets/sprite_factory";
+import { SpriteFactory, ContaineredSprite } from "../assets/sprite_factory";
 import { idMap } from "../configs/id_map";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { percentOf } from "../../lib/math";
@@ -10,18 +10,19 @@ export class ItemButton {
     enabled: boolean = true;
     sendEvents: boolean = true;
 
-    background: SpriteWrapper;
+    background: ContaineredSprite;
 
-    disableSprite: SpriteWrapper;
-    itemSprite: SpriteWrapper;
+    disableSprite: ContaineredSprite;
+    itemSprite: ContaineredSprite;
 
     hovering: boolean = false;
     down: boolean = false;
     rightDown: boolean = false;
     private _item: number | null = null;
+    private _touchDown: boolean = false;
 
-    rightclick?: (item: number, shift?: boolean) => void;
-    leftclick?: (item: number, shift?: boolean) => void;
+    rightclick?: (item: number, shift: boolean) => void;
+    leftclick?: (item: number, shift: boolean) => void;
 
     constructor() {
         this.button = new Container();
@@ -58,6 +59,9 @@ export class ItemButton {
 
         this.button.onpointerleave = () => {
             this.hovering = false;
+            if (this._touchDown) {
+                this.rightDown = true;
+            }
         };
 
         this.button.onpointerdown = (ev) => {
@@ -67,23 +71,38 @@ export class ItemButton {
             this.down = true;
         };
 
+        this.button.ontouchstart = () => {
+            this._touchDown = true;
+        };
+
+        this.button.ontouchendoutside = (ev) => {
+            if (this.rightclick && this.item !== null) {
+                this.rightclick(this.item, ev?.shiftKey ?? false);
+            }
+            this.down = false;
+            this.rightDown = false;
+            this._touchDown = false;
+        };
+
         this.button.onpointerup = (ev) => {
             if (ev?.button === 2) {
                 if (this.rightclick && this.item !== null && this.sendEvents) {
-                    this.rightclick(this.item, ev?.shiftKey);
+                    this.rightclick(this.item, ev?.shiftKey ?? false);
                 }
             } else if (ev?.button === 0 && this.sendEvents) {
                 if (this.leftclick && this.item !== null) {
-                    this.leftclick(this.item, ev?.shiftKey);
+                    this.leftclick(this.item, ev?.shiftKey ?? false);
                 }
             }
             this.down = false;
             this.rightDown = false;
+            this._touchDown = false;
         };
 
         this.button.onpointerupoutside = () => {
             this.down = false;
             this.rightDown = false;
+            this._touchDown = false;
         };
     }
 

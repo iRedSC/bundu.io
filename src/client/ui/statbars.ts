@@ -1,8 +1,8 @@
-import { clamp, colorLerp, lerp } from "../../lib/transforms";
-import { Animation, AnimationManager } from "../../lib/animations";
-import { SpriteFactory } from "../assets/sprite_factory";
-import { ColorSource, Container, Graphics, Sprite } from "pixi.js";
-import { UIAnimationManager } from "./animation_manager";
+import { clamp, lerp } from "../../lib/transforms";
+import { Animation } from "../../lib/animations";
+import { ContaineredSprite, SpriteFactory } from "../assets/sprite_factory";
+import { ColorSource, Container } from "pixi.js";
+import { AnimationManagers } from "../animation/animations";
 
 export type StatBarOptions = {
     max: number;
@@ -25,14 +25,14 @@ export class StatBar {
     displayAmount: number;
 
     container: Container;
-    circle: Sprite;
-    outline: Sprite;
-    icon: Sprite;
+    circle: ContaineredSprite;
+    outline: ContaineredSprite;
+    icon: ContaineredSprite;
 
-    base: Sprite;
-    baseDiff: Sprite;
-    overlay: Sprite;
-    overlayDiff: Sprite;
+    base: ContaineredSprite;
+    baseDiff: ContaineredSprite;
+    overlay: ContaineredSprite;
+    overlayDiff: ContaineredSprite;
 
     tint: ColorSource;
 
@@ -63,42 +63,42 @@ export class StatBar {
 
         this.icon = SpriteFactory.build(icon);
         this.icon.anchor.set(0.5);
-        this.icon.scale.set(0.25);
+        this.icon.scale.set(0.2);
 
         this.outline = SpriteFactory.build("stat_bar_outline");
         this.outline.anchor.set(0, 0.5);
-        this.outline.scale.set(1.2);
+        this.outline.scale.set(0.95);
         this.outline.tint = tint;
 
         this.circle = SpriteFactory.build("stat_bar_circle");
         this.circle.anchor.set(0.5);
-        this.circle.scale.set(0.25);
+        this.circle.scale.set(0.2);
         this.circle.tint = tint;
 
         this.container = new Container();
-        this.container.scale.set(0.15);
+        this.container.scale.set(175);
         this.container.pivot.set(
             this.container.width / 2,
             this.container.height / 2
         );
 
         this.base = SpriteFactory.build("stat_bar");
-        // this.base.scale.set(0.1);
+        this.base.scale.set(0.1);
         this.base.anchor.set(0, 0.5);
         this.base.tint = tint;
 
         this.baseDiff = SpriteFactory.build("stat_bar");
-        // this.baseDiff.scale.set(0.1);
+        this.baseDiff.scale.set(0.1);
         this.baseDiff.anchor.set(0, 0.5);
         this.baseDiff.tint = diffTint;
 
         this.overlay = SpriteFactory.build("stat_bar");
-        // this.overlay.scale.set(0.1);
+        this.overlay.scale.set(0.1);
         this.overlay.anchor.set(0, 0.5);
         this.overlay.tint = overlayTint;
 
         this.overlayDiff = SpriteFactory.build("stat_bar");
-        // this.overlayDiff.scale.set(0.1);
+        this.overlayDiff.scale.set(0.1);
         this.overlayDiff.anchor.set(0, 0.5);
         this.overlayDiff.tint = diffTint;
 
@@ -109,7 +109,7 @@ export class StatBar {
         this.container.addChild(this.outline);
         this.container.addChild(this.circle);
         this.container.addChild(this.icon);
-        UIAnimationManager.set(this, 0, statAnimation(this).run(), true);
+        AnimationManagers.UI.set(this, 0, statAnimation(this).run(), true);
     }
 
     update(amount: number) {
@@ -120,7 +120,7 @@ export class StatBar {
 function statAnimation(target: StatBar) {
     const animation = new Animation();
     const buffer = 0;
-    let width = 1000 * 1.175 - buffer;
+    let width = 1 - 0.07;
 
     animation.keyframes[0] = (animation) => {
         let base;

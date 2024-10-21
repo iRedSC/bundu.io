@@ -2,6 +2,7 @@ import z from "zod";
 import { round } from "../../lib/math";
 import { lerp } from "../../lib/transforms";
 import { validate } from "../../shared/type_guard";
+import { serverTime } from "../globals";
 
 const State = z.tuple([
     z.number(), // time
@@ -24,7 +25,7 @@ export class States {
         const removeStaleStates = (tries = 0) => {
             const state = this.values[1];
             if (state && tries < 100) {
-                if (Date.now() - 50 > state[0]) {
+                if (now > state[0]) {
                     this.values = this.values.slice(1);
                     removeStaleStates(tries + 1);
                 }
@@ -34,6 +35,8 @@ export class States {
 
         const lastState = this.values[0];
         let nextState = this.values[1];
+
+        console.log(lastState, now, nextState);
 
         if (!nextState) {
             if (lastState) {
@@ -56,7 +59,7 @@ export class States {
             // if there was no state updates for a while, this will set the old state's time
             // to the present so it can update smoothly.
             if (this.values.length === 2) {
-                this.values[0][0] = Date.now() - 50;
+                this.values[0][0] = serverTime.now();
             }
             if (this.callback) {
                 this.callback();

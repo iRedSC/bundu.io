@@ -1,20 +1,32 @@
-import { Container, Sprite, Text } from "pixi.js";
-import { SpriteFactory } from "../assets/sprite_factory";
+import {
+    BaseRenderTexture,
+    Container,
+    MIPMAP_MODES,
+    RenderTexture,
+    SCALE_MODES,
+    Sprite,
+    Text,
+} from "pixi.js";
+import { ContaineredSprite, SpriteFactory } from "../assets/sprite_factory";
 import { OutlineFilter } from "@pixi/filter-outline";
 import { Animation } from "../../lib/animations";
-import { distance, lerp } from "../../lib/transforms";
-import { UIAnimationManager } from "./animation_manager";
+import { lerp } from "../../lib/transforms";
+import { AnimationManagers } from "../animation/animations";
 import { percentOf } from "../../lib/math";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { TEXT_STYLE } from "../assets/text";
+import { PixiApp } from "../rendering/app";
 
+type MinimapPlayer = {
+    name: Text;
+    sprite: ContaineredSprite;
+    color: number;
+    hovering: boolean;
+};
 export class Minimap {
     container: Container;
-    sprite: Sprite;
-    players: Map<
-        number,
-        { name: Text; sprite: Sprite; color: number; hovering: boolean }
-    >;
+    sprite: ContaineredSprite;
+    players: Map<number, MinimapPlayer>;
 
     large: boolean = false;
     hovering: boolean = false;
@@ -49,38 +61,74 @@ export class Minimap {
             this.hovering = false;
         };
 
-        UIAnimationManager.set(this, 0, minimapAnimation(this).run(), true);
+        AnimationManagers.UI.set(this, 0, minimapAnimation(this).run(), true);
     }
 
     addPlayer(id: number, name: string, color: number, x: number, y: number) {
-        const player = {
+        const genSprite = SpriteFactory.build("player");
+        genSprite.tint = color;
+        genSprite.filters = [new OutlineFilter(3, color)];
+        genSprite.width = 100;
+        genSprite.height = 100;
+
+        var baseRenderTex = new BaseRenderTexture({
+            width: 100,
+            height: 100,
+            scaleMode: SCALE_MODES.LINEAR,
+        });
+        baseRenderTex.mipmap = MIPMAP_MODES.ON;
+        const playerTexture = new RenderTexture(baseRenderTex);
+        const renderer = PixiApp.app.renderer;
+        renderer.render(genSprite, {
+            renderTexture: playerTexture,
+        });
+        const sprite = new ContaineredSprite(new Sprite(playerTexture));
+        sprite.anchor.set(0.5);
+
+        genSprite.destroy();
+
+        const player: MinimapPlayer = {
             name: new Text(name, TEXT_STYLE),
             color: color,
-            sprite: SpriteFactory.build("player"),
+            sprite: sprite,
             hovering: false,
         };
         this.players.set(id, player);
-        player.sprite.anchor.set(0.5);
-        player.sprite.scale.set(0.1);
 
         player.name.anchor.set(0.5, 1.5);
-        player.name.scale.set(1.5);
+        player.name.scale.set(0);
         // 0xfcba03
-        player.sprite.filters = [new OutlineFilter(2, color)];
+        player.sprite.scale.set(5);
+        player.sprite.alpha = 0;
+
         this.container.addChild(player.sprite);
         this.container.addChild(player.name);
         this.setPlayerPosition(id, x, y);
 
-        player.sprite.eventMode = "static";
-        player.sprite.onpointerenter = () => {
+        player.sprite.sprite.eventMode = "static";
+        player.sprite.sprite.onpointerenter = () => {
             player.hovering = true;
         };
 
-        player.sprite.onpointerleave = () => {
+        player.sprite.sprite.onpointerleave = () => {
             player.hovering = false;
         };
 
-        UIAnimationManager.set(player, 0, playerAnimation(player).run(), true);
+        AnimationManagers.UI.set(
+            player,
+            0,
+            playerAnimation(player).run(),
+            true
+        );
+    }
+
+    clear() {
+        for (const [id, player] of this.players.entries()) {
+            AnimationManagers.UI.remove(player);
+            player.name.destroy();
+            player.sprite.destroy();
+            this.players.delete(id);
+        }
     }
 
     setPlayerPosition(id: number, x: number, y: number) {
@@ -105,20 +153,21 @@ export class Minimap {
 
 function playerAnimation(player: {
     name: Text;
-    sprite: Sprite;
+    sprite: ContaineredSprite;
     hovering: boolean;
 }) {
     const animation = new Animation();
 
     animation.keyframes[0] = () => {
         if (player.hovering) {
-            player.sprite.scale.set(lerp(player.sprite.scale.x, 0.125, 0.05));
+            player.sprite.scale.set(lerp(player.sprite.scale.x, 1.3, 0.05));
             player.name.scale.set(lerp(player.name.scale.x, 1.5, 0.05));
             return;
         }
 
-        player.sprite.scale.set(lerp(player.sprite.scale.x, 0.1, 0.05));
+        player.sprite.scale.set(lerp(player.sprite.scale.x, 1, 0.05));
         player.name.scale.set(lerp(player.name.scale.x, 0, 0.15));
+        player.sprite.alpha = lerp(player.sprite.alpha, 1, 0.15);
     };
 
     return animation;

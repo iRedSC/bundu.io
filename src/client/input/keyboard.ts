@@ -1,11 +1,15 @@
 import { Keystrokes } from "@rwh/keystrokes";
 
+type MoveDir = 0 | 1 | 2;
 export class KeyboardInputListener {
     keybinds: Keystrokes;
-    move: [number, number];
+    move: [MoveDir, MoveDir];
     chatOpen: boolean;
 
-    constructor(moveCallback: Function, chatCallback: Function) {
+    onMoveInput: (direction: [MoveDir, MoveDir]) => void = () => {};
+    onSendChat: (message: string) => void = () => {};
+
+    constructor() {
         this.keybinds = new Keystrokes({
             keyRemap: {
                 w: "up",
@@ -22,41 +26,41 @@ export class KeyboardInputListener {
         this.keybinds.bindKey("up", {
             onPressed: () => {
                 this.move[1] += 1;
-                moveCallback(this.move);
+                this.onMoveInput(this.move);
             },
             onReleased: () => {
                 this.move[1] -= 1;
-                moveCallback(this.move);
+                this.onMoveInput(this.move);
             },
         });
         this.keybinds.bindKey("left", {
             onPressed: () => {
                 this.move[0] += 1;
-                moveCallback(this.move);
+                this.onMoveInput(this.move);
             },
             onReleased: () => {
                 this.move[0] -= 1;
-                moveCallback(this.move);
+                this.onMoveInput(this.move);
             },
         });
         this.keybinds.bindKey("down", {
             onPressed: () => {
                 this.move[1] -= 1;
-                moveCallback(this.move);
+                this.onMoveInput(this.move);
             },
             onReleased: () => {
                 this.move[1] += 1;
-                moveCallback(this.move);
+                this.onMoveInput(this.move);
             },
         });
         this.keybinds.bindKey("right", {
             onPressed: () => {
                 this.move[0] -= 1;
-                moveCallback(this.move);
+                this.onMoveInput(this.move);
             },
             onReleased: () => {
                 this.move[0] += 1;
-                moveCallback(this.move);
+                this.onMoveInput(this.move);
             },
         });
 
@@ -75,7 +79,7 @@ export class KeyboardInputListener {
                 const chat =
                     document.querySelector<HTMLInputElement>("#chat-input");
                 if (chat) {
-                    chatCallback(chat.value);
+                    this.onSendChat(chat.value);
                     chat.value = "";
                 }
                 document

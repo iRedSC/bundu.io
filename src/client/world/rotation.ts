@@ -1,4 +1,5 @@
 import { rotationLerp } from "../../lib/transforms";
+import { serverTime } from "../globals";
 
 export class RotationHandler {
     _interpolate: boolean;
@@ -23,7 +24,7 @@ export class RotationHandler {
     }
 
     set(current: number, next: number) {
-        this.timestamp = Date.now() - 50;
+        this.timestamp = serverTime.now() - 50;
         this.last = current;
         this.next = next;
     }

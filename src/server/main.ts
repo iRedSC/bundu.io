@@ -101,7 +101,10 @@ parser.set(
         GlobalPacketFactory.add(
             player.id,
             [PACKET.SERVER.STARTING_INFO],
-            () => [player.id]
+            () => {
+                console.log(GlobalPacketFactory.startTime);
+                return [player.id, GlobalPacketFactory.startTime];
+            }
         );
     }
 );
@@ -114,6 +117,7 @@ setInterval(() => {
 }, 10000);
 
 setInterval(() => {
+    const now = Math.round((Date.now() - GlobalPacketFactory.startTime) * 10);
     // run all client requests for this tick
     GlobalClientPacketHandler.unpack(parser);
 
@@ -124,7 +128,7 @@ setInterval(() => {
     for (const player of GlobalPacketFactory.players.keys()) {
         const socket = GlobalSocketManager.sockets.getv(player);
         if (socket !== undefined) {
-            send(socket, GlobalPacketFactory.pack(player));
+            send(socket, [now, GlobalPacketFactory.pack(player)]);
         }
     }
 

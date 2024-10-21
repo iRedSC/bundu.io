@@ -4,30 +4,30 @@ none:
 pickaxe:
     hand_display:
         rotation: -75
-        x: 230
-        y: -100
-        scale: 0.4
+        x: -0.35
+        y: 0.21
+        scale: 0.38
 
 sword:
     hand_display:
         rotation: -135
-        x: -50
-        y: -280
-        scale: 0.6
+        x: 0
+        y: 0.5
+        scale: 0.45
 
 helmet:
     body_display:
         x: 0
         y: 0
         rotation: 0
-        scale: 0.2
+        scale: 1
 
 hat:
     body_display:
         x: 0
         y: 0
         rotation: 0
-        scale: 0.2
+        scale: 1
 
 spear:
     hand_display:
@@ -66,4 +66,4 @@ tree:
         x: 0
         y: 0
         rotation: 0
-        scale: 0.2
+        scale: 1.2

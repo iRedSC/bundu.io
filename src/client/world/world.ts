@@ -1,4 +1,3 @@
-import { Viewport } from "pixi-viewport";
 import { AnimationManager } from "../../lib/animations";
 import { SCHEMA } from "../../shared/enums";
 import { Structure } from "./objects/structure";
@@ -8,10 +7,9 @@ import { idMap } from "../configs/id_map";
 import { createGround } from "./ground";
 import { Entity } from "./objects/entity";
 import { Quadtree } from "../../lib/quadtree";
-import { requestIds } from "../client";
 import { BasicPoint } from "../../lib/types";
 import { radians } from "../../lib/transforms";
-import { ANIMATION } from "../animation/animations";
+import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { Container, Point, Text } from "pixi.js";
 import { RotationHandler } from "./rotation";
@@ -20,6 +18,7 @@ import { States } from "./states";
 import { Pond } from "./objects/pond";
 import { WORLD_SIZE } from "../constants";
 import { DefaultMap } from "../../lib/default_map";
+import { serverTime } from "../globals";
 interface GameObject {
     id: number;
 
@@ -34,7 +33,7 @@ interface GameObject {
      * Update the object.
      * Returns true if is done updating.
      */
-    update(): boolean;
+    update(now: number): boolean;
 
     trigger(id: number, manager: AnimationManager, replace?: boolean): void;
 
@@ -86,9 +85,9 @@ class ObjectContainer {
     /**
      * Update objects in the updating set.
      */
-    update(): void {
+    update(now: number): void {
         for (const object of this.updating.values()) {
-            const done = object.update();
+            const done = object.update(now);
             if (done) {
                 this.updating.delete(object);
             }
@@ -119,6 +118,7 @@ export type WorldEvent = {
 
     new_player: Player;
     user_move: { x: number; y: number };
+    set_user: Player;
 };
 
 type WorldEventCallback<T extends keyof WorldEvent> = (
@@ -128,11 +128,9 @@ type WorldEventCallback<T extends keyof WorldEvent> = (
 // This basically controls everything on the client
 // All packets (after being parsed) are sent to one of these methods
 export class World {
-    viewport: Viewport;
+    viewport: Container;
 
     user?: number;
-
-    animationManager: AnimationManager;
 
     objects: ObjectContainer;
     renderer: LayeredRenderer;
@@ -141,11 +139,13 @@ export class World {
 
     listeners: DefaultMap<keyof WorldEvent, Function[]>;
 
-    constructor(viewport: Viewport, animationManager: AnimationManager) {
+    requestIds: Set<number>;
+
+    constructor(viewport: Container) {
+        this.requestIds = new Set();
         this.listeners = new DefaultMap(() => []);
         this.viewport = viewport;
         this.sky = new Sky();
-        this.animationManager = animationManager;
 
         this.renderer = new LayeredRenderer();
 
@@ -159,6 +159,13 @@ export class World {
         this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
         this.viewport.sortChildren();
+    }
+
+    clear() {
+        for (const object of this.objects.all()) {
+            this.deleteObject(object.id);
+            this.objects.delete(object.id);
+        }
     }
 
     addEventListener<T extends keyof WorldEvent>(
@@ -183,13 +190,15 @@ export class World {
     }
 
     tick() {
-        this.animationManager.update();
-        this.objects.update();
+        AnimationManagers.World.update();
+        this.objects.update(serverTime.now());
     }
 
     setPlayer(packet?: SCHEMA.SERVER.STARTING_INFO) {
         if (packet) {
             this.user = packet[0];
+            console.log(packet);
+            serverTime.start = packet[1];
         }
         if (!this.user) {
             return;
@@ -200,11 +209,12 @@ export class World {
             return;
         }
         player.rotationProperties._interpolate = false;
-        this.viewport.follow(player.containers[0], {
-            speed: 0,
-            acceleration: 1,
-            radius: 0,
-        });
+
+        this.emitEvent("set_user", player as Player);
+    }
+
+    getUser() {
+        return this.objects.get(this.user ?? -1) as Player;
     }
 
     newStructure(packet: SCHEMA.NEW_OBJECT.STRUCTURE) {
@@ -232,7 +242,7 @@ export class World {
         scaleCoords(pos);
         const entity = new Entity(
             id,
-            this.animationManager,
+            AnimationManagers.World,
             idMap.getv(packet[5]) || "stone",
             pos,
             packet[3],
@@ -252,7 +262,7 @@ export class World {
         const name = new Text(packet[4], TEXT_STYLE);
         const player = new Player(
             id,
-            this.animationManager,
+            AnimationManagers.World,
             name,
             pos,
             packet[3]
@@ -267,10 +277,6 @@ export class World {
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
 
-        if (this.user === player.id) {
-            this.setPlayer([this.user]);
-        }
-
         this.emitEvent("new_player", player);
     }
 
@@ -280,24 +286,24 @@ export class World {
 
         const pos = new Point(packet[1], packet[2]);
         scaleCoords(pos);
-        const pond = new Pond(id, pos, packet[3], this.animationManager);
+        const pond = new Pond(id, pos, packet[3], AnimationManagers.World);
         this.objects.add(pond);
         this.renderer.add(pond.id, ...pond.containers);
     }
 
-    moveObject(packet: SCHEMA.SERVER.MOVE_OBJECT) {
+    moveObject(packet: SCHEMA.SERVER.MOVE_OBJECT, now: number) {
         const id = packet[0];
         const time = packet[1];
 
         const object = this.objects.get(id);
         if (!object) {
-            requestIds.add(id);
+            this.requestIds.add(id);
             return;
         }
         if (id === this.user)
             this.emitEvent("user_move", { x: packet[2], y: packet[3] });
         object.renderable = true;
-        object.states.set([Date.now() + time, packet[2], packet[3]]);
+        object.states.set([now, packet[2], packet[3]]);
         this.emitEvent("object_move", object);
         this.objects.updating.add(object);
         this.objects.add(object);
@@ -310,7 +316,7 @@ export class World {
         }
         const object = this.objects.get(id);
         if (!object) {
-            requestIds.add(id);
+            this.requestIds.add(id);
             return;
         }
         object.rotation = radians(packet[1]);
@@ -321,7 +327,7 @@ export class World {
         const id = packet;
         const object = this.objects.get(id);
         this.objects.delete(id);
-        this.animationManager.remove(object);
+        AnimationManagers.World.remove(object);
         this.renderer.delete(id);
     }
 
@@ -332,7 +338,7 @@ export class World {
             return;
         }
         console.log("attack triggered");
-        object.trigger(ANIMATION.ATTACK, this.animationManager, true);
+        object.trigger(ANIMATION.ATTACK, AnimationManagers.World, true);
     }
 
     block(packet: SCHEMA.EVENT.BLOCK) {
@@ -347,7 +353,7 @@ export class World {
             return;
         }
         object.blocking = true;
-        object.trigger(ANIMATION.BLOCK, this.animationManager);
+        object.trigger(ANIMATION.BLOCK, AnimationManagers.World);
     }
 
     hurt(id: SCHEMA.EVENT.HURT) {
@@ -355,7 +361,7 @@ export class World {
         if (!object) {
             return;
         }
-        object.trigger(ANIMATION.HURT, this.animationManager, true);
+        object.trigger(ANIMATION.HURT, AnimationManagers.World, true);
     }
 
     updateGear(packet: SCHEMA.SERVER.UPDATE_GEAR) {
@@ -371,7 +377,7 @@ export class World {
         }
     }
 
-    // setTime(_: number, packet: PACKET.SET_TIME) {
+    // setTime(packet: PACKET.SET_TIME) {
     //     this.sky.setTime(packet[0], this.animationManager);
     // }
 

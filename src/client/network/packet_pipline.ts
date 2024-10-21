@@ -1,8 +1,10 @@
 import { SCHEMA, OBJECT_CLASS, PACKET } from "../../shared/enums";
 import { PacketParser } from "../../shared/unpack";
+import { drawPolygon } from "../rendering/debug";
+import { UI } from "../ui/ui";
 import { World } from "../world/world";
 
-export function createParser(parser: PacketParser, world: World) {
+export function setupWorldParser(parser: PacketParser, world: World) {
     const newObjectParser = new PacketParser();
 
     parser.set(
@@ -99,5 +101,49 @@ export function createParser(parser: PacketParser, world: World) {
         PACKET.SERVER.UNLOAD_OBJECT,
         SCHEMA.SERVER.UNLOAD_OBJECT,
         world.unloadObject.bind(world)
+    );
+}
+
+export function setupUIParser(parser: PacketParser, ui: UI) {
+    parser.set(
+        PACKET.SERVER.PING,
+        SCHEMA.SERVER.PING,
+        (_: SCHEMA.SERVER.PING) => {}
+    );
+
+    parser.set(
+        PACKET.SERVER.DRAW_POLYGON,
+        SCHEMA.SERVER.DRAW_POLYGON,
+        drawPolygon
+    );
+
+    parser.set(
+        PACKET.SERVER.UPDATE_STATS,
+        SCHEMA.SERVER.UPDATE_STATS,
+        (packet: SCHEMA.SERVER.UPDATE_STATS) => {
+            console.log(packet);
+            ui.health.update(packet[0]);
+            ui.hunger.update(packet[1]);
+            ui.heat.update(packet[2]);
+        }
+    );
+
+    parser.set(
+        PACKET.SERVER.CRAFTING_RECIPES,
+        SCHEMA.SERVER.CRAFTING_RECIPES,
+        ui.recipeManager.updateRecipes.bind(ui.recipeManager)
+    );
+
+    parser.set(
+        PACKET.SERVER.UPDATE_INVENTORY,
+        SCHEMA.SERVER.UPDATE_INVENTORY,
+        (packet: SCHEMA.SERVER.UPDATE_INVENTORY) => {
+            ui.inventory.update(packet);
+            ui.craftingMenu.items = ui.recipeManager.filter(
+                ui.inventory.items,
+                []
+            );
+            ui.craftingMenu.update();
+        }
     );
 }

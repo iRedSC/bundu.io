@@ -2,12 +2,12 @@ import * as PIXI from "pixi.js";
 import { radians } from "../../../lib/transforms";
 import Random from "../../../lib/random";
 import { WorldObject } from "./world_object";
-import { assets } from "../../assets/load";
 import { Animation, AnimationManager } from "../../../lib/animations";
 import { ANIMATION, hurt } from "../../animation/animations";
+import { ContaineredSprite, SpriteFactory } from "../../assets/sprite_factory";
 
 export class Entity extends WorldObject {
-    sprite: PIXI.Sprite;
+    sprite: ContaineredSprite;
 
     constructor(
         id: number,
@@ -24,7 +24,7 @@ export class Entity extends WorldObject {
             this.container.height / 2
         );
 
-        this.sprite = new PIXI.Sprite(assets(type));
+        this.sprite = SpriteFactory.build(type);
         this.sprite.rotation = radians(-90);
         this.sprite.anchor.set(0.5);
 
@@ -52,9 +52,9 @@ function entityIdle(target: Entity) {
 
     animation.keyframes[1] = (animation) => {
         target.container.scale.x =
-            width + Math.cos(animation.t * Math.PI * 2) * 0.001;
+            width + Math.cos(animation.t * Math.PI * 2) * 1;
         target.container.scale.y =
-            height - Math.cos(animation.t * Math.PI * 2) * 0.002;
+            height - Math.cos(animation.t * Math.PI * 2) * 2;
         if (animation.keyframeEnded) {
             animation.goto(1, frameLength);
         }

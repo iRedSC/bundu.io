@@ -3,7 +3,7 @@ import { cubicBezier } from "../../animation/animations";
 import { Point } from "pixi.js";
 import { Animation, AnimationManager } from "../../../lib/animations";
 import { lerp } from "../../../lib/transforms";
-import { SpriteFactory, SpriteWrapper } from "../../assets/sprite_factory";
+import { SpriteFactory, ContaineredSprite } from "../../assets/sprite_factory";
 
 function createSprite(
     color: number,
@@ -16,7 +16,7 @@ function createSprite(
     sprite.position = pos;
     sprite.zIndex = z;
     sprite.alpha = a === undefined ? 1 : a;
-    sprite.scale.set(size / 5000);
+    sprite.scale.set(size);
     sprite.tint = color;
     sprite.anchor.set(0.5);
     return sprite;
@@ -24,12 +24,12 @@ function createSprite(
 
 export class Pond extends WorldObject {
     sprites: [
-        SpriteWrapper,
-        SpriteWrapper,
-        SpriteWrapper,
-        SpriteWrapper,
-        SpriteWrapper,
-        SpriteWrapper
+        ContaineredSprite,
+        ContaineredSprite,
+        ContaineredSprite,
+        ContaineredSprite,
+        ContaineredSprite,
+        ContaineredSprite
     ];
 
     constructor(
@@ -66,7 +66,7 @@ export class Pond extends WorldObject {
     }
 }
 
-export function wave(target: SpriteWrapper, time: number) {
+export function wave(target: ContaineredSprite, time: number) {
     const timingFunction = cubicBezier(0.68, 0.3, 0.32, 0.74);
     const size = target.scale.x;
     const animation = new Animation();

@@ -142,8 +142,9 @@ export class AttributesData {
         }
 
         const callbacks = this.callbacks[type];
-        if (!callbacks) return;
+        if (!callbacks) return this;
         for (const callback of callbacks?.values()) callback(this.get(type));
+        return this;
     }
 
     addEventListener(type: AttributeType, callback: AttributeCallback): void {

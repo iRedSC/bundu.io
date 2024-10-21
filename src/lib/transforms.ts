@@ -4,11 +4,20 @@ import { BasicPoint } from "./types.js";
 /**
  * Returns the distance between two points
  */
-export function distance(point1: BasicPoint, point2: BasicPoint): number {
+export function distance(
+    point1: BasicPoint,
+    point2: BasicPoint,
+    tolerance: number = Number.EPSILON
+): number {
     const deltaX = point2.x - point1.x;
     const deltaY = point2.y - point1.y;
 
-    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+    // Check if the difference is within the tolerance
+    if (Math.abs(deltaX) < tolerance && Math.abs(deltaY) < tolerance) {
+        return 0; // Points are practically identical
+    }
+
+    const distance = Math.sqrt(Math.abs(deltaX) ** 2 + Math.abs(deltaY) ** 2);
 
     return distance;
 }

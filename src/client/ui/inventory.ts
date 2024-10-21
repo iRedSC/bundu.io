@@ -9,12 +9,12 @@ import {
     rotationLerp,
 } from "../../lib/transforms";
 import { TEXT_STYLE } from "../assets/text";
-import { SpriteFactory } from "../assets/sprite_factory";
+import { ContaineredSprite, SpriteFactory } from "../assets/sprite_factory";
 import { SCHEMA } from "../../shared/enums";
 import { Grid } from "./grid";
 import { percentOf } from "../../lib/math";
 import { Animation } from "../../lib/animations";
-import { UIAnimationManager } from "./animation_manager";
+import { AnimationManagers } from "../animation/animations";
 import { ITEM_BUTTON_SIZE } from "../constants";
 
 /**
@@ -34,7 +34,7 @@ export class InventoryButton extends ItemButton {
     constructor() {
         super();
 
-        UIAnimationManager.set(
+        AnimationManagers.UI.set(
             this,
             0,
             inventoryButtonAnimation(this).run(),
@@ -165,7 +165,7 @@ function inventoryButtonAnimation(button: ItemButton) {
  * The inventory, where all of your item data is stored.
  */
 
-type Callback = (item: number) => void;
+type Callback = (item: number, shift: boolean) => void;
 
 const inventoryGrid = new Grid(
     percentOf(10, ITEM_BUTTON_SIZE),
@@ -183,8 +183,8 @@ export class Inventory {
     buttons: InventoryButton[];
     itemsArray: Item[];
     items: Map<number, number>;
-    rightclick?: (item: number) => void;
-    leftclick?: (item: number) => void;
+    private rightClickCB?: Callback;
+    private leftClickCB?: Callback;
 
     constructor() {
         this.items = new Map();
@@ -207,8 +207,8 @@ export class Inventory {
         const add = count - this.buttons.length;
         for (let i = 0; i < add; i++) {
             const button = new InventoryButton();
-            button.leftclick = this.leftclick;
-            button.rightclick = this.rightclick;
+            button.leftclick = this.leftClickCB;
+            button.rightclick = this.rightClickCB;
             this.buttons.push(button);
             this.container.addChild(button.button);
             button.button.onpointerdown = (ev) => {
@@ -228,13 +228,14 @@ export class Inventory {
         return this.buttons.length;
     }
 
-    setCallbacks(leftclick?: Callback, rightclick?: Callback) {
-        this.leftclick = leftclick;
-        this.rightclick = rightclick;
-        for (const button of this.buttons) {
-            button.leftclick = leftclick;
-            button.rightclick = rightclick;
-        }
+    set leftclick(value: Callback) {
+        this.leftClickCB = value;
+        this.buttons.forEach((b) => (b.leftclick = value));
+    }
+
+    set rightclick(value: Callback) {
+        this.rightClickCB = value;
+        this.buttons.forEach((b) => (b.rightclick = value));
     }
 
     update(update: SCHEMA.SERVER.UPDATE_INVENTORY) {
@@ -292,7 +293,7 @@ function dragStart(button: InventoryButton, display: Inventory) {
         return;
     }
     const sprite = SpriteFactory.build(button.item ?? -1);
-    sprite.scale.set(0.05);
+    sprite.scale.set(50);
     sprite.anchor.set(0.5);
     sprite.alpha = 0.8;
     let canDrag = false;
@@ -327,7 +328,7 @@ function dragStart(button: InventoryButton, display: Inventory) {
  * @param event The mouseMove event
  */
 function dragMove(
-    sprite: PIXI.Sprite,
+    sprite: ContaineredSprite,
     event: PointerEvent,
     display: Inventory
 ) {
