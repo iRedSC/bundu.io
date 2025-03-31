@@ -7,14 +7,14 @@ export const AttributeList = [
     "attack.reach",
     "attack.sweep",
 
-    "movement.speed",
+"movement.speed",
 
     "health.max",
     "health.regen_amount",
     "health.defense",
     "health.defense.blocking",
 
-    "hunger.max",
+"hunger.max",
     "hunger.depletion_amount",
 
     "temperature.max",
