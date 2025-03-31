@@ -18,7 +18,7 @@ export type CameraOptions = {
     screenHeight: number;
 
     ticker: Ticker;
-    targets: BasicPoint[];
+    target: BasicPoint;
     speed: number;
 
     padding: number;
@@ -84,8 +84,7 @@ export class Camera {
 
     padding: number;
 
-    targets: BasicPoint[];
-    readonly target: Point;
+    target: BasicPoint;
     center: Point;
     speed: number;
 
@@ -111,8 +110,7 @@ export class Camera {
 
         this.padding = options.padding ?? 0.1;
 
-        this.targets = options.targets ?? [];
-        this.target = new Point();
+        this.target = options.target ?? new Point();
         this.speed = options.speed ?? 1;
 
         this._zoom = options.zoom ?? 1;
@@ -132,7 +130,7 @@ export class Camera {
         this.world.eventMode = "static";
         this.world.on("globalpointermove", this.updatePointerPos, this);
         this.world.on("wheel", (ev) => {
-            this.addLinearZoom(ev.deltaY / 1000);
+            this.addLinearZoom(-ev.deltaY / 1000);
         });
     }
 
@@ -225,46 +223,24 @@ export class Camera {
         });
         drawRect(smallBounds, graphics);
 
-        const filteredTargets = this.targets.filter(
-            (target, i) => i === 0 || smallBounds.contains(target.x, target.y)
-        );
-
-        for (const [i, target] of this.targets.entries()) {
-            if (i === 0) {
-                graphics.lineStyle({
-                    width: 5,
-                    color: 0x00ff00,
-                });
-                graphics.drawCircle(target.x, target.y, 2);
-                continue;
-            }
-            graphics.lineStyle({
-                width: 5,
-                color: 0x0000ff,
-            });
-            graphics.drawCircle(target.x, target.y, 2);
-        }
-
-        const bounds = calculateBoundingBox(filteredTargets, this.padding);
         graphics.lineStyle({
             width: 5,
             color: 0x00ff00,
         });
-        drawRect(bounds, graphics);
     }
 
     update(elapsed: number, snap?: boolean) {
-        const smallBounds = this.getVisibleBounds(
-            this.padding,
-            this.minZoom ?? 0.01
-        );
+        // const smallBounds = this.getVisibleBounds(
+        //     this.padding,
+        //     this.minZoom ?? 0.01
+        // );
 
         // const filteredTargets = this.targets.filter(
         //     (target, i) => i === 0 || smallBounds.contains(target.x, target.y)
         // );
 
-        const bounds = calculateBoundingBox(this.targets, this.padding);
-        this.fitBounds(bounds, this.autoZoom);
+        // const bounds = calculateBoundingBox(this.target, this.padding);
+        // this.fitBounds(bounds, this.autoZoom);
 
         // this.drawDebug(graphics);
 

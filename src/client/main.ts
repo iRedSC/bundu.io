@@ -48,14 +48,14 @@ const camera = new Camera(viewport, {
     ticker: app.ticker,
 
     zoomSpeed: 0.05,
-    // minZoom: 0.75,
+    minZoom: 0.75,
     maxZoom: 2.5,
     // autoZoom: true,
 
     padding: 100,
 
     speed: 0.05,
-    peek: 0.1,
+    peek: 0.01,
     // deadZone: 25,
 });
 
@@ -69,23 +69,10 @@ const parser = new PacketParser();
 setupWorldParser(parser, world);
 
 world.addEventListener("set_user", (player) => {
-    camera.targets = [player.position];
+    camera.target = player.position;
     camera.snap();
+    console.log("camera target: ", camera.target);
 });
-
-// world.addEventListener("new_player", (player) => {
-//     camera.targets.push(player.position);
-// });
-
-// setInterval(() => {
-//     const user = world.getUser();
-//     if (!user) return;
-//     const query = world.objects.query([
-//         { x: user.position.x - 500, y: user.position.y - 500 },
-//         { x: user.position.x + 500, y: user.position.y + 500 },
-//     ]);
-//     camera.targets = query.map((id) => world.objects.get(id)!.position);
-// });
 
 const resize = new Event("resize");
 setTimeout(() => window.dispatchEvent(resize), 50);
