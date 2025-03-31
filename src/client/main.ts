@@ -71,7 +71,6 @@ setupWorldParser(parser, world);
 world.addEventListener("set_user", (player) => {
     camera.target = player.position;
     camera.snap();
-    console.log("camera target: ", camera.target);
 });
 
 const resize = new Event("resize");
