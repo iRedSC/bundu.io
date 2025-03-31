@@ -85,7 +85,7 @@ export class WorldObject {
         // if (!now) return true;
         const [x, y] = this.states.interpolate(now);
         this.position.set(x, y);
-        console.log(this.position);
+        // console.log(this.position);
 
         if (this.rotationProperties._interpolate) {
             this._rotation = this.rotationProperties.interpolate(now);

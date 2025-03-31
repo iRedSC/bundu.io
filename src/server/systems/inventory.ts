@@ -9,6 +9,8 @@ import {
     Attributes,
     AttributesData,
 } from "../components/attributes.js";
+import { GlobalPacketFactory } from "../globals.js";
+import { PACKET } from "../../shared/enums.js";
 
 const UUID = () => {
     return String("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx").replace(
@@ -79,7 +81,7 @@ export class InventorySystem extends System {
     };
 
     selectItem: EventCallback<"select_item"> = (
-        object: GameObject,
+        player: GameObject,
         item: number
     ) => {
         const setAttrs = (
@@ -98,10 +100,10 @@ export class InventorySystem extends System {
             }
         };
 
-        const data = PlayerData.get(object);
-        const inventory = Inventory.get(object);
+        const data = PlayerData.get(player);
+        const inventory = Inventory.get(player);
         const config = ItemConfigs.get(item);
-        const attributes = Attributes.get(object);
+        const attributes = Attributes.get(player);
 
         if (!inventory.items.has(item) || !config.type) return;
 
@@ -131,12 +133,19 @@ export class InventorySystem extends System {
                 attributes?.clear("off_hand");
                 break;
             case "consume":
-                this.trigger("remove_item", object.id, { id: item, amount: 1 });
+                this.trigger("remove_item", player.id, { id: item, amount: 1 });
                 setAttrs(UUID(), attributes, config.attributes, 5000);
+                break;
+            case "building":
+                GlobalPacketFactory.add(
+                    player.id,
+                    [PACKET.SERVER.SELECT_STRUCTURE],
+                    () => [item, 5]
+                );
                 break;
         }
 
-        this.trigger("update_gear", object.id, [
+        this.trigger("update_gear", player.id, [
             data.mainHand || -1,
             data.offHand || -1,
             data.helmet || -1,

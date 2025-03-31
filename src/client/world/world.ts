@@ -376,6 +376,16 @@ export class World {
             player.setGear(gear);
         }
     }
+    selectStructure(packet: SCHEMA.SERVER.SELECT_STRUCTURE) {
+        const structure: number = packet[0];
+        const size: number = packet[1];
+        console.error("IT WORKS?", structure);
+
+        const player = this.objects.get(this.user || -1);
+        if (player instanceof Player) {
+            player.setSelectedStructure(structure, size);
+        }
+    }
 
     // setTime(packet: PACKET.SET_TIME) {
     //     this.sky.setTime(packet[0], this.animationManager);

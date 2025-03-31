@@ -25,6 +25,7 @@ export namespace PACKET {
         LOAD_GROUND: 0x0d,
         STARTING_INFO: 0x0e,
         CRAFTING_RECIPES: 0x0f,
+        SELECT_STRUCTURE: 0x10,
     } as const;
     export type SERVER = (typeof SERVER)[keyof typeof SERVER];
 
@@ -259,6 +260,12 @@ export namespace SCHEMA {
             z.string(), // message
         ]);
         export type CHAT_MESSAGE = z.infer<typeof CHAT_MESSAGE>;
+
+        export const SELECT_STRUCTURE = z.tuple([
+            z.number(), // structure id
+            z.number(), // structure size
+        ]);
+        export type SELECT_STRUCTURE = z.infer<typeof SELECT_STRUCTURE>;
 
         export const PLACEMENT_VALIDITY = z.boolean();
         export type PLACEMENT_VALIDITY = boolean;

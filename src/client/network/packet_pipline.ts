@@ -102,6 +102,12 @@ export function setupWorldParser(parser: PacketParser, world: World) {
         SCHEMA.SERVER.UNLOAD_OBJECT,
         world.unloadObject.bind(world)
     );
+
+    parser.set(
+        PACKET.SERVER.SELECT_STRUCTURE,
+        SCHEMA.SERVER.SELECT_STRUCTURE,
+        world.selectStructure.bind(world)
+    );
 }
 
 export function setupUIParser(parser: PacketParser, ui: UI) {

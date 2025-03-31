@@ -18,6 +18,10 @@ const Gear = z.tuple([
 ]);
 type Gear = z.infer<typeof Gear>;
 type PlayerParts = {
+    structure: {
+        container: Container;
+        sprite: ContaineredSprite;
+    };
     body: {
         container: Container;
         sprite: ContaineredSprite;
@@ -54,6 +58,10 @@ export class Player extends WorldObject {
     ) {
         super(id, pos, rotation, 15);
         this.sprite = {
+            structure: {
+                container: new Container(),
+                sprite: SpriteFactory.build(""),
+            },
             body: {
                 container: new Container(),
                 sprite: SpriteFactory.build("player"),
@@ -91,6 +99,7 @@ export class Player extends WorldObject {
         // this.container.pivot.y = -0.1;
         this.container.zIndex = 1;
 
+        const structure = this.sprite.structure;
         const body = this.sprite.body;
         const leftHand = this.sprite.leftHand;
         const rightHand = this.sprite.rightHand;
@@ -101,6 +110,10 @@ export class Player extends WorldObject {
         this.container.addChild(leftHand.container);
         this.container.addChild(rightHand.container);
         this.container.addChild(body.container);
+        this.container.addChild(structure.container);
+
+        structure.container.addChild(structure.sprite);
+
         body.container.addChild(body.sprite);
 
         leftHand.container.addChild(leftHand.item);
@@ -241,6 +254,20 @@ export class Player extends WorldObject {
                 this.helmet
             );
         }
+    }
+
+    setSelectedStructure(id: number, size: number) {
+        const name = idMap.getv(id) || "";
+        const config = spriteConfigs.get(name);
+        if (!config) {
+            return;
+        }
+        config.world_display.scale = size;
+        SpriteFactory.update(
+            this.sprite.structure.sprite,
+            config.world_display,
+            name
+        );
     }
 }
 

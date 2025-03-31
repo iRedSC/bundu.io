@@ -44,7 +44,7 @@ type FullItemConfig = {
 const FALLBACK_DISPLAY_CONFIG: DisplayConfig = {
     x: 0,
     y: 0,
-    scale: 0,
+    scale: 1,
     rotation: 0,
 };
 

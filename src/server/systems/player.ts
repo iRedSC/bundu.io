@@ -71,8 +71,7 @@ export class PlayerSystem extends System implements PlayerController {
         const target = moveToward(
             { x: 0, y: 0 },
             { x: data.moveDir[0], y: data.moveDir[1] },
-            baseSpeed * attributes?.get("movement.speed", baseSpeed) ??
-                baseSpeed
+            baseSpeed * attributes?.get("movement.speed", baseSpeed)
         );
         this.trigger("move", player.id, target);
     }
