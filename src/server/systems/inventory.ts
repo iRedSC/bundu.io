@@ -101,7 +101,7 @@ export class InventorySystem extends System {
         const data = PlayerData.get(object);
         const inventory = Inventory.get(object);
         const config = ItemConfigs.get(item);
-        const attributes = object.get(Attributes);
+        const attributes = Attributes.get(object);
 
         if (!inventory.items.has(item) || !config.type) return;
 

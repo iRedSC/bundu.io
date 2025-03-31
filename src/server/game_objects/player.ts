@@ -25,7 +25,7 @@ export class Player extends GameObject {
         attributes.data.set("health.regen_amount", "base", "add", 10);
         attributes.data.set("hunger.depletion_amount", "base", "add", 10);
         attributes.data.set("hunger.max", "base", "add", 100);
-        attributes.data.set("movement.speed", "base", "add", 1);
+        attributes.data.set("movement.speed", "base", "add", 0);
         attributes.data.set("temperature.max", "base", "add", 200);
         attributes.data.set("water.depletion_amount", "base", "add", 5);
         attributes.data.set("water.max", "base", "add", 100);
@@ -75,8 +75,8 @@ export class Player extends GameObject {
             return [
                 this.id,
                 100,
-                round(physics.position.x),
-                round(physics.position.y),
+                round(physics.position.x, 2),
+                round(physics.position.y, 2),
             ];
         };
 

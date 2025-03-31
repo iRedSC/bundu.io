@@ -9,7 +9,7 @@ type UpdateTypes = Set<PACKET.SERVER>;
 
 /**
  * UpdateHandler deals with sending packets to players.
- * All you need to do is add objects that need send, along with which
+ * All you need to do is add objects that need sent, along with which
  * packets need sent from it.
  */
 export class UpdateHandler {
