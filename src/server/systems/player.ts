@@ -158,7 +158,7 @@ export class PlayerSystem extends System implements PlayerController {
             GlobalPacketFactory.add(
                 player.id,
                 [PACKET.SERVER.SELECT_STRUCTURE],
-                () => [selectedStructure.id, 1]
+                () => [-1, 1]
             );
             this.trigger("remove_item", player.id, {
                 id: selectedStructure.id,
