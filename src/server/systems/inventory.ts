@@ -66,6 +66,7 @@ export class InventorySystem extends System {
     ) => {
         if (amount === undefined) amount = 1;
         if (amount <= 0 || id === undefined) return;
+        if (id < 0) return;
 
         const inventory = Inventory.get(object);
         if (!inventory) return;
