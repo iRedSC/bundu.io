@@ -1,4 +1,4 @@
-import { moveToward } from "../../lib/transforms.js";
+import { moveToward, radians } from "../../lib/transforms.js";
 import { PACKET } from "../../shared/enums.js";
 import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
@@ -17,7 +17,8 @@ import {
     AttributeType,
 } from "../components/attributes.js";
 import { StatList, StatType, Stats } from "../components/stats.js";
-
+import { Resource } from "../game_objects/resource.js";
+import SAT from "sat";
 /**
  * This is the system that controls players.
  * ! Method calls come directly from client's packets, so it's a potential attack point.
@@ -133,7 +134,40 @@ export class PlayerSystem extends System implements PlayerController {
     attack(playerId: number, stop: boolean) {
         const player = this.world.getObject(playerId);
         if (!player) return;
+        const physics = Physics.get(player);
         const data = PlayerData.get(player);
+        const selectedStructure = data.selectedStructure;
+
+        if (selectedStructure.id !== -1) {
+            const struct_physics: Physics = {
+                position: physics.position.clone(),
+                size: 15,
+                rotation: physics.rotation + radians(-45),
+                collider: new SAT.Circle(physics.position.clone(), 15),
+                solid: true,
+                speed: 0,
+            };
+            this.world.addObject(
+                new Resource(struct_physics, {
+                    id: selectedStructure.id,
+                    variant: 0,
+                })
+            );
+            selectedStructure.cooldown_timestamp = Date.now() + 1000;
+
+            GlobalPacketFactory.add(
+                player.id,
+                [PACKET.SERVER.SELECT_STRUCTURE],
+                () => [selectedStructure.id, 1]
+            );
+            this.trigger("remove_item", player.id, {
+                id: selectedStructure.id,
+                amount: 1,
+            });
+            selectedStructure.id = -1;
+            return;
+        }
+
         data.attacking = !stop;
         if (data.lastAttackTime === undefined) {
             data.lastAttackTime = this.world.gameTime;

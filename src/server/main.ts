@@ -93,6 +93,10 @@ parser.set(
                 backpackSkin: packet[2],
 
                 moveDir: [0, 0],
+                selectedStructure: {
+                    id: -1,
+                    cooldown_timestamp: 0,
+                },
             }
         );
         GlobalSocketManager.sockets.set(socket, player.id);

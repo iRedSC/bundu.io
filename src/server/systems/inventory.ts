@@ -104,6 +104,7 @@ export class InventorySystem extends System {
         const inventory = Inventory.get(player);
         const config = ItemConfigs.get(item);
         const attributes = Attributes.get(player);
+        const selectedStructure = data.selectedStructure;
 
         if (!inventory.items.has(item) || !config.type) return;
 
@@ -137,10 +138,14 @@ export class InventorySystem extends System {
                 setAttrs(UUID(), attributes, config.attributes, 5000);
                 break;
             case "building":
+                if (selectedStructure.cooldown_timestamp > Date.now()) break;
+                selectedStructure.cooldown_timestamp = Date.now() + 1000;
+                selectedStructure.id =
+                    selectedStructure.id === item ? -1 : item;
                 GlobalPacketFactory.add(
                     player.id,
                     [PACKET.SERVER.SELECT_STRUCTURE],
-                    () => [item, 1]
+                    () => [selectedStructure.id, 1]
                 );
                 break;
         }

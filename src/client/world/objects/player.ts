@@ -112,6 +112,7 @@ export class Player extends WorldObject {
         this.container.addChild(body.container);
         this.container.addChild(structure.container);
 
+        structure.sprite.alpha = 0.5;
         structure.container.addChild(structure.sprite);
         structure.sprite.anchor.set(0.5);
         structure.container.pivot.set(0, -1 * structure.sprite.scale.x);
@@ -259,11 +260,13 @@ export class Player extends WorldObject {
     }
 
     setSelectedStructure(id: number, size: number) {
+        this.sprite.structure.sprite.renderable = false;
         const name = idMap.getv(id) || "";
         const config = spriteConfigs.get(name);
         if (!config) {
             return;
         }
+        this.sprite.structure.sprite.renderable = true;
         config.world_display.scale = size;
         SpriteFactory.update(
             this.sprite.structure.sprite,

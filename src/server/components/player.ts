@@ -69,6 +69,10 @@ export type PlayerData = {
 
     playerSkin: number;
     backpackSkin: number;
+    selectedStructure: {
+        id: number;
+        cooldown_timestamp: number;
+    };
 
     mainHand?: number;
     offHand?: number;
@@ -87,4 +91,8 @@ export const PlayerData = Component.register<PlayerData>(() => ({
     playerSkin: 0,
     backpackSkin: 0,
     moveDir: [0, 0],
+    selectedStructure: {
+        id: -1,
+        cooldown_timestamp: 0,
+    },
 }));
