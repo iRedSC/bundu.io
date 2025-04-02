@@ -161,12 +161,12 @@ function playerAnimation(player: {
     animation.keyframes[0] = () => {
         if (player.hovering) {
             player.sprite.scale.set(lerp(player.sprite.scale.x, 1.3, 0.05));
-            player.name.scale.set(lerp(player.name.scale.x, 1.5, 0.05));
+            player.name.scale.set(lerp(player.name.scale.x, 1.5, 0.5));
             return;
         }
 
         player.sprite.scale.set(lerp(player.sprite.scale.x, 1, 0.05));
-        player.name.scale.set(lerp(player.name.scale.x, 0, 0.15));
+        player.name.scale.set(lerp(player.name.scale.x, 0, 0.5));
         player.sprite.alpha = lerp(player.sprite.alpha, 1, 0.15);
     };
 
@@ -179,7 +179,7 @@ function minimapAnimation(minimap: Minimap) {
     animation.keyframes[0] = () => {
         if (minimap.large) {
             minimap.container.scale.set(
-                lerp(minimap.container.scale.x, 0.4, 0.025)
+                lerp(minimap.container.scale.x, 0.4, 0.2)
             );
             minimap.container.alpha = lerp(
                 minimap.container.alpha,
@@ -195,9 +195,7 @@ function minimapAnimation(minimap: Minimap) {
             );
             return;
         }
-        minimap.container.scale.set(
-            lerp(minimap.container.scale.x, 0.15, 0.05)
-        );
+        minimap.container.scale.set(lerp(minimap.container.scale.x, 0.15, 0.2));
         minimap.container.alpha = lerp(minimap.container.alpha, 0.9, 0.05);
     };
 
