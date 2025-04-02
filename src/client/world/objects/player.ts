@@ -113,6 +113,8 @@ export class Player extends WorldObject {
         this.container.addChild(structure.container);
 
         structure.container.addChild(structure.sprite);
+        structure.sprite.anchor.set(0.5);
+        structure.container.pivot.set(0, -1 * structure.sprite.scale.x);
 
         body.container.addChild(body.sprite);
 

@@ -140,7 +140,7 @@ export class InventorySystem extends System {
                 GlobalPacketFactory.add(
                     player.id,
                     [PACKET.SERVER.SELECT_STRUCTURE],
-                    () => [item, 5]
+                    () => [item, 1]
                 );
                 break;
         }
