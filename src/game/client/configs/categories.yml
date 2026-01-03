@@ -1,0 +1,18 @@
+tools:
+    types:
+        - pickaxe
+        - sword
+        - helmet
+        - spear
+        - hammer
+        - hat
+        - book
+    items:
+        - spyglass
+
+buildings:
+    types:
+        - wall
+        - door
+        - building
+        - spike

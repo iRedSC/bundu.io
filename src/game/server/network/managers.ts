@@ -1,0 +1,23 @@
+import { Schema, type ServerPacketMap } from "@shared/packet_definitions";
+import {
+    WorldPacketManager,
+    PlayerPacketManager,
+    SocketManager,
+} from "@ioengine/server";
+import { PlayerData } from "../components/player";
+
+export const worldPacketManager = new WorldPacketManager<
+    typeof Schema.Server,
+    ServerPacketMap
+>(Schema.Server);
+
+export const playerPacketManager = new PlayerPacketManager<
+    typeof Schema.Server,
+    ServerPacketMap
+>(Schema.Server);
+
+playerPacketManager.visibleObjectsCallback = (player) => {
+    return player.get(PlayerData)?.visibleObjects.objects.values();
+};
+
+export const socketManager = new SocketManager();

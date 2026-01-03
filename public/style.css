@@ -1,0 +1,97 @@
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    color-scheme: light dark;
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #242424;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+canvas {
+    pointer-events: all;
+    position: absolute;
+    z-index: 1;
+    /* width: 100%;
+    height: 100%; */
+    /* object-fit: cover;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0; */
+}
+
+.menu-background {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.blur-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(4px); /* Adjust the blur amount as needed */
+}
+
+.centered-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+input[type="text"],
+button {
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    outline: none;
+    pointer-events: all;
+}
+
+button {
+    border-radius: 0.3rem;
+    background-color: #745c06;
+    color: #fff;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.hidden {
+    display: none;
+}
+
+.menu {
+    z-index: 2;
+}
+
+.chat-container {
+    z-index: 3;
+    position: absolute;
+    top: 75%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}

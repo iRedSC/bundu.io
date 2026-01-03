@@ -1,0 +1,69 @@
+none:
+    sprite: unknown_asset
+
+pickaxe:
+    hand_display:
+        rotation: -75
+        x: -0.35
+        y: 0.21
+        scale: 0.38
+
+sword:
+    hand_display:
+        rotation: -135
+        x: 0
+        y: 0.5
+        scale: 0.45
+
+helmet:
+    body_display:
+        x: 0
+        y: 0
+        rotation: 0
+        scale: 1
+
+hat:
+    body_display:
+        x: 0
+        y: 0
+        rotation: 0
+        scale: 1
+
+spear:
+    hand_display:
+        rotation: -135
+        x: 0
+        y: -400
+        scale: 2.2
+
+hammer:
+    hand_display:
+        rotation: -100
+        x: 150
+        y: -200
+        scale: 2
+
+book:
+    hand_display:
+        rotation: -100
+        x: 150
+        y: -200
+        scale: 2
+wall:
+    sprite: unknown_asset
+
+door:
+    sprite: unknown_asset
+
+spike:
+    sprite: unknown_asset
+
+building:
+    sprite: unknown_asset
+
+tree:
+    world_display:
+        x: 0
+        y: 0
+        rotation: 0
+        scale: 1.2

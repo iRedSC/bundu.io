@@ -1,0 +1,46 @@
+{
+    "compilerOptions": {
+        // Environment setup & latest features
+        "lib": ["ESNext", "DOM"],
+        "target": "ESNext",
+        "module": "Preserve",
+        "moduleDetection": "force",
+        "jsx": "react-jsx",
+        "allowJs": true,
+        // Bundler mode
+        "moduleResolution": "bundler",
+        // "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        // Best practices
+        "strict": true,
+        "skipLibCheck": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": true,
+        "noImplicitOverride": true,
+        // Some stricter flags (disabled by default)
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "noPropertyAccessFromIndexSignature": false,
+        "paths": {
+            "@client/constants": ["./src/game/client/constants.ts"],
+            "@shared/*": ["./src/game/shared/*"],
+            "@client/globals": ["./src/game/client/globals.ts"],
+            "@client/rendering/*": ["./src/game/client/rendering/*"],
+            "@client/assets/*": ["./src/game/client/assets/*"],
+            "@client/configs/*": ["./src/game/client/configs/*"],
+
+            "@ioengine/client": ["./src/ioengine/client/index.ts"],
+            "@ioengine/server": ["./src/ioengine/server/index.ts"],
+            "@ioengine/lib": ["./src/ioengine/lib/index.ts"],
+            "@ioengine/shared": ["./src/ioengine/shared/index.ts"]
+        },
+        "plugins": [
+            {
+                "transform": "typia/lib/transform"
+            }
+        ],
+        "outDir": "dist",
+        "strictNullChecks": true
+    },
+    "include": ["src"]
+}

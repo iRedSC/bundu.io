@@ -1,0 +1,28 @@
+import { getStringId } from "../configs/id_map";
+import SpriteMap from "../configs/sprite_map.yml";
+import { Assets, Texture } from "pixi.js";
+
+const loadedAssets = new Map<string, Texture>();
+let unknownAsset: Texture;
+
+export async function initAssets(): Promise<void> {
+    const bundles = Object.entries(SpriteMap).map(([key, value]) => ({
+        alias: key,
+        src: `../assets/${value}`,
+    }));
+
+    await Assets.load(bundles.map((b) => b.src));
+
+    for (const { alias, src } of bundles) {
+        loadedAssets.set(alias, Assets.get(src));
+    }
+
+    unknownAsset = loadedAssets.get("unknown_asset")!;
+    console.debug("Assets loaded");
+}
+
+export function getAsset(asset?: string | number): Texture {
+    if (typeof asset === "number") asset = getStringId(asset);
+    if (!asset) return unknownAsset;
+    return loadedAssets.get(asset) || unknownAsset;
+}

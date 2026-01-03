@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="public/assets/player.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Aoboshi+One&family=Nunito:wght@500&display=swap"
+            rel="stylesheet"
+        />
+
+        <link rel="stylesheet" href="public/style.css" />
+        <title>Bundu.io</title>
+        <script type="module" defer src="src/game/client/index.ts"></script>
+    </head>
+    <body>
+        <img
+            src="public/assets/menu_background.png"
+            alt=""
+            class="menu-background blur-image menu"
+        />
+        <div class="centered-content menu">
+            <input type="text" id="name-input" placeholder="username" />
+            <button class="menu">Play</button>
+        </div>
+        <div class="chat-container hidden">
+            <input
+                type="text"
+                id="chat-input"
+                autocomplete="off"
+                placeholder="chat message"
+            />
+        </div>
+    </body>
+</html>

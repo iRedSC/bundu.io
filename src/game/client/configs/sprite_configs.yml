@@ -1,0 +1,19 @@
+wood_sword:
+    texture: wood_sword.svg
+    type: sword
+
+stone_sword:
+    texture: stone_sword.svg
+    type: sword
+
+gold_sword:
+    texture: gold_sword.svg
+    type: sword
+
+diamond_sword:
+    texture: diamond_sword.svg
+    type: sword
+
+amethyst_sword:
+    texture: amethyst_sword.svg
+    type: sword

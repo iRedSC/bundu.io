@@ -1,0 +1,146 @@
+import { DebugWorldObject } from "@client/rendering/debug";
+import { Circle } from "./debug/circle";
+import { TEXT_STYLE } from "@client/assets/text";
+import { Animation, AnimationManager } from "@ioengine/lib";
+import {
+    PositionStates,
+    RotationStates,
+    type PositionState,
+    type RotationState,
+} from "./states";
+import { Container, Point, Text } from "pixi.js";
+import { serverTime } from "@client/globals";
+import typia from "typia";
+
+/**
+ * The base object for rendering something in the world.
+ * Contains states for interpolating movement
+ * Separate system for interpolating rotation
+ */
+export default class GameObject {
+    container: Container;
+
+    id: number;
+
+    private _renderable: boolean = true;
+
+    positionStates: PositionStates;
+    rotationStates: RotationStates;
+
+    debug: DebugWorldObject;
+
+    animations: Map<number, Animation>;
+    active?: boolean;
+
+    constructor(id: number, pos: Point, rotation: number, size: number) {
+        this.container = new Container();
+        this.container.zIndex = 0;
+
+        this.id = id;
+
+        this.debug = new DebugWorldObject();
+
+        this.container.position = pos;
+        this.size = size;
+
+        this.positionStates = new PositionStates(() => {
+            this.container.renderable = true;
+            this.debug.renderable = true;
+        });
+        this.positionStates.set({
+            x: pos.x,
+            y: pos.y,
+        });
+
+        this.rotationStates = new RotationStates();
+        this.container.rotation = rotation;
+
+        this.animations = new Map();
+
+        const idText = new Text(`ID: ${this.id}`, TEXT_STYLE);
+        idText.scale.set(0.34);
+        idText.position = pos;
+        this.debug.update("id", idText);
+
+        const hitbox = new Circle(this.position, size / 10, 0xff0000, 2);
+        this.debug.update("hitbox", hitbox);
+    }
+
+    get containers(): Container[] {
+        // ...Array.from(this.debug.containers.values())
+        return [this.container];
+    }
+
+    set renderable(value: boolean) {
+        this._renderable = value;
+        for (const container of this.containers) {
+            container.renderable = value;
+        }
+    }
+
+    get renderable() {
+        return this._renderable;
+    }
+
+    /** Return true if object is done interpolating */
+    update(now: number): boolean {
+        const { x, y } = this.positionStates.interpolate();
+        const rot = this.rotationStates.interpolate();
+
+        this.position.set(x, y);
+        this.container.rotation = rot;
+
+        this.debug.containers.get("hitbox")?.position.set(x, y);
+        this.debug.containers.get("id")?.position.set(x, y);
+
+        if (
+            this.positionStates.isComplete() &&
+            this.rotationStates.isComplete()
+        ) {
+            return false;
+        }
+        return false;
+    }
+
+    addState(state: PositionState | RotationState): void {
+        if (typia.is<PositionState>(state)) {
+            this.positionStates.set(state);
+        } else if (typia.is<RotationState>(state)) {
+            this.rotationStates.set(state);
+        } else {
+            console.log(`Bad state sent to object ${this.id}: ${state}`);
+            return;
+        }
+    }
+
+    /** Trigger an animation state */
+    trigger(id: number, manager: AnimationManager, replace: boolean = false) {
+        if (!this.animations) {
+            return;
+        }
+        const animation = this.animations.get(id);
+        if (animation) {
+            manager.set(this, id, animation.run(), replace);
+        }
+    }
+
+    get rotation() {
+        return this.container.rotation;
+    }
+
+    set rotation(value) {
+        this.container.rotation = value;
+    }
+
+    get position() {
+        return this.container.position;
+    }
+
+    set size(value: number) {
+        this.container.scale.set(value);
+    }
+
+    get size() {
+        return this.container.scale._x;
+    }
+}
