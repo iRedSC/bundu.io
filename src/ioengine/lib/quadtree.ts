@@ -66,6 +66,7 @@ export class Quadtree {
 
     delete(objectID: number) {
         this.objects.delete(objectID);
+        this.tree.delete(objectID);
     }
 
     get(objectID: number | undefined) {
@@ -161,6 +162,21 @@ class InternalQuadtree {
         }
     }
 
+    private canRecombine(): boolean {
+        if (this.nodes.length === 0) return false;
+
+        return this.nodes.every((node) => node.objects.size === 0);
+    }
+
+    private recombine() {
+        if (!this.canRecombine()) return;
+
+        for (let node of this.nodes) {
+            node.clear();
+        }
+        this.nodes = [];
+    }
+
     query(
         range: Range,
         objectList: QuadtreeObjectList,
@@ -176,7 +192,10 @@ class InternalQuadtree {
                 const position = objectList.get(id);
                 if (!position) continue;
 
-                if (this.bounds.contains(position) && range.contains(position)) {
+                if (
+                    this.bounds.contains(position) &&
+                    range.contains(position)
+                ) {
                     found.push(id);
                 } else {
                     this.objects.delete(id);
@@ -186,8 +205,21 @@ class InternalQuadtree {
             for (let node of this.nodes) {
                 node.query(range, objectList, found);
             }
+
+            this.recombine();
+
             return found;
         }
+    }
+
+    delete(objectID: number) {
+        this.objects.delete(objectID);
+
+        for (let node of this.nodes) {
+            node.delete(objectID);
+        }
+
+        this.recombine();
     }
 
     insert(id: number, objectList: QuadtreeObjectList): boolean {
