@@ -4,11 +4,7 @@ import { World } from "./world.js";
 
 let NEXT_SYSTEM_ID = 1;
 
-export type SystemEventCallback<M, K extends keyof M> = (
-    object: GameObject,
-    data: M[K],
-    ...args: any[]
-) => void;
+export type SystemEventCallback<M, K extends keyof M> = (data: M[K]) => void;
 
 export abstract class System<
     EventMap extends Record<string | number | symbol, any>
@@ -21,8 +17,7 @@ export abstract class System<
 
     public trigger: <T extends keyof EventMap>(
         event: T,
-        objectIds: number | number[],
-        data?: EventMap[T]
+        data: EventMap[T]
     ) => void = undefined as any;
 
     readonly callbacks: Map<
@@ -70,8 +65,8 @@ export abstract class System<
         if (once) {
             const temp = callback.bind(callback);
 
-            callback = (object: GameObject, data?: any) => {
-                temp(object, data);
+            callback = (data?: any) => {
+                temp(data);
                 this.callbacks.get(event)?.delete(callback);
             };
         }

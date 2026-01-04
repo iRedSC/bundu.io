@@ -39,27 +39,27 @@ export class World {
         }
     }
 
-    private triggerSystems = (
-        event: string,
-        objectIds: number | number[],
-        data?: any
-    ) => {
-        if (typeof objectIds === "number") objectIds = [objectIds];
+    private triggerSystems = (event: number, data: Record<any, any>) => {
+        const object =
+            Object.prototype.hasOwnProperty.call(data, "object") && data.object
+                ? (data.object as GameObject)
+                : undefined;
+
+        if (!this.systems || typeof this.systems.values !== "function") {
+            console.error("this.systems is not initialized correctly.");
+            return;
+        }
+
         for (const system of this.systems.values()) {
-            const events = system.callbacks;
+            const events = system?.callbacks;
+            if (!(events instanceof Map)) continue;
 
-            if (!events.has(event)) continue;
+            const callbacks = events.get(event);
+            if (!(callbacks instanceof Map)) continue;
 
-            const callbacks: Map<
-                SystemEventCallback<any, any>,
-                ComponentFactory<any>[]
-            > = events.get(event) || new Map();
-            const objects = this.query([], objectIds);
-            if (callbacks.size <= 0) continue;
             for (const [callback, components] of callbacks.entries()) {
-                for (const object of objects) {
-                    if (!object.hasComponents(components)) continue;
-                    callback(object, data);
+                if (!object || object.hasComponents?.(components)) {
+                    callback.call(system, data);
                 }
             }
         }

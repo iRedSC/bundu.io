@@ -11,7 +11,7 @@ import {
     worldPacketManager,
 } from "../network/managers.js";
 import { ServerPacket } from "@shared/packet_definitions.js";
-import type { EventCallback, GameEventMap } from "./event_map.js";
+import { GameEvent, type GameEventMap } from "./event_map.js";
 
 export class PacketSystem extends System<GameEventMap> {
     lastUpdate: number;
@@ -20,20 +20,24 @@ export class PacketSystem extends System<GameEventMap> {
 
         this.lastUpdate = 0;
 
-        this.listen("new_object", this.newObject);
-        this.listen("hurt", this.hurt);
-        this.listen("send_new_objects", this.sendNewObjects, [PlayerData]);
-        this.listen("send_object_updates", this.sendUpdatedObjects, [
+        this.listen(GameEvent.NewObject, this.newObject);
+        this.listen(GameEvent.Hurt, this.hurt);
+        this.listen(GameEvent.SendNewObjects, this.sendNewObjects, [
             PlayerData,
         ]);
-        this.listen("delete_object", this.deleteObject);
+        this.listen(GameEvent.SendObjectUpdates, this.sendUpdatedObjects, [
+            PlayerData,
+        ]);
+        this.listen(GameEvent.DeleteObject, this.deleteObject);
 
-        this.listen("update_inventory", this.sendInventory, [PlayerData]);
-        this.listen("update_equipment", this.updateGear, [PlayerData]);
+        this.listen(GameEvent.UpdateInventory, this.sendInventory, [
+            PlayerData,
+        ]);
+        this.listen(GameEvent.UpdateEquipment, this.updateGear, [PlayerData]);
 
-        this.listen("chat_message", this.chatMessage, [PlayerData]);
+        this.listen(GameEvent.ChatMessage, this.chatMessage, [PlayerData]);
 
-        this.listen("health_update", this.healthUpdate, [PlayerData]);
+        this.listen(GameEvent.HealthUpdate, this.healthUpdate, [PlayerData]);
     }
 
     public override afterUpdate(time: number, players: GameObject[]): void {
@@ -69,13 +73,13 @@ export class PacketSystem extends System<GameEventMap> {
                 });
 
             if (data.visibleObjects.new.size > 0)
-                this.trigger("send_object_updates", player.id);
+                this.trigger(GameEvent.SendObjectUpdates, { object: player });
         }
         if (this.lastUpdate < Date.now()) this.lastUpdate = Date.now() + 1000;
     }
 
-    newObject: EventCallback<"new_object"> = (object: GameObject) => {
-        const objPhys = Physics.get(object);
+    newObject({ object: target }: GameEvent.NewObject) {
+        const objPhys = Physics.get(target);
         if (!objPhys) return;
         const players = this.world.query([PlayerData]);
         for (const player of players) {
@@ -94,39 +98,34 @@ export class PacketSystem extends System<GameEventMap> {
             );
 
             if (bounds.contains(objPhys.position)) {
-                data.visibleObjects.add(object.id);
-                object.sendNewObjectPacket();
+                data.visibleObjects.add(target.id);
+                target.sendNewObjectPacket();
             }
         }
-    };
+    }
 
-    deleteObject: EventCallback<"delete_object"> = (object: GameObject) => {
+    deleteObject({ objects: target }: GameEvent.DeleteObject) {
         const players = this.world.query([PlayerData]);
         for (const player of players) {
             playerPacketManager.set(player.id, ServerPacket.DeleteObjects, {
-                objects: [object.id],
+                objects: [target.id],
             });
         }
-    };
+    }
 
-    sendNewObjects: EventCallback<"send_new_objects"> = (
-        player: GameObject,
-        objects?: number[]
-    ) => {
+    sendNewObjects({ object: target, objects }: GameEvent.SendNewObjects) {
         if (!objects) return;
         const foundObjects = this.world.query([], objects);
 
         for (const object of foundObjects) {
-            object.sendNewObjectPacket(player.id);
+            object.sendNewObjectPacket(target.id);
             console.log(`Sent data for object ${object.id}`);
         }
-    };
+    }
 
-    sendUpdatedObjects: EventCallback<"send_object_updates"> = (
-        player: GameObject
-    ) => {
+    sendUpdatedObjects({ object: target }: GameEvent.SendObjectUpdates) {
         console.log("sending object updates");
-        const data = player.get(PlayerData);
+        const data = target.get(PlayerData);
         const newObjects = data.visibleObjects.getNew();
         const objects = this.world.query([], newObjects);
         for (const object of objects) {
@@ -142,53 +141,56 @@ export class PacketSystem extends System<GameEventMap> {
             });
         }
         data.visibleObjects.clear();
-    };
+    }
 
-    sendInventory: EventCallback<"update_inventory"> = (player: GameObject) => {
-        const inventory = player.get(Inventory);
-        playerPacketManager.set(player.id, ServerPacket.UpdateInventory, {
+    sendInventory({ object: target }: GameEvent.UpdateInventory) {
+        const inventory = target.get(Inventory);
+        playerPacketManager.set(target.id, ServerPacket.UpdateInventory, {
             items: Array.from(inventory.items.entries()),
         });
-    };
+    }
 
-    updateGear: EventCallback<"update_equipment"> = (player, items) => {
-        const data = PlayerData.get(player);
+    updateGear({
+        object: target,
+        mainhand,
+        offhand,
+        helmet,
+        backpack,
+    }: GameEvent.UpdateEquipment) {
+        const data = PlayerData.get(target);
         if (!data) return;
 
         worldPacketManager.add(ServerPacket.UpdateEquipment, {
-            id: player.id,
-            mainhand: items[0],
-            offhand: items[1],
-            helmet: items[2],
-            backpack: items[3],
+            id: target.id,
+            mainhand,
+            offhand,
+            helmet,
+            backpack,
         });
-    };
+    }
 
-    hurt: EventCallback<"hurt"> = (object: GameObject, { source }) => {
-        if (object.id === source?.id) return;
+    hurt({ object: target, source }: GameEvent.Hurt) {
+        if (target.id === source?.id) return;
         worldPacketManager.add(ServerPacket.HitEvent, {
-            id: object.id,
+            id: target.id,
             angle: 0,
         });
-    };
+    }
 
-    chatMessage: EventCallback<"chat_message"> = (
-        object: GameObject,
-        message: string
-    ) => {
+    chatMessage({ object: target, message }: GameEvent.ChatMessage) {
         worldPacketManager.add(ServerPacket.ChatMessage, {
-            id: object.id,
+            id: target.id,
             message,
         });
-    };
+    }
 
-    healthUpdate: EventCallback<"health_update"> = (player: GameObject) => {
-        const stats = player.get(Stats);
-        const health = player.get(Health);
-        playerPacketManager.set(player.id, ServerPacket.UpdateVitals, {
+    healthUpdate({ object: target }: GameEvent.HealthUpdate) {
+        const stats = target.get(Stats);
+        const health = target.get(Health);
+        playerPacketManager.set(target.id, ServerPacket.UpdateVitals, {
             health: health.value,
             hunger: stats.get("hunger").value,
             heat: stats.get("temperature").value,
         });
-    };
+    }
 }

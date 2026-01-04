@@ -1,7 +1,7 @@
 import { Attributes } from "../components/attributes.js";
 import { Health } from "../components/base.js";
 import { GameObject, System } from "@ioengine/server";
-import type { EventCallback, GameEventMap } from "./event_map.js";
+import { GameEvent, type GameEventMap } from "./event_map.js";
 
 export class HealthSystem extends System<GameEventMap> {
     tick: number;
@@ -10,7 +10,7 @@ export class HealthSystem extends System<GameEventMap> {
 
         this.tick = 0;
 
-        this.listen("hurt", this.hurt, [Health]);
+        this.listen(GameEvent.Hurt, this.hurt, [Health]);
     }
 
     override update(time: number, delta: number, object: GameObject) {
@@ -25,20 +25,20 @@ export class HealthSystem extends System<GameEventMap> {
                 ? Math.min(health.value + regen, health.max)
                 : health.value + regen;
             health.value = healthUpdate;
-            this.trigger("health_update", object.id);
+            this.trigger(GameEvent.HealthUpdate, { object: object });
         }
     }
 
-    hurt: EventCallback<"hurt"> = (object: GameObject, { source, damage }) => {
-        const health = object.get(Health);
-        const attributes = object.get(Attributes);
+    hurt({ object: target, source, damage }: GameEvent.Hurt) {
+        const health = target.get(Health);
+        const attributes = target.get(Attributes);
         let defense = attributes?.get("health.defense") ?? 0;
 
         damage = damage ?? 0;
         health.value -= Math.round(Math.max(0, damage - defense));
         if (health.value <= 0) {
-            this.trigger("kill", object.id, { source });
+            this.trigger(GameEvent.Kill, { object: target, source });
         }
-        this.trigger("health_update", object.id);
-    };
+        this.trigger(GameEvent.HealthUpdate, { object: target });
+    }
 }

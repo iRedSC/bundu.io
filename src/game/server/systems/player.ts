@@ -18,14 +18,10 @@ import {
 import { StatList, type StatType, Stats } from "../components/stats.js";
 import { Circle, Vector } from "sat";
 import { type BasicPoint } from "@ioengine/lib";
-import {
-    playerPacketManager,
-    socketManager,
-    worldPacketManager,
-} from "../network/managers.js";
+import { playerPacketManager, socketManager } from "../network/managers.js";
 import { Resource } from "../game_objects/resource.js";
 import { getNumericId } from "../configs/loaders/id_map.js";
-import type { EventCallback, GameEventMap } from "./event_map.js";
+import { GameEvent, type GameEventMap } from "./event_map.js";
 
 function pointToVec(point: BasicPoint) {
     return new Vector(point.x, point.y);
@@ -39,7 +35,7 @@ export class PlayerSystem extends System<GameEventMap> {
     constructor() {
         super([PlayerData, Physics]);
 
-        this.listen("kill", this.kill, [PlayerData]);
+        this.listen(GameEvent.Kill, this.kill, [PlayerData]);
     }
 
     /**
@@ -62,7 +58,8 @@ export class PlayerSystem extends System<GameEventMap> {
                 const length = attributes.get("attack.reach") ?? 5;
                 const width = attributes.get("attack.sweep") ?? 5;
 
-                this.trigger("attack", player.id, {
+                this.trigger(GameEvent.Attack, {
+                    object: player,
                     weapon: data.mainHand,
                     damage,
                     hitbox: { start, length, width },
@@ -87,7 +84,11 @@ export class PlayerSystem extends System<GameEventMap> {
             { x: data.moveDir[0], y: data.moveDir[1] },
             baseSpeed * attributes?.get("movement.speed", baseSpeed)
         );
-        this.trigger("move", player.id, target);
+        this.trigger(GameEvent.Move, {
+            object: player,
+            x: target.x,
+            y: target.y,
+        });
     }
 
     override enter(player: GameObject) {
@@ -102,26 +103,32 @@ export class PlayerSystem extends System<GameEventMap> {
         playerPacketManager.set(player.id, ServerPacket.RecipeList, {
             recipes: packCraftingList(),
         });
-        this.trigger("health_update", player.id);
+        this.trigger(GameEvent.HealthUpdate, { object: player });
 
         player.sendNewObjectPacket();
     }
 
-    kill: EventCallback<"kill"> = (player: GameObject) => {
-        const inventory = player.get(Inventory);
+    kill({ object: target }: GameEvent.Kill) {
+        const inventory = target.get(Inventory);
+        const physics = target.get(Physics);
 
         for (const [id, amount] of inventory.items.entries()) {
-            this.trigger("spawn_item", player.id, { id, amount });
+            this.trigger(GameEvent.SpawnItem, {
+                id,
+                amount,
+                x: physics.position.x,
+                y: physics.position.y,
+            });
         }
 
-        this.trigger("delete_object", player.id);
-        const socket = socketManager.getSocket(player.id);
+        this.trigger(GameEvent.DeleteObject, { objects: target });
+        const socket = socketManager.getSocket(target.id);
         socket?.close();
-        socketManager.deleteClient(player.id);
-        player.active = false;
-    };
+        socketManager.deleteClient(target.id);
+        target.active = false;
+    }
 
-    healthUpdate: EventCallback<"health_update"> = (player: GameObject) => {
+    healthUpdate(player: GameObject) {
         const health = player.get(Health);
         const stats = player.get(Stats);
 
@@ -130,7 +137,7 @@ export class PlayerSystem extends System<GameEventMap> {
             hunger: stats.get("hunger").value,
             heat: stats.get("temperature").value,
         });
-    };
+    }
 
     // Sets selected player's moveDir property.
     move = (playerId: number, packet: ClientPacket.Movement) => {
@@ -149,7 +156,7 @@ export class PlayerSystem extends System<GameEventMap> {
     rotate = (playerId: number, { rotation }: ClientPacket.Rotation) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
-        this.trigger("rotate", player.id, { rotation });
+        this.trigger(GameEvent.Rotate, { object: player, rotation });
     };
 
     // Triggers event to send objects to selected player
@@ -161,7 +168,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         console.log("Player is requesting objects");
 
-        this.trigger("send_new_objects", player.id, objects);
+        this.trigger(GameEvent.SendNewObjects, { object: player, objects });
     };
 
     // starts or stops a player from attacking
@@ -202,7 +209,8 @@ export class PlayerSystem extends System<GameEventMap> {
                 ServerPacket.SetSelectedStructure,
                 { structureId: -1, structureSize: 1 }
             );
-            this.trigger("remove_item", player.id, {
+            this.trigger(GameEvent.RemoveItem, {
+                object: player,
                 id: selectedStructure.id,
                 amount: 1,
             });
@@ -233,19 +241,19 @@ export class PlayerSystem extends System<GameEventMap> {
         } else {
             attributes?.clear("blocking");
         }
-        this.trigger("block", player.id, stop);
+        this.trigger(GameEvent.Block, { object: player, stop });
     };
 
     selectItem = (playerId: number, { itemId }: ClientPacket.SelectItem) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
-        this.trigger("select_item", player.id, itemId);
+        this.trigger(GameEvent.SelectItem, { object: player, id: itemId });
     };
 
     craftItem = (playerId: number, { itemId }: ClientPacket.CraftItem) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
-        this.trigger("craft_item", player.id, itemId);
+        this.trigger(GameEvent.CraftItem, { object: player, id: itemId });
     };
 
     chatMessage = (playerId: number, { message }: ClientPacket.ChatMessage) => {
@@ -259,7 +267,8 @@ export class PlayerSystem extends System<GameEventMap> {
                 case "give":
                     const item = getNumericId(command[1]);
                     const amount = Number(command[2]);
-                    this.trigger("give_item", player.id, {
+                    this.trigger(GameEvent.GiveItem, {
+                        object: player,
                         id: item,
                         amount: amount,
                     });
@@ -285,7 +294,7 @@ export class PlayerSystem extends System<GameEventMap> {
                     break;
                 }
                 case "kill": {
-                    this.trigger("kill", player.id);
+                    this.trigger(GameEvent.Kill, { object: player });
                     break;
                 }
                 case "godmode": {
@@ -297,7 +306,7 @@ export class PlayerSystem extends System<GameEventMap> {
             }
             return;
         }
-        this.trigger("chat_message", player.id, message);
+        this.trigger(GameEvent.ChatMessage, { object: player, message });
     };
 
     dropItem = (
@@ -307,6 +316,10 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
 
-        this.trigger("drop_item", player.id, { id: itemId, all: dropAll });
+        this.trigger(GameEvent.DropItem, {
+            object: player,
+            id: itemId,
+            all: dropAll,
+        });
     };
 }

@@ -9,7 +9,7 @@ import {
     worldPacketManager,
 } from "../network/managers.js";
 import { ServerPacket } from "@shared/packet_definitions.js";
-import type { EventCallback, GameEventMap } from "./event_map.js";
+import { GameEvent, type GameEventMap } from "./event_map.js";
 
 function packPolygon(polygon: SAT.Polygon): {
     startX: number;
@@ -80,14 +80,11 @@ export class AttackSystem extends System<GameEventMap> {
     constructor() {
         super([Physics]);
 
-        this.listen("attack", this.attack);
+        this.listen(GameEvent.Attack, this.attack);
     }
 
-    attack: EventCallback<"attack"> = (
-        object: GameObject,
-        { damage, weapon, hitbox }
-    ) => {
-        const physics = Physics.get(object);
+    attack({ object: source, damage, weapon, hitbox }: GameEvent.Attack) {
+        const physics = Physics.get(source);
         if (!physics) return;
 
         const bounds: [BasicPoint, BasicPoint] = [
@@ -119,19 +116,21 @@ export class AttackSystem extends System<GameEventMap> {
             width
         );
 
-        worldPacketManager.add(ServerPacket.AttackEvent, { id: object.id });
+        worldPacketManager.add(ServerPacket.AttackEvent, { id: source.id });
         playerPacketManager.set(
-            object.id,
+            source.id,
             ServerPacket.DebugDrawPolygon,
             packPolygon(hitRange)
         );
 
         const hits = testForIntersection(hitRange, nearby);
-        hits.delete(object.id);
-        this.trigger("hurt", Array.from(hits.keys()), {
-            source: object,
-            damage,
-            weapon,
-        });
-    };
+        hits.delete(source.id);
+        for (const object of hits.values()) {
+            this.trigger(GameEvent.Hurt, {
+                object,
+                damage,
+                weapon,
+            });
+        }
+    }
 }
