@@ -54,6 +54,27 @@ async function main() {
     const gui = createUI();
     app.stage.addChild(gui.container);
 
+    const debugToggle = document.querySelector<HTMLButtonElement>("#debug-toggle");
+    if (debugToggle) {
+        const setDebugVisible = (visible: boolean) => {
+            debugContainer.visible = visible;
+            debugToggle.textContent = `Debug: ${visible ? "On" : "Off"}`;
+            debugToggle.ariaPressed = String(visible);
+        };
+
+        debugToggle.addEventListener("pointerdown", (event) =>
+            event.stopPropagation()
+        );
+        debugToggle.addEventListener("pointerup", (event) =>
+            event.stopPropagation()
+        );
+        debugToggle.addEventListener("click", (event) => {
+            event.stopPropagation();
+            setDebugVisible(!debugContainer.visible);
+        });
+        setDebugVisible(debugContainer.visible);
+    }
+
     // * Keyboard inputs
     const mouse = new MouseInputListener();
     let updateTick: number = 0;

@@ -80,6 +80,20 @@ button {
     margin-left: 10px;
 }
 
+.debug-toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 3;
+    margin-left: 0;
+    background-color: #214f2c;
+}
+
+.debug-toggle[aria-pressed="false"] {
+    background-color: #333333;
+    opacity: 0.8;
+}
+
 .hidden {
     display: none;
 }
