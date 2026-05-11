@@ -14,6 +14,8 @@ import {
     playerPacketManager,
     worldPacketManager,
 } from "../network/managers.js";
+import { VisibleObjects } from "../components/visible_objects.js";
+import { GameObjectData } from "@shared/object_types.js";
 
 // Player should have the following properties:
 // name, socket, inventory, cosmetics, movement
@@ -55,10 +57,11 @@ export class Player extends GameObject {
             .add(new Inventory({ slots: 10, items: new Map() }))
             .add(new Flags())
             .add(attributes)
-            .add(stats);
+            .add(stats)
+            .add(new VisibleObjects());
     }
 
-    public override sendNewObjectPacket(to: number) {
+    public override getNewObjectPacket() {
         const physics = this.get(Physics);
         const data = this.get(PlayerData);
         const packet = {
@@ -66,17 +69,16 @@ export class Player extends GameObject {
             x: physics.position.x,
             y: physics.position.y,
             rotation: physics.rotation,
-            name: data.name,
-            mainhand: data.mainHand,
-            offhand: data.offHand,
-            helmet: data.helmet,
-            backpack: data.backpack ?? false,
-            playerSkin: data.playerSkin,
+            type: GameObjectData.PlayerType,
+            data: [
+                data.name,
+                data.mainHand,
+                data.offHand,
+                data.helmet,
+                data.backpack ?? false,
+                data.playerSkin,
+            ],
         };
-
-        if (to)
-            return playerPacketManager.add(to, ServerPacket.LoadPlayer, packet);
-
-        worldPacketManager.add(ServerPacket.LoadPlayer, packet);
+        return packet;
     }
 }

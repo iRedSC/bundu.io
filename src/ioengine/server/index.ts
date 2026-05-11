@@ -10,4 +10,3 @@ export { WorldPacketManager } from "./network/packets/world";
 export { PlayerPacketManager } from "./network/packets/manager";
 export { SocketManager } from "./network/socket_manager";
 export { ReversableMap } from "../shared/reverseable_map";
-export { VisibleObjects } from "./game_engine/visible_objects";

@@ -1,7 +1,7 @@
 import { DebugWorldObject } from "@client/rendering/debug";
 import { Circle } from "./debug/circle";
 import { TEXT_STYLE } from "@client/assets/text";
-import { Animation, AnimationManager } from "@ioengine/lib";
+import { Animation, AnimationManager, round } from "@ioengine/lib";
 import {
     PositionStates,
     RotationStates,
@@ -22,6 +22,7 @@ export default class GameObject {
 
     id: number;
 
+    locationText: Text;
     private _renderable: boolean = true;
 
     positionStates: PositionStates;
@@ -62,6 +63,14 @@ export default class GameObject {
         idText.position = pos;
         this.debug.update("id", idText);
 
+        this.locationText = new Text(
+            ` ${this.position.x}, ${this.position.y}`,
+            TEXT_STYLE
+        );
+        this.locationText.scale.set(0.34);
+        this.locationText.position.set(pos.x, pos.y - 10);
+        this.debug.update("location", this.locationText);
+
         const hitbox = new Circle(this.position, size / 10, 0xff0000, 2);
         this.debug.update("hitbox", hitbox);
     }
@@ -90,6 +99,11 @@ export default class GameObject {
         this.position.set(x, y);
         this.container.rotation = rot;
 
+        this.locationText.text = `${round(this.position.x)}, ${round(
+            this.position.y
+        )}`;
+
+        this.locationText.position.set(x, y - 10);
         this.debug.containers.get("hitbox")?.position.set(x, y);
         this.debug.containers.get("id")?.position.set(x, y);
 

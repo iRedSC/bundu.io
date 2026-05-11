@@ -7,7 +7,7 @@ import { ClientPacketReceiver } from "./client_receiver";
 import { Serializer } from "@ioengine/client";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
-import { drawPolygon } from "@client/rendering/debug";
+import { drawPolygon, drawRects } from "@client/rendering/debug";
 import { serverTime } from "@client/globals";
 
 const serverSerializer = new Serializer<typeof Schema.Server, ServerPacketMap>(
@@ -22,7 +22,16 @@ export function setupPacketReceiving(
     receiver: ClientPacketReceiver<typeof Schema.Server, ServerPacketMap>,
     world: World
 ) {
-    receiver.on(ServerPacket.LoadPlayer, world.newPlayer);
+    receiver.on(
+        ServerPacket.DebugDrawPolygon,
+        (packet: ServerPacket.DebugDrawPolygon) => drawPolygon(packet)
+    );
+
+    receiver.on(
+        ServerPacket.DebugDrawRects,
+        (packet: ServerPacket.DebugDrawRects) => drawRects(packet)
+    );
+    receiver.on(ServerPacket.LoadObject, world.loadObject);
     receiver.on(ServerPacket.AttackEvent, world.attack);
     receiver.on(ServerPacket.BlockEvent, world.block);
     receiver.on(ServerPacket.HitEvent, world.hurt);

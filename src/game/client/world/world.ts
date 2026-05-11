@@ -13,6 +13,10 @@ import { serverTime } from "@client/globals";
 import GameObject from "./game_object";
 import ObjectContainer from "./object_container";
 import { Camera } from "@client/rendering/basic_camera";
+import { GameObjectData } from "@shared/object_types";
+import typia from "typia";
+import { Structure } from "./objects/structure";
+import { getStringId } from "@client/configs/id_map";
 
 export const WorldEvent = {
     ObjectLoaded: 1,
@@ -38,7 +42,7 @@ type WorldEventCallback<T extends keyof WorldEvent> = (
 // This basically controls everything on the client
 // All packets (after being parsed) are sent to one of these methods
 export class World {
-    camera: Camera;
+    // camera: Camera;
     viewport: Container;
     user?: number;
     objects: ObjectContainer;
@@ -48,14 +52,14 @@ export class World {
     requestIds: Set<number>;
 
     constructor(viewport: Container) {
-        this.camera = new Camera(viewport, {
-            zoomSpeed: 0.05,
-            minZoom: 0.75,
-            maxZoom: 2.5,
-            padding: 100,
-            speed: 100,
-            peek: 0.01,
-        });
+        // this.camera = new Camera(viewport, {
+        //     zoomSpeed: 0.05,
+        //     minZoom: 0.75,
+        //     maxZoom: 2.5,
+        //     padding: 100,
+        //     speed: 100,
+        //     peek: 0.01,
+        // });
 
         this.requestIds = new Set();
         this.listeners = new DefaultMap(() => []);
@@ -106,7 +110,7 @@ export class World {
     tick() {
         AnimationManagers.World.update();
         this.objects.update(serverTime.now());
-        this.camera.update();
+        // this.camera.update();
     }
 
     clientConnectionInfo = (packet?: ServerPacket.ClientConnectionInfo) => {
@@ -124,8 +128,8 @@ export class World {
         }
         console.info(`Found user (id ${this.user}), loading..`);
 
-        this.camera.target = player.position;
-        this.camera.snap();
+        // this.camera.target = player.position;
+        // this.camera.snap();
         console.debug("Snapping camera..");
 
         this.emitEvent(WorldEvent.ClientConnected, player as Player);
@@ -135,26 +139,69 @@ export class World {
         return this.objects.get(this.user ?? -1) as Player;
     }
 
-    newPlayer = (packet: ServerPacket.LoadPlayer) => {
+    loadObject = (packet: ServerPacket.LoadObject) => {
+        switch (packet.type) {
+            case GameObjectData.PlayerType:
+                this.newPlayer(packet);
+                break;
+            case GameObjectData.ResourceNodeType:
+                this.newStructure(packet);
+                break;
+        }
+    };
+
+    newPlayer = (packet: ServerPacket.LoadObject) => {
+        if (!typia.is<GameObjectData.PlayerData>(packet.data)) {
+            console.log(packet.data);
+            return console.error(
+                `Tried to load player (ID: ${packet.id}) had a bad data property. [${packet.data}]`
+            );
+        }
+        const [name, mainhand, offhand, helmet, backpack, playerSkin] =
+            packet.data;
         const id = packet.id;
         this.renderer.delete(id);
         console.log(`Loading new player with id: ${id}`);
 
         const pos = new Point(packet.x, packet.y);
-        const name = new Text(packet.name, TEXT_STYLE);
+        const nameText = new Text(name, TEXT_STYLE);
 
         const player = new Player(
             id,
             AnimationManagers.World,
-            name,
+            nameText,
             pos,
             packet.rotation
         );
 
-        player.setEquipment(packet);
+        player.setEquipment({ mainhand, offhand, helmet, backpack });
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
         this.emitEvent(WorldEvent.PlayerLoaded, player);
+    };
+
+    newStructure = (packet: ServerPacket.LoadObject) => {
+        if (!typia.is<GameObjectData.ResourceNodeData>(packet.data)) {
+            console.log(packet.data);
+            return console.error(
+                `Tried to load player (ID: ${packet.id}) had a bad data property. [${packet.data}]`
+            );
+        }
+        const [size, nodeType] = packet.data;
+        this.renderer.delete(packet.id);
+
+        const pos = new Point(packet.x, packet.y);
+
+        const structure = new Structure(
+            packet.id,
+            getStringId(nodeType),
+            pos,
+            packet.rotation,
+            size
+        );
+        this.objects.add(structure);
+        this.renderer.add(structure.id, ...structure.containers);
+        this.emitEvent(WorldEvent.ObjectLoaded, structure);
     };
 
     moveObject = (packet: ServerPacket.SetPosition, now: number) => {

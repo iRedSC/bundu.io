@@ -1,364 +1,341 @@
 import { GameObject } from "./game_object.js";
-import { type SystemEventCallback, System } from "./system.js";
-import { NOW } from "./now.js";
+import { System, type SystemEventCallback } from "./system.js";
 import { Component, type ComponentFactory } from "./component.js";
+import { NOW } from "./now.js";
 
-function checkSubset<T>(subSet: Set<T>, superSet: Set<T>) {
-    for (const value of subSet.values()) {
-        if (!superSet.has(value)) {
-            return false;
-        }
+/** Utility: check if all elements of subSet exist in superSet */
+function isSubset<T>(subSet: Set<T>, superSet: Set<T>): boolean {
+    for (const item of subSet) {
+        if (!superSet.has(item)) return false;
     }
     return true;
 }
 
 /**
- * A world holds objects
+ * ECS World — orchestrates GameObjects and Systems.
+ *
+ * Responsibilities:
+ * - Keeps track of all entities (GameObjects)
+ * - Maintains which systems apply to which objects
+ * - Executes system update cycles
+ * - Handles addition/removal and component changes cleanly
  */
 export class World {
-    public objects: Map<number, GameObject> = new Map();
+    // -------------------------------------------------------------------
+    // Fields
+    // -------------------------------------------------------------------
+    public readonly objects = new Map<number, GameObject>();
+    public readonly systems = new Map<number, System<any>>();
+    private readonly objectSystems = new Map<number, Set<System<any>>>();
 
-    public systems: Map<number, System<any>> = new Map();
+    private readonly objectLastUpdateRT = new Map<
+        number,
+        Map<number, number>
+    >();
+    private readonly objectLastUpdateGT = new Map<
+        number,
+        Map<number, number>
+    >();
 
-    private objectSystems: Map<number, Set<System<any>>> = new Map();
-
-    private objectLastUpdateRT: Map<number, Map<number, number>> = new Map();
-    private objectLastUpdateGT: Map<number, Map<number, number>> = new Map();
-
-    private subscriptions: Map<number, () => void> = new Map();
+    private readonly subscriptions = new Map<number, () => void>();
 
     public timeScale = 1;
-    public lastUpdate: number = NOW();
-    public gameTime: number = 0;
+    public lastUpdate = NOW();
+    public gameTime = 0;
 
+    // -------------------------------------------------------------------
+    // Constructor
+    // -------------------------------------------------------------------
     constructor(systems?: System<any>[]) {
-        if (systems) {
-            systems.forEach((system) => {
-                this.addSystem(system);
-            });
-        }
+        systems?.forEach((system) => this.addSystem(system));
     }
 
-    private triggerSystems = (event: number, data: Record<any, any>) => {
+    // -------------------------------------------------------------------
+    // Core: System Events
+    // -------------------------------------------------------------------
+    private triggerSystems(event: number, data: Record<any, any>) {
         const object =
             Object.prototype.hasOwnProperty.call(data, "object") && data.object
                 ? (data.object as GameObject)
                 : undefined;
 
-        if (!this.systems || typeof this.systems.values !== "function") {
-            console.error("this.systems is not initialized correctly.");
-            return;
-        }
-
         for (const system of this.systems.values()) {
-            const events = system?.callbacks;
-            if (!(events instanceof Map)) continue;
+            const callbacks = system.callbacks?.get(event);
+            if (!callbacks) continue;
 
-            const callbacks = events.get(event);
-            if (!(callbacks instanceof Map)) continue;
-
-            for (const [callback, components] of callbacks.entries()) {
-                if (!object || object.hasComponents?.(components)) {
+            for (const [callback, requiredComponents] of callbacks) {
+                if (!object || object.hasComponents?.(requiredComponents)) {
                     callback.call(system, data);
                 }
             }
         }
-    };
-
-    destroy() {
-        this.objects.clear();
-        this.systems.clear();
     }
 
-    getObject(id: number) {
+    // -------------------------------------------------------------------
+    // Lifecycle
+    // -------------------------------------------------------------------
+    public destroy(): void {
+        for (const unsubscribe of this.subscriptions.values()) unsubscribe();
+        this.objects.clear();
+        this.systems.clear();
+        this.objectSystems.clear();
+        this.subscriptions.clear();
+        this.objectLastUpdateGT.clear();
+        this.objectLastUpdateRT.clear();
+    }
+
+    // -------------------------------------------------------------------
+    // Object Management
+    // -------------------------------------------------------------------
+    public getObject(id: number) {
         return this.objects.get(id);
     }
 
-    addObject(object: GameObject) {
-        if (!object || this.objects.has(object.id)) {
-            return;
-        }
+    public addObject(object: GameObject): this {
+        if (!object || this.objects.has(object.id)) return this;
 
         this.objects.set(object.id, object);
         this.objectLastUpdateGT.set(object.id, new Map());
         this.objectLastUpdateRT.set(object.id, new Map());
 
-        if (this.subscriptions.get(object.id)) {
-            this.subscriptions.get(object.id)!();
-        }
-        this.subscriptions.set(
-            object.id,
-            object.subscribe((object, added, removed) => {
-                this.onObjectComponentChange(object, added, removed);
-                this.indexObject(object);
-            })
-        );
+        // Clean up any existing subscription and resubscribe
+        this.subscriptions.get(object.id)?.();
+        const unsubscribe = object.subscribe((obj, added, removed) => {
+            this.onObjectComponentChange(obj, added, removed);
+            this.indexObject(obj);
+        });
+        this.subscriptions.set(object.id, unsubscribe);
+
         this.indexObject(object);
         return this;
     }
 
-    removeObject(object: GameObject) {
-        if (!object) {
-            return;
-        }
+    public removeObject(object: GameObject): this {
+        if (!object) return this;
 
         this.objects.delete(object.id);
+        this.subscriptions.get(object.id)?.();
+        this.subscriptions.delete(object.id);
 
-        if (this.subscriptions.get(object.id)) {
-            this.subscriptions.get(object.id)!();
-        }
-
-        const systems = this.objectSystems.get(object.id) || new Set();
-        for (const system of systems.values()) {
-            if (system.exit) {
-                this.inject(system);
-                system.exit(object);
+        const systems = this.objectSystems.get(object.id);
+        if (systems) {
+            for (const system of systems) {
+                system.exit?.call(system, object);
             }
         }
 
         this.objectSystems.delete(object.id);
         this.objectLastUpdateGT.delete(object.id);
         this.objectLastUpdateRT.delete(object.id);
+
         return this;
     }
 
-    addSystem(system: System<any>) {
-        if (system.world) {
-            throw new Error("System already in use.");
-        }
+    // -------------------------------------------------------------------
+    // System Management
+    // -------------------------------------------------------------------
+    public addSystem(system: System<any>): this {
+        if (system.world) throw new Error("System already in use.");
+
         this.inject(system);
         this.systems.set(system.id, system);
 
         for (const object of this.objects.values()) {
             this.indexObject(object, system);
-            if (object.active) {
-                if (
-                    system.enter &&
-                    this.objectSystems.get(object.id)?.has(system)
-                ) {
-                    system.enter(object);
-                }
+            if (
+                object.active &&
+                system.enter &&
+                this.hasSystem(object, system)
+            ) {
+                system.enter(object);
             }
         }
         return this;
     }
 
-    removeSystem(system: System<any>) {
-        if (!this.systems.has(system.id)) {
-            return;
-        }
+    public removeSystem(system: System<any>): this {
+        if (!this.systems.has(system.id)) return this;
+
         this.systems.delete(system.id);
+
         for (const object of this.objects.values()) {
-            this.indexObject(object, system);
-            if (object.active) {
-                if (
-                    system.exit &&
-                    this.objectSystems.get(object.id)?.has(system)
-                ) {
-                    this.inject(system);
-                    system.exit(object);
-                }
-                this.indexObject(object, system);
+            if (system.exit && this.hasSystem(object, system)) {
+                system.exit(object);
             }
+            this.untrackObjectSystem(object, system);
         }
+
         if (system.world === this) {
             system.world = undefined as any;
             system.trigger = undefined as any;
         }
+
         return this;
     }
 
-    public update() {
+    // -------------------------------------------------------------------
+    // Update Loop
+    // -------------------------------------------------------------------
+    public update(): void {
         const now = NOW();
 
-        this.gameTime += (now - this.lastUpdate) * this.timeScale;
+        // Update global game time using the scaled delta
+        const delta = now - this.lastUpdate;
+        this.gameTime += delta * this.timeScale;
         this.lastUpdate = now;
 
-        const afterUpdateListeners: Map<System<any>, GameObject[]> = new Map();
+        // Track which systems had objects updated this tick
+        const afterUpdateMap = new Map<System<any>, GameObject[]>();
 
         for (const [objectId, object] of this.objects.entries()) {
             if (!object.active) {
                 this.removeObject(object);
+                continue;
             }
 
             const systems = this.objectSystems.get(objectId);
-            if (!systems) {
-                continue;
-            }
-            const objectLastUpdateRT = this.objectLastUpdateRT.get(objectId);
-            const objectLastUpdateGT = this.objectLastUpdateGT.get(objectId);
+            if (!systems) continue;
 
-            for (const system of systems.values()) {
-                if (!afterUpdateListeners.get(system)) {
-                    if (system.beforeUpdate) {
-                        system.beforeUpdate(this.gameTime);
-                    }
-                    afterUpdateListeners.set(system, []);
+            const lastRT = this.objectLastUpdateRT.get(objectId)!;
+            const lastGT = this.objectLastUpdateGT.get(objectId)!;
+
+            for (const system of systems) {
+                // Ensure beforeUpdate() gets called once per system per tick
+                if (!afterUpdateMap.has(system)) {
+                    system.beforeUpdate?.(this.gameTime);
+                    afterUpdateMap.set(system, []);
                 }
-                afterUpdateListeners.get(system)?.push(object);
+                afterUpdateMap.get(system)!.push(object);
 
-                if (!system.update) {
-                    continue;
-                }
-
-                const elapsed = now - objectLastUpdateRT?.get(system.id)!;
-                const elapsedScaled =
-                    this.gameTime - objectLastUpdateGT?.get(system.id)!;
+                if (!system.update || !system.tps || system.tps <= 0) continue;
 
                 const interval = 1000 / system.tps;
-                if (elapsed < interval) {
-                    continue;
-                }
-                objectLastUpdateRT?.set(system.id, now - (elapsed % interval));
-                objectLastUpdateGT?.set(system.id, this.gameTime);
 
-                system.update(this.gameTime, elapsedScaled, object);
+                const lastSystemRT = lastRT.get(system.id) ?? 0;
+                const lastSystemGT = lastGT.get(system.id) ?? 0;
+
+                const elapsedRT = now - lastSystemRT;
+                const elapsedGT = this.gameTime - lastSystemGT;
+
+                // Only update the system if enough real time has passed
+                if (elapsedRT < interval) continue;
+
+                // Smoothly align the next update time (prevents drift)
+                const newRT = now - (elapsedRT % interval);
+                lastRT.set(system.id, newRT);
+                lastGT.set(system.id, this.gameTime);
+
+                system.update(this.gameTime, elapsedGT, object);
             }
         }
-        for (const [system, objects] of afterUpdateListeners.entries()) {
-            if (system.afterUpdate) {
-                system.afterUpdate(this.gameTime, objects);
-            }
+
+        // Call afterUpdate() for each system once per tick
+        for (const [system, objs] of afterUpdateMap) {
+            system.afterUpdate?.(this.gameTime, objs);
         }
     }
 
-    /**
-     * Query the world for specific objects.
-     * @param componentIds id of components to query for
-     * @param ids objects to query for, objects must contain specified components
-     * @returns generator that gives requested objects
-     */
+    // -------------------------------------------------------------------
+    // Queries
+    // -------------------------------------------------------------------
     public query(
         components: ComponentFactory<any>[],
         ids?: number[]
     ): GameObject[] {
-        const objects = ids ? ids.values() : this.objects.keys();
-
+        const targets = ids
+            ? ids.map((id) => this.objects.get(id))
+            : this.objects.values();
         const found: GameObject[] = [];
-        for (const id of objects) {
-            const object = this.objects.get(id);
-            if (!object) {
-                continue;
-            }
-            if (object.hasComponents(components)) {
-                found.push(object);
-            }
+
+        for (const object of targets) {
+            if (!object) continue;
+            if (object.hasComponents(components)) found.push(object);
         }
         return found;
     }
 
-    private inject(system: System<any>) {
+    // -------------------------------------------------------------------
+    // Internal: Object ↔ System bookkeeping
+    // -------------------------------------------------------------------
+    private inject(system: System<any>): void {
         system.world = this;
-        //@ts-expect-error
-        system.trigger = this.triggerSystems;
-        return system;
+        // @ts-expect-error: trigger type will be injected at runtime
+        system.trigger = this.triggerSystems.bind(this);
     }
 
     private onObjectComponentChange(
         object: GameObject,
-        added?: Component<unknown>,
-        removed?: Component<unknown>
-    ) {
-        if (!this.objectSystems.get(object.id)) {
-            return;
-        }
+        added?: Component<any>,
+        removed?: Component<any>
+    ): void {
+        const set = this.objectSystems.get(object.id);
+        if (!set) return;
 
-        const systemsToNotify: System<any>[] = [];
-
-        for (const system of this.objectSystems.get(object.id)!.values()) {
-            if (system.componentIds.size === 0) {
-                continue;
+        for (const system of set) {
+            const watch = system.componentIds;
+            const shouldNotify =
+                watch.size === 0 ||
+                (added && watch.has(added.id)) ||
+                (removed && watch.has(removed.id));
+            if (shouldNotify) {
+                system.change?.call(
+                    system,
+                    object,
+                    added && watch.has(added.id) ? added : undefined,
+                    removed && watch.has(removed.id) ? removed : undefined
+                );
             }
-
-            if (added && !system.componentIds.has(added.id)) {
-                continue;
-            }
-
-            if (removed && !system.componentIds.has(removed.id)) {
-                continue;
-            }
-            systemsToNotify.push(system);
-        }
-
-        for (const system of systemsToNotify) {
-            const componentIds = system.componentIds;
-            const all = componentIds.size === 0;
-            system.change?.call(
-                system,
-                object,
-                all
-                    ? added
-                    : added && componentIds.has(added.id)
-                    ? added
-                    : undefined,
-                all
-                    ? removed
-                    : removed && componentIds.has(removed.id)
-                    ? removed
-                    : undefined
-            );
         }
     }
 
-    private indexObjectSystem = (object: GameObject, system: System<any>) => {
-        const objectSystem = this.objectSystems.get(object.id)!;
+    /** Returns whether the given system currently applies to an object */
+    private hasSystem(object: GameObject, system: System<any>): boolean {
+        return this.objectSystems.get(object.id)?.has(system) ?? false;
+    }
 
-        function deleteObject() {
-            objectSystem.delete(system);
-            //@ts-expect-error
-            this.objectLastUpdateGT.get(object.id)?.delete(system.id);
-            //@ts-expect-error
-            this.objectLastUpdateRT.get(object.id)?.delete(system.id);
-        }
+    /** Remove all tracking state of system from object */
+    private untrackObjectSystem(object: GameObject, system: System<any>): void {
+        this.objectSystems.get(object.id)?.delete(system);
+        this.objectLastUpdateGT.get(object.id)?.delete(system.id);
+        this.objectLastUpdateRT.get(object.id)?.delete(system.id);
+    }
 
-        // If system doesn not exist in world, delete system from caches.
-        if (!this.systems.get(system.id)) {
-            if (objectSystem.has(system)) {
-                deleteObject();
-            }
-            return;
-        }
-
-        const componentIds = system.componentIds;
-
-        const HasAllComponents = checkSubset(
-            componentIds,
-            new Set(object.components.map((component) => component.id))
-        );
-        if (!HasAllComponents) {
-            if (objectSystem.has(system)) {
-                if (system.exit) {
-                    this.inject(system);
-                    system.exit(object);
-                }
-                deleteObject();
-            }
-            return;
-        }
-
-        if (!objectSystem.has(system)) {
-            this.objectSystems.get(object.id)?.add(system);
-            this.objectLastUpdateRT.get(object.id)?.set(system.id, NOW());
-            this.objectLastUpdateGT
-                .get(object.id)
-                ?.set(system.id, this.gameTime);
-
-            if (system.enter) {
-                system.enter(object);
-            }
-        }
-    };
-
-    private indexObject(object: GameObject, system?: System<any>) {
-        if (!this.objectSystems.get(object.id)) {
+    /** Check and (re)index one object against all or one system */
+    private indexObject(object: GameObject, single?: System<any>): void {
+        if (!this.objectSystems.has(object.id)) {
             this.objectSystems.set(object.id, new Set());
         }
-        if (system) {
-            this.indexObjectSystem(object, system);
-        } else {
-            this.systems.forEach((system) => {
-                this.indexObjectSystem(object, system);
-            });
+
+        const systems = single ? [single] : this.systems.values();
+
+        for (const system of systems) {
+            const objectSystemSet = this.objectSystems.get(object.id)!;
+            const componentSet = new Set(object.components.map((c) => c.id));
+            const qualifies = isSubset(system.componentIds, componentSet);
+            const already = objectSystemSet.has(system);
+
+            if (qualifies && !already) {
+                objectSystemSet.add(system);
+                this.objectLastUpdateGT
+                    .get(object.id)!
+                    .set(system.id, this.gameTime);
+                this.objectLastUpdateRT.get(object.id)!.set(system.id, NOW());
+                system.enter?.call(system, object);
+            } else if (!qualifies && already) {
+                system.exit?.call(system, object);
+                this.untrackObjectSystem(object, system);
+            }
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+

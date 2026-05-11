@@ -19,7 +19,6 @@ import { CollisionSystem } from "./systems/collision";
 import { HealthSystem } from "./systems/health";
 import { random } from "@ioengine/lib";
 import { Player } from "./game_objects/player";
-import { VisibleObjects } from "../../ioengine/server/game_engine/visible_objects";
 import {
     playerPacketManager,
     socketManager,
@@ -30,6 +29,8 @@ import { Circle, Vector } from "sat";
 import { PacketSystem } from "./systems/packet";
 import { AttackSystem } from "./systems/attack";
 import { encode } from "@msgpack/msgpack";
+import { RenderDistanceSystem } from "./systems/render_distance";
+import { GameEvent } from "./systems/event_map";
 
 const world = new World();
 loadConfigs();
@@ -47,7 +48,15 @@ world
     .addSystem(new CollisionSystem())
     .addSystem(new HealthSystem())
     .addSystem(new PacketSystem())
-    .addSystem(new AttackSystem());
+    .addSystem(new AttackSystem())
+    .addSystem(new RenderDistanceSystem());
+
+playerSystem.trigger(GameEvent.PlaceStructure, {
+    structureId: 2,
+    x: 7700,
+    y: 7500,
+    rotation: 0,
+});
 
 function createPlayer(username: string, skinId: number) {
     const position = new Vector(
@@ -62,7 +71,6 @@ function createPlayer(username: string, skinId: number) {
         {
             name: username,
             score: 0,
-            visibleObjects: new VisibleObjects(),
             playerSkin: skinId,
 
             moveDir: [0, 0],

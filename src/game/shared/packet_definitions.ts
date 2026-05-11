@@ -12,18 +12,14 @@ export namespace ServerPacket {
     export const PlacementValidity = 0x03;
     export type PlacementValidity = { valid: boolean };
 
-    export const LoadPlayer = 0x04;
-    export type LoadPlayer = {
+    export const LoadObject = 0x04;
+    export type LoadObject = {
         id: number;
         x: number;
         y: number;
         rotation: number;
-        name: string;
-        mainhand: number | nullish;
-        offhand: number | nullish;
-        helmet: number | nullish;
-        playerSkin: number;
-        backpack: boolean;
+        type: number;
+        data: unknown[];
     };
 
     export const UnloadObjects = 0x05;
@@ -108,6 +104,11 @@ export namespace ServerPacket {
 
     export const HitEvent = 0x13;
     export type HitEvent = { id: number; angle: number };
+
+    export const DebugDrawRects = 0x014;
+    export type DebugDrawRects = {
+        rects: [x: number, y: number, w: number, h: number][];
+    };
 }
 
 export namespace ClientPacket {
@@ -153,32 +154,18 @@ export namespace Schema {
         [ServerPacket.SetRotation]: {
             fields: ["id", "rotation"] as const,
             validator: typia.createIs<ServerPacket.SetRotation>(),
-            world: true,
         },
         [ServerPacket.SetPosition]: {
             fields: ["id", "x", "y"] as const,
             validator: typia.createIs<ServerPacket.SetPosition>(),
-            world: true,
         },
         [ServerPacket.PlacementValidity]: {
             fields: ["valid"] as const,
             validator: typia.createIs<ServerPacket.PlacementValidity>(),
         },
-        [ServerPacket.LoadPlayer]: {
-            fields: [
-                "id",
-                "x",
-                "y",
-                "rotation",
-                "name",
-                "mainhand",
-                "offhand",
-                "helmet",
-                "playerSkin",
-                "backpack",
-            ] as const,
-            validator: typia.createIs<ServerPacket.LoadPlayer>(),
-            world: true,
+        [ServerPacket.LoadObject]: {
+            fields: ["id", "type", "x", "y", "rotation", "data"] as const,
+            validator: typia.createIs<ServerPacket.LoadObject>(),
         },
         [ServerPacket.UnloadObjects]: {
             fields: ["objects"] as const,
@@ -201,7 +188,6 @@ export namespace Schema {
                 "backpack",
             ] as const,
             validator: typia.createIs<ServerPacket.UpdateEquipment>(),
-            world: true,
         },
         [ServerPacket.DeleteObjects]: {
             fields: ["objects"] as const,
@@ -218,7 +204,6 @@ export namespace Schema {
         [ServerPacket.ChatMessage]: {
             fields: ["id", "message"] as const,
             validator: typia.createIs<ServerPacket.ChatMessage>(),
-            world: true,
         },
         [ServerPacket.LoadGround]: {
             fields: ["groundData"] as const,
@@ -239,17 +224,18 @@ export namespace Schema {
         [ServerPacket.AttackEvent]: {
             fields: ["id"],
             validator: typia.createIs<ServerPacket.AttackEvent>(),
-            world: true,
         },
         [ServerPacket.BlockEvent]: {
             fields: ["id", "stop"],
             validator: typia.createIs<ServerPacket.BlockEvent>(),
-            world: true,
         },
         [ServerPacket.HitEvent]: {
             fields: ["id", "angle"],
             validator: typia.createIs<ServerPacket.HitEvent>(),
-            world: true,
+        },
+        [ServerPacket.DebugDrawRects]: {
+            fields: ["rects"],
+            validator: typia.createIs<ServerPacket.DebugDrawRects>(),
         },
     } as const;
 
@@ -305,7 +291,7 @@ export type ServerPacketMap = {
     [ServerPacket.SetRotation]: ServerPacket.SetRotation;
     [ServerPacket.SetPosition]: ServerPacket.SetPosition;
     [ServerPacket.PlacementValidity]: ServerPacket.PlacementValidity;
-    [ServerPacket.LoadPlayer]: ServerPacket.LoadPlayer;
+    [ServerPacket.LoadObject]: ServerPacket.LoadObject;
     [ServerPacket.UnloadObjects]: ServerPacket.UnloadObjects;
     [ServerPacket.UpdateVitals]: ServerPacket.UpdateVitals;
     [ServerPacket.UpdateInventory]: ServerPacket.UpdateInventory;
@@ -321,6 +307,7 @@ export type ServerPacketMap = {
     [ServerPacket.AttackEvent]: ServerPacket.AttackEvent;
     [ServerPacket.BlockEvent]: ServerPacket.BlockEvent;
     [ServerPacket.HitEvent]: ServerPacket.HitEvent;
+    [ServerPacket.DebugDrawRects]: ServerPacket.DebugDrawRects;
 };
 
 export type ClientPacketMap = {

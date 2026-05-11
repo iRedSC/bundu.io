@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { type BasicPoint } from "@lib/types";
+import { type BasicPoint } from "@ioengine/lib";
 
 export class Circle extends PIXI.Graphics {
     r: number;
@@ -14,7 +14,7 @@ export class Circle extends PIXI.Graphics {
         this.r = r;
         this.position = pos;
 
-        this.circle(0, 0, r * 10);
+        this.circle(0, 0, r);
         this.stroke({ width: s, color: c });
     }
 }

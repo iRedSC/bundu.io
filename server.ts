@@ -3,12 +3,19 @@ import path from "path";
 import fs from "fs";
 
 const PUBLIC_DIR = path.join(import.meta.dir, "public");
+const PORT = Number(process.env.PORT ?? 3000);
 
 serve({
-    port: 3000,
+    port: PORT,
     fetch(req) {
         const url = new URL(req.url);
-        let pathname = url.pathname === "/" ? "/index.html" : url.pathname;
+        if (url.pathname === "/") {
+            return Response.redirect(new URL("/site/", url), 302);
+        }
+
+        let pathname = url.pathname.endsWith("/")
+            ? `${url.pathname}index.html`
+            : url.pathname;
         let filepath = path.join(PUBLIC_DIR, pathname);
 
         // Security: prevent directory traversal
@@ -25,3 +32,5 @@ serve({
         }
     },
 });
+
+console.log(`Client running at http://localhost:${PORT}/site/`);

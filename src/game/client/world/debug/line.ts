@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { type BasicPoint } from "@lib/types";
+import { type BasicPoint } from "@ioengine/lib";
 
 export class Line extends PIXI.Graphics {
     start: BasicPoint;

@@ -5,6 +5,7 @@ import {
     SocketManager,
 } from "@ioengine/server";
 import { PlayerData } from "../components/player";
+import { VisibleObjects } from "../components/visible_objects";
 
 export const worldPacketManager = new WorldPacketManager<
     typeof Schema.Server,
@@ -17,7 +18,7 @@ export const playerPacketManager = new PlayerPacketManager<
 >(Schema.Server);
 
 playerPacketManager.visibleObjectsCallback = (player) => {
-    return player.get(PlayerData)?.visibleObjects.objects.values();
+    return player.get(VisibleObjects).visible.values();
 };
 
 export const socketManager = new SocketManager();

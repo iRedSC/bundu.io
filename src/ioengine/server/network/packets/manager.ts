@@ -35,7 +35,9 @@ export class PlayerPacketManager<
     >();
     private schemas = new Map<number, S[keyof S & number]>();
     private serializer: Serializer<S, DataMap>;
-    visibleObjectsCallback?: (player: GameObject) => IterableIterator<number>;
+    visibleObjectsCallback?: (
+        player: GameObject
+    ) => IterableIterator<GameObject>;
 
     constructor(schema: S) {
         this.packets = new Map();

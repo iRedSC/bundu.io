@@ -6,6 +6,9 @@ import { ServerPacket } from "@shared/packet_definitions";
 export const debugContainer = new Container();
 debugContainer.zIndex = 1000;
 
+const rects = new Graphics();
+debugContainer.addChild(rects);
+
 export class DebugWorldObject {
     containers: Map<string, Container>;
 
@@ -34,8 +37,9 @@ export class DebugWorldObject {
 }
 
 export function drawPolygon(packet: ServerPacket.DebugDrawPolygon) {
+    console.log("Drawing polygon");
     const polygon = new Graphics();
-    polygon.stroke({ width: 2, color: "#FF0000" });
+    polygon.stroke({ width: 16, color: "#FF0000" });
     const start = { x: packet.startX, y: packet.startY };
     polygon.moveTo(start.x, start.y);
     for (const rawPoint of packet.points) {
@@ -50,6 +54,16 @@ export function drawPolygon(packet: ServerPacket.DebugDrawPolygon) {
         debugContainer.removeChild(polygon);
         polygon.destroy();
     }, 1000);
+}
+
+export function drawRects(packet: ServerPacket.DebugDrawRects) {
+    rects.clear();
+    for (const rect of packet.rects) {
+        rects.rect(...rect).stroke({
+            width: 16,
+            color: 0xff0000,
+        });
+    }
 }
 
 type BasicPoint = { x: number; y: number } | [number, number];

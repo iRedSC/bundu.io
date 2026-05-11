@@ -1,9 +1,8 @@
-import { Component, VisibleObjects } from "@ioengine/server";
+import { Component } from "@ioengine/server";
 
 export type PlayerData = {
     name: string;
     score: number;
-    visibleObjects: VisibleObjects;
 
     playerSkin: number;
     selectedStructure: {
@@ -24,7 +23,6 @@ export type PlayerData = {
 export const PlayerData = Component.register<PlayerData>(() => ({
     name: "unnamed",
     score: 0,
-    visibleObjects: new VisibleObjects(),
     playerSkin: 0,
     backpackSkin: 0,
     moveDir: [0, 0],

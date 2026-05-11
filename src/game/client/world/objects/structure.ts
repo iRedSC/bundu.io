@@ -1,9 +1,12 @@
 import * as PIXI from "pixi.js";
-import { radians } from "@lib/transforms";
+import { radians } from "@ioengine/lib";
 import GameObject from "../game_object";
 import { ANIMATION, hit } from "../../animation/animations";
 import { spriteConfigs } from "@client/configs/sprite_configs";
-import { SpriteFactory, ContaineredSprite } from "@client/assets/sprite_factory";
+import {
+    SpriteFactory,
+    ContaineredSprite,
+} from "@client/assets/sprite_factory";
 // type StructureData = [id: number, pos: number, size: number, rotation: number];
 
 export class Structure extends GameObject {

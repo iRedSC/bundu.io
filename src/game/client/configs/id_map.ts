@@ -8,10 +8,10 @@ for (let [k, v] of Object.entries(_idMap)) {
     if (typia.is<number>(v)) idMap.set(k, v);
 }
 
-export function getStringId(numericId: number | undefined | null) {
-    return idMap.getv(numericId ?? -1);
+export function getStringId(numericId: number | undefined | null): string {
+    return idMap.getv(numericId ?? -1) ?? "";
 }
 
 export function getNumericId(stringId: string | undefined | null) {
-    return idMap.get(stringId ?? "");
+    return idMap.get(stringId ?? "") ?? -1;
 }

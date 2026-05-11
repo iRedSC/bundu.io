@@ -1,3 +1,4 @@
+import type { ServerPacket } from "@shared/packet_definitions.js";
 import { Component, type ComponentFactory } from "./component.js";
 
 let NEXT_OBJECT_ID = 1;
@@ -89,7 +90,7 @@ export abstract class GameObject {
 
     public get: typeof getComponents = getComponents.bind(this);
 
-    public sendNewObjectPacket(to?: number) {
+    public getNewObjectPacket(): ServerPacket.LoadObject | void {
         console.error(
             "Attempted to serialize GameObject that did not implement serialization method!"
         );

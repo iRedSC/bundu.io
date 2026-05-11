@@ -23,10 +23,6 @@ import { Resource } from "../game_objects/resource.js";
 import { getNumericId } from "../configs/loaders/id_map.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
-function pointToVec(point: BasicPoint) {
-    return new Vector(point.x, point.y);
-}
-
 /**
  * This is the system that controls players.
  * ! Method calls come directly from client's packets, so it's a potential attack point.
@@ -104,8 +100,6 @@ export class PlayerSystem extends System<GameEventMap> {
             recipes: packCraftingList(),
         });
         this.trigger(GameEvent.HealthUpdate, { object: player });
-
-        player.sendNewObjectPacket();
     }
 
     kill({ object: target }: GameEvent.Kill) {
@@ -121,7 +115,7 @@ export class PlayerSystem extends System<GameEventMap> {
             });
         }
 
-        this.trigger(GameEvent.DeleteObject, { objects: target });
+        this.trigger(GameEvent.DeleteObject, { object: target });
         const socket = socketManager.getSocket(target.id);
         socket?.close();
         socketManager.deleteClient(target.id);
@@ -159,6 +153,7 @@ export class PlayerSystem extends System<GameEventMap> {
         this.trigger(GameEvent.Rotate, { object: player, rotation });
     };
 
+    //! remove this in favor of ObjectsAddedToView
     // Triggers event to send objects to selected player
     requestObjects = (
         playerId: number,
@@ -168,54 +163,44 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         console.log("Player is requesting objects");
 
-        this.trigger(GameEvent.SendNewObjects, { object: player, objects });
+        // this.trigger(GameEvent.SendNewObjects, { object: player, objects });
     };
 
     // starts or stops a player from attacking
     attack = (playerId: number, { stop }: ClientPacket.Attack) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
-        const physics = Physics.get(player);
-        const data = PlayerData.get(player);
+        const data = player.get(PlayerData);
+        const physics = player.get(Physics);
         const selectedStructure = data.selectedStructure;
-
-        const position = pointToVec(
-            moveInDirection(
-                physics.position.clone(),
-                physics.rotation + radians(90),
-                30
-            )
-        );
+        const { x, y } = physics.position;
 
         if (selectedStructure.id !== -1) {
-            const struct_physics: Physics = {
-                position: position.clone(),
-                size: 15,
-                rotation: physics.rotation + radians(-45),
-                collider: new Circle(position.clone(), 15),
-                solid: true,
-                speed: 0,
-            };
-            this.world.addObject(
-                new Resource(struct_physics, {
-                    id: selectedStructure.id,
-                    variant: 0,
-                })
-            );
             selectedStructure.cooldown_timestamp = Date.now() + 1000;
 
             playerPacketManager.set(
                 player.id,
                 ServerPacket.SetSelectedStructure,
-                { structureId: -1, structureSize: 1 }
+                {
+                    structureId: -1,
+                    structureSize: 10,
+                }
             );
+
             this.trigger(GameEvent.RemoveItem, {
                 object: player,
                 id: selectedStructure.id,
                 amount: 1,
             });
+
+            this.trigger(GameEvent.PlaceStructure, {
+                structureId: selectedStructure.id,
+                x,
+                y,
+                rotation: 0,
+            });
+
             selectedStructure.id = -1;
-            return;
         }
 
         data.attacking = !stop;

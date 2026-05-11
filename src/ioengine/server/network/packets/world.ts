@@ -1,4 +1,5 @@
 import { Serializer } from "../../../shared/network/serializer";
+import type { GameObject } from "../../game_engine/game_object";
 
 type WorldPacketContainer<I, DataMap> = Map<
     I,
@@ -9,7 +10,6 @@ export class WorldPacketManager<
     S extends Record<
         number,
         {
-            world?: true;
             fields: readonly string[];
             validator: (v: any) => boolean;
         }
@@ -39,8 +39,6 @@ export class WorldPacketManager<
         if (!schema.validator(data))
             return console.error(`Validation failed: ${id}`);
 
-        if (!schema.world) return console.error(`Not a world packet ${id}`);
-
         if (!data.id)
             return console.error(`Object id not found in packet ${id}`);
 
@@ -52,10 +50,10 @@ export class WorldPacketManager<
         // console.log(data);
     }
 
-    process(objects: IterableIterator<number>) {
+    process(objects: IterableIterator<GameObject>) {
         const packets: unknown[] = [];
         for (const object of objects) {
-            const objectPackets = this.objects.get(object);
+            const objectPackets = this.objects.get(object.id);
             objectPackets
                 ?.entries()
                 .forEach(([id, data]) =>

@@ -43,20 +43,9 @@ export namespace GameEvent {
         object: GameObject;
     };
 
-    export const SendNewObjects = 7;
-    export type SendNewObjects = {
-        object: GameObject;
-        objects: number[];
-    };
-
-    export const SendObjectUpdates = 8;
-    export type SendObjectUpdates = {
-        object: GameObject;
-    };
-
     export const DeleteObject = 9;
     export type DeleteObject = {
-        objects: GameObject;
+        object: GameObject;
     };
 
     export const SpawnItem = 10;
@@ -138,6 +127,46 @@ export namespace GameEvent {
         id?: number;
         amount?: number;
     };
+
+    export const ObjectsRemovedFromView = 22;
+    export type ObjectsRemovedFromView = {
+        object: GameObject;
+        objectsRemoved: GameObject[];
+    };
+
+    export const ObjectsAddedToView = 23;
+    export type ObjectsAddedToView = {
+        object: GameObject;
+        objectsAdded: GameObject[];
+    };
+
+    export const PlaceStructure = 24;
+    export type PlaceStructure = {
+        structureId: number;
+        x: number;
+        y: number;
+        rotation: number;
+    };
+
+    export const CalculateStructurePlacement = 25;
+    export type CalculateStructurePlacement = {
+        object: GameObject;
+        structureId: number;
+    };
+
+    export const DebugDrawPolygon = 26;
+    export type DebugDrawPolygon = {
+        object: GameObject;
+        startX: number;
+        startY: number;
+        points: [x: number, y: number][];
+    };
+
+    export const DebugDrawRects = 27;
+    export type DebugDrawRects = {
+        object: GameObject;
+        rects: [x: number, y: number, w: number, h: number][];
+    };
 }
 
 export type GameEventMap = {
@@ -147,8 +176,6 @@ export type GameEventMap = {
     [GameEvent.Collide]: GameEvent.Collide;
     [GameEvent.Rotate]: GameEvent.Rotate;
     [GameEvent.NewObject]: GameEvent.NewObject;
-    [GameEvent.SendNewObjects]: GameEvent.SendNewObjects;
-    [GameEvent.SendObjectUpdates]: GameEvent.SendObjectUpdates;
     [GameEvent.DeleteObject]: GameEvent.DeleteObject;
     [GameEvent.SpawnItem]: GameEvent.SpawnItem;
     [GameEvent.UpdateInventory]: GameEvent.UpdateInventory;
@@ -162,6 +189,11 @@ export type GameEventMap = {
     [GameEvent.SelectItem]: GameEvent.SelectItem;
     [GameEvent.GiveItem]: GameEvent.GiveItem;
     [GameEvent.RemoveItem]: GameEvent.RemoveItem;
+    [GameEvent.ObjectsAddedToView]: GameEvent.ObjectsAddedToView;
+    [GameEvent.ObjectsRemovedFromView]: GameEvent.ObjectsRemovedFromView;
+    [GameEvent.PlaceStructure]: GameEvent.PlaceStructure;
+    [GameEvent.CalculateStructurePlacement]: GameEvent.CalculateStructurePlacement;
+    [GameEvent.DebugDrawPolygon]: GameEvent.DebugDrawPolygon;
 };
 
 export type GameEventCallback<T extends keyof GameEventMap> =

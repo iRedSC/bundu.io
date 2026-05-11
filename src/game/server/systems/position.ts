@@ -9,9 +9,9 @@ export const quadtree = new Quadtree(
     new Map(),
     [
         { x: 0, y: 0 },
-        { x: 500000, y: 500000 },
+        { x: 20000, y: 20000 },
     ],
-    100
+    5
 );
 
 export const getSizedBounds = (
