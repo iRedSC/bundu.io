@@ -144,13 +144,15 @@ class InternalQuadtree {
                 const position = objectList.get(id);
                 if (!position) continue;
 
-                if (
-                    this.bounds.contains(position) &&
-                    range.contains(position)
-                ) {
-                    found.push(id);
-                } else {
+                const isInNode = this.bounds.contains(position);
+                const isInQuery = range.contains(position);
+                if (!isInNode) {
                     this.objects.delete(id);
+                    continue;
+                }
+
+                if (isInQuery) {
+                    found.push(id);
                 }
             }
 

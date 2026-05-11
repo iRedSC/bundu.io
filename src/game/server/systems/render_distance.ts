@@ -5,6 +5,9 @@ import { VisibleObjects } from "../components/visible_objects.js";
 import { packRangetoPolygon, Range } from "@ioengine/lib";
 import { quadtree } from "./position.js";
 
+const RENDER_DISTANCE_X = 2200;
+const RENDER_DISTANCE_Y = 1250;
+
 export class RenderDistanceSystem extends System<GameEventMap> {
     constructor() {
         super([VisibleObjects, Physics], 2);
@@ -19,12 +22,12 @@ export class RenderDistanceSystem extends System<GameEventMap> {
 
         const renderBounds = new Range(
             {
-                x: physics.position.x - 8000,
-                y: physics.position.y - 4500,
+                x: physics.position.x - RENDER_DISTANCE_X,
+                y: physics.position.y - RENDER_DISTANCE_Y,
             },
             {
-                x: physics.position.x + 8000,
-                y: physics.position.y + 4500,
+                x: physics.position.x + RENDER_DISTANCE_X,
+                y: physics.position.y + RENDER_DISTANCE_Y,
             }
         );
 
@@ -74,18 +77,18 @@ export class RenderDistanceSystem extends System<GameEventMap> {
             VisibleObjects,
         ]);
         for (const obj of objectsWithVisibleObjectsComponent) {
-            const visibleObjects = object.get(VisibleObjects);
+            const visibleObjects = obj.get(VisibleObjects);
             const physics = obj.get(Physics);
             if (!visibleObjects || !physics) continue;
 
             const bounds = new Range(
                 {
-                    x: physics.position.x - 8000,
-                    y: physics.position.y - 4500,
+                    x: physics.position.x - RENDER_DISTANCE_X,
+                    y: physics.position.y - RENDER_DISTANCE_Y,
                 },
                 {
-                    x: physics.position.x + 8000,
-                    y: physics.position.y + 4500,
+                    x: physics.position.x + RENDER_DISTANCE_X,
+                    y: physics.position.y + RENDER_DISTANCE_Y,
                 }
             );
 
