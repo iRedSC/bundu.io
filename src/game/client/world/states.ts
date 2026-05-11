@@ -49,6 +49,7 @@ export class PositionStates {
     set(state: PositionState) {
         if (!typia.is<PositionState>(state)) return;
 
+        if (!this.next) this.current = state;
         this.last = this.current;
         this.next = state;
         this.lastUpdateTime = performance.now();
