@@ -25,12 +25,15 @@ import {
     worldPacketManager,
 } from "./network/managers";
 import { PlayerData } from "./components/player";
-import { Circle, Vector } from "sat";
+import { Box, Circle, Vector } from "sat";
 import { PacketSystem } from "./systems/packet";
 import { AttackSystem } from "./systems/attack";
 import { encode } from "@msgpack/msgpack";
 import { RenderDistanceSystem } from "./systems/render_distance";
 import { GameEvent } from "./systems/event_map";
+import { Ground } from "./game_objects/ground";
+import { Resource } from "./game_objects/resource";
+import { getNumericId } from "./configs/loaders/id_map";
 
 const world = new World();
 loadConfigs();
@@ -50,6 +53,95 @@ world
     .addSystem(new PacketSystem())
     .addSystem(new AttackSystem())
     .addSystem(new RenderDistanceSystem());
+
+const TEST_MAP_SIZE = 20000;
+const TEST_MAP_BORDER_PADDING = 300;
+const TEST_MAP_RESOURCE_COUNT = 450;
+
+const TEST_MAP_RESOURCE_IDS: string[] = [
+    "forest_tree",
+    "pine_tree",
+    "pine_tree_snow",
+    "savanah_tree",
+    "stone",
+    "gold",
+    "diamond",
+    "amethyst",
+];
+
+function getRequiredNumericId(id: string) {
+    const numericId = getNumericId(id);
+    if (typeof numericId !== "number") {
+        throw new Error(`Missing numeric id for ${id}`);
+    }
+    return numericId;
+}
+
+function addResource(
+    id: string,
+    x: number,
+    y: number,
+    size: number,
+    rotation = 0
+) {
+    const position = new Vector(x, y);
+    world.addObject(
+        new Resource(
+            {
+                position,
+                collider: new Circle(position, size),
+                rotation,
+                size,
+                solid: true,
+                speed: 0,
+            },
+            { id: getRequiredNumericId(id), variant: 0 }
+        )
+    );
+}
+
+function loadTestMap() {
+    const origin = new Vector(0, 0);
+    world.addObject(
+        new Ground({
+            collider: new Box(origin, TEST_MAP_SIZE, TEST_MAP_SIZE),
+            type: 1,
+            speedMultiplier: 1,
+            createPacket() {
+                // Client ground rendering currently consumes type before bounds.
+                return [1, 0, 0, TEST_MAP_SIZE, TEST_MAP_SIZE];
+            },
+        })
+    );
+
+    const borderSize = 56;
+    const borderStep = borderSize * 2;
+    for (let pos = 0; pos <= TEST_MAP_SIZE; pos += borderStep) {
+        addResource("stone_barrier", pos, 0, borderSize);
+        addResource("stone_barrier", pos, TEST_MAP_SIZE, borderSize);
+        addResource("stone_barrier", 0, pos, borderSize);
+        addResource("stone_barrier", TEST_MAP_SIZE, pos, borderSize);
+    }
+
+    for (let i = 0; i < TEST_MAP_RESOURCE_COUNT; i++) {
+        const id = random.choice(TEST_MAP_RESOURCE_IDS);
+        addResource(
+            id,
+            random.integer(
+                TEST_MAP_BORDER_PADDING,
+                TEST_MAP_SIZE - TEST_MAP_BORDER_PADDING
+            ),
+            random.integer(
+                TEST_MAP_BORDER_PADDING,
+                TEST_MAP_SIZE - TEST_MAP_BORDER_PADDING
+            ),
+            random.integer(30, 70),
+            random.integer(0, 360)
+        );
+    }
+}
+
+loadTestMap();
 
 playerSystem.trigger(GameEvent.PlaceStructure, {
     structureId: 2,
