@@ -33,7 +33,7 @@ export class Resource extends GameObject {
             y: physics.position.y,
             rotation: physics.rotation,
             type: GameObjectData.ResourceNodeType,
-            data: [physics.size, type.id],
+            data: [physics.collisionRadius, type.id],
         };
     }
 }

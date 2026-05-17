@@ -77,6 +77,7 @@ export class Player extends GameObject {
                 data.helmet,
                 data.backpack ?? false,
                 data.playerSkin,
+                physics.collisionRadius,
             ],
         };
         return packet;

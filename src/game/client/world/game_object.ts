@@ -32,17 +32,25 @@ export default class GameObject {
 
     animations: Map<number, Animation>;
     active?: boolean;
+    collisionRadius: number;
 
-    constructor(id: number, pos: Point, rotation: number, size: number) {
+    constructor(
+        id: number,
+        pos: Point,
+        rotation: number,
+        collisionRadius: number,
+        visualScale: number = collisionRadius
+    ) {
         this.container = new Container();
         this.container.zIndex = 0;
 
         this.id = id;
+        this.collisionRadius = collisionRadius;
 
         this.debug = new DebugWorldObject();
 
         this.container.position = pos;
-        this.size = size;
+        this.size = visualScale;
 
         this.positionStates = new PositionStates(() => {
             this.container.renderable = true;
@@ -71,7 +79,12 @@ export default class GameObject {
         this.locationText.position.set(pos.x, pos.y - 10);
         this.debug.update("location", this.locationText);
 
-        const hitbox = new Circle(this.position, size / 10, 0xff0000, 2);
+        const hitbox = new Circle(
+            this.position,
+            this.collisionRadius,
+            0xff0000,
+            2
+        );
         this.debug.update("hitbox", hitbox);
     }
 

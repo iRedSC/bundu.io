@@ -65,11 +65,11 @@ export namespace ServerPacket {
     export const LoadGround = 0x0d;
     export type LoadGround = {
         groundData: [
+            type: number,
             x: number,
             y: number,
             w: number,
-            h: number,
-            type: number
+            h: number
         ][];
     };
 

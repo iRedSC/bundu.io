@@ -1,8 +1,6 @@
 import * as PIXI from "pixi.js";
-import { radians } from "@lib/transforms";
-import Random from "@lib/random";
+import { Animation, AnimationManager, radians, random } from "@ioengine/lib";
 import GameObject from "../game_object";
-import { Animation, AnimationManager } from "@lib/animations";
 import { ANIMATION, hurt } from "../../animation/animations";
 import { ContaineredSprite, SpriteFactory } from "@client/assets/sprite_factory";
 
@@ -15,14 +13,10 @@ export class Entity extends GameObject {
         type: string,
         pos: PIXI.Point,
         rotation: number,
-        size: number
+        collisionRadius: number,
+        visualScale: number = collisionRadius * 2.5
     ) {
-        super(id, pos, rotation, size);
-
-        this.container.pivot.set(
-            this.container.width / 2,
-            this.container.height / 2
-        );
+        super(id, pos, rotation, collisionRadius, visualScale);
 
         this.sprite = SpriteFactory.build(type);
         this.sprite.rotation = radians(-90);
@@ -45,7 +39,7 @@ function entityIdle(target: Entity) {
     animation.keyframes[0] = (animation) => {
         width = target.container.scale.x;
         height = target.container.scale.y;
-        frameLength = Random.integer(1000, 2000);
+        frameLength = random.integer(1000, 2000);
 
         animation.next(frameLength);
     };

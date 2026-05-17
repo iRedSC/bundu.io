@@ -11,9 +11,10 @@ export namespace GameObjectData {
         offhand: nullish<number>,
         helmet: nullish<number>,
         backpack: boolean,
-        playerSkin: nullish<number>
+        playerSkin: nullish<number>,
+        collisionRadius: number
     ];
 
     export const ResourceNodeType = 0x01;
-    export type ResourceNodeData = [size: number, type: number];
+    export type ResourceNodeData = [collisionRadius: number, type: number];
 }

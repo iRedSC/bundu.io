@@ -34,6 +34,7 @@ import { GameEvent } from "./systems/event_map";
 import { Ground } from "./game_objects/ground";
 import { Resource } from "./game_objects/resource";
 import { getNumericId } from "./configs/loaders/id_map";
+import { StructureSystem } from "./systems/structure";
 
 const world = new World();
 loadConfigs();
@@ -52,6 +53,7 @@ world
     .addSystem(new HealthSystem())
     .addSystem(new PacketSystem())
     .addSystem(new AttackSystem())
+    .addSystem(new StructureSystem())
     .addSystem(new RenderDistanceSystem());
 
 const TEST_MAP_SIZE = 20000;
@@ -81,7 +83,7 @@ function addResource(
     id: string,
     x: number,
     y: number,
-    size: number,
+    collisionRadius: number,
     rotation = 0
 ) {
     const position = new Vector(x, y);
@@ -89,9 +91,9 @@ function addResource(
         new Resource(
             {
                 position,
-                collider: new Circle(position, size),
+                collider: new Circle(position, collisionRadius),
                 rotation,
-                size,
+                collisionRadius,
                 solid: true,
                 speed: 0,
             },
@@ -108,7 +110,6 @@ function loadTestMap() {
             type: 1,
             speedMultiplier: 1,
             createPacket() {
-                // Client ground rendering currently consumes type before bounds.
                 return [1, 0, 0, TEST_MAP_SIZE, TEST_MAP_SIZE];
             },
         })
@@ -155,11 +156,18 @@ function createPlayer(username: string, skinId: number) {
         random.integer(7500, 7500),
         random.integer(7500, 7500)
     );
-    const size = 10;
-    const collider = new Circle(position, size);
+    const collisionRadius = 30;
+    const collider = new Circle(position, collisionRadius);
 
     const player = new Player(
-        { position, collider, size, solid: false, rotation: 0, speed: 10 },
+        {
+            position,
+            collider,
+            collisionRadius,
+            solid: false,
+            rotation: 0,
+            speed: 10,
+        },
         {
             name: username,
             score: 0,

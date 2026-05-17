@@ -53,9 +53,10 @@ export class Player extends GameObject {
         manager: AnimationManager,
         name: Text,
         pos: Point,
-        rotation: number
+        rotation: number,
+        collisionRadius: number
     ) {
-        super(id, pos, rotation, 100);
+        super(id, pos, rotation, collisionRadius, 100);
         this.sprite = {
             structure: {
                 container: new Container(),
@@ -258,7 +259,7 @@ export class Player extends GameObject {
         }
     }
 
-    setSelectedStructure(id: number, size: number) {
+    setSelectedStructure(id: number, visualScale: number) {
         this.sprite.structure.sprite.renderable = false;
         const name = getStringId(id);
         if (!name) return;
@@ -267,10 +268,13 @@ export class Player extends GameObject {
         if (!config) return;
 
         this.sprite.structure.sprite.renderable = true;
-        config.world_display.scale = size;
+        const worldDisplay = {
+            ...config.world_display,
+            scale: visualScale,
+        };
         SpriteFactory.update(
             this.sprite.structure.sprite,
-            config.world_display,
+            worldDisplay,
             name
         );
     }

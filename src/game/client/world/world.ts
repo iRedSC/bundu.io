@@ -157,7 +157,15 @@ export class World {
                 `Tried to load player (ID: ${packet.id}) had a bad data property. [${packet.data}]`
             );
         }
-        const [name, mainhand, offhand, helmet, backpack, playerSkin] =
+        const [
+            name,
+            mainhand,
+            offhand,
+            helmet,
+            backpack,
+            playerSkin,
+            collisionRadius,
+        ] =
             packet.data;
         const id = packet.id;
         this.renderer.delete(id);
@@ -171,7 +179,8 @@ export class World {
             AnimationManagers.World,
             nameText,
             pos,
-            packet.rotation
+            packet.rotation,
+            collisionRadius
         );
 
         player.setEquipment({ mainhand, offhand, helmet, backpack });
@@ -187,7 +196,7 @@ export class World {
                 `Tried to load player (ID: ${packet.id}) had a bad data property. [${packet.data}]`
             );
         }
-        const [size, nodeType] = packet.data;
+        const [collisionRadius, nodeType] = packet.data;
         this.renderer.delete(packet.id);
 
         const pos = new Point(packet.x, packet.y);
@@ -197,7 +206,7 @@ export class World {
             getStringId(nodeType),
             pos,
             packet.rotation,
-            size
+            collisionRadius
         );
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);

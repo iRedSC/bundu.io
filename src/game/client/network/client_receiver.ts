@@ -1,4 +1,4 @@
-import type { Serializer } from "@shared/packets/serializer";
+import type { Serializer } from "@ioengine/client";
 
 export type SerializedPacketArray = [number, ...[number, ...unknown[]][]];
 

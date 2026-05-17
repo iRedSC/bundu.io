@@ -5,7 +5,7 @@ export type Physics = {
     position: Vector;
     collider: Circle;
     rotation: number;
-    size: number;
+    collisionRadius: number;
     solid: boolean;
     speed: number;
 };
@@ -15,7 +15,7 @@ export const Physics = Component.register<Physics>(() => {
     return {
         position,
         collider: new Circle(position, 15),
-        size: 15,
+        collisionRadius: 15,
         solid: false,
         speed: 0,
         rotation: 0,
@@ -49,7 +49,13 @@ export type GroundData = {
     collider: Box;
     type: number;
     speedMultiplier: number;
-    createPacket: () => [number, number, number, number, number];
+    createPacket: () => [
+        type: number,
+        x: number,
+        y: number,
+        w: number,
+        h: number
+    ];
 };
 export const GroundData = Component.register<GroundData>(() => ({
     collider: new Box(new Vector(), 100, 100),
@@ -57,11 +63,11 @@ export const GroundData = Component.register<GroundData>(() => ({
     speedMultiplier: 1,
     createPacket() {
         return [
+            this.type,
             this.collider.pos.x,
             this.collider.pos.y,
             this.collider.w,
             this.collider.h,
-            this.type,
         ];
     },
 }));

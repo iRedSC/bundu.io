@@ -22,6 +22,7 @@ import { playerPacketManager, socketManager } from "../network/managers.js";
 import { Resource } from "../game_objects/resource.js";
 import { getNumericId } from "../configs/loaders/id_map.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
+import { STRUCTURE_COLLISION_RADIUS } from "./structure.js";
 
 /**
  * This is the system that controls players.
@@ -183,7 +184,7 @@ export class PlayerSystem extends System<GameEventMap> {
                 ServerPacket.SetSelectedStructure,
                 {
                     structureId: -1,
-                    structureSize: 10,
+                    structureSize: STRUCTURE_COLLISION_RADIUS,
                 }
             );
 

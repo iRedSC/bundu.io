@@ -1,14 +1,12 @@
 import { GameObject, System } from "@ioengine/server";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-import {
-    moveInDirection,
-    moveToward,
-    radians,
-} from "../../../ioengine/lib/transforms.js";
+import { moveInDirection } from "../../../ioengine/lib/transforms.js";
 import { Circle, Vector } from "sat";
 import type { BasicPoint } from "@ioengine/lib";
 import { Physics } from "../components/base.js";
 import { Resource } from "../game_objects/resource.js";
+
+export const STRUCTURE_COLLISION_RADIUS = 10;
 
 function pointToVec(point: BasicPoint) {
     return new Vector(point.x, point.y);
@@ -25,9 +23,9 @@ export class StructureSystem extends System<GameEventMap> {
         const position = new Vector(x, y);
         const struct_physics: Physics = {
             position,
-            size: 15,
+            collisionRadius: STRUCTURE_COLLISION_RADIUS,
             rotation,
-            collider: new Circle(position, 10),
+            collider: new Circle(position, STRUCTURE_COLLISION_RADIUS),
             solid: true,
             speed: 0,
         };
@@ -47,7 +45,11 @@ export class StructureSystem extends System<GameEventMap> {
         if (!physics) return;
 
         const position = pointToVec(
-            moveInDirection(physics.position.clone(), physics.rotation, 15)
+            moveInDirection(
+                physics.position.clone(),
+                physics.rotation,
+                STRUCTURE_COLLISION_RADIUS
+            )
         );
     }
 }
