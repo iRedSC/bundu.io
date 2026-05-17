@@ -6,13 +6,13 @@ import { radians, type BasicPoint } from "@ioengine/lib";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { Container, Point, Text } from "pixi.js";
+import type { Viewport } from "pixi-viewport";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
 import { WORLD_SIZE } from "@client/constants";
 import { DefaultMap } from "../../../ioengine/lib/default_map";
 import { serverTime } from "@client/globals";
 import GameObject from "./game_object";
 import ObjectContainer from "./object_container";
-import { Camera } from "@client/rendering/basic_camera";
 import { GameObjectData } from "@shared/object_types";
 import typia from "typia";
 import { Structure } from "./objects/structure";
@@ -42,8 +42,7 @@ type WorldEventCallback<T extends keyof WorldEvent> = (
 // This basically controls everything on the client
 // All packets (after being parsed) are sent to one of these methods
 export class World {
-    // camera: Camera;
-    viewport: Container;
+    viewport: Viewport;
     user?: number;
     objects: ObjectContainer;
     renderer: LayeredRenderer;
@@ -51,7 +50,7 @@ export class World {
     listeners: DefaultMap<keyof WorldEvent, Function[]>;
     requestIds: Set<number>;
 
-    constructor(viewport: Container) {
+    constructor(viewport: Viewport) {
         // this.camera = new Camera(viewport, {
         //     zoomSpeed: 0.05,
         //     minZoom: 0.75,
@@ -128,9 +127,8 @@ export class World {
         }
         console.info(`Found user (id ${this.user}), loading..`);
 
-        // this.camera.target = player.position;
-        // this.camera.snap();
-        console.debug("Snapping camera..");
+        this.viewport.follow(player.container, { speed: 0 });
+        console.debug("Camera following local player");
 
         this.emitEvent(WorldEvent.ClientConnected, player as Player);
     };

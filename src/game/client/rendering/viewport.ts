@@ -33,6 +33,6 @@ export function createViewport(app: PIXI.Application) {
         viewport.resize(window.innerWidth, window.innerHeight);
     };
 
-    viewport.drag().pinch().wheel().decelerate();
+    // viewport.drag().pinch().wheel().decelerate();
     return viewport;
 }
