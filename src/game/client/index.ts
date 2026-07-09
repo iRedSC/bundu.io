@@ -173,9 +173,6 @@ async function main() {
     gui.craftingMenu.leftclick = (itemId) => {
         sendPacket(ClientPacket.CraftItem, { itemId });
     };
-    gui.craftingMenu.rightclick = (itemId) => {
-        sendPacket(ClientPacket.CraftItem, { itemId });
-    };
 
     const isInGame = () =>
         socket !== null && socket.readyState === WebSocket.OPEN;
@@ -233,17 +230,21 @@ async function main() {
 
         next.onmessage = async (ev) => {
             const data = await decodeFromBlob(ev.data);
+            if (socket !== next) return;
             if (!typia.is<SerializedPacketArray>(data)) return;
             receiver.process(data);
         };
 
         next.onopen = () => {
+            if (socket !== next) return;
             connecting = false;
             playButton.disabled = false;
             setMenuVisible(false);
         };
 
         next.onerror = () => {
+            // Non-terminal: let onclose own session cleanup.
+            if (socket !== next) return;
             connecting = false;
             playButton.disabled = false;
         };
@@ -251,9 +252,8 @@ async function main() {
         next.onclose = () => {
             connecting = false;
             playButton.disabled = false;
-            if (socket === next) {
-                socket = null;
-            }
+            if (socket !== next) return;
+            socket = null;
             resetSession();
             setMenuVisible(true);
             nameInput.focus();

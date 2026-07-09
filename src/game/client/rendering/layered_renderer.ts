@@ -61,11 +61,12 @@ export class LayeredRenderer {
 
     delete(id: number): void {
         for (const layer of this.layers.values()) {
-            const containers = layer.map.get(id) || new Set();
+            const containers = layer.map.get(id);
+            if (!containers) continue;
             for (const container of containers.values()) {
-                layer.container.removeChild(container);
-                layer.map.delete(id);
+                container.destroy({ children: true });
             }
+            layer.map.delete(id);
         }
     }
 
