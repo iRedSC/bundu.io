@@ -1,1 +1,0 @@
-        "copy-yml": "rsync -av --include='*.yml' --include='*/' --exclude='*' src/game/client/ dist/client/",
