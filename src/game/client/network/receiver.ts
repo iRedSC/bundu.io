@@ -66,7 +66,6 @@ export function setupGUIPacketReceiving(
     receiver: ClientPacketReceiver<typeof Schema.Server, ServerPacketMap>,
     ui: UI
 ) {
-    receiver.on(ServerPacket.DebugDrawPolygon, drawPolygon);
     receiver.on(ServerPacket.UpdateVitals, ({ health, hunger, heat }) => {
         ui.health.update(health);
         ui.hunger.update(hunger);
