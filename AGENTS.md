@@ -19,3 +19,6 @@
 
 ## General Preferences
 - If asked to do too much work at once, stop and state that clearly.
+
+## Subagents
+- Please use Grok 4.5 High for all subagent work.
