@@ -1,6 +1,5 @@
 import { Application, type Renderer } from "pixi.js";
 import { decodeFromBlob } from "./network/decode";
-import typia from "typia";
 import type { SerializedPacketArray } from "./network/client_receiver";
 import {
     receiver,
@@ -25,6 +24,10 @@ import { MouseInputListener } from "./input/mouse";
 import { round, degrees, lookToward, radians } from "@ioengine/lib";
 import { KeyboardInputListener } from "./input/keyboard";
 import { serverTime } from "./globals";
+
+function isPacketArray(data: unknown): data is SerializedPacketArray {
+    return Array.isArray(data) && typeof data[0] === "number";
+}
 
 declare namespace globalThis {
     var __PIXI_APP__: Application;
@@ -219,7 +222,7 @@ async function main() {
 
         next.onmessage = async (ev) => {
             const data = await decodeFromBlob(ev.data);
-            if (!typia.is<SerializedPacketArray>(data)) return;
+            if (!isPacketArray(data)) return;
             receiver.process(data);
         };
 
@@ -257,16 +260,6 @@ async function main() {
 
     setMenuVisible(true);
     nameInput.focus();
-
-    setInterval(() => {
-        if (world.requestIds.size > 0) {
-            console.log(`Requesting IDs: ${Array.from(world.requestIds)}`);
-            sendPacket(ClientPacket.RequestObjects, {
-                objects: Array.from(world.requestIds),
-            });
-            world.requestIds.clear();
-        }
-    }, 500);
 
     app.ticker.add(() => {
         const player = world.objects.get(world.user ?? -1);

@@ -1,11 +1,14 @@
 import { decode } from "@msgpack/msgpack";
 import { type ServerWebSocket } from "bun";
-import typia from "typia";
 import type { SocketManager } from "./socket_manager";
 
 type WebSocketData = { username: string; playerId: number };
 
 type ValidPacket = [number, ...unknown[]];
+
+function isValidPacket(value: unknown): value is ValidPacket {
+    return Array.isArray(value) && typeof value[0] === "number";
+}
 
 export class ServerController {
     connect: (socket: ServerWebSocket<WebSocketData>) => void = () => {};
@@ -30,19 +33,12 @@ export class ServerController {
             port,
             fetch: (req, server) => {
                 const url = new URL(req.url);
-
-                // Extract parameters
                 const username = url.searchParams.get("username") ?? "unnamed";
-                const skin_id = Number(url.searchParams.get("skin_id")) ?? 0;
-
+                const skin_id = Number(url.searchParams.get("skin_id")) || 0;
                 const playerId = this.createPlayer(username, skin_id);
 
-                // Attach parameters to the upgrade context
                 const success = server.upgrade(req, {
-                    data: {
-                        playerId,
-                        username,
-                    },
+                    data: { playerId, username },
                 });
 
                 if (success) return;
@@ -60,11 +56,11 @@ export class ServerController {
                     try {
                         if (typeof message === "string") return;
                         const decoded = decode(message);
-                        const isValid = typia.is<ValidPacket>(decoded);
-                        if (!isValid)
+                        if (!isValidPacket(decoded)) {
                             return console.error(
                                 `Bad packet from ${ws.data.username} (${ws.data.playerId}): ${decoded}`
                             );
+                        }
                         this.message(ws, decoded);
                     } catch {
                         console.warn("Invalid message format");
@@ -78,10 +74,6 @@ export class ServerController {
             },
         });
 
-        if (server) {
-            console.info(`Listening on port ${port}`);
-        } else {
-            console.error(`Failed to start WebSocket server on port ${port}`);
-        }
+        console.log(`WebSocket server listening on :${server.port}`);
     }
 }

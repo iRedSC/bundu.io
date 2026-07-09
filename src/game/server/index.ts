@@ -33,7 +33,7 @@ import { RenderDistanceSystem } from "./systems/render_distance";
 import { GameEvent } from "./systems/event_map";
 import { Ground } from "./game_objects/ground";
 import { Resource } from "./game_objects/resource";
-import { getNumericId } from "./configs/loaders/id_map";
+import { getNumericId } from "@shared/id_map";
 import { StructureSystem } from "./systems/structure";
 
 const world = new World();

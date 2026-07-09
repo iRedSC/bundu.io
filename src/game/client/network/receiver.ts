@@ -22,15 +22,8 @@ export function setupPacketReceiving(
     receiver: ClientPacketReceiver<typeof Schema.Server, ServerPacketMap>,
     world: World
 ) {
-    receiver.on(
-        ServerPacket.DebugDrawPolygon,
-        (packet: ServerPacket.DebugDrawPolygon) => drawPolygon(packet)
-    );
-
-    receiver.on(
-        ServerPacket.DebugDrawRects,
-        (packet: ServerPacket.DebugDrawRects) => drawRects(packet)
-    );
+    receiver.on(ServerPacket.DebugDrawPolygon, drawPolygon);
+    receiver.on(ServerPacket.DebugDrawRects, drawRects);
     receiver.on(ServerPacket.LoadObject, world.loadObject);
     receiver.on(ServerPacket.AttackEvent, world.attack);
     receiver.on(ServerPacket.BlockEvent, world.block);
@@ -42,7 +35,6 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.ClientConnectionInfo, world.clientConnectionInfo);
     receiver.on(ServerPacket.UpdateEquipment, world.updateEquipment);
     receiver.on(ServerPacket.ChatMessage, world.chatMessage);
-    receiver.on(ServerPacket.UnloadObjects, world.unloadObject);
     receiver.on(ServerPacket.SetSelectedStructure, world.selectStructure);
     receiver.on(ServerPacket.Ping, (_, now) => {
         serverTime.ping = (performance.now() - serverTime.pingTimeStart) / 2;
@@ -55,11 +47,7 @@ export function setupPacketReceiving(
             serverTime.offset = newOffset;
         }
         serverTime.offset = now - performance.now();
-
-        console.log(`timeoffset ${serverTime.now() - now} ${serverTime.ping}`);
     });
-
-    // receiver.on(ServerPacket.Ping)
 }
 
 export function setupGUIPacketReceiving(

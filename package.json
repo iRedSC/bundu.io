@@ -3,10 +3,7 @@
     "module": "index.ts",
     "type": "module",
     "devDependencies": {
-        "@ryoppippi/unplugin-typia": "^2.6.5",
         "@types/bun": "latest",
-        "bun-plugin-typia": "^0.1.0",
-        "ts-patch": "^3.3.0",
         "@types/sat": "^0.0.35"
     },
     "peerDependencies": {
@@ -16,8 +13,7 @@
         "server": "bun run src/game/server/index.ts",
         "build": "bun run ./build.ts",
         "start": "bun server.ts --hot",
-        "client": "bun run build && bun run start",
-        "prepare": "ts-patch install"
+        "client": "bun run build && bun run start"
     },
     "dependencies": {
         "@msgpack/msgpack": "^3.1.2",
@@ -25,7 +21,6 @@
         "@rwh/keystrokes": "^1.5.6",
         "pixi-viewport": "^6.0.3",
         "pixi.js": "^8.14.3",
-        "sat": "^0.9.0",
-        "typia": "^10.0.2"
+        "sat": "^0.9.0"
     }
 }

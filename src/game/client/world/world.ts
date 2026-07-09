@@ -2,46 +2,36 @@ import { ServerPacket } from "@shared/packet_definitions";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { createGround } from "./ground";
-import { radians, type BasicPoint } from "@ioengine/lib";
+import { radians } from "@ioengine/lib";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
-import { Container, Point, Text } from "pixi.js";
+import { Point, Text } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
-import { WORLD_SIZE } from "@client/constants";
-import { DefaultMap } from "../../../ioengine/lib/default_map";
 import { serverTime } from "@client/globals";
 import GameObject from "./game_object";
 import ObjectContainer from "./object_container";
 import { GameObjectData } from "@shared/object_types";
-import typia from "typia";
 import { Structure } from "./objects/structure";
-import { getStringId } from "@client/configs/id_map";
+import { getStringId } from "@shared/id_map";
 
-export const WorldEvent = {
-    ObjectLoaded: 1,
-    ObjectPositionChanged: 2,
-    PlayerLoaded: 3,
-    ClientPlayerPositionChanged: 4,
-    ClientConnected: 5,
-};
+function isPlayerData(data: unknown): data is GameObjectData.PlayerData {
+    return Array.isArray(data) && data.length >= 7 && typeof data[0] === "string";
+}
 
-export type WorldEvent = {
-    [WorldEvent.ObjectLoaded]: GameObject;
-    [WorldEvent.ObjectPositionChanged]: GameObject;
+function isResourceData(
+    data: unknown
+): data is GameObjectData.ResourceNodeData {
+    return (
+        Array.isArray(data) &&
+        data.length >= 2 &&
+        typeof data[0] === "number" &&
+        typeof data[1] === "number"
+    );
+}
 
-    [WorldEvent.PlayerLoaded]: Player;
-    [WorldEvent.ClientPlayerPositionChanged]: { x: number; y: number };
-    [WorldEvent.ClientConnected]: Player;
-};
-
-type WorldEventCallback<T extends keyof WorldEvent> = (
-    ev: WorldEvent[T]
-) => void;
-
-// This basically controls everything on the client
-// All packets (after being parsed) are sent to one of these methods
+/** Client world scene — packet handlers land here after decode. */
 export class World {
     viewport: Viewport;
     camera: Camera;
@@ -49,23 +39,13 @@ export class World {
     objects: ObjectContainer;
     renderer: LayeredRenderer;
     sky: Sky;
-    listeners: DefaultMap<keyof WorldEvent, Function[]>;
-    requestIds: Set<number>;
 
     constructor(viewport: Viewport) {
-        this.requestIds = new Set();
-        this.listeners = new DefaultMap(() => []);
         this.viewport = viewport;
         this.camera = new Camera(viewport);
         this.sky = new Sky();
         this.renderer = new LayeredRenderer();
-
-        const mapBounds: [BasicPoint, BasicPoint] = [
-            { x: 0, y: 0 },
-            { x: WORLD_SIZE, y: WORLD_SIZE },
-        ];
-
-        this.objects = new ObjectContainer(mapBounds);
+        this.objects = new ObjectContainer();
 
         this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
@@ -75,29 +55,7 @@ export class World {
     clear() {
         for (const object of this.objects.all()) {
             this.deleteObjects({ objects: [object.id] });
-            this.objects.delete(object.id);
         }
-    }
-
-    addEventListener<T extends keyof WorldEvent>(
-        event: T,
-        callback: WorldEventCallback<T>
-    ) {
-        this.listeners.get(event).push(callback);
-    }
-
-    removeEventListener<T extends keyof WorldEvent>(
-        event: T,
-        callback: WorldEventCallback<T>
-    ) {
-        this.listeners.set(
-            event,
-            this.listeners.get(event).filter((cb) => cb !== callback)
-        );
-    }
-
-    emitEvent<T extends keyof WorldEvent>(event: T, data: WorldEvent[T]) {
-        this.listeners.get(event).forEach((cb) => cb(data));
     }
 
     tick() {
@@ -120,11 +78,7 @@ export class World {
             return setTimeout(this.clientConnectionInfo, 500);
         }
         console.info(`Found user (id ${this.user}), loading..`);
-
         this.camera.follow(player.container);
-        console.debug("Camera following local player");
-
-        this.emitEvent(WorldEvent.ClientConnected, player as Player);
     };
 
     getUser() {
@@ -143,10 +97,9 @@ export class World {
     };
 
     newPlayer = (packet: ServerPacket.LoadObject) => {
-        if (!typia.is<GameObjectData.PlayerData>(packet.data)) {
-            console.log(packet.data);
+        if (!isPlayerData(packet.data)) {
             return console.error(
-                `Tried to load player (ID: ${packet.id}) had a bad data property. [${packet.data}]`
+                `Tried to load player (ID: ${packet.id}) with bad data.`
             );
         }
         const [
@@ -157,11 +110,9 @@ export class World {
             backpack,
             playerSkin,
             collisionRadius,
-        ] =
-            packet.data;
+        ] = packet.data;
         const id = packet.id;
         this.renderer.delete(id);
-        console.log(`Loading new player with id: ${id}`);
 
         const pos = new Point(packet.x, packet.y);
         const nameText = new Text(name, TEXT_STYLE);
@@ -178,21 +129,18 @@ export class World {
         player.setEquipment({ mainhand, offhand, helmet, backpack });
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
-        this.emitEvent(WorldEvent.PlayerLoaded, player);
     };
 
     newStructure = (packet: ServerPacket.LoadObject) => {
-        if (!typia.is<GameObjectData.ResourceNodeData>(packet.data)) {
-            console.log(packet.data);
+        if (!isResourceData(packet.data)) {
             return console.error(
-                `Tried to load player (ID: ${packet.id}) had a bad data property. [${packet.data}]`
+                `Tried to load structure (ID: ${packet.id}) with bad data.`
             );
         }
         const [collisionRadius, nodeType] = packet.data;
         this.renderer.delete(packet.id);
 
         const pos = new Point(packet.x, packet.y);
-
         const structure = new Structure(
             packet.id,
             getStringId(nodeType),
@@ -202,37 +150,22 @@ export class World {
         );
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
-        this.emitEvent(WorldEvent.ObjectLoaded, structure);
     };
 
     moveObject = (packet: ServerPacket.SetPosition, now: number) => {
-        const id = packet.id;
-        const state = { timestamp: now, x: packet.x, y: packet.y };
-
-        const object = this.objects.get(id);
-        if (!object) {
-            this.requestIds.add(id);
-            return;
-        }
-        if (id === this.user)
-            this.emitEvent(WorldEvent.ClientPlayerPositionChanged, state);
+        const object = this.objects.get(packet.id);
+        if (!object) return;
         object.renderable = true;
-        object.addState(state);
-
-        this.emitEvent(WorldEvent.ObjectPositionChanged, object);
+        object.addState({ x: packet.x, y: packet.y });
         this.objects.updating.add(object);
         this.objects.add(object);
     };
 
-    rotateObject = (packet: ServerPacket.SetRotation, now: number) => {
-        const id = packet.id;
-        const state = { timestamp: now, rotation: radians(packet.rotation) };
-        if (id === this.user) return;
-
-        const object = this.objects.get(id);
-        if (!object) return this.requestIds.add(id);
-
-        object.addState(state.rotation);
+    rotateObject = (packet: ServerPacket.SetRotation, _now: number) => {
+        if (packet.id === this.user) return;
+        const object = this.objects.get(packet.id);
+        if (!object) return;
+        object.addState(radians(packet.rotation));
         this.objects.updating.add(object);
     };
 
@@ -254,13 +187,12 @@ export class World {
     block = ({ id, stop }: ServerPacket.BlockEvent) => {
         const object = this.objects.get(id);
         if (!object || !(object instanceof Player)) return;
-
         if (stop) return (object.blocking = false);
         object.blocking = true;
         object.trigger(ANIMATION.BLOCK, AnimationManagers.World);
     };
 
-    hurt = ({ id, angle }: ServerPacket.HitEvent) => {
+    hurt = ({ id }: ServerPacket.HitEvent) => {
         const object = this.objects.get(id);
         if (!object) return;
         object.trigger(ANIMATION.HURT, AnimationManagers.World, true);
@@ -287,15 +219,6 @@ export class World {
         for (const data of packet.groundData) {
             const ground = createGround(...data);
             this.renderer.add(-10, ground);
-        }
-    };
-
-    unloadObject = ({ objects }: ServerPacket.UnloadObjects) => {
-        for (const id of objects) {
-            const object = this.objects.get(id);
-            if (object) {
-                object.renderable = false;
-            }
         }
     };
 

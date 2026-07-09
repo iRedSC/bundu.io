@@ -5,8 +5,7 @@ import { random, Animation, AnimationManager } from "@ioengine/lib";
 import { ANIMATION, cubicBezier, hurt } from "../../animation/animations";
 import { Container, Point, Text } from "pixi.js";
 import GameObject from "../game_object";
-import typia from "typia";
-import { getStringId } from "../../configs/id_map";
+import { getStringId } from "@shared/id_map";
 
 type nullish = undefined | null;
 export interface Equipment {
@@ -203,13 +202,12 @@ export class Player extends GameObject {
     }
 
     setEquipment(equipment?: Equipment) {
-        if (typia.is<Equipment>(equipment)) {
-            this.mainhand = getStringId(equipment.mainhand);
-            this.offhand = getStringId(equipment.offhand);
-            this.helmet = getStringId(equipment.helmet);
-            this.backpack = equipment.backpack ?? undefined;
-            this.updateEquipment();
-        }
+        if (!equipment) return;
+        this.mainhand = getStringId(equipment.mainhand);
+        this.offhand = getStringId(equipment.offhand);
+        this.helmet = getStringId(equipment.helmet);
+        this.backpack = equipment.backpack ?? undefined;
+        this.updateEquipment();
     }
 
     updateEquipment() {

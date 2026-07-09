@@ -34,11 +34,6 @@
             "@ioengine/lib": ["./src/ioengine/lib/index.ts"],
             "@ioengine/shared": ["./src/ioengine/shared/index.ts"]
         },
-        "plugins": [
-            {
-                "transform": "typia/lib/transform"
-            }
-        ],
         "outDir": "dist",
         "strictNullChecks": true
     },

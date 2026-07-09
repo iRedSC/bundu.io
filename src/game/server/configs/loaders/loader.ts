@@ -1,5 +1,5 @@
 import { mergeObjects } from "@ioengine/lib";
-import { getStringId } from "./id_map";
+import { getStringId } from "@shared/id_map";
 
 /**
  * Loads configs and allows for easy access of records within said config.
