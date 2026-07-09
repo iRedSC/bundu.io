@@ -17,6 +17,7 @@
         "build": "bun run ./build.ts",
         "start": "bun server.ts --hot",
         "client": "bun run build && bun run start",
+        "typecheck": "tsc --noEmit",
         "prepare": "ts-patch install"
     },
     "dependencies": {
