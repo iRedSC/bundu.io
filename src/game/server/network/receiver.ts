@@ -24,8 +24,6 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.CraftItem, system.craftItem);
     receiver.on(ClientPacket.DropItem, system.dropItem);
     receiver.on(ClientPacket.Movement, system.move);
-    receiver.on(ClientPacket.RequestObjects, system.requestObjects);
-    // receiver.on(ClientPacket.RequestPlacementValidity)
     receiver.on(ClientPacket.Rotation, system.rotate);
     receiver.on(ClientPacket.SelectItem, system.selectItem);
 }

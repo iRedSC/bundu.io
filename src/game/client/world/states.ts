@@ -1,6 +1,4 @@
-import typia from "typia";
 import { lerp, rotationLerp } from "@ioengine/lib";
-import { drawLine } from "@client/rendering/debug";
 
 export interface PositionState {
     x: number;
@@ -28,7 +26,6 @@ export class PositionStates {
         const elapsed = Math.max(0, now - this.lastFrameTime);
         this.lastFrameTime = now;
         const t = 1 - Math.exp(-elapsed / this.smoothingMs);
-        drawLine(this.last, this.next);
 
         this.current = {
             x: lerp(this.current.x, this.next.x, t),
@@ -38,14 +35,11 @@ export class PositionStates {
     }
 
     set(state: PositionState) {
-        if (!typia.is<PositionState>(state)) return;
-
         if (!this.next) this.current = state;
         this.last = this.current;
         this.next = state;
         this.lastUpdateTime = performance.now();
         this.lastFrameTime = this.lastUpdateTime;
-
         this.callback?.();
     }
 
@@ -55,12 +49,6 @@ export class PositionStates {
             Math.abs(this.current.x - this.next.x) < 0.001 &&
             Math.abs(this.current.y - this.next.y) < 0.001
         );
-    }
-
-    private debugInfo() {
-        const now = performance.now();
-        const interval = now - this.lastUpdateTime;
-        console.log(`Update interval: ${interval.toFixed(2)}ms`);
     }
 }
 
@@ -84,19 +72,18 @@ export class RotationStates {
 
         const now = performance.now();
         const elapsed = now - this.lastUpdateTime;
-        const t = Math.min(elapsed / this.updateIntervalMs, 1); // clamp [0,1]
+        const t = Math.min(elapsed / this.updateIntervalMs, 1);
 
         this.current = rotationLerp(this.last, this.next, t);
         return this.current;
     }
 
     isComplete(): boolean {
-        // return !!this.next && Math.abs(this.current - this.next) < 0.001;
-        return false;
+        const elapsed = performance.now() - this.lastUpdateTime;
+        return elapsed >= this.updateIntervalMs;
     }
 
     set(state: RotationState) {
-        if (!typia.is<RotationState>(state)) return;
         this.last = this.next;
         this.next = state;
         this.lastUpdateTime = performance.now();

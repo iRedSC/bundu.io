@@ -7,13 +7,7 @@ type WorldPacketContainer<I, DataMap> = Map<
 >;
 
 export class WorldPacketManager<
-    S extends Record<
-        number,
-        {
-            fields: readonly string[];
-            validator: (v: any) => boolean;
-        }
-    >,
+    S extends Record<number, { fields: readonly string[] }>,
     DataMap extends Record<number, any>
 > {
     objects: Map<number, WorldPacketContainer<keyof S & number, DataMap>>;
@@ -32,22 +26,18 @@ export class WorldPacketManager<
         id: I,
         data: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
     ) {
-        const schema = this.schemas.get(id);
+        if (!this.schemas.has(id)) {
+            return console.error(`Schema ${id} not found`);
+        }
 
-        if (!schema) return console.error(`Schema ${id} not found`);
-
-        if (!schema.validator(data))
-            return console.error(`Validation failed: ${id}`);
-
-        if (!data.id)
+        if (!data.id) {
             return console.error(`Object id not found in packet ${id}`);
+        }
 
         let packets = this.objects.get(data.id);
         if (!packets) packets = new Map();
         packets.set(id, data);
         this.objects.set(data.id, packets);
-
-        // console.log(data);
     }
 
     process(objects: IterableIterator<GameObject>) {

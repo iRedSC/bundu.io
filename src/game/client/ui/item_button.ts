@@ -1,9 +1,8 @@
-// import { Button } from "@pixi/ui";
 import { Container } from "pixi.js";
 import { SpriteFactory, ContaineredSprite } from "../assets/sprite_factory";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { percentOf } from "../../../ioengine/lib/math";
-import { getStringId } from "@client/configs/id_map";
+import { getStringId } from "@shared/id_map";
 
 export class ItemButton {
     button: Container;

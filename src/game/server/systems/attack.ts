@@ -4,43 +4,22 @@ import { GameObject } from "../../../ioengine/server/game_engine/game_object.js"
 import { System } from "@ioengine/server";
 import { quadtree } from "./position.js";
 import SAT from "sat";
-import {
-    playerPacketManager,
-    worldPacketManager,
-} from "../network/managers.js";
+import { worldPacketManager } from "../network/managers.js";
 import { ServerPacket } from "@shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-
-function packPolygon(polygon: SAT.Polygon): {
-    startX: number;
-    startY: number;
-    points: [x: number, y: number][];
-} {
-    return {
-        startX: polygon.pos.x,
-        startY: polygon.pos.y,
-        points: polygon.points.map((vec) => [vec.x, vec.y]),
-    };
-}
 
 function pointToVec(point: BasicPoint) {
     return new SAT.Vector(point.x, point.y);
 }
 
-// Yes, I used ChatGPT for this one, don't hate on me
 export function attackBox(
     start: SAT.Vector,
     direction: number,
     length: number,
     width: number
 ): SAT.Polygon {
-    // Calculate end point based on direction and length
     const end = moveInDirection({ x: 0, y: 0 }, direction, length);
-
-    // Calculate the perpendicular angle to the direction
     const perpendicularAngle = direction + Math.PI / 2;
-
-    // Calculate points for the polygon
     const halfWidth = width / 2;
     const p1 = pointToVec(
         moveInDirection({ x: 0, y: 0 }, perpendicularAngle, halfWidth)
@@ -52,8 +31,6 @@ export function attackBox(
     const p4 = pointToVec(
         moveInDirection({ x: 0, y: 0 }, perpendicularAngle + Math.PI, halfWidth)
     );
-
-    // Construct and return the polygon
     return new SAT.Polygon(start.clone(), [p4, p3, p2, p1, new SAT.Vector()]);
 }
 
@@ -65,11 +42,8 @@ export function testForIntersection(
 
     for (const other of collisionTest) {
         const physics = other.get(Physics);
-        if (!physics) {
-            continue;
-        }
-        const overlap = SAT.testPolygonCircle(polygon, physics.collider);
-        if (overlap) {
+        if (!physics) continue;
+        if (SAT.testPolygonCircle(polygon, physics.collider)) {
             hitObjects.set(other.id, other);
         }
     }
@@ -79,7 +53,6 @@ export function testForIntersection(
 export class AttackSystem extends System<GameEventMap> {
     constructor() {
         super([Physics]);
-
         this.listen(GameEvent.Attack, this.attack);
     }
 
@@ -117,11 +90,6 @@ export class AttackSystem extends System<GameEventMap> {
         );
 
         worldPacketManager.add(ServerPacket.AttackEvent, { id: source.id });
-        playerPacketManager.set(
-            source.id,
-            ServerPacket.DebugDrawPolygon,
-            packPolygon(hitRange)
-        );
 
         const hits = testForIntersection(hitRange, nearby);
         hits.delete(source.id);

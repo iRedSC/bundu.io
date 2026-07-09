@@ -1,9 +1,8 @@
 import flagMapData from "@shared/flag_map.yml";
-import { ReversableMap } from "@ioengine/server";
-import typia from "typia";
+import { ReversableMap } from "@ioengine/shared";
 
 export const flagMap: ReversableMap<string, number> = new ReversableMap();
 
-for (let [k, v] of Object.entries(flagMapData)) {
-    if (typia.is<number>(v)) flagMap.set(k, v);
+for (const [key, value] of Object.entries(flagMapData)) {
+    if (typeof value === "number") flagMap.set(key, value);
 }

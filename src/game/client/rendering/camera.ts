@@ -1,293 +1,61 @@
-import {
-    Container,
-    FederatedPointerEvent,
-    Graphics,
-    Point,
-    Rectangle,
-    Ticker,
-} from "pixi.js";
-import {
-    clamp,
-    distance,
-    lerp,
-    moveToward,
-    type BasicPoint,
-} from "@ioengine/lib";
+import type { BasicPoint } from "@ioengine/lib";
+import { FederatedPointerEvent, Point } from "pixi.js";
+import type { Viewport } from "pixi-viewport";
 
 export type CameraOptions = {
-    worldWidth: number;
-    worldHeight: number;
-
-    screenWidth: number;
-    screenHeight: number;
-
-    ticker: Ticker;
-    target: BasicPoint;
-    speed: number;
-
-    padding: number;
-
-    zoom: number;
-    maxZoom: number;
-    minZoom: number;
-    zoomSpeed: number;
-    autoZoom: boolean;
-
-    peek: number;
-    deadZone: number;
+    /** How far the view leans toward the pointer (0 = none). */
+    peek?: number;
+    minZoom?: number;
+    maxZoom?: number;
 };
 
-type Nullish<T> = T | undefined | null;
-
-function calculateBoundingBox(
-    points: BasicPoint[],
-    padding: number
-): Rectangle {
-    let minX = Number.MAX_VALUE;
-    let minY = Number.MAX_VALUE;
-    let maxX = Number.MIN_VALUE;
-    let maxY = Number.MIN_VALUE;
-
-    // Find minimum and maximum x and y coordinates
-    points.forEach((point) => {
-        minX = Math.min(minX, point.x);
-        minY = Math.min(minY, point.y);
-        maxX = Math.max(maxX, point.x);
-        maxY = Math.max(maxY, point.y);
-    });
-
-    // Add padding
-    minX -= padding;
-    minY -= padding;
-    maxX += padding;
-    maxY += padding;
-
-    // Return bounding box
-    return new Rectangle(minX, minY, maxX - minX, maxY - minY);
-}
-
-const graphics = new Graphics();
-graphics.zIndex = 1000;
-
-function drawRect(rect: Rectangle, graphics: Graphics) {
-    graphics.rect(rect.x, rect.y, rect.width, rect.height);
-}
-
+/**
+ * Thin follow camera on top of pixi-viewport: track a target, optional
+ * mouse look-ahead, and clamped wheel zoom.
+ */
 export class Camera {
-    private pointerPos: Point;
+    private viewport: Viewport;
+    private pointer = new Point(
+        typeof window !== "undefined" ? window.innerWidth / 2 : 0,
+        typeof window !== "undefined" ? window.innerHeight / 2 : 0
+    );
 
-    world: Container;
-
-    width: number;
-    height: number;
-
-    worldWidth: number;
-    worldHeight: number;
-
-    padding: number;
-
-    target: BasicPoint;
-    center: Point;
-    speed: number;
-
-    private _zoom: number;
-    maxZoom: Nullish<number>;
-    minZoom: Nullish<number>;
-    zoomSpeed: number;
-    autoZoom: boolean;
-
+    target: BasicPoint | null = null;
     peek: number;
-    deadZone: Nullish<number>;
 
-    constructor(world: Container, options: Partial<CameraOptions> = {}) {
-        this.world = world;
-        this.world.addChild(graphics);
-        world.sortChildren();
+    constructor(viewport: Viewport, options: CameraOptions = {}) {
+        this.viewport = viewport;
+        this.peek = options.peek ?? 0.2;
 
-        this.worldWidth = options.worldWidth ?? this.world.width;
-        this.worldHeight = options.worldHeight ?? this.world.height;
-
-        this.width = options.screenWidth ?? window.innerWidth;
-        this.height = options.screenHeight ?? window.innerHeight;
-
-        this.padding = options.padding ?? 0.1;
-
-        this.target = options.target ?? new Point();
-        this.speed = options.speed ?? 1;
-
-        this._zoom = options.zoom ?? 1;
-        this.maxZoom = options.maxZoom;
-        this.minZoom = options.minZoom;
-        this.zoomSpeed = options.zoomSpeed ?? 1;
-        this.autoZoom = options.autoZoom ?? false;
-
-        this.peek = options.peek ?? 0;
-        this.deadZone = options.deadZone;
-
-        this.center = new Point();
-
-        this.pointerPos = new Point();
-        this.world.eventMode = "static";
-        this.world.on("globalpointermove", this.updatePointerPos, this);
-        this.world.on("wheel", (ev) => {
-            this.addLinearZoom(-ev.deltaY / 1000);
+        viewport.clampZoom({
+            minScale: options.minZoom ?? 0.75,
+            maxScale: options.maxZoom ?? 2.5,
         });
+        viewport.wheel({ center: viewport.center });
+
+        viewport.eventMode = "static";
+        viewport.on("globalpointermove", this.onPointerMove, this);
     }
 
-    addLinearZoom(amount: number) {
-        this._zoom = this._zoom * Math.exp(amount);
-
-        this._zoom = Math.max(this._zoom, this.minZoom ?? 0);
-        if (this.maxZoom) this._zoom = Math.min(this._zoom, this.maxZoom);
+    follow(target: BasicPoint | null) {
+        this.target = target;
     }
 
-    set zoom(value: number) {
-        this._zoom = value;
-        this._zoom = Math.max(this._zoom, this.minZoom ?? 0.1);
-        if (this.maxZoom) this._zoom = Math.min(this._zoom, this.maxZoom);
+    update() {
+        if (!this.target) return;
+
+        const zoom = this.viewport.scale.x || 1;
+        const x =
+            this.target.x +
+            (this.pointer.x - window.innerWidth / 2) * (this.peek / zoom);
+        const y =
+            this.target.y +
+            (this.pointer.y - window.innerHeight / 2) * (this.peek / zoom);
+
+        this.viewport.moveCenter(x, y);
     }
 
-    get zoom() {
-        return this._zoom;
-    }
-
-    zoomToFit(width = this.worldWidth, height = this.worldHeight) {
-        const scaleX = this.width / width;
-        const scaleY = this.height / height;
-
-        if (scaleX < scaleY) {
-            this.zoom = scaleX;
-            return;
-        }
-        this.zoom = scaleY;
-    }
-
-    updatePointerPos(ev: FederatedPointerEvent) {
-        this.pointerPos.x = ev.clientX;
-        this.pointerPos.y = ev.clientY;
-    }
-
-    /** Screen width in world coordinates */
-    get widthInWorld(): number {
-        return this.width / this.world.scale.x;
-    }
-
-    /** Screen height in world coordinates */
-    get heightInWorld(): number {
-        return this.height / this.world.scale.y;
-    }
-
-    /** World width in screen coordinates */
-    get scaledWorldWidth(): number {
-        return this.worldWidth * this.world.scale.x;
-    }
-
-    /** World height in screen coordinates */
-    get scaledWorldHeight(): number {
-        return this.worldHeight * this.world.scale.y;
-    }
-
-    fitBounds(bounds: Rectangle, zoom: boolean = false) {
-        if (zoom) this.zoomToFit(bounds.width, bounds.height);
-        this.target.x = bounds.x + bounds.width / 2;
-        this.target.y = bounds.y + bounds.height / 2;
-    }
-
-    drawDebug(graphics: Graphics) {
-        const visibleBounds = this.getVisibleBounds();
-        graphics.clear();
-        graphics.stroke({
-            width: 5,
-            color: 0xff0000,
-        });
-        drawRect(visibleBounds, graphics);
-
-        const smallBounds = this.getVisibleBounds(this.padding);
-        graphics.stroke({
-            width: 5,
-            color: 0x0000ff,
-        });
-        drawRect(smallBounds, graphics);
-
-        graphics.stroke({
-            width: 5,
-            color: 0x00ff00,
-        });
-    }
-
-    update(elapsed: number, snap?: boolean) {
-        // const smallBounds = this.getVisibleBounds(
-        //     this.padding,
-        //     this.minZoom ?? 0.01
-        // );
-
-        // const filteredTargets = this.targets.filter(
-        //     (target, i) => i === 0 || smallBounds.contains(target.x, target.y)
-        // );
-
-        // const bounds = calculateBoundingBox(this.target, this.padding);
-        // this.fitBounds(bounds, this.autoZoom);
-
-        // this.drawDebug(graphics);
-
-        let moveT = 1 - Math.exp(-(this.speed / 10) * elapsed);
-        let zoomT = 1 - Math.exp(-(this.zoomSpeed / 10) * elapsed);
-        // let moveT = 1;
-        // let zoomT = 1;
-        if (snap) {
-            moveT = 1;
-            zoomT = 1;
-        }
-
-        // console.log(zoomT, this.center, this.target);
-        this.world.scale.set(lerp(this.world.scale.x, this.zoom, zoomT));
-
-        const x = lerp(this.center.x, this.target.x, moveT);
-        const y = lerp(this.center.y, this.target.y, moveT);
-
-        if (distance(this.target, this.center) > (this.deadZone ?? 0)) {
-            const target = moveToward(
-                this.target,
-                this.center,
-                this.deadZone ?? 0
-            );
-            this.target.copyFrom(target);
-            this.center.x = x;
-            this.center.y = y;
-        }
-
-        const peekingX =
-            this.center.x +
-            (this.pointerPos.x - window.innerWidth / 2) *
-                (this.peek / this.zoom);
-        const peekingY =
-            this.center.y +
-            (this.pointerPos.y - window.innerHeight / 2) *
-                (this.peek / this.zoom);
-
-        this.world.position.set(window.innerWidth / 2, window.innerHeight / 2);
-        this.world.pivot.set(peekingX, peekingY);
-    }
-
-    getVisibleBounds(padding: number = 0, zoom: number = this.zoom) {
-        if (
-            (window.innerHeight / 2) * zoom <= padding ||
-            (window.innerWidth / 2) * zoom <= padding
-        ) {
-            padding = 0;
-        }
-        return new Rectangle(
-            this.center.x - window.innerWidth / 2 / zoom + padding,
-            this.center.y - window.innerHeight / 2 / zoom + padding,
-            window.innerWidth / zoom - padding * 2,
-            window.innerHeight / zoom - padding * 2
-        );
-    }
-
-    /**
-     * Snap to the target.
-     */
-    snap() {
-        this.update(0, true);
+    private onPointerMove(ev: FederatedPointerEvent) {
+        this.pointer.set(ev.clientX, ev.clientY);
     }
 }

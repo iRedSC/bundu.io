@@ -10,7 +10,6 @@ import {
 } from "./states";
 import { Container, Point, Text } from "pixi.js";
 import { serverTime } from "@client/globals";
-import typia from "typia";
 
 /**
  * The base object for rendering something in the world.
@@ -120,23 +119,22 @@ export default class GameObject {
         this.debug.containers.get("hitbox")?.position.set(x, y);
         this.debug.containers.get("id")?.position.set(x, y);
 
-        if (
+        return (
             this.positionStates.isComplete() &&
             this.rotationStates.isComplete()
-        ) {
-            return false;
-        }
-        return false;
+        );
     }
 
     addState(state: PositionState | RotationState): void {
-        if (typia.is<PositionState>(state)) {
-            this.positionStates.set(state);
-        } else if (typia.is<RotationState>(state)) {
+        if (typeof state === "number") {
             this.rotationStates.set(state);
-        } else {
-            console.log(`Bad state sent to object ${this.id}: ${state}`);
-            return;
+        } else if (
+            state &&
+            typeof state === "object" &&
+            typeof state.x === "number" &&
+            typeof state.y === "number"
+        ) {
+            this.positionStates.set(state);
         }
     }
 

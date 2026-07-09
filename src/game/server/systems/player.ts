@@ -1,47 +1,33 @@
-import {
-    moveInDirection,
-    moveToward,
-    radians,
-} from "../../../ioengine/lib/transforms.js";
+import { moveToward } from "../../../ioengine/lib/transforms.js";
 import { ClientPacket, ServerPacket } from "@shared/packet_definitions.js";
-import { GroundData, Health, Physics } from "../components/base.js";
+import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
-import { Inventory } from "../components/inventory.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject, System } from "@ioengine/server";
-
 import {
     AttributeList,
     Attributes,
     type AttributeType,
 } from "../components/attributes.js";
 import { StatList, type StatType, Stats } from "../components/stats.js";
-import { Circle, Vector } from "sat";
-import { type BasicPoint } from "@ioengine/lib";
-import { playerPacketManager, socketManager } from "../network/managers.js";
-import { Resource } from "../game_objects/resource.js";
-import { getNumericId } from "../configs/loaders/id_map.js";
+import {
+    playerPacketManager,
+    socketManager,
+    worldPacketManager,
+} from "../network/managers.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { STRUCTURE_COLLISION_RADIUS } from "./structure.js";
 
 /**
- * This is the system that controls players.
- * ! Method calls come directly from client's packets, so it's a potential attack point.
+ * Player input + lifecycle. Packet handlers are attack surface — keep them small.
  */
 export class PlayerSystem extends System<GameEventMap> {
     constructor() {
         super([PlayerData, Physics]);
-
         this.listen(GameEvent.Kill, this.kill, [PlayerData]);
     }
 
-    /**
-     * Updates each player.
-     *
-     * Moves them based on their moveDir value.
-     * Sends attack event if attacking is true.
-     */
-    override update(time: number, delta: number, player: GameObject): void {
+    override update(time: number, _delta: number, player: GameObject): void {
         const data = player.get(PlayerData);
         const attributes = player.get(Attributes);
 
@@ -74,7 +60,6 @@ export class PlayerSystem extends System<GameEventMap> {
         if (data.moveDir[0] === 0 && data.moveDir[1] === 0) {
             return;
         }
-        // const baseSpeed = delta / this.tps - 1;
         const baseSpeed = 4;
         const target = moveToward(
             { x: 0, y: 0 },
@@ -104,37 +89,14 @@ export class PlayerSystem extends System<GameEventMap> {
     }
 
     kill({ object: target }: GameEvent.Kill) {
-        const inventory = target.get(Inventory);
-        const physics = target.get(Physics);
-
-        for (const [id, amount] of inventory.items.entries()) {
-            this.trigger(GameEvent.SpawnItem, {
-                id,
-                amount,
-                x: physics.position.x,
-                y: physics.position.y,
-            });
-        }
-
+        if (!target.active) return;
+        target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
         const socket = socketManager.getSocket(target.id);
-        socket?.close();
         socketManager.deleteClient(target.id);
-        target.active = false;
+        socket?.close();
     }
 
-    healthUpdate(player: GameObject) {
-        const health = player.get(Health);
-        const stats = player.get(Stats);
-
-        playerPacketManager.set(player.id, ServerPacket.UpdateVitals, {
-            health: health.value,
-            hunger: stats.get("hunger").value,
-            heat: stats.get("temperature").value,
-        });
-    }
-
-    // Sets selected player's moveDir property.
     move = (playerId: number, packet: ClientPacket.Movement) => {
         let byte = packet.direction;
         byte--;
@@ -147,27 +109,12 @@ export class PlayerSystem extends System<GameEventMap> {
         data.moveDir = [x, y];
     };
 
-    // Sets selected player's rotation
     rotate = (playerId: number, { rotation }: ClientPacket.Rotation) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
         this.trigger(GameEvent.Rotate, { object: player, rotation });
     };
 
-    //! remove this in favor of ObjectsAddedToView
-    // Triggers event to send objects to selected player
-    requestObjects = (
-        playerId: number,
-        { objects }: ClientPacket.RequestObjects
-    ) => {
-        const player = this.world.getObject(playerId);
-        if (!player) return;
-        console.log("Player is requesting objects");
-
-        // this.trigger(GameEvent.SendNewObjects, { object: player, objects });
-    };
-
-    // starts or stops a player from attacking
     attack = (playerId: number, { stop }: ClientPacket.Attack) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
@@ -188,12 +135,6 @@ export class PlayerSystem extends System<GameEventMap> {
                 }
             );
 
-            this.trigger(GameEvent.RemoveItem, {
-                object: player,
-                id: selectedStructure.id,
-                amount: 1,
-            });
-
             this.trigger(GameEvent.PlaceStructure, {
                 structureId: selectedStructure.id,
                 x,
@@ -210,7 +151,6 @@ export class PlayerSystem extends System<GameEventMap> {
         }
     };
 
-    // starts or stops a player from blocking
     block = (playerId: number, { stop }: ClientPacket.Block) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
@@ -227,20 +167,16 @@ export class PlayerSystem extends System<GameEventMap> {
         } else {
             attributes?.clear("blocking");
         }
-        this.trigger(GameEvent.Block, { object: player, stop });
+        worldPacketManager.add(ServerPacket.BlockEvent, {
+            id: player.id,
+            stop,
+        });
     };
 
-    selectItem = (playerId: number, { itemId }: ClientPacket.SelectItem) => {
-        const player = this.world.getObject(playerId);
-        if (!player) return;
-        this.trigger(GameEvent.SelectItem, { object: player, id: itemId });
-    };
-
-    craftItem = (playerId: number, { itemId }: ClientPacket.CraftItem) => {
-        const player = this.world.getObject(playerId);
-        if (!player) return;
-        this.trigger(GameEvent.CraftItem, { object: player, id: itemId });
-    };
+    /** Inventory/craft not implemented yet — no-op so the client stays quiet. */
+    selectItem = (_playerId: number, _packet: ClientPacket.SelectItem) => {};
+    craftItem = (_playerId: number, _packet: ClientPacket.CraftItem) => {};
+    dropItem = (_playerId: number, _packet: ClientPacket.DropItem) => {};
 
     chatMessage = (playerId: number, { message }: ClientPacket.ChatMessage) => {
         const player = this.world.getObject(playerId);
@@ -250,15 +186,6 @@ export class PlayerSystem extends System<GameEventMap> {
             const command = message.replace("/", "").split(" ");
             if (!command[1]) return;
             switch (command[0]) {
-                case "give":
-                    const item = getNumericId(command[1]);
-                    const amount = Number(command[2]);
-                    this.trigger(GameEvent.GiveItem, {
-                        object: player,
-                        id: item,
-                        amount: amount,
-                    });
-                    break;
                 case "attribute": {
                     const type = command[1] as AttributeType;
                     if (!AttributeList.includes(type)) return;
@@ -293,19 +220,5 @@ export class PlayerSystem extends System<GameEventMap> {
             return;
         }
         this.trigger(GameEvent.ChatMessage, { object: player, message });
-    };
-
-    dropItem = (
-        playerId: number,
-        { itemId, dropAll }: ClientPacket.DropItem
-    ) => {
-        const player = this.world.getObject(playerId);
-        if (!player) return;
-
-        this.trigger(GameEvent.DropItem, {
-            object: player,
-            id: itemId,
-            all: dropAll,
-        });
     };
 }

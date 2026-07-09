@@ -2,10 +2,7 @@ import { encode } from "@msgpack/msgpack";
 import type { Serializer } from "@ioengine/client";
 
 export class Socket<
-    S extends Record<
-        number,
-        { fields: readonly string[]; validator: (v: any) => boolean }
-    >,
+    S extends Record<number, { fields: readonly string[] }>,
     DataMap extends Record<number, any>
 > extends WebSocket {
     serializer: Serializer<S, DataMap>;

@@ -1,4 +1,3 @@
-import { ServerPacket } from "@shared/packet_definitions.js";
 import { Attributes } from "../components/attributes.js";
 import {
     CalculateCollisions,
@@ -10,10 +9,6 @@ import { Inventory } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { Stats } from "../components/stats.js";
 import { GameObject } from "@ioengine/server";
-import {
-    playerPacketManager,
-    worldPacketManager,
-} from "../network/managers.js";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { GameObjectData } from "@shared/object_types.js";
 

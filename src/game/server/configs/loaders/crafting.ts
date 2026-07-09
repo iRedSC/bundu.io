@@ -1,15 +1,12 @@
-import { getNumericId } from "./id_map.js";
+import { getNumericId } from "@shared/id_map";
 import { flagMap } from "./flag_map.js";
 import craftingConfig from "../crafting.yml";
-import typia from "typia";
 
 export type CraftingRecipeData = {
     duration: number;
     ingredients: Record<string, number>;
     flags: string[];
 };
-
-type CraftingConfigSchema = Record<string, CraftingRecipeData>;
 
 export class CraftingRecipe {
     id: number;
@@ -25,7 +22,7 @@ export class CraftingRecipe {
         if (data.ingredients) {
             for (const [k, v] of Object.entries(data.ingredients)) {
                 const id = getNumericId(k);
-                if (!id) {
+                if (id === undefined) {
                     console.warn(`${k} not found in ID Map`);
                     continue;
                 }
@@ -35,7 +32,7 @@ export class CraftingRecipe {
         this.flags = [];
         for (const flag of data.flags || []) {
             const flagId = flagMap.get(flag);
-            if (!flagId) {
+            if (flagId === undefined) {
                 console.warn(`${flag} not found in flag ID Map`);
                 continue;
             }
@@ -50,18 +47,18 @@ export class CraftingRecipe {
 
 export const craftingList: Map<number, CraftingRecipe> = new Map();
 
-for (let [k, v] of Object.entries(craftingConfig)) {
+for (const [k, v] of Object.entries(craftingConfig)) {
     const numericId = getNumericId(k);
-    if (!numericId) throw new Error("No ID matching: " + k);
-    if (!typia.is<Partial<CraftingRecipeData>>(v))
-        throw new Error(`${v} is not a valid crafting recipe.`);
-    const recipe = new CraftingRecipe(numericId, v);
+    if (numericId === undefined) throw new Error("No ID matching: " + k);
+    const recipe = new CraftingRecipe(
+        numericId,
+        v as Partial<CraftingRecipeData>
+    );
     craftingList.set(numericId, recipe);
 }
 
 export function packCraftingList() {
     const packet: any[] = [];
-
     for (const recipe of craftingList.values()) {
         packet.push(recipe.pack());
     }

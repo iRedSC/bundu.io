@@ -8,7 +8,6 @@ import { Serializer } from "@ioengine/client";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
 import { drawPolygon, drawRects } from "@client/rendering/debug";
-import { serverTime } from "@client/globals";
 
 const serverSerializer = new Serializer<typeof Schema.Server, ServerPacketMap>(
     Schema.Server
@@ -22,15 +21,8 @@ export function setupPacketReceiving(
     receiver: ClientPacketReceiver<typeof Schema.Server, ServerPacketMap>,
     world: World
 ) {
-    receiver.on(
-        ServerPacket.DebugDrawPolygon,
-        (packet: ServerPacket.DebugDrawPolygon) => drawPolygon(packet)
-    );
-
-    receiver.on(
-        ServerPacket.DebugDrawRects,
-        (packet: ServerPacket.DebugDrawRects) => drawRects(packet)
-    );
+    receiver.on(ServerPacket.DebugDrawPolygon, drawPolygon);
+    receiver.on(ServerPacket.DebugDrawRects, drawRects);
     receiver.on(ServerPacket.LoadObject, world.loadObject);
     receiver.on(ServerPacket.AttackEvent, world.attack);
     receiver.on(ServerPacket.BlockEvent, world.block);
@@ -42,31 +34,13 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.ClientConnectionInfo, world.clientConnectionInfo);
     receiver.on(ServerPacket.UpdateEquipment, world.updateEquipment);
     receiver.on(ServerPacket.ChatMessage, world.chatMessage);
-    receiver.on(ServerPacket.UnloadObjects, world.unloadObject);
     receiver.on(ServerPacket.SetSelectedStructure, world.selectStructure);
-    receiver.on(ServerPacket.Ping, (_, now) => {
-        serverTime.ping = (performance.now() - serverTime.pingTimeStart) / 2;
-
-        const newOffset = now - performance.now();
-        const drift = Math.abs(newOffset - serverTime.offset);
-        if (drift > 50) {
-            serverTime.targetOffset = newOffset;
-        } else {
-            serverTime.offset = newOffset;
-        }
-        serverTime.offset = now - performance.now();
-
-        console.log(`timeoffset ${serverTime.now() - now} ${serverTime.ping}`);
-    });
-
-    // receiver.on(ServerPacket.Ping)
 }
 
 export function setupGUIPacketReceiving(
     receiver: ClientPacketReceiver<typeof Schema.Server, ServerPacketMap>,
     ui: UI
 ) {
-    receiver.on(ServerPacket.DebugDrawPolygon, drawPolygon);
     receiver.on(ServerPacket.UpdateVitals, ({ health, hunger, heat }) => {
         ui.health.update(health);
         ui.hunger.update(hunger);

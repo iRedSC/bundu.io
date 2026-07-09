@@ -80,6 +80,17 @@ button {
     margin-left: 10px;
 }
 
+button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+#name-input {
+    border-radius: 0.3rem;
+    background: rgba(20, 28, 18, 0.85);
+    color: #f2f0e4;
+}
+
 .debug-toggle {
     position: absolute;
     top: 1rem;

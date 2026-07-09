@@ -1,4 +1,4 @@
-import { getStringId } from "../configs/id_map";
+import { getStringId } from "@shared/id_map";
 import SpriteMap from "../configs/sprite_map.yml";
 import { Assets, Texture } from "pixi.js";
 

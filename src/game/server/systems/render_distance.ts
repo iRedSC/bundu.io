@@ -2,7 +2,7 @@ import { Physics } from "../components/base.js";
 import { System, GameObject } from "@ioengine/server";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { VisibleObjects } from "../components/visible_objects.js";
-import { packRangetoPolygon, Range } from "@ioengine/lib";
+import { Range } from "@ioengine/lib";
 import { quadtree } from "./position.js";
 
 const RENDER_DISTANCE_X = 2200;
@@ -16,7 +16,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         this.listen(GameEvent.DeleteObject, this.deleteObject, [Physics]);
     }
 
-    override update(time: number, delta: number, object: GameObject): void {
+    override update(_time: number, _delta: number, object: GameObject): void {
         const physics = object.get(Physics);
         const visibleObjects = object.get(VisibleObjects);
 
@@ -30,11 +30,6 @@ export class RenderDistanceSystem extends System<GameEventMap> {
                 y: physics.position.y + RENDER_DISTANCE_Y,
             }
         );
-
-        this.trigger(GameEvent.DebugDrawPolygon, {
-            object,
-            ...packRangetoPolygon(renderBounds),
-        });
 
         const objectsInRenderDistance = this.world.query(
             [Physics],
@@ -50,12 +45,6 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         );
 
         visibleObjects.visible = currentVisibleObjects;
-
-        console.log(
-            `ID: ${object.id} -> ${Array.from(
-                quadtree.query(renderBounds.normalized)
-            ).join(", ")}`
-        );
 
         if (oldObjects.size > 0)
             this.trigger(GameEvent.ObjectsRemovedFromView, {

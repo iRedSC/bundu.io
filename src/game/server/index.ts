@@ -8,7 +8,6 @@ import { loadConfigs } from "./configs/loaders/load";
 import { World } from "../../ioengine/server/game_engine/world";
 import { PlayerSystem } from "./systems/player";
 import {
-    ClientPacket,
     Schema,
     ServerPacket,
     type ClientPacketMap,
@@ -28,12 +27,11 @@ import { PlayerData } from "./components/player";
 import { Box, Circle, Vector } from "sat";
 import { PacketSystem } from "./systems/packet";
 import { AttackSystem } from "./systems/attack";
-import { encode } from "@msgpack/msgpack";
 import { RenderDistanceSystem } from "./systems/render_distance";
 import { GameEvent } from "./systems/event_map";
 import { Ground } from "./game_objects/ground";
 import { Resource } from "./game_objects/resource";
-import { getNumericId } from "./configs/loaders/id_map";
+import { getNumericId } from "@shared/id_map";
 import { StructureSystem } from "./systems/structure";
 
 const world = new World();
@@ -194,10 +192,17 @@ function createPlayer(username: string, skinId: number) {
 
 const controller = new ServerController(socketManager, createPlayer);
 
+controller.disconnect = (socket) => {
+    const playerId = socket.data.playerId;
+    if (playerId < 0) return;
+    socketManager.deleteClient(playerId);
+    const player = world.getObject(playerId);
+    if (!player || !player.active) return;
+    player.active = false;
+    playerSystem.trigger(GameEvent.DeleteObject, { object: player });
+};
+
 controller.message = (socket, packet) => {
-    if (packet[0] === ClientPacket.Ping) {
-        socket.send(encode([serverTime.now(), [ServerPacket.Ping]]));
-    }
     receiver.add(socket.data.playerId, packet);
 };
 

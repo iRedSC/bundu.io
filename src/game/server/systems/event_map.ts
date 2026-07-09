@@ -1,6 +1,7 @@
 import { GameObject } from "@ioengine/server";
 import type { SystemEventCallback } from "@ioengine/server";
 
+/** Events that actually have listeners. Orphan inventory/craft stubs removed. */
 export namespace GameEvent {
     export const Attack = 1;
     export type Attack = {
@@ -12,12 +13,6 @@ export namespace GameEvent {
             length: number;
             width: number;
         };
-    };
-
-    export const Block = 2;
-    export type Block = {
-        object: GameObject;
-        stop: boolean;
     };
 
     export const Move = 3;
@@ -46,14 +41,6 @@ export namespace GameEvent {
     export const DeleteObject = 9;
     export type DeleteObject = {
         object: GameObject;
-    };
-
-    export const SpawnItem = 10;
-    export type SpawnItem = {
-        id: number;
-        amount: number;
-        x: number;
-        y: number;
     };
 
     export const UpdateInventory = 11;
@@ -95,39 +82,6 @@ export namespace GameEvent {
         object: GameObject;
     };
 
-    export const DropItem = 17;
-    export type DropItem = {
-        object: GameObject;
-        id: number;
-        all: boolean;
-    };
-
-    export const CraftItem = 18;
-    export type CraftItem = {
-        object: GameObject;
-        id: number;
-    };
-
-    export const SelectItem = 19;
-    export type SelectItem = {
-        object: GameObject;
-        id: number;
-    };
-
-    export const GiveItem = 20;
-    export type GiveItem = {
-        object: GameObject;
-        id?: number;
-        amount?: number;
-    };
-
-    export const RemoveItem = 21;
-    export type RemoveItem = {
-        object: GameObject;
-        id?: number;
-        amount?: number;
-    };
-
     export const ObjectsRemovedFromView = 22;
     export type ObjectsRemovedFromView = {
         object: GameObject;
@@ -147,53 +101,24 @@ export namespace GameEvent {
         y: number;
         rotation: number;
     };
-
-    export const CalculateStructurePlacement = 25;
-    export type CalculateStructurePlacement = {
-        object: GameObject;
-        structureId: number;
-    };
-
-    export const DebugDrawPolygon = 26;
-    export type DebugDrawPolygon = {
-        object: GameObject;
-        startX: number;
-        startY: number;
-        points: [x: number, y: number][];
-    };
-
-    export const DebugDrawRects = 27;
-    export type DebugDrawRects = {
-        object: GameObject;
-        rects: [x: number, y: number, w: number, h: number][];
-    };
 }
 
 export type GameEventMap = {
     [GameEvent.Attack]: GameEvent.Attack;
-    [GameEvent.Block]: GameEvent.Block;
     [GameEvent.Move]: GameEvent.Move;
     [GameEvent.Collide]: GameEvent.Collide;
     [GameEvent.Rotate]: GameEvent.Rotate;
     [GameEvent.NewObject]: GameEvent.NewObject;
     [GameEvent.DeleteObject]: GameEvent.DeleteObject;
-    [GameEvent.SpawnItem]: GameEvent.SpawnItem;
     [GameEvent.UpdateInventory]: GameEvent.UpdateInventory;
     [GameEvent.UpdateEquipment]: GameEvent.UpdateEquipment;
     [GameEvent.Hurt]: GameEvent.Hurt;
     [GameEvent.Kill]: GameEvent.Kill;
     [GameEvent.ChatMessage]: GameEvent.ChatMessage;
     [GameEvent.HealthUpdate]: GameEvent.HealthUpdate;
-    [GameEvent.DropItem]: GameEvent.DropItem;
-    [GameEvent.CraftItem]: GameEvent.CraftItem;
-    [GameEvent.SelectItem]: GameEvent.SelectItem;
-    [GameEvent.GiveItem]: GameEvent.GiveItem;
-    [GameEvent.RemoveItem]: GameEvent.RemoveItem;
     [GameEvent.ObjectsAddedToView]: GameEvent.ObjectsAddedToView;
     [GameEvent.ObjectsRemovedFromView]: GameEvent.ObjectsRemovedFromView;
     [GameEvent.PlaceStructure]: GameEvent.PlaceStructure;
-    [GameEvent.CalculateStructurePlacement]: GameEvent.CalculateStructurePlacement;
-    [GameEvent.DebugDrawPolygon]: GameEvent.DebugDrawPolygon;
 };
 
 export type GameEventCallback<T extends keyof GameEventMap> =

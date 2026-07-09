@@ -16,13 +16,7 @@ type NonExclusivePlayerPacketContainer<I, DataMap> = Map<
 >;
 
 export class PlayerPacketManager<
-    S extends Record<
-        number,
-        {
-            fields: readonly string[];
-            validator: (v: any) => boolean;
-        }
-    >,
+    S extends Record<number, { fields: readonly string[] }>,
     DataMap extends Record<number, any>
 > {
     packets = new Map<
@@ -52,12 +46,9 @@ export class PlayerPacketManager<
         packetId: I,
         data: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
     ) {
-        const schema = this.schemas.get(packetId);
-
-        if (!schema) return console.error(`Schema ${packetId} not found`);
-
-        if (!schema.validator(data))
-            return console.error(`Validation failed: ${packetId}`);
+        if (!this.schemas.has(packetId)) {
+            return console.error(`Schema ${packetId} not found`);
+        }
 
         let packets = this.packets.get(playerId);
         if (!packets) packets = new Map();
@@ -70,12 +61,9 @@ export class PlayerPacketManager<
         packetId: I,
         data: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
     ) {
-        const schema = this.schemas.get(packetId);
-
-        if (!schema) return console.error(`Schema ${packetId} not found`);
-
-        if (!schema.validator(data))
-            return console.error(`Validation failed: ${packetId}`);
+        if (!this.schemas.has(packetId)) {
+            return console.error(`Schema ${packetId} not found`);
+        }
 
         let packets = this.nonExclusivePackets.get(playerId);
         if (!packets) packets = new Map();
@@ -98,7 +86,10 @@ export class PlayerPacketManager<
             const socket = socketManager.getSocket(id);
             const playerPackets = this.packets.get(id);
             const nonExclusivePlayerPackets = this.nonExclusivePackets.get(id);
-            if (!socket) return console.error("No socket available to send to");
+            if (!socket) {
+                console.error("No socket available to send to");
+                continue;
+            }
 
             const visibleObjects = this.visibleObjectsCallback?.(player);
 
