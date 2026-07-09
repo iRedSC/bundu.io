@@ -2,15 +2,22 @@ import { Application, type Renderer } from "pixi.js";
 import { decodeFromBlob } from "./network/decode";
 import typia from "typia";
 import type { SerializedPacketArray } from "./network/client_receiver";
-import { receiver, setupPacketReceiving } from "./network/receiver";
-import { ClientPacket } from "@shared/packet_definitions";
+import {
+    receiver,
+    setupGUIPacketReceiving,
+    setupPacketReceiving,
+} from "./network/receiver";
+import {
+    ClientPacket,
+    Schema,
+    type ClientPacketMap,
+} from "@shared/packet_definitions";
 import { serializer } from "./network/serializer";
 import { Socket } from "./network/socket";
 import { World } from "./world/world";
 import { createViewport } from "./rendering/viewport";
 import { debugContainer } from "./rendering/debug";
 import { createUI } from "./ui/ui";
-import { decode } from "@msgpack/msgpack";
 import { initAssets } from "./assets/load";
 import { AnimationManagers } from "./animation/animations";
 import { initDevtools } from "@pixi/devtools";
@@ -23,12 +30,31 @@ declare namespace globalThis {
     var __PIXI_APP__: Application;
 }
 
+const GAME_WS_URL = "ws://localhost:7777";
+
 const app = new Application<Renderer<HTMLCanvasElement>>();
 globalThis.__PIXI_APP__ = app;
 
+type GameSocket = Socket<typeof Schema.Client, ClientPacketMap>;
+
+function setMenuVisible(visible: boolean) {
+    document.querySelectorAll(".menu").forEach((item) => {
+        item.classList.toggle("hidden", !visible);
+    });
+    if (visible) {
+        document.querySelector(".chat-container")?.classList.add("hidden");
+    }
+}
+
+function buildSocketUrl(username: string) {
+    const url = new URL(GAME_WS_URL);
+    url.searchParams.set("username", username || "unnamed");
+    url.searchParams.set("skin_id", "0");
+    return url.toString();
+}
+
 async function main() {
     await initAssets();
-    const socket = new Socket("ws://localhost:7777", serializer);
 
     await app.init({
         resizeTo: window,
@@ -53,6 +79,15 @@ async function main() {
     // * GUI
     const gui = createUI();
     app.stage.addChild(gui.container);
+    setupGUIPacketReceiving(receiver, gui);
+
+    let socket: GameSocket | null = null;
+    let connecting = false;
+
+    const sendPacket: GameSocket["sendPacket"] = (id, data) => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) return;
+        socket.sendPacket(id, data);
+    };
 
     const debugToggle = document.querySelector<HTMLButtonElement>("#debug-toggle");
     if (debugToggle) {
@@ -75,7 +110,7 @@ async function main() {
         setDebugVisible(debugContainer.visible);
     }
 
-    // * Keyboard inputs
+    // * Keyboard / mouse inputs
     const mouse = new MouseInputListener();
     let updateTick: number = 0;
     mouse.onMouseMove = (mousePos: [number, number]) => {
@@ -90,7 +125,7 @@ async function main() {
             updateTick++;
             if (Math.abs(player.rotation - rotation) > 0.1 || updateTick > 5) {
                 updateTick = 0;
-                socket.sendPacket(ClientPacket.Rotation, {
+                sendPacket(ClientPacket.Rotation, {
                     rotation: round(degrees(rotation)),
                 });
             }
@@ -101,30 +136,52 @@ async function main() {
 
     const keyboard = new KeyboardInputListener();
     keyboard.onMoveInput = (move: [number, number]) => {
-        const chat = document.querySelector<HTMLInputElement>("#chat-input")!;
+        const chat = document.querySelector<HTMLInputElement>("#chat-input");
         if (chat === document.activeElement) {
             return;
         }
         move[0] = Math.max(0, Math.min(2, move[0]));
         move[1] = Math.max(0, Math.min(2, move[1]));
         const dir = (move[0] << 2) | move[1];
-        socket.sendPacket(ClientPacket.Movement, { direction: dir + 1 });
+        sendPacket(ClientPacket.Movement, { direction: dir + 1 });
+    };
+    keyboard.onSendChat = (message: string) => {
+        const trimmed = message.trim();
+        if (!trimmed) return;
+        sendPacket(ClientPacket.ChatMessage, { message: trimmed });
     };
 
+    gui.inventory.leftclick = (itemId) => {
+        sendPacket(ClientPacket.SelectItem, { itemId });
+    };
+    gui.inventory.rightclick = (itemId, shift) => {
+        sendPacket(ClientPacket.DropItem, { itemId, dropAll: shift });
+    };
+    gui.craftingMenu.leftclick = (itemId) => {
+        sendPacket(ClientPacket.CraftItem, { itemId });
+    };
+    gui.craftingMenu.rightclick = (itemId) => {
+        sendPacket(ClientPacket.CraftItem, { itemId });
+    };
+
+    const isInGame = () =>
+        socket !== null && socket.readyState === WebSocket.OPEN;
+
     document.addEventListener("pointerdown", (event) => {
+        if (!isInGame()) return;
         if (event.button === 2) {
-            socket.sendPacket(ClientPacket.Block, { stop: false });
-            console.log(`Starting block`);
+            sendPacket(ClientPacket.Block, { stop: false });
         }
         if (event.button === 0)
-            socket.sendPacket(ClientPacket.Attack, { stop: false });
+            sendPacket(ClientPacket.Attack, { stop: false });
     });
 
     document.addEventListener("pointerup", (event) => {
+        if (!isInGame()) return;
         if (event.button === 2)
-            socket.sendPacket(ClientPacket.Block, { stop: true });
+            sendPacket(ClientPacket.Block, { stop: true });
         if (event.button === 0)
-            socket.sendPacket(ClientPacket.Attack, { stop: true });
+            sendPacket(ClientPacket.Attack, { stop: true });
     });
 
     app.canvas.oncontextmenu = () => {};
@@ -132,43 +189,86 @@ async function main() {
 
     viewport.sortChildren();
 
-    socket.onmessage = async (ev) => {
-        const data = await decodeFromBlob(ev.data);
-        if (!typia.is<SerializedPacketArray>(data)) return;
-        receiver.process(data);
-    };
-
-    document
-        .querySelectorAll(".menu")
-        .forEach((item) => item.classList.add("hidden"));
-
     const nameInput = document.getElementById("name-input") as HTMLInputElement;
-    const name = nameInput.value;
+    const playButton = document.getElementById(
+        "play-button"
+    ) as HTMLButtonElement;
 
-    socket.onopen = () => {};
+    const connect = () => {
+        if (connecting) return;
+        if (socket && socket.readyState === WebSocket.OPEN) return;
 
-    socket.onclose = () => {
-        document
-            .querySelectorAll(".menu")
-            .forEach((item) => item.classList.remove("hidden"));
+        connecting = true;
+        playButton.disabled = true;
+
+        if (socket) {
+            socket.onopen = null;
+            socket.onclose = null;
+            socket.onmessage = null;
+            socket.onerror = null;
+            if (
+                socket.readyState === WebSocket.OPEN ||
+                socket.readyState === WebSocket.CONNECTING
+            ) {
+                socket.close();
+            }
+        }
+
+        const next = new Socket(buildSocketUrl(nameInput.value.trim()), serializer);
+        socket = next;
+
+        next.onmessage = async (ev) => {
+            const data = await decodeFromBlob(ev.data);
+            if (!typia.is<SerializedPacketArray>(data)) return;
+            receiver.process(data);
+        };
+
+        next.onopen = () => {
+            connecting = false;
+            playButton.disabled = false;
+            setMenuVisible(false);
+        };
+
+        next.onerror = () => {
+            connecting = false;
+            playButton.disabled = false;
+        };
+
+        next.onclose = () => {
+            connecting = false;
+            playButton.disabled = false;
+            if (socket === next) {
+                socket = null;
+            }
+            setMenuVisible(true);
+        };
     };
+
+    playButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        connect();
+    });
+    nameInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            connect();
+        }
+    });
+
+    setMenuVisible(true);
+    nameInput.focus();
 
     setInterval(() => {
         if (world.requestIds.size > 0) {
             console.log(`Requesting IDs: ${Array.from(world.requestIds)}`);
-            socket.sendPacket(ClientPacket.RequestObjects, {
+            sendPacket(ClientPacket.RequestObjects, {
                 objects: Array.from(world.requestIds),
             });
             world.requestIds.clear();
         }
     }, 500);
 
-    // setInterval(() => {
-    //     serverTime.pingTimeStart = performance.now();
-    //     socket.sendPacket(ClientPacket.Ping, {});
-    // }, 1000);
-
-    app.ticker.add((ticker) => {
+    app.ticker.add(() => {
         const player = world.objects.get(world.user ?? -1);
         if (player) {
             world.tick();
