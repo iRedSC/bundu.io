@@ -39,6 +39,7 @@ export class World {
     objects: ObjectContainer;
     renderer: LayeredRenderer;
     sky: Sky;
+    private connectionRetryTimeout?: ReturnType<typeof setTimeout>;
 
     constructor(viewport: Viewport) {
         this.viewport = viewport;
@@ -53,9 +54,18 @@ export class World {
     }
 
     clear() {
-        for (const object of this.objects.all()) {
-            this.deleteObjects({ objects: [object.id] });
+        if (this.connectionRetryTimeout !== undefined) {
+            clearTimeout(this.connectionRetryTimeout);
+            this.connectionRetryTimeout = undefined;
         }
+        this.camera.follow(null);
+
+        const ids = Array.from(this.objects.all(), (object) => object.id);
+        if (ids.length > 0) {
+            this.deleteObjects({ objects: ids });
+        }
+        this.renderer.delete(-10);
+        this.user = undefined;
     }
 
     tick() {
@@ -75,7 +85,19 @@ export class World {
             console.warn(
                 `No player with id ${this.user} found in world, retrying..`
             );
-            return setTimeout(this.clientConnectionInfo, 500);
+            if (this.connectionRetryTimeout !== undefined) {
+                clearTimeout(this.connectionRetryTimeout);
+            }
+            this.connectionRetryTimeout = setTimeout(() => {
+                this.connectionRetryTimeout = undefined;
+                if (!this.user) return;
+                this.clientConnectionInfo();
+            }, 500);
+            return;
+        }
+        if (this.connectionRetryTimeout !== undefined) {
+            clearTimeout(this.connectionRetryTimeout);
+            this.connectionRetryTimeout = undefined;
         }
         console.info(`Found user (id ${this.user}), loading..`);
         this.camera.follow(player.container);

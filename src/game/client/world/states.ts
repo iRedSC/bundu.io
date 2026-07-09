@@ -79,7 +79,8 @@ export class RotationStates {
     }
 
     isComplete(): boolean {
-        return false;
+        const elapsed = performance.now() - this.lastUpdateTime;
+        return elapsed >= this.updateIntervalMs;
     }
 
     set(state: RotationState) {

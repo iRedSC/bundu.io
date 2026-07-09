@@ -26,6 +26,11 @@ export class Serializer<
         // @ts-expect-error
         const schema = this.schemas.get(id);
         if (!schema) throw new Error(`Schema ${id} not found`);
+        if (packet.length !== schema.fields.length + 1) {
+            throw new Error(
+                `Packet ${id} field count mismatch: got ${packet.length - 1}, expected ${schema.fields.length}`
+            );
+        }
 
         const result: any = { id };
         schema.fields.forEach((f, i) => (result[f] = packet[i + 1]));

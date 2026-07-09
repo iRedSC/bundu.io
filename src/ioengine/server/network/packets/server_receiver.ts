@@ -34,10 +34,18 @@ export class ServerPacketReceiver<
     process() {
         for (const [player, packets] of this.packets.entries()) {
             for (const packet of packets) {
-                const id = packet[0];
-                const deserialized = this.serializer.deserialize(packet);
-                const callback = this.callbacks.get(id);
-                callback?.(player, deserialized);
+                try {
+                    const id = packet[0];
+                    const deserialized = this.serializer.deserialize(packet);
+                    const callback = this.callbacks.get(id);
+                    callback?.(player, deserialized);
+                } catch (error) {
+                    console.error(
+                        `Dropped bad packet from player ${player}`,
+                        packet,
+                        error
+                    );
+                }
             }
         }
     }

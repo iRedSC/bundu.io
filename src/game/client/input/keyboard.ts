@@ -66,6 +66,15 @@ export class KeyboardInputListener {
 
         this.keybinds.bindKey("chat", {
             onReleased: () => {
+                // Enter in other inputs (e.g. username) must not toggle chat.
+                const active = document.activeElement;
+                if (
+                    active instanceof HTMLInputElement &&
+                    active.id !== "chat-input"
+                ) {
+                    return;
+                }
+
                 this.chatOpen = !this.chatOpen;
                 if (this.chatOpen === true) {
                     document
@@ -87,5 +96,15 @@ export class KeyboardInputListener {
                     ?.classList.add("hidden");
             },
         });
+    }
+
+    closeChat() {
+        this.chatOpen = false;
+        const chat = document.querySelector<HTMLInputElement>("#chat-input");
+        if (chat) {
+            chat.value = "";
+            chat.blur();
+        }
+        document.querySelector(".chat-container")?.classList.add("hidden");
     }
 }

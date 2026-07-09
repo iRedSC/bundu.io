@@ -27,10 +27,14 @@ export class ClientPacketReceiver<
         const [timestamp, ...rest] = packets;
 
         for (const packet of rest) {
-            const id = packet[0];
-            const deserialized = this.serializer.deserialize(packet);
-            const callback = this.callbacks.get(id);
-            callback?.(deserialized, timestamp);
+            try {
+                const id = packet[0];
+                const deserialized = this.serializer.deserialize(packet);
+                const callback = this.callbacks.get(id);
+                callback?.(deserialized, timestamp);
+            } catch (error) {
+                console.error("Dropped bad packet", packet, error);
+            }
         }
     }
 }

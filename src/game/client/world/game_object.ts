@@ -119,13 +119,10 @@ export default class GameObject {
         this.debug.containers.get("hitbox")?.position.set(x, y);
         this.debug.containers.get("id")?.position.set(x, y);
 
-        if (
+        return (
             this.positionStates.isComplete() &&
             this.rotationStates.isComplete()
-        ) {
-            return false;
-        }
-        return false;
+        );
     }
 
     addState(state: PositionState | RotationState): void {

@@ -44,9 +44,6 @@ function setMenuVisible(visible: boolean) {
     document.querySelectorAll(".menu").forEach((item) => {
         item.classList.toggle("hidden", !visible);
     });
-    if (visible) {
-        document.querySelector(".chat-container")?.classList.add("hidden");
-    }
 }
 
 function buildSocketUrl(username: string) {
@@ -154,6 +151,18 @@ async function main() {
         sendPacket(ClientPacket.ChatMessage, { message: trimmed });
     };
 
+    const resetSession = () => {
+        world.clear();
+        gui.health.update(0);
+        gui.hunger.update(0);
+        gui.heat.update(0);
+        gui.inventory.update({ items: [] });
+        gui.recipeManager.recipes.clear();
+        gui.craftingMenu.items = [];
+        gui.craftingMenu.update();
+        keyboard.closeChat();
+    };
+
     gui.inventory.leftclick = (itemId) => {
         sendPacket(ClientPacket.SelectItem, { itemId });
     };
@@ -161,9 +170,6 @@ async function main() {
         sendPacket(ClientPacket.DropItem, { itemId, dropAll: shift });
     };
     gui.craftingMenu.leftclick = (itemId) => {
-        sendPacket(ClientPacket.CraftItem, { itemId });
-    };
-    gui.craftingMenu.rightclick = (itemId) => {
         sendPacket(ClientPacket.CraftItem, { itemId });
     };
 
@@ -203,6 +209,7 @@ async function main() {
 
         connecting = true;
         playButton.disabled = true;
+        resetSession();
 
         if (socket) {
             socket.onopen = null;
@@ -222,17 +229,21 @@ async function main() {
 
         next.onmessage = async (ev) => {
             const data = await decodeFromBlob(ev.data);
+            if (socket !== next) return;
             if (!isPacketArray(data)) return;
             receiver.process(data);
         };
 
         next.onopen = () => {
+            if (socket !== next) return;
             connecting = false;
             playButton.disabled = false;
             setMenuVisible(false);
         };
 
         next.onerror = () => {
+            // Non-terminal: let onclose own session cleanup.
+            if (socket !== next) return;
             connecting = false;
             playButton.disabled = false;
         };
@@ -240,10 +251,11 @@ async function main() {
         next.onclose = () => {
             connecting = false;
             playButton.disabled = false;
-            if (socket === next) {
-                socket = null;
-            }
+            if (socket !== next) return;
+            socket = null;
+            resetSession();
             setMenuVisible(true);
+            nameInput.focus();
         };
     };
 
@@ -254,6 +266,7 @@ async function main() {
     nameInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
             event.preventDefault();
+            event.stopPropagation();
             connect();
         }
     });

@@ -52,8 +52,16 @@ export class PacketSystem extends System<GameEventMap> {
 
     sendInventory({ object: target }: GameEvent.UpdateInventory) {
         const inventory = target.get(Inventory);
+        const items: ([number, number] | null)[] = Array(inventory.slots).fill(
+            null
+        );
+        let slot = 0;
+        for (const [itemId, count] of inventory.items) {
+            if (slot >= inventory.slots) break;
+            items[slot++] = [itemId, count];
+        }
         playerPacketManager.set(target.id, ServerPacket.UpdateInventory, {
-            items: Array.from(inventory.items.entries()),
+            items,
         });
     }
 

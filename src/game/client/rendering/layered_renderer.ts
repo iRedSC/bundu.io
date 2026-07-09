@@ -29,7 +29,7 @@ export class LayeredRenderer {
         const containers = this.byObject.get(id);
         if (!containers) return;
         for (const child of containers) {
-            child.parent?.removeChild(child);
+            child.destroy({ children: true });
         }
         this.byObject.delete(id);
     }

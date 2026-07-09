@@ -8,7 +8,6 @@ import { Serializer } from "@ioengine/client";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
 import { drawPolygon, drawRects } from "@client/rendering/debug";
-import { serverTime } from "@client/globals";
 
 const serverSerializer = new Serializer<typeof Schema.Server, ServerPacketMap>(
     Schema.Server
@@ -36,18 +35,6 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.UpdateEquipment, world.updateEquipment);
     receiver.on(ServerPacket.ChatMessage, world.chatMessage);
     receiver.on(ServerPacket.SetSelectedStructure, world.selectStructure);
-    receiver.on(ServerPacket.Ping, (_, now) => {
-        serverTime.ping = (performance.now() - serverTime.pingTimeStart) / 2;
-
-        const newOffset = now - performance.now();
-        const drift = Math.abs(newOffset - serverTime.offset);
-        if (drift > 50) {
-            serverTime.targetOffset = newOffset;
-        } else {
-            serverTime.offset = newOffset;
-        }
-        serverTime.offset = now - performance.now();
-    });
 }
 
 export function setupGUIPacketReceiving(

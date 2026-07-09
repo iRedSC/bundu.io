@@ -2,7 +2,7 @@ import { decode } from "@msgpack/msgpack";
 import { type ServerWebSocket } from "bun";
 import type { SocketManager } from "./socket_manager";
 
-type WebSocketData = { username: string; playerId: number };
+type WebSocketData = { username: string; playerId: number; skinId: number };
 
 type ValidPacket = [number, ...unknown[]];
 
@@ -35,10 +35,9 @@ export class ServerController {
                 const url = new URL(req.url);
                 const username = url.searchParams.get("username") ?? "unnamed";
                 const skin_id = Number(url.searchParams.get("skin_id")) || 0;
-                const playerId = this.createPlayer(username, skin_id);
 
                 const success = server.upgrade(req, {
-                    data: { playerId, username },
+                    data: { playerId: -1, username, skinId: skin_id },
                 });
 
                 if (success) return;
@@ -47,7 +46,12 @@ export class ServerController {
 
             websocket: {
                 open: (ws) => {
-                    this.manager.addClient(ws, ws.data.playerId);
+                    const playerId = this.createPlayer(
+                        ws.data.username,
+                        ws.data.skinId
+                    );
+                    ws.data.playerId = playerId;
+                    this.manager.addClient(ws, playerId);
                     this.connect(ws);
                     console.log(`Socket connected: ${ws.data.username}`);
                 },

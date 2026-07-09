@@ -37,7 +37,7 @@ export class Camera {
         viewport.on("globalpointermove", this.onPointerMove, this);
     }
 
-    follow(target: BasicPoint) {
+    follow(target: BasicPoint | null) {
         this.target = target;
     }
 

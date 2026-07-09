@@ -89,11 +89,12 @@ export class PlayerSystem extends System<GameEventMap> {
     }
 
     kill({ object: target }: GameEvent.Kill) {
+        if (!target.active) return;
+        target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
         const socket = socketManager.getSocket(target.id);
-        socket?.close();
         socketManager.deleteClient(target.id);
-        target.active = false;
+        socket?.close();
     }
 
     move = (playerId: number, packet: ClientPacket.Movement) => {

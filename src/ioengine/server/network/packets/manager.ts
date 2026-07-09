@@ -86,7 +86,10 @@ export class PlayerPacketManager<
             const socket = socketManager.getSocket(id);
             const playerPackets = this.packets.get(id);
             const nonExclusivePlayerPackets = this.nonExclusivePackets.get(id);
-            if (!socket) return console.error("No socket available to send to");
+            if (!socket) {
+                console.error("No socket available to send to");
+                continue;
+            }
 
             const visibleObjects = this.visibleObjectsCallback?.(player);
 
