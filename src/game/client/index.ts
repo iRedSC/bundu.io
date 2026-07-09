@@ -41,9 +41,6 @@ function setMenuVisible(visible: boolean) {
     document.querySelectorAll(".menu").forEach((item) => {
         item.classList.toggle("hidden", !visible);
     });
-    if (visible) {
-        document.querySelector(".chat-container")?.classList.add("hidden");
-    }
 }
 
 function buildSocketUrl(username: string) {
@@ -84,9 +81,13 @@ async function main() {
     let socket: GameSocket | null = null;
     let connecting = false;
 
-    const sendPacket: GameSocket["sendPacket"] = (id, data) => {
-        if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const sendPacket = <I extends keyof ClientPacketMap & number>(
+        id: I,
+        data: ClientPacketMap[I]
+    ): boolean => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) return false;
         socket.sendPacket(id, data);
+        return true;
     };
 
     const debugToggle = document.querySelector<HTMLButtonElement>("#debug-toggle");
@@ -151,6 +152,18 @@ async function main() {
         sendPacket(ClientPacket.ChatMessage, { message: trimmed });
     };
 
+    const resetSession = () => {
+        world.clear();
+        gui.health.update(0);
+        gui.hunger.update(0);
+        gui.heat.update(0);
+        gui.inventory.update({ items: [] });
+        gui.recipeManager.recipes.clear();
+        gui.craftingMenu.items = [];
+        gui.craftingMenu.update();
+        keyboard.closeChat();
+    };
+
     gui.inventory.leftclick = (itemId) => {
         sendPacket(ClientPacket.SelectItem, { itemId });
     };
@@ -200,6 +213,7 @@ async function main() {
 
         connecting = true;
         playButton.disabled = true;
+        resetSession();
 
         if (socket) {
             socket.onopen = null;
@@ -240,7 +254,9 @@ async function main() {
             if (socket === next) {
                 socket = null;
             }
+            resetSession();
             setMenuVisible(true);
+            nameInput.focus();
         };
     };
 
@@ -251,6 +267,7 @@ async function main() {
     nameInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
             event.preventDefault();
+            event.stopPropagation();
             connect();
         }
     });
@@ -259,11 +276,12 @@ async function main() {
     nameInput.focus();
 
     setInterval(() => {
-        if (world.requestIds.size > 0) {
-            console.log(`Requesting IDs: ${Array.from(world.requestIds)}`);
-            sendPacket(ClientPacket.RequestObjects, {
-                objects: Array.from(world.requestIds),
-            });
+        if (world.requestIds.size === 0) return;
+        if (!isInGame()) return;
+
+        const objects = Array.from(world.requestIds);
+        console.log(`Requesting IDs: ${objects}`);
+        if (sendPacket(ClientPacket.RequestObjects, { objects })) {
             world.requestIds.clear();
         }
     }, 500);

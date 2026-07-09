@@ -79,10 +79,17 @@ export class World {
     }
 
     clear() {
-        for (const object of this.objects.all()) {
-            this.deleteObjects({ objects: [object.id] });
-            this.objects.delete(object.id);
+        this.viewport.plugins.remove("follow");
+
+        const ids = Array.from(this.objects.all(), (object) => object.id);
+        if (ids.length > 0) {
+            this.deleteObjects({ objects: ids });
         }
+
+        // Ground tiles are stored under a fixed renderer id, not as world objects.
+        this.renderer.delete(-10);
+        this.requestIds.clear();
+        this.user = undefined;
     }
 
     addEventListener<T extends keyof WorldEvent>(
