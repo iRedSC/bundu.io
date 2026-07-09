@@ -4,7 +4,6 @@ export * from "./math";
 export * from "./object_utils";
 export * from "./quadtree";
 export * from "./random";
-export * from "./set_transforms";
 export * from "./types";
 export * from "./transforms";
 export * from "./range";

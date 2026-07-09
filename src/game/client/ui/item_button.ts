@@ -1,4 +1,3 @@
-// import { Button } from "@pixi/ui";
 import { Container } from "pixi.js";
 import { SpriteFactory, ContaineredSprite } from "../assets/sprite_factory";
 import { ITEM_BUTTON_SIZE } from "../constants";

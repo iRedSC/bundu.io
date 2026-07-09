@@ -7,6 +7,7 @@ import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { Container, Point, Text } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
+import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
 import { WORLD_SIZE } from "@client/constants";
 import { DefaultMap } from "../../../ioengine/lib/default_map";
@@ -43,6 +44,7 @@ type WorldEventCallback<T extends keyof WorldEvent> = (
 // All packets (after being parsed) are sent to one of these methods
 export class World {
     viewport: Viewport;
+    camera: Camera;
     user?: number;
     objects: ObjectContainer;
     renderer: LayeredRenderer;
@@ -51,18 +53,10 @@ export class World {
     requestIds: Set<number>;
 
     constructor(viewport: Viewport) {
-        // this.camera = new Camera(viewport, {
-        //     zoomSpeed: 0.05,
-        //     minZoom: 0.75,
-        //     maxZoom: 2.5,
-        //     padding: 100,
-        //     speed: 100,
-        //     peek: 0.01,
-        // });
-
         this.requestIds = new Set();
         this.listeners = new DefaultMap(() => []);
         this.viewport = viewport;
+        this.camera = new Camera(viewport);
         this.sky = new Sky();
         this.renderer = new LayeredRenderer();
 
@@ -109,6 +103,7 @@ export class World {
     tick() {
         AnimationManagers.World.update();
         this.objects.update(serverTime.now());
+        this.camera.update();
     }
 
     clientConnectionInfo = (packet?: ServerPacket.ClientConnectionInfo) => {
@@ -126,7 +121,7 @@ export class World {
         }
         console.info(`Found user (id ${this.user}), loading..`);
 
-        this.viewport.follow(player.container, { speed: 0 });
+        this.camera.follow(player.container);
         console.debug("Camera following local player");
 
         this.emitEvent(WorldEvent.ClientConnected, player as Player);

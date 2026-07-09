@@ -7,7 +7,6 @@
         "@types/bun": "latest",
         "bun-plugin-typia": "^0.1.0",
         "ts-patch": "^3.3.0",
-        "@types/pixi.js": "^5.0.0",
         "@types/sat": "^0.0.35"
     },
     "peerDependencies": {
@@ -23,10 +22,7 @@
     "dependencies": {
         "@msgpack/msgpack": "^3.1.2",
         "@pixi/devtools": "^2.0.1",
-        "@pixi/ui": "^2.3.0",
         "@rwh/keystrokes": "^1.5.6",
-        "js-logger": "^1.6.1",
-        "pixi-cull": "^2.1.1",
         "pixi-viewport": "^6.0.3",
         "pixi.js": "^8.14.3",
         "sat": "^0.9.0",
