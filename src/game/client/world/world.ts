@@ -109,7 +109,6 @@ export class World {
     tick() {
         AnimationManagers.World.update();
         this.objects.update(serverTime.now());
-        // this.camera.update();
     }
 
     clientConnectionInfo = (packet?: ServerPacket.ClientConnectionInfo) => {

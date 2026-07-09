@@ -106,7 +106,7 @@ export default class GameObject {
 
     /** Return true if object is done interpolating */
     update(now: number): boolean {
-        const { x, y } = this.positionStates.interpolate();
+        const { x, y } = this.positionStates.interpolate(now);
         const rot = this.rotationStates.interpolate();
 
         this.position.set(x, y);

@@ -1,14 +1,6 @@
 import typia from "typia";
 import { lerp, rotationLerp } from "@ioengine/lib";
-import { serverTime } from "@client/globals";
 import { drawLine } from "@client/rendering/debug";
-
-const DEBUG_MODE = true;
-
-function debugLog(...data: any[]) {
-    if (!DEBUG_MODE) return;
-    console.log(...data);
-}
 
 export interface PositionState {
     x: number;
@@ -21,7 +13,8 @@ export class PositionStates {
     private next?: PositionState;
 
     private lastUpdateTime: number = performance.now();
-    private readonly updateIntervalMs = 150; // period between updates
+    private lastFrameTime: number = performance.now();
+    private readonly smoothingMs = 80;
 
     callback?: () => void;
 
@@ -29,19 +22,17 @@ export class PositionStates {
         this.callback = callback;
     }
 
-    interpolate(): { x: number; y: number } {
+    interpolate(now = performance.now()): { x: number; y: number } {
         if (!this.next) return this.last;
 
-        const now = performance.now();
-        const elapsed = now - this.lastUpdateTime;
-        const t = Math.min(elapsed / this.updateIntervalMs, 1); // clamp [0,1]
-        // if (t === 1)
-        //     console.log(`t=${t.toFixed(3)}, elapsed=${elapsed.toFixed(1)}`);
+        const elapsed = Math.max(0, now - this.lastFrameTime);
+        this.lastFrameTime = now;
+        const t = 1 - Math.exp(-elapsed / this.smoothingMs);
         drawLine(this.last, this.next);
 
         this.current = {
-            x: lerp(this.current.x, this.next.x, 0.05),
-            y: lerp(this.current.y, this.next.y, 0.05),
+            x: lerp(this.current.x, this.next.x, t),
+            y: lerp(this.current.y, this.next.y, t),
         };
         return this.current;
     }
@@ -53,6 +44,7 @@ export class PositionStates {
         this.last = this.current;
         this.next = state;
         this.lastUpdateTime = performance.now();
+        this.lastFrameTime = this.lastUpdateTime;
 
         this.callback?.();
     }
@@ -68,11 +60,7 @@ export class PositionStates {
     private debugInfo() {
         const now = performance.now();
         const interval = now - this.lastUpdateTime;
-        console.log(
-            `Update interval: ${interval.toFixed(2)}ms (expected ${
-                this.updateIntervalMs
-            }ms)`
-        );
+        console.log(`Update interval: ${interval.toFixed(2)}ms`);
     }
 }
 
