@@ -1,13 +1,9 @@
-import {
-    Schema,
-    ClientPacket,
-    type ClientPacketMap,
-} from "@bundu/shared/packet_definitions";
+import { ClientPacket } from "@bundu/shared/packet_definitions";
 import { ServerPacketReceiver } from "../engine";
 import type { PlayerSystem } from "../systems/player";
 
 export function setupPacketReceiving(
-    receiver: ServerPacketReceiver<typeof Schema.Client, ClientPacketMap>,
+    receiver: ServerPacketReceiver,
     system: PlayerSystem
 ) {
     receiver.on(ClientPacket.Attack, system.attack);

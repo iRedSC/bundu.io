@@ -141,7 +141,7 @@ export class PlayerSystem extends System<GameEventMap> {
         } else {
             attributes?.clear("blocking");
         }
-        this.world.context.worldPacketManager.add(ServerPacket.BlockEvent, {
+        this.world.context.worldPacketManager.emit(ServerPacket.BlockEvent, {
             id: player.id,
             stop,
         });
@@ -177,7 +177,7 @@ export class PlayerSystem extends System<GameEventMap> {
         ) {
             return;
         }
-        this.world.context.worldPacketManager.add(ServerPacket.ChatMessage, {
+        this.world.context.worldPacketManager.emit(ServerPacket.ChatMessage, {
             id: player.id,
             message,
         });

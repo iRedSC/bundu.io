@@ -5,20 +5,13 @@ import {
     type MoveAxes,
 } from "@bundu/shared";
 import { worldToTile } from "@bundu/shared/tiles";
-import {
-    ClientPacket,
-    type Schema,
-    type ClientPacketMap,
-} from "@bundu/shared/packet_definitions";
+import { ClientPacket } from "@bundu/shared/packet_definitions";
 import type { Socket } from "../network/socket";
 import type { Player } from "../world/objects/player";
 import { KeyboardInputListener } from "./keyboard";
 import { MouseInputListener } from "./mouse";
 
-export type SendPacket = Socket<
-    typeof Schema.Client,
-    ClientPacketMap
->["sendPacket"];
+export type SendPacket = Socket["sendPacket"];
 
 /** Minimal surface InputController needs from the local player / world. */
 export type InputPlayerFacade = {

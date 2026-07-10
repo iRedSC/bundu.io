@@ -13,8 +13,4 @@ export * from "./tiles";
 export * from "./transforms";
 export * from "./range";
 export { ReversableMap } from "./reverseable_map";
-export { Serializer } from "./network/serializer";
-export {
-    PacketReceiver,
-    type SerializedPacket,
-} from "./network/packet_receiver";
+export { Serializer, type SerializedPacket } from "./network/serializer";

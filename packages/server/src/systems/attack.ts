@@ -91,14 +91,14 @@ export class AttackSystem extends System<GameEventMap> {
             width
         );
 
-        this.world.context.worldPacketManager.add(ServerPacket.AttackEvent, {
+        this.world.context.worldPacketManager.emit(ServerPacket.AttackEvent, {
             id: source.id,
         });
 
         const hits = testForIntersection(hitRange, nearby);
         hits.delete(source.id);
         for (const object of hits.values()) {
-            this.world.context.worldPacketManager.add(ServerPacket.HitEvent, {
+            this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
                 id: object.id,
                 angle: 0,
             });

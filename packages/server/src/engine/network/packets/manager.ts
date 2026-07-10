@@ -1,106 +1,95 @@
-import { Serializer } from "@bundu/shared";
+import { Serializer, type SerializedPacket } from "@bundu/shared";
+import type {
+    ServerPacketMap,
+    ServerPacketID,
+} from "@bundu/shared/packet_definitions";
 import type { GameObject } from "../../game_object";
 import type { WorldPacketManager } from "./world";
 import type { SocketManager } from "../socket_manager";
 import { encode } from "@msgpack/msgpack";
 import { serverTime } from "../../server_time";
 
-type PacketData<I, DataMap> = I extends keyof DataMap ? DataMap[I] : never;
+/** Per-player outbound queue: exclusive state (`set`) + multi packets (`add`). */
+export class PlayerPacketManager {
+    private state = new Map<number, Map<ServerPacketID, object>>();
+    private multi = new Map<number, Map<ServerPacketID, object[]>>();
 
-type PlayerPacketContainer<I, DataMap> = Map<I, PacketData<I, DataMap>>;
+    constructor(private serializer: Serializer<ServerPacketMap>) {}
 
-type NonExclusivePlayerPacketContainer<I, DataMap> = Map<
-    I,
-    PacketData<I, DataMap>[]
->;
-
-export class PlayerPacketManager<
-    S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, object>
-> {
-    packets = new Map<
-        number,
-        PlayerPacketContainer<keyof S & number, DataMap>
-    >();
-    nonExclusivePackets = new Map<
-        number,
-        NonExclusivePlayerPacketContainer<keyof S & number, DataMap>
-    >();
-    private serializer: Serializer<S, DataMap>;
     visibleObjectsCallback?: (
         player: GameObject
     ) => IterableIterator<GameObject>;
 
-    constructor(schema: S) {
-        this.packets = new Map();
-        this.serializer = new Serializer<S, DataMap>(schema);
-    }
-
-    set<I extends keyof S & number>(
+    /** Latest-wins state for this player (vitals, recipes, etc.). */
+    set<I extends ServerPacketID>(
         playerId: number,
         packetId: I,
-        data: PacketData<I, DataMap>
+        data: ServerPacketMap[I]
     ) {
-        if (!this.serializer.has(packetId)) {
-            return console.error(`Schema ${packetId} not found`);
+        let packets = this.state.get(playerId);
+        if (!packets) {
+            packets = new Map();
+            this.state.set(playerId, packets);
         }
-
-        let packets = this.packets.get(playerId);
-        if (!packets) packets = new Map();
         packets.set(packetId, data);
-        this.packets.set(playerId, packets);
     }
 
-    add<I extends keyof S & number>(
+    /** Append a packet (LoadObject, DeleteObjects — many per tick). */
+    add<I extends ServerPacketID>(
         playerId: number,
         packetId: I,
-        data: PacketData<I, DataMap>
+        data: ServerPacketMap[I]
     ) {
-        if (!this.serializer.has(packetId)) {
-            return console.error(`Schema ${packetId} not found`);
+        let packets = this.multi.get(playerId);
+        if (!packets) {
+            packets = new Map();
+            this.multi.set(playerId, packets);
         }
-
-        let packets = this.nonExclusivePackets.get(playerId);
-        if (!packets) packets = new Map();
         let list = packets.get(packetId);
         if (!list) {
             list = [];
             packets.set(packetId, list);
         }
         list.push(data);
-
-        this.nonExclusivePackets.set(playerId, packets);
     }
 
     process(
         players: GameObject[],
         socketManager: SocketManager,
-        worldPacketManager: WorldPacketManager<S, DataMap>
+        worldPacketManager: WorldPacketManager
     ) {
         for (const player of players) {
             const id = player.id;
-            const packets: [number, ...unknown[]] = [0];
+            const packets: SerializedPacket[] = [];
             const socket = socketManager.getSocket(id);
-            const playerPackets = this.packets.get(id);
-            const nonExclusivePlayerPackets = this.nonExclusivePackets.get(id);
             if (!socket) {
                 console.error("No socket available to send to");
                 continue;
             }
 
-            const visibleObjects = this.visibleObjectsCallback?.(player);
+            const playerState = this.state.get(id);
+            const playerMulti = this.multi.get(id);
 
-            playerPackets
-                ?.entries()
-                .forEach(([id, data]) =>
-                    packets.push(this.serializer.serialize(id, data))
+            playerState?.forEach((data, packetId) => {
+                packets.push(
+                    this.serializer.serialize(
+                        packetId,
+                        data as ServerPacketMap[typeof packetId]
+                    )
                 );
-            nonExclusivePlayerPackets?.entries().forEach(([id, data]) => {
-                for (const packet of data) {
-                    packets.push(this.serializer.serialize(id, packet));
+            });
+            playerMulti?.forEach((list, packetId) => {
+                for (const data of list) {
+                    packets.push(
+                        this.serializer.serialize(
+                            packetId,
+                            data as ServerPacketMap[typeof packetId]
+                        )
+                    );
                 }
             });
 
+            const visibleObjects = this.visibleObjectsCallback?.(player);
             if (visibleObjects) {
                 packets.push(...worldPacketManager.process(visibleObjects));
             } else {
@@ -109,14 +98,14 @@ export class PlayerPacketManager<
                 );
             }
 
-            packets[0] = serverTime.now();
-
-            if (packets.length > 1) socket.send(encode(packets));
+            if (packets.length > 0) {
+                socket.send(encode([serverTime.now(), ...packets]));
+            }
         }
     }
 
     clear() {
-        this.packets.clear();
-        this.nonExclusivePackets.clear();
+        this.state.clear();
+        this.multi.clear();
     }
 }

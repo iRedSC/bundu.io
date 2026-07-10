@@ -1,41 +1,58 @@
-import {
-    PacketReceiver,
-    type SerializedPacket,
-} from "@bundu/shared";
+import { type SerializedPacket, type Serializer } from "@bundu/shared";
+import type { ClientPacketMap } from "@bundu/shared/packet_definitions";
 
-type Callback<I, DataMap> = (
-    playerId: number,
-    packet: I extends keyof DataMap ? DataMap[I] : never
-) => void;
-
-/** Server adapter: queues by player; callbacks get `(playerId, packet)`. */
-export class ServerPacketReceiver<
-    S extends Record<number, { fields: readonly string[] }>,
+type Handler<
     DataMap extends Record<number, object>,
-> extends PacketReceiver<S, DataMap, number> {
-    packets = new Map<number, SerializedPacket[]>();
+    I extends keyof DataMap & number,
+> = (playerId: number, packet: DataMap[I]) => void;
 
-    on<I extends keyof S & number>(id: I, callback: Callback<I, DataMap>) {
-        this.setHandler(id, (data, playerId) => {
-            (callback as Callback<keyof S & number, DataMap>)(playerId, data as never);
-        });
+/** Queues client packets by player; dispatches `(playerId, packet)` on process. */
+export class ServerPacketReceiver<
+    DataMap extends Record<number, object> = ClientPacketMap,
+> {
+    packets = new Map<number, SerializedPacket[]>();
+    private handlers = new Map<
+        keyof DataMap & number,
+        Handler<DataMap, keyof DataMap & number>
+    >();
+
+    constructor(private serializer: Serializer<DataMap>) {}
+
+    on<I extends keyof DataMap & number>(
+        id: I,
+        callback: Handler<DataMap, I>
+    ) {
+        this.handlers.set(
+            id,
+            callback as Handler<DataMap, keyof DataMap & number>
+        );
     }
 
     add(playerId: number, packet: SerializedPacket) {
         let packets = this.packets.get(playerId);
-        if (!packets) packets = [];
+        if (!packets) {
+            packets = [];
+            this.packets.set(playerId, packets);
+        }
         packets.push(packet);
-        this.packets.set(playerId, packets);
     }
 
     process() {
-        for (const [player, packets] of this.packets.entries()) {
+        for (const [playerId, packets] of this.packets) {
             for (const packet of packets) {
-                this.receivePacket(
-                    packet,
-                    player,
-                    `Dropped bad packet from player ${player}`
-                );
+                try {
+                    const id = packet[0] as keyof DataMap & number;
+                    const data = this.serializer.deserialize(
+                        packet as [typeof id, ...unknown[]]
+                    );
+                    this.handlers.get(id)?.(playerId, data);
+                } catch (error) {
+                    console.error(
+                        `Dropped bad packet from player ${playerId}`,
+                        packet,
+                        error
+                    );
+                }
             }
         }
     }
