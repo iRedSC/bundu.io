@@ -282,14 +282,16 @@ export class AnimationManager {
             ) {
                 continue;
             }
-            for (let [index, animation] of animations.entries()) {
+            const remaining: ValidActiveAnimation[] = [];
+            for (const animation of animations) {
                 if (animation.expired) {
                     animation.end();
-                    animations.splice(index, 1);
                 } else {
                     animation.update();
+                    remaining.push(animation);
                 }
             }
+            this.sources.set(source, remaining);
         }
     }
 }
