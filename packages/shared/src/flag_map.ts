@@ -1,5 +1,5 @@
 import flagMapData from "./flag_map.yml";
-import { ReversableMap } from "@bundu/shared";
+import { ReversableMap } from "./reverseable_map";
 
 export const flagMap: ReversableMap<string, number> = new ReversableMap();
 
