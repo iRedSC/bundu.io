@@ -7,7 +7,6 @@ import {
 } from "../engine";
 import { Quadtree } from "../engine/quadtree.js";
 import { VisibleObjects } from "../components/visible_objects";
-import { WORLD_BOUNDS } from "../systems/position";
 
 export type { ServerContext };
 
@@ -28,11 +27,12 @@ export function createServerContext(): ServerContext {
     };
 
     return {
+        // Bounds match WORLD_BOUNDS in position.ts (avoid import cycle).
         quadtree: new Quadtree(
             new Map(),
             [
                 { x: 0, y: 0 },
-                { x: WORLD_BOUNDS, y: WORLD_BOUNDS },
+                { x: 20000, y: 20000 },
             ],
             5
         ),
