@@ -1,4 +1,4 @@
-import { Component, type ComponentFactory } from "./component.js";
+import { type ComponentFactory } from "./component.js";
 import { GameObject } from "./game_object.js";
 import { World } from "./world.js";
 
@@ -28,17 +28,7 @@ export abstract class System<
         Map<(data: unknown) => void, ComponentFactory<unknown>[]>
     >();
 
-    public beforeUpdate?(time: number): void;
-
     public update?(time: number, delta: number, object: GameObject): void;
-
-    public afterUpdate?(time: number, objects: GameObject[]): void;
-
-    public change?(
-        object: GameObject,
-        added?: Component<unknown>,
-        removed?: Component<unknown>
-    ): void;
 
     public enter?(object: GameObject): void;
 

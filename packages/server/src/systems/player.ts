@@ -4,12 +4,7 @@ import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject, System, type World } from "../engine";
-import {
-    AttributeList,
-    Attributes,
-    type AttributeType,
-} from "../components/attributes.js";
-import { StatList, type StatType, Stats } from "../components/stats.js";
+import { Attributes } from "../components/attributes.js";
 import {
     playerPacketManager,
     socketManager,
@@ -17,6 +12,7 @@ import {
 } from "../network/managers.js";
 import { emitVitals } from "../network/vitals.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
+import { tryHandleDebugChatCommand } from "./player_debug_commands.js";
 import { STRUCTURE_COLLISION_RADIUS } from "./structure.js";
 
 /**
@@ -179,48 +175,16 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
 
-        if (message.startsWith("/")) {
-            const command = message.replace("/", "").split(" ");
-            if (!command[1]) return;
-            switch (command[0]) {
-                case "attribute": {
-                    const type = command[1] as AttributeType;
-                    if (!AttributeList.includes(type)) return;
-                    const operation = command[2] as "add" | "multiply";
-                    if (!["add", "multiply"].includes(operation)) return;
-                    const value = Number(command[3]);
-                    let duration;
-                    if (command[4]) duration = Number(command[4]);
-                    player
-                        .get(Attributes)
-                        .set(
-                            type,
-                            "command",
-                            operation,
-                            value,
-                            duration,
-                            this.world.gameTime
-                        );
-                    break;
-                }
-                case "stat": {
-                    const type = command[1] as StatType;
-                    if (!StatList.includes(type)) return;
-                    const value = Number(command[2]);
-                    player.get(Stats).set(type, { value });
-                    break;
-                }
-                case "kill": {
-                    this.trigger(GameEvent.Kill, { object: player });
-                    break;
-                }
-                case "godmode": {
-                    player
-                        .get(Attributes)
-                        .set("attack.speed", "godmode", "add", 100)
-                        .set("attack.reach", "godmode", "add", 500);
-                }
-            }
+        if (
+            tryHandleDebugChatCommand(
+                player,
+                message,
+                (target) => {
+                    this.trigger(GameEvent.Kill, { object: target });
+                },
+                this.world.gameTime
+            )
+        ) {
             return;
         }
         worldPacketManager.add(ServerPacket.ChatMessage, {

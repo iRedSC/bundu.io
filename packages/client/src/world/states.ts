@@ -1,4 +1,5 @@
 import { lerp, rotationLerp } from "@bundu/shared";
+import { serverTime } from "@client/globals";
 
 export interface PositionState {
     x: number;
@@ -10,8 +11,8 @@ export class PositionStates {
     private current: PositionState = this.last;
     private next?: PositionState;
 
-    private lastUpdateTime: number = performance.now();
-    private lastFrameTime: number = performance.now();
+    private lastUpdateTime: number = serverTime.now();
+    private lastFrameTime: number = serverTime.now();
     private readonly smoothingMs = 80;
 
     callback?: () => void;
@@ -20,7 +21,7 @@ export class PositionStates {
         this.callback = callback;
     }
 
-    interpolate(now = performance.now()): { x: number; y: number } {
+    interpolate(now = serverTime.now()): { x: number; y: number } {
         if (!this.next) return this.last;
 
         const elapsed = Math.max(0, now - this.lastFrameTime);
@@ -38,7 +39,7 @@ export class PositionStates {
         if (!this.next) this.current = state;
         this.last = this.current;
         this.next = state;
-        this.lastUpdateTime = performance.now();
+        this.lastUpdateTime = serverTime.now();
         this.lastFrameTime = this.lastUpdateTime;
         this.callback?.();
     }
@@ -60,7 +61,7 @@ export class RotationStates {
     private next: RotationState = 0;
     callback?: () => void;
 
-    private lastUpdateTime: number = performance.now();
+    private lastUpdateTime: number = serverTime.now();
     private readonly updateIntervalMs = 50;
 
     constructor(callback?: () => void) {
@@ -70,7 +71,7 @@ export class RotationStates {
     interpolate(): number {
         if (!this.next) return this.last;
 
-        const now = performance.now();
+        const now = serverTime.now();
         const elapsed = now - this.lastUpdateTime;
         const t = Math.min(elapsed / this.updateIntervalMs, 1);
 
@@ -79,14 +80,14 @@ export class RotationStates {
     }
 
     isComplete(): boolean {
-        const elapsed = performance.now() - this.lastUpdateTime;
+        const elapsed = serverTime.now() - this.lastUpdateTime;
         return elapsed >= this.updateIntervalMs;
     }
 
     set(state: RotationState) {
         this.last = this.next;
         this.next = state;
-        this.lastUpdateTime = performance.now();
+        this.lastUpdateTime = serverTime.now();
         this.callback?.();
     }
 }
