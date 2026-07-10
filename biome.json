@@ -44,10 +44,7 @@
 										"message": "Client must not import from @bundu/server. Use @bundu/shared."
 									},
 									{
-										"group": [
-											"**/packages/server",
-											"**/packages/server/**"
-										],
+										"group": ["**/server", "**/server/**"],
 										"message": "Client must not reach into packages/server. Use @bundu/shared."
 									}
 								]
@@ -75,10 +72,7 @@
 										"message": "Server must not import client path aliases. Use @bundu/shared."
 									},
 									{
-										"group": [
-											"**/packages/client",
-											"**/packages/client/**"
-										],
+										"group": ["**/client", "**/client/**"],
 										"message": "Server must not reach into packages/client. Use @bundu/shared."
 									}
 								]
@@ -110,10 +104,10 @@
 									},
 									{
 										"group": [
-											"**/packages/client",
-											"**/packages/client/**",
-											"**/packages/server",
-											"**/packages/server/**"
+											"**/client",
+											"**/client/**",
+											"**/server",
+											"**/server/**"
 										],
 										"message": "Shared must not reach into packages/client or packages/server."
 									}
