@@ -29,7 +29,7 @@ export class Sky extends Graphics {
         this.currentCycle = 0;
         this.nextCycle = 0;
         this.rect(0, 0, WORLD_SIZE, WORLD_SIZE).fill(0xffffff);
-        this.zIndex = 100;
+        this.zIndex = 200;
         this.blendMode = "multiply";
 
         this.animations = new Map();
