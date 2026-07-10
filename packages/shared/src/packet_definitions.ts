@@ -62,12 +62,6 @@ const serverPacketDefs = {
         backpack: boolean;
     }>()(0x08, ["id", "mainhand", "offhand", "helmet", "backpack"]),
     DeleteObjects: packet<{ objects: number[] }>()(0x09, ["objects"]),
-    Ping: packet<Record<PropertyKey, never>>()(0x0a, []),
-    DebugDrawPolygon: packet<{
-        startX: number;
-        startY: number;
-        points: [x: number, y: number][];
-    }>()(0x0b, ["startX", "startY", "points"]),
     ChatMessage: packet<{ id: number; message: string }>()(0x0c, [
         "id",
         "message",
@@ -99,9 +93,6 @@ const serverPacketDefs = {
     AttackEvent: packet<{ id: number }>()(0x11, ["id"]),
     BlockEvent: packet<{ id: number; stop: boolean }>()(0x12, ["id", "stop"]),
     HitEvent: packet<{ id: number; angle: number }>()(0x13, ["id", "angle"]),
-    DebugDrawRects: packet<{
-        rects: [x: number, y: number, w: number, h: number][];
-    }>()(0x14, ["rects"]),
 } as const;
 
 const clientPacketDefs = {
@@ -109,7 +100,6 @@ const clientPacketDefs = {
     Movement: packet<{ direction: number }>()(0x01, ["direction"]),
     Attack: packet<{ stop: boolean }>()(0x04, ["stop"]),
     SelectItem: packet<{ itemId: number }>()(0x05, ["itemId"]),
-    Ping: packet<Record<PropertyKey, never>>()(0x06, []),
     CraftItem: packet<{ itemId: number }>()(0x07, ["itemId"]),
     ChatMessage: packet<{ message: string }>()(0x08, ["message"]),
     DropItem: packet<{ itemId: number; dropAll: boolean }>()(0x09, [
@@ -182,9 +172,6 @@ export namespace ServerPacket {
         (typeof serverPacketDefs)["UpdateEquipment"]["__payload"];
     export type DeleteObjects =
         (typeof serverPacketDefs)["DeleteObjects"]["__payload"];
-    export type Ping = (typeof serverPacketDefs)["Ping"]["__payload"];
-    export type DebugDrawPolygon =
-        (typeof serverPacketDefs)["DebugDrawPolygon"]["__payload"];
     export type ChatMessage =
         (typeof serverPacketDefs)["ChatMessage"]["__payload"];
     export type LoadGround = (typeof serverPacketDefs)["LoadGround"]["__payload"];
@@ -197,8 +184,6 @@ export namespace ServerPacket {
         (typeof serverPacketDefs)["AttackEvent"]["__payload"];
     export type BlockEvent = (typeof serverPacketDefs)["BlockEvent"]["__payload"];
     export type HitEvent = (typeof serverPacketDefs)["HitEvent"]["__payload"];
-    export type DebugDrawRects =
-        (typeof serverPacketDefs)["DebugDrawRects"]["__payload"];
 }
 
 export const ClientPacket = toPacketIds(clientPacketDefs);
@@ -207,7 +192,6 @@ export namespace ClientPacket {
     export type Movement = (typeof clientPacketDefs)["Movement"]["__payload"];
     export type Attack = (typeof clientPacketDefs)["Attack"]["__payload"];
     export type SelectItem = (typeof clientPacketDefs)["SelectItem"]["__payload"];
-    export type Ping = (typeof clientPacketDefs)["Ping"]["__payload"];
     export type CraftItem = (typeof clientPacketDefs)["CraftItem"]["__payload"];
     export type ChatMessage =
         (typeof clientPacketDefs)["ChatMessage"]["__payload"];
