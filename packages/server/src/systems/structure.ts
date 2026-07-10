@@ -1,4 +1,4 @@
-import { GameObject, System } from "../engine";
+import { GameObject, System, type World } from "../engine";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { Circle, Vector } from "sat";
 import { Physics } from "../components/base.js";
@@ -7,8 +7,8 @@ import { Resource } from "../game_objects/resource.js";
 export const STRUCTURE_COLLISION_RADIUS = 10;
 
 export class StructureSystem extends System<GameEventMap> {
-    constructor() {
-        super([], 1);
+    constructor(world: World) {
+        super(world, [], 1);
         this.listen(GameEvent.PlaceStructure, this.placeStructure);
     }
 

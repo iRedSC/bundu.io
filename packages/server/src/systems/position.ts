@@ -1,6 +1,6 @@
 import { Physics } from "../components/base.js";
 import { Quadtree, type BasicPoint, round, clamp } from "@bundu/shared";
-import { GameObject, System } from "../engine";
+import { GameObject, System, type World } from "../engine";
 import { worldPacketManager } from "../network/managers.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
@@ -27,8 +27,8 @@ export const getSizedBounds = (
  * Position system inserts objects into the quadtree when they move.
  */
 export class PositionSystem extends System<GameEventMap> {
-    constructor() {
-        super([Physics]);
+    constructor(world: World) {
+        super(world, [Physics]);
 
         this.listen(GameEvent.Rotate, this.rotate, [Physics]);
         this.listen(GameEvent.Move, this.move, [Physics]);

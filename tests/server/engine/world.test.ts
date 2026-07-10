@@ -17,8 +17,12 @@ class TrackingSystem extends System<TrackEvents> {
   entered: GameObject[] = [];
   exited: GameObject[] = [];
 
-  constructor(components: ComponentFactory<Vec>[], tps?: number) {
-    super(components, tps);
+  constructor(
+    world: World,
+    components: ComponentFactory<Vec>[],
+    tps?: number
+  ) {
+    super(world, components, tps);
   }
 
   override enter(object: GameObject) {
@@ -126,8 +130,9 @@ describe("World + System", () => {
   beforeEach(() => {
     Position = Component.register(() => ({ x: 0, y: 0 }));
     Velocity = Component.register(() => ({ x: 0, y: 0 }));
-    system = new TrackingSystem([Position, Velocity]);
-    world = new World([system]);
+    world = new World();
+    system = new TrackingSystem(world, [Position, Velocity]);
+    world.addSystem(system);
   });
 
   test("addObject / getObject / removeObject", () => {

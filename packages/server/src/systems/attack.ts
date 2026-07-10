@@ -1,7 +1,6 @@
 import { radians, moveInDirection, type BasicPoint } from "@bundu/shared";
 import { Physics } from "../components/base.js";
-import { GameObject } from "../engine";
-import { System } from "../engine";
+import { GameObject, System, type World } from "../engine";
 import { quadtree } from "./position.js";
 import SAT from "sat";
 import { worldPacketManager } from "../network/managers.js";
@@ -51,8 +50,8 @@ export function testForIntersection(
 }
 
 export class AttackSystem extends System<GameEventMap> {
-    constructor() {
-        super([Physics]);
+    constructor(world: World) {
+        super(world, [Physics]);
         this.listen(GameEvent.Attack, this.attack);
     }
 

@@ -6,24 +6,27 @@ let NEXT_SYSTEM_ID = 1;
 
 export type SystemEventCallback<M, K extends keyof M> = (data: M[K]) => void;
 
+/** Heterogeneous system handle for World registries (mixed EventMaps). */
+export type AnySystem = System<Record<string | number | symbol, unknown>>;
+
 export abstract class System<
-    EventMap extends Record<string | number | symbol, any>
+    EventMap extends Record<string | number | symbol, unknown>
 > {
     readonly id: number;
     readonly tps: number;
     readonly componentIds: Set<number> = new Set();
 
-    public world: World = undefined as any;
+    readonly world: World;
 
-    public trigger: <T extends keyof EventMap>(
+    readonly trigger: <T extends keyof EventMap>(
         event: T,
         data: EventMap[T]
-    ) => void = undefined as any;
+    ) => void;
 
-    readonly callbacks: Map<
+    readonly callbacks = new Map<
         string | number | symbol,
-        Map<SystemEventCallback<EventMap, any>, ComponentFactory<any>[]>
-    > = new Map();
+        Map<(data: unknown) => void, ComponentFactory<unknown>[]>
+    >();
 
     public beforeUpdate?(time: number): void;
 
@@ -33,43 +36,61 @@ export abstract class System<
 
     public change?(
         object: GameObject,
-        added?: Component<any>,
-        removed?: Component<any>
+        added?: Component<unknown>,
+        removed?: Component<unknown>
     ): void;
 
     public enter?(object: GameObject): void;
 
     public exit?(object: GameObject): void;
 
-    constructor(componentIds: ComponentFactory<any>[], tps: number = 20) {
+    constructor(
+        world: World,
+        // Factories are invariant in data; accept via structural id list.
+        componentIds: readonly { readonly id: number }[],
+        tps: number = 20
+    ) {
         this.id = NEXT_SYSTEM_ID++;
         this.componentIds = new Set(
             componentIds.map((component) => component.id)
         );
         this.tps = tps;
+        this.world = world;
+        this.trigger = (event, data) => {
+            world.dispatch(event, data);
+        };
     }
 
-    protected query(componentTypes: ComponentFactory<any>[]): GameObject[] {
-        return this.world.query(componentTypes);
+    protected query(
+        componentTypes: readonly { readonly id: number }[]
+    ): GameObject[] {
+        return this.world.query(
+            componentTypes as ComponentFactory<unknown>[]
+        );
     }
 
     public listen<T extends keyof EventMap>(
         event: T,
         callback: SystemEventCallback<EventMap, T>,
-        components?: ComponentFactory<any>[],
+        components?: readonly { readonly id: number }[],
         once?: boolean
     ) {
         if (!this.callbacks.has(event)) {
             this.callbacks.set(event, new Map());
         }
+        let registered = callback as (data: unknown) => void;
         if (once) {
-            const temp = callback.bind(callback);
-
-            callback = (data?: any) => {
-                temp(data);
-                this.callbacks.get(event)?.delete(callback);
+            const temp = registered;
+            registered = (data: unknown) => {
+                temp.call(this, data);
+                this.callbacks.get(event)?.delete(registered);
             };
         }
-        this.callbacks.get(event)?.set(callback, components || []);
+        this.callbacks
+            .get(event)
+            ?.set(
+                registered,
+                (components || []) as ComponentFactory<unknown>[]
+            );
     }
 }

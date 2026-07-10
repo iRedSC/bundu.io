@@ -412,8 +412,8 @@
       <h2>Type safety</h2>
       <p class="section-intro">Holes in the shared wire contract and casts that hide real shape mismatches.</p>
 
-      <article class="smell" id="smell-shared-serializer-any-holes" data-id="shared-serializer-any-holes" data-severity="high" data-package="shared" data-category="type-safety" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark shared-serializer-any-holes fixed" /></div>
+      <article class="smell" id="smell-shared-serializer-any-holes" data-id="shared-serializer-any-holes" data-severity="high" data-package="shared" data-category="type-safety" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark shared-serializer-any-holes fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Serializer erases field types via <code>any</code></h3>
@@ -431,8 +431,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-shared-loadobject-opaque-payload" data-id="shared-loadobject-opaque-payload" data-severity="high" data-package="shared" data-category="type-safety" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark shared-loadobject-opaque-payload fixed" /></div>
+      <article class="smell" id="smell-shared-loadobject-opaque-payload" data-id="shared-loadobject-opaque-payload" data-severity="high" data-package="shared" data-category="type-safety" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark shared-loadobject-opaque-payload fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title"><code>LoadObject.data</code> is <code>unknown[]</code>, disconnected from <code>GameObjectData</code></h3>
@@ -452,8 +452,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-shared-packet-map-manual-sync" data-id="shared-packet-map-manual-sync" data-severity="medium" data-package="shared" data-category="type-safety" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark shared-packet-map-manual-sync fixed" /></div>
+      <article class="smell" id="smell-shared-packet-map-manual-sync" data-id="shared-packet-map-manual-sync" data-severity="medium" data-package="shared" data-category="type-safety" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark shared-packet-map-manual-sync fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Packet IDs, types, Schema fields, and PacketMaps are four hand-synced tables</h3>
@@ -469,8 +469,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-shared-basicpoint-index-signature" data-id="shared-basicpoint-index-signature" data-severity="medium" data-package="shared" data-category="type-safety" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark shared-basicpoint-index-signature fixed" /></div>
+      <article class="smell" id="smell-shared-basicpoint-index-signature" data-id="shared-basicpoint-index-signature" data-severity="medium" data-package="shared" data-category="type-safety" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark shared-basicpoint-index-signature fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title"><code>BasicPoint</code> index signature is <code>any</code></h3>
@@ -488,8 +488,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-client-unsafe-casts" data-id="client-unsafe-casts" data-severity="medium" data-package="client" data-category="type-safety" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark client-unsafe-casts fixed" /></div>
+      <article class="smell" id="smell-client-unsafe-casts" data-id="client-unsafe-casts" data-severity="medium" data-package="client" data-category="type-safety" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark client-unsafe-casts fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Client <code>as any</code> / unsafe casts hide object identity</h3>
@@ -507,8 +507,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-system-runtime-injection" data-id="system-runtime-injection" data-severity="medium" data-package="server" data-category="type-safety" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark system-runtime-injection fixed" /></div>
+      <article class="smell" id="smell-system-runtime-injection" data-id="system-runtime-injection" data-severity="medium" data-package="server" data-category="type-safety" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark system-runtime-injection fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title"><code>System.world</code> / <code>trigger</code> injected as <code>undefined as any</code></h3>
@@ -532,8 +532,8 @@
       <h2>Bad patterns</h2>
       <p class="section-intro">Incorrect or fragile approaches that cause real bugs or hidden coupling.</p>
 
-      <article class="smell" id="smell-shared-clamp-falsy-zero" data-id="shared-clamp-falsy-zero" data-severity="high" data-package="shared" data-category="bad-pattern" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark shared-clamp-falsy-zero fixed" /></div>
+      <article class="smell" id="smell-shared-clamp-falsy-zero" data-id="shared-clamp-falsy-zero" data-severity="high" data-package="shared" data-category="bad-pattern" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark shared-clamp-falsy-zero fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title"><code>clamp</code> treats <code>0</code> as “no bound” via truthiness</h3>
@@ -866,8 +866,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-client-connection-retry-poll" data-id="client-connection-retry-poll" data-severity="medium" data-package="client" data-category="complexity" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark client-connection-retry-poll fixed" /></div>
+      <article class="smell" id="smell-client-connection-retry-poll" data-id="client-connection-retry-poll" data-severity="medium" data-package="client" data-category="complexity" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark client-connection-retry-poll fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Local-player attach retries via recursive <code>setTimeout</code></h3>
@@ -1075,8 +1075,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-now-polyfill-dead-weight" data-id="now-polyfill-dead-weight" data-severity="low" data-package="server" data-category="overengineering" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark now-polyfill-dead-weight fixed" /></div>
+      <article class="smell" id="smell-now-polyfill-dead-weight" data-id="now-polyfill-dead-weight" data-severity="low" data-package="server" data-category="overengineering" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark now-polyfill-dead-weight fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Browser/Node <code>NOW</code> polyfill on a Bun-only server</h3>
@@ -1100,8 +1100,8 @@
       <h2>Code smells</h2>
       <p class="section-intro">Leaks, mixed concerns, magic numbers, and inconsistent ownership.</p>
 
-      <article class="smell" id="smell-client-debug-leak" data-id="client-debug-leak" data-severity="high" data-package="client" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark client-debug-leak fixed" /></div>
+      <article class="smell" id="smell-client-debug-leak" data-id="client-debug-leak" data-severity="high" data-package="client" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark client-debug-leak fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Per-object debug overlays never cleaned up on delete</h3>
@@ -1119,8 +1119,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-index-bootstrap-god" data-id="index-bootstrap-god" data-severity="medium" data-package="server" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark index-bootstrap-god fixed" /></div>
+      <article class="smell" id="smell-index-bootstrap-god" data-id="index-bootstrap-god" data-severity="medium" data-package="server" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark index-bootstrap-god fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Server <code>index.ts</code> mixes bootstrap, test map, player factory, and tick loop</h3>
@@ -1195,8 +1195,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-client-equipment-early-return" data-id="client-equipment-early-return" data-severity="medium" data-package="client" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark client-equipment-early-return fixed" /></div>
+      <article class="smell" id="smell-client-equipment-early-return" data-id="client-equipment-early-return" data-severity="medium" data-package="client" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark client-equipment-early-return fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Missing sprite config aborts rest of equipment update</h3>
@@ -1250,8 +1250,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-client-resize-handler-clash" data-id="client-resize-handler-clash" data-severity="low" data-package="client" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark client-resize-handler-clash fixed" /></div>
+      <article class="smell" id="smell-client-resize-handler-clash" data-id="client-resize-handler-clash" data-severity="low" data-package="client" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark client-resize-handler-clash fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Viewport uses <code>window.onresize =</code> while UI uses <code>addEventListener</code></h3>
@@ -1269,8 +1269,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-shared-import-path-inconsistency" data-id="shared-import-path-inconsistency" data-severity="low" data-package="shared" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark shared-import-path-inconsistency fixed" /></div>
+      <article class="smell" id="smell-shared-import-path-inconsistency" data-id="shared-import-path-inconsistency" data-severity="low" data-package="shared" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark shared-import-path-inconsistency fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Inconsistent import styles across package boundaries</h3>
@@ -1314,8 +1314,8 @@
       <h2>Duplication</h2>
       <p class="section-intro">Copy-pasted logic that will drift.</p>
 
-      <article class="smell" id="smell-cross-packet-receiver-dup" data-id="cross-packet-receiver-dup" data-severity="medium" data-package="shared" data-category="duplication" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark cross-packet-receiver-dup fixed" /></div>
+      <article class="smell" id="smell-cross-packet-receiver-dup" data-id="cross-packet-receiver-dup" data-severity="medium" data-package="shared" data-category="duplication" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark cross-packet-receiver-dup fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Client and server packet receivers are near-copies outside shared</h3>
@@ -1350,8 +1350,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-render-bounds-duplicated" data-id="render-bounds-duplicated" data-severity="low" data-package="server" data-category="duplication" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark render-bounds-duplicated fixed" /></div>
+      <article class="smell" id="smell-render-bounds-duplicated" data-id="render-bounds-duplicated" data-severity="low" data-package="server" data-category="duplication" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark render-bounds-duplicated fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Render-distance AABB built twice with the same math</h3>
@@ -1438,8 +1438,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-shared-unused-utilities" data-id="shared-unused-utilities" data-severity="medium" data-package="shared" data-category="dead-code" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark shared-unused-utilities fixed" /></div>
+      <article class="smell" id="smell-shared-unused-utilities" data-id="shared-unused-utilities" data-severity="medium" data-package="shared" data-category="dead-code" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark shared-unused-utilities fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Several shared exports have no production callers</h3>
@@ -1460,8 +1460,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-shared-dead-protocol-surface" data-id="shared-dead-protocol-surface" data-severity="low" data-package="shared" data-category="dead-code" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark shared-dead-protocol-surface fixed" /></div>
+      <article class="smell" id="smell-shared-dead-protocol-surface" data-id="shared-dead-protocol-surface" data-severity="low" data-package="shared" data-category="dead-code" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark shared-dead-protocol-surface fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Ping and DebugDraw packets are defined/handled but never produced</h3>
@@ -1479,8 +1479,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-server-orphan-receiver-module" data-id="server-orphan-receiver-module" data-severity="medium" data-package="server" data-category="dead-code" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark server-orphan-receiver-module fixed" /></div>
+      <article class="smell" id="smell-server-orphan-receiver-module" data-id="server-orphan-receiver-module" data-severity="medium" data-package="server" data-category="dead-code" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark server-orphan-receiver-module fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title"><code>network/receiver.ts</code> exports an unused receiver; <code>index.ts</code> builds another</h3>
