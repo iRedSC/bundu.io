@@ -171,11 +171,6 @@ export class PlayerSystem extends System<GameEventMap> {
         });
     };
 
-    /** Inventory/craft not implemented yet — no-op so the client stays quiet. */
-    selectItem = (_playerId: number, _packet: ClientPacket.SelectItem) => {};
-    craftItem = (_playerId: number, _packet: ClientPacket.CraftItem) => {};
-    dropItem = (_playerId: number, _packet: ClientPacket.DropItem) => {};
-
     chatMessage = (playerId: number, { message }: ClientPacket.ChatMessage) => {
         const player = this.world.getObject(playerId);
         if (!player) return;

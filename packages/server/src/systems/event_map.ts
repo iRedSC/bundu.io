@@ -46,20 +46,6 @@ export namespace GameEvent {
         object: GameObject;
     };
 
-    export const UpdateInventory = 11;
-    export type UpdateInventory = {
-        object: GameObject;
-    };
-
-    export const UpdateEquipment = 12;
-    export type UpdateEquipment = {
-        object: GameObject;
-        mainhand: number;
-        offhand: number;
-        helmet: number;
-        backpack: boolean;
-    };
-
     export const Hurt = 13;
     export type Hurt = {
         object: GameObject;
@@ -90,8 +76,6 @@ export type GameEventMap = {
     [GameEvent.Rotate]: GameEvent.Rotate;
     [GameEvent.NewObject]: GameEvent.NewObject;
     [GameEvent.DeleteObject]: GameEvent.DeleteObject;
-    [GameEvent.UpdateInventory]: GameEvent.UpdateInventory;
-    [GameEvent.UpdateEquipment]: GameEvent.UpdateEquipment;
     [GameEvent.Hurt]: GameEvent.Hurt;
     [GameEvent.Kill]: GameEvent.Kill;
     [GameEvent.PlaceStructure]: GameEvent.PlaceStructure;
