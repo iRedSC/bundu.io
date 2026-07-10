@@ -53,7 +53,6 @@ GAME_WS_URL=wss://game.example.com docker compose build frontend
 | `bun run client`  | Build + hot static server (dev)              |
 | `bun run build`   | Production client bundle → `public/site/`    |
 | `bun run start:frontend` | Static server without `--hot`         |
-| `bun run start:server`   | Same as `server`                      |
 | `bun run typecheck`      | `tsc --noEmit`                        |
 | `bun test`               | Unit tests                            |
 

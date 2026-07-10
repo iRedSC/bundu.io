@@ -15,7 +15,6 @@
         "build": "bun run ./build.ts",
         "start": "bun server.ts --hot",
         "start:frontend": "bun server.ts",
-        "start:server": "bun run packages/server/src/index.ts",
         "client": "bun run build && bun run start",
         "typecheck": "tsc --noEmit",
         "test": "bun test"
