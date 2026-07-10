@@ -24,9 +24,9 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.DebugDrawPolygon, drawPolygon);
     receiver.on(ServerPacket.DebugDrawRects, drawRects);
     receiver.on(ServerPacket.LoadObject, world.loadObject);
-    receiver.on(ServerPacket.AttackEvent, world.attack);
-    receiver.on(ServerPacket.BlockEvent, world.block);
-    receiver.on(ServerPacket.HitEvent, world.hurt);
+    receiver.on(ServerPacket.AttackEvent, world.combatFx.attack);
+    receiver.on(ServerPacket.BlockEvent, world.combatFx.block);
+    receiver.on(ServerPacket.HitEvent, world.combatFx.hurt);
     receiver.on(ServerPacket.SetPosition, world.moveObject);
     receiver.on(ServerPacket.SetRotation, world.rotateObject);
     receiver.on(ServerPacket.DeleteObjects, world.deleteObjects);

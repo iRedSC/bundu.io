@@ -3,15 +3,15 @@ import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { createGround } from "./ground";
 import { radians } from "@bundu/shared";
-import { ANIMATION, AnimationManagers } from "../animation/animations";
+import { AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { Point, Text } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
 import { serverTime } from "@client/globals";
-import GameObject from "./game_object";
 import ObjectContainer from "./object_container";
+import { CombatFx } from "./combat_fx";
 import { GameObjectData } from "@bundu/shared/object_types";
 import { Structure } from "./objects/structure";
 import { getStringId } from "@bundu/shared/id_map";
@@ -37,6 +37,7 @@ export class World {
     camera: Camera;
     user?: number;
     objects: ObjectContainer;
+    combatFx: CombatFx;
     renderer: LayeredRenderer;
     sky: Sky;
     private connectionRetryTimeout?: ReturnType<typeof setTimeout>;
@@ -47,6 +48,7 @@ export class World {
         this.sky = new Sky();
         this.renderer = new LayeredRenderer();
         this.objects = new ObjectContainer();
+        this.combatFx = new CombatFx(this.objects);
 
         this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
@@ -198,26 +200,6 @@ export class World {
             AnimationManagers.World.remove(object);
             this.renderer.delete(id);
         }
-    };
-
-    attack = ({ id }: ServerPacket.AttackEvent) => {
-        const object = this.objects.get(id);
-        if (!object) return;
-        object.trigger(ANIMATION.ATTACK, AnimationManagers.World, true);
-    };
-
-    block = ({ id, stop }: ServerPacket.BlockEvent) => {
-        const object = this.objects.get(id);
-        if (!object || !(object instanceof Player)) return;
-        if (stop) return (object.blocking = false);
-        object.blocking = true;
-        object.trigger(ANIMATION.BLOCK, AnimationManagers.World);
-    };
-
-    hurt = ({ id }: ServerPacket.HitEvent) => {
-        const object = this.objects.get(id);
-        if (!object) return;
-        object.trigger(ANIMATION.HURT, AnimationManagers.World, true);
     };
 
     updateEquipment = (packet: ServerPacket.UpdateEquipment) => {
