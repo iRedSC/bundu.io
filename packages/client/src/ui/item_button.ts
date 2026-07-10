@@ -168,12 +168,5 @@ export class ItemButton {
 
         // Destroy container
         this.button.destroy({ children: false });
-
-        // Clear references to help GC
-        (this as any).button = null;
-        (this as any).background = null;
-        (this as any).disableSprite = null;
-        (this as any).itemSprite = null;
-        (this as any)._item = null;
     }
 }

@@ -103,8 +103,9 @@ export class World {
         this.camera.follow(player.container);
     };
 
-    getUser() {
-        return this.objects.get(this.user ?? -1) as Player;
+    getUser(): Player | undefined {
+        const obj = this.objects.get(this.user ?? -1);
+        return obj instanceof Player ? obj : undefined;
     }
 
     loadObject = (packet: ServerPacket.LoadObject) => {
@@ -245,8 +246,8 @@ export class World {
     };
 
     chatMessage = ({ id, message }: ServerPacket.ChatMessage) => {
-        const player = this.objects.get(id) as any;
-        if (!player) return;
-        if (player.name) console.log(player.name.text, message);
+        const player = this.objects.get(id);
+        if (!(player instanceof Player)) return;
+        console.log(player.name.text, message);
     };
 }
