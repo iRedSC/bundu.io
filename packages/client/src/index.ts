@@ -20,16 +20,9 @@ import { createUI } from "./ui/ui";
 import { initAssets } from "./assets/load";
 import { AnimationManagers } from "./animation/animations";
 import { initDevtools } from "@pixi/devtools";
-import { MouseInputListener } from "./input/mouse";
-import {
-    encodeMoveDirection,
-    round,
-    degrees,
-    lookToward,
-    radians,
-} from "@bundu/shared";
-import { KeyboardInputListener } from "./input/keyboard";
+import { InputController } from "./input/controller";
 import { serverTime } from "./globals";
+import { Player } from "./world/objects/player";
 
 function isPacketArray(data: unknown): data is SerializedPacketArray {
     return Array.isArray(data) && typeof data[0] === "number";
@@ -114,44 +107,19 @@ async function main() {
     }
 
     // * Keyboard / mouse inputs
-    const mouse = new MouseInputListener();
-    let updateTick: number = 0;
-    mouse.onMouseMove = (mousePos: [number, number]) => {
-        const player = world.objects.get(world.user || -1);
-        if (player) {
-            let mouseToWorld = viewport.toLocal({
-                x: mousePos[0],
-                y: mousePos[1],
-            });
-            const rotation =
-                lookToward(player.position, mouseToWorld) - radians(90);
-            updateTick++;
-            if (Math.abs(player.rotation - rotation) > 0.1 || updateTick > 5) {
-                updateTick = 0;
-                sendPacket(ClientPacket.Rotation, {
-                    rotation: round(degrees(rotation)),
-                });
-            }
+    const input = new InputController(sendPacket, {
+        getLocalPlayer: () => {
+            const object = world.objects.get(world.user ?? -1);
+            return object instanceof Player ? object : undefined;
+        },
+        markUpdating: (player) => {
             world.objects.updating.add(player);
-            player.addRotation(rotation);
-        }
-    };
-
-    const keyboard = new KeyboardInputListener();
-    keyboard.onMoveInput = (move) => {
-        const chat = document.querySelector<HTMLInputElement>("#chat-input");
-        if (chat === document.activeElement) {
-            return;
-        }
-        sendPacket(ClientPacket.Movement, {
-            direction: encodeMoveDirection(move[0], move[1]),
-        });
-    };
-    keyboard.onSendChat = (message: string) => {
-        const trimmed = message.trim();
-        if (!trimmed) return;
-        sendPacket(ClientPacket.ChatMessage, { message: trimmed });
-    };
+        },
+        screenToWorld: (screenX, screenY) =>
+            viewport.toLocal({ x: screenX, y: screenY }),
+        isInGame: () =>
+            socket !== null && socket.readyState === WebSocket.OPEN,
+    });
 
     const resetSession = () => {
         world.clear();
@@ -162,7 +130,7 @@ async function main() {
         gui.recipeManager.recipes.clear();
         gui.craftingMenu.items = [];
         gui.craftingMenu.update();
-        keyboard.closeChat();
+        input.closeChat();
         serverTime.synced = false;
         serverTime.offset = 0;
         serverTime.targetOffset = 0;
@@ -177,26 +145,6 @@ async function main() {
     gui.craftingMenu.leftclick = (itemId) => {
         sendPacket(ClientPacket.CraftItem, { itemId });
     };
-
-    const isInGame = () =>
-        socket !== null && socket.readyState === WebSocket.OPEN;
-
-    document.addEventListener("pointerdown", (event) => {
-        if (!isInGame()) return;
-        if (event.button === 2) {
-            sendPacket(ClientPacket.Block, { stop: false });
-        }
-        if (event.button === 0)
-            sendPacket(ClientPacket.Attack, { stop: false });
-    });
-
-    document.addEventListener("pointerup", (event) => {
-        if (!isInGame()) return;
-        if (event.button === 2)
-            sendPacket(ClientPacket.Block, { stop: true });
-        if (event.button === 0)
-            sendPacket(ClientPacket.Attack, { stop: true });
-    });
 
     app.canvas.oncontextmenu = () => {};
     document.body.appendChild(app.canvas);
