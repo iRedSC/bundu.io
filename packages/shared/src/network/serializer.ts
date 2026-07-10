@@ -4,10 +4,6 @@ type PacketSchema = Record<number, PacketSchemaEntry>;
 /** Packet payloads are plain field bags — never `any`. */
 type PacketData = object;
 
-function fieldValue(data: object, field: string): unknown {
-    return (data as Record<string, unknown>)[field];
-}
-
 export class Serializer<
     S extends PacketSchema,
     DataMap extends Record<number, PacketData>,
@@ -26,10 +22,10 @@ export class Serializer<
     ): [I, ...unknown[]] {
         const schema = this.schemas.get(id);
         if (!schema) throw new Error(`Schema ${id} not found`);
-        return [id, ...schema.fields.map((f) => fieldValue(data, f))] as [
-            I,
-            ...unknown[],
-        ];
+        return [
+            id,
+            ...schema.fields.map((f) => (data as Record<string, unknown>)[f]),
+        ] as [I, ...unknown[]];
     }
 
     deserialize<I extends keyof S & number>(

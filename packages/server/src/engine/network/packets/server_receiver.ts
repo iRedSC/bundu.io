@@ -4,13 +4,13 @@ type SerializedPacket = [number, ...unknown[]];
 
 type Callback<I, DataMap> = (
     playerId: number,
-    packet: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
+    packet: I extends keyof DataMap ? DataMap[I] : never
 ) => void;
 type CallbackMap<I, DataMap> = Map<I, Callback<I, DataMap>>;
 
 export class ServerPacketReceiver<
     S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, any>
+    DataMap extends Record<number, object>
 > {
     callbacks: CallbackMap<keyof S & number, DataMap> = new Map();
     serializer: Serializer<S, DataMap>;
