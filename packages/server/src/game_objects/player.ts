@@ -41,9 +41,11 @@ export class Player extends GameObject {
         stats.data.set("temperature", { value: 100, min: 0, max: 200 });
         stats.data.set("water", { value: 100, min: 0, max: 100 });
 
+        // Sync health.max when modifiers change (including tick-driven expiry).
         attributes.data.addEventListener("health.max", (value) => {
             health.data.max = value;
         });
+        health.data.max = attributes.data.get("health.max");
 
         this.add(new Physics(physics))
             .add(health)
