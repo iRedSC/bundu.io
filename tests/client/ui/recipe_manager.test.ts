@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach } from "bun:test";
-import { RecipeManager } from "../../../../packages/client/src/ui/crafting_menu";
+import { RecipeManager } from "../../../packages/client/src/ui/crafting_menu";
 
 describe("RecipeManager", () => {
   let manager: RecipeManager;

@@ -2,7 +2,7 @@ import { describe, expect, spyOn, test } from "bun:test";
 import {
   PositionStates,
   RotationStates,
-} from "../../../../packages/client/src/world/states";
+} from "../../../packages/client/src/world/states";
 
 describe("PositionStates", () => {
   test("set invokes callback and interpolate progresses toward target", () => {

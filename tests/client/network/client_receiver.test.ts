@@ -3,7 +3,7 @@ import { Serializer } from "@bundu/shared";
 import {
   ClientPacketReceiver,
   type SerializedPacketArray,
-} from "../../../../packages/client/src/network/client_receiver";
+} from "../../../packages/client/src/network/client_receiver";
 
 const TestSchema = {
   1: {

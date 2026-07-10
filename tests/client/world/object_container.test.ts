@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach } from "bun:test";
-import ObjectContainer from "../../../../packages/client/src/world/object_container";
-import type GameObject from "../../../../packages/client/src/world/game_object";
+import ObjectContainer from "../../../packages/client/src/world/object_container";
+import type GameObject from "../../../packages/client/src/world/game_object";
 
 function stub(
   id: number,
