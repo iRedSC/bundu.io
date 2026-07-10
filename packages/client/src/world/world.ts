@@ -180,6 +180,7 @@ export class World {
         for (const id of objects) {
             const object = this.objects.get(id);
             this.objects.delete(id);
+            object?.debug.destroy();
             AnimationManagers.World.remove(object);
             this.renderer.delete(id);
         }
