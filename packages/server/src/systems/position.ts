@@ -31,7 +31,8 @@ export const getSizedBounds = (
 ];
 
 /**
- * Position system inserts objects into the quadtree when they move.
+ * Position owns Move intent (apply delta) and the single spatial/net write.
+ * Collision resolves after Move, then emits Collide once for that write.
  */
 export class PositionSystem extends System<GameEventMap> {
     constructor(world: World) {
@@ -39,7 +40,7 @@ export class PositionSystem extends System<GameEventMap> {
 
         this.listen(GameEvent.Rotate, this.rotate, [Physics]);
         this.listen(GameEvent.Move, this.move, [Physics]);
-        this.listen(GameEvent.Collide, this.insert, [Physics]);
+        this.listen(GameEvent.Collide, this.publish, [Physics]);
     }
 
     override enter(object: GameObject) {
@@ -53,7 +54,8 @@ export class PositionSystem extends System<GameEventMap> {
         quadtree.delete(object.id);
     }
 
-    insert({ object }: GameEvent.Collide) {
+    /** Final quadtree + network write after move intent and collision settle. */
+    publish({ object }: GameEvent.Collide) {
         const physics = Physics.get(object);
         if (!physics) return;
 
@@ -74,7 +76,7 @@ export class PositionSystem extends System<GameEventMap> {
         physics.position.y = round(
             clamp(physics.position.y - y, 0, WORLD_BOUNDS)
         );
-        this.insert({ object });
+        // CollisionSystem listens to Move next and emits Collide once when settled.
     }
 
     rotate({ object, rotation }: GameEvent.Rotate) {
