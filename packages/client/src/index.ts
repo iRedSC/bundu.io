@@ -33,7 +33,8 @@ declare namespace globalThis {
     var __PIXI_APP__: Application;
 }
 
-const GAME_WS_URL = "ws://localhost:7777";
+const GAME_WS_URL =
+    process.env.GAME_WS_URL ?? "ws://localhost:7777";
 
 const app = new Application<Renderer<HTMLCanvasElement>>();
 globalThis.__PIXI_APP__ = app;

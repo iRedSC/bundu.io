@@ -1,0 +1,30 @@
+# dependencies
+node_modules
+
+# git / IDE
+.git
+.github
+.cursor
+.idea
+.DS_Store
+
+# build output (produced in image)
+public/site
+dist
+out
+coverage
+
+# docs / audits not needed in images
+*.md
+rework-audit.html
+AGENTS.md
+
+# env / caches
+.env
+.env.*
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# tests (not needed in runtime images)
+tests

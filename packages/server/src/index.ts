@@ -229,5 +229,6 @@ async function startTicker() {
     }
 }
 
-controller.start(7777);
+const WS_PORT = Number(process.env.WS_PORT ?? 7777);
+controller.start(WS_PORT);
 startTicker();
