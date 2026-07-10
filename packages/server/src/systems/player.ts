@@ -14,7 +14,6 @@ import {
 import { emitVitals } from "../network/vitals.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "./player_debug_commands.js";
-import { STRUCTURE_COLLISION_RADIUS } from "./structure.js";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
