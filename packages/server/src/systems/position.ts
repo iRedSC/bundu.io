@@ -3,8 +3,8 @@ import {
     quantizeWorld,
     worldToDeci,
     worldToTile,
-    type BasicPoint,
-} from "@bundu/shared";
+} from "@bundu/shared/tiles";
+import type { BasicPoint } from "@bundu/shared";
 import { Physics, TileEntity } from "../components/base.js";
 import { GameObject, System, type World } from "../engine";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
@@ -73,7 +73,7 @@ export class PositionSystem extends System<GameEventMap> {
 
         this.world.context.quadtree.insert(object.id, physics.position);
 
-        this.world.context.worldPacketManager.add(ServerPacket.SetPosition, {
+        this.world.context.worldPacketManager.set(ServerPacket.SetPosition, {
             id: object.id,
             x: worldToDeci(physics.position.x),
             y: worldToDeci(physics.position.y),
@@ -97,7 +97,7 @@ export class PositionSystem extends System<GameEventMap> {
         const physics = object.get(Physics);
         physics.rotation = rotation;
 
-        this.world.context.worldPacketManager.add(ServerPacket.SetRotation, {
+        this.world.context.worldPacketManager.set(ServerPacket.SetRotation, {
             id: object.id,
             rotation,
         });

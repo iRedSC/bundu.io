@@ -2,8 +2,8 @@ import { ServerPacketReceiver, World } from "../engine";
 import { loadConfigs } from "../configs/loaders/load";
 import { PlayerSystem } from "../systems/player";
 import {
-    Schema,
     type ClientPacketMap,
+    ClientSchema,
 } from "@bundu/shared/packet_definitions";
 import { setupPacketReceiving } from "../network/receiver";
 import { createServerContext } from "../network/managers";
@@ -19,7 +19,7 @@ import { AttributesSystem } from "../systems/attributes";
 export type ServerWorld = {
     world: World;
     playerSystem: PlayerSystem;
-    receiver: ServerPacketReceiver<typeof Schema.Client, ClientPacketMap>;
+    receiver: ServerPacketReceiver;
 };
 
 export function createWorld(): ServerWorld {
@@ -28,9 +28,7 @@ export function createWorld(): ServerWorld {
     loadConfigs();
 
     const playerSystem = new PlayerSystem(world);
-    const serializer = new Serializer<typeof Schema.Client, ClientPacketMap>(
-        Schema.Client
-    );
+    const serializer = new Serializer<ClientPacketMap>(ClientSchema);
     const receiver = new ServerPacketReceiver(serializer);
     setupPacketReceiving(receiver, playerSystem);
 

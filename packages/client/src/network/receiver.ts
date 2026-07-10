@@ -1,5 +1,5 @@
 import {
-    Schema,
+    ServerSchema,
     ServerPacket,
     type ServerPacketMap,
 } from "@bundu/shared/packet_definitions";
@@ -8,16 +8,12 @@ import { Serializer } from "@bundu/shared";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
 
-const serverSerializer = new Serializer<typeof Schema.Server, ServerPacketMap>(
-    Schema.Server
+export const receiver = new ClientPacketReceiver(
+    new Serializer<ServerPacketMap>(ServerSchema)
 );
-export const receiver = new ClientPacketReceiver<
-    typeof Schema.Server,
-    ServerPacketMap
->(serverSerializer);
 
 export function setupPacketReceiving(
-    receiver: ClientPacketReceiver<typeof Schema.Server, ServerPacketMap>,
+    receiver: ClientPacketReceiver,
     world: World
 ) {
     receiver.on(ServerPacket.LoadObject, world.loadObject);
@@ -35,7 +31,7 @@ export function setupPacketReceiving(
 }
 
 export function setupGUIPacketReceiving(
-    receiver: ClientPacketReceiver<typeof Schema.Server, ServerPacketMap>,
+    receiver: ClientPacketReceiver,
     ui: UI
 ) {
     receiver.on(ServerPacket.UpdateVitals, ({ health, hunger, heat }) => {

@@ -1,10 +1,9 @@
-import type { Schema, ClientPacketMap } from "@bundu/shared/packet_definitions";
 import { decodeFromBlob } from "../network/decode";
 import type { SerializedPacketArray } from "../network/client_receiver";
 import { serializer } from "../network/serializer";
 import { Socket } from "../network/socket";
 
-export type GameSocket = Socket<typeof Schema.Client, ClientPacketMap>;
+export type GameSocket = Socket;
 
 function isPacketArray(data: unknown): data is SerializedPacketArray {
     return Array.isArray(data) && typeof data[0] === "number";

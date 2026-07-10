@@ -1,24 +1,19 @@
 import { encode } from "@msgpack/msgpack";
 import type { Serializer } from "@bundu/shared";
+import type { ClientPacketMap } from "@bundu/shared/packet_definitions";
 
-export class Socket<
-    S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, object>
-> extends WebSocket {
-    serializer: Serializer<S, DataMap>;
-
+export class Socket extends WebSocket {
     constructor(
         url: string | URL,
-        serializer: Serializer<S, DataMap>,
+        private serializer: Serializer<ClientPacketMap>,
         protocols?: string | string[]
     ) {
         super(url, protocols);
-        this.serializer = serializer;
     }
 
-    sendPacket<I extends keyof S & number>(
+    sendPacket<I extends keyof ClientPacketMap & number>(
         id: I,
-        data: I extends keyof DataMap ? DataMap[I] : never
+        data: ClientPacketMap[I]
     ): void {
         super.send(encode(this.serializer.serialize(id, data)));
     }

@@ -1,5 +1,9 @@
-import { Schema, type ServerPacketMap } from "@bundu/shared/packet_definitions";
+import {
+    ServerSchema,
+    type ServerPacketMap,
+} from "@bundu/shared/packet_definitions";
 import { WORLD_BOUNDS } from "@bundu/shared/tiles";
+import { Serializer } from "@bundu/shared";
 import {
     WorldPacketManager,
     PlayerPacketManager,
@@ -14,15 +18,9 @@ export type { ServerContext };
 
 /** Build a fresh context for one World (no process-wide singletons). */
 export function createServerContext(): ServerContext {
-    const worldPacketManager = new WorldPacketManager<
-        typeof Schema.Server,
-        ServerPacketMap
-    >(Schema.Server);
-
-    const playerPacketManager = new PlayerPacketManager<
-        typeof Schema.Server,
-        ServerPacketMap
-    >(Schema.Server);
+    const serializer = new Serializer<ServerPacketMap>(ServerSchema);
+    const worldPacketManager = new WorldPacketManager(serializer);
+    const playerPacketManager = new PlayerPacketManager(serializer);
 
     playerPacketManager.visibleObjectsCallback = (player) => {
         return player.get(VisibleObjects).visible.values();

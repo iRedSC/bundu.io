@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach } from "bun:test";
+import { describe, expect, test, beforeEach, mock } from "bun:test";
 import { Serializer } from "@bundu/shared";
 import {
   ClientPacketReceiver,
@@ -6,96 +6,90 @@ import {
 } from "../../../packages/client/src/network/client_receiver";
 
 const TestSchema = {
-  1: {
-    fields: ["a", "b"] as const,
-  },
-  2: {
-    fields: ["value"] as const,
-  },
-  3: {
-    fields: ["n"] as const,
-  },
+  1: { fields: ["a", "b"] as const },
+  2: { fields: [] as const },
+  3: { fields: ["x", "y", "z"] as const },
 } as const;
 
 type TestDataMap = {
   1: { a: number; b: string };
-  2: { value: number };
-  3: { n: number };
+  2: {};
+  3: { x: number; y: number; z: number };
 };
 
 describe("ClientPacketReceiver", () => {
-  let serializer: Serializer<typeof TestSchema, TestDataMap>;
-  let receiver: ClientPacketReceiver<typeof TestSchema, TestDataMap>;
+  let serializer: Serializer<TestDataMap>;
+  let receiver: ClientPacketReceiver<TestDataMap>;
 
   beforeEach(() => {
-    serializer = new Serializer(TestSchema) as Serializer<
-      typeof TestSchema,
-      TestDataMap
-    >;
-    receiver = new ClientPacketReceiver(serializer);
+    serializer = new Serializer<TestDataMap>(TestSchema);
+    receiver = new ClientPacketReceiver<TestDataMap>(serializer);
   });
 
-  test("process dispatches registered callbacks with deserialized data and batch timestamp", () => {
-    const seen: Array<{ packet: TestDataMap[1] | TestDataMap[2]; ts: number }> =
-      [];
+  test("dispatches registered callbacks with deserialized data and batch timestamp", () => {
+    const on1 = mock((_packet: TestDataMap[1], _timestamp: number) => {});
+    const on3 = mock((_packet: TestDataMap[3], _timestamp: number) => {});
 
-    receiver.on(1, (packet, timestamp) => {
-      seen.push({ packet, ts: timestamp });
-    });
-    receiver.on(2, (packet, timestamp) => {
-      seen.push({ packet, ts: timestamp });
-    });
+    receiver.on(1, on1);
+    receiver.on(3, on3);
 
-    const packets: SerializedPacketArray = [
-      1_500,
+    const batch: SerializedPacketArray = [
+      1234,
       [1, 42, "hi"],
-      [2, 99],
+      [3, 1, 2, 3],
     ];
-    receiver.process(packets);
+    receiver.process(batch);
 
-    expect(seen).toHaveLength(2);
-    expect(seen[0]?.ts).toBe(1_500);
-    expect(seen[0]?.packet).toMatchObject({ a: 42, b: "hi" });
-    expect(seen[1]?.ts).toBe(1_500);
-    expect(seen[1]?.packet).toMatchObject({ value: 99 });
+    expect(on1).toHaveBeenCalledTimes(1);
+    expect(on1).toHaveBeenCalledWith({ a: 42, b: "hi" }, 1234);
+    expect(on1.mock.calls[0]![0]).not.toHaveProperty("id");
+
+    expect(on3).toHaveBeenCalledTimes(1);
+    expect(on3).toHaveBeenCalledWith({ x: 1, y: 2, z: 3 }, 1234);
+    expect(on3.mock.calls[0]![0]).not.toHaveProperty("id");
   });
 
-  test("continues processing remaining packets when one deserialize fails", () => {
-    const seen: number[] = [];
-    const error = console.error;
-    console.error = () => {};
+  test("empty-fields packet dispatches {}", () => {
+    const on2 = mock((_packet: TestDataMap[2], _timestamp: number) => {});
+    receiver.on(2, on2);
 
-    try {
-      receiver.on(1, (packet) => {
-        seen.push(packet.a);
-      });
-      receiver.on(2, (packet) => {
-        seen.push(packet.value);
-      });
+    receiver.process([999, [2]]);
 
-      // id 999 is unknown to the schema → deserialize throws and is dropped
-      const packets: SerializedPacketArray = [
+    expect(on2).toHaveBeenCalledTimes(1);
+    expect(on2).toHaveBeenCalledWith({}, 999);
+    expect(on2.mock.calls[0]![0]).not.toHaveProperty("id");
+  });
+
+  test("continues after a bad/unknown packet without throwing", () => {
+    const on1 = mock((_packet: TestDataMap[1], _timestamp: number) => {});
+    receiver.on(1, on1);
+
+    expect(() =>
+      receiver.process([
         100,
-        [1, 10, "ok"],
-        [999, "bad"],
-        [2, 20],
-      ];
-      expect(() => receiver.process(packets)).not.toThrow();
-      expect(seen).toEqual([10, 20]);
-    } finally {
-      console.error = error;
-    }
+        [99, "bad"],
+        [1, 1],
+        [1, 5, "ok"],
+      ]),
+    ).not.toThrow();
+
+    expect(on1).toHaveBeenCalledTimes(1);
+    expect(on1).toHaveBeenCalledWith({ a: 5, b: "ok" }, 100);
   });
 
-  test("silently skips packets with no registered callback", () => {
-    const seen: unknown[] = [];
-    receiver.on(1, (packet) => {
-      seen.push(packet);
-    });
+  test("skips packets with no registered callback", () => {
+    const on1 = mock((_packet: TestDataMap[1], _timestamp: number) => {});
+    receiver.on(1, on1);
 
-    const packets: SerializedPacketArray = [50, [2, 7], [1, 1, "x"]];
-    expect(() => receiver.process(packets)).not.toThrow();
-    expect(seen).toHaveLength(1);
-    expect(seen[0]).toMatchObject({ a: 1, b: "x" });
+    expect(() =>
+      receiver.process([
+        50,
+        [3, 1, 2, 3],
+        [1, 9, "yes"],
+      ]),
+    ).not.toThrow();
+
+    expect(on1).toHaveBeenCalledTimes(1);
+    expect(on1).toHaveBeenCalledWith({ a: 9, b: "yes" }, 50);
   });
 });

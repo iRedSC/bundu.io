@@ -1,16 +1,10 @@
-import { describe, expect, test, beforeEach } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { Serializer } from "@bundu/shared";
 
 const TestSchema = {
-  1: {
-    fields: ["a", "b"] as const,
-  },
-  2: {
-    fields: [] as const,
-  },
-  3: {
-    fields: ["x", "y", "z"] as const,
-  },
+  1: { fields: ["a", "b"] as const },
+  2: { fields: [] as const },
+  3: { fields: ["x", "y", "z"] as const },
 } as const;
 
 type TestDataMap = {
@@ -20,89 +14,101 @@ type TestDataMap = {
 };
 
 describe("Serializer", () => {
-  let serializer: Serializer<typeof TestSchema, TestDataMap>;
+  const serializer = new Serializer<TestDataMap>(TestSchema);
 
-  beforeEach(() => {
-    serializer = new Serializer(TestSchema) as Serializer<
-      typeof TestSchema,
-      TestDataMap
-    >;
+  describe("has", () => {
+    test("returns true for known ids", () => {
+      expect(serializer.has(1)).toBe(true);
+      expect(serializer.has(2)).toBe(true);
+      expect(serializer.has(3)).toBe(true);
+    });
+
+    test("returns false for unknown ids", () => {
+      expect(serializer.has(0)).toBe(false);
+      expect(serializer.has(99)).toBe(false);
+    });
   });
 
-  test("serialize packs id then fields in schema order", () => {
-    const packet = serializer.serialize(1, { a: 42, b: "hi" });
-    expect(packet).toEqual([1, 42, "hi"]);
-  });
-
-  test("serialize with empty fields yields [id] only", () => {
-    const packet = serializer.serialize(2, {});
-    expect(packet).toEqual([2]);
-  });
-
-  test("serialize ignores extra keys not listed in fields", () => {
-    const packet = serializer.serialize(1, {
-      a: 1,
-      b: "x",
-      extra: true,
-    } as TestDataMap[1] & { extra: boolean });
-    expect(packet).toEqual([1, 1, "x"]);
-    expect(packet).toHaveLength(3);
-  });
-
-  test("serialize field order matches fields array", () => {
-    const packet = serializer.serialize(3, { x: 10, y: 20, z: 30 });
-    expect(packet).toEqual([3, 10, 20, 30]);
-  });
-
-  test("deserialize reconstructs fields and attaches id", () => {
-    const result = serializer.deserialize([1, 7, "ok"]);
-    expect(result).toEqual({ id: 1, a: 7, b: "ok" });
-    expect(result.id).toBe(1);
-  });
-
-  test("deserialize empty fields packet attaches id", () => {
-    const result = serializer.deserialize([2]);
-    expect(result).toEqual({ id: 2 });
-    expect(result.id).toBe(2);
-  });
-
-  test("round-trip serialize then deserialize recovers fields and id", () => {
-    const data = { a: 99, b: "round" };
-    const packet = serializer.serialize(1, data);
-    const restored = serializer.deserialize(packet);
-    expect(restored).toEqual({ id: 1, a: 99, b: "round" });
-  });
-
-  test("round-trip empty fields packet", () => {
-    const packet = serializer.serialize(2, {});
-    const restored = serializer.deserialize(packet);
-    expect(restored).toEqual({ id: 2 });
-  });
-
-  test("serialize unknown schema id throws mentioning schema/not found", () => {
-    expect(() =>
-      serializer.serialize(999 as unknown as 1, { a: 1, b: "x" }),
-    ).toThrow(/schema|not found/i);
-  });
-
-  test("deserialize unknown schema id throws", () => {
-    expect(() =>
-      serializer.deserialize([999 as unknown as 1, 1, "x"]),
-    ).toThrow(/schema|not found/i);
-  });
-
-  test("deserialize field count mismatch throws", () => {
-    expect(() =>
-      serializer.deserialize([1, 7] as unknown as [1, ...unknown[]]),
-    ).toThrow(/mismatch/i);
-  });
-
-  test("deserialize too many fields throws", () => {
-    expect(() =>
-      serializer.deserialize([1, 7, "ok", "extra"] as unknown as [
+  describe("serialize", () => {
+    test("packs fields in schema order", () => {
+      expect(serializer.serialize(1, { a: 42, b: "hi" })).toEqual([
         1,
-        ...unknown[],
-      ]),
-    ).toThrow(/mismatch/i);
+        42,
+        "hi",
+      ]);
+      expect(serializer.serialize(3, { x: 1, y: 2, z: 3 })).toEqual([
+        3, 1, 2, 3,
+      ]);
+    });
+
+    test("empty fields yields [id] only", () => {
+      expect(serializer.serialize(2, {})).toEqual([2]);
+    });
+
+    test("ignores extra keys not in fields", () => {
+      expect(
+        serializer.serialize(1, {
+          a: 1,
+          b: "x",
+          extra: true,
+        } as { a: number; b: string }),
+      ).toEqual([1, 1, "x"]);
+    });
+
+    test("throws for unknown id", () => {
+      expect(() =>
+        serializer.serialize(99 as keyof TestDataMap & number, {} as never),
+      ).toThrow();
+    });
+  });
+
+  describe("deserialize", () => {
+    test("reconstructs fields without attaching packet-type id", () => {
+      const result = serializer.deserialize([1, 10, "ok"]);
+      expect(result).toEqual({ a: 10, b: "ok" });
+      expect(result).not.toHaveProperty("id");
+    });
+
+    test("empty-fields packet yields {}", () => {
+      expect(serializer.deserialize([2])).toEqual({});
+    });
+
+    test("throws for unknown id", () => {
+      expect(() =>
+        serializer.deserialize([99, "x"] as unknown as readonly [
+          keyof TestDataMap & number,
+          ...unknown[],
+        ]),
+      ).toThrow();
+    });
+
+    test("throws when too few fields", () => {
+      expect(() => serializer.deserialize([1, 10])).toThrow();
+      expect(() => serializer.deserialize([3, 1, 2])).toThrow();
+    });
+
+    test("throws when too many fields", () => {
+      expect(() => serializer.deserialize([1, 10, "ok", "extra"])).toThrow();
+      expect(() => serializer.deserialize([2, "extra"])).toThrow();
+    });
+  });
+
+  describe("round-trip", () => {
+    test("serialize then deserialize restores payload", () => {
+      const data1 = { a: 7, b: "round" };
+      expect(serializer.deserialize(serializer.serialize(1, data1))).toEqual(
+        data1,
+      );
+
+      const data2 = {};
+      expect(serializer.deserialize(serializer.serialize(2, data2))).toEqual(
+        data2,
+      );
+
+      const data3 = { x: 4, y: 5, z: 6 };
+      expect(serializer.deserialize(serializer.serialize(3, data3))).toEqual(
+        data3,
+      );
+    });
   });
 });
