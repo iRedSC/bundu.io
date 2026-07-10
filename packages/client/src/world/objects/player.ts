@@ -2,7 +2,7 @@ import { radians, lerp } from "@bundu/shared/transforms";
 import { spriteConfigs } from "../../configs/sprite_configs";
 import { SpriteFactory, ContaineredSprite } from "../../assets/sprite_factory";
 import { random } from "@bundu/shared";
-import { ANIMATION, cubicBezier, hurt } from "../../animation/animations";
+import { ANIMATION, easeIn, easeOut, hurt } from "../../animation/animations";
 import { Animation, AnimationManager } from "../../animation/runtime";
 import { Container, Point, Text } from "pixi.js";
 import GameObject from "../game_object";
@@ -309,8 +309,6 @@ namespace PlayerAnimations {
     }
 
     export function attack(target: Player) {
-        const backwardTiming = cubicBezier(0.78, -0.01, 0.52, 0.99);
-        const forwardTiming = cubicBezier(0, 0.74, 0.52, 0.99);
         let targetHand: number;
         const body = target.sprite.body.container;
         const leftHand = target.sprite.leftHand.container;
@@ -331,7 +329,7 @@ namespace PlayerAnimations {
             animation.next(125);
         };
         animation.keyframes[1] = (animation) => {
-            const t = forwardTiming(animation.t);
+            const t = easeOut(animation.t);
             if (targetHand) {
                 leftHand.rotation = lerp(radians(0), radians(-100), t);
                 rightHand.rotation = lerp(radians(0), radians(-10), t);
@@ -346,7 +344,7 @@ namespace PlayerAnimations {
             }
         };
         animation.keyframes[2] = (animation) => {
-            const t = backwardTiming(animation.t);
+            const t = easeIn(animation.t);
             if (targetHand) {
                 leftHand.rotation = lerp(radians(-100), radians(0), t);
                 rightHand.rotation = lerp(radians(-10), radians(0), t);

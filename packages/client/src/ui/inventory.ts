@@ -10,8 +10,6 @@ import {
 } from "@bundu/shared";
 import { TEXT_STYLE } from "@client/assets/text";
 import { Grid } from "./grid";
-import { AnimationManagers } from "../animation/animations";
-import { Animation } from "../animation/runtime";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 
@@ -22,6 +20,14 @@ import type { ServerPacket } from "@bundu/shared/packet_definitions";
 
 type ItemStack = [id: number, amount: number];
 
+const INVENTORY_COLORS = {
+    EMPTY: 0x222910,
+    DEFAULT: 0x4a5235,
+    HOVER: 0x818f5d,
+    DOWN: 0x222910,
+    RIGHT_DOWN: 0xb54731,
+} as const;
+
 /**
  * The InventoryButton is what makes up the hotbar.
  * It can be clicked to select the item in it's slot,
@@ -29,15 +35,12 @@ type ItemStack = [id: number, amount: number];
  */
 export class InventoryButton extends ItemButton {
     amount: Text;
+    private restY: number;
+
     constructor() {
         super();
 
-        AnimationManagers.UI.set(
-            this,
-            0,
-            inventoryButtonAnimation(this).run(),
-            true
-        );
+        this.restY = this.background.position.y;
         this.amount = new Text({ text: "", style: TEXT_STYLE });
         this.amount.style.align = "right";
         this.amount.position.set(
@@ -55,84 +58,62 @@ export class InventoryButton extends ItemButton {
         this.amount.text = "";
         this.item = null;
     }
-}
 
-const INVENTORY_COLORS = {
-    EMPTY: 0x222910,
-    DEFAULT: 0x4a5235,
-    HOVER: 0x818f5d,
-    DOWN: 0x222910,
-    RIGHT_DOWN: 0xb54731,
-};
-
-function inventoryButtonAnimation(button: ItemButton) {
-    const animation = new Animation();
-    let y: number;
-
-    animation.keyframes[0] = (animation) => {
-        if (animation.firstFrameTrigger) {
-            y = button.button.position.y;
-        }
-        if (button.rightDown && button.item) {
-            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
-            button.background.tint = colorLerp(
-                Number(button.background.tint),
+    /** Tween hover/press/empty visuals from interaction state. */
+    tick() {
+        const y = this.restY;
+        if (this.rightDown && this.item) {
+            this.button.scale.set(lerp(this.button.scale.x, 0.8, 0.2));
+            this.background.tint = colorLerp(
+                Number(this.background.tint),
                 INVENTORY_COLORS.RIGHT_DOWN,
                 0.2
             );
-            button.background.position.y = lerp(
-                button.background.position.y,
+            this.background.position.y = lerp(
+                this.background.position.y,
                 y - 10,
                 0.2
             );
-            button.itemSprite.position.y = lerp(
-                button.itemSprite.position.y,
+            this.itemSprite.position.y = lerp(
+                this.itemSprite.position.y,
                 y - 10,
                 0.2
             );
-            button.background.rotation = lerp(
-                button.background.rotation,
+            this.background.rotation = lerp(
+                this.background.rotation,
                 radians(45),
                 0.2
             );
             return;
         }
 
-        button.background.rotation = lerp(
-            button.background.rotation,
+        this.background.rotation = lerp(
+            this.background.rotation,
             radians(0),
             0.2
         );
-        button.background.position.y = lerp(
-            button.background.position.y,
-            y,
-            0.2
-        );
-        button.itemSprite.position.y = lerp(
-            button.itemSprite.position.y,
-            y,
-            0.2
-        );
+        this.background.position.y = lerp(this.background.position.y, y, 0.2);
+        this.itemSprite.position.y = lerp(this.itemSprite.position.y, y, 0.2);
 
-        if (button.down && button.item) {
-            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
-            button.background.tint = colorLerp(
-                Number(button.background.tint),
+        if (this.down && this.item) {
+            this.button.scale.set(lerp(this.button.scale.x, 0.8, 0.2));
+            this.background.tint = colorLerp(
+                Number(this.background.tint),
                 INVENTORY_COLORS.DOWN,
                 0.2
             );
             return;
         }
-        if (button.hovering) {
-            button.background.rotation = rotationLerp(
-                button.background.rotation,
+        if (this.hovering) {
+            this.background.rotation = rotationLerp(
+                this.background.rotation,
                 Math.sin(Date.now() / 500) * 0.3,
                 0.2
             );
-            button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));
-            if (button.item)
-                button.background.tint = colorLerp(
-                    Number(button.background.tint),
+            this.button.scale.set(lerp(this.button.scale.x, 1.1, 0.1));
+            if (this.item)
+                this.background.tint = colorLerp(
+                    Number(this.background.tint),
                     INVENTORY_COLORS.HOVER,
                     0.1
                 );
@@ -140,23 +121,21 @@ function inventoryButtonAnimation(button: ItemButton) {
             return;
         }
 
-        button.button.scale.set(lerp(button.button.scale.x, 1, 0.1));
-        if (button.item) {
-            button.background.tint = colorLerp(
-                Number(button.background.tint),
+        this.button.scale.set(lerp(this.button.scale.x, 1, 0.1));
+        if (this.item) {
+            this.background.tint = colorLerp(
+                Number(this.background.tint),
                 INVENTORY_COLORS.DEFAULT,
                 0.1
             );
             return;
         }
-        button.background.tint = colorLerp(
-            Number(button.background.tint),
+        this.background.tint = colorLerp(
+            Number(this.background.tint),
             INVENTORY_COLORS.EMPTY,
             0.1
         );
-    };
-
-    return animation;
+    }
 }
 
 /**
@@ -263,6 +242,12 @@ export class Inventory {
             button.item = itemId;
         }
         this.resize();
+    }
+
+    tick() {
+        for (const button of this.buttons) {
+            button.tick();
+        }
     }
 
     resize() {

@@ -30,6 +30,14 @@ export class DebugWorldObject {
             container.renderable = value;
         }
     }
+
+    destroy() {
+        for (const container of this.containers.values()) {
+            debugContainer.removeChild(container);
+            container.destroy();
+        }
+        this.containers.clear();
+    }
 }
 
 type BasicPoint = { x: number; y: number } | [number, number];
