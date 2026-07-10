@@ -1,20 +1,4 @@
 /**
- * @returns random hex color
- */
-function hexColor(): number {
-    const letters: string = "0123456789ABCDEF";
-    let color = 0x0;
-
-    for (let i = 0; i < 6; i++) {
-        color =
-            (color << 4) |
-            letters.indexOf(letters[Math.floor(Math.random() * 16)] as string);
-    }
-
-    return color;
-}
-
-/**
  *
  * @param min
  * @param max
@@ -36,7 +20,6 @@ export function choice<T>(arr: T[]): T {
 }
 
 export const random = {
-    hexColor,
     integer,
     choice,
 };

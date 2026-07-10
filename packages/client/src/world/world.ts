@@ -33,7 +33,6 @@ export class World {
     objects: ObjectContainer;
     renderer: LayeredRenderer;
     sky: Sky;
-    private connectionRetryTimeout?: ReturnType<typeof setTimeout>;
 
     constructor(viewport: Viewport) {
         this.viewport = viewport;
@@ -48,10 +47,6 @@ export class World {
     }
 
     clear() {
-        if (this.connectionRetryTimeout !== undefined) {
-            clearTimeout(this.connectionRetryTimeout);
-            this.connectionRetryTimeout = undefined;
-        }
         this.camera.follow(null);
 
         const ids = Array.from(this.objects.all(), (object) => object.id);
@@ -68,6 +63,11 @@ export class World {
         this.camera.update();
     }
 
+    private attachLocalPlayer(player: GameObject) {
+        console.info(`Found user (id ${player.id}), loading..`);
+        this.camera.follow(player.container);
+    }
+
     clientConnectionInfo = (packet?: ServerPacket.ClientConnectionInfo) => {
         if (packet) {
             this.user = packet.playerId;
@@ -77,24 +77,11 @@ export class World {
         const player = this.objects.get(this.user);
         if (!player) {
             console.warn(
-                `No player with id ${this.user} found in world, retrying..`
+                `No player with id ${this.user} found in world, waiting for load..`
             );
-            if (this.connectionRetryTimeout !== undefined) {
-                clearTimeout(this.connectionRetryTimeout);
-            }
-            this.connectionRetryTimeout = setTimeout(() => {
-                this.connectionRetryTimeout = undefined;
-                if (!this.user) return;
-                this.clientConnectionInfo();
-            }, 500);
             return;
         }
-        if (this.connectionRetryTimeout !== undefined) {
-            clearTimeout(this.connectionRetryTimeout);
-            this.connectionRetryTimeout = undefined;
-        }
-        console.info(`Found user (id ${this.user}), loading..`);
-        this.camera.follow(player.container);
+        this.attachLocalPlayer(player);
     };
 
     getUser(): Player | undefined {
@@ -141,6 +128,10 @@ export class World {
         player.setEquipment({ mainhand, offhand, helmet, backpack });
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
+
+        if (id === this.user) {
+            this.attachLocalPlayer(player);
+        }
     };
 
     newStructure = (packet: LoadResource) => {
@@ -180,6 +171,7 @@ export class World {
         for (const id of objects) {
             const object = this.objects.get(id);
             this.objects.delete(id);
+            object?.debug.destroy();
             AnimationManagers.World.remove(object);
             this.renderer.delete(id);
         }

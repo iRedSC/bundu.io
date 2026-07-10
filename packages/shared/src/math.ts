@@ -6,7 +6,3 @@ export function round(num: number, digits: number = 0) {
 export function percentOf(percent: number, of: number) {
     return (percent / 100) * of;
 }
-
-export function getPercent(x: number, of: number) {
-    return (x / of) * 100;
-}

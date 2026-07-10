@@ -1,8 +1,8 @@
-import { GameObject, System, type World } from "../engine";
+import { System, type World } from "../engine";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { Circle, Vector } from "sat";
 import { Physics } from "../components/base.js";
-import { Resource } from "../game_objects/resource.js";
+import { Structure } from "../game_objects/structure.js";
 
 export const STRUCTURE_COLLISION_RADIUS = 10;
 
@@ -22,7 +22,7 @@ export class StructureSystem extends System<GameEventMap> {
             solid: true,
             speed: 0,
         };
-        const structure = new Resource(struct_physics, {
+        const structure = new Structure(struct_physics, {
             id: structureId,
             variant: 0,
         });

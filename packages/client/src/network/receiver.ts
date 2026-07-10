@@ -7,7 +7,6 @@ import { ClientPacketReceiver } from "./client_receiver";
 import { Serializer } from "@bundu/shared";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
-import { drawPolygon, drawRects } from "@client/rendering/debug";
 
 const serverSerializer = new Serializer<typeof Schema.Server, ServerPacketMap>(
     Schema.Server
@@ -21,8 +20,6 @@ export function setupPacketReceiving(
     receiver: ClientPacketReceiver<typeof Schema.Server, ServerPacketMap>,
     world: World
 ) {
-    receiver.on(ServerPacket.DebugDrawPolygon, drawPolygon);
-    receiver.on(ServerPacket.DebugDrawRects, drawRects);
     receiver.on(ServerPacket.LoadObject, world.loadObject);
     receiver.on(ServerPacket.AttackEvent, world.attack);
     receiver.on(ServerPacket.BlockEvent, world.block);

@@ -2,7 +2,7 @@ import { radians, lerp } from "@bundu/shared/transforms";
 import { spriteConfigs } from "../../configs/sprite_configs";
 import { SpriteFactory, ContaineredSprite } from "../../assets/sprite_factory";
 import { random, Animation, AnimationManager } from "@bundu/shared";
-import { ANIMATION, cubicBezier, hurt } from "../../animation/animations";
+import { ANIMATION, easeIn, easeOut, hurt } from "../../animation/animations";
 import { Container, Point, Text } from "pixi.js";
 import GameObject from "../game_object";
 import { getStringId } from "@bundu/shared/id_map";
@@ -216,44 +216,40 @@ export class Player extends GameObject {
         this.sprite.body.helmet.renderable = false;
 
         if (this.mainhand) {
-            this.sprite.leftHand.item.renderable = true;
             const config = spriteConfigs.get(this.mainhand);
-            if (!config) {
-                return;
+            if (config) {
+                this.sprite.leftHand.item.renderable = true;
+                SpriteFactory.update(
+                    this.sprite.leftHand.item,
+                    config.hand_display,
+                    this.mainhand
+                );
             }
-            SpriteFactory.update(
-                this.sprite.leftHand.item,
-                config.hand_display,
-                this.mainhand
-            );
-            console.log(this.sprite.leftHand.item.position);
         }
 
         if (this.offhand) {
-            this.sprite.rightHand.item.renderable = true;
             const config = spriteConfigs.get(this.offhand);
-            if (!config) {
-                return;
+            if (config) {
+                this.sprite.rightHand.item.renderable = true;
+                SpriteFactory.update(
+                    this.sprite.rightHand.item,
+                    config.hand_display,
+                    this.offhand
+                );
+                this.sprite.rightHand.item.x = -this.sprite.rightHand.item.x;
             }
-            SpriteFactory.update(
-                this.sprite.rightHand.item,
-                config.hand_display,
-                this.offhand
-            );
-            this.sprite.rightHand.item.x = -this.sprite.rightHand.item.x;
         }
 
         if (this.helmet) {
-            this.sprite.body.helmet.renderable = true;
             const config = spriteConfigs.get(this.helmet);
-            if (!config) {
-                return;
+            if (config) {
+                this.sprite.body.helmet.renderable = true;
+                SpriteFactory.update(
+                    this.sprite.body.helmet,
+                    config.body_display,
+                    this.helmet
+                );
             }
-            SpriteFactory.update(
-                this.sprite.body.helmet,
-                config.body_display,
-                this.helmet
-            );
         }
     }
 
@@ -312,8 +308,6 @@ namespace PlayerAnimations {
     }
 
     export function attack(target: Player) {
-        const backwardTiming = cubicBezier(0.78, -0.01, 0.52, 0.99);
-        const forwardTiming = cubicBezier(0, 0.74, 0.52, 0.99);
         let targetHand: number;
         const body = target.sprite.body.container;
         const leftHand = target.sprite.leftHand.container;
@@ -334,7 +328,7 @@ namespace PlayerAnimations {
             animation.next(125);
         };
         animation.keyframes[1] = (animation) => {
-            const t = forwardTiming(animation.t);
+            const t = easeOut(animation.t);
             if (targetHand) {
                 leftHand.rotation = lerp(radians(0), radians(-100), t);
                 rightHand.rotation = lerp(radians(0), radians(-10), t);
@@ -349,7 +343,7 @@ namespace PlayerAnimations {
             }
         };
         animation.keyframes[2] = (animation) => {
-            const t = backwardTiming(animation.t);
+            const t = easeIn(animation.t);
             if (targetHand) {
                 leftHand.rotation = lerp(radians(-100), radians(0), t);
                 rightHand.rotation = lerp(radians(-10), radians(0), t);

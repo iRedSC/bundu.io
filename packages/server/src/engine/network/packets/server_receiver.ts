@@ -1,27 +1,24 @@
-import type { Serializer } from "@bundu/shared";
-
-type SerializedPacket = [number, ...unknown[]];
+import {
+    PacketReceiver,
+    type SerializedPacket,
+} from "@bundu/shared";
 
 type Callback<I, DataMap> = (
     playerId: number,
     packet: I extends keyof DataMap ? DataMap[I] : never
 ) => void;
-type CallbackMap<I, DataMap> = Map<I, Callback<I, DataMap>>;
 
+/** Server adapter: queues by player; callbacks get `(playerId, packet)`. */
 export class ServerPacketReceiver<
     S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, object>
-> {
-    callbacks: CallbackMap<keyof S & number, DataMap> = new Map();
-    serializer: Serializer<S, DataMap>;
+    DataMap extends Record<number, object>,
+> extends PacketReceiver<S, DataMap, number> {
     packets = new Map<number, SerializedPacket[]>();
 
-    constructor(serializer: Serializer<S, DataMap>) {
-        this.serializer = serializer;
-    }
-
     on<I extends keyof S & number>(id: I, callback: Callback<I, DataMap>) {
-        this.callbacks.set(id, callback as Callback<keyof S & number, DataMap>);
+        this.setHandler(id, (data, playerId) => {
+            (callback as Callback<keyof S & number, DataMap>)(playerId, data as never);
+        });
     }
 
     add(playerId: number, packet: SerializedPacket) {
@@ -34,21 +31,15 @@ export class ServerPacketReceiver<
     process() {
         for (const [player, packets] of this.packets.entries()) {
             for (const packet of packets) {
-                try {
-                    const id = packet[0];
-                    const deserialized = this.serializer.deserialize(packet);
-                    const callback = this.callbacks.get(id);
-                    callback?.(player, deserialized);
-                } catch (error) {
-                    console.error(
-                        `Dropped bad packet from player ${player}`,
-                        packet,
-                        error
-                    );
-                }
+                this.receivePacket(
+                    packet,
+                    player,
+                    `Dropped bad packet from player ${player}`
+                );
             }
         }
     }
+
     clear() {
         this.packets.clear();
     }
