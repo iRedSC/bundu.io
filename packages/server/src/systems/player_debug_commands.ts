@@ -18,10 +18,10 @@ export function tryHandleDebugChatCommand(
     if (!message.startsWith("/")) return false;
 
     const command = message.replace("/", "").split(" ");
-    if (!command[1]) return true;
 
     switch (command[0]) {
         case "attribute": {
+            if (!command[1]) return true;
             const type = command[1] as AttributeType;
             if (!AttributeList.includes(type)) return true;
             const operation = command[2] as "add" | "multiply";
@@ -35,6 +35,7 @@ export function tryHandleDebugChatCommand(
             break;
         }
         case "stat": {
+            if (!command[1]) return true;
             const type = command[1] as StatType;
             if (!StatList.includes(type)) return true;
             const value = Number(command[2]);
