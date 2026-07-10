@@ -124,11 +124,11 @@ async function main() {
         getPlaceStructureId: () => debug.getPlaceStructureId(),
     });
 
-    gui.inventory.leftclick = (itemId) => {
-        session.sendPacket(ClientPacket.SelectItem, { itemId });
+    gui.inventory.leftclick = (slot) => {
+        session.sendPacket(ClientPacket.SelectItem, { slot });
     };
-    gui.inventory.rightclick = (itemId, shift) => {
-        session.sendPacket(ClientPacket.DropItem, { itemId, dropAll: shift });
+    gui.inventory.rightclick = (slot, shift) => {
+        session.sendPacket(ClientPacket.DropItem, { slot, dropAll: shift });
     };
     gui.craftingMenu.leftclick = (itemId) => {
         session.sendPacket(ClientPacket.CraftItem, { itemId });

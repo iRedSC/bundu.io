@@ -3,11 +3,13 @@ import {
     Attributes,
     type AttributeType,
 } from "../components/attributes.js";
+import { addItem, Inventory } from "../components/inventory.js";
 import { StatList, type StatType, Stats } from "../components/stats.js";
 import type { GameObject } from "../engine";
+import { getNumericId } from "@bundu/shared/id_map.js";
 
 /**
- * Debug/cheat slash commands (`/attribute`, `/stat`, `/kill`, `/godmode`).
+ * Debug/cheat slash commands (`/attribute`, `/stat`, `/kill`, `/godmode`, `/give`).
  * Only invoked when SERVER_DEBUG is on.
  * Returns true when the message was treated as a command (handled or rejected).
  */
@@ -53,6 +55,14 @@ export function tryHandleDebugChatCommand(
                 .get(Attributes)
                 .set("attack.speed", "godmode", "add", 100)
                 .set("attack.reach", "godmode", "add", 500);
+            break;
+        }
+        case "give": {
+            const itemId = getNumericId(command[1]);
+            const count = Number(command[2] ?? 1);
+            const inv = Inventory.get(player);
+            if (itemId === undefined || !inv || !(count > 0)) return true;
+            addItem(inv, itemId, count);
             break;
         }
     }

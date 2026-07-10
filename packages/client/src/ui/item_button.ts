@@ -191,8 +191,9 @@ export class ItemButton {
                     this.rightclick(this.item, ev?.shiftKey ?? false);
                 }
             } else if (ev?.button === 0 && this.sendEvents) {
-                if (this.leftclick && this.item !== null) {
-                    this.leftclick(this.item, ev?.shiftKey ?? false);
+                // Fire even for empty slots (hotbar select / unequip).
+                if (this.leftclick) {
+                    this.leftclick(this.item ?? -1, ev?.shiftKey ?? false);
                 }
             }
             this.down = false;

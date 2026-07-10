@@ -6,11 +6,6 @@ import { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 
-/**
- * Ah yes the inventory, not looking so good rn
- * I'm going to try to get is nice and cleaned up soon enough.
- */
-
 type ItemStack = [id: number, amount: number];
 
 const INVENTORY_COLORS = {
@@ -58,11 +53,8 @@ export class InventoryButton extends ItemButton {
     }
 }
 
-/**
- * The inventory, where all of your item data is stored.
- */
-
-type Callback = (item: number, shift: boolean) => void;
+/** Slot index + whether shift was held. */
+type Callback = (slot: number, shift: boolean) => void;
 
 const inventoryGrid = new Grid(
     percentOf(10, ITEM_BUTTON_SIZE),
@@ -98,14 +90,7 @@ export class Inventory {
         if (diff > 0) {
             for (let i = 0; i < diff; i++) {
                 const button = new InventoryButton();
-                button.leftclick = this.leftClickCB;
-                button.rightclick = this.rightClickCB;
-
-                button.button.onpointerdown = (ev) => {
-                    if (ev?.button === 2) button.rightDown = true;
-                    button.down = true;
-                };
-
+                this.wireButton(button, this.buttons.length);
                 this.buttons.push(button);
                 this.container.addChild(button.button);
                 this.slots.push(null);
@@ -131,12 +116,17 @@ export class Inventory {
 
     set leftclick(value: Callback) {
         this.leftClickCB = value;
-        this.buttons.forEach((b) => (b.leftclick = value));
+        this.buttons.forEach((b, i) => this.wireButton(b, i));
     }
 
     set rightclick(value: Callback) {
         this.rightClickCB = value;
-        this.buttons.forEach((b) => (b.rightclick = value));
+        this.buttons.forEach((b, i) => this.wireButton(b, i));
+    }
+
+    private wireButton(button: InventoryButton, slot: number) {
+        button.leftclick = (_item, shift) => this.leftClickCB?.(slot, shift);
+        button.rightclick = (_item, shift) => this.rightClickCB?.(slot, shift);
     }
 
     update({ items }: ServerPacket.UpdateInventory) {

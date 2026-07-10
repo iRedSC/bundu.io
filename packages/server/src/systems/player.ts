@@ -2,11 +2,17 @@ import { moveToward } from "@bundu/shared/transforms";
 import { decodeMoveDirection } from "@bundu/shared/movement";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GroundData, Physics } from "../components/base.js";
+import { Inventory, removeFromSlot } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject, System, type World } from "../engine";
 import { Attributes } from "../components/attributes.js";
 import { emitVitals } from "../network/vitals.js";
+import {
+    emitEquipment,
+    emitInventory,
+    syncMainHand,
+} from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { SERVER_DEBUG } from "../debug/flag.js";
@@ -73,7 +79,7 @@ export class PlayerSystem extends System<GameEventMap> {
             const data = ground.get(GroundData);
             return data.createPacket();
         });
-        const { playerPacketManager } = this.world.context;
+        const { playerPacketManager, worldPacketManager } = this.world.context;
         playerPacketManager.set(player.id, ServerPacket.LoadGround, {
             groundData: packets,
         });
@@ -81,6 +87,8 @@ export class PlayerSystem extends System<GameEventMap> {
             recipes: packCraftingList(),
         });
         emitVitals(player, playerPacketManager);
+        emitInventory(player, playerPacketManager);
+        emitEquipment(player, worldPacketManager);
     }
 
     kill({ object: target }: GameEvent.Kill) {
@@ -147,6 +155,35 @@ export class PlayerSystem extends System<GameEventMap> {
         });
     };
 
+    selectItem = (playerId: number, { slot }: ClientPacket.SelectItem) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const inv = Inventory.get(player);
+        if (!inv || slot < 0 || slot >= inv.slots.length) return;
+
+        inv.selected = slot;
+        syncMainHand(player);
+        emitEquipment(player, this.world.context.worldPacketManager);
+    };
+
+    dropItem = (
+        playerId: number,
+        { slot, dropAll }: ClientPacket.DropItem
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const inv = Inventory.get(player);
+        if (!inv || slot < 0 || slot >= inv.slots.length) return;
+        if (!inv.slots[slot]) return;
+
+        removeFromSlot(inv, slot, dropAll ? Infinity : 1);
+        if (inv.selected === slot) syncMainHand(player);
+
+        const { playerPacketManager, worldPacketManager } = this.world.context;
+        emitInventory(player, playerPacketManager);
+        if (inv.selected === slot) emitEquipment(player, worldPacketManager);
+    };
+
     placeStructureAt = (
         _playerId: number,
         { structureId, x, y, rotation }: ClientPacket.PlaceStructureAt
@@ -175,6 +212,7 @@ export class PlayerSystem extends System<GameEventMap> {
                 this.world.gameTime
             )
         ) {
+            emitInventory(player, this.world.context.playerPacketManager);
             return;
         }
         this.world.context.worldPacketManager.emit(ServerPacket.ChatMessage, {

@@ -4,7 +4,7 @@ import {
     Health,
     Physics,
 } from "../components/base.js";
-import { Inventory } from "../components/inventory.js";
+import { emptySlots, Inventory } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { Stats } from "../components/stats.js";
 import { GameObject } from "../engine";
@@ -52,7 +52,7 @@ export class Player extends GameObject {
             .add(health)
             .add(new PlayerData(playerData))
             .add(new CalculateCollisions())
-            .add(new Inventory({ slots: 10, items: new Map() }))
+            .add(new Inventory({ slots: emptySlots(), selected: 0 }))
             .add(attributes)
             .add(stats)
             .add(new VisibleObjects());

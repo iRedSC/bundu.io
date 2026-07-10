@@ -96,10 +96,10 @@ export namespace ClientPacket {
     export type Rotation = { rotation: number };
     export type Movement = { direction: number };
     export type Attack = { stop: boolean };
-    export type SelectItem = { itemId: number };
+    export type SelectItem = { slot: number };
     export type CraftItem = { itemId: number };
     export type ChatMessage = { message: string };
-    export type DropItem = { itemId: number; dropAll: boolean };
+    export type DropItem = { slot: number; dropAll: boolean };
     export type Block = { stop: boolean };
     export type PlaceStructureAt = {
         structureId: number;
@@ -183,10 +183,10 @@ export const ClientSchema: {
     [ClientPacket.Rotation]: { fields: ["rotation"] },
     [ClientPacket.Movement]: { fields: ["direction"] },
     [ClientPacket.Attack]: { fields: ["stop"] },
-    [ClientPacket.SelectItem]: { fields: ["itemId"] },
+    [ClientPacket.SelectItem]: { fields: ["slot"] },
     [ClientPacket.CraftItem]: { fields: ["itemId"] },
     [ClientPacket.ChatMessage]: { fields: ["message"] },
-    [ClientPacket.DropItem]: { fields: ["itemId", "dropAll"] },
+    [ClientPacket.DropItem]: { fields: ["slot", "dropAll"] },
     [ClientPacket.Block]: { fields: ["stop"] },
     [ClientPacket.PlaceStructureAt]: {
         fields: ["structureId", "x", "y", "rotation"],
