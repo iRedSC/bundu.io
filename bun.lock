@@ -4,14 +4,6 @@
   "workspaces": {
     "": {
       "name": "bundu.io",
-      "dependencies": {
-        "@msgpack/msgpack": "^3.1.2",
-        "@pixi/devtools": "^2.0.1",
-        "@rwh/keystrokes": "^1.5.6",
-        "pixi-viewport": "^6.0.3",
-        "pixi.js": "^8.14.3",
-        "sat": "^0.9.0",
-      },
       "devDependencies": {
         "@types/bun": "latest",
         "@types/sat": "^0.0.35",
@@ -20,8 +12,39 @@
         "typescript": "~5.9.3",
       },
     },
+    "packages/client": {
+      "name": "@bundu/client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bundu/shared": "workspace:*",
+        "@msgpack/msgpack": "^3.1.2",
+        "@pixi/devtools": "^2.0.1",
+        "@rwh/keystrokes": "^1.5.6",
+        "pixi-viewport": "^6.0.3",
+        "pixi.js": "^8.14.3",
+      },
+    },
+    "packages/server": {
+      "name": "@bundu/server",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bundu/shared": "workspace:*",
+        "@msgpack/msgpack": "^3.1.2",
+        "sat": "^0.9.0",
+      },
+    },
+    "packages/shared": {
+      "name": "@bundu/shared",
+      "version": "0.0.0",
+    },
   },
   "packages": {
+    "@bundu/client": ["@bundu/client@workspace:packages/client"],
+
+    "@bundu/server": ["@bundu/server@workspace:packages/server"],
+
+    "@bundu/shared": ["@bundu/shared@workspace:packages/shared"],
+
     "@msgpack/msgpack": ["@msgpack/msgpack@3.1.2", "", {}, "sha512-JEW4DEtBzfe8HvUYecLU9e6+XJnKDlUAIve8FvPzF3Kzs6Xo/KuZkZJsDH0wJXl/qEZbeeE7edxDNY3kMs39hQ=="],
 
     "@pixi/colord": ["@pixi/colord@2.9.6", "", {}, "sha512-nezytU2pw587fQstUu1AsJZDVEynjskwOL+kibwcdxsMBFqPsFFNA7xl0ii/gXuDi6M0xj3mfRJj8pBSc2jCfA=="],

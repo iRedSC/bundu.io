@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach } from "bun:test";
-import { ReversableMap } from "@ioengine/shared";
+import { ReversableMap } from "@bundu/shared";
 
 describe("ReversableMap", () => {
   let map: ReversableMap<string, number>;

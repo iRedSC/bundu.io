@@ -22,20 +22,16 @@
         "noUnusedParameters": false,
         "noPropertyAccessFromIndexSignature": false,
         "paths": {
-            "@client/constants": ["./src/game/client/constants.ts"],
-            "@shared/*": ["./src/game/shared/*"],
-            "@client/globals": ["./src/game/client/globals.ts"],
-            "@client/rendering/*": ["./src/game/client/rendering/*"],
-            "@client/assets/*": ["./src/game/client/assets/*"],
-            "@client/configs/*": ["./src/game/client/configs/*"],
-
-            "@ioengine/client": ["./src/ioengine/client/index.ts"],
-            "@ioengine/server": ["./src/ioengine/server/index.ts"],
-            "@ioengine/lib": ["./src/ioengine/lib/index.ts"],
-            "@ioengine/shared": ["./src/ioengine/shared/index.ts"]
+            "@bundu/shared": ["./packages/shared/src/index.ts"],
+            "@bundu/shared/*": ["./packages/shared/src/*"],
+            "@client/constants": ["./packages/client/src/constants.ts"],
+            "@client/globals": ["./packages/client/src/globals.ts"],
+            "@client/rendering/*": ["./packages/client/src/rendering/*"],
+            "@client/assets/*": ["./packages/client/src/assets/*"],
+            "@client/configs/*": ["./packages/client/src/configs/*"]
         },
         "outDir": "dist",
         "strictNullChecks": true
     },
-    "include": ["src", "tests"]
+    "include": ["packages", "tests"]
 }
