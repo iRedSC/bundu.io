@@ -1,6 +1,6 @@
 import { GameObject } from "./game_object.js";
 import { type AnySystem } from "./system.js";
-import { Component, type ComponentFactory } from "./component.js";
+import type { ComponentFactory } from "./component.js";
 
 /** Utility: check if all elements of subSet exist in superSet */
 function isSubset<T>(subSet: Set<T>, superSet: Set<T>): boolean {
@@ -99,8 +99,7 @@ export class World {
 
         // Clean up any existing subscription and resubscribe
         this.subscriptions.get(object.id)?.();
-        const unsubscribe = object.subscribe((obj, added, removed) => {
-            this.onObjectComponentChange(obj, added, removed);
+        const unsubscribe = object.subscribe((obj) => {
             this.indexObject(obj);
         });
         this.subscriptions.set(object.id, unsubscribe);
@@ -179,9 +178,6 @@ export class World {
         this.gameTime += delta * this.timeScale;
         this.lastUpdate = now;
 
-        // Track which systems had objects updated this tick
-        const afterUpdateMap = new Map<AnySystem, GameObject[]>();
-
         for (const [objectId, object] of this.objects.entries()) {
             if (!object.active) {
                 this.removeObject(object);
@@ -195,13 +191,6 @@ export class World {
             const lastGT = this.objectLastUpdateGT.get(objectId)!;
 
             for (const system of systems) {
-                // Ensure beforeUpdate() gets called once per system per tick
-                if (!afterUpdateMap.has(system)) {
-                    system.beforeUpdate?.(this.gameTime);
-                    afterUpdateMap.set(system, []);
-                }
-                afterUpdateMap.get(system)!.push(object);
-
                 if (!system.update || !system.tps || system.tps <= 0) continue;
 
                 const interval = 1000 / system.tps;
@@ -222,11 +211,6 @@ export class World {
 
                 system.update(this.gameTime, elapsedGT, object);
             }
-        }
-
-        // Call afterUpdate() for each system once per tick
-        for (const [system, objs] of afterUpdateMap) {
-            system.afterUpdate?.(this.gameTime, objs);
         }
     }
 
@@ -258,31 +242,6 @@ export class World {
     // -------------------------------------------------------------------
     // Internal: Object ↔ System bookkeeping
     // -------------------------------------------------------------------
-    private onObjectComponentChange(
-        object: GameObject,
-        added?: Component<unknown>,
-        removed?: Component<unknown>
-    ): void {
-        const set = this.objectSystems.get(object.id);
-        if (!set) return;
-
-        for (const system of set) {
-            const watch = system.componentIds;
-            const shouldNotify =
-                watch.size === 0 ||
-                (added && watch.has(added.id)) ||
-                (removed && watch.has(removed.id));
-            if (shouldNotify) {
-                system.change?.call(
-                    system,
-                    object,
-                    added && watch.has(added.id) ? added : undefined,
-                    removed && watch.has(removed.id) ? removed : undefined
-                );
-            }
-        }
-    }
-
     /** Returns whether the given system currently applies to an object */
     private hasSystem(object: GameObject, system: AnySystem): boolean {
         return this.objectSystems.get(object.id)?.has(system) ?? false;
@@ -323,14 +282,3 @@ export class World {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
