@@ -1,7 +1,10 @@
 import { GameObject } from "../engine";
 import type { SystemEventCallback } from "../engine";
 
-/** Events that actually have listeners. Orphan inventory/craft stubs removed. */
+/**
+ * Events that actually have listeners.
+ * Outbound packets are emitted by the owning system (not a PacketSystem bridge).
+ */
 export namespace GameEvent {
     export const Attack = 1;
     export type Attack = {
@@ -71,29 +74,6 @@ export namespace GameEvent {
         source?: GameObject;
     };
 
-    export const ChatMessage = 15;
-    export type ChatMessage = {
-        object: GameObject;
-        message: string;
-    };
-
-    export const HealthUpdate = 16;
-    export type HealthUpdate = {
-        object: GameObject;
-    };
-
-    export const ObjectsRemovedFromView = 22;
-    export type ObjectsRemovedFromView = {
-        object: GameObject;
-        objectsRemoved: GameObject[];
-    };
-
-    export const ObjectsAddedToView = 23;
-    export type ObjectsAddedToView = {
-        object: GameObject;
-        objectsAdded: GameObject[];
-    };
-
     export const PlaceStructure = 24;
     export type PlaceStructure = {
         structureId: number;
@@ -114,10 +94,6 @@ export type GameEventMap = {
     [GameEvent.UpdateEquipment]: GameEvent.UpdateEquipment;
     [GameEvent.Hurt]: GameEvent.Hurt;
     [GameEvent.Kill]: GameEvent.Kill;
-    [GameEvent.ChatMessage]: GameEvent.ChatMessage;
-    [GameEvent.HealthUpdate]: GameEvent.HealthUpdate;
-    [GameEvent.ObjectsAddedToView]: GameEvent.ObjectsAddedToView;
-    [GameEvent.ObjectsRemovedFromView]: GameEvent.ObjectsRemovedFromView;
     [GameEvent.PlaceStructure]: GameEvent.PlaceStructure;
 };
 

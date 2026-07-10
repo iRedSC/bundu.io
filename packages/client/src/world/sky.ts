@@ -7,7 +7,7 @@ import {
     WORLD_SIZE,
 } from "../constants";
 import { colorLerp } from "@bundu/shared/transforms";
-import { Animation, AnimationManager } from "@bundu/shared/animations";
+import { Animation, AnimationManager } from "../animation/runtime";
 
 const times = new Map();
 times.set(0, MORNING_COLOR);

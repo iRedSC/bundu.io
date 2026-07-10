@@ -1,1 +1,1 @@
-export type BasicPoint = { x: number; y: number; [key: string]: any };
+export type BasicPoint = { x: number; y: number };

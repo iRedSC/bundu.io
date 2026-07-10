@@ -1,5 +1,5 @@
 import { CalculateCollisions, Physics } from "../components/base.js";
-import { System, GameObject } from "../engine";
+import { System, GameObject, type World } from "../engine";
 import { getSizedBounds, quadtree } from "./position.js";
 import { Response, testCircleCircle } from "sat";
 import { GameEvent, type GameEventMap } from "./event_map.js";
@@ -10,8 +10,8 @@ import { GameEvent, type GameEventMap } from "./event_map.js";
  * Emits positionUpdate event when object is moved by a collision.
  */
 export class CollisionSystem extends System<GameEventMap> {
-    constructor() {
-        super([Physics, CalculateCollisions], 10);
+    constructor(world: World) {
+        super(world, [Physics, CalculateCollisions], 10);
 
         this.listen(GameEvent.Move, this.testForCollision);
     }

@@ -3,7 +3,7 @@ import type { Serializer } from "@bundu/shared";
 
 export class Socket<
     S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, any>
+    DataMap extends Record<number, object>
 > extends WebSocket {
     serializer: Serializer<S, DataMap>;
 
@@ -18,7 +18,7 @@ export class Socket<
 
     sendPacket<I extends keyof S & number>(
         id: I,
-        data: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
+        data: I extends keyof DataMap ? DataMap[I] : never
     ): void {
         super.send(encode(this.serializer.serialize(id, data)));
     }
