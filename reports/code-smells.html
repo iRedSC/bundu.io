@@ -1332,8 +1332,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-client-dup-button-animations" data-id="client-dup-button-animations" data-severity="medium" data-package="client" data-category="duplication" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark client-dup-button-animations fixed" /></div>
+      <article class="smell" id="smell-client-dup-button-animations" data-id="client-dup-button-animations" data-severity="medium" data-package="client" data-category="duplication" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark client-dup-button-animations fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Inventory and crafting button hover animations are copy-pasted</h3>
@@ -1342,7 +1342,7 @@
             <span class="badge id">client-dup-button-animations</span>
           </div>
           <p>Nearly identical press/hover/idle scale+tint+wobble with different colors. Crafting recreates the animation on every <code>update()</code>; inventory creates once—inconsistent and wasteful.</p>
-          <p class="suggestion">One <code>itemButtonIdleAnimation(button, colors)</code> helper; create once per button lifetime.</p>
+          <p class="suggestion">One shared <code>tickItemButton(button, colors, restY)</code> helper driven from <code>gui.tick()</code>.</p>
           <ul class="files">
             <li>packages/client/src/ui/inventory.ts</li>
             <li>packages/client/src/ui/crafting_menu.ts</li>
