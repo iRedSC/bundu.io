@@ -4,30 +4,33 @@ import { GameObject, System, type World } from "../engine";
 import { emitVitals } from "../network/vitals.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
+/** Matches prior cadence: HealthSystem runs at 1 tps with a 5-tick period. */
+const REGEN_INTERVAL_MS = 5000;
+
 export class HealthSystem extends System<GameEventMap> {
-    tick: number;
     constructor(world: World) {
         super(world, [Health], 1);
-
-        this.tick = 0;
 
         this.listen(GameEvent.Hurt, this.hurt, [Health]);
     }
 
-    override update(time: number, delta: number, object: GameObject) {
+    override enter(object: GameObject) {
+        object.get(Health).lastRegen = this.world.gameTime;
+    }
+
+    override update(time: number, _delta: number, object: GameObject) {
         const health = object.get(Health);
         const attributes = object.get(Attributes);
         if (!attributes) return;
 
+        if (time - health.lastRegen < REGEN_INTERVAL_MS) return;
+
+        health.lastRegen = time;
         const regen = attributes.get("health.regen_amount");
-        this.tick = (this.tick + 1) % 5;
-        if (this.tick === 0) {
-            const healthUpdate = health.max
-                ? Math.min(health.value + regen, health.max)
-                : health.value + regen;
-            health.value = healthUpdate;
-            emitVitals(object);
-        }
+        health.value = health.max
+            ? Math.min(health.value + regen, health.max)
+            : health.value + regen;
+        emitVitals(object);
     }
 
     hurt({ object: target, source, damage }: GameEvent.Hurt) {

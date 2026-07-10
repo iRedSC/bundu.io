@@ -71,9 +71,12 @@ export const ResourceData = Component.register<ResourceData>(() => ({
 export type Health = {
     max: number;
     value: number;
+    /** Game time of last regen tick; per-entity so cadence is not shared. */
+    lastRegen: number;
 };
 
 export const Health = Component.register<Health>(() => ({
     max: 100,
     value: 100,
+    lastRegen: 0,
 }));
