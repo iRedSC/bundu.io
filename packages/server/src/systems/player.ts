@@ -115,30 +115,11 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = player.get(PlayerData);
-        const physics = player.get(Physics);
-        const selectedStructure = data.selectedStructure;
-        const { x, y } = physics.position;
 
-        if (selectedStructure.id !== -1) {
-            selectedStructure.cooldown_timestamp = this.world.gameTime + 1000;
-
-            playerPacketManager.set(
-                player.id,
-                ServerPacket.SetSelectedStructure,
-                {
-                    structureId: -1,
-                    structureSize: STRUCTURE_COLLISION_RADIUS,
-                }
-            );
-
-            this.trigger(GameEvent.PlaceStructure, {
-                structureId: selectedStructure.id,
-                x,
-                y,
-                rotation: 0,
-            });
-
-            selectedStructure.id = -1;
+        // Place-only path: selected structure consumes the attack packet.
+        if (data.selectedStructure.id !== -1) {
+            this.trigger(GameEvent.PlaceSelectedStructure, { object: player });
+            return;
         }
 
         data.attacking = !stop;
