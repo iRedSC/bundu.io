@@ -1,4 +1,5 @@
 import { moveToward } from "@bundu/shared/transforms";
+import { decodeMoveDirection } from "@bundu/shared/movement";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
@@ -98,10 +99,7 @@ export class PlayerSystem extends System<GameEventMap> {
     }
 
     move = (playerId: number, packet: ClientPacket.Movement) => {
-        let byte = packet.direction;
-        byte--;
-        const y = (byte & 0b11) - 1;
-        const x = ((byte >> 2) & 0b11) - 1;
+        const [x, y] = decodeMoveDirection(packet.direction);
 
         const player = this.world.getObject(playerId);
         if (!player) return;

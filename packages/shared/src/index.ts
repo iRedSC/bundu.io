@@ -1,6 +1,7 @@
 export * from "./animations";
 export * from "./default_map";
 export * from "./math";
+export * from "./movement";
 export * from "./object_utils";
 export * from "./quadtree";
 export * from "./random";
