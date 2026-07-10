@@ -5,19 +5,18 @@ import type { SocketManager } from "../socket_manager";
 import { encode } from "@msgpack/msgpack";
 import { serverTime } from "../../server_time";
 
-type PlayerPacketContainer<I, DataMap> = Map<
-    I,
-    I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
->;
+type PacketData<I, DataMap> = I extends keyof DataMap ? DataMap[I] : never;
+
+type PlayerPacketContainer<I, DataMap> = Map<I, PacketData<I, DataMap>>;
 
 type NonExclusivePlayerPacketContainer<I, DataMap> = Map<
     I,
-    I extends keyof DataMap ? (DataMap[I] & Record<string, any>)[] : never[]
+    PacketData<I, DataMap>[]
 >;
 
 export class PlayerPacketManager<
     S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, any>
+    DataMap extends Record<number, object>
 > {
     packets = new Map<
         number,
@@ -36,7 +35,7 @@ export class PlayerPacketManager<
     constructor(schema: S) {
         this.packets = new Map();
         for (const [id, def] of Object.entries(schema)) {
-            this.schemas.set(Number(id), def as any);
+            this.schemas.set(Number(id), def as S[keyof S & number]);
         }
         this.serializer = new Serializer<S, DataMap>(schema);
     }
@@ -44,7 +43,7 @@ export class PlayerPacketManager<
     set<I extends keyof S & number>(
         playerId: number,
         packetId: I,
-        data: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
+        data: PacketData<I, DataMap>
     ) {
         if (!this.schemas.has(packetId)) {
             return console.error(`Schema ${packetId} not found`);
@@ -59,7 +58,7 @@ export class PlayerPacketManager<
     add<I extends keyof S & number>(
         playerId: number,
         packetId: I,
-        data: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
+        data: PacketData<I, DataMap>
     ) {
         if (!this.schemas.has(packetId)) {
             return console.error(`Schema ${packetId} not found`);
@@ -67,10 +66,12 @@ export class PlayerPacketManager<
 
         let packets = this.nonExclusivePackets.get(playerId);
         if (!packets) packets = new Map();
-        // @ts-expect-error
-        if (!packets.get(packetId)) packets.set(packetId, []);
-        // @ts-expect-error
-        packets.get(packetId).push(data);
+        let list = packets.get(packetId);
+        if (!list) {
+            list = [];
+            packets.set(packetId, list);
+        }
+        list.push(data);
 
         this.nonExclusivePackets.set(playerId, packets);
     }
