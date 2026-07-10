@@ -8,19 +8,25 @@ import {
 import { Response, testCircleCircle } from "sat";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
+const MAX_COLLISION_TRIES = 3;
+
 /**
- * Runs collisions for any object with the CalculateCollisions component.
- *
- * Emits positionUpdate event when object is moved by a collision.
+ * After Move applies intent, resolve solid overlaps then emit Collide once.
+ * Retries stay internal — no re-entrant Move / mid-loop Collide fan-out.
  */
 export class CollisionSystem extends System<GameEventMap> {
     constructor(world: World) {
         super(world, [Physics, CalculateCollisions], 10);
 
-        this.listen(GameEvent.Move, this.testForCollision);
+        this.listen(GameEvent.Move, this.afterMove);
     }
 
-    testForCollision({ object: target }: GameEvent.Move, tries: number = 0) {
+    afterMove({ object }: GameEvent.Move) {
+        this.resolve(object, 0);
+        this.trigger(GameEvent.Collide, { object });
+    }
+
+    private resolve(target: GameObject, tries: number) {
         const physics = target.get(Physics);
 
         const bounds = getSizedBounds(
@@ -32,7 +38,7 @@ export class CollisionSystem extends System<GameEventMap> {
         const nearby = this.world.query([Physics], quadtree.query(bounds));
 
         const response = new Response();
-        let retrigger = false;
+        let hit = false;
         for (const other of nearby) {
             if (other.id === target.id || !Physics.get(other).solid) {
                 continue;
@@ -44,13 +50,12 @@ export class CollisionSystem extends System<GameEventMap> {
                 response
             );
             if (collided) {
-                retrigger = true;
+                hit = true;
                 physics.position.sub(response.overlapV);
-                this.trigger(GameEvent.Collide, { object: target });
             }
         }
-        if (retrigger && tries < 3) {
-            this.testForCollision({ object: target, x: 0, y: 0 }, tries + 1);
+        if (hit && tries < MAX_COLLISION_TRIES) {
+            this.resolve(target, tries + 1);
         }
     }
 }
