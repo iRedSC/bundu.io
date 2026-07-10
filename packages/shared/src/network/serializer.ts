@@ -1,12 +1,14 @@
 export type SerializedPacket = [number, ...unknown[]];
 
-type PacketSchema = Record<number, { readonly fields: readonly string[] }>;
-
 /** Packs/unpacks packets by field order. One type param: the ID → payload map. */
 export class Serializer<DataMap extends Record<number, object>> {
     private schemas = new Map<number, { fields: readonly string[] }>();
 
-    constructor(schema: PacketSchema) {
+    constructor(
+        schema: {
+            [K in keyof DataMap & number]: { readonly fields: readonly string[] };
+        },
+    ) {
         for (const [id, def] of Object.entries(schema)) {
             this.schemas.set(Number(id), def);
         }
