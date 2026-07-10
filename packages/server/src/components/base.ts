@@ -7,7 +7,6 @@ export type Physics = {
     collider: Circle;
     rotation: number;
     collisionRadius: number;
-    solid: boolean;
     speed: number;
 };
 export const Physics = Component.register<Physics>(() => {
@@ -17,7 +16,6 @@ export const Physics = Component.register<Physics>(() => {
         position,
         collider: new Circle(position, 15),
         collisionRadius: 15,
-        solid: false,
         speed: 0,
         rotation: 0,
     };

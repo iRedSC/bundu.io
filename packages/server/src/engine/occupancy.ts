@@ -12,10 +12,6 @@ export class OccupancyGrid {
         return this.cells.get(tileKey(x, y));
     }
 
-    has(x: number, y: number): boolean {
-        return this.cells.has(tileKey(x, y));
-    }
-
     canPlace(tiles: readonly TilePos[]): boolean {
         for (const { x, y } of tiles) {
             if (this.cells.has(tileKey(x, y))) return false;
@@ -23,8 +19,9 @@ export class OccupancyGrid {
         return true;
     }
 
-    /** Claim tiles for an entity. No-op (false) if any cell is taken. */
+    /** Claim tiles for an entity. Releases any prior claim first. */
     occupy(entityId: number, tiles: readonly TilePos[]): boolean {
+        this.release(entityId);
         if (!this.canPlace(tiles)) return false;
 
         const keys: number[] = [];
@@ -44,25 +41,5 @@ export class OccupancyGrid {
             this.cells.delete(key);
         }
         this.byEntity.delete(entityId);
-    }
-
-    /**
-     * Entity ids whose occupied tiles overlap the inclusive tile AABB.
-     * Deduped; order is not significant.
-     */
-    queryTileBounds(
-        minX: number,
-        minY: number,
-        maxX: number,
-        maxY: number
-    ): number[] {
-        const seen = new Set<number>();
-        for (let x = minX; x <= maxX; x++) {
-            for (let y = minY; y <= maxY; y++) {
-                const id = this.cells.get(tileKey(x, y));
-                if (id !== undefined) seen.add(id);
-            }
-        }
-        return Array.from(seen);
     }
 }

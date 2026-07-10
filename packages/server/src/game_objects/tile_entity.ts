@@ -22,7 +22,6 @@ export function tileEntityPhysics(origin: TilePos, rot: TileRot): Physics {
         collider: new Circle(position, FOOTPRINT_CIRCLE_RADIUS),
         collisionRadius: FOOTPRINT_CIRCLE_RADIUS,
         rotation: tileRotToDegrees(rot),
-        solid: false,
         speed: 0,
     };
 }

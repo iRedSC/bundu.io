@@ -25,7 +25,6 @@ export function createPlayer(
             position,
             collider,
             collisionRadius: PLAYER_HITBOX_RADIUS,
-            solid: false,
             rotation: 0,
             speed: 10,
         },

@@ -24,7 +24,7 @@ export class StructureSystem extends System<GameEventMap> {
         );
     }
 
-    /** Clears selection, notifies client, and places at the player's tile. */
+    /** Places at the player's tile; clears selection only on success. */
     placeSelectedStructure({
         object: player,
     }: GameEvent.PlaceSelectedStructure) {
@@ -32,6 +32,15 @@ export class StructureSystem extends System<GameEventMap> {
         const physics = player.get(Physics);
         const selectedStructure = data.selectedStructure;
         if (selectedStructure.id === -1) return;
+
+        const tile = pointToTile(physics.position);
+        const placed = this.placeStructure({
+            structureId: selectedStructure.id,
+            x: tile.x,
+            y: tile.y,
+            rotation: 0,
+        });
+        if (!placed) return;
 
         selectedStructure.cooldown_timestamp = this.world.gameTime + 1000;
 
@@ -44,23 +53,16 @@ export class StructureSystem extends System<GameEventMap> {
             }
         );
 
-        const tile = pointToTile(physics.position);
-        this.trigger(GameEvent.PlaceStructure, {
-            structureId: selectedStructure.id,
-            x: tile.x,
-            y: tile.y,
-            rotation: 0,
-        });
-
         selectedStructure.id = -1;
     }
 
+    /** @returns true if the structure was added to the world. */
     placeStructure({ structureId, x, y, rotation }: GameEvent.PlaceStructure) {
-        const rot = (rotation % 4) as TileRot;
+        const rot = (((rotation % 4) + 4) % 4) as TileRot;
         const origin = { x, y };
         const tile = makeTileEntity(origin, rot);
 
-        if (!this.world.context.occupancy.canPlace(tile.occupied)) return;
+        if (!this.world.context.occupancy.canPlace(tile.occupied)) return false;
 
         const structure = new Structure(
             tileEntityPhysics(origin, rot),
@@ -68,5 +70,6 @@ export class StructureSystem extends System<GameEventMap> {
             tile
         );
         this.world.addObject(structure);
+        return true;
     }
 }
