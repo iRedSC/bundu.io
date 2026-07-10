@@ -7,8 +7,15 @@ export class ReversableMap<K, V> extends Map<K, V> {
     }
 
     override set(key: K, value: V) {
-        if (this._valueMap.get(value)) {
+        if (this._valueMap.has(value) && !Object.is(this._valueMap.get(value), key)) {
             throw "Value already exists in map.";
+        }
+
+        if (this.has(key)) {
+            const oldValue = this.get(key) as V;
+            if (!Object.is(oldValue, value)) {
+                this._valueMap.delete(oldValue);
+            }
         }
 
         super.set(key, value);
@@ -40,5 +47,10 @@ export class ReversableMap<K, V> extends Map<K, V> {
 
     hasv(value: V) {
         return this._valueMap.has(value);
+    }
+
+    override clear() {
+        super.clear();
+        this._valueMap.clear();
     }
 }
