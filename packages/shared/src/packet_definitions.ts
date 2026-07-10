@@ -107,6 +107,13 @@ const clientPacketDefs = {
         "dropAll",
     ]),
     Block: packet<{ stop: boolean }>()(0x0c, ["stop"]),
+    /** Place a structure at integer tile (x, y). Debug / build tools. */
+    PlaceStructureAt: packet<{
+        structureId: number;
+        x: number;
+        y: number;
+        rotation: number;
+    }>()(0x0d, ["structureId", "x", "y", "rotation"]),
 } as const;
 
 type PacketDefs = Record<
@@ -197,4 +204,6 @@ export namespace ClientPacket {
         (typeof clientPacketDefs)["ChatMessage"]["__payload"];
     export type DropItem = (typeof clientPacketDefs)["DropItem"]["__payload"];
     export type Block = (typeof clientPacketDefs)["Block"]["__payload"];
+    export type PlaceStructureAt =
+        (typeof clientPacketDefs)["PlaceStructureAt"]["__payload"];
 }

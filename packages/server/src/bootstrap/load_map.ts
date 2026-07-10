@@ -1,16 +1,22 @@
 import { random } from "@bundu/shared";
 import { getNumericId } from "@bundu/shared/id_map";
-import { Box, Circle, Vector } from "sat";
+import {
+    WORLD_TILES,
+    type TileRot,
+} from "@bundu/shared/tiles";
+import { Box, Vector } from "sat";
 import type { World } from "../engine";
 import { Ground } from "../game_objects/ground";
 import { Resource } from "../game_objects/resource";
+import {
+    makeTileEntity,
+    tileEntityPhysics,
+} from "../game_objects/tile_entity";
 import { GameEvent } from "../systems/event_map";
 import type { PlayerSystem } from "../systems/player";
-import { WORLD_BOUNDS } from "../systems/position";
 
-const TEST_MAP_SIZE = WORLD_BOUNDS;
-const TEST_MAP_BORDER_PADDING = 300;
 const TEST_MAP_RESOURCE_COUNT = 450;
+const TEST_MAP_BORDER_PADDING_TILES = 3;
 
 const TEST_MAP_RESOURCE_IDS: string[] = [
     "forest_tree",
@@ -31,75 +37,73 @@ function getRequiredNumericId(id: string) {
     return numericId;
 }
 
-function addResource(
+function tryAddResource(
     world: World,
     id: string,
-    x: number,
-    y: number,
-    collisionRadius: number,
-    rotation = 0
-) {
-    const position = new Vector(x, y);
+    tx: number,
+    ty: number,
+    rot: TileRot = 0
+): boolean {
+    const origin = { x: tx, y: ty };
+    const tile = makeTileEntity(origin, rot);
+    if (!world.context.occupancy.canPlace(tile.occupied)) return false;
+
     world.addObject(
         new Resource(
-            {
-                position,
-                collider: new Circle(position, collisionRadius),
-                rotation,
-                collisionRadius,
-                solid: true,
-                speed: 0,
-            },
-            { id: getRequiredNumericId(id), variant: 0 }
+            tileEntityPhysics(origin, rot),
+            { id: getRequiredNumericId(id), variant: 0 },
+            tile
         )
     );
+    return true;
 }
 
 /** Procedural test map + starter structure placement. */
 export function loadMap(world: World, playerSystem: PlayerSystem) {
-    const origin = new Vector(0, 0);
+    // Ground AABB in tile coordinates (client scales by TILE_SIZE).
     world.addObject(
         new Ground({
-            collider: new Box(origin, TEST_MAP_SIZE, TEST_MAP_SIZE),
+            collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
             type: 1,
             speedMultiplier: 1,
             createPacket() {
-                return [1, 0, 0, TEST_MAP_SIZE, TEST_MAP_SIZE];
+                return [1, 0, 0, WORLD_TILES, WORLD_TILES];
             },
         })
     );
 
-    const borderSize = 56;
-    const borderStep = borderSize * 2;
-    for (let pos = 0; pos <= TEST_MAP_SIZE; pos += borderStep) {
-        addResource(world, "stone_barrier", pos, 0, borderSize);
-        addResource(world, "stone_barrier", pos, TEST_MAP_SIZE, borderSize);
-        addResource(world, "stone_barrier", 0, pos, borderSize);
-        addResource(world, "stone_barrier", TEST_MAP_SIZE, pos, borderSize);
+    for (let t = 0; t < WORLD_TILES; t++) {
+        tryAddResource(world, "stone_barrier", t, 0);
+        tryAddResource(world, "stone_barrier", t, WORLD_TILES - 1);
+        tryAddResource(world, "stone_barrier", 0, t);
+        tryAddResource(world, "stone_barrier", WORLD_TILES - 1, t);
     }
 
-    for (let i = 0; i < TEST_MAP_RESOURCE_COUNT; i++) {
+    let placed = 0;
+    let attempts = 0;
+    const maxAttempts = TEST_MAP_RESOURCE_COUNT * 8;
+    while (
+        placed < TEST_MAP_RESOURCE_COUNT &&
+        attempts < maxAttempts
+    ) {
+        attempts++;
         const id = random.choice(TEST_MAP_RESOURCE_IDS);
-        addResource(
-            world,
-            id,
-            random.integer(
-                TEST_MAP_BORDER_PADDING,
-                TEST_MAP_SIZE - TEST_MAP_BORDER_PADDING
-            ),
-            random.integer(
-                TEST_MAP_BORDER_PADDING,
-                TEST_MAP_SIZE - TEST_MAP_BORDER_PADDING
-            ),
-            random.integer(30, 70),
-            random.integer(0, 360)
+        const tx = random.integer(
+            TEST_MAP_BORDER_PADDING_TILES,
+            WORLD_TILES - 1 - TEST_MAP_BORDER_PADDING_TILES
         );
+        const ty = random.integer(
+            TEST_MAP_BORDER_PADDING_TILES,
+            WORLD_TILES - 1 - TEST_MAP_BORDER_PADDING_TILES
+        );
+        const rot = random.integer(0, 3) as TileRot;
+        if (tryAddResource(world, id, tx, ty, rot)) placed++;
     }
 
     playerSystem.trigger(GameEvent.PlaceStructure, {
         structureId: 2,
-        x: 7700,
-        y: 7500,
+        x: 77,
+        y: 75,
         rotation: 0,
     });
 }

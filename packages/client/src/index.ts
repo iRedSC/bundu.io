@@ -7,15 +7,15 @@ import {
 import { ClientPacket } from "@bundu/shared/packet_definitions";
 import { World } from "./world/world";
 import { createViewport } from "./rendering/viewport";
-import { debugContainer } from "./rendering/debug";
 import { createUI } from "./ui/ui";
 import { initAssets } from "./assets/load";
 import { AnimationManagers } from "./animation/animations";
-import { initDevtools } from "@pixi/devtools";
 import { InputController } from "./input/controller";
 import { serverTime } from "./globals";
 import { Player } from "./world/objects/player";
 import { GameSession } from "./session/game_session";
+
+declare const __DEBUG__: boolean;
 
 declare namespace globalThis {
     var __PIXI_APP__: Application;
@@ -23,6 +23,10 @@ declare namespace globalThis {
 
 const GAME_WS_URL =
     process.env.GAME_WS_URL ?? "ws://localhost:7777";
+
+type ClientDebugHandle = {
+    getPlaceStructureId(): number | null;
+};
 
 const app = new Application<Renderer<HTMLCanvasElement>>();
 globalThis.__PIXI_APP__ = app;
@@ -50,11 +54,18 @@ async function main() {
         autoDensity: true,
     });
     document.oncontextmenu = () => false;
-    initDevtools({ app });
+
     const viewport = createViewport(app);
     app.stage.addChild(viewport);
 
-    viewport.addChild(debugContainer);
+    // Debug tools / overlay — omitted entirely from prod bundles.
+    let debug: ClientDebugHandle = { getPlaceStructureId: () => null };
+    if (__DEBUG__) {
+        const { mountClientDebug } = await import("./debug/tools");
+        debug = mountClientDebug(viewport);
+        const { initDevtools } = await import("@pixi/devtools");
+        await initDevtools({ app });
+    }
 
     const world = new World(viewport);
     setupPacketReceiving(receiver, world);
@@ -96,27 +107,6 @@ async function main() {
         },
     });
 
-    const debugToggle = document.querySelector<HTMLButtonElement>("#debug-toggle");
-    if (debugToggle) {
-        const setDebugVisible = (visible: boolean) => {
-            debugContainer.visible = visible;
-            debugToggle.textContent = `Debug: ${visible ? "On" : "Off"}`;
-            debugToggle.ariaPressed = String(visible);
-        };
-
-        debugToggle.addEventListener("pointerdown", (event) =>
-            event.stopPropagation()
-        );
-        debugToggle.addEventListener("pointerup", (event) =>
-            event.stopPropagation()
-        );
-        debugToggle.addEventListener("click", (event) => {
-            event.stopPropagation();
-            setDebugVisible(!debugContainer.visible);
-        });
-        setDebugVisible(debugContainer.visible);
-    }
-
     // * Keyboard / mouse inputs
     // `input` is referenced from session.resetLocalState; const TDZ is fine because
     // reset only runs after connect(), which is after this declaration.
@@ -131,6 +121,7 @@ async function main() {
         screenToWorld: (screenX, screenY) =>
             viewport.toLocal({ x: screenX, y: screenY }),
         isInGame: () => session.isInGame(),
+        getPlaceStructureId: () => debug.getPlaceStructureId(),
     });
 
     gui.inventory.leftclick = (itemId) => {

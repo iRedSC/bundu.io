@@ -1,4 +1,5 @@
 import { Schema, type ServerPacketMap } from "@bundu/shared/packet_definitions";
+import { WORLD_BOUNDS } from "@bundu/shared/tiles";
 import {
     WorldPacketManager,
     PlayerPacketManager,
@@ -6,6 +7,7 @@ import {
     type ServerContext,
 } from "../engine";
 import { Quadtree } from "../engine/quadtree.js";
+import { OccupancyGrid } from "../engine/occupancy.js";
 import { VisibleObjects } from "../components/visible_objects";
 
 export type { ServerContext };
@@ -27,15 +29,15 @@ export function createServerContext(): ServerContext {
     };
 
     return {
-        // Bounds match WORLD_BOUNDS in position.ts (avoid import cycle).
         quadtree: new Quadtree(
             new Map(),
             [
                 { x: 0, y: 0 },
-                { x: 20000, y: 20000 },
+                { x: WORLD_BOUNDS, y: WORLD_BOUNDS },
             ],
             5
         ),
+        occupancy: new OccupancyGrid(),
         worldPacketManager,
         playerPacketManager,
         socketManager: new SocketManager(),

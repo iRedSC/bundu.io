@@ -1,5 +1,6 @@
 import { Box, Circle, Vector } from "sat";
 import { Component } from "../engine";
+import type { TilePos, TileRot } from "@bundu/shared/tiles";
 
 export type Physics = {
     position: Vector;
@@ -22,6 +23,22 @@ export const Physics = Component.register<Physics>(() => {
     };
 });
 
+/** Tile-grid entity: integer origin, discrete rot, occupied world tiles. */
+export type TileEntity = {
+    origin: TilePos;
+    rot: TileRot;
+    /** Local blocked offsets (before rotation). */
+    blocked: TilePos[];
+    /** Cached world tiles currently claimed in the occupancy grid. */
+    occupied: TilePos[];
+};
+export const TileEntity = Component.register<TileEntity>(() => ({
+    origin: { x: 0, y: 0 },
+    rot: 0,
+    blocked: [{ x: 0, y: 0 }],
+    occupied: [],
+}));
+
 export type CalculateCollisions = {};
 export const CalculateCollisions = Component.register<CalculateCollisions>(
     () => ({})
@@ -39,7 +56,7 @@ export type GroundData = {
         x: number,
         y: number,
         w: number,
-        h: number
+        h: number,
     ];
 };
 export const GroundData = Component.register<GroundData>(() => ({

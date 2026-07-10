@@ -1,12 +1,18 @@
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
+import {
+    TILE_SIZE,
+    pointToTile,
+    type TileRot,
+} from "@bundu/shared/tiles";
 import { System, type World } from "../engine";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-import { Circle, Vector } from "sat";
 import { Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { Structure } from "../game_objects/structure.js";
-
-export const STRUCTURE_COLLISION_RADIUS = 10;
+import {
+    makeTileEntity,
+    tileEntityPhysics,
+} from "../game_objects/tile_entity.js";
 
 export class StructureSystem extends System<GameEventMap> {
     constructor(world: World) {
@@ -18,7 +24,7 @@ export class StructureSystem extends System<GameEventMap> {
         );
     }
 
-    /** Clears selection, notifies client, and places at the player's position. */
+    /** Clears selection, notifies client, and places at the player's tile. */
     placeSelectedStructure({
         object: player,
     }: GameEvent.PlaceSelectedStructure) {
@@ -34,14 +40,15 @@ export class StructureSystem extends System<GameEventMap> {
             ServerPacket.SetSelectedStructure,
             {
                 structureId: -1,
-                structureSize: STRUCTURE_COLLISION_RADIUS,
+                structureSize: TILE_SIZE,
             }
         );
 
+        const tile = pointToTile(physics.position);
         this.trigger(GameEvent.PlaceStructure, {
             structureId: selectedStructure.id,
-            x: physics.position.x,
-            y: physics.position.y,
+            x: tile.x,
+            y: tile.y,
             rotation: 0,
         });
 
@@ -49,20 +56,17 @@ export class StructureSystem extends System<GameEventMap> {
     }
 
     placeStructure({ structureId, x, y, rotation }: GameEvent.PlaceStructure) {
-        const position = new Vector(x, y);
-        const struct_physics: Physics = {
-            position,
-            collisionRadius: STRUCTURE_COLLISION_RADIUS,
-            rotation,
-            collider: new Circle(position, STRUCTURE_COLLISION_RADIUS),
-            solid: true,
-            speed: 0,
-        };
-        const structure = new Structure(struct_physics, {
-            id: structureId,
-            variant: 0,
-        });
+        const rot = (rotation % 4) as TileRot;
+        const origin = { x, y };
+        const tile = makeTileEntity(origin, rot);
 
+        if (!this.world.context.occupancy.canPlace(tile.occupied)) return;
+
+        const structure = new Structure(
+            tileEntityPhysics(origin, rot),
+            { id: structureId, variant: 0 },
+            tile
+        );
         this.world.addObject(structure);
     }
 }

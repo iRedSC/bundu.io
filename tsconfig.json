@@ -28,6 +28,7 @@
             "@bundu/server/*": ["./packages/server/src/*"],
             "@client/constants": ["./packages/client/src/constants.ts"],
             "@client/globals": ["./packages/client/src/globals.ts"],
+            "@client/debug/*": ["./packages/client/src/debug/*"],
             "@client/rendering/*": ["./packages/client/src/rendering/*"],
             "@client/assets/*": ["./packages/client/src/assets/*"],
             "@client/configs/*": ["./packages/client/src/configs/*"]

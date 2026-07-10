@@ -35,6 +35,9 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Assert debug tools stripped from prod bundle
+        run: bun run check-prod-debug
+
   docker:
     runs-on: ubuntu-latest
     needs: check

@@ -91,20 +91,6 @@ button:disabled {
     color: #f2f0e4;
 }
 
-.debug-toggle {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    z-index: 3;
-    margin-left: 0;
-    background-color: #214f2c;
-}
-
-.debug-toggle[aria-pressed="false"] {
-    background-color: #333333;
-    opacity: 0.8;
-}
-
 .hidden {
     display: none;
 }

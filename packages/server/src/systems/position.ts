@@ -1,14 +1,19 @@
-import { Physics } from "../components/base.js";
-import { type BasicPoint, round, clamp } from "@bundu/shared";
+import {
+    WORLD_BOUNDS,
+    quantizeWorld,
+    worldToDeci,
+    worldToTile,
+    type BasicPoint,
+} from "@bundu/shared";
+import { Physics, TileEntity } from "../components/base.js";
 import { GameObject, System, type World } from "../engine";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
-/** World extent from origin (0,0) to (WORLD_BOUNDS, WORLD_BOUNDS). */
-export const WORLD_BOUNDS = 20000;
-
 /** Neighborhood half-size for spatial queries (attack / collision). */
 export const SPATIAL_QUERY_PADDING = 500;
+
+export { WORLD_BOUNDS };
 
 export const getSizedBounds = (
     origin: BasicPoint,
@@ -35,11 +40,26 @@ export class PositionSystem extends System<GameEventMap> {
     override enter(object: GameObject) {
         const physics = Physics.get(object);
         if (!physics) return;
+
+        const tile = TileEntity.get(object);
+        if (tile) {
+            const ok = this.world.context.occupancy.occupy(
+                object.id,
+                tile.occupied
+            );
+            if (!ok) {
+                // Placement should have validated; drop if racing a free tile.
+                object.active = false;
+                return;
+            }
+        }
+
         this.world.context.quadtree.insert(object.id, physics.position);
         this.trigger(GameEvent.NewObject, { object });
     }
 
     override exit(object: GameObject) {
+        this.world.context.occupancy.release(object.id);
         this.world.context.quadtree.delete(object.id);
     }
 
@@ -48,24 +68,29 @@ export class PositionSystem extends System<GameEventMap> {
         const physics = Physics.get(object);
         if (!physics) return;
 
+        physics.position.x = quantizeWorld(physics.position.x);
+        physics.position.y = quantizeWorld(physics.position.y);
+
         this.world.context.quadtree.insert(object.id, physics.position);
 
         this.world.context.worldPacketManager.add(ServerPacket.SetPosition, {
             id: object.id,
-            x: physics.position.x,
-            y: physics.position.y,
+            x: worldToDeci(physics.position.x),
+            y: worldToDeci(physics.position.y),
         });
     }
 
     move({ object, x, y }: GameEvent.Move) {
         const physics = object.get(Physics);
-        physics.position.x = round(
-            clamp(physics.position.x - x, 0, WORLD_BOUNDS)
+        // Keep sub-decitile motion in-tick; publish snaps to the decitile grid.
+        physics.position.x = Math.min(
+            Math.max(physics.position.x - x, 0),
+            WORLD_BOUNDS
         );
-        physics.position.y = round(
-            clamp(physics.position.y - y, 0, WORLD_BOUNDS)
+        physics.position.y = Math.min(
+            Math.max(physics.position.y - y, 0),
+            WORLD_BOUNDS
         );
-        // CollisionSystem listens to Move next and emits Collide once when settled.
     }
 
     rotate({ object, rotation }: GameEvent.Rotate) {
@@ -77,4 +102,16 @@ export class PositionSystem extends System<GameEventMap> {
             rotation,
         });
     }
+}
+
+export function tilesOverlappingCircle(
+    pos: BasicPoint,
+    radius: number
+): { minX: number; minY: number; maxX: number; maxY: number } {
+    return {
+        minX: worldToTile(pos.x - radius),
+        minY: worldToTile(pos.y - radius),
+        maxX: worldToTile(pos.x + radius),
+        maxY: worldToTile(pos.y + radius),
+    };
 }
