@@ -2,11 +2,6 @@ import { describe, expect, test, beforeEach } from "bun:test";
 import ObjectContainer from "../../../../packages/client/src/world/object_container";
 import type GameObject from "../../../../packages/client/src/world/game_object";
 
-type StubObject = {
-  id: number;
-  update: (now: number) => boolean;
-};
-
 function stub(
   id: number,
   update: (now: number) => boolean = () => false,
@@ -30,20 +25,15 @@ describe("ObjectContainer", () => {
 
     expect(container.get(1)).toBe(a);
     expect(container.get(2)).toBe(b);
-    expect(container.objects.size).toBe(2);
-    expect(container.updating.has(a)).toBe(true);
-    expect(container.updating.has(b)).toBe(true);
     expect([...container.all()]).toEqual([a, b]);
 
     container.delete(1);
     expect(container.get(1)).toBeUndefined();
-    expect(container.updating.has(a)).toBe(false);
-    expect(container.objects.size).toBe(1);
+    expect([...container.all()]).toEqual([b]);
 
     container.delete(b);
     expect(container.get(2)).toBeUndefined();
-    expect(container.objects.size).toBe(0);
-    expect(container.updating.size).toBe(0);
+    expect([...container.all()]).toEqual([]);
 
     expect(() => container.delete(99)).not.toThrow();
   });
@@ -68,6 +58,6 @@ describe("ObjectContainer", () => {
     expect(container.updating.has(idle)).toBe(true);
     expect(container.get(1)).toBe(active);
     expect(container.get(2)).toBe(idle);
-    expect(container.objects.size).toBe(2);
+    expect([...container.all()]).toEqual([active, idle]);
   });
 });

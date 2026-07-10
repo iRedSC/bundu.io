@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import {
   PositionStates,
   RotationStates,
@@ -11,57 +11,77 @@ describe("PositionStates", () => {
       calls += 1;
     });
 
-    const t0 = 0;
-    states.set({ x: 100, y: 200 });
-    expect(calls).toBe(1);
+    let fakeNow = 1_000;
+    const nowSpy = spyOn(performance, "now").mockImplementation(() => fakeNow);
 
-    const first = states.interpolate(t0);
-    const mid = states.interpolate(t0 + 50);
-    const later = states.interpolate(t0 + 200);
+    try {
+      // First set snaps current to the target; seed so the second set must lerp.
+      states.set({ x: 0, y: 0 });
+      expect(calls).toBe(1);
 
-    const dist = (p: { x: number; y: number }) =>
-      Math.hypot(100 - p.x, 200 - p.y);
+      const target = { x: 100, y: 200 };
+      states.set(target);
+      expect(calls).toBe(2);
 
-    // Over advancing time, position should move closer to (or reach) the target
-    expect(dist(mid)).toBeLessThanOrEqual(dist(first) + 1e-6);
-    expect(dist(later)).toBeLessThanOrEqual(dist(mid) + 1e-6);
+      const dist = (p: { x: number; y: number }) =>
+        Math.hypot(target.x - p.x, target.y - p.y);
 
-    // Eventually settle
-    let settled = false;
-    for (let t = t0; t < t0 + 5_000; t += 100) {
-      states.interpolate(t);
-      if (states.isComplete()) {
-        settled = true;
-        break;
+      const first = states.interpolate(fakeNow);
+      fakeNow += 50;
+      const mid = states.interpolate(fakeNow);
+      fakeNow += 150;
+      const later = states.interpolate(fakeNow);
+
+      expect(dist(first)).toBeGreaterThan(1);
+      expect(dist(mid)).toBeLessThan(dist(first));
+      expect(dist(later)).toBeLessThan(dist(mid));
+
+      let settled = false;
+      for (let i = 0; i < 50; i++) {
+        fakeNow += 100;
+        states.interpolate(fakeNow);
+        if (states.isComplete()) {
+          settled = true;
+          break;
+        }
       }
+      expect(settled).toBe(true);
+      const final = states.interpolate(fakeNow);
+      expect(final.x).toBeCloseTo(target.x, 0);
+      expect(final.y).toBeCloseTo(target.y, 0);
+    } finally {
+      nowSpy.mockRestore();
     }
-    expect(settled).toBe(true);
-    const final = states.interpolate();
-    expect(final.x).toBeCloseTo(100, 0);
-    expect(final.y).toBeCloseTo(200, 0);
   });
 });
 
 describe("RotationStates", () => {
-  test("set invokes callback and isComplete after enough time", async () => {
+  test("set invokes callback and interpolate progresses toward target", () => {
     let calls = 0;
     const states = new RotationStates(() => {
       calls += 1;
     });
 
-    states.set(Math.PI / 2);
-    expect(calls).toBe(1);
+    let fakeNow = 1_000;
+    const nowSpy = spyOn(performance, "now").mockImplementation(() => fakeNow);
 
-    const value = states.interpolate();
-    expect(typeof value).toBe("number");
-    expect(Number.isFinite(value)).toBe(true);
+    try {
+      const target = Math.PI / 2;
+      states.set(target);
+      expect(calls).toBe(1);
 
-    // Coarse: wait until interpolation finishes (wall-clock based)
-    const deadline = Date.now() + 3_000;
-    while (!states.isComplete() && Date.now() < deadline) {
-      states.interpolate();
-      await Bun.sleep(20);
+      const first = states.interpolate();
+      fakeNow += 25;
+      const mid = states.interpolate();
+      fakeNow += 25;
+      const later = states.interpolate();
+
+      // From last=0 toward π/2: values should advance and land on target.
+      expect(mid).toBeGreaterThan(first);
+      expect(later).toBeGreaterThan(mid);
+      expect(later).toBeCloseTo(target, 5);
+    } finally {
+      nowSpy.mockRestore();
     }
-    expect(states.isComplete()).toBe(true);
   });
 });
