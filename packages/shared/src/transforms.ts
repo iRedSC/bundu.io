@@ -89,8 +89,8 @@ export function subPoints(a: BasicPoint, b: BasicPoint): BasicPoint {
 }
 
 export function clamp(value: number, min: number | null, max: number | null) {
-    const clampedMin = min ? Math.max(value, min) : value;
-    const clampedMax = max ? Math.min(value, clampedMin) : clampedMin;
+    const clampedMin = min != null ? Math.max(value, min) : value;
+    const clampedMax = max != null ? Math.min(clampedMin, max) : clampedMin;
     return clampedMax;
 }
 
