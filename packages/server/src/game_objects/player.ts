@@ -11,6 +11,7 @@ import { Stats } from "../components/stats.js";
 import { GameObject } from "../engine";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { GameObjectData } from "@bundu/shared/object_types.js";
+import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
 
 // Player should have the following properties:
 // name, socket, inventory, cosmetics, movement
@@ -56,10 +57,10 @@ export class Player extends GameObject {
             .add(new VisibleObjects());
     }
 
-    public override getNewObjectPacket() {
+    public override getNewObjectPacket(): ServerPacket.LoadObject {
         const physics = this.get(Physics);
         const data = this.get(PlayerData);
-        const packet = {
+        return {
             id: this.id,
             x: physics.position.x,
             y: physics.position.y,
@@ -75,6 +76,5 @@ export class Player extends GameObject {
                 physics.collisionRadius,
             ],
         };
-        return packet;
     }
 }

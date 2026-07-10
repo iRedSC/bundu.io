@@ -16,20 +16,14 @@ import { GameObjectData } from "@bundu/shared/object_types";
 import { Structure } from "./objects/structure";
 import { getStringId } from "@bundu/shared/id_map";
 
-function isPlayerData(data: unknown): data is GameObjectData.PlayerData {
-    return Array.isArray(data) && data.length >= 7 && typeof data[0] === "string";
-}
-
-function isResourceData(
-    data: unknown
-): data is GameObjectData.ResourceNodeData {
-    return (
-        Array.isArray(data) &&
-        data.length >= 2 &&
-        typeof data[0] === "number" &&
-        typeof data[1] === "number"
-    );
-}
+type LoadPlayer = Extract<
+    ServerPacket.LoadObject,
+    { type: typeof GameObjectData.PlayerType }
+>;
+type LoadResource = Extract<
+    ServerPacket.LoadObject,
+    { type: typeof GameObjectData.ResourceNodeType }
+>;
 
 /** Client world scene — packet handlers land here after decode. */
 export class World {
@@ -118,19 +112,14 @@ export class World {
         }
     };
 
-    newPlayer = (packet: ServerPacket.LoadObject) => {
-        if (!isPlayerData(packet.data)) {
-            return console.error(
-                `Tried to load player (ID: ${packet.id}) with bad data.`
-            );
-        }
+    newPlayer = (packet: LoadPlayer) => {
         const [
             name,
             mainhand,
             offhand,
             helmet,
             backpack,
-            playerSkin,
+            _playerSkin,
             collisionRadius,
         ] = packet.data;
         const id = packet.id;
@@ -153,12 +142,7 @@ export class World {
         this.renderer.add(player.id, ...player.containers);
     };
 
-    newStructure = (packet: ServerPacket.LoadObject) => {
-        if (!isResourceData(packet.data)) {
-            return console.error(
-                `Tried to load structure (ID: ${packet.id}) with bad data.`
-            );
-        }
+    newStructure = (packet: LoadResource) => {
         const [collisionRadius, nodeType] = packet.data;
         this.renderer.delete(packet.id);
 

@@ -17,4 +17,10 @@ export namespace GameObjectData {
 
     export const ResourceNodeType = 0x01;
     export type ResourceNodeData = [collisionRadius: number, type: number];
+
+    /** Maps LoadObject.type → typed payload tuple. */
+    export type ByType = {
+        [PlayerType]: PlayerData;
+        [ResourceNodeType]: ResourceNodeData;
+    };
 }
