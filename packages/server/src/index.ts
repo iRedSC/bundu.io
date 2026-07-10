@@ -36,7 +36,7 @@ import { StructureSystem } from "./systems/structure";
 const world = new World();
 loadConfigs();
 
-const playerSystem = new PlayerSystem();
+const playerSystem = new PlayerSystem(world);
 const serializer = new Serializer<typeof Schema.Client, ClientPacketMap>(
     Schema.Client
 );
@@ -45,13 +45,13 @@ setupPacketReceiving(receiver, playerSystem);
 
 world
     .addSystem(playerSystem)
-    .addSystem(new PositionSystem())
-    .addSystem(new CollisionSystem())
-    .addSystem(new HealthSystem())
-    .addSystem(new PacketSystem())
-    .addSystem(new AttackSystem())
-    .addSystem(new StructureSystem())
-    .addSystem(new RenderDistanceSystem());
+    .addSystem(new PositionSystem(world))
+    .addSystem(new CollisionSystem(world))
+    .addSystem(new HealthSystem(world))
+    .addSystem(new PacketSystem(world))
+    .addSystem(new AttackSystem(world))
+    .addSystem(new StructureSystem(world))
+    .addSystem(new RenderDistanceSystem(world));
 
 const TEST_MAP_SIZE = 20000;
 const TEST_MAP_BORDER_PADDING = 300;

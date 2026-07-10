@@ -1,6 +1,6 @@
 import { Health } from "../components/base.js";
 import { Inventory } from "../components/inventory.js";
-import { System } from "../engine";
+import { System, type World } from "../engine";
 import { Stats } from "../components/stats.js";
 import {
     playerPacketManager,
@@ -15,8 +15,8 @@ import { PlayerData } from "../components/player.js";
  * Keep this thin — prefer sending from the system that owns the logic when adding features.
  */
 export class PacketSystem extends System<GameEventMap> {
-    constructor() {
-        super([PlayerData], 10);
+    constructor(world: World) {
+        super(world, [PlayerData], 10);
 
         this.listen(GameEvent.Hurt, this.hurt);
         this.listen(GameEvent.ObjectsAddedToView, this.objectsAddedToView);

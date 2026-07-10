@@ -3,7 +3,7 @@ import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js"
 import { GroundData, Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
-import { GameObject, System } from "../engine";
+import { GameObject, System, type World } from "../engine";
 import {
     AttributeList,
     Attributes,
@@ -22,8 +22,8 @@ import { STRUCTURE_COLLISION_RADIUS } from "./structure.js";
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
  */
 export class PlayerSystem extends System<GameEventMap> {
-    constructor() {
-        super([PlayerData, Physics]);
+    constructor(world: World) {
+        super(world, [PlayerData, Physics]);
         this.listen(GameEvent.Kill, this.kill, [PlayerData]);
     }
 
