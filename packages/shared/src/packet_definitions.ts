@@ -1,3 +1,5 @@
+import type { GameObjectData } from "./object_types.js";
+
 export namespace ServerPacket {
     export const SetRotation = 0x00;
     export type SetRotation = { id: number; rotation: number };
@@ -7,13 +9,15 @@ export namespace ServerPacket {
 
     export const LoadObject = 0x04;
     export type LoadObject = {
-        id: number;
-        x: number;
-        y: number;
-        rotation: number;
-        type: number;
-        data: unknown[];
-    };
+        [T in keyof GameObjectData.ByType]: {
+            id: number;
+            x: number;
+            y: number;
+            rotation: number;
+            type: T;
+            data: GameObjectData.ByType[T];
+        };
+    }[keyof GameObjectData.ByType];
 
     export const UpdateVitals = 0x06;
     export type UpdateVitals = {
