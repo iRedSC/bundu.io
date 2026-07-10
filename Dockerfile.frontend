@@ -14,7 +14,7 @@ FROM deps AS build
 ARG GAME_WS_URL=ws://localhost:7777
 ENV GAME_WS_URL=$GAME_WS_URL
 
-COPY tsconfig.json build.ts index.html server.ts ./
+COPY tsconfig.json build.ts index.html static-server.ts ./
 COPY packages ./packages
 COPY public ./public
 
@@ -25,8 +25,8 @@ WORKDIR /app
 
 ENV PORT=3000
 
-COPY --from=build /app/server.ts ./server.ts
+COPY --from=build /app/static-server.ts ./static-server.ts
 COPY --from=build /app/public ./public
 
 EXPOSE 3000
-CMD ["bun", "server.ts"]
+CMD ["bun", "static-server.ts"]

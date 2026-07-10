@@ -1,7 +1,6 @@
 import { GameObject } from "./game_object.js";
 import { type AnySystem } from "./system.js";
 import { Component, type ComponentFactory } from "./component.js";
-import { NOW } from "./now.js";
 
 /** Utility: check if all elements of subSet exist in superSet */
 function isSubset<T>(subSet: Set<T>, superSet: Set<T>): boolean {
@@ -48,7 +47,7 @@ export class World {
     private readonly subscriptions = new Map<number, () => void>();
 
     public timeScale = 1;
-    public lastUpdate = NOW();
+    public lastUpdate = performance.now();
     /** Authoritative gameplay clock (ms). Cooldowns, cadence, and expiry use this — not Date.now()/serverTime. */
     public gameTime = 0;
 
@@ -173,7 +172,7 @@ export class World {
     // Update Loop
     // -------------------------------------------------------------------
     public update(): void {
-        const now = NOW();
+        const now = performance.now();
 
         // Update global game time using the scaled delta
         const delta = now - this.lastUpdate;
@@ -315,7 +314,7 @@ export class World {
                 this.objectLastUpdateGT
                     .get(object.id)!
                     .set(system.id, this.gameTime);
-                this.objectLastUpdateRT.get(object.id)!.set(system.id, NOW());
+                this.objectLastUpdateRT.get(object.id)!.set(system.id, performance.now());
                 system.enter?.call(system, object);
             } else if (!qualifies && already) {
                 system.exit?.call(system, object);

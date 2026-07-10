@@ -1,26 +1,5 @@
-import { round } from "./math.js";
-import { type BasicPoint } from "./types.js";
-
-/**
- * Returns the distance between two points
- */
-export function distance(
-    point1: BasicPoint,
-    point2: BasicPoint,
-    tolerance: number = Number.EPSILON
-): number {
-    const deltaX = point2.x - point1.x;
-    const deltaY = point2.y - point1.y;
-
-    // Check if the difference is within the tolerance
-    if (Math.abs(deltaX) < tolerance && Math.abs(deltaY) < tolerance) {
-        return 0; // Points are practically identical
-    }
-
-    const distance = Math.sqrt(Math.abs(deltaX) ** 2 + Math.abs(deltaY) ** 2);
-
-    return distance;
-}
+import { round } from "./math";
+import { type BasicPoint } from "./types";
 
 export function rotationLerp(a: number, b: number, t: number): number {
     t = Math.min(1, t);
@@ -84,10 +63,6 @@ export function moveInDirection(
     };
 }
 
-export function subPoints(a: BasicPoint, b: BasicPoint): BasicPoint {
-    return { x: a.x - b.x, y: a.y - b.y };
-}
-
 export function clamp(value: number, min: number | null, max: number | null) {
     const clampedMin = min != null ? Math.max(value, min) : value;
     const clampedMax = max != null ? Math.min(clampedMin, max) : clampedMin;
@@ -120,22 +95,6 @@ export function colorLerp(color1: number, color2: number, t: number) {
     const b = Math.round(lerp(rgb1.b, rgb2.b, t));
 
     return rgbToHex({ r, g, b });
-}
-
-type Rectangle = { x: number; y: number; width: number; height: number };
-
-export function coordsToRect(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number
-): Rectangle {
-    const x = Math.min(x1, x2);
-    const y = Math.min(y1, y2);
-    const width = Math.abs(x1 - x2);
-    const height = Math.abs(y1 - y2);
-
-    return { x: x, y: y, width: width, height: height };
 }
 
 export function prettifyNumber(num: number) {

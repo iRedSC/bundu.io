@@ -1,13 +1,9 @@
 import { Container, Graphics } from "pixi.js";
-import { ServerPacket } from "@bundu/shared/packet_definitions";
 
 // Used for creating debug objects on the map, such as hitboxes or id text.
 
 export const debugContainer = new Container();
 debugContainer.zIndex = 1000;
-
-const rects = new Graphics();
-debugContainer.addChild(rects);
 
 export class DebugWorldObject {
     containers: Map<string, Container>;
@@ -34,35 +30,13 @@ export class DebugWorldObject {
             container.renderable = value;
         }
     }
-}
 
-export function drawPolygon(packet: ServerPacket.DebugDrawPolygon) {
-    console.log("Drawing polygon");
-    const polygon = new Graphics();
-    polygon.stroke({ width: 16, color: "#FF0000" });
-    const start = { x: packet.startX, y: packet.startY };
-    polygon.moveTo(start.x, start.y);
-    for (const rawPoint of packet.points) {
-        const point = {
-            x: start.x + rawPoint[0],
-            y: start.y + rawPoint[1],
-        };
-        polygon.lineTo(point.x, point.y);
-    }
-    debugContainer.addChild(polygon);
-    setTimeout(() => {
-        debugContainer.removeChild(polygon);
-        polygon.destroy();
-    }, 1000);
-}
-
-export function drawRects(packet: ServerPacket.DebugDrawRects) {
-    rects.clear();
-    for (const rect of packet.rects) {
-        rects.rect(...rect).stroke({
-            width: 16,
-            color: 0xff0000,
-        });
+    destroy() {
+        for (const container of this.containers.values()) {
+            debugContainer.removeChild(container);
+            container.destroy();
+        }
+        this.containers.clear();
     }
 }
 
