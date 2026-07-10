@@ -16,13 +16,8 @@ type TrackEvents = { ping: string };
 class TrackingSystem extends System<TrackEvents> {
   entered: GameObject[] = [];
   exited: GameObject[] = [];
-  changed: Array<{
-    object: GameObject;
-    added?: Component<unknown>;
-    removed?: Component<unknown>;
-  }> = [];
 
-  constructor(components: ComponentFactory<any>[], tps?: number) {
+  constructor(components: ComponentFactory<Vec>[], tps?: number) {
     super(components, tps);
   }
 
@@ -33,14 +28,6 @@ class TrackingSystem extends System<TrackEvents> {
   override exit(object: GameObject) {
     this.exited.push(object);
   }
-
-  override change(
-    object: GameObject,
-    added?: Component<unknown>,
-    removed?: Component<unknown>
-  ) {
-    this.changed.push({ object, added, removed });
-  }
 }
 
 describe("Component.register", () => {
@@ -48,13 +35,16 @@ describe("Component.register", () => {
     const Position = Component.register<Vec>(() => ({ x: 0, y: 0 }));
     const Velocity = Component.register<Vec>(() => ({ x: 1, y: 1 }));
 
-    expect(Position.id).toBe(Position.id);
-    expect(Velocity.id).not.toBe(Position.id);
+    const positionId = Position.id;
+    expect(Velocity.id).not.toBe(positionId);
 
     const def = new Position();
+    expect(def.id).toBe(positionId);
+    expect(Position.id).toBe(positionId);
     expect(def.data).toEqual({ x: 0, y: 0 });
 
     const custom = new Position({ x: 3, y: 4 });
+    expect(custom.id).toBe(positionId);
     expect(custom.data).toEqual({ x: 3, y: 4 });
 
     const obj = new Entity().add(new Position({ x: 9, y: 8 }));
