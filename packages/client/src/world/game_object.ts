@@ -1,7 +1,8 @@
 import { DebugWorldObject } from "@client/rendering/debug";
 import { Circle } from "./debug/circle";
 import { TEXT_STYLE } from "@client/assets/text";
-import { Animation, AnimationManager, round } from "@bundu/shared";
+import { round } from "@bundu/shared";
+import { Animation, AnimationManager } from "../animation/runtime";
 import {
     PositionStates,
     RotationStates,

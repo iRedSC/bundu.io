@@ -1,5 +1,6 @@
 import { Physics } from "../components/base.js";
-import { Quadtree, type BasicPoint, round, clamp } from "@bundu/shared";
+import { type BasicPoint, round, clamp } from "@bundu/shared";
+import { Quadtree } from "../engine/quadtree.js";
 import { GameObject, System, type World } from "../engine";
 import { worldPacketManager } from "../network/managers.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";

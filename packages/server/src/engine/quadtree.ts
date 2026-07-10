@@ -1,5 +1,4 @@
-import { type BasicPoint } from "./types";
-import { Range } from "./range";
+import { Range, type BasicPoint } from "@bundu/shared";
 
 export type QuadtreeObjectList = Map<number, BasicPoint>;
 

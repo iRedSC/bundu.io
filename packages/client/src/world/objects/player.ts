@@ -1,8 +1,9 @@
 import { radians, lerp } from "@bundu/shared/transforms";
 import { spriteConfigs } from "../../configs/sprite_configs";
 import { SpriteFactory, ContaineredSprite } from "../../assets/sprite_factory";
-import { random, Animation, AnimationManager } from "@bundu/shared";
+import { random } from "@bundu/shared";
 import { ANIMATION, easeIn, easeOut, hurt } from "../../animation/animations";
+import { Animation, AnimationManager } from "../../animation/runtime";
 import { Container, Point, Text } from "pixi.js";
 import GameObject from "../game_object";
 import { getStringId } from "@bundu/shared/id_map";
