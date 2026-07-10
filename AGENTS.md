@@ -22,3 +22,6 @@
 
 ## Subagents
 - Please use Grok 4.5 High for all subagent work.
+
+## Tests
+- NEVER modify tests without asking. Give a debrief of why they need changed, and only change them on approval.

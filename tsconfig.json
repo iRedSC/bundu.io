@@ -37,5 +37,5 @@
         "outDir": "dist",
         "strictNullChecks": true
     },
-    "include": ["src"]
+    "include": ["src", "tests"]
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach } from "bun:test";
-import { Serializer } from "./serializer";
+import { Serializer } from "@ioengine/shared";
 
 const TestSchema = {
   1: {
