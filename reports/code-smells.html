@@ -1288,8 +1288,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-root-static-server-naming" data-id="root-static-server-naming" data-severity="low" data-package="shared" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark root-static-server-naming fixed" /></div>
+      <article class="smell" id="smell-root-static-server-naming" data-id="root-static-server-naming" data-severity="low" data-package="shared" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark root-static-server-naming fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Root <code>server.ts</code> is a static file host, not the game server</h3>
@@ -1300,7 +1300,7 @@
           <p><code>bun run server</code> runs the game WS process; <code>bun run start</code> runs root <code>server.ts</code> which only serves <code>public/</code>. Naming collides with <code>packages/server</code>.</p>
           <p class="suggestion">Rename to <code>static-server.ts</code> / <code>serve-frontend</code> and align script names.</p>
           <ul class="files">
-            <li>server.ts</li>
+            <li>static-server.ts</li>
             <li>package.json</li>
             <li>Dockerfile.frontend</li>
             <li>docker-compose.yml</li>
