@@ -1,4 +1,4 @@
-import { lookToward } from "@bundu/shared/transforms";
+import { lookToward, radians } from "@bundu/shared/transforms";
 import { spriteConfigs } from "../../configs/sprite_configs";
 import { SpriteFactory, ContaineredSprite } from "../../assets/sprite_factory";
 import { ANIMATION, hurt } from "../../animation/animations";

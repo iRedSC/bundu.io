@@ -1,4 +1,9 @@
-import { encodeMoveDirection, round, degrees } from "@bundu/shared";
+import {
+    encodeMoveDirection,
+    round,
+    degrees,
+    type MoveAxes,
+} from "@bundu/shared";
 import {
     ClientPacket,
     type Schema,
@@ -72,7 +77,7 @@ export class InputController {
         }
     }
 
-    private handleMoveInput(move: [number, number]) {
+    private handleMoveInput(move: MoveAxes) {
         const chat = document.querySelector<HTMLInputElement>("#chat-input");
         if (chat === document.activeElement) return;
 
