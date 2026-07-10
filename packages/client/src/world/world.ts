@@ -38,10 +38,9 @@ export class World {
         this.viewport = viewport;
         this.camera = new Camera(viewport);
         this.sky = new Sky();
-        this.renderer = new LayeredRenderer();
+        this.renderer = new LayeredRenderer(this.viewport);
         this.objects = new ObjectContainer();
 
-        this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
         this.viewport.sortChildren();
     }
