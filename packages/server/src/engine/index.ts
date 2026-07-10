@@ -1,4 +1,4 @@
-export { Component } from "./component";
+export { Component, type ComponentFactory } from "./component";
 export { World } from "./world";
 export { GameObject } from "./game_object";
 export { Serializer } from "@bundu/shared";
