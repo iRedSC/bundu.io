@@ -62,23 +62,29 @@ describe("ClientPacketReceiver", () => {
 
   test("continues processing remaining packets when one deserialize fails", () => {
     const seen: number[] = [];
+    const error = console.error;
+    console.error = () => {};
 
-    receiver.on(1, (packet) => {
-      seen.push(packet.a);
-    });
-    receiver.on(2, (packet) => {
-      seen.push(packet.value);
-    });
+    try {
+      receiver.on(1, (packet) => {
+        seen.push(packet.a);
+      });
+      receiver.on(2, (packet) => {
+        seen.push(packet.value);
+      });
 
-    // id 999 is unknown to the schema → deserialize throws and is dropped
-    const packets: SerializedPacketArray = [
-      100,
-      [1, 10, "ok"],
-      [999, "bad"],
-      [2, 20],
-    ];
-    expect(() => receiver.process(packets)).not.toThrow();
-    expect(seen).toEqual([10, 20]);
+      // id 999 is unknown to the schema → deserialize throws and is dropped
+      const packets: SerializedPacketArray = [
+        100,
+        [1, 10, "ok"],
+        [999, "bad"],
+        [2, 20],
+      ];
+      expect(() => receiver.process(packets)).not.toThrow();
+      expect(seen).toEqual([10, 20]);
+    } finally {
+      console.error = error;
+    }
   });
 
   test("silently skips packets with no registered callback", () => {
