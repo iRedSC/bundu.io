@@ -131,7 +131,7 @@ async function main() {
                 });
             }
             world.objects.updating.add(player);
-            player.addState(rotation);
+            player.addRotation(rotation);
         }
     };
 

@@ -13,8 +13,7 @@ import { serverTime } from "@client/globals";
 
 /**
  * The base object for rendering something in the world.
- * Contains states for interpolating movement
- * Separate system for interpolating rotation
+ * Contains shared-clock states for interpolating position and rotation.
  */
 export default class GameObject {
     container: Container;
@@ -106,7 +105,7 @@ export default class GameObject {
     /** Return true if object is done interpolating */
     update(now: number): boolean {
         const { x, y } = this.positionStates.interpolate(now);
-        const rot = this.rotationStates.interpolate();
+        const rot = this.rotationStates.interpolate(now);
 
         this.position.set(x, y);
         this.container.rotation = rot;
@@ -125,17 +124,12 @@ export default class GameObject {
         );
     }
 
-    addState(state: PositionState | RotationState): void {
-        if (typeof state === "number") {
-            this.rotationStates.set(state);
-        } else if (
-            state &&
-            typeof state === "object" &&
-            typeof state.x === "number" &&
-            typeof state.y === "number"
-        ) {
-            this.positionStates.set(state);
-        }
+    addPosition(state: PositionState, now = performance.now()): void {
+        this.positionStates.set(state, now);
+    }
+
+    addRotation(radians: RotationState, now = performance.now()): void {
+        this.rotationStates.set(radians, now);
     }
 
     /** Trigger an animation state */

@@ -178,7 +178,7 @@ export class World {
         const object = this.objects.get(packet.id);
         if (!object) return;
         object.renderable = true;
-        object.addState({ x: packet.x, y: packet.y });
+        object.addPosition({ x: packet.x, y: packet.y }, now);
         this.objects.updating.add(object);
         this.objects.add(object);
     };
@@ -187,7 +187,7 @@ export class World {
         if (packet.id === this.user) return;
         const object = this.objects.get(packet.id);
         if (!object) return;
-        object.addState(radians(packet.rotation));
+        object.addRotation(radians(packet.rotation), _now);
         this.objects.updating.add(object);
     };
 

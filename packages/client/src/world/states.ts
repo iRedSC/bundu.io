@@ -1,5 +1,13 @@
 import { lerp, rotationLerp } from "@bundu/shared";
 
+/** Shared exponential-smoothing clock for position and rotation. */
+const SMOOTHING_MS = 80;
+const COMPLETE_EPSILON = 0.001;
+
+function smoothT(elapsedMs: number): number {
+    return 1 - Math.exp(-elapsedMs / SMOOTHING_MS);
+}
+
 export interface PositionState {
     x: number;
     y: number;
@@ -12,7 +20,6 @@ export class PositionStates {
 
     private lastUpdateTime: number = performance.now();
     private lastFrameTime: number = performance.now();
-    private readonly smoothingMs = 80;
 
     callback?: () => void;
 
@@ -25,7 +32,7 @@ export class PositionStates {
 
         const elapsed = Math.max(0, now - this.lastFrameTime);
         this.lastFrameTime = now;
-        const t = 1 - Math.exp(-elapsed / this.smoothingMs);
+        const t = smoothT(elapsed);
 
         this.current = {
             x: lerp(this.current.x, this.next.x, t),
@@ -34,20 +41,20 @@ export class PositionStates {
         return this.current;
     }
 
-    set(state: PositionState) {
+    set(state: PositionState, now = performance.now()) {
         if (!this.next) this.current = state;
         this.last = this.current;
         this.next = state;
-        this.lastUpdateTime = performance.now();
-        this.lastFrameTime = this.lastUpdateTime;
+        this.lastUpdateTime = now;
+        this.lastFrameTime = now;
         this.callback?.();
     }
 
     isComplete(): boolean {
         return (
             !!this.next &&
-            Math.abs(this.current.x - this.next.x) < 0.001 &&
-            Math.abs(this.current.y - this.next.y) < 0.001
+            Math.abs(this.current.x - this.next.x) < COMPLETE_EPSILON &&
+            Math.abs(this.current.y - this.next.y) < COMPLETE_EPSILON
         );
     }
 }
@@ -57,36 +64,44 @@ export type RotationState = number;
 export class RotationStates {
     private last: RotationState = 0;
     private current: RotationState = 0;
-    private next: RotationState = 0;
-    callback?: () => void;
+    private next?: RotationState;
 
     private lastUpdateTime: number = performance.now();
-    private readonly updateIntervalMs = 50;
+    private lastFrameTime: number = performance.now();
+
+    callback?: () => void;
 
     constructor(callback?: () => void) {
         this.callback = callback;
     }
 
-    interpolate(): number {
-        if (!this.next) return this.last;
+    interpolate(now = performance.now()): number {
+        if (this.next === undefined) return this.last;
 
-        const now = performance.now();
-        const elapsed = now - this.lastUpdateTime;
-        const t = Math.min(elapsed / this.updateIntervalMs, 1);
+        const elapsed = Math.max(0, now - this.lastFrameTime);
+        this.lastFrameTime = now;
+        const t = smoothT(elapsed);
 
-        this.current = rotationLerp(this.last, this.next, t);
+        this.current = rotationLerp(this.current, this.next, t);
         return this.current;
     }
 
-    isComplete(): boolean {
-        const elapsed = performance.now() - this.lastUpdateTime;
-        return elapsed >= this.updateIntervalMs;
+    set(state: RotationState, now = performance.now()) {
+        if (this.next === undefined) this.current = state;
+        this.last = this.current;
+        this.next = state;
+        this.lastUpdateTime = now;
+        this.lastFrameTime = now;
+        this.callback?.();
     }
 
-    set(state: RotationState) {
-        this.last = this.next;
-        this.next = state;
-        this.lastUpdateTime = performance.now();
-        this.callback?.();
+    isComplete(): boolean {
+        if (this.next === undefined) return false;
+        // Shortest angular distance (same wrap as rotationLerp)
+        let delta = this.next - this.current;
+        delta = ((delta + Math.PI) % (2 * Math.PI)) - Math.PI;
+        if (delta > Math.PI) delta -= 2 * Math.PI;
+        else if (delta < -Math.PI) delta += 2 * Math.PI;
+        return Math.abs(delta) < COMPLETE_EPSILON;
     }
 }
