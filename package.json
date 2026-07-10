@@ -12,6 +12,7 @@
         "typescript": "~5.9.3"
     },
     "scripts": {
+        "dev": "bun run ./dev.ts",
         "server": "bun run packages/server/src/index.ts",
         "build": "bun run ./build.ts",
         "serve-frontend": "bun static-server.ts --hot",

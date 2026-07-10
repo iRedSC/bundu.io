@@ -8,17 +8,20 @@ Bun monorepo: Pixi client, WebSocket game server, shared package.
 bun install
 ```
 
-## Local (two processes)
+## Local
 
 ```bash
-# Terminal 1 — game server (WS :7777)
-bun run server
-
-# Terminal 2 — build client + static host (:3000)
-bun run client
+bun run dev
 ```
 
-Open http://localhost:3000/site/
+Builds the client, starts the game server (WS `:7777`) and static host (`:3000`), and rebuilds the client when sources change. Open http://localhost:3000/site/
+
+To run either process alone:
+
+```bash
+bun run server   # WS :7777
+bun run client   # build + static host :3000
+```
 
 ## Containers
 
@@ -49,6 +52,7 @@ GAME_WS_URL=wss://game.example.com docker compose build frontend
 
 | Script            | Purpose                                      |
 |-------------------|----------------------------------------------|
+| `bun run dev`     | Server + client together (rebuild on change) |
 | `bun run server`  | Game WebSocket server                        |
 | `bun run client`  | Build + `serve-frontend` (dev)               |
 | `bun run build`   | Production client bundle → `public/site/`    |
