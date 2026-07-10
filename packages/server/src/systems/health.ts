@@ -1,12 +1,12 @@
 import { Attributes } from "../components/attributes.js";
 import { Health } from "../components/base.js";
-import { GameObject, System } from "../engine";
+import { GameObject, System, type World } from "../engine";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
 export class HealthSystem extends System<GameEventMap> {
     tick: number;
-    constructor() {
-        super([Health], 1);
+    constructor(world: World) {
+        super(world, [Health], 1);
 
         this.tick = 0;
 

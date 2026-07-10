@@ -1,5 +1,5 @@
 import { Physics } from "../components/base.js";
-import { System, GameObject } from "../engine";
+import { System, GameObject, type World } from "../engine";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { Range } from "@bundu/shared";
@@ -9,8 +9,8 @@ const RENDER_DISTANCE_X = 2200;
 const RENDER_DISTANCE_Y = 1250;
 
 export class RenderDistanceSystem extends System<GameEventMap> {
-    constructor() {
-        super([VisibleObjects, Physics], 2);
+    constructor(world: World) {
+        super(world, [VisibleObjects, Physics], 2);
 
         this.listen(GameEvent.NewObject, this.newObject, [Physics]);
         this.listen(GameEvent.DeleteObject, this.deleteObject, [Physics]);
