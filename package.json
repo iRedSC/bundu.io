@@ -13,7 +13,8 @@
         "server": "bun run src/game/server/index.ts",
         "build": "bun run ./build.ts",
         "start": "bun server.ts --hot",
-        "client": "bun run build && bun run start"
+        "client": "bun run build && bun run start",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "@msgpack/msgpack": "^3.1.2",
