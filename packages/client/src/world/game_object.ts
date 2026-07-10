@@ -125,17 +125,12 @@ export default class GameObject {
         );
     }
 
-    addState(state: PositionState | RotationState): void {
-        if (typeof state === "number") {
-            this.rotationStates.set(state);
-        } else if (
-            state &&
-            typeof state === "object" &&
-            typeof state.x === "number" &&
-            typeof state.y === "number"
-        ) {
-            this.positionStates.set(state);
-        }
+    addPosition(state: PositionState): void {
+        this.positionStates.set(state);
+    }
+
+    addRotation(radians: RotationState): void {
+        this.rotationStates.set(radians);
     }
 
     /** Trigger an animation state */
