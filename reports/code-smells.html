@@ -982,8 +982,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-client-cubic-bezier-solver" data-id="client-cubic-bezier-solver" data-severity="medium" data-package="client" data-category="overengineering" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark client-cubic-bezier-solver fixed" /></div>
+      <article class="smell" id="smell-client-cubic-bezier-solver" data-id="client-cubic-bezier-solver" data-severity="medium" data-package="client" data-category="overengineering" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark client-cubic-bezier-solver fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Hand-rolled cubic-bezier Newton solver for simple tweens</h3>
@@ -1000,8 +1000,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-client-anim-as-ui-statemachine" data-id="client-anim-as-ui-statemachine" data-severity="medium" data-package="client" data-category="overengineering" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark client-anim-as-ui-statemachine fixed" /></div>
+      <article class="smell" id="smell-client-anim-as-ui-statemachine" data-id="client-anim-as-ui-statemachine" data-severity="medium" data-package="client" data-category="overengineering" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark client-anim-as-ui-statemachine fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Perpetual <code>AnimationManager</code> loops drive button/stat UI</h3>
@@ -1019,8 +1019,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-shared-kitchen-sink-boundary" data-id="shared-kitchen-sink-boundary" data-severity="medium" data-package="shared" data-category="overengineering" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark shared-kitchen-sink-boundary fixed" /></div>
+      <article class="smell" id="smell-shared-kitchen-sink-boundary" data-id="shared-kitchen-sink-boundary" data-severity="medium" data-package="shared" data-category="overengineering" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark shared-kitchen-sink-boundary fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Shared mixes client-only and server-only concerns</h3>
@@ -1038,8 +1038,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-server-packet-managers-schema-dup" data-id="server-packet-managers-schema-dup" data-severity="medium" data-package="server" data-category="overengineering" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark server-packet-managers-schema-dup fixed" /></div>
+      <article class="smell" id="smell-server-packet-managers-schema-dup" data-id="server-packet-managers-schema-dup" data-severity="medium" data-package="server" data-category="overengineering" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark server-packet-managers-schema-dup fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Packet managers re-copy schema maps already owned by <code>Serializer</code></h3>
@@ -1057,8 +1057,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-client-layered-renderer-vs-zindex" data-id="client-layered-renderer-vs-zindex" data-severity="low" data-package="client" data-category="overengineering" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark client-layered-renderer-vs-zindex fixed" /></div>
+      <article class="smell" id="smell-client-layered-renderer-vs-zindex" data-id="client-layered-renderer-vs-zindex" data-severity="low" data-package="client" data-category="overengineering" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark client-layered-renderer-vs-zindex fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title"><code>LayeredRenderer</code> reimplements what Pixi <code>zIndex</code> already does</h3>
@@ -1154,8 +1154,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-magic-world-bounds" data-id="magic-world-bounds" data-severity="medium" data-package="server" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark magic-world-bounds fixed" /></div>
+      <article class="smell" id="smell-magic-world-bounds" data-id="magic-world-bounds" data-severity="medium" data-package="server" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark magic-world-bounds fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Map size <code>20000</code> and query radius <code>500</code> are duplicated magic numbers</h3>
@@ -1166,7 +1166,7 @@
           <p>Quadtree bounds, clamp limits, and test map size must stay in sync by hand. Attack/collision use hard-coded <code>500</code> neighborhoods unrelated to weapon reach.</p>
           <p class="suggestion">One <code>WORLD_BOUNDS</code> / <code>SPATIAL_QUERY_PADDING</code> constant (or derive padding from hitbox).</p>
           <ul class="files">
-            <li>packages/server/src/index.ts</li>
+            <li>packages/server/src/bootstrap/load_map.ts</li>
             <li>packages/server/src/systems/position.ts</li>
             <li>packages/server/src/systems/collision.ts</li>
             <li>packages/server/src/systems/attack.ts</li>
@@ -1175,8 +1175,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-mixed-time-sources" data-id="mixed-time-sources" data-severity="medium" data-package="server" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark mixed-time-sources fixed" /></div>
+      <article class="smell" id="smell-mixed-time-sources" data-id="mixed-time-sources" data-severity="medium" data-package="server" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark mixed-time-sources fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Wall clock, game time, and server time used interchangeably</h3>
@@ -1212,8 +1212,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-inconsistent-packet-ownership" data-id="inconsistent-packet-ownership" data-severity="low" data-package="server" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark inconsistent-packet-ownership fixed" /></div>
+      <article class="smell" id="smell-inconsistent-packet-ownership" data-id="inconsistent-packet-ownership" data-severity="low" data-package="server" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark inconsistent-packet-ownership fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Some systems emit packets directly; others go through <code>PacketSystem</code></h3>
@@ -1288,8 +1288,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-root-static-server-naming" data-id="root-static-server-naming" data-severity="low" data-package="shared" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark root-static-server-naming fixed" /></div>
+      <article class="smell" id="smell-root-static-server-naming" data-id="root-static-server-naming" data-severity="low" data-package="shared" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark root-static-server-naming fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Root <code>server.ts</code> is a static file host, not the game server</h3>
@@ -1300,7 +1300,7 @@
           <p><code>bun run server</code> runs the game WS process; <code>bun run start</code> runs root <code>server.ts</code> which only serves <code>public/</code>. Naming collides with <code>packages/server</code>.</p>
           <p class="suggestion">Rename to <code>static-server.ts</code> / <code>serve-frontend</code> and align script names.</p>
           <ul class="files">
-            <li>server.ts</li>
+            <li>static-server.ts</li>
             <li>package.json</li>
             <li>Dockerfile.frontend</li>
             <li>docker-compose.yml</li>

@@ -10,14 +10,10 @@ export class WorldPacketManager<
     DataMap extends Record<number, object>
 > {
     objects: Map<number, WorldPacketContainer<keyof S & number, DataMap>>;
-    private schemas = new Map<number, S[keyof S & number]>();
     private serializer: Serializer<S, DataMap>;
 
     constructor(schema: S) {
         this.objects = new Map();
-        for (const [id, def] of Object.entries(schema)) {
-            this.schemas.set(Number(id), def as S[keyof S & number]);
-        }
         this.serializer = new Serializer<S, DataMap>(schema);
     }
 
@@ -25,7 +21,7 @@ export class WorldPacketManager<
         id: I,
         data: PacketData<I, DataMap> & { id: number }
     ) {
-        if (!this.schemas.has(id)) {
+        if (!this.serializer.has(id)) {
             return console.error(`Schema ${id} not found`);
         }
 

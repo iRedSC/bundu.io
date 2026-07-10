@@ -15,6 +15,7 @@ import {
     socketManager,
     worldPacketManager,
 } from "../network/managers.js";
+import { emitVitals } from "../network/vitals.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { STRUCTURE_COLLISION_RADIUS } from "./structure.js";
 
@@ -52,7 +53,8 @@ export class PlayerSystem extends System<GameEventMap> {
                     "attacking",
                     "multiply",
                     0.7,
-                    500
+                    500,
+                    time
                 );
                 data.lastAttackTime = time;
             }
@@ -85,7 +87,7 @@ export class PlayerSystem extends System<GameEventMap> {
         playerPacketManager.set(player.id, ServerPacket.RecipeList, {
             recipes: packCraftingList(),
         });
-        this.trigger(GameEvent.HealthUpdate, { object: player });
+        emitVitals(player);
     }
 
     kill({ object: target }: GameEvent.Kill) {
@@ -124,7 +126,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const { x, y } = physics.position;
 
         if (selectedStructure.id !== -1) {
-            selectedStructure.cooldown_timestamp = Date.now() + 1000;
+            selectedStructure.cooldown_timestamp = this.world.gameTime + 1000;
 
             playerPacketManager.set(
                 player.id,
@@ -196,7 +198,14 @@ export class PlayerSystem extends System<GameEventMap> {
                     if (command[4]) duration = Number(command[4]);
                     player
                         .get(Attributes)
-                        .set(type, "command", operation, value, duration);
+                        .set(
+                            type,
+                            "command",
+                            operation,
+                            value,
+                            duration,
+                            this.world.gameTime
+                        );
                     break;
                 }
                 case "stat": {
@@ -219,6 +228,9 @@ export class PlayerSystem extends System<GameEventMap> {
             }
             return;
         }
-        this.trigger(GameEvent.ChatMessage, { object: player, message });
+        worldPacketManager.add(ServerPacket.ChatMessage, {
+            id: player.id,
+            message,
+        });
     };
 }

@@ -1,29 +1,13 @@
-import { Container } from "pixi.js";
+import type { Container } from "pixi.js";
 
 /**
- * Groups display objects by zIndex layer and tracks them by game-object id.
+ * Tracks display objects by game-object id for teardown.
+ * Parents them under a sortable Pixi container so zIndex does the layering.
  */
 export class LayeredRenderer {
-    container: Container;
-    private layers = new Map<number, Container>();
     private byObject = new Map<number, Set<Container>>();
 
-    constructor() {
-        this.container = new Container();
-        this.container.sortableChildren = true;
-    }
-
-    private layer(zIndex: number): Container {
-        let layer = this.layers.get(zIndex);
-        if (!layer) {
-            layer = new Container();
-            layer.zIndex = zIndex;
-            this.container.addChild(layer);
-            this.layers.set(zIndex, layer);
-            this.container.sortChildren();
-        }
-        return layer;
-    }
+    constructor(private parent: Container) {}
 
     delete(id: number): void {
         const containers = this.byObject.get(id);
@@ -41,7 +25,7 @@ export class LayeredRenderer {
             this.byObject.set(id, set);
         }
         for (const child of containers) {
-            this.layer(child.zIndex).addChild(child);
+            this.parent.addChild(child);
             set.add(child);
         }
     }

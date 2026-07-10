@@ -1,16 +1,14 @@
 import { ItemButton } from "./item_button";
 import { Grid } from "./grid";
-import { Animation } from "@bundu/shared/animations";
 import {
     colorLerp,
     lerp,
     radians,
     rotationLerp,
 } from "@bundu/shared/transforms";
-import { AnimationManagers } from "../animation/animations";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
-import { Container, Sprite, Texture } from "pixi.js";
+import { Container } from "pixi.js";
 
 export class RecipeManager {
     recipes: Map<number, [Map<number, number>, number[]]>;
@@ -99,12 +97,6 @@ export class CraftingMenu {
         this.resize();
         for (const [i, button] of this.buttons.entries()) {
             button.item = this.items[i] ?? null;
-            AnimationManagers.UI.set(
-                button,
-                0,
-                craftingButtonAnimation(button).run(),
-                true
-            );
         }
     }
 
@@ -116,6 +108,12 @@ export class CraftingMenu {
     set leftclick(value: Callback) {
         this.leftClickCB = value;
         this.buttons.forEach((b) => (b.leftclick = value));
+    }
+
+    tick() {
+        for (const button of this.buttons) {
+            tickCraftingButton(button);
+        }
     }
 
     resize() {
@@ -209,62 +207,57 @@ export class CraftingMenu {
 //         craftingMenu.padding * 2
 // );
 
-function craftingButtonAnimation(button: ItemButton) {
-    const animation = new Animation();
-
-    animation.keyframes[0] = () => {
-        if (button.rightDown) {
-            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
-            button.background.tint = colorLerp(
-                Number(button.background.tint),
-                0x333333,
-                0.2
-            );
-            button.background.rotation = lerp(
-                button.background.rotation,
-                radians(45),
-                0.2
-            );
-            return;
-        }
-
-        button.background.rotation = lerp(
-            button.background.rotation,
-            radians(0),
-            0.2
-        );
-
-        if (button.down) {
-            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
-            button.background.tint = colorLerp(
-                Number(button.background.tint),
-                0x333333,
-                0.2
-            );
-            return;
-        }
-        if (button.hovering) {
-            button.background.rotation = rotationLerp(
-                button.background.rotation,
-                Math.sin(Date.now() / 500) * 0.3,
-                0.2
-            );
-            button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));
-            button.background.tint = colorLerp(
-                Number(button.background.tint),
-                0x999999,
-                0.1
-            );
-            return;
-        }
-
-        button.button.scale.set(lerp(button.button.scale.x, 1, 0.1));
+/** Tween hover/press visuals from interaction state. */
+function tickCraftingButton(button: ItemButton) {
+    if (button.rightDown) {
+        button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
         button.background.tint = colorLerp(
             Number(button.background.tint),
-            0x777777,
+            0x333333,
+            0.2
+        );
+        button.background.rotation = lerp(
+            button.background.rotation,
+            radians(45),
+            0.2
+        );
+        return;
+    }
+
+    button.background.rotation = lerp(
+        button.background.rotation,
+        radians(0),
+        0.2
+    );
+
+    if (button.down) {
+        button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
+        button.background.tint = colorLerp(
+            Number(button.background.tint),
+            0x333333,
+            0.2
+        );
+        return;
+    }
+    if (button.hovering) {
+        button.background.rotation = rotationLerp(
+            button.background.rotation,
+            Math.sin(Date.now() / 500) * 0.3,
+            0.2
+        );
+        button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));
+        button.background.tint = colorLerp(
+            Number(button.background.tint),
+            0x999999,
             0.1
         );
-    };
+        return;
+    }
 
-    return animation;
+    button.button.scale.set(lerp(button.button.scale.x, 1, 0.1));
+    button.background.tint = colorLerp(
+        Number(button.background.tint),
+        0x777777,
+        0.1
+    );
 }

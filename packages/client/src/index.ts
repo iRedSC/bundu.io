@@ -275,6 +275,7 @@ async function main() {
         const player = world.objects.get(world.user ?? -1);
         if (player) {
             world.tick();
+            gui.tick();
             AnimationManagers.UI.update();
         }
         const adjustmentRate = 0.1;
