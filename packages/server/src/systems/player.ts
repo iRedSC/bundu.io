@@ -2,7 +2,7 @@ import { moveToward } from "@bundu/shared/transforms";
 import { decodeMoveDirection } from "@bundu/shared/movement";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GroundData, Physics } from "../components/base.js";
-import { Inventory, removeFromSlot } from "../components/inventory.js";
+import { Inventory, cursorSlot, moveSlot } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject, System, type World } from "../engine";
@@ -16,6 +16,7 @@ import {
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { SERVER_DEBUG } from "../debug/flag.js";
+import { PlaceMode } from "@bundu/shared/inventory";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
@@ -166,22 +167,38 @@ export class PlayerSystem extends System<GameEventMap> {
         emitEquipment(player, this.world.context.worldPacketManager);
     };
 
-    dropItem = (
+    moveSlot = (playerId: number, { from, to }: ClientPacket.MoveSlot) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const inv = Inventory.get(player);
+        if (!inv) return;
+        if (!moveSlot(inv, from, to)) return;
+
+        syncMainHand(player);
+        const { playerPacketManager, worldPacketManager } = this.world.context;
+        emitInventory(player, playerPacketManager);
+        emitEquipment(player, worldPacketManager);
+    };
+
+    cursorSlot = (
         playerId: number,
-        { slot, dropAll }: ClientPacket.DropItem
+        { slot, mode }: ClientPacket.CursorSlot
     ) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const inv = Inventory.get(player);
-        if (!inv || slot < 0 || slot >= inv.slots.length) return;
-        if (!inv.slots[slot]) return;
+        if (!inv) return;
 
-        removeFromSlot(inv, slot, dropAll ? Infinity : 1);
-        if (inv.selected === slot) syncMainHand(player);
+        const placeMode =
+            mode === PlaceMode.Half || mode === PlaceMode.One
+                ? mode
+                : PlaceMode.All;
+        if (!cursorSlot(inv, slot, placeMode)) return;
 
+        syncMainHand(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
-        if (inv.selected === slot) emitEquipment(player, worldPacketManager);
+        emitEquipment(player, worldPacketManager);
     };
 
     placeStructureAt = (

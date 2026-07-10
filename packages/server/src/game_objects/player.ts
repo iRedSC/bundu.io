@@ -52,7 +52,9 @@ export class Player extends GameObject {
             .add(health)
             .add(new PlayerData(playerData))
             .add(new CalculateCollisions())
-            .add(new Inventory({ slots: emptySlots(), selected: 0 }))
+            .add(
+                new Inventory({ slots: emptySlots(), selected: 0, cursor: null })
+            )
             .add(attributes)
             .add(stats)
             .add(new VisibleObjects());

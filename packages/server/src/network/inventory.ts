@@ -1,5 +1,5 @@
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { Inventory, toPacketItems } from "../components/inventory.js";
+import { Inventory, toPacketCursor, toPacketItems } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import type { GameObject, ServerContext } from "../engine";
 
@@ -13,6 +13,7 @@ export function emitInventory(
 
     playerPacketManager.set(target.id, ServerPacket.UpdateInventory, {
         items: toPacketItems(inv),
+        cursor: toPacketCursor(inv),
     });
 }
 

@@ -13,5 +13,6 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.Rotation, system.rotate);
     receiver.on(ClientPacket.PlaceStructureAt, system.placeStructureAt);
     receiver.on(ClientPacket.SelectItem, system.selectItem);
-    receiver.on(ClientPacket.DropItem, system.dropItem);
+    receiver.on(ClientPacket.MoveSlot, system.moveSlot);
+    receiver.on(ClientPacket.CursorSlot, system.cursorSlot);
 }

@@ -24,31 +24,6 @@ export function tickItemButton(
     colors: ItemButtonColors,
     restY = 0
 ) {
-    if (button.rightDown && button.item) {
-        button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
-        button.background.tint = colorLerp(
-            Number(button.background.tint),
-            colors.rightDown,
-            0.2
-        );
-        button.background.position.y = lerp(
-            button.background.position.y,
-            restY - 10,
-            0.2
-        );
-        button.itemSprite.position.y = lerp(
-            button.itemSprite.position.y,
-            restY - 10,
-            0.2
-        );
-        button.background.rotation = lerp(
-            button.background.rotation,
-            radians(45),
-            0.2
-        );
-        return;
-    }
-
     button.background.rotation = lerp(
         button.background.rotation,
         radians(0),
@@ -64,6 +39,16 @@ export function tickItemButton(
         restY,
         0.2
     );
+
+    if (button.rightDown) {
+        button.button.scale.set(lerp(button.button.scale.x, 1.3, 0.2));
+        button.background.tint = colorLerp(
+            Number(button.background.tint),
+            colors.hover,
+            0.2
+        );
+        return;
+    }
 
     if (button.down && button.item) {
         button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
@@ -81,12 +66,11 @@ export function tickItemButton(
             0.2
         );
         button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));
-        if (button.item)
-            button.background.tint = colorLerp(
-                Number(button.background.tint),
-                colors.hover,
-                0.1
-            );
+        button.background.tint = colorLerp(
+            Number(button.background.tint),
+            button.item ? colors.hover : colors.default,
+            0.1
+        );
         return;
     }
 
