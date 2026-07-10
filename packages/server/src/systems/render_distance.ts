@@ -8,6 +8,19 @@ import { quadtree } from "./position.js";
 const RENDER_DISTANCE_X = 2200;
 const RENDER_DISTANCE_Y = 1250;
 
+function getRenderBounds(physics: Physics): Range {
+    return new Range(
+        {
+            x: physics.position.x - RENDER_DISTANCE_X,
+            y: physics.position.y - RENDER_DISTANCE_Y,
+        },
+        {
+            x: physics.position.x + RENDER_DISTANCE_X,
+            y: physics.position.y + RENDER_DISTANCE_Y,
+        }
+    );
+}
+
 export class RenderDistanceSystem extends System<GameEventMap> {
     constructor(world: World) {
         super(world, [VisibleObjects, Physics], 2);
@@ -20,16 +33,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         const physics = object.get(Physics);
         const visibleObjects = object.get(VisibleObjects);
 
-        const renderBounds = new Range(
-            {
-                x: physics.position.x - RENDER_DISTANCE_X,
-                y: physics.position.y - RENDER_DISTANCE_Y,
-            },
-            {
-                x: physics.position.x + RENDER_DISTANCE_X,
-                y: physics.position.y + RENDER_DISTANCE_Y,
-            }
-        );
+        const renderBounds = getRenderBounds(physics);
 
         const objectsInRenderDistance = this.world.query(
             [Physics],
@@ -70,16 +74,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
             const physics = obj.get(Physics);
             if (!visibleObjects || !physics) continue;
 
-            const bounds = new Range(
-                {
-                    x: physics.position.x - RENDER_DISTANCE_X,
-                    y: physics.position.y - RENDER_DISTANCE_Y,
-                },
-                {
-                    x: physics.position.x + RENDER_DISTANCE_X,
-                    y: physics.position.y + RENDER_DISTANCE_Y,
-                }
-            );
+            const bounds = getRenderBounds(physics);
 
             if (bounds.contains(objPhys.position)) {
                 visibleObjects.visible.add(object);

@@ -217,44 +217,40 @@ export class Player extends GameObject {
         this.sprite.body.helmet.renderable = false;
 
         if (this.mainhand) {
-            this.sprite.leftHand.item.renderable = true;
             const config = spriteConfigs.get(this.mainhand);
-            if (!config) {
-                return;
+            if (config) {
+                this.sprite.leftHand.item.renderable = true;
+                SpriteFactory.update(
+                    this.sprite.leftHand.item,
+                    config.hand_display,
+                    this.mainhand
+                );
             }
-            SpriteFactory.update(
-                this.sprite.leftHand.item,
-                config.hand_display,
-                this.mainhand
-            );
-            console.log(this.sprite.leftHand.item.position);
         }
 
         if (this.offhand) {
-            this.sprite.rightHand.item.renderable = true;
             const config = spriteConfigs.get(this.offhand);
-            if (!config) {
-                return;
+            if (config) {
+                this.sprite.rightHand.item.renderable = true;
+                SpriteFactory.update(
+                    this.sprite.rightHand.item,
+                    config.hand_display,
+                    this.offhand
+                );
+                this.sprite.rightHand.item.x = -this.sprite.rightHand.item.x;
             }
-            SpriteFactory.update(
-                this.sprite.rightHand.item,
-                config.hand_display,
-                this.offhand
-            );
-            this.sprite.rightHand.item.x = -this.sprite.rightHand.item.x;
         }
 
         if (this.helmet) {
-            this.sprite.body.helmet.renderable = true;
             const config = spriteConfigs.get(this.helmet);
-            if (!config) {
-                return;
+            if (config) {
+                this.sprite.body.helmet.renderable = true;
+                SpriteFactory.update(
+                    this.sprite.body.helmet,
+                    config.body_display,
+                    this.helmet
+                );
             }
-            SpriteFactory.update(
-                this.sprite.body.helmet,
-                config.body_display,
-                this.helmet
-            );
         }
     }
 

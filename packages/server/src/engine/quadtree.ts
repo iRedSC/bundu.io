@@ -209,26 +209,6 @@ class InternalQuadtree {
             this.insert(id, objects);
         }
     }
-
-    serializeRects(): [number, number, number, number][] {
-        const rects: [number, number, number, number][] = [];
-
-        // helper recursion
-        const collect = (node: InternalQuadtree) => {
-            const { pos1, pos2 } = node.bounds;
-            const w = pos2.x - pos1.x;
-            const h = pos2.y - pos1.y;
-
-            rects.push([pos1.x, pos1.y, w, h]);
-
-            for (let child of node.nodes) {
-                collect(child);
-            }
-        };
-
-        collect(this);
-        return rects;
-    }
 }
 
 export default Quadtree;

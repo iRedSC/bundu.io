@@ -13,9 +13,11 @@ export function createViewport(app: PIXI.Application) {
 
     viewport.sortableChildren = true;
 
-    window.onresize = (_) => {
+    const resize = () => {
         viewport.resize(window.innerWidth, window.innerHeight);
     };
+    window.addEventListener("resize", resize);
+    resize();
 
     return viewport;
 }

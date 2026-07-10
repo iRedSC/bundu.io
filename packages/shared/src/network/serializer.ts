@@ -1,29 +1,37 @@
+type PacketSchemaEntry = { readonly fields: readonly string[] };
+type PacketSchema = Record<number, PacketSchemaEntry>;
+
+/** Packet payloads are plain field bags — never `any`. */
+type PacketData = object;
+
 export class Serializer<
-    S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, any>
+    S extends PacketSchema,
+    DataMap extends Record<number, PacketData>,
 > {
-    private schemas = new Map<number, S[keyof S & number]>();
+    private schemas = new Map<number, PacketSchemaEntry>();
 
     constructor(schema: S) {
         for (const [id, def] of Object.entries(schema)) {
-            this.schemas.set(Number(id), def as any);
+            this.schemas.set(Number(id), def);
         }
     }
 
     serialize<I extends keyof S & number>(
         id: I,
-        data: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
+        data: I extends keyof DataMap ? DataMap[I] : never
     ): [I, ...unknown[]] {
         const schema = this.schemas.get(id);
         if (!schema) throw new Error(`Schema ${id} not found`);
-        return [id, ...schema.fields.map((f) => data[f])] as [I, ...unknown[]];
+        return [
+            id,
+            ...schema.fields.map((f) => (data as Record<string, unknown>)[f]),
+        ] as [I, ...unknown[]];
     }
 
     deserialize<I extends keyof S & number>(
-        packet: [I | unknown, ...any[]]
+        packet: readonly [I, ...unknown[]]
     ): I extends keyof DataMap ? DataMap[I] & { id: I } : never {
         const id = packet[0];
-        // @ts-expect-error
         const schema = this.schemas.get(id);
         if (!schema) throw new Error(`Schema ${id} not found`);
         if (packet.length !== schema.fields.length + 1) {
@@ -32,8 +40,10 @@ export class Serializer<
             );
         }
 
-        const result: any = { id };
-        schema.fields.forEach((f, i) => (result[f] = packet[i + 1]));
-        return result;
+        const result: Record<string, unknown> = { id };
+        schema.fields.forEach((f, i) => {
+            result[f] = packet[i + 1];
+        });
+        return result as I extends keyof DataMap ? DataMap[I] & { id: I } : never;
     }
 }
