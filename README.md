@@ -54,6 +54,7 @@ GAME_WS_URL=wss://game.example.com docker compose build frontend
 | `bun run build`   | Production client bundle → `public/site/`    |
 | `bun run start:frontend` | Static server without `--hot`         |
 | `bun run typecheck`      | `tsc --noEmit`                        |
+| `bun run lint`           | Biome lint (incl. package boundaries) |
 | `bun test`               | Unit tests                            |
 
 This project uses [Bun](https://bun.com) v1.3.0.

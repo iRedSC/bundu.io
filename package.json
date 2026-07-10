@@ -4,6 +4,7 @@
     "type": "module",
     "workspaces": ["packages/*"],
     "devDependencies": {
+        "@biomejs/biome": "2.5.3",
         "@types/bun": "latest",
         "@types/sat": "^0.0.35"
     },
@@ -17,6 +18,7 @@
         "start:frontend": "bun server.ts",
         "client": "bun run build && bun run start",
         "typecheck": "tsc --noEmit",
+        "lint": "biome lint .",
         "test": "bun test"
     }
 }

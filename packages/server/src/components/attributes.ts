@@ -69,7 +69,7 @@ export class AttributesData {
 
             const callbacks = this.callbacks[type];
             if (!callbacks) return;
-            for (const callback of callbacks?.values())
+            for (const callback of callbacks.values())
                 callback(this.get(type));
             return;
         }
@@ -79,7 +79,7 @@ export class AttributesData {
             // @ts-expect-error
             const callbacks = this.callbacks[name];
             if (!callbacks) continue;
-            for (const callback of callbacks?.values())
+            for (const callback of callbacks.values())
                 callback(this.get(name as AttributeType));
         }
     }
@@ -144,7 +144,7 @@ export class AttributesData {
 
         const callbacks = this.callbacks[type];
         if (!callbacks) return this;
-        for (const callback of callbacks?.values()) callback(this.get(type));
+        for (const callback of callbacks.values()) callback(this.get(type));
         return this;
     }
 
