@@ -1,5 +1,4 @@
 import {
-    Serializer,
     ServerPacketReceiver,
     ServerController,
     serverTime,
@@ -16,7 +15,7 @@ import { setupPacketReceiving } from "./network/receiver";
 import { PositionSystem } from "./systems/position";
 import { CollisionSystem } from "./systems/collision";
 import { HealthSystem } from "./systems/health";
-import { random } from "@bundu/shared";
+import { random, Serializer } from "@bundu/shared";
 import { Player } from "./game_objects/player";
 import {
     playerPacketManager,

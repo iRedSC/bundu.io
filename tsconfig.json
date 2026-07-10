@@ -24,7 +24,6 @@
         "paths": {
             "@bundu/shared": ["./packages/shared/src/index.ts"],
             "@bundu/shared/*": ["./packages/shared/src/*"],
-            "@bundu/server/engine": ["./packages/server/src/engine/index.ts"],
             "@client/constants": ["./packages/client/src/constants.ts"],
             "@client/globals": ["./packages/client/src/globals.ts"],
             "@client/rendering/*": ["./packages/client/src/rendering/*"],

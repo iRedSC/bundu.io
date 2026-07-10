@@ -3,7 +3,8 @@ import {
     ClientPacket,
     type ClientPacketMap,
 } from "@bundu/shared/packet_definitions";
-import { Serializer, ServerPacketReceiver } from "../engine";
+import { Serializer } from "@bundu/shared";
+import { ServerPacketReceiver } from "../engine";
 import type { PlayerSystem } from "../systems/player";
 
 const ClientSerializer = new Serializer<typeof Schema.Client, ClientPacketMap>(

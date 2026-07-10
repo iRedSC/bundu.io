@@ -4,6 +4,11 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@bundu/shared": "workspace:*"
+    "@bundu/shared": "workspace:*",
+    "@msgpack/msgpack": "^3.1.2",
+    "@pixi/devtools": "^2.0.1",
+    "@rwh/keystrokes": "^1.5.6",
+    "pixi-viewport": "^6.0.3",
+    "pixi.js": "^8.14.3"
   }
 }
