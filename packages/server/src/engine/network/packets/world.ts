@@ -1,14 +1,13 @@
 import { Serializer } from "@bundu/shared";
 import type { GameObject } from "../../game_object";
 
-type WorldPacketContainer<I, DataMap> = Map<
-    I,
-    I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
->;
+type PacketData<I, DataMap> = I extends keyof DataMap ? DataMap[I] : never;
+
+type WorldPacketContainer<I, DataMap> = Map<I, PacketData<I, DataMap>>;
 
 export class WorldPacketManager<
     S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, any>
+    DataMap extends Record<number, object>
 > {
     objects: Map<number, WorldPacketContainer<keyof S & number, DataMap>>;
     private schemas = new Map<number, S[keyof S & number]>();
@@ -17,14 +16,14 @@ export class WorldPacketManager<
     constructor(schema: S) {
         this.objects = new Map();
         for (const [id, def] of Object.entries(schema)) {
-            this.schemas.set(Number(id), def as any);
+            this.schemas.set(Number(id), def as S[keyof S & number]);
         }
         this.serializer = new Serializer<S, DataMap>(schema);
     }
 
     add<I extends keyof S & number>(
         id: I,
-        data: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never
+        data: PacketData<I, DataMap> & { id: number }
     ) {
         if (!this.schemas.has(id)) {
             return console.error(`Schema ${id} not found`);
