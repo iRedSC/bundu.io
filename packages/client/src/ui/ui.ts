@@ -20,6 +20,7 @@ export type UI = {
     health: StatBar;
     hunger: StatBar;
     heat: StatBar;
+    tick: () => void;
 };
 
 export function createUI() {
@@ -110,5 +111,12 @@ export function createUI() {
         health,
         hunger,
         heat,
+        tick() {
+            health.tick();
+            hunger.tick();
+            heat.tick();
+            inventory.tick();
+            craftingMenu.tick();
+        },
     };
 }
