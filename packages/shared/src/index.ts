@@ -5,7 +5,6 @@
  * extensionless imports (never import `@bundu/shared` from inside itself).
  */
 export * from "./animations";
-export * from "./default_map";
 export * from "./math";
 export * from "./object_utils";
 export * from "./quadtree";
