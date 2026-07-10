@@ -35,18 +35,11 @@ export class World {
     public readonly systems = new Map<number, AnySystem>();
     private readonly objectSystems = new Map<number, Set<AnySystem>>();
 
-    private readonly objectLastUpdateRT = new Map<
-        number,
-        Map<number, number>
-    >();
-    private readonly objectLastUpdateGT = new Map<
-        number,
-        Map<number, number>
-    >();
+    /** Last gameTime each system ran its update (gameplay clock only). */
+    private readonly systemLastUpdate = new Map<number, number>();
 
     private readonly subscriptions = new Map<number, () => void>();
 
-    public timeScale = 1;
     public lastUpdate = performance.now();
     /** Authoritative gameplay clock (ms). Cooldowns, cadence, and expiry use this — not Date.now()/serverTime. */
     public gameTime = 0;
@@ -79,8 +72,7 @@ export class World {
         this.systems.clear();
         this.objectSystems.clear();
         this.subscriptions.clear();
-        this.objectLastUpdateGT.clear();
-        this.objectLastUpdateRT.clear();
+        this.systemLastUpdate.clear();
     }
 
     // -------------------------------------------------------------------
@@ -94,8 +86,6 @@ export class World {
         if (!object || this.objects.has(object.id)) return this;
 
         this.objects.set(object.id, object);
-        this.objectLastUpdateGT.set(object.id, new Map());
-        this.objectLastUpdateRT.set(object.id, new Map());
 
         // Clean up any existing subscription and resubscribe
         this.subscriptions.get(object.id)?.();
@@ -123,8 +113,6 @@ export class World {
         }
 
         this.objectSystems.delete(object.id);
-        this.objectLastUpdateGT.delete(object.id);
-        this.objectLastUpdateRT.delete(object.id);
 
         return this;
     }
@@ -138,6 +126,7 @@ export class World {
         }
 
         this.systems.set(system.id, system);
+        this.systemLastUpdate.set(system.id, this.gameTime);
 
         for (const object of this.objects.values()) {
             this.indexObject(object, system);
@@ -156,6 +145,7 @@ export class World {
         if (!this.systems.has(system.id)) return this;
 
         this.systems.delete(system.id);
+        this.systemLastUpdate.delete(system.id);
 
         for (const object of this.objects.values()) {
             if (system.exit && this.hasSystem(object, system)) {
@@ -172,11 +162,11 @@ export class World {
     // -------------------------------------------------------------------
     public update(): void {
         const now = performance.now();
-
-        // Update global game time using the scaled delta
         const delta = now - this.lastUpdate;
-        this.gameTime += delta * this.timeScale;
+        this.gameTime += delta;
         this.lastUpdate = now;
+
+        const objectsBySystem = new Map<AnySystem, GameObject[]>();
 
         for (const [objectId, object] of this.objects.entries()) {
             if (!object.active) {
@@ -187,28 +177,29 @@ export class World {
             const systems = this.objectSystems.get(objectId);
             if (!systems) continue;
 
-            const lastRT = this.objectLastUpdateRT.get(objectId)!;
-            const lastGT = this.objectLastUpdateGT.get(objectId)!;
-
             for (const system of systems) {
-                if (!system.update || !system.tps || system.tps <= 0) continue;
+                let objs = objectsBySystem.get(system);
+                if (!objs) {
+                    objs = [];
+                    objectsBySystem.set(system, objs);
+                }
+                objs.push(object);
+            }
+        }
 
-                const interval = 1000 / system.tps;
+        for (const [system, objs] of objectsBySystem) {
+            if (!system.update || system.tps <= 0) continue;
 
-                const lastSystemRT = lastRT.get(system.id) ?? 0;
-                const lastSystemGT = lastGT.get(system.id) ?? 0;
+            const interval = 1000 / system.tps;
+            const lastGT = this.systemLastUpdate.get(system.id) ?? 0;
+            const elapsedGT = this.gameTime - lastGT;
+            if (elapsedGT < interval) continue;
 
-                const elapsedRT = now - lastSystemRT;
-                const elapsedGT = this.gameTime - lastSystemGT;
-
-                // Only update the system if enough real time has passed
-                if (elapsedRT < interval) continue;
-
-                // Smoothly align the next update time (prevents drift)
-                const newRT = now - (elapsedRT % interval);
-                lastRT.set(system.id, newRT);
-                lastGT.set(system.id, this.gameTime);
-
+            this.systemLastUpdate.set(
+                system.id,
+                this.gameTime - (elapsedGT % interval)
+            );
+            for (const object of objs) {
                 system.update(this.gameTime, elapsedGT, object);
             }
         }
@@ -250,8 +241,6 @@ export class World {
     /** Remove all tracking state of system from object */
     private untrackObjectSystem(object: GameObject, system: AnySystem): void {
         this.objectSystems.get(object.id)?.delete(system);
-        this.objectLastUpdateGT.get(object.id)?.delete(system.id);
-        this.objectLastUpdateRT.get(object.id)?.delete(system.id);
     }
 
     /** Check and (re)index one object against all or one system */
@@ -270,10 +259,6 @@ export class World {
 
             if (qualifies && !already) {
                 objectSystemSet.add(system);
-                this.objectLastUpdateGT
-                    .get(object.id)!
-                    .set(system.id, this.gameTime);
-                this.objectLastUpdateRT.get(object.id)!.set(system.id, performance.now());
                 system.enter?.call(system, object);
             } else if (!qualifies && already) {
                 system.exit?.call(system, object);

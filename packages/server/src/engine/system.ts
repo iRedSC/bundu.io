@@ -13,6 +13,7 @@ export abstract class System<
     EventMap extends Record<string | number | symbol, unknown>
 > {
     readonly id: number;
+    /** Target updates per second, measured against World.gameTime. */
     readonly tps: number;
     readonly componentIds: Set<number> = new Set();
 
