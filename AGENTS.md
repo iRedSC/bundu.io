@@ -25,3 +25,13 @@
 
 ## Tests
 - NEVER modify tests without asking. Give a debrief of why they need changed, and only change them on approval.
+
+## Cursor Cloud specific instructions
+
+**bundu.io** is a Bun monorepo (client + WebSocket server + shared). No database or external services are required.
+
+- **Runtime:** Bun **v1.3.0** (see CI). If `bun` is missing, install with `curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.0"`; binary is at `~/.bun/bin/bun`.
+- **Dev stack:** `bun run dev` builds the client and runs the game server (`ws://localhost:7777`) plus the static frontend (`http://localhost:3000/site/`). For this repo's normal agent workflow, assume the dev server is already running — do not start it unless explicitly asked.
+- **Individual processes:** `bun run server` (WS only), `bun run client` (build + static host).
+- **Checks:** `bun run typecheck`, `bun run lint`, `bun test` (89 unit tests). CI also runs `bun run build` and `bun run check-prod-debug`; skip build unless requested (see Commands above).
+- **Docker alternative:** `docker compose up --build` exposes the same ports (3000, 7777).
