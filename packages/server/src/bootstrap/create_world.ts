@@ -10,7 +10,6 @@ import { PositionSystem } from "../systems/position";
 import { CollisionSystem } from "../systems/collision";
 import { HealthSystem } from "../systems/health";
 import { Serializer } from "@bundu/shared";
-import { PacketSystem } from "../systems/packet";
 import { AttackSystem } from "../systems/attack";
 import { RenderDistanceSystem } from "../systems/render_distance";
 import { StructureSystem } from "../systems/structure";
@@ -39,7 +38,6 @@ export function createWorld(): ServerWorld {
         .addSystem(new PositionSystem(world))
         .addSystem(new CollisionSystem(world))
         .addSystem(new HealthSystem(world))
-        .addSystem(new PacketSystem(world))
         .addSystem(new AttackSystem(world))
         .addSystem(new StructureSystem(world))
         .addSystem(new RenderDistanceSystem(world));

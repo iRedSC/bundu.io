@@ -15,6 +15,7 @@ import {
     socketManager,
     worldPacketManager,
 } from "../network/managers.js";
+import { emitVitals } from "../network/vitals.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { STRUCTURE_COLLISION_RADIUS } from "./structure.js";
 
@@ -86,7 +87,7 @@ export class PlayerSystem extends System<GameEventMap> {
         playerPacketManager.set(player.id, ServerPacket.RecipeList, {
             recipes: packCraftingList(),
         });
-        this.trigger(GameEvent.HealthUpdate, { object: player });
+        emitVitals(player);
     }
 
     kill({ object: target }: GameEvent.Kill) {
@@ -227,6 +228,9 @@ export class PlayerSystem extends System<GameEventMap> {
             }
             return;
         }
-        this.trigger(GameEvent.ChatMessage, { object: player, message });
+        worldPacketManager.add(ServerPacket.ChatMessage, {
+            id: player.id,
+            message,
+        });
     };
 }

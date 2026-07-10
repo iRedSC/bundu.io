@@ -1,6 +1,7 @@
 import { Attributes } from "../components/attributes.js";
 import { Health } from "../components/base.js";
 import { GameObject, System, type World } from "../engine";
+import { emitVitals } from "../network/vitals.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
 export class HealthSystem extends System<GameEventMap> {
@@ -25,7 +26,7 @@ export class HealthSystem extends System<GameEventMap> {
                 ? Math.min(health.value + regen, health.max)
                 : health.value + regen;
             health.value = healthUpdate;
-            this.trigger(GameEvent.HealthUpdate, { object: object });
+            emitVitals(object);
         }
     }
 
@@ -39,6 +40,6 @@ export class HealthSystem extends System<GameEventMap> {
         if (health.value <= 0) {
             this.trigger(GameEvent.Kill, { object: target, source });
         }
-        this.trigger(GameEvent.HealthUpdate, { object: target });
+        emitVitals(target);
     }
 }
