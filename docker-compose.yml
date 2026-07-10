@@ -1,0 +1,51 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        GAME_WS_URL: ${GAME_WS_URL:-ws://localhost:7777}
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "${WS_PORT:-7777}:7777"
+    environment:
+      WS_PORT: 7777
+
+  # Future services (uncomment when packages exist):
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.api
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     DATABASE_URL: postgres://bundu:bundu@db:5432/bundu
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: bundu
+  #     POSTGRES_PASSWORD: bundu
+  #     POSTGRES_DB: bundu
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U bundu"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
+# volumes:
+#   db_data:
