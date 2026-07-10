@@ -8,14 +8,8 @@ export type Keyframe = (animation: ActiveAnimation) => void;
  * Use the `Animation.run()` method to retrieve an {@link ActiveAnimation}.
  */
 export class Animation {
-    keyframes: Keyframes;
+    keyframes: Keyframes = {};
     cleanup?: Keyframe;
-    firstKeyframeDuration?: number
-
-    constructor({firstKeyframeDuration}: { firstKeyframeDuration: number } = {firstKeyframeDuration: -1}) {
-        this.keyframes = {};
-        this.firstKeyframeDuration = firstKeyframeDuration
-    }
 
     /**
      * Retrieve a new {@link ActiveAnimation}.
@@ -47,12 +41,12 @@ class ActiveAnimation {
     start: number;
     duration: number;
     firstFrameTrigger: boolean;
-    firstKeyframeDuration: number = -1;
     cleanup?: Keyframe;
 
     constructor(keyframes: Keyframes, cleanup?: Keyframe) {
         this.start = Date.now();
-        this.duration = this.firstKeyframeDuration;
+        // -1 marks "not yet timed"; callers use isFirstKeyframe + goto/next to set duration
+        this.duration = -1;
         this.expired = false;
         this.keyframes = keyframes;
         this.currentKeyframe = 0;
