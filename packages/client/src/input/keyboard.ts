@@ -1,12 +1,21 @@
 import { Keystrokes } from "@rwh/keystrokes";
+import {
+    axesFromPressedKeys,
+    type MoveAxes,
+} from "@bundu/shared";
 
-type MoveDir = 0 | 1 | 2;
 export class KeyboardInputListener {
     keybinds: Keystrokes;
-    move: [MoveDir, MoveDir];
     chatOpen: boolean;
 
-    onMoveInput: (direction: [MoveDir, MoveDir]) => void = () => {};
+    private pressed = {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+    };
+
+    onMoveInput: (direction: MoveAxes) => void = () => {};
     onSendChat: (message: string) => void = () => {};
 
     constructor() {
@@ -21,46 +30,49 @@ export class KeyboardInputListener {
         });
 
         this.chatOpen = false;
-        this.move = [1, 1];
+
+        const emitMove = () => {
+            this.onMoveInput(axesFromPressedKeys(this.pressed));
+        };
 
         this.keybinds.bindKey("up", {
             onPressed: () => {
-                this.move[1] += 1;
-                this.onMoveInput(this.move);
+                this.pressed.up = true;
+                emitMove();
             },
             onReleased: () => {
-                this.move[1] -= 1;
-                this.onMoveInput(this.move);
+                this.pressed.up = false;
+                emitMove();
             },
         });
         this.keybinds.bindKey("left", {
             onPressed: () => {
-                this.move[0] += 1;
-                this.onMoveInput(this.move);
+                this.pressed.left = true;
+                emitMove();
             },
             onReleased: () => {
-                this.move[0] -= 1;
-                this.onMoveInput(this.move);
+                this.pressed.left = false;
+                emitMove();
             },
         });
         this.keybinds.bindKey("down", {
             onPressed: () => {
-                this.move[1] -= 1;
-                this.onMoveInput(this.move);
+                this.pressed.down = true;
+                emitMove();
             },
             onReleased: () => {
-                this.move[1] += 1;
-                this.onMoveInput(this.move);
+                this.pressed.down = false;
+                emitMove();
             },
         });
         this.keybinds.bindKey("right", {
             onPressed: () => {
-                this.move[0] -= 1;
-                this.onMoveInput(this.move);
+                this.pressed.right = true;
+                emitMove();
             },
             onReleased: () => {
-                this.move[0] += 1;
-                this.onMoveInput(this.move);
+                this.pressed.right = false;
+                emitMove();
             },
         });
 

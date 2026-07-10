@@ -21,7 +21,13 @@ import { initAssets } from "./assets/load";
 import { AnimationManagers } from "./animation/animations";
 import { initDevtools } from "@pixi/devtools";
 import { MouseInputListener } from "./input/mouse";
-import { round, degrees, lookToward, radians } from "@bundu/shared";
+import {
+    encodeMoveDirection,
+    round,
+    degrees,
+    lookToward,
+    radians,
+} from "@bundu/shared";
 import { KeyboardInputListener } from "./input/keyboard";
 import { serverTime } from "./globals";
 
@@ -132,15 +138,14 @@ async function main() {
     };
 
     const keyboard = new KeyboardInputListener();
-    keyboard.onMoveInput = (move: [number, number]) => {
+    keyboard.onMoveInput = (move) => {
         const chat = document.querySelector<HTMLInputElement>("#chat-input");
         if (chat === document.activeElement) {
             return;
         }
-        move[0] = Math.max(0, Math.min(2, move[0]));
-        move[1] = Math.max(0, Math.min(2, move[1]));
-        const dir = (move[0] << 2) | move[1];
-        sendPacket(ClientPacket.Movement, { direction: dir + 1 });
+        sendPacket(ClientPacket.Movement, {
+            direction: encodeMoveDirection(move[0], move[1]),
+        });
     };
     keyboard.onSendChat = (message: string) => {
         const trimmed = message.trim();
