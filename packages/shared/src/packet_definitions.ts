@@ -40,6 +40,7 @@ export namespace ServerPacket {
     };
     export type UpdateInventory = {
         items: ([itemId: number, count: number] | null)[];
+        cursor: [itemId: number, count: number] | null;
     };
     export type UpdateEquipment = {
         id: number;
@@ -85,9 +86,10 @@ export const ClientPacket = {
     Movement: 0x01,
     Attack: 0x04,
     SelectItem: 0x05,
+    MoveSlot: 0x06,
     CraftItem: 0x07,
     ChatMessage: 0x08,
-    DropItem: 0x09,
+    CursorSlot: 0x09,
     Block: 0x0c,
     PlaceStructureAt: 0x0d,
 } as const;
@@ -96,10 +98,16 @@ export namespace ClientPacket {
     export type Rotation = { rotation: number };
     export type Movement = { direction: number };
     export type Attack = { stop: boolean };
-    export type SelectItem = { itemId: number };
+    export type SelectItem = { slot: number };
+    /** `to === -1` drops the stack from `from` outside the hotbar. */
+    export type MoveSlot = { from: number; to: number };
     export type CraftItem = { itemId: number };
     export type ChatMessage = { message: string };
-    export type DropItem = { itemId: number; dropAll: boolean };
+    /**
+     * Right-click cursor: pick / place / swap.
+     * `slot === -1` drops from the cursor (mode = all/half/one).
+     */
+    export type CursorSlot = { slot: number; mode: number };
     export type Block = { stop: boolean };
     export type PlaceStructureAt = {
         structureId: number;
@@ -134,9 +142,10 @@ export type ClientPacketMap = {
     [ClientPacket.Movement]: ClientPacket.Movement;
     [ClientPacket.Attack]: ClientPacket.Attack;
     [ClientPacket.SelectItem]: ClientPacket.SelectItem;
+    [ClientPacket.MoveSlot]: ClientPacket.MoveSlot;
     [ClientPacket.CraftItem]: ClientPacket.CraftItem;
     [ClientPacket.ChatMessage]: ClientPacket.ChatMessage;
-    [ClientPacket.DropItem]: ClientPacket.DropItem;
+    [ClientPacket.CursorSlot]: ClientPacket.CursorSlot;
     [ClientPacket.Block]: ClientPacket.Block;
     [ClientPacket.PlaceStructureAt]: ClientPacket.PlaceStructureAt;
 };
@@ -156,7 +165,7 @@ export const ServerSchema: {
         fields: ["id", "type", "x", "y", "rotation", "data"],
     },
     [ServerPacket.UpdateVitals]: { fields: ["health", "hunger", "heat"] },
-    [ServerPacket.UpdateInventory]: { fields: ["items"] },
+    [ServerPacket.UpdateInventory]: { fields: ["items", "cursor"] },
     [ServerPacket.UpdateEquipment]: {
         fields: ["id", "mainhand", "offhand", "helmet", "backpack"],
     },
@@ -183,10 +192,11 @@ export const ClientSchema: {
     [ClientPacket.Rotation]: { fields: ["rotation"] },
     [ClientPacket.Movement]: { fields: ["direction"] },
     [ClientPacket.Attack]: { fields: ["stop"] },
-    [ClientPacket.SelectItem]: { fields: ["itemId"] },
+    [ClientPacket.SelectItem]: { fields: ["slot"] },
+    [ClientPacket.MoveSlot]: { fields: ["from", "to"] },
     [ClientPacket.CraftItem]: { fields: ["itemId"] },
     [ClientPacket.ChatMessage]: { fields: ["message"] },
-    [ClientPacket.DropItem]: { fields: ["itemId", "dropAll"] },
+    [ClientPacket.CursorSlot]: { fields: ["slot", "mode"] },
     [ClientPacket.Block]: { fields: ["stop"] },
     [ClientPacket.PlaceStructureAt]: {
         fields: ["structureId", "x", "y", "rotation"],

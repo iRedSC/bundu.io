@@ -88,7 +88,7 @@ async function main() {
             gui.health.update(0);
             gui.hunger.update(0);
             gui.heat.update(0);
-            gui.inventory.update({ items: [] });
+            gui.inventory.update({ items: [], cursor: null });
             gui.recipeManager.recipes.clear();
             gui.craftingMenu.items = [];
             gui.craftingMenu.update();
@@ -122,13 +122,25 @@ async function main() {
             viewport.toLocal({ x: screenX, y: screenY }),
         isInGame: () => session.isInGame(),
         getPlaceStructureId: () => debug.getPlaceStructureId(),
+        isOverInventory: () => gui.inventory.isInteracting,
     });
 
-    gui.inventory.leftclick = (itemId) => {
-        session.sendPacket(ClientPacket.SelectItem, { itemId });
+    gui.inventory.onSelect = (slot) => {
+        session.sendPacket(ClientPacket.SelectItem, { slot });
     };
-    gui.inventory.rightclick = (itemId, shift) => {
-        session.sendPacket(ClientPacket.DropItem, { itemId, dropAll: shift });
+    gui.inventory.onMove = (from, to) => {
+        session.sendPacket(ClientPacket.MoveSlot, { from, to });
+    };
+    gui.inventory.onCursor = (slot, mode) => {
+        session.sendPacket(ClientPacket.CursorSlot, { slot, mode });
+    };
+    gui.inventory.getDropTargetGlobal = () => {
+        const object = world.objects.get(world.user ?? -1);
+        if (!(object instanceof Player)) return null;
+        return viewport.toGlobal({
+            x: object.position.x,
+            y: object.position.y,
+        });
     };
     gui.craftingMenu.leftclick = (itemId) => {
         session.sendPacket(ClientPacket.CraftItem, { itemId });

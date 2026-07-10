@@ -43,8 +43,8 @@ export function setupGUIPacketReceiving(
         ServerPacket.RecipeList,
         ui.recipeManager.updateRecipes.bind(ui.recipeManager)
     );
-    receiver.on(ServerPacket.UpdateInventory, ({ items }) => {
-        ui.inventory.update({ items });
+    receiver.on(ServerPacket.UpdateInventory, (packet) => {
+        ui.inventory.update(packet);
         ui.craftingMenu.items = ui.recipeManager.filter(ui.inventory.items, []);
         ui.craftingMenu.update();
     });

@@ -21,6 +21,8 @@ export type InputPlayerFacade = {
     isInGame(): boolean;
     /** When set, left-click places this structure id at the cursor tile. */
     getPlaceStructureId(): number | null;
+    /** True when pointer is over inventory UI (skip attack/block). */
+    isOverInventory(): boolean;
 };
 
 /**
@@ -90,6 +92,7 @@ export class InputController {
 
     private handlePointerDown(event: PointerEvent) {
         if (!this.facade.isInGame()) return;
+        if (this.facade.isOverInventory()) return;
         if (event.button === 2) {
             this.sendPacket(ClientPacket.Block, { stop: false });
             return;
