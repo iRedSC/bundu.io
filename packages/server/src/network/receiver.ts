@@ -3,17 +3,8 @@ import {
     ClientPacket,
     type ClientPacketMap,
 } from "@bundu/shared/packet_definitions";
-import { Serializer } from "@bundu/shared";
 import { ServerPacketReceiver } from "../engine";
 import type { PlayerSystem } from "../systems/player";
-
-const ClientSerializer = new Serializer<typeof Schema.Client, ClientPacketMap>(
-    Schema.Client
-);
-export const receiver = new ServerPacketReceiver<
-    typeof Schema.Client,
-    ClientPacketMap
->(ClientSerializer);
 
 export function setupPacketReceiving(
     receiver: ServerPacketReceiver<typeof Schema.Client, ClientPacketMap>,
@@ -22,9 +13,6 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.Attack, system.attack);
     receiver.on(ClientPacket.Block, system.block);
     receiver.on(ClientPacket.ChatMessage, system.chatMessage);
-    receiver.on(ClientPacket.CraftItem, system.craftItem);
-    receiver.on(ClientPacket.DropItem, system.dropItem);
     receiver.on(ClientPacket.Movement, system.move);
     receiver.on(ClientPacket.Rotation, system.rotate);
-    receiver.on(ClientPacket.SelectItem, system.selectItem);
 }

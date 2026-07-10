@@ -1,5 +1,4 @@
 import { Health } from "../components/base.js";
-import { Inventory } from "../components/inventory.js";
 import { System, type World } from "../engine";
 import { Stats } from "../components/stats.js";
 import {
@@ -24,8 +23,6 @@ export class PacketSystem extends System<GameEventMap> {
             GameEvent.ObjectsRemovedFromView,
             this.objectsRemovedFromView
         );
-        this.listen(GameEvent.UpdateInventory, this.sendInventory);
-        this.listen(GameEvent.UpdateEquipment, this.updateGear);
         this.listen(GameEvent.ChatMessage, this.chatMessage);
         this.listen(GameEvent.HealthUpdate, this.healthUpdate);
     }
@@ -47,39 +44,6 @@ export class PacketSystem extends System<GameEventMap> {
     }: GameEvent.ObjectsRemovedFromView) {
         playerPacketManager.add(player.id, ServerPacket.DeleteObjects, {
             objects: objectsRemoved.map((o) => o.id),
-        });
-    }
-
-    sendInventory({ object: target }: GameEvent.UpdateInventory) {
-        const inventory = target.get(Inventory);
-        const items: ([number, number] | null)[] = Array(inventory.slots).fill(
-            null
-        );
-        let slot = 0;
-        for (const [itemId, count] of inventory.items) {
-            if (slot >= inventory.slots) break;
-            items[slot++] = [itemId, count];
-        }
-        playerPacketManager.set(target.id, ServerPacket.UpdateInventory, {
-            items,
-        });
-    }
-
-    updateGear({
-        object: target,
-        mainhand,
-        offhand,
-        helmet,
-        backpack,
-    }: GameEvent.UpdateEquipment) {
-        if (!PlayerData.get(target)) return;
-
-        worldPacketManager.add(ServerPacket.UpdateEquipment, {
-            id: target.id,
-            mainhand,
-            offhand,
-            helmet,
-            backpack,
         });
     }
 

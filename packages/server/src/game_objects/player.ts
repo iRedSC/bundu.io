@@ -1,7 +1,6 @@
 import { Attributes } from "../components/attributes.js";
 import {
     CalculateCollisions,
-    Flags,
     Health,
     Physics,
 } from "../components/base.js";
@@ -51,7 +50,6 @@ export class Player extends GameObject {
             .add(new PlayerData(playerData))
             .add(new CalculateCollisions())
             .add(new Inventory({ slots: 10, items: new Map() }))
-            .add(new Flags())
             .add(attributes)
             .add(stats)
             .add(new VisibleObjects());

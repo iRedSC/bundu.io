@@ -30,21 +30,6 @@ export const CalculateCollisions = Component.register<CalculateCollisions>(
 export type Type = { id: number; variant?: number };
 export const Type = Component.register<Type>(() => ({ id: 0 }));
 
-export type EntityAI = {
-    target: Vector;
-    arriveTime: number;
-    travelTime: number;
-    lastPosition: Vector;
-    lastMoveTime: number;
-};
-export const EntityAI = Component.register<EntityAI>(() => ({
-    target: new Vector(),
-    arriveTime: 0,
-    travelTime: 0,
-    lastPosition: new Vector(),
-    lastMoveTime: 0,
-}));
-
 export type GroundData = {
     collider: Box;
     type: number;
@@ -70,20 +55,6 @@ export const GroundData = Component.register<GroundData>(() => ({
             this.collider.h,
         ];
     },
-}));
-
-export type Flags = Set<number>;
-export const Flags = Component.register<Flags>(() => new Set<number>());
-
-export type GroundItemData = {
-    id: number;
-    amount: number;
-    despawnTime: number;
-};
-export const GroundItemData = Component.register<GroundItemData>(() => ({
-    id: 0,
-    amount: 0,
-    despawnTime: 0,
 }));
 
 export type ResourceData = {

@@ -1,7 +1,6 @@
 import { GameObject } from "../engine";
 import type { SystemEventCallback } from "../engine";
 
-/** Events that actually have listeners. Orphan inventory/craft stubs removed. */
 export namespace GameEvent {
     export const Attack = 1;
     export type Attack = {
@@ -41,20 +40,6 @@ export namespace GameEvent {
     export const DeleteObject = 9;
     export type DeleteObject = {
         object: GameObject;
-    };
-
-    export const UpdateInventory = 11;
-    export type UpdateInventory = {
-        object: GameObject;
-    };
-
-    export const UpdateEquipment = 12;
-    export type UpdateEquipment = {
-        object: GameObject;
-        mainhand: number;
-        offhand: number;
-        helmet: number;
-        backpack: boolean;
     };
 
     export const Hurt = 13;
@@ -110,8 +95,6 @@ export type GameEventMap = {
     [GameEvent.Rotate]: GameEvent.Rotate;
     [GameEvent.NewObject]: GameEvent.NewObject;
     [GameEvent.DeleteObject]: GameEvent.DeleteObject;
-    [GameEvent.UpdateInventory]: GameEvent.UpdateInventory;
-    [GameEvent.UpdateEquipment]: GameEvent.UpdateEquipment;
     [GameEvent.Hurt]: GameEvent.Hurt;
     [GameEvent.Kill]: GameEvent.Kill;
     [GameEvent.ChatMessage]: GameEvent.ChatMessage;
