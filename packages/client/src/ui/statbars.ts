@@ -1,5 +1,5 @@
 import { clamp, lerp } from "@bundu/shared/transforms";
-import { Animation } from "@bundu/shared/animations";
+import { Animation } from "../animation/runtime";
 import { ContaineredSprite, SpriteFactory } from "../assets/sprite_factory";
 import { type ColorSource, Container } from "pixi.js";
 import { AnimationManagers } from "../animation/animations";

@@ -1,8 +1,5 @@
 import type { ColorSource } from "pixi.js";
-import {
-    Animation,
-    AnimationManager,
-} from "@bundu/shared/animations";
+import { Animation, AnimationManager } from "./runtime";
 import { colorLerp, lerp } from "@bundu/shared/transforms";
 
 export class AnimationManagers {

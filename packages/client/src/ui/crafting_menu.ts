@@ -1,6 +1,6 @@
 import { ItemButton } from "./item_button";
 import { Grid } from "./grid";
-import { Animation } from "@bundu/shared/animations";
+import { Animation } from "../animation/runtime";
 import {
     colorLerp,
     lerp,

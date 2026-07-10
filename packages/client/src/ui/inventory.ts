@@ -7,11 +7,11 @@ import {
     radians,
     rotationLerp,
     percentOf,
-    Animation,
 } from "@bundu/shared";
 import { TEXT_STYLE } from "@client/assets/text";
 import { Grid } from "./grid";
 import { AnimationManagers } from "../animation/animations";
+import { Animation } from "../animation/runtime";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 
