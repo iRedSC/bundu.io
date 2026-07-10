@@ -1,5 +1,5 @@
 import { getNumericId } from "@bundu/shared/id_map";
-import { flagMap } from "./flag_map.js";
+import { flagMap } from "@bundu/shared/flag_map";
 import craftingConfig from "../crafting.yml";
 
 export type CraftingRecipeData = {
