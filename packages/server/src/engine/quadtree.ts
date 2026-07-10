@@ -36,6 +36,7 @@ export class Quadtree {
 
     insert(objectId: number, position: BasicPoint) {
         this.objects.set(objectId, position);
+        this.tree.delete(objectId);
         this.tree.insert(objectId, this.objects);
     }
 
@@ -138,31 +139,22 @@ class InternalQuadtree {
         }
         if (!this.bounds.intersects(range)) {
             return found;
-        } else {
-            for (let id of this.objects.keys()) {
-                const position = objectList.get(id);
-                if (!position) continue;
-
-                const isInNode = this.bounds.contains(position);
-                const isInQuery = range.contains(position);
-                if (!isInNode) {
-                    this.objects.delete(id);
-                    continue;
-                }
-
-                if (isInQuery) {
-                    found.push(id);
-                }
-            }
-
-            for (let node of this.nodes) {
-                node.query(range, objectList, found);
-            }
-
-            this.recombine();
-
-            return found;
         }
+
+        for (let id of this.objects.keys()) {
+            const position = objectList.get(id);
+            if (!position) continue;
+
+            if (range.contains(position)) {
+                found.push(id);
+            }
+        }
+
+        for (let node of this.nodes) {
+            node.query(range, objectList, found);
+        }
+
+        return found;
     }
 
     delete(objectID: number) {
