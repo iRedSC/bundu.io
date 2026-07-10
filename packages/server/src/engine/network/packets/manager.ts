@@ -91,7 +91,7 @@ export class PlayerPacketManager {
 
             const visibleObjects = this.visibleObjectsCallback?.(player);
             if (visibleObjects) {
-                packets.push(...worldPacketManager.flush(visibleObjects));
+                packets.push(...worldPacketManager.process(visibleObjects));
             } else {
                 console.error(
                     "No visibleObjects callback provided to PlayerPacketManager!"

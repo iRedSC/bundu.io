@@ -8,7 +8,7 @@ import type { GameObject } from "../../game_object";
 type ObjectPacket = ServerPacketMap[ServerPacketID] & { id: number };
 
 /**
- * Per-object outbound queue, flushed only for visible objects.
+ * Per-object outbound queue, processed only for visible objects.
  * - `set`: latest-wins state (position, rotation)
  * - `emit`: append-only events (hits, attacks, chat)
  */
@@ -44,7 +44,7 @@ export class WorldPacketManager {
         list.push([packetId, data]);
     }
 
-    flush(objects: IterableIterator<GameObject>): SerializedPacket[] {
+    process(objects: IterableIterator<GameObject>): SerializedPacket[] {
         const packets: SerializedPacket[] = [];
         for (const object of objects) {
             const objectState = this.state.get(object.id);
