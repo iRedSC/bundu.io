@@ -1,5 +1,5 @@
-import { type BasicPoint } from "./types.js";
-import { Range } from "./range.js";
+import { type BasicPoint } from "./types";
+import { Range } from "./range";
 
 export type QuadtreeObjectList = Map<number, BasicPoint>;
 

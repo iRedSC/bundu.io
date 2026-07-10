@@ -1,4 +1,4 @@
-import type { GameObjectData } from "./object_types.js";
+import type { GameObjectData } from "./object_types";
 
 /**
  * Single source of truth for each packet: id + field order + payload type.

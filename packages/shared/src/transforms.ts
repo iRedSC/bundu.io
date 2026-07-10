@@ -1,5 +1,5 @@
-import { round } from "./math.js";
-import { type BasicPoint } from "./types.js";
+import { round } from "./math";
+import { type BasicPoint } from "./types";
 
 /**
  * Returns the distance between two points
