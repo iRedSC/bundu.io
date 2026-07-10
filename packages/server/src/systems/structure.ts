@@ -28,6 +28,5 @@ export class StructureSystem extends System<GameEventMap> {
         });
 
         this.world.addObject(structure);
-        this.trigger(GameEvent.NewObject, { object: structure });
     }
 }
