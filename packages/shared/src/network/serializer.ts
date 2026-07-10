@@ -16,6 +16,10 @@ export class Serializer<
         }
     }
 
+    has(id: number): boolean {
+        return this.schemas.has(id);
+    }
+
     serialize<I extends keyof S & number>(
         id: I,
         data: I extends keyof DataMap ? DataMap[I] : never
