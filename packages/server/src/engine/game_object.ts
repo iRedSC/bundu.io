@@ -13,7 +13,7 @@ function getComponents<T>(component: ComponentFactory<T>): T;
 function getComponents<T>(
     component: ComponentFactory<T>,
     all: true
-): Component<T>[];
+): T[];
 function getComponents<T>(
     this: GameObject,
     component: ComponentFactory<T>,
