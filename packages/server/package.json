@@ -1,0 +1,13 @@
+{
+  "name": "@bundu/server",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@bundu/shared": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./engine": "./src/engine/index.ts"
+  }
+}

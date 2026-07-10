@@ -2,6 +2,7 @@
     "name": "bundu.io",
     "module": "index.ts",
     "type": "module",
+    "workspaces": ["packages/*"],
     "devDependencies": {
         "@types/bun": "latest",
         "@types/sat": "^0.0.35"
@@ -10,7 +11,7 @@
         "typescript": "~5.9.3"
     },
     "scripts": {
-        "server": "bun run src/game/server/index.ts",
+        "server": "bun run packages/server/src/index.ts",
         "build": "bun run ./build.ts",
         "start": "bun server.ts --hot",
         "client": "bun run build && bun run start",

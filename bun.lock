@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "bundu.io",
@@ -20,8 +19,32 @@
         "typescript": "~5.9.3",
       },
     },
+    "packages/client": {
+      "name": "@bundu/client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bundu/shared": "workspace:*",
+      },
+    },
+    "packages/server": {
+      "name": "@bundu/server",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bundu/shared": "workspace:*",
+      },
+    },
+    "packages/shared": {
+      "name": "@bundu/shared",
+      "version": "0.0.0",
+    },
   },
   "packages": {
+    "@bundu/client": ["@bundu/client@workspace:packages/client"],
+
+    "@bundu/server": ["@bundu/server@workspace:packages/server"],
+
+    "@bundu/shared": ["@bundu/shared@workspace:packages/shared"],
+
     "@msgpack/msgpack": ["@msgpack/msgpack@3.1.2", "", {}, "sha512-JEW4DEtBzfe8HvUYecLU9e6+XJnKDlUAIve8FvPzF3Kzs6Xo/KuZkZJsDH0wJXl/qEZbeeE7edxDNY3kMs39hQ=="],
 
     "@pixi/colord": ["@pixi/colord@2.9.6", "", {}, "sha512-nezytU2pw587fQstUu1AsJZDVEynjskwOL+kibwcdxsMBFqPsFFNA7xl0ii/gXuDi6M0xj3mfRJj8pBSc2jCfA=="],
