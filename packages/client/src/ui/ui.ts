@@ -4,7 +4,6 @@
 
 import { Container } from "pixi.js";
 import { percentOf } from "@bundu/shared/math";
-import { Timer } from "./timer";
 import { Grid } from "./grid";
 import { CraftingMenu, RecipeManager } from "./crafting_menu";
 import { Inventory } from "./inventory";
@@ -16,7 +15,6 @@ export type UI = {
     inventory: Inventory;
     craftingMenu: CraftingMenu;
     recipeManager: RecipeManager;
-    swordTimer: Timer;
     health: StatBar;
     hunger: StatBar;
     heat: StatBar;
@@ -39,8 +37,6 @@ export function createUI() {
     );
     const craftingMenu = new CraftingMenu(craftingGrid);
 
-    const swordTimer = new Timer("sword_timer");
-
     const statsGrid = new Grid(60, 5, 150, 60, 1);
 
     const health = new StatBar({
@@ -49,7 +45,6 @@ export function createUI() {
         tint: 0x88fa57,
         overlayTint: 0x37ad98,
         diffTint: 0xd4ffe4,
-        warnOnHigh: false,
         split: false,
     });
 
@@ -60,8 +55,6 @@ export function createUI() {
         tint: 0xb06b30,
         overlayTint: 0xd48457,
         diffTint: 0x6e5648,
-
-        warnOnHigh: false,
     });
 
     const heat = new StatBar({
@@ -90,15 +83,10 @@ export function createUI() {
                 ITEM_BUTTON_SIZE -
                 statsGrid.spacingV
         );
-        swordTimer.container.position.set(
-            100,
-            percentOf(75, window.innerHeight)
-        );
     }
 
     ui.addChild(statContainer);
     ui.addChild(inventory.container);
-    ui.addChild(swordTimer.container);
     ui.addChild(craftingMenu.container);
 
     window.addEventListener("resize", resize);
@@ -109,7 +97,6 @@ export function createUI() {
         inventory,
         craftingMenu,
         recipeManager,
-        swordTimer,
         health,
         hunger,
         heat,

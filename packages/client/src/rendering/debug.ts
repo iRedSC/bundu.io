@@ -1,4 +1,4 @@
-import { Container, Graphics } from "pixi.js";
+import { Container } from "pixi.js";
 
 // Used for creating debug objects on the map, such as hitboxes or id text.
 
@@ -38,24 +38,4 @@ export class DebugWorldObject {
         }
         this.containers.clear();
     }
-}
-
-type BasicPoint = { x: number; y: number } | [number, number];
-
-let lastDraw: Graphics | undefined;
-export function drawLine(p1: BasicPoint, p2: BasicPoint) {
-    const [x1, y1] = Array.isArray(p1) ? p1 : [p1.x, p1.y];
-    const [x2, y2] = Array.isArray(p2) ? p2 : [p2.x, p2.y];
-
-    const line = new Graphics();
-    line.moveTo(x1, y1);
-    line.lineTo(x2, y2);
-    line.stroke({ width: 2, color: 0xffffff });
-
-    if (lastDraw) {
-        debugContainer.removeChild(lastDraw);
-        lastDraw.destroy();
-    }
-    debugContainer.addChild(line);
-    lastDraw = line;
 }

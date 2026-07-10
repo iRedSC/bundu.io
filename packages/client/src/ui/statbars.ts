@@ -11,9 +11,6 @@ export type StatBarOptions = {
 
     overlayTint: ColorSource;
     diffTint: ColorSource;
-
-    warnOnLow?: boolean;
-    warnOnHigh?: boolean;
 };
 
 export class StatBar {
@@ -34,9 +31,6 @@ export class StatBar {
 
     tint: ColorSource;
 
-    warnOnLow: boolean;
-    warnOnHigh: boolean;
-
     constructor({
         max,
         icon,
@@ -45,14 +39,9 @@ export class StatBar {
         diffTint,
 
         split = false,
-        warnOnLow = true,
-        warnOnHigh = true,
     }: StatBarOptions) {
         this.max = max;
         this.split = split;
-
-        this.warnOnHigh = warnOnHigh;
-        this.warnOnLow = warnOnLow;
 
         this.tint = tint;
 
