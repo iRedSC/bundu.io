@@ -52,7 +52,8 @@ export class PlayerSystem extends System<GameEventMap> {
                     "attacking",
                     "multiply",
                     0.7,
-                    500
+                    500,
+                    time
                 );
                 data.lastAttackTime = time;
             }
@@ -124,7 +125,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const { x, y } = physics.position;
 
         if (selectedStructure.id !== -1) {
-            selectedStructure.cooldown_timestamp = Date.now() + 1000;
+            selectedStructure.cooldown_timestamp = this.world.gameTime + 1000;
 
             playerPacketManager.set(
                 player.id,
@@ -196,7 +197,14 @@ export class PlayerSystem extends System<GameEventMap> {
                     if (command[4]) duration = Number(command[4]);
                     player
                         .get(Attributes)
-                        .set(type, "command", operation, value, duration);
+                        .set(
+                            type,
+                            "command",
+                            operation,
+                            value,
+                            duration,
+                            this.world.gameTime
+                        );
                     break;
                 }
                 case "stat": {

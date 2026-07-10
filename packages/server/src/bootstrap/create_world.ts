@@ -14,6 +14,7 @@ import { PacketSystem } from "../systems/packet";
 import { AttackSystem } from "../systems/attack";
 import { RenderDistanceSystem } from "../systems/render_distance";
 import { StructureSystem } from "../systems/structure";
+import { AttributesSystem } from "../systems/attributes";
 
 export type ServerWorld = {
     world: World;
@@ -33,6 +34,7 @@ export function createWorld(): ServerWorld {
     setupPacketReceiving(receiver, playerSystem);
 
     world
+        .addSystem(new AttributesSystem(world))
         .addSystem(playerSystem)
         .addSystem(new PositionSystem(world))
         .addSystem(new CollisionSystem(world))

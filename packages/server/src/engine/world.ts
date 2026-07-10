@@ -48,6 +48,7 @@ export class World {
 
     public timeScale = 1;
     public lastUpdate = performance.now();
+    /** Authoritative gameplay clock (ms). Cooldowns, cadence, and expiry use this — not Date.now()/serverTime. */
     public gameTime = 0;
 
     // -------------------------------------------------------------------
