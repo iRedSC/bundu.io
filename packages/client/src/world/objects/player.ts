@@ -1,3 +1,4 @@
+import { lookToward } from "@bundu/shared/transforms";
 import { spriteConfigs } from "../../configs/sprite_configs";
 import { SpriteFactory, ContaineredSprite } from "../../assets/sprite_factory";
 import { ANIMATION, hurt } from "../../animation/animations";
@@ -47,6 +48,14 @@ export class Player extends GameObject {
     backpack?: boolean;
 
     blocking: boolean;
+
+    /** Client-side look prediction for local input; returns rotation in radians. */
+    predictLook(toward: { x: number; y: number }): number {
+        const rotation = lookToward(this.position, toward) - radians(90);
+        this.addRotation(rotation);
+        return rotation;
+    }
+
     constructor(
         id: number,
         manager: AnimationManager,
