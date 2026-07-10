@@ -162,6 +162,9 @@ async function main() {
         gui.craftingMenu.items = [];
         gui.craftingMenu.update();
         keyboard.closeChat();
+        serverTime.synced = false;
+        serverTime.offset = 0;
+        serverTime.targetOffset = 0;
     };
 
     gui.inventory.leftclick = (itemId) => {
