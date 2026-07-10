@@ -10,6 +10,7 @@ import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
 import { serverTime } from "@client/globals";
+import GameObject from "./game_object";
 import ObjectContainer from "./object_container";
 import { CombatFx } from "./combat_fx";
 import { GameObjectData } from "@bundu/shared/object_types";
