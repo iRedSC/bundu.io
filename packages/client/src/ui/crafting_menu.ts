@@ -1,14 +1,16 @@
-import { ItemButton } from "./item_button";
+import { ItemButton, tickItemButton } from "./item_button";
 import { Grid } from "./grid";
-import {
-    colorLerp,
-    lerp,
-    radians,
-    rotationLerp,
-} from "@bundu/shared/transforms";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Container } from "pixi.js";
+
+const CRAFTING_COLORS = {
+    empty: 0x777777,
+    default: 0x777777,
+    hover: 0x999999,
+    down: 0x333333,
+    rightDown: 0x333333,
+} as const;
 
 export class RecipeManager {
     recipes: Map<number, [Map<number, number>, number[]]>;
@@ -79,9 +81,10 @@ export class CraftingMenu {
     update() {
         if (this.buttons.length >= this.items.length) {
             const remove = this.buttons.length - this.items.length;
-            this.buttons
-                .splice(-remove, remove)
-                .forEach((button) => this.container.removeChild(button.button));
+            this.buttons.splice(-remove, remove).forEach((button) => {
+                this.container.removeChild(button.button);
+                button.destroy();
+            });
         } else {
             console.log(this.buttons.length, this.items.length);
             const add = this.items.length - this.buttons.length;
@@ -112,7 +115,7 @@ export class CraftingMenu {
 
     tick() {
         for (const button of this.buttons) {
-            tickCraftingButton(button);
+            tickItemButton(button, CRAFTING_COLORS);
         }
     }
 
@@ -206,58 +209,3 @@ export class CraftingMenu {
 //         (craftingMenu.buttonSize + craftingMenu.padding) +
 //         craftingMenu.padding * 2
 // );
-
-/** Tween hover/press visuals from interaction state. */
-function tickCraftingButton(button: ItemButton) {
-    if (button.rightDown) {
-        button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
-        button.background.tint = colorLerp(
-            Number(button.background.tint),
-            0x333333,
-            0.2
-        );
-        button.background.rotation = lerp(
-            button.background.rotation,
-            radians(45),
-            0.2
-        );
-        return;
-    }
-
-    button.background.rotation = lerp(
-        button.background.rotation,
-        radians(0),
-        0.2
-    );
-
-    if (button.down) {
-        button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
-        button.background.tint = colorLerp(
-            Number(button.background.tint),
-            0x333333,
-            0.2
-        );
-        return;
-    }
-    if (button.hovering) {
-        button.background.rotation = rotationLerp(
-            button.background.rotation,
-            Math.sin(Date.now() / 500) * 0.3,
-            0.2
-        );
-        button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));
-        button.background.tint = colorLerp(
-            Number(button.background.tint),
-            0x999999,
-            0.1
-        );
-        return;
-    }
-
-    button.button.scale.set(lerp(button.button.scale.x, 1, 0.1));
-    button.background.tint = colorLerp(
-        Number(button.background.tint),
-        0x777777,
-        0.1
-    );
-}

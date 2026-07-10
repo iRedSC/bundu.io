@@ -1,13 +1,6 @@
 import { Container, Text } from "pixi.js";
-import { ItemButton } from "./item_button";
-import {
-    colorLerp,
-    lerp,
-    prettifyNumber,
-    radians,
-    rotationLerp,
-    percentOf,
-} from "@bundu/shared";
+import { ItemButton, tickItemButton } from "./item_button";
+import { prettifyNumber, percentOf } from "@bundu/shared";
 import { TEXT_STYLE } from "@client/assets/text";
 import { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
@@ -21,11 +14,11 @@ import type { ServerPacket } from "@bundu/shared/packet_definitions";
 type ItemStack = [id: number, amount: number];
 
 const INVENTORY_COLORS = {
-    EMPTY: 0x222910,
-    DEFAULT: 0x4a5235,
-    HOVER: 0x818f5d,
-    DOWN: 0x222910,
-    RIGHT_DOWN: 0xb54731,
+    empty: 0x222910,
+    default: 0x4a5235,
+    hover: 0x818f5d,
+    down: 0x222910,
+    rightDown: 0xb54731,
 } as const;
 
 /**
@@ -61,80 +54,7 @@ export class InventoryButton extends ItemButton {
 
     /** Tween hover/press/empty visuals from interaction state. */
     tick() {
-        const y = this.restY;
-        if (this.rightDown && this.item) {
-            this.button.scale.set(lerp(this.button.scale.x, 0.8, 0.2));
-            this.background.tint = colorLerp(
-                Number(this.background.tint),
-                INVENTORY_COLORS.RIGHT_DOWN,
-                0.2
-            );
-            this.background.position.y = lerp(
-                this.background.position.y,
-                y - 10,
-                0.2
-            );
-            this.itemSprite.position.y = lerp(
-                this.itemSprite.position.y,
-                y - 10,
-                0.2
-            );
-            this.background.rotation = lerp(
-                this.background.rotation,
-                radians(45),
-                0.2
-            );
-            return;
-        }
-
-        this.background.rotation = lerp(
-            this.background.rotation,
-            radians(0),
-            0.2
-        );
-        this.background.position.y = lerp(this.background.position.y, y, 0.2);
-        this.itemSprite.position.y = lerp(this.itemSprite.position.y, y, 0.2);
-
-        if (this.down && this.item) {
-            this.button.scale.set(lerp(this.button.scale.x, 0.8, 0.2));
-            this.background.tint = colorLerp(
-                Number(this.background.tint),
-                INVENTORY_COLORS.DOWN,
-                0.2
-            );
-            return;
-        }
-        if (this.hovering) {
-            this.background.rotation = rotationLerp(
-                this.background.rotation,
-                Math.sin(Date.now() / 500) * 0.3,
-                0.2
-            );
-            this.button.scale.set(lerp(this.button.scale.x, 1.1, 0.1));
-            if (this.item)
-                this.background.tint = colorLerp(
-                    Number(this.background.tint),
-                    INVENTORY_COLORS.HOVER,
-                    0.1
-                );
-
-            return;
-        }
-
-        this.button.scale.set(lerp(this.button.scale.x, 1, 0.1));
-        if (this.item) {
-            this.background.tint = colorLerp(
-                Number(this.background.tint),
-                INVENTORY_COLORS.DEFAULT,
-                0.1
-            );
-            return;
-        }
-        this.background.tint = colorLerp(
-            Number(this.background.tint),
-            INVENTORY_COLORS.EMPTY,
-            0.1
-        );
+        tickItemButton(this, INVENTORY_COLORS, this.restY);
     }
 }
 
