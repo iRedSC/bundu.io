@@ -1154,8 +1154,8 @@
         </div>
       </article>
 
-      <article class="smell" id="smell-magic-world-bounds" data-id="magic-world-bounds" data-severity="medium" data-package="server" data-category="smell" data-fixed="false">
-        <div class="smell-check"><input type="checkbox" aria-label="Mark magic-world-bounds fixed" /></div>
+      <article class="smell" id="smell-magic-world-bounds" data-id="magic-world-bounds" data-severity="medium" data-package="server" data-category="smell" data-fixed="true">
+        <div class="smell-check"><input type="checkbox" checked aria-label="Mark magic-world-bounds fixed" /></div>
         <div>
           <div class="smell-head">
             <h3 class="smell-title">Map size <code>20000</code> and query radius <code>500</code> are duplicated magic numbers</h3>
@@ -1166,7 +1166,7 @@
           <p>Quadtree bounds, clamp limits, and test map size must stay in sync by hand. Attack/collision use hard-coded <code>500</code> neighborhoods unrelated to weapon reach.</p>
           <p class="suggestion">One <code>WORLD_BOUNDS</code> / <code>SPATIAL_QUERY_PADDING</code> constant (or derive padding from hitbox).</p>
           <ul class="files">
-            <li>packages/server/src/index.ts</li>
+            <li>packages/server/src/bootstrap/load_map.ts</li>
             <li>packages/server/src/systems/position.ts</li>
             <li>packages/server/src/systems/collision.ts</li>
             <li>packages/server/src/systems/attack.ts</li>

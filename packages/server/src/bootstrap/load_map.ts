@@ -6,8 +6,9 @@ import { Ground } from "../game_objects/ground";
 import { Resource } from "../game_objects/resource";
 import { GameEvent } from "../systems/event_map";
 import type { PlayerSystem } from "../systems/player";
+import { WORLD_BOUNDS } from "../systems/position";
 
-const TEST_MAP_SIZE = 20000;
+const TEST_MAP_SIZE = WORLD_BOUNDS;
 const TEST_MAP_BORDER_PADDING = 300;
 const TEST_MAP_RESOURCE_COUNT = 450;
 
