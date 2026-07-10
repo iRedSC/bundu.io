@@ -2,7 +2,6 @@ import { Application, type Renderer } from "pixi.js";
 import { decodeFromBlob } from "./network/decode";
 import type { SerializedPacketArray } from "./network/client_receiver";
 import {
-    receiver,
     setupGUIPacketReceiving,
     setupPacketReceiving,
 } from "./network/receiver";
@@ -15,21 +14,17 @@ import { serializer } from "./network/serializer";
 import { Socket } from "./network/socket";
 import { World } from "./world/world";
 import { createViewport } from "./rendering/viewport";
-import { debugContainer } from "./rendering/debug";
+import {
+    createDebugDrawHandlers,
+} from "./rendering/debug";
 import { createUI } from "./ui/ui";
 import { initAssets } from "./assets/load";
-import { AnimationManagers } from "./animation/animations";
 import { initDevtools } from "@pixi/devtools";
 import { MouseInputListener } from "./input/mouse";
-import {
-    encodeMoveDirection,
-    round,
-    degrees,
-    lookToward,
-    radians,
-} from "@bundu/shared";
+import { round, degrees, lookToward, radians } from "@bundu/shared";
 import { KeyboardInputListener } from "./input/keyboard";
 import { serverTime } from "./globals";
+import { createClientSession } from "./client_session";
 
 function isPacketArray(data: unknown): data is SerializedPacketArray {
     return Array.isArray(data) && typeof data[0] === "number";
@@ -71,16 +66,25 @@ async function main() {
     });
     document.oncontextmenu = () => false;
     initDevtools({ app });
+
+    const session = createClientSession();
+    const { receiver, animations, debugContainer } = session;
+    const debugDraw = createDebugDrawHandlers(debugContainer);
+
     const viewport = createViewport(app);
     app.stage.addChild(viewport);
 
     viewport.addChild(debugContainer);
 
-    const world = new World(viewport);
-    setupPacketReceiving(receiver, world);
+    const world = new World(viewport, animations.World, debugContainer);
+    setupPacketReceiving(receiver, world, debugDraw);
+
+    // ? Manually dispatching resize event, find out why
+    const resize = new Event("resize");
+    setTimeout(() => window.dispatchEvent(resize), 500);
 
     // * GUI
-    const gui = createUI();
+    const gui = createUI(animations.UI);
     app.stage.addChild(gui.container);
     setupGUIPacketReceiving(receiver, gui);
 
@@ -133,19 +137,20 @@ async function main() {
                 });
             }
             world.objects.updating.add(player);
-            player.addRotation(rotation);
+            player.addState(rotation);
         }
     };
 
     const keyboard = new KeyboardInputListener();
-    keyboard.onMoveInput = (move) => {
+    keyboard.onMoveInput = (move: [number, number]) => {
         const chat = document.querySelector<HTMLInputElement>("#chat-input");
         if (chat === document.activeElement) {
             return;
         }
-        sendPacket(ClientPacket.Movement, {
-            direction: encodeMoveDirection(move[0], move[1]),
-        });
+        move[0] = Math.max(0, Math.min(2, move[0]));
+        move[1] = Math.max(0, Math.min(2, move[1]));
+        const dir = (move[0] << 2) | move[1];
+        sendPacket(ClientPacket.Movement, { direction: dir + 1 });
     };
     keyboard.onSendChat = (message: string) => {
         const trimmed = message.trim();
@@ -163,9 +168,6 @@ async function main() {
         gui.craftingMenu.items = [];
         gui.craftingMenu.update();
         keyboard.closeChat();
-        serverTime.synced = false;
-        serverTime.offset = 0;
-        serverTime.targetOffset = 0;
     };
 
     gui.inventory.leftclick = (itemId) => {
@@ -283,8 +285,7 @@ async function main() {
         const player = world.objects.get(world.user ?? -1);
         if (player) {
             world.tick();
-            gui.tick();
-            AnimationManagers.UI.update();
+            animations.UI.update();
         }
         const adjustmentRate = 0.1;
         serverTime.offset +=

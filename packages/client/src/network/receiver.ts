@@ -4,26 +4,21 @@ import {
     type ServerPacketMap,
 } from "@bundu/shared/packet_definitions";
 import { ClientPacketReceiver } from "./client_receiver";
-import { Serializer } from "@bundu/shared";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
-
-const serverSerializer = new Serializer<typeof Schema.Server, ServerPacketMap>(
-    Schema.Server
-);
-export const receiver = new ClientPacketReceiver<
-    typeof Schema.Server,
-    ServerPacketMap
->(serverSerializer);
+import type { DebugDrawHandlers } from "@client/rendering/debug";
 
 export function setupPacketReceiving(
     receiver: ClientPacketReceiver<typeof Schema.Server, ServerPacketMap>,
-    world: World
+    world: World,
+    debug: DebugDrawHandlers
 ) {
+    receiver.on(ServerPacket.DebugDrawPolygon, debug.drawPolygon);
+    receiver.on(ServerPacket.DebugDrawRects, debug.drawRects);
     receiver.on(ServerPacket.LoadObject, world.loadObject);
-    receiver.on(ServerPacket.AttackEvent, world.combatFx.attack);
-    receiver.on(ServerPacket.BlockEvent, world.combatFx.block);
-    receiver.on(ServerPacket.HitEvent, world.combatFx.hurt);
+    receiver.on(ServerPacket.AttackEvent, world.attack);
+    receiver.on(ServerPacket.BlockEvent, world.block);
+    receiver.on(ServerPacket.HitEvent, world.hurt);
     receiver.on(ServerPacket.SetPosition, world.moveObject);
     receiver.on(ServerPacket.SetRotation, world.rotateObject);
     receiver.on(ServerPacket.DeleteObjects, world.deleteObjects);

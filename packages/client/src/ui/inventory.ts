@@ -1,6 +1,15 @@
 import { Container, Text } from "pixi.js";
-import { ItemButton, tickItemButton } from "./item_button";
-import { prettifyNumber, percentOf } from "@bundu/shared";
+import { ItemButton } from "./item_button";
+import {
+    colorLerp,
+    lerp,
+    prettifyNumber,
+    radians,
+    rotationLerp,
+    percentOf,
+    Animation,
+    type AnimationManager,
+} from "@bundu/shared";
 import { TEXT_STYLE } from "@client/assets/text";
 import { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
@@ -13,14 +22,6 @@ import type { ServerPacket } from "@bundu/shared/packet_definitions";
 
 type ItemStack = [id: number, amount: number];
 
-const INVENTORY_COLORS = {
-    empty: 0x222910,
-    default: 0x4a5235,
-    hover: 0x818f5d,
-    down: 0x222910,
-    rightDown: 0xb54731,
-} as const;
-
 /**
  * The InventoryButton is what makes up the hotbar.
  * It can be clicked to select the item in it's slot,
@@ -28,12 +29,15 @@ const INVENTORY_COLORS = {
  */
 export class InventoryButton extends ItemButton {
     amount: Text;
-    private restY: number;
-
-    constructor() {
+    constructor(uiAnimations: AnimationManager) {
         super();
 
-        this.restY = this.background.position.y;
+        uiAnimations.set(
+            this,
+            0,
+            inventoryButtonAnimation(this).run(),
+            true
+        );
         this.amount = new Text({ text: "", style: TEXT_STYLE });
         this.amount.style.align = "right";
         this.amount.position.set(
@@ -51,11 +55,108 @@ export class InventoryButton extends ItemButton {
         this.amount.text = "";
         this.item = null;
     }
+}
 
-    /** Tween hover/press/empty visuals from interaction state. */
-    tick() {
-        tickItemButton(this, INVENTORY_COLORS, this.restY);
-    }
+const INVENTORY_COLORS = {
+    EMPTY: 0x222910,
+    DEFAULT: 0x4a5235,
+    HOVER: 0x818f5d,
+    DOWN: 0x222910,
+    RIGHT_DOWN: 0xb54731,
+};
+
+function inventoryButtonAnimation(button: ItemButton) {
+    const animation = new Animation();
+    let y: number;
+
+    animation.keyframes[0] = (animation) => {
+        if (animation.firstFrameTrigger) {
+            y = button.button.position.y;
+        }
+        if (button.rightDown && button.item) {
+            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                INVENTORY_COLORS.RIGHT_DOWN,
+                0.2
+            );
+            button.background.position.y = lerp(
+                button.background.position.y,
+                y - 10,
+                0.2
+            );
+            button.itemSprite.position.y = lerp(
+                button.itemSprite.position.y,
+                y - 10,
+                0.2
+            );
+            button.background.rotation = lerp(
+                button.background.rotation,
+                radians(45),
+                0.2
+            );
+            return;
+        }
+
+        button.background.rotation = lerp(
+            button.background.rotation,
+            radians(0),
+            0.2
+        );
+        button.background.position.y = lerp(
+            button.background.position.y,
+            y,
+            0.2
+        );
+        button.itemSprite.position.y = lerp(
+            button.itemSprite.position.y,
+            y,
+            0.2
+        );
+
+        if (button.down && button.item) {
+            button.button.scale.set(lerp(button.button.scale.x, 0.8, 0.2));
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                INVENTORY_COLORS.DOWN,
+                0.2
+            );
+            return;
+        }
+        if (button.hovering) {
+            button.background.rotation = rotationLerp(
+                button.background.rotation,
+                Math.sin(Date.now() / 500) * 0.3,
+                0.2
+            );
+            button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));
+            if (button.item)
+                button.background.tint = colorLerp(
+                    Number(button.background.tint),
+                    INVENTORY_COLORS.HOVER,
+                    0.1
+                );
+
+            return;
+        }
+
+        button.button.scale.set(lerp(button.button.scale.x, 1, 0.1));
+        if (button.item) {
+            button.background.tint = colorLerp(
+                Number(button.background.tint),
+                INVENTORY_COLORS.DEFAULT,
+                0.1
+            );
+            return;
+        }
+        button.background.tint = colorLerp(
+            Number(button.background.tint),
+            INVENTORY_COLORS.EMPTY,
+            0.1
+        );
+    };
+
+    return animation;
 }
 
 /**
@@ -63,14 +164,6 @@ export class InventoryButton extends ItemButton {
  */
 
 type Callback = (item: number, shift: boolean) => void;
-
-const inventoryGrid = new Grid(
-    percentOf(10, ITEM_BUTTON_SIZE),
-    percentOf(10, ITEM_BUTTON_SIZE),
-    ITEM_BUTTON_SIZE,
-    ITEM_BUTTON_SIZE,
-    1
-);
 
 /**
  * The display side of the inventory, holds all of the buttons.
@@ -80,10 +173,20 @@ export class Inventory {
     buttons: InventoryButton[] = [];
     slots: (ItemStack | null)[] = [];
     items = new Map<number, number>();
+    private readonly grid: Grid;
+    private readonly uiAnimations: AnimationManager;
     private rightClickCB?: Callback;
     private leftClickCB?: Callback;
 
-    constructor() {
+    constructor(uiAnimations: AnimationManager) {
+        this.uiAnimations = uiAnimations;
+        this.grid = new Grid(
+            percentOf(10, ITEM_BUTTON_SIZE),
+            percentOf(10, ITEM_BUTTON_SIZE),
+            ITEM_BUTTON_SIZE,
+            ITEM_BUTTON_SIZE,
+            1
+        );
         this.slotCount = 0;
     }
 
@@ -97,7 +200,7 @@ export class Inventory {
         // add slots
         if (diff > 0) {
             for (let i = 0; i < diff; i++) {
-                const button = new InventoryButton();
+                const button = new InventoryButton(this.uiAnimations);
                 button.leftclick = this.leftClickCB;
                 button.rightclick = this.rightClickCB;
 
@@ -122,7 +225,7 @@ export class Inventory {
             }
         }
 
-        inventoryGrid.arrange(this.buttons);
+        this.grid.arrange(this.buttons);
     }
 
     get slotCount() {
@@ -162,12 +265,6 @@ export class Inventory {
             button.item = itemId;
         }
         this.resize();
-    }
-
-    tick() {
-        for (const button of this.buttons) {
-            button.tick();
-        }
     }
 
     resize() {

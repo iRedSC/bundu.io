@@ -18,9 +18,10 @@ export class Structure extends GameObject {
         pos: PIXI.Point,
         rotation: number,
         collisionRadius: number,
+        debugRoot: PIXI.Container,
         visualScale: number = collisionRadius * 2.5
     ) {
-        super(id, pos, rotation, collisionRadius, visualScale);
+        super(id, pos, rotation, collisionRadius, debugRoot, visualScale);
         const config = spriteConfigs.get(type);
         this.sprite = SpriteFactory.build(type, config?.world_display);
 

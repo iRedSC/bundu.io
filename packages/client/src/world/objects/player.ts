@@ -54,9 +54,10 @@ export class Player extends GameObject {
         name: Text,
         pos: Point,
         rotation: number,
-        collisionRadius: number
+        collisionRadius: number,
+        debugRoot: Container
     ) {
-        super(id, pos, rotation, collisionRadius, 100);
+        super(id, pos, rotation, collisionRadius, debugRoot, 100);
         this.sprite = {
             structure: {
                 container: new Container(),

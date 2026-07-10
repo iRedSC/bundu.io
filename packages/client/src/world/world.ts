@@ -2,28 +2,34 @@ import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { createGround } from "./ground";
-import { radians } from "@bundu/shared";
-import { AnimationManagers } from "../animation/animations";
+import { radians, type AnimationManager } from "@bundu/shared";
+import { ANIMATION } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
-import { Point, Text } from "pixi.js";
+import { Container, Point, Text } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
 import { serverTime } from "@client/globals";
+import GameObject from "./game_object";
 import ObjectContainer from "./object_container";
-import { CombatFx } from "./combat_fx";
 import { GameObjectData } from "@bundu/shared/object_types";
 import { Structure } from "./objects/structure";
 import { getStringId } from "@bundu/shared/id_map";
 
-type LoadPlayer = Extract<
-    ServerPacket.LoadObject,
-    { type: typeof GameObjectData.PlayerType }
->;
-type LoadResource = Extract<
-    ServerPacket.LoadObject,
-    { type: typeof GameObjectData.ResourceNodeType }
->;
+function isPlayerData(data: unknown): data is GameObjectData.PlayerData {
+    return Array.isArray(data) && data.length >= 7 && typeof data[0] === "string";
+}
+
+function isResourceData(
+    data: unknown
+): data is GameObjectData.ResourceNodeData {
+    return (
+        Array.isArray(data) &&
+        data.length >= 2 &&
+        typeof data[0] === "number" &&
+        typeof data[1] === "number"
+    );
+}
 
 /** Client world scene — packet handlers land here after decode. */
 export class World {
@@ -31,23 +37,35 @@ export class World {
     camera: Camera;
     user?: number;
     objects: ObjectContainer;
-    combatFx: CombatFx;
     renderer: LayeredRenderer;
     sky: Sky;
+    private readonly worldAnimations: AnimationManager;
+    private readonly debugRoot: Container;
+    private connectionRetryTimeout?: ReturnType<typeof setTimeout>;
 
-    constructor(viewport: Viewport) {
+    constructor(
+        viewport: Viewport,
+        worldAnimations: AnimationManager,
+        debugRoot: Container
+    ) {
         this.viewport = viewport;
         this.camera = new Camera(viewport);
         this.sky = new Sky();
-        this.renderer = new LayeredRenderer(this.viewport);
+        this.renderer = new LayeredRenderer();
         this.objects = new ObjectContainer();
-        this.combatFx = new CombatFx(this.objects);
+        this.worldAnimations = worldAnimations;
+        this.debugRoot = debugRoot;
 
+        this.viewport.addChild(this.renderer.container);
         this.viewport.addChild(this.sky);
         this.viewport.sortChildren();
     }
 
     clear() {
+        if (this.connectionRetryTimeout !== undefined) {
+            clearTimeout(this.connectionRetryTimeout);
+            this.connectionRetryTimeout = undefined;
+        }
         this.camera.follow(null);
 
         const ids = Array.from(this.objects.all(), (object) => object.id);
@@ -59,14 +77,9 @@ export class World {
     }
 
     tick() {
-        AnimationManagers.World.update();
+        this.worldAnimations.update();
         this.objects.update(serverTime.now());
         this.camera.update();
-    }
-
-    private attachLocalPlayer(player: GameObject) {
-        console.info(`Found user (id ${player.id}), loading..`);
-        this.camera.follow(player.container);
     }
 
     clientConnectionInfo = (packet?: ServerPacket.ClientConnectionInfo) => {
@@ -78,12 +91,29 @@ export class World {
         const player = this.objects.get(this.user);
         if (!player) {
             console.warn(
-                `No player with id ${this.user} found in world, waiting for load..`
+                `No player with id ${this.user} found in world, retrying..`
             );
+            if (this.connectionRetryTimeout !== undefined) {
+                clearTimeout(this.connectionRetryTimeout);
+            }
+            this.connectionRetryTimeout = setTimeout(() => {
+                this.connectionRetryTimeout = undefined;
+                if (!this.user) return;
+                this.clientConnectionInfo();
+            }, 500);
             return;
         }
-        this.attachLocalPlayer(player);
+        if (this.connectionRetryTimeout !== undefined) {
+            clearTimeout(this.connectionRetryTimeout);
+            this.connectionRetryTimeout = undefined;
+        }
+        console.info(`Found user (id ${this.user}), loading..`);
+        this.camera.follow(player.container);
     };
+
+    getUser() {
+        return this.objects.get(this.user ?? -1) as Player;
+    }
 
     loadObject = (packet: ServerPacket.LoadObject) => {
         switch (packet.type) {
@@ -96,14 +126,19 @@ export class World {
         }
     };
 
-    newPlayer = (packet: LoadPlayer) => {
+    newPlayer = (packet: ServerPacket.LoadObject) => {
+        if (!isPlayerData(packet.data)) {
+            return console.error(
+                `Tried to load player (ID: ${packet.id}) with bad data.`
+            );
+        }
         const [
             name,
             mainhand,
             offhand,
             helmet,
             backpack,
-            _playerSkin,
+            playerSkin,
             collisionRadius,
         ] = packet.data;
         const id = packet.id;
@@ -114,23 +149,25 @@ export class World {
 
         const player = new Player(
             id,
-            AnimationManagers.World,
+            this.worldAnimations,
             nameText,
             pos,
             packet.rotation,
-            collisionRadius
+            collisionRadius,
+            this.debugRoot
         );
 
         player.setEquipment({ mainhand, offhand, helmet, backpack });
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
-
-        if (id === this.user) {
-            this.attachLocalPlayer(player);
-        }
     };
 
-    newStructure = (packet: LoadResource) => {
+    newStructure = (packet: ServerPacket.LoadObject) => {
+        if (!isResourceData(packet.data)) {
+            return console.error(
+                `Tried to load structure (ID: ${packet.id}) with bad data.`
+            );
+        }
         const [collisionRadius, nodeType] = packet.data;
         this.renderer.delete(packet.id);
 
@@ -140,7 +177,8 @@ export class World {
             getStringId(nodeType),
             pos,
             packet.rotation,
-            collisionRadius
+            collisionRadius,
+            this.debugRoot
         );
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
@@ -150,7 +188,7 @@ export class World {
         const object = this.objects.get(packet.id);
         if (!object) return;
         object.renderable = true;
-        object.addPosition({ x: packet.x, y: packet.y });
+        object.addState({ x: packet.x, y: packet.y });
         this.objects.updating.add(object);
         this.objects.add(object);
     };
@@ -159,7 +197,7 @@ export class World {
         if (packet.id === this.user) return;
         const object = this.objects.get(packet.id);
         if (!object) return;
-        object.addRotation(radians(packet.rotation));
+        object.addState(radians(packet.rotation));
         this.objects.updating.add(object);
     };
 
@@ -167,10 +205,29 @@ export class World {
         for (const id of objects) {
             const object = this.objects.get(id);
             this.objects.delete(id);
-            object?.debug.destroy();
-            AnimationManagers.World.remove(object);
+            this.worldAnimations.remove(object);
             this.renderer.delete(id);
         }
+    };
+
+    attack = ({ id }: ServerPacket.AttackEvent) => {
+        const object = this.objects.get(id);
+        if (!object) return;
+        object.trigger(ANIMATION.ATTACK, this.worldAnimations, true);
+    };
+
+    block = ({ id, stop }: ServerPacket.BlockEvent) => {
+        const object = this.objects.get(id);
+        if (!object || !(object instanceof Player)) return;
+        if (stop) return (object.blocking = false);
+        object.blocking = true;
+        object.trigger(ANIMATION.BLOCK, this.worldAnimations);
+    };
+
+    hurt = ({ id }: ServerPacket.HitEvent) => {
+        const object = this.objects.get(id);
+        if (!object) return;
+        object.trigger(ANIMATION.HURT, this.worldAnimations, true);
     };
 
     updateEquipment = (packet: ServerPacket.UpdateEquipment) => {
@@ -198,8 +255,8 @@ export class World {
     };
 
     chatMessage = ({ id, message }: ServerPacket.ChatMessage) => {
-        const player = this.objects.get(id);
-        if (!(player instanceof Player)) return;
-        console.log(player.name.text, message);
+        const player = this.objects.get(id) as any;
+        if (!player) return;
+        if (player.name) console.log(player.name.text, message);
     };
 }

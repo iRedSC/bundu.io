@@ -1,14 +1,63 @@
-import { Container } from "pixi.js";
+import { Container, Graphics } from "pixi.js";
+import { ServerPacket } from "@bundu/shared/packet_definitions";
 
 // Used for creating debug objects on the map, such as hitboxes or id text.
 
-export const debugContainer = new Container();
-debugContainer.zIndex = 1000;
+export type DebugDrawHandlers = {
+    drawPolygon: (packet: ServerPacket.DebugDrawPolygon) => void;
+    drawRects: (packet: ServerPacket.DebugDrawRects) => void;
+};
+
+export function createDebugContainer(): Container {
+    const debugContainer = new Container();
+    debugContainer.zIndex = 1000;
+    return debugContainer;
+}
+
+export function createDebugDrawHandlers(
+    debugContainer: Container
+): DebugDrawHandlers {
+    const rects = new Graphics();
+    debugContainer.addChild(rects);
+
+    return {
+        drawPolygon(packet: ServerPacket.DebugDrawPolygon) {
+            console.log("Drawing polygon");
+            const polygon = new Graphics();
+            polygon.stroke({ width: 16, color: "#FF0000" });
+            const start = { x: packet.startX, y: packet.startY };
+            polygon.moveTo(start.x, start.y);
+            for (const rawPoint of packet.points) {
+                const point = {
+                    x: start.x + rawPoint[0],
+                    y: start.y + rawPoint[1],
+                };
+                polygon.lineTo(point.x, point.y);
+            }
+            debugContainer.addChild(polygon);
+            setTimeout(() => {
+                debugContainer.removeChild(polygon);
+                polygon.destroy();
+            }, 1000);
+        },
+        drawRects(packet: ServerPacket.DebugDrawRects) {
+            rects.clear();
+            for (const rect of packet.rects) {
+                rects.rect(...rect).stroke({
+                    width: 16,
+                    color: 0xff0000,
+                });
+            }
+        },
+    };
+}
 
 export class DebugWorldObject {
     containers: Map<string, Container>;
+    private readonly root: Container;
 
-    constructor() {
+    constructor(root: Container) {
+        this.root = root;
         this.containers = new Map();
     }
 
@@ -16,13 +65,13 @@ export class DebugWorldObject {
         const current = this.containers.get(value);
         if (!current) {
             this.containers.set(value, container);
-            debugContainer.addChild(container);
+            this.root.addChild(container);
             return;
         }
-        debugContainer.removeChild(current);
+        this.root.removeChild(current);
         current.destroy();
         this.containers.set(value, container);
-        debugContainer.addChild(container);
+        this.root.addChild(container);
     }
 
     set renderable(value: boolean) {
@@ -30,12 +79,26 @@ export class DebugWorldObject {
             container.renderable = value;
         }
     }
+}
 
-    destroy() {
-        for (const container of this.containers.values()) {
-            debugContainer.removeChild(container);
-            container.destroy();
+type BasicPoint = { x: number; y: number } | [number, number];
+
+export function createDrawLine(debugContainer: Container) {
+    let lastDraw: Graphics | undefined;
+    return (p1: BasicPoint, p2: BasicPoint) => {
+        const [x1, y1] = Array.isArray(p1) ? p1 : [p1.x, p1.y];
+        const [x2, y2] = Array.isArray(p2) ? p2 : [p2.x, p2.y];
+
+        const line = new Graphics();
+        line.moveTo(x1, y1);
+        line.lineTo(x2, y2);
+        line.stroke({ width: 2, color: 0xffffff });
+
+        if (lastDraw) {
+            debugContainer.removeChild(lastDraw);
+            lastDraw.destroy();
         }
-        this.containers.clear();
-    }
+        debugContainer.addChild(line);
+        lastDraw = line;
+    };
 }

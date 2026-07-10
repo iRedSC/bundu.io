@@ -4,6 +4,8 @@
 
 import { Container } from "pixi.js";
 import { percentOf } from "@bundu/shared/math";
+import type { AnimationManager } from "@bundu/shared/animations";
+import { Timer } from "./timer";
 import { Grid } from "./grid";
 import { CraftingMenu, RecipeManager } from "./crafting_menu";
 import { Inventory } from "./inventory";
@@ -15,16 +17,16 @@ export type UI = {
     inventory: Inventory;
     craftingMenu: CraftingMenu;
     recipeManager: RecipeManager;
+    swordTimer: Timer;
     health: StatBar;
     hunger: StatBar;
     heat: StatBar;
-    tick: () => void;
 };
 
-export function createUI() {
+export function createUI(uiAnimations: AnimationManager) {
     const ui = new Container();
 
-    const inventory = new Inventory();
+    const inventory = new Inventory(uiAnimations);
 
     const recipeManager = new RecipeManager();
 
@@ -35,36 +37,50 @@ export function createUI() {
         ITEM_BUTTON_SIZE,
         3
     );
-    const craftingMenu = new CraftingMenu(craftingGrid);
+    const craftingMenu = new CraftingMenu(craftingGrid, uiAnimations);
+
+    const swordTimer = new Timer("sword_timer");
 
     const statsGrid = new Grid(60, 5, 150, 60, 1);
 
-    const health = new StatBar({
-        max: 200,
-        icon: "health_bar_icon",
-        tint: 0x88fa57,
-        overlayTint: 0x37ad98,
-        diffTint: 0xd4ffe4,
-        split: false,
-    });
+    const health = new StatBar(
+        {
+            max: 200,
+            icon: "health_bar_icon",
+            tint: 0x88fa57,
+            overlayTint: 0x37ad98,
+            diffTint: 0xd4ffe4,
+            warnOnHigh: false,
+            split: false,
+        },
+        uiAnimations
+    );
 
-    const hunger = new StatBar({
-        max: 100,
-        split: false,
-        icon: "hunger_bar_icon",
-        tint: 0xb06b30,
-        overlayTint: 0xd48457,
-        diffTint: 0x6e5648,
-    });
+    const hunger = new StatBar(
+        {
+            max: 100,
+            split: false,
+            icon: "hunger_bar_icon",
+            tint: 0xb06b30,
+            overlayTint: 0xd48457,
+            diffTint: 0x6e5648,
 
-    const heat = new StatBar({
-        max: 200,
-        split: true,
-        icon: "heat_bar_icon",
-        tint: 0xb85a48,
-        overlayTint: 0xb02a2a,
-        diffTint: 0x5f7b85,
-    });
+            warnOnHigh: false,
+        },
+        uiAnimations
+    );
+
+    const heat = new StatBar(
+        {
+            max: 200,
+            split: true,
+            icon: "heat_bar_icon",
+            tint: 0xb85a48,
+            overlayTint: 0xb02a2a,
+            diffTint: 0x5f7b85,
+        },
+        uiAnimations
+    );
 
     const statContainer = new Container();
     statContainer.pivot.set(statContainer.width / 2, statContainer.height / 2);
@@ -83,29 +99,26 @@ export function createUI() {
                 ITEM_BUTTON_SIZE -
                 statsGrid.spacingV
         );
+        swordTimer.container.position.set(
+            100,
+            percentOf(75, window.innerHeight)
+        );
     }
+    window.addEventListener("resize", resize);
 
     ui.addChild(statContainer);
     ui.addChild(inventory.container);
+    ui.addChild(swordTimer.container);
     ui.addChild(craftingMenu.container);
-
-    window.addEventListener("resize", resize);
-    resize();
 
     return {
         container: ui,
         inventory,
         craftingMenu,
         recipeManager,
+        swordTimer,
         health,
         hunger,
         heat,
-        tick() {
-            health.tick();
-            hunger.tick();
-            heat.tick();
-            inventory.tick();
-            craftingMenu.tick();
-        },
     };
 }

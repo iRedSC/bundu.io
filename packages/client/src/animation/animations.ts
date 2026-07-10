@@ -2,9 +2,16 @@ import type { ColorSource } from "pixi.js";
 import { Animation, AnimationManager } from "./runtime";
 import { colorLerp, lerp } from "@bundu/shared/transforms";
 
-export class AnimationManagers {
-    static UI: AnimationManager = new AnimationManager();
-    static World: AnimationManager = new AnimationManager();
+export type ClientAnimationManagers = {
+    readonly UI: AnimationManager;
+    readonly World: AnimationManager;
+};
+
+export function createAnimationManagers(): ClientAnimationManagers {
+    return {
+        UI: new AnimationManager(),
+        World: new AnimationManager(),
+    };
 }
 
 export enum ANIMATION {

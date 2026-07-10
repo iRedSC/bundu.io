@@ -38,6 +38,7 @@ export default class GameObject {
         pos: Point,
         rotation: number,
         collisionRadius: number,
+        debugRoot: Container,
         visualScale: number = collisionRadius
     ) {
         this.container = new Container();
@@ -46,7 +47,7 @@ export default class GameObject {
         this.id = id;
         this.collisionRadius = collisionRadius;
 
-        this.debug = new DebugWorldObject();
+        this.debug = new DebugWorldObject(debugRoot);
 
         this.container.position = pos;
         this.size = visualScale;

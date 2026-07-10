@@ -1,4 +1,5 @@
 import { clamp, lerp } from "@bundu/shared/transforms";
+import { Animation, type AnimationManager } from "@bundu/shared/animations";
 import { ContaineredSprite, SpriteFactory } from "../assets/sprite_factory";
 import { type ColorSource, Container } from "pixi.js";
 
@@ -11,6 +12,9 @@ export type StatBarOptions = {
 
     overlayTint: ColorSource;
     diffTint: ColorSource;
+
+    warnOnLow?: boolean;
+    warnOnHigh?: boolean;
 };
 
 export class StatBar {
@@ -31,17 +35,28 @@ export class StatBar {
 
     tint: ColorSource;
 
-    constructor({
-        max,
-        icon,
-        tint,
-        overlayTint,
-        diffTint,
+    warnOnLow: boolean;
+    warnOnHigh: boolean;
 
-        split = false,
-    }: StatBarOptions) {
+    constructor(
+        {
+            max,
+            icon,
+            tint,
+            overlayTint,
+            diffTint,
+
+            split = false,
+            warnOnLow = true,
+            warnOnHigh = true,
+        }: StatBarOptions,
+        uiAnimations: AnimationManager
+    ) {
         this.max = max;
         this.split = split;
+
+        this.warnOnHigh = warnOnHigh;
+        this.warnOnLow = warnOnLow;
 
         this.tint = tint;
 
@@ -96,40 +111,112 @@ export class StatBar {
         this.container.addChild(this.outline);
         this.container.addChild(this.circle);
         this.container.addChild(this.icon);
+        uiAnimations.set(this, 0, statAnimation(this).run(), true);
     }
 
     update(amount: number) {
         this.amount = clamp(amount, 0, this.max);
     }
+}
 
-    /** Lerp bar widths toward the current amount. */
-    tick() {
-        const width = 1 - 0.07;
-        const buffer = 0;
-        let base: number;
-        let overlay: number;
-        if (this.split) {
-            base = clamp(this.amount / (this.max / 2), 0, 1) * width + buffer;
+function statAnimation(target: StatBar) {
+    const animation = new Animation();
+    const buffer = 0;
+    let width = 1 - 0.07;
+
+    animation.keyframes[0] = (animation) => {
+        let base;
+        let overlay;
+        if (target.split) {
+            base =
+                clamp(target.amount / (target.max / 2), 0, 1) * width + buffer;
             overlay =
-                clamp((this.amount - this.max / 2) / (this.max / 2), 0, 1) *
+                clamp(
+                    (target.amount - target.max / 2) / (target.max / 2),
+                    0,
+                    1
+                ) *
                     width +
                 buffer;
         } else {
-            base = clamp(this.amount / this.max, 0, 1) * width + buffer;
+            base = clamp(target.amount / target.max, 0, 1) * width + buffer;
             overlay = buffer;
         }
 
-        this.base.width = lerp(this.base.width, base, 0.05);
-        if (Math.abs(this.base.width - base) < 2) {
-            this.baseDiff.width = lerp(this.baseDiff.width, base, 0.02);
+        target.base.width = lerp(target.base.width, base, 0.05);
+        if (Math.abs(target.base.width - base) < 2) {
+            target.baseDiff.width = lerp(target.baseDiff.width, base, 0.02);
         }
-        this.overlay.width = lerp(this.overlay.width, overlay, 0.05);
-        if (Math.abs(this.overlay.width - overlay) < 2) {
-            this.overlayDiff.width = lerp(
-                this.overlayDiff.width,
+        target.overlay.width = lerp(target.overlay.width, overlay, 0.05);
+        if (Math.abs(target.overlay.width - overlay) < 2) {
+            target.overlayDiff.width = lerp(
+                target.overlayDiff.width,
                 overlay,
                 0.02
             );
         }
-    }
+
+        animation.next(120);
+    };
+
+    return animation;
 }
+
+// function statsWarning(target: StatBar) {
+//     const animation = new Animation();
+
+//     animation.keyframes[0] = (animation) => {
+//         animation.next(250);
+//     };
+
+//     animation.keyframes[1] = (animation) => {
+//         const percent =
+//             (target.amount - target.min) / (target.max - target.min);
+//         if (target.warnOnHigh && percent > 0.8) {
+//             target.overlay.tint = colorLerp(
+//                 0xffffff,
+//                 target.warningColor as number,
+//                 animation.t
+//             );
+//         } else if (target.warnOnLow && percent < 0.2) {
+//             target.base.tint = colorLerp(
+//                 0xffffff,
+//                 target.warningColor as number,
+//                 animation.t
+//             );
+//         } else {
+//             target.base.tint = 0xffffff;
+//             target.overlay.tint = 0xffffff;
+//         }
+
+//         if (animation.keyframeEnded) {
+//             animation.next(250);
+//         }
+//     };
+
+//     animation.keyframes[2] = (animation) => {
+//         const percent =
+//             (target.amount - target.min) / (target.max - target.min);
+//         if (target.warnOnHigh && percent > 0.8) {
+//             target.overlay.tint = colorLerp(
+//                 target.warningColor as number,
+//                 0xffffff,
+//                 animation.t
+//             );
+//         } else if (target.warnOnLow && percent < 0.2) {
+//             target.base.tint = colorLerp(
+//                 target.warningColor as number,
+//                 0xffffff,
+//                 animation.t
+//             );
+//         } else {
+//             target.base.tint = 0xffffff;
+//             target.overlay.tint = 0xffffff;
+//         }
+
+//         if (animation.keyframeEnded) {
+//             animation.previous(250);
+//         }
+//     };
+//     return animation;
+// }
