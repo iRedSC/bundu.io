@@ -50,9 +50,10 @@ GAME_WS_URL=wss://game.example.com docker compose build frontend
 | Script            | Purpose                                      |
 |-------------------|----------------------------------------------|
 | `bun run server`  | Game WebSocket server                        |
-| `bun run client`  | Build + hot static server (dev)              |
+| `bun run client`  | Build + `serve-frontend` (dev)               |
 | `bun run build`   | Production client bundle → `public/site/`    |
-| `bun run start:frontend` | Static server without `--hot`         |
+| `bun run serve-frontend`  | Hot static server (`static-server.ts`) |
+| `bun run serve-frontend:prod` | Static server without `--hot`      |
 | `bun run typecheck`      | `tsc --noEmit`                        |
 | `bun run lint`           | Biome lint (incl. package boundaries) |
 | `bun test`               | Unit tests                            |
