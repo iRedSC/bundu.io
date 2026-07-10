@@ -8,7 +8,7 @@ export class ReversableMap<K, V> extends Map<K, V> {
 
     override set(key: K, value: V) {
         if (this._valueMap.has(value) && !Object.is(this._valueMap.get(value), key)) {
-            throw "Value already exists in map.";
+            throw new Error("Value already exists in map.");
         }
 
         if (this.has(key)) {
