@@ -45,8 +45,6 @@ For a non-local deploy, rebuild frontend with the public WebSocket URL:
 GAME_WS_URL=wss://game.example.com docker compose build frontend
 ```
 
-`docker-compose.yml` includes commented stubs for future `api` and `db` services.
-
 ## Scripts
 
 | Script            | Purpose                                      |
