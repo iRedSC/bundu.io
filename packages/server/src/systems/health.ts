@@ -30,7 +30,7 @@ export class HealthSystem extends System<GameEventMap> {
         health.value = health.max
             ? Math.min(health.value + regen, health.max)
             : health.value + regen;
-        emitVitals(object);
+        emitVitals(object, this.world.context.playerPacketManager);
     }
 
     hurt({ object: target, source, damage }: GameEvent.Hurt) {
@@ -43,6 +43,6 @@ export class HealthSystem extends System<GameEventMap> {
         if (health.value <= 0) {
             this.trigger(GameEvent.Kill, { object: target, source });
         }
-        emitVitals(target);
+        emitVitals(target, this.world.context.playerPacketManager);
     }
 }

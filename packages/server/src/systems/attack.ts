@@ -1,13 +1,8 @@
 import { radians, moveInDirection, type BasicPoint } from "@bundu/shared";
 import { Physics } from "../components/base.js";
 import { GameObject, System, type World } from "../engine";
-import {
-    getSizedBounds,
-    quadtree,
-    SPATIAL_QUERY_PADDING,
-} from "./position.js";
+import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import SAT from "sat";
-import { worldPacketManager } from "../network/managers.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
@@ -69,7 +64,10 @@ export class AttackSystem extends System<GameEventMap> {
             SPATIAL_QUERY_PADDING
         );
 
-        const nearby = this.world.query([Physics], quadtree.query(bounds));
+        const nearby = this.world.query(
+            [Physics],
+            this.world.context.quadtree.query(bounds)
+        );
 
         let start = 0;
         let length = 5;
@@ -93,12 +91,14 @@ export class AttackSystem extends System<GameEventMap> {
             width
         );
 
-        worldPacketManager.add(ServerPacket.AttackEvent, { id: source.id });
+        this.world.context.worldPacketManager.add(ServerPacket.AttackEvent, {
+            id: source.id,
+        });
 
         const hits = testForIntersection(hitRange, nearby);
         hits.delete(source.id);
         for (const object of hits.values()) {
-            worldPacketManager.add(ServerPacket.HitEvent, {
+            this.world.context.worldPacketManager.add(ServerPacket.HitEvent, {
                 id: object.id,
                 angle: 0,
             });

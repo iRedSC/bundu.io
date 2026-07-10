@@ -8,3 +8,4 @@ export { serverTime } from "./server_time";
 export { WorldPacketManager } from "./network/packets/world";
 export { PlayerPacketManager } from "./network/packets/manager";
 export { SocketManager } from "./network/socket_manager";
+export type { ServerContext } from "./server_context";

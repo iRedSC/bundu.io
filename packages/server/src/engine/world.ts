@@ -1,6 +1,7 @@
 import { GameObject } from "./game_object.js";
 import { type AnySystem } from "./system.js";
 import type { ComponentFactory } from "./component.js";
+import type { ServerContext } from "./server_context.js";
 
 /** Utility: check if all elements of subSet exist in superSet */
 function isSubset<T>(subSet: Set<T>, superSet: Set<T>): boolean {
@@ -43,6 +44,9 @@ export class World {
     public lastUpdate = performance.now();
     /** Authoritative gameplay clock (ms). Cooldowns, cadence, and expiry use this — not Date.now()/serverTime. */
     public gameTime = 0;
+
+    /** Owned spatial index + net managers for this world instance. */
+    public context!: ServerContext;
 
     // -------------------------------------------------------------------
     // Core: System Events

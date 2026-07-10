@@ -1,10 +1,6 @@
 import { CalculateCollisions, Physics } from "../components/base.js";
 import { System, GameObject, type World } from "../engine";
-import {
-    getSizedBounds,
-    quadtree,
-    SPATIAL_QUERY_PADDING,
-} from "./position.js";
+import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import { Response, testCircleCircle } from "sat";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
@@ -35,7 +31,10 @@ export class CollisionSystem extends System<GameEventMap> {
             SPATIAL_QUERY_PADDING
         );
 
-        const nearby = this.world.query([Physics], quadtree.query(bounds));
+        const nearby = this.world.query(
+            [Physics],
+            this.world.context.quadtree.query(bounds)
+        );
 
         const response = new Response();
         let hit = false;

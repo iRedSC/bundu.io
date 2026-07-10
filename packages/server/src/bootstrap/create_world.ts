@@ -6,6 +6,7 @@ import {
     type ClientPacketMap,
 } from "@bundu/shared/packet_definitions";
 import { setupPacketReceiving } from "../network/receiver";
+import { createServerContext } from "../network/managers";
 import { PositionSystem } from "../systems/position";
 import { CollisionSystem } from "../systems/collision";
 import { HealthSystem } from "../systems/health";
@@ -23,6 +24,7 @@ export type ServerWorld = {
 
 export function createWorld(): ServerWorld {
     const world = new World();
+    world.context = createServerContext();
     loadConfigs();
 
     const playerSystem = new PlayerSystem(world);

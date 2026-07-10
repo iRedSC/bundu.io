@@ -1,8 +1,6 @@
 import { Physics } from "../components/base.js";
 import { type BasicPoint, round, clamp } from "@bundu/shared";
-import { Quadtree } from "../engine/quadtree.js";
 import { GameObject, System, type World } from "../engine";
-import { worldPacketManager } from "../network/managers.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
@@ -11,15 +9,6 @@ export const WORLD_BOUNDS = 20000;
 
 /** Neighborhood half-size for spatial queries (attack / collision). */
 export const SPATIAL_QUERY_PADDING = 500;
-
-export const quadtree = new Quadtree(
-    new Map(),
-    [
-        { x: 0, y: 0 },
-        { x: WORLD_BOUNDS, y: WORLD_BOUNDS },
-    ],
-    5
-);
 
 export const getSizedBounds = (
     origin: BasicPoint,
@@ -46,12 +35,12 @@ export class PositionSystem extends System<GameEventMap> {
     override enter(object: GameObject) {
         const physics = Physics.get(object);
         if (!physics) return;
-        quadtree.insert(object.id, physics.position);
+        this.world.context.quadtree.insert(object.id, physics.position);
         this.trigger(GameEvent.NewObject, { object });
     }
 
     override exit(object: GameObject) {
-        quadtree.delete(object.id);
+        this.world.context.quadtree.delete(object.id);
     }
 
     /** Final quadtree + network write after move intent and collision settle. */
@@ -59,9 +48,9 @@ export class PositionSystem extends System<GameEventMap> {
         const physics = Physics.get(object);
         if (!physics) return;
 
-        quadtree.insert(object.id, physics.position);
+        this.world.context.quadtree.insert(object.id, physics.position);
 
-        worldPacketManager.add(ServerPacket.SetPosition, {
+        this.world.context.worldPacketManager.add(ServerPacket.SetPosition, {
             id: object.id,
             x: physics.position.x,
             y: physics.position.y,
@@ -83,7 +72,7 @@ export class PositionSystem extends System<GameEventMap> {
         const physics = object.get(Physics);
         physics.rotation = rotation;
 
-        worldPacketManager.add(ServerPacket.SetRotation, {
+        this.world.context.worldPacketManager.add(ServerPacket.SetRotation, {
             id: object.id,
             rotation,
         });

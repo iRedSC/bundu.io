@@ -1,10 +1,5 @@
 import type { World } from "../engine";
 import { PlayerData } from "../components/player";
-import {
-    playerPacketManager,
-    socketManager,
-    worldPacketManager,
-} from "../network/managers";
 
 const TICK_INTERVAL = 50;
 
@@ -14,6 +9,9 @@ type TickReceiver = {
 };
 
 export async function startTicker(world: World, receiver: TickReceiver) {
+    const { playerPacketManager, socketManager, worldPacketManager } =
+        world.context;
+
     while (true) {
         const start = performance.now();
 
