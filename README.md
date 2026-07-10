@@ -39,7 +39,7 @@ docker compose up --build
 | `WS_PORT`      | server runtime     | `7777`                  |
 | `GAME_WS_URL`  | frontend **build** | `ws://localhost:7777`   |
 
-For a non-local deploy, rebuild frontend with the public WebSocket URL:
+Compose publishes fixed host ports `3000` and `7777` to match the default `GAME_WS_URL`. For a non-local deploy, rebuild frontend with the public WebSocket URL:
 
 ```bash
 GAME_WS_URL=wss://game.example.com docker compose build frontend
