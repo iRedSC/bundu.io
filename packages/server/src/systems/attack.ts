@@ -93,8 +93,13 @@ export class AttackSystem extends System<GameEventMap> {
         const hits = testForIntersection(hitRange, nearby);
         hits.delete(source.id);
         for (const object of hits.values()) {
+            worldPacketManager.add(ServerPacket.HitEvent, {
+                id: object.id,
+                angle: 0,
+            });
             this.trigger(GameEvent.Hurt, {
                 object,
+                source,
                 damage,
                 weapon,
             });

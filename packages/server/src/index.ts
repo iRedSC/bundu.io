@@ -24,7 +24,6 @@ import {
 } from "./network/managers";
 import { PlayerData } from "./components/player";
 import { Box, Circle, Vector } from "sat";
-import { PacketSystem } from "./systems/packet";
 import { AttackSystem } from "./systems/attack";
 import { RenderDistanceSystem } from "./systems/render_distance";
 import { GameEvent } from "./systems/event_map";
@@ -48,7 +47,6 @@ world
     .addSystem(new PositionSystem(world))
     .addSystem(new CollisionSystem(world))
     .addSystem(new HealthSystem(world))
-    .addSystem(new PacketSystem(world))
     .addSystem(new AttackSystem(world))
     .addSystem(new StructureSystem(world))
     .addSystem(new RenderDistanceSystem(world));
