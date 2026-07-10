@@ -5,7 +5,6 @@ import { Circle, Vector } from "sat";
 import { Physics } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { Structure } from "../game_objects/structure.js";
-import { playerPacketManager } from "../network/managers.js";
 
 export const STRUCTURE_COLLISION_RADIUS = 10;
 
@@ -30,7 +29,7 @@ export class StructureSystem extends System<GameEventMap> {
 
         selectedStructure.cooldown_timestamp = this.world.gameTime + 1000;
 
-        playerPacketManager.set(
+        this.world.context.playerPacketManager.set(
             player.id,
             ServerPacket.SetSelectedStructure,
             {

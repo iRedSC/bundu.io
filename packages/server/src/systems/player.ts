@@ -6,11 +6,6 @@ import { PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject, System, type World } from "../engine";
 import { Attributes } from "../components/attributes.js";
-import {
-    playerPacketManager,
-    socketManager,
-    worldPacketManager,
-} from "../network/managers.js";
 import { emitVitals } from "../network/vitals.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "./player_debug_commands.js";
@@ -77,19 +72,21 @@ export class PlayerSystem extends System<GameEventMap> {
             const data = ground.get(GroundData);
             return data.createPacket();
         });
+        const { playerPacketManager } = this.world.context;
         playerPacketManager.set(player.id, ServerPacket.LoadGround, {
             groundData: packets,
         });
         playerPacketManager.set(player.id, ServerPacket.RecipeList, {
             recipes: packCraftingList(),
         });
-        emitVitals(player);
+        emitVitals(player, playerPacketManager);
     }
 
     kill({ object: target }: GameEvent.Kill) {
         if (!target.active) return;
         target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
+        const { socketManager } = this.world.context;
         const socket = socketManager.getSocket(target.id);
         socketManager.deleteClient(target.id);
         socket?.close();
@@ -143,7 +140,7 @@ export class PlayerSystem extends System<GameEventMap> {
         } else {
             attributes?.clear("blocking");
         }
-        worldPacketManager.add(ServerPacket.BlockEvent, {
+        this.world.context.worldPacketManager.add(ServerPacket.BlockEvent, {
             id: player.id,
             stop,
         });
@@ -165,7 +162,7 @@ export class PlayerSystem extends System<GameEventMap> {
         ) {
             return;
         }
-        worldPacketManager.add(ServerPacket.ChatMessage, {
+        this.world.context.worldPacketManager.add(ServerPacket.ChatMessage, {
             id: player.id,
             message,
         });

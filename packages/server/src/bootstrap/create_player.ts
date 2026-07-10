@@ -3,7 +3,6 @@ import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Circle, Vector } from "sat";
 import { serverTime, type World } from "../engine";
 import { Player } from "../game_objects/player";
-import { playerPacketManager } from "../network/managers";
 
 export function createPlayer(
     world: World,
@@ -41,10 +40,14 @@ export function createPlayer(
     world.addObject(player);
     console.log("added player object");
 
-    playerPacketManager.set(player.id, ServerPacket.ClientConnectionInfo, {
-        playerId: player.id,
-        serverStartTime: serverTime.start,
-    });
+    world.context.playerPacketManager.set(
+        player.id,
+        ServerPacket.ClientConnectionInfo,
+        {
+            playerId: player.id,
+            serverStartTime: serverTime.start,
+        }
+    );
     console.log("Added client info packet");
 
     return player.id;

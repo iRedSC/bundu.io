@@ -1,11 +1,9 @@
 import { Physics } from "../components/base.js";
-import { System, GameObject, type World } from "../engine";
+import { System, GameObject, type World, type ServerContext } from "../engine";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { Range } from "@bundu/shared";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { playerPacketManager } from "../network/managers.js";
-import { quadtree } from "./position.js";
 
 const RENDER_DISTANCE_X = 2200;
 const RENDER_DISTANCE_Y = 1250;
@@ -23,7 +21,11 @@ function getRenderBounds(physics: Physics): Range {
     );
 }
 
-function loadObjectsIntoView(viewer: GameObject, objects: GameObject[]) {
+function loadObjectsIntoView(
+    viewer: GameObject,
+    objects: GameObject[],
+    playerPacketManager: ServerContext["playerPacketManager"]
+) {
     for (const object of objects) {
         const packet = object.getNewObjectPacket();
         if (!packet) continue;
@@ -31,7 +33,11 @@ function loadObjectsIntoView(viewer: GameObject, objects: GameObject[]) {
     }
 }
 
-function deleteObjectsFromView(viewer: GameObject, objects: GameObject[]) {
+function deleteObjectsFromView(
+    viewer: GameObject,
+    objects: GameObject[],
+    playerPacketManager: ServerContext["playerPacketManager"]
+) {
     playerPacketManager.add(viewer.id, ServerPacket.DeleteObjects, {
         objects: objects.map((o) => o.id),
     });
@@ -48,6 +54,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
     override update(_time: number, _delta: number, object: GameObject): void {
         const physics = object.get(Physics);
         const visibleObjects = object.get(VisibleObjects);
+        const { playerPacketManager, quadtree } = this.world.context;
 
         const renderBounds = getRenderBounds(physics);
 
@@ -67,15 +74,24 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         visibleObjects.visible = currentVisibleObjects;
 
         if (oldObjects.size > 0)
-            deleteObjectsFromView(object, Array.from(oldObjects));
+            deleteObjectsFromView(
+                object,
+                Array.from(oldObjects),
+                playerPacketManager
+            );
 
         if (newVisibleObjects.size > 0)
-            loadObjectsIntoView(object, Array.from(newVisibleObjects));
+            loadObjectsIntoView(
+                object,
+                Array.from(newVisibleObjects),
+                playerPacketManager
+            );
     }
 
     newObject({ object }: GameEvent.NewObject) {
         const objPhys = object.get(Physics);
         if (!objPhys) return;
+        const { playerPacketManager } = this.world.context;
         const objectsWithVisibleObjectsComponent = this.world.query([
             VisibleObjects,
         ]);
@@ -88,18 +104,19 @@ export class RenderDistanceSystem extends System<GameEventMap> {
 
             if (bounds.contains(objPhys.position)) {
                 visibleObjects.visible.add(object);
-                loadObjectsIntoView(obj, [object]);
+                loadObjectsIntoView(obj, [object], playerPacketManager);
             }
         }
     }
 
     deleteObject({ object }: GameEvent.DeleteObject) {
+        const { playerPacketManager } = this.world.context;
         const objectsWithVisibleObjectsComponent = this.world.query([
             VisibleObjects,
         ]);
         for (const obj of objectsWithVisibleObjectsComponent) {
             if (!obj.get(VisibleObjects).visible.delete(object)) continue;
-            deleteObjectsFromView(obj, [object]);
+            deleteObjectsFromView(obj, [object], playerPacketManager);
         }
     }
 }
