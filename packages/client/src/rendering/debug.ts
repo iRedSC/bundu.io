@@ -34,6 +34,14 @@ export class DebugWorldObject {
             container.renderable = value;
         }
     }
+
+    destroy() {
+        for (const container of this.containers.values()) {
+            debugContainer.removeChild(container);
+            container.destroy();
+        }
+        this.containers.clear();
+    }
 }
 
 export function drawPolygon(packet: ServerPacket.DebugDrawPolygon) {
