@@ -9,7 +9,6 @@ export class AnimationManagers {
 
 export enum ANIMATION {
     HURT = 100,
-    ENTITY_IDLE = 101,
 
     IDLE_HANDS = 200,
 

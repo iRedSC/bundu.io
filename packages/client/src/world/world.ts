@@ -83,11 +83,6 @@ export class World {
         this.attachLocalPlayer(player);
     };
 
-    getUser(): Player | undefined {
-        const obj = this.objects.get(this.user ?? -1);
-        return obj instanceof Player ? obj : undefined;
-    }
-
     loadObject = (packet: ServerPacket.LoadObject) => {
         switch (packet.type) {
             case GameObjectData.PlayerType:

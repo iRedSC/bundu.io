@@ -181,27 +181,6 @@ export class Player extends GameObject {
         return done;
     }
 
-    selectItem({
-        main,
-        off,
-        body,
-    }: {
-        main?: string;
-        off?: string;
-        body?: string;
-    }) {
-        if (main) {
-            this.mainhand = main;
-        }
-        if (off) {
-            this.offhand = off;
-        }
-        if (body) {
-            this.helmet = body;
-        }
-        this.updateEquipment();
-    }
-
     setEquipment(equipment?: Equipment) {
         if (!equipment) return;
         this.mainhand = getStringId(equipment.mainhand);

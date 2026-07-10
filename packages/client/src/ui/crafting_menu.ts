@@ -31,16 +31,10 @@ export class RecipeManager {
         }
     }
 
-    filter(items: Map<number, number>, flags: number[]): number[] {
+    filter(items: Map<number, number>, _flags: number[]): number[] {
         const craftable: number[] = [];
         nextRecipe: for (const [recipeId, recipe] of this.recipes.entries()) {
             const ingredients = recipe[0];
-            const itemFlags = new Set(flags);
-            // for (const flag of recipe[1]) {
-            //     if (!itemFlags.has(flag)) {
-            //         continue nextRecipe;
-            //     }
-            // }
 
             for (const [id, recipeAmount] of ingredients.entries()) {
                 const itemsAmount = items.get(id);
@@ -59,7 +53,6 @@ export class RecipeManager {
 
 type Item = number;
 
-// const craftingGrid = new Grid(6, 6, 68, 68, 3);
 type Callback = (item: number, shift: boolean) => void;
 export class CraftingMenu {
     buttons: ItemButton[];
@@ -126,86 +119,3 @@ export class CraftingMenu {
         );
     }
 }
-
-// class FilterButton extends Container {
-//     sprite: Sprite;
-//     constructor(
-//         activeCategories: Set<string>,
-//         toggleCallback: Function,
-//         category: string,
-//         xOffset: number,
-//         texture: Texture,
-//         size: number
-//     ) {
-//         const sprite: Sprite = new Sprite(texture);
-//         sprite.anchor.set(0.5, 0.5);
-//         this.width = size;
-//         this.height = size;
-//         this.position.set(xOffset, 0);
-//         this.pivot.set(this.width / 2, this.height / 2);
-
-//         const colorMatrixFilter = new PIXI.ColorMatrixFilter();
-//         this.filters = [colorMatrixFilter];
-
-//         this.on("pointertap", () => {
-//             toggleCallback(category);
-//             this.updateButtonAppearance(activeCategories.has(category));
-//         });
-//     }
-
-//     updateButtonAppearance(selected: boolean) {
-//         const scale = selected ? 0.11 : 0.1;
-//         const sprite = this as Sprite;
-//         this.scale.set(scale);
-//         sprite.tint = selected ? 0xfffff : 0xffffff;
-//     }
-// }
-// export class Filter {
-//     container: PIXI.Container;
-//     activeCategories: Set<string>;
-//     buttonSize: number;
-//     nextPos: number;
-//     craftingMenu: CraftingMenu;
-
-//     constructor(buttonSize: number, craftingMenu: CraftingMenu) {
-//         this.craftingMenu = craftingMenu;
-//         this.activeCategories = new Set();
-//         this.container = new PIXI.Container();
-//         this.buttonSize = buttonSize;
-//         this.nextPos = 0;
-//     }
-
-//     add(category: string, texture: PIXI.Texture) {
-//         const button = new FilterButton(
-//             this.activeCategories,
-//             this.filter.bind(this),
-//             category,
-//             this.nextPos,
-//             texture,
-//             this.buttonSize
-//         );
-//         this.nextPos += this.buttonSize + 10;
-//         this.container.addChild(button.view);
-//     }
-
-//     filter(category: string) {
-//         if (this.activeCategories.has(category)) {
-//             this.activeCategories.delete(category);
-//         } else {
-//             this.activeCategories.add(category);
-//         }
-//         // this.craftingMenu.update(this.activeCategories);
-//     }
-// }
-
-// export const filterButtons = new Filter(40, craftingMenu);
-// filterButtons.add("tools", assets("weapon_toggle"));
-// filterButtons.add("structures", assets("build_toggle"));
-// filterButtons.add("misc", assets("misc_toggle"));
-
-// filterButtons.container.position.set(
-//     craftingMenu.padding,
-//     craftingMenu.buttonsPerRow *
-//         (craftingMenu.buttonSize + craftingMenu.padding) +
-//         craftingMenu.padding * 2
-// );
