@@ -34,7 +34,7 @@ export class Player extends GameObject {
         attributes.data.set("water.depletion_amount", "base", "add", 5);
         attributes.data.set("water.max", "base", "add", 100);
 
-        const health = new Health({ value: 200, max: 200 });
+        const health = new Health({ value: 200, max: 200, lastRegen: 0 });
 
         const stats = new Stats();
         stats.data.set("hunger", { value: 100, min: 0, max: 100 });
