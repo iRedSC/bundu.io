@@ -3,14 +3,14 @@ import type { Serializer } from "@bundu/shared";
 export type SerializedPacketArray = [number, ...[number, ...unknown[]][]];
 
 type Callback<I, DataMap> = (
-    packet: I extends keyof DataMap ? DataMap[I] & Record<string, any> : never,
+    packet: I extends keyof DataMap ? DataMap[I] : never,
     timestamp: number
 ) => void;
 type CallbackMap<I, DataMap> = Map<I, Callback<I, DataMap>>;
 
 export class ClientPacketReceiver<
     S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, any>
+    DataMap extends Record<number, object>
 > {
     callbacks: CallbackMap<keyof S & number, DataMap> = new Map();
     serializer: Serializer<S, DataMap>;
