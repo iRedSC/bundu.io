@@ -32,6 +32,7 @@ import { Ground } from "./game_objects/ground";
 import { Resource } from "./game_objects/resource";
 import { getNumericId } from "@bundu/shared/id_map";
 import { StructureSystem } from "./systems/structure";
+import { AttributesSystem } from "./systems/attributes";
 
 const world = new World();
 loadConfigs();
@@ -44,6 +45,7 @@ const receiver = new ServerPacketReceiver(serializer);
 setupPacketReceiving(receiver, playerSystem);
 
 world
+    .addSystem(new AttributesSystem(world))
     .addSystem(playerSystem)
     .addSystem(new PositionSystem(world))
     .addSystem(new CollisionSystem(world))
