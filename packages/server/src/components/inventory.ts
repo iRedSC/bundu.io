@@ -40,16 +40,6 @@ export function toPacketCursor(
         : null;
 }
 
-/** Total count of an item across slots + cursor. */
-export function countOf(inv: Inventory, itemId: number): number {
-    let n = 0;
-    for (const stack of inv.slots) {
-        if (stack?.id === itemId) n += stack.count;
-    }
-    if (inv.cursor?.id === itemId) n += inv.cursor.count;
-    return n;
-}
-
 /**
  * Add items into existing stacks, then empty slots.
  * Returns how many could not fit.
@@ -78,21 +68,6 @@ export function addItem(
     }
 
     return remaining;
-}
-
-/** Remove up to `count` from a slot. Clears the slot when empty. */
-export function removeFromSlot(
-    inv: Inventory,
-    slot: number,
-    count: number
-): number {
-    const stack = inv.slots[slot];
-    if (!stack || count <= 0) return 0;
-
-    const removed = Math.min(stack.count, count);
-    stack.count -= removed;
-    if (stack.count <= 0) inv.slots[slot] = null;
-    return removed;
 }
 
 function validSlot(inv: Inventory, slot: number): boolean {

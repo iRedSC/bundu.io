@@ -2,7 +2,11 @@ import { moveToward } from "@bundu/shared/transforms";
 import { decodeMoveDirection } from "@bundu/shared/movement";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GroundData, Physics } from "../components/base.js";
-import { Inventory, cursorSlot, moveSlot } from "../components/inventory.js";
+import {
+    Inventory,
+    cursorSlot as applyCursorSlot,
+    moveSlot as applyMoveSlot,
+} from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { packCraftingList } from "../configs/loaders/crafting.js";
 import { GameObject, System, type World } from "../engine";
@@ -172,7 +176,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         const inv = Inventory.get(player);
         if (!inv) return;
-        if (!moveSlot(inv, from, to)) return;
+        if (!applyMoveSlot(inv, from, to)) return;
 
         syncMainHand(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
@@ -193,7 +197,7 @@ export class PlayerSystem extends System<GameEventMap> {
             mode === PlaceMode.Half || mode === PlaceMode.One
                 ? mode
                 : PlaceMode.All;
-        if (!cursorSlot(inv, slot, placeMode)) return;
+        if (!applyCursorSlot(inv, slot, placeMode)) return;
 
         syncMainHand(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
@@ -229,7 +233,11 @@ export class PlayerSystem extends System<GameEventMap> {
                 this.world.gameTime
             )
         ) {
-            emitInventory(player, this.world.context.playerPacketManager);
+            const { playerPacketManager, worldPacketManager } =
+                this.world.context;
+            emitInventory(player, playerPacketManager);
+            syncMainHand(player);
+            emitEquipment(player, worldPacketManager);
             return;
         }
         this.world.context.worldPacketManager.emit(ServerPacket.ChatMessage, {

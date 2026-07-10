@@ -172,9 +172,13 @@ export class Inventory {
         return this.buttons.length;
     }
 
-    /** True while the pointer is over a slot or mid drag from one. */
+    /** True while over a slot, mid-drag, or holding a stack on the cursor. */
     get isInteracting(): boolean {
-        return this.hoverSlot !== null || this.dragFrom !== null;
+        return (
+            this.hoverSlot !== null ||
+            this.dragFrom !== null ||
+            this.cursor !== null
+        );
     }
 
     private setupOverlay(button: InventoryButton) {
