@@ -1,15 +1,22 @@
 import { Physics } from "../components/base.js";
-import { Quadtree, type BasicPoint, round, clamp } from "@bundu/shared";
+import { type BasicPoint, round, clamp } from "@bundu/shared";
+import { Quadtree } from "../engine/quadtree.js";
 import { GameObject, System, type World } from "../engine";
 import { worldPacketManager } from "../network/managers.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
+/** World extent from origin (0,0) to (WORLD_BOUNDS, WORLD_BOUNDS). */
+export const WORLD_BOUNDS = 20000;
+
+/** Neighborhood half-size for spatial queries (attack / collision). */
+export const SPATIAL_QUERY_PADDING = 500;
+
 export const quadtree = new Quadtree(
     new Map(),
     [
         { x: 0, y: 0 },
-        { x: 20000, y: 20000 },
+        { x: WORLD_BOUNDS, y: WORLD_BOUNDS },
     ],
     5
 );
@@ -61,8 +68,12 @@ export class PositionSystem extends System<GameEventMap> {
 
     move({ object, x, y }: GameEvent.Move) {
         const physics = object.get(Physics);
-        physics.position.x = round(clamp(physics.position.x - x, 0, 20000));
-        physics.position.y = round(clamp(physics.position.y - y, 0, 20000));
+        physics.position.x = round(
+            clamp(physics.position.x - x, 0, WORLD_BOUNDS)
+        );
+        physics.position.y = round(
+            clamp(physics.position.y - y, 0, WORLD_BOUNDS)
+        );
         this.insert({ object });
     }
 

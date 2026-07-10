@@ -1,40 +1,32 @@
-import type { Serializer } from "@bundu/shared";
+import {
+    PacketReceiver,
+    type SerializedPacket,
+} from "@bundu/shared";
 
-export type SerializedPacketArray = [number, ...[number, ...unknown[]][]];
+export type SerializedPacketArray = [number, ...SerializedPacket[]];
 
 type Callback<I, DataMap> = (
     packet: I extends keyof DataMap ? DataMap[I] : never,
     timestamp: number
 ) => void;
-type CallbackMap<I, DataMap> = Map<I, Callback<I, DataMap>>;
 
+/** Client adapter: batch is `[timestamp, ...packets]`; callbacks get `(packet, timestamp)`. */
 export class ClientPacketReceiver<
     S extends Record<number, { fields: readonly string[] }>,
-    DataMap extends Record<number, object>
-> {
-    callbacks: CallbackMap<keyof S & number, DataMap> = new Map();
-    serializer: Serializer<S, DataMap>;
-
-    constructor(serializer: Serializer<S, DataMap>) {
-        this.serializer = serializer;
-    }
-
+    DataMap extends Record<number, object>,
+> extends PacketReceiver<S, DataMap, number> {
     on<I extends keyof S & number>(id: I, callback: Callback<I, DataMap>) {
-        this.callbacks.set(id, callback as Callback<keyof S & number, DataMap>);
+        this.setHandler(
+            id,
+            callback as (data: DataMap[keyof DataMap & number], ctx: number) => void
+        );
     }
 
     process(packets: SerializedPacketArray) {
         const [timestamp, ...rest] = packets;
 
         for (const packet of rest) {
-            try {
-                const id = packet[0];
-                const deserialized = this.serializer.deserialize(packet);
-                const callback = this.callbacks.get(id);
-                callback?.(deserialized, timestamp);
-            } catch (error) {
-                console.error("Dropped bad packet", packet, error);
-            }
+            this.receivePacket(packet, timestamp, "Dropped bad packet");
         }
     }
 }

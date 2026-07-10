@@ -20,6 +20,7 @@ export type UI = {
     health: StatBar;
     hunger: StatBar;
     heat: StatBar;
+    tick: () => void;
 };
 
 export function createUI() {
@@ -94,12 +95,14 @@ export function createUI() {
             percentOf(75, window.innerHeight)
         );
     }
-    window.addEventListener("resize", resize);
 
     ui.addChild(statContainer);
     ui.addChild(inventory.container);
     ui.addChild(swordTimer.container);
     ui.addChild(craftingMenu.container);
+
+    window.addEventListener("resize", resize);
+    resize();
 
     return {
         container: ui,
@@ -110,5 +113,12 @@ export function createUI() {
         health,
         hunger,
         heat,
+        tick() {
+            health.tick();
+            hunger.tick();
+            heat.tick();
+            inventory.tick();
+            craftingMenu.tick();
+        },
     };
 }

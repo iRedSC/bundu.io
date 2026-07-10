@@ -13,7 +13,8 @@ import type { GameObject } from "../engine";
 export function tryHandleDebugChatCommand(
     player: GameObject,
     message: string,
-    onKill: (player: GameObject) => void
+    onKill: (player: GameObject) => void,
+    now?: number
 ): boolean {
     if (!message.startsWith("/")) return false;
 
@@ -31,7 +32,7 @@ export function tryHandleDebugChatCommand(
             if (command[4]) duration = Number(command[4]);
             player
                 .get(Attributes)
-                .set(type, "command", operation, value, duration);
+                .set(type, "command", operation, value, duration, now);
             break;
         }
         case "stat": {

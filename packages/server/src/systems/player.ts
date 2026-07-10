@@ -10,6 +10,7 @@ import {
     socketManager,
     worldPacketManager,
 } from "../network/managers.js";
+import { emitVitals } from "../network/vitals.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "./player_debug_commands.js";
 import { STRUCTURE_COLLISION_RADIUS } from "./structure.js";
@@ -48,7 +49,8 @@ export class PlayerSystem extends System<GameEventMap> {
                     "attacking",
                     "multiply",
                     0.7,
-                    500
+                    500,
+                    time
                 );
                 data.lastAttackTime = time;
             }
@@ -81,7 +83,7 @@ export class PlayerSystem extends System<GameEventMap> {
         playerPacketManager.set(player.id, ServerPacket.RecipeList, {
             recipes: packCraftingList(),
         });
-        this.trigger(GameEvent.HealthUpdate, { object: player });
+        emitVitals(player);
     }
 
     kill({ object: target }: GameEvent.Kill) {
@@ -120,7 +122,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const { x, y } = physics.position;
 
         if (selectedStructure.id !== -1) {
-            selectedStructure.cooldown_timestamp = Date.now() + 1000;
+            selectedStructure.cooldown_timestamp = this.world.gameTime + 1000;
 
             playerPacketManager.set(
                 player.id,
@@ -179,12 +181,20 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
 
         if (
-            tryHandleDebugChatCommand(player, message, (target) => {
-                this.trigger(GameEvent.Kill, { object: target });
-            })
+            tryHandleDebugChatCommand(
+                player,
+                message,
+                (target) => {
+                    this.trigger(GameEvent.Kill, { object: target });
+                },
+                this.world.gameTime
+            )
         ) {
             return;
         }
-        this.trigger(GameEvent.ChatMessage, { object: player, message });
+        worldPacketManager.add(ServerPacket.ChatMessage, {
+            id: player.id,
+            message,
+        });
     };
 }
