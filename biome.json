@@ -1,0 +1,128 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
+	"files": {
+		"includes": [
+			"packages/**/*.ts",
+			"tests/**/*.ts",
+			"*.ts",
+			"!**/public",
+			"!**/dist"
+		]
+	},
+	"formatter": {
+		"enabled": false
+	},
+	"assist": {
+		"enabled": false
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noImplicitAnyLet": "warn",
+				"useIterableCallbackReturn": "warn",
+				"noAssignInExpressions": "warn"
+			},
+			"style": {
+				"noRestrictedImports": "off"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["packages/client/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": ["@bundu/server", "@bundu/server/**"],
+										"message": "Client must not import from @bundu/server. Use @bundu/shared."
+									},
+									{
+										"group": [
+											"**/packages/server",
+											"**/packages/server/**"
+										],
+										"message": "Client must not reach into packages/server. Use @bundu/shared."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["packages/server/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": ["@bundu/client", "@bundu/client/**"],
+										"message": "Server must not import from @bundu/client. Use @bundu/shared."
+									},
+									{
+										"group": ["@client/**", "@client/*"],
+										"message": "Server must not import client path aliases. Use @bundu/shared."
+									},
+									{
+										"group": [
+											"**/packages/client",
+											"**/packages/client/**"
+										],
+										"message": "Server must not reach into packages/client. Use @bundu/shared."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["packages/shared/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"@bundu/client",
+											"@bundu/client/**",
+											"@bundu/server",
+											"@bundu/server/**",
+											"@client/**",
+											"@client/*"
+										],
+										"message": "Shared must not import from client or server packages."
+									},
+									{
+										"group": [
+											"**/packages/client",
+											"**/packages/client/**",
+											"**/packages/server",
+											"**/packages/server/**"
+										],
+										"message": "Shared must not reach into packages/client or packages/server."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		}
+	]
+}
