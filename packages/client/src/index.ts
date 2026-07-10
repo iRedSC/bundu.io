@@ -73,10 +73,6 @@ async function main() {
     const world = new World(viewport);
     setupPacketReceiving(receiver, world);
 
-    // ? Manually dispatching resize event, find out why
-    const resize = new Event("resize");
-    setTimeout(() => window.dispatchEvent(resize), 500);
-
     // * GUI
     const gui = createUI();
     app.stage.addChild(gui.container);
@@ -279,6 +275,7 @@ async function main() {
         const player = world.objects.get(world.user ?? -1);
         if (player) {
             world.tick();
+            gui.tick();
             AnimationManagers.UI.update();
         }
         const adjustmentRate = 0.1;

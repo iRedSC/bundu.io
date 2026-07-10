@@ -1,6 +1,6 @@
 import { type ColorSource, Container, Graphics } from "pixi.js";
 import { SpriteFactory, ContaineredSprite } from "../assets/sprite_factory";
-import { Animation, AnimationManager } from "@bundu/shared/animations";
+import { Animation, AnimationManager } from "../animation/runtime";
 import { lerp, radians } from "@bundu/shared/transforms";
 
 export class Timer {

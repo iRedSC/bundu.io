@@ -1,5 +1,5 @@
 import idMapData from "./id_map.yml";
-import { ReversableMap } from "@bundu/shared";
+import { ReversableMap } from "./reverseable_map";
 
 const idMap: ReversableMap<string, number> = new ReversableMap();
 

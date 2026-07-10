@@ -7,7 +7,7 @@ import {
     WORLD_SIZE,
 } from "../constants";
 import { colorLerp } from "@bundu/shared/transforms";
-import { Animation, AnimationManager } from "@bundu/shared/animations";
+import { Animation, AnimationManager } from "../animation/runtime";
 
 const times = new Map();
 times.set(0, MORNING_COLOR);
@@ -29,7 +29,7 @@ export class Sky extends Graphics {
         this.currentCycle = 0;
         this.nextCycle = 0;
         this.rect(0, 0, WORLD_SIZE, WORLD_SIZE).fill(0xffffff);
-        this.zIndex = 100;
+        this.zIndex = 200;
         this.blendMode = "multiply";
 
         this.animations = new Map();

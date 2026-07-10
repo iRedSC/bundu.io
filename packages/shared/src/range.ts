@@ -1,27 +1,5 @@
 import type { BasicPoint } from "./types";
 
-export function packRangetoPolygon(range: Range): {
-    startX: number;
-    startY: number;
-    points: [x: number, y: number][];
-} {
-    const [pos1, pos2] = range.normalized;
-
-    // Represent the range as a rectangle polygon (clockwise or counterclockwise)
-    const points: [number, number][] = [
-        [pos1.x, pos1.y], // bottom-left
-        [pos2.x, pos1.y], // bottom-right
-        [pos2.x, pos2.y], // top-right
-        [pos1.x, pos2.y], // top-left
-    ];
-
-    return {
-        startX: pos1.x,
-        startY: pos1.y,
-        points,
-    };
-}
-
 export class Range {
     pos1: BasicPoint;
     pos2: BasicPoint;

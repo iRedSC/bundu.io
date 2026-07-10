@@ -14,9 +14,9 @@
     "scripts": {
         "server": "bun run packages/server/src/index.ts",
         "build": "bun run ./build.ts",
-        "start": "bun server.ts --hot",
-        "start:frontend": "bun server.ts",
-        "client": "bun run build && bun run start",
+        "serve-frontend": "bun static-server.ts --hot",
+        "serve-frontend:prod": "bun static-server.ts",
+        "client": "bun run build && bun run serve-frontend",
         "typecheck": "tsc --noEmit",
         "lint": "biome lint .",
         "test": "bun test"

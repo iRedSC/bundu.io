@@ -3,10 +3,39 @@ import { System, GameObject, type World } from "../engine";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { Range } from "@bundu/shared";
+import { ServerPacket } from "@bundu/shared/packet_definitions.js";
+import { playerPacketManager } from "../network/managers.js";
 import { quadtree } from "./position.js";
 
 const RENDER_DISTANCE_X = 2200;
 const RENDER_DISTANCE_Y = 1250;
+
+function getRenderBounds(physics: Physics): Range {
+    return new Range(
+        {
+            x: physics.position.x - RENDER_DISTANCE_X,
+            y: physics.position.y - RENDER_DISTANCE_Y,
+        },
+        {
+            x: physics.position.x + RENDER_DISTANCE_X,
+            y: physics.position.y + RENDER_DISTANCE_Y,
+        }
+    );
+}
+
+function loadObjectsIntoView(viewer: GameObject, objects: GameObject[]) {
+    for (const object of objects) {
+        const packet = object.getNewObjectPacket();
+        if (!packet) continue;
+        playerPacketManager.add(viewer.id, ServerPacket.LoadObject, packet);
+    }
+}
+
+function deleteObjectsFromView(viewer: GameObject, objects: GameObject[]) {
+    playerPacketManager.add(viewer.id, ServerPacket.DeleteObjects, {
+        objects: objects.map((o) => o.id),
+    });
+}
 
 export class RenderDistanceSystem extends System<GameEventMap> {
     constructor(world: World) {
@@ -20,16 +49,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         const physics = object.get(Physics);
         const visibleObjects = object.get(VisibleObjects);
 
-        const renderBounds = new Range(
-            {
-                x: physics.position.x - RENDER_DISTANCE_X,
-                y: physics.position.y - RENDER_DISTANCE_Y,
-            },
-            {
-                x: physics.position.x + RENDER_DISTANCE_X,
-                y: physics.position.y + RENDER_DISTANCE_Y,
-            }
-        );
+        const renderBounds = getRenderBounds(physics);
 
         const objectsInRenderDistance = this.world.query(
             [Physics],
@@ -47,16 +67,10 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         visibleObjects.visible = currentVisibleObjects;
 
         if (oldObjects.size > 0)
-            this.trigger(GameEvent.ObjectsRemovedFromView, {
-                object: object,
-                objectsRemoved: Array.from(oldObjects),
-            });
+            deleteObjectsFromView(object, Array.from(oldObjects));
 
         if (newVisibleObjects.size > 0)
-            this.trigger(GameEvent.ObjectsAddedToView, {
-                object: object,
-                objectsAdded: Array.from(newVisibleObjects),
-            });
+            loadObjectsIntoView(object, Array.from(newVisibleObjects));
     }
 
     newObject({ object }: GameEvent.NewObject) {
@@ -70,23 +84,11 @@ export class RenderDistanceSystem extends System<GameEventMap> {
             const physics = obj.get(Physics);
             if (!visibleObjects || !physics) continue;
 
-            const bounds = new Range(
-                {
-                    x: physics.position.x - RENDER_DISTANCE_X,
-                    y: physics.position.y - RENDER_DISTANCE_Y,
-                },
-                {
-                    x: physics.position.x + RENDER_DISTANCE_X,
-                    y: physics.position.y + RENDER_DISTANCE_Y,
-                }
-            );
+            const bounds = getRenderBounds(physics);
 
             if (bounds.contains(objPhys.position)) {
                 visibleObjects.visible.add(object);
-                this.trigger(GameEvent.ObjectsAddedToView, {
-                    object: obj,
-                    objectsAdded: [object],
-                });
+                loadObjectsIntoView(obj, [object]);
             }
         }
     }
@@ -97,10 +99,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         ]);
         for (const obj of objectsWithVisibleObjectsComponent) {
             obj.get(VisibleObjects).visible.delete(object);
-            this.trigger(GameEvent.ObjectsRemovedFromView, {
-                object: obj,
-                objectsRemoved: [object],
-            });
+            deleteObjectsFromView(obj, [object]);
         }
     }
 }

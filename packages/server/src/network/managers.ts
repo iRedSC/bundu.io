@@ -7,6 +7,7 @@ import {
 import { PlayerData } from "../components/player";
 import { VisibleObjects } from "../components/visible_objects";
 
+/** Owning systems write outbound packets here directly (no PacketSystem bridge). */
 export const worldPacketManager = new WorldPacketManager<
     typeof Schema.Server,
     ServerPacketMap
