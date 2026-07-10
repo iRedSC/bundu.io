@@ -10,7 +10,6 @@ import {
     type RotationState,
 } from "./states";
 import { Container, Point, Text } from "pixi.js";
-import { serverTime } from "@client/globals";
 
 /**
  * The base object for rendering something in the world.
