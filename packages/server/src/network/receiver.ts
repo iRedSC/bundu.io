@@ -15,4 +15,5 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.ChatMessage, system.chatMessage);
     receiver.on(ClientPacket.Movement, system.move);
     receiver.on(ClientPacket.Rotation, system.rotate);
+    receiver.on(ClientPacket.PlaceStructureAt, system.placeStructureAt);
 }

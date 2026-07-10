@@ -11,6 +11,7 @@ import { GameObject } from "../engine";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { GameObjectData } from "@bundu/shared/object_types.js";
 import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
+import { deciPacketPos } from "./tile_entity.js";
 
 // Player should have the following properties:
 // name, socket, inventory, cosmetics, movement
@@ -21,9 +22,9 @@ export class Player extends GameObject {
 
         const attributes = new Attributes();
         attributes.data.set("attack.damage", "base", "add", 1);
-        attributes.data.set("attack.origin", "base", "add", 10);
-        attributes.data.set("attack.reach", "base", "add", 15);
-        attributes.data.set("attack.sweep", "base", "add", 5);
+        attributes.data.set("attack.origin", "base", "add", 30);
+        attributes.data.set("attack.reach", "base", "add", 70);
+        attributes.data.set("attack.sweep", "base", "add", 50);
         attributes.data.set("attack.speed", "base", "add", 2);
         attributes.data.set("health.max", "base", "add", 200);
         attributes.data.set("health.regen_amount", "base", "add", 10);
@@ -60,10 +61,11 @@ export class Player extends GameObject {
     public override getNewObjectPacket(): ServerPacket.LoadObject {
         const physics = this.get(Physics);
         const data = this.get(PlayerData);
+        const pos = deciPacketPos(physics);
         return {
             id: this.id,
-            x: physics.position.x,
-            y: physics.position.y,
+            x: pos.x,
+            y: pos.y,
             rotation: physics.rotation,
             type: GameObjectData.PlayerType,
             data: [

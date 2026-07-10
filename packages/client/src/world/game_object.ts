@@ -1,15 +1,14 @@
-import { DebugWorldObject } from "@client/rendering/debug";
-import { Circle } from "./debug/circle";
-import { TEXT_STYLE } from "@client/assets/text";
 import { round } from "@bundu/shared";
 import { Animation, AnimationManager } from "../animation/runtime";
+import { createObjectDebug } from "../debug/object_debug";
+import type { ObjectDebug } from "../debug/types";
 import {
     PositionStates,
     RotationStates,
     type PositionState,
     type RotationState,
 } from "./states";
-import { Container, Point, Text } from "pixi.js";
+import { Container, Point } from "pixi.js";
 
 /**
  * The base object for rendering something in the world.
@@ -21,13 +20,12 @@ export default class GameObject {
 
     id: number;
 
-    locationText: Text;
     private _renderable: boolean = true;
 
     positionStates: PositionStates;
     rotationStates: RotationStates;
 
-    debug: DebugWorldObject;
+    debug: ObjectDebug;
 
     animations: Map<number, Animation>;
     active?: boolean;
@@ -46,7 +44,11 @@ export default class GameObject {
         this.id = id;
         this.collisionRadius = collisionRadius;
 
-        this.debug = new DebugWorldObject();
+        this.debug = createObjectDebug({
+            id,
+            position: pos,
+            collisionRadius,
+        });
 
         this.container.position = pos;
         this.size = visualScale;
@@ -64,31 +66,9 @@ export default class GameObject {
         this.container.rotation = rotation;
 
         this.animations = new Map();
-
-        const idText = new Text(`ID: ${this.id}`, TEXT_STYLE);
-        idText.scale.set(0.34);
-        idText.position = pos;
-        this.debug.update("id", idText);
-
-        this.locationText = new Text(
-            ` ${this.position.x}, ${this.position.y}`,
-            TEXT_STYLE
-        );
-        this.locationText.scale.set(0.34);
-        this.locationText.position.set(pos.x, pos.y - 10);
-        this.debug.update("location", this.locationText);
-
-        const hitbox = new Circle(
-            this.position,
-            this.collisionRadius,
-            0xff0000,
-            2
-        );
-        this.debug.update("hitbox", hitbox);
     }
 
     get containers(): Container[] {
-        // ...Array.from(this.debug.containers.values())
         return [this.container];
     }
 
@@ -111,13 +91,7 @@ export default class GameObject {
         this.position.set(x, y);
         this.container.rotation = rot;
 
-        this.locationText.text = `${round(this.position.x)}, ${round(
-            this.position.y
-        )}`;
-
-        this.locationText.position.set(x, y - 10);
-        this.debug.containers.get("hitbox")?.position.set(x, y);
-        this.debug.containers.get("id")?.position.set(x, y);
+        this.debug.sync(x, y, `${round(x)}, ${round(y)}`);
 
         return (
             this.positionStates.isComplete() &&

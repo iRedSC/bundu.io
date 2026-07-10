@@ -1,4 +1,5 @@
 import { lookToward, radians } from "@bundu/shared/transforms";
+import { TILE_SIZE } from "@bundu/shared/tiles";
 import { spriteConfigs } from "../../configs/sprite_configs";
 import { SpriteFactory, ContaineredSprite } from "../../assets/sprite_factory";
 import { ANIMATION, hurt } from "../../animation/animations";
@@ -64,7 +65,7 @@ export class Player extends GameObject {
         rotation: number,
         collisionRadius: number
     ) {
-        super(id, pos, rotation, collisionRadius, 100);
+        super(id, pos, rotation, collisionRadius, TILE_SIZE);
         this.sprite = {
             structure: {
                 container: new Container(),

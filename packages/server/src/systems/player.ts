@@ -8,7 +8,8 @@ import { GameObject, System, type World } from "../engine";
 import { Attributes } from "../components/attributes.js";
 import { emitVitals } from "../network/vitals.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-import { tryHandleDebugChatCommand } from "./player_debug_commands.js";
+import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
+import { SERVER_DEBUG } from "../debug/flag.js";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
@@ -146,11 +147,25 @@ export class PlayerSystem extends System<GameEventMap> {
         });
     };
 
+    placeStructureAt = (
+        _playerId: number,
+        { structureId, x, y, rotation }: ClientPacket.PlaceStructureAt
+    ) => {
+        if (!SERVER_DEBUG) return;
+        this.trigger(GameEvent.PlaceStructure, {
+            structureId,
+            x,
+            y,
+            rotation,
+        });
+    };
+
     chatMessage = (playerId: number, { message }: ClientPacket.ChatMessage) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
 
         if (
+            SERVER_DEBUG &&
             tryHandleDebugChatCommand(
                 player,
                 message,

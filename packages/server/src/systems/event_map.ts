@@ -61,6 +61,7 @@ export namespace GameEvent {
     };
 
     export const PlaceStructure = 24;
+    /** Place a tile entity at integer tile (x, y) with discrete rotation 0–3. */
     export type PlaceStructure = {
         structureId: number;
         x: number;

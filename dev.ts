@@ -1,16 +1,20 @@
 import { spawn, type Subprocess } from "bun";
 import { watch } from "fs";
 
-const children: Subprocess[] = [];
 let building = false;
 let rebuildQueued = false;
+let serverProc: Subprocess | undefined;
+let staticProc: Subprocess | undefined;
+let shuttingDown = false;
+/** True while we intentionally killed the server to reload code. */
+let serverReload = false;
 
 async function buildClient(): Promise<boolean> {
     const proc = spawn({
         cmd: ["bun", "run", "./build.ts"],
         stdout: "inherit",
         stderr: "inherit",
-        env: process.env,
+        env: { ...process.env, BUNDU_DEBUG: "1" },
     });
     return (await proc.exited) === 0;
 }
@@ -31,22 +35,34 @@ async function rebuildClient(): Promise<void> {
     }
 }
 
-function start(cmd: string[]): Subprocess {
-    const proc = spawn({
-        cmd,
+function startServer(): Subprocess {
+    console.log("[dev] starting game server…");
+    return spawn({
+        cmd: ["bun", "run", "packages/server/src/index.ts"],
         stdout: "inherit",
         stderr: "inherit",
-        env: process.env,
+        env: { ...process.env, BUNDU_DEBUG: "1" },
     });
-    children.push(proc);
-    return proc;
+}
+
+function requestServerReload(): void {
+    if (shuttingDown || !serverProc) return;
+    console.log("\n[dev] shared/server changed — reloading game server…");
+    serverReload = true;
+    try {
+        serverProc.kill();
+    } catch {
+        // already gone
+    }
 }
 
 function shutdown(signal: string): void {
+    if (shuttingDown) return;
+    shuttingDown = true;
     console.log(`\n[dev] shutting down (${signal})…`);
-    for (const child of children) {
+    for (const child of [serverProc, staticProc]) {
         try {
-            child.kill();
+            child?.kill();
         } catch {
             // already gone
         }
@@ -62,10 +78,15 @@ if (!(await buildClient())) {
     process.exit(1);
 }
 
-start(["bun", "run", "packages/server/src/index.ts"]);
-start(["bun", "static-server.ts", "--hot"]);
+serverProc = startServer();
+staticProc = spawn({
+    cmd: ["bun", "static-server.ts", "--hot"],
+    stdout: "inherit",
+    stderr: "inherit",
+    env: process.env,
+});
 
-const watchTargets = [
+const clientWatchTargets = [
     "index.html",
     "build.ts",
     "packages/client",
@@ -74,12 +95,22 @@ const watchTargets = [
     "public/assets",
 ];
 
-let debounce: Timer | undefined;
-for (const target of watchTargets) {
+let clientDebounce: Timer | undefined;
+for (const target of clientWatchTargets) {
     watch(target, { recursive: true }, () => {
-        clearTimeout(debounce);
-        debounce = setTimeout(() => {
+        clearTimeout(clientDebounce);
+        clientDebounce = setTimeout(() => {
             void rebuildClient();
+        }, 150);
+    });
+}
+
+let serverDebounce: Timer | undefined;
+for (const target of ["packages/server", "packages/shared"]) {
+    watch(target, { recursive: true }, () => {
+        clearTimeout(serverDebounce);
+        serverDebounce = setTimeout(() => {
+            requestServerReload();
         }, 150);
     });
 }
@@ -94,5 +125,20 @@ console.log(`
   Ctrl+C to stop
 `);
 
-await Promise.race(children.map((child) => child.exited));
-shutdown("child-exit");
+void staticProc.exited.then(() => {
+    if (!shuttingDown) shutdown("static-exit");
+});
+
+// Supervise the game server: reload on code change, or recover from crashes.
+while (!shuttingDown) {
+    const proc = serverProc;
+    if (!proc) break;
+    await proc.exited;
+    if (shuttingDown) break;
+    if (serverReload) {
+        serverReload = false;
+    } else {
+        console.log("[dev] game server exited — restarting…");
+    }
+    serverProc = startServer();
+}

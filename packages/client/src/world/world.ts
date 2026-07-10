@@ -1,3 +1,8 @@
+import {
+    FOOTPRINT_CIRCLE_RADIUS,
+    TILE_SIZE,
+    deciToWorld,
+} from "@bundu/shared/tiles";
 import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
@@ -25,6 +30,10 @@ type LoadResource = Extract<
     ServerPacket.LoadObject,
     { type: typeof GameObjectData.ResourceNodeType }
 >;
+
+function deciPoint(x: number, y: number): Point {
+    return new Point(deciToWorld(x), deciToWorld(y));
+}
 
 /** Client world scene — packet handlers land here after decode. */
 export class World {
@@ -110,7 +119,7 @@ export class World {
         const id = packet.id;
         this.renderer.delete(id);
 
-        const pos = new Point(packet.x, packet.y);
+        const pos = deciPoint(packet.x, packet.y);
         const nameText = new Text(name, TEXT_STYLE);
 
         const player = new Player(
@@ -118,7 +127,7 @@ export class World {
             AnimationManagers.World,
             nameText,
             pos,
-            packet.rotation,
+            radians(packet.rotation),
             collisionRadius
         );
 
@@ -132,26 +141,29 @@ export class World {
     };
 
     newStructure = (packet: LoadResource) => {
-        const [collisionRadius, nodeType] = packet.data;
+        const [nodeType] = packet.data;
         this.renderer.delete(packet.id);
 
-        const pos = new Point(packet.x, packet.y);
         const structure = new Structure(
             packet.id,
             getStringId(nodeType),
-            pos,
+            deciPoint(packet.x, packet.y),
             packet.rotation,
-            collisionRadius
+            FOOTPRINT_CIRCLE_RADIUS,
+            TILE_SIZE
         );
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
     };
 
-    moveObject = (packet: ServerPacket.SetPosition, now: number) => {
+    moveObject = (packet: ServerPacket.SetPosition, _now: number) => {
         const object = this.objects.get(packet.id);
         if (!object) return;
         object.renderable = true;
-        object.addPosition({ x: packet.x, y: packet.y });
+        object.addPosition({
+            x: deciToWorld(packet.x),
+            y: deciToWorld(packet.y),
+        });
         this.objects.updating.add(object);
         this.objects.add(object);
     };
@@ -192,9 +204,17 @@ export class World {
     };
 
     loadGround = (packet: ServerPacket.LoadGround) => {
-        for (const data of packet.groundData) {
-            const ground = createGround(...data);
-            this.renderer.add(-10, ground);
+        for (const [type, x, y, w, h] of packet.groundData) {
+            this.renderer.add(
+                -10,
+                createGround(
+                    type,
+                    x * TILE_SIZE,
+                    y * TILE_SIZE,
+                    w * TILE_SIZE,
+                    h * TILE_SIZE
+                )
+            );
         }
     };
 

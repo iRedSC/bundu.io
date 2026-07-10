@@ -8,6 +8,7 @@ import type { GameObject } from "../engine";
 
 /**
  * Debug/cheat slash commands (`/attribute`, `/stat`, `/kill`, `/godmode`).
+ * Only invoked when SERVER_DEBUG is on.
  * Returns true when the message was treated as a command (handled or rejected).
  */
 export function tryHandleDebugChatCommand(

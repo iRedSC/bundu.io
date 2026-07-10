@@ -4,6 +4,7 @@ import {
     degrees,
     type MoveAxes,
 } from "@bundu/shared";
+import { worldToTile } from "@bundu/shared/tiles";
 import {
     ClientPacket,
     type Schema,
@@ -25,6 +26,8 @@ export type InputPlayerFacade = {
     markUpdating(player: Player): void;
     screenToWorld(screenX: number, screenY: number): { x: number; y: number };
     isInGame(): boolean;
+    /** When set, left-click places this structure id at the cursor tile. */
+    getPlaceStructureId(): number | null;
 };
 
 /**
@@ -96,10 +99,23 @@ export class InputController {
         if (!this.facade.isInGame()) return;
         if (event.button === 2) {
             this.sendPacket(ClientPacket.Block, { stop: false });
+            return;
         }
-        if (event.button === 0) {
-            this.sendPacket(ClientPacket.Attack, { stop: false });
+        if (event.button !== 0) return;
+
+        const placeId = this.facade.getPlaceStructureId();
+        if (placeId !== null) {
+            const world = this.facade.screenToWorld(event.clientX, event.clientY);
+            this.sendPacket(ClientPacket.PlaceStructureAt, {
+                structureId: placeId,
+                x: worldToTile(world.x),
+                y: worldToTile(world.y),
+                rotation: 0,
+            });
+            return;
         }
+
+        this.sendPacket(ClientPacket.Attack, { stop: false });
     }
 
     private handlePointerUp(event: PointerEvent) {
@@ -107,7 +123,7 @@ export class InputController {
         if (event.button === 2) {
             this.sendPacket(ClientPacket.Block, { stop: true });
         }
-        if (event.button === 0) {
+        if (event.button === 0 && this.facade.getPlaceStructureId() === null) {
             this.sendPacket(ClientPacket.Attack, { stop: true });
         }
     }
