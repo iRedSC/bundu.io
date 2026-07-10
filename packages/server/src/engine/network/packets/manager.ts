@@ -26,7 +26,6 @@ export class PlayerPacketManager<
         number,
         NonExclusivePlayerPacketContainer<keyof S & number, DataMap>
     >();
-    private schemas = new Map<number, S[keyof S & number]>();
     private serializer: Serializer<S, DataMap>;
     visibleObjectsCallback?: (
         player: GameObject
@@ -34,9 +33,6 @@ export class PlayerPacketManager<
 
     constructor(schema: S) {
         this.packets = new Map();
-        for (const [id, def] of Object.entries(schema)) {
-            this.schemas.set(Number(id), def as S[keyof S & number]);
-        }
         this.serializer = new Serializer<S, DataMap>(schema);
     }
 
@@ -45,7 +41,7 @@ export class PlayerPacketManager<
         packetId: I,
         data: PacketData<I, DataMap>
     ) {
-        if (!this.schemas.has(packetId)) {
+        if (!this.serializer.has(packetId)) {
             return console.error(`Schema ${packetId} not found`);
         }
 
@@ -60,7 +56,7 @@ export class PlayerPacketManager<
         packetId: I,
         data: PacketData<I, DataMap>
     ) {
-        if (!this.schemas.has(packetId)) {
+        if (!this.serializer.has(packetId)) {
             return console.error(`Schema ${packetId} not found`);
         }
 
