@@ -1510,6 +1510,9 @@
     (function () {
       const STORAGE_KEY = "bundu-code-smells-v1";
       const smells = Array.from(document.querySelectorAll(".smell"));
+      const htmlCommitted = new Map(
+        smells.map((el) => [el.dataset.id, el.getAttribute("data-fixed") === "true"])
+      );
       let filter = "all";
 
       function loadLocal() {
@@ -1612,15 +1615,8 @@
       document.getElementById("btn-mark-none").addEventListener("click", () => {
         localStorage.removeItem(STORAGE_KEY);
         for (const el of smells) {
-          // Preserve HTML-committed fixes
-          if (el.getAttribute("data-fixed") === "true") {
-            const input = el.querySelector('input[type="checkbox"]');
-            if (input) input.checked = true;
-          } else {
-            setFixed(el, false);
-          }
+          setFixed(el, htmlCommitted.get(el.dataset.id) === true);
         }
-        syncFromDomAndLocal();
         updateStats();
         applyFilter();
       });
