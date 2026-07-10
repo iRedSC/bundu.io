@@ -98,7 +98,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
             VisibleObjects,
         ]);
         for (const obj of objectsWithVisibleObjectsComponent) {
-            obj.get(VisibleObjects).visible.delete(object);
+            if (!obj.get(VisibleObjects).visible.delete(object)) continue;
             deleteObjectsFromView(obj, [object]);
         }
     }
