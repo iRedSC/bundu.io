@@ -124,12 +124,18 @@ async function main() {
     });
 
     gui.inventory.onSelect = (slot) => {
+        const local = world.objects.get(world.user ?? -1);
+        if (local instanceof Player && local.isCrafting) return;
         session.sendPacket(ClientPacket.SelectItem, { slot });
     };
     gui.inventory.onMove = (from, to) => {
+        const local = world.objects.get(world.user ?? -1);
+        if (local instanceof Player && local.isCrafting) return;
         session.sendPacket(ClientPacket.MoveSlot, { from, to });
     };
     gui.inventory.onCursor = (slot, mode) => {
+        const local = world.objects.get(world.user ?? -1);
+        if (local instanceof Player && local.isCrafting) return;
         session.sendPacket(ClientPacket.CursorSlot, { slot, mode });
     };
     gui.inventory.getDropTargetGlobal = () => {
@@ -141,6 +147,8 @@ async function main() {
         });
     };
     gui.craftingMenu.leftclick = (itemId) => {
+        const local = world.objects.get(world.user ?? -1);
+        if (local instanceof Player && local.isCrafting) return;
         session.sendPacket(ClientPacket.CraftItem, { itemId });
     };
 

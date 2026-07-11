@@ -70,6 +70,63 @@ export function addItem(
     return remaining;
 }
 
+/** Total count of `itemId` across all slots. */
+export function countItem(inv: Inventory, itemId: number): number {
+    let total = 0;
+    for (const stack of inv.slots) {
+        if (stack?.id === itemId) total += stack.count;
+    }
+    return total;
+}
+
+/** True when every entry in `requirements` is present in sufficient quantity. */
+export function hasItems(
+    inv: Inventory,
+    requirements: Map<number, number> | Iterable<[number, number]>
+): boolean {
+    for (const [itemId, amount] of requirements) {
+        if (countItem(inv, itemId) < amount) return false;
+    }
+    return true;
+}
+
+/**
+ * Remove items across stacks. Returns false if inventory lacked enough
+ * (inventory is left unchanged on failure).
+ */
+export function removeItem(
+    inv: Inventory,
+    itemId: number,
+    count: number
+): boolean {
+    if (count <= 0) return true;
+    if (countItem(inv, itemId) < count) return false;
+
+    let remaining = count;
+    for (let i = 0; i < inv.slots.length && remaining > 0; i++) {
+        const stack = inv.slots[i];
+        if (!stack || stack.id !== itemId) continue;
+        const take = Math.min(stack.count, remaining);
+        stack.count -= take;
+        remaining -= take;
+        if (stack.count <= 0) inv.slots[i] = null;
+    }
+    return true;
+}
+
+/** Remove every requirement; rolls back and returns false if any are missing. */
+export function removeItems(
+    inv: Inventory,
+    requirements: Map<number, number> | Iterable<[number, number]>
+): boolean {
+    const list = Array.from(requirements);
+    if (!hasItems(inv, list)) return false;
+    for (const [itemId, amount] of list) {
+        removeItem(inv, itemId, amount);
+    }
+    return true;
+}
+
 function validSlot(inv: Inventory, slot: number): boolean {
     return slot >= 0 && slot < inv.slots.length;
 }

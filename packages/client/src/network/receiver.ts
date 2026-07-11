@@ -20,6 +20,7 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.AttackEvent, world.combatFx.attack);
     receiver.on(ServerPacket.BlockEvent, world.combatFx.block);
     receiver.on(ServerPacket.HitEvent, world.combatFx.hurt);
+    receiver.on(ServerPacket.CraftEvent, world.craftEvent);
     receiver.on(ServerPacket.SetPosition, world.moveObject);
     receiver.on(ServerPacket.SetRotation, world.rotateObject);
     receiver.on(ServerPacket.DeleteObjects, world.deleteObjects);

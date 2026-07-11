@@ -1,5 +1,10 @@
 import { Component } from "../engine";
 
+export type CraftingState = {
+    itemId: number;
+    endsAt: number;
+};
+
 export type PlayerData = {
     name: string;
     score: number;
@@ -19,6 +24,7 @@ export type PlayerData = {
     attacking?: boolean;
     blocking?: boolean;
     lastAttackTime?: number;
+    crafting?: CraftingState;
 };
 export const PlayerData = Component.register<PlayerData>(() => ({
     name: "unnamed",

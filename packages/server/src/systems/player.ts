@@ -7,11 +7,17 @@ import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js"
 import { GroundData, Physics } from "../components/base.js";
 import {
     Inventory,
+    addItem,
     cursorSlot as applyCursorSlot,
+    hasItems,
     moveSlot as applyMoveSlot,
+    removeItems,
 } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
-import { packCraftingList } from "../configs/loaders/crafting.js";
+import {
+    craftingList,
+    packCraftingList,
+} from "../configs/loaders/crafting.js";
 import { GameObject, System, type World } from "../engine";
 import { Attributes } from "../components/attributes.js";
 import { emitVitals } from "../network/vitals.js";
@@ -38,7 +44,11 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = player.get(PlayerData);
         const attributes = player.get(Attributes);
 
-        if (data.attacking && data.lastAttackTime && !data.blocking) {
+        if (data.crafting && time >= data.crafting.endsAt) {
+            this.finishCraft(player);
+        }
+
+        if (data.attacking && data.lastAttackTime && !data.blocking && !data.crafting) {
             if (
                 data.lastAttackTime <
                 time - (1 / attributes.get("attack.speed")) * 1000
@@ -102,6 +112,7 @@ export class PlayerSystem extends System<GameEventMap> {
 
     kill({ object: target }: GameEvent.Kill) {
         if (!target.active) return;
+        this.clearCraft(target);
         target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
         const { socketManager } = this.world.context;
@@ -110,12 +121,79 @@ export class PlayerSystem extends System<GameEventMap> {
         socket?.close();
     }
 
+    private emitCraftEvent(player: GameObject, duration: number) {
+        this.world.context.worldPacketManager.emit(ServerPacket.CraftEvent, {
+            id: player.id,
+            duration,
+        });
+    }
+
+    private clearCraft(player: GameObject, emit = true) {
+        const data = PlayerData.get(player);
+        if (!data?.crafting) return;
+        data.crafting = undefined;
+        if (emit) this.emitCraftEvent(player, 0);
+    }
+
+    private finishCraft(player: GameObject) {
+        const data = PlayerData.get(player);
+        const crafting = data?.crafting;
+        if (!data || !crafting) return;
+
+        const recipe = craftingList.get(crafting.itemId);
+        const inv = Inventory.get(player);
+        data.crafting = undefined;
+        this.emitCraftEvent(player, 0);
+
+        if (!recipe || !inv) return;
+        if (!removeItems(inv, recipe.ingredients)) return;
+
+        addItem(inv, recipe.id, recipe.amount);
+        data.score += recipe.score;
+
+        syncMainHand(player);
+        const { playerPacketManager, worldPacketManager } = this.world.context;
+        emitInventory(player, playerPacketManager);
+        emitEquipment(player, worldPacketManager);
+    }
+
+    craftItem = (playerId: number, { itemId }: ClientPacket.CraftItem) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const data = PlayerData.get(player);
+        if (!data || data.crafting) return;
+
+        const recipe = craftingList.get(itemId);
+        if (!recipe) return;
+
+        const inv = Inventory.get(player);
+        if (!inv || !hasItems(inv, recipe.ingredients)) return;
+
+        // Stop in-progress combat for the channel.
+        data.attacking = false;
+        if (data.blocking) {
+            data.blocking = false;
+            player.get(Attributes)?.clear("blocking");
+            this.world.context.worldPacketManager.emit(ServerPacket.BlockEvent, {
+                id: player.id,
+                stop: true,
+            });
+        }
+
+        data.crafting = {
+            itemId,
+            endsAt: this.world.gameTime + recipe.duration,
+        };
+        this.emitCraftEvent(player, recipe.duration);
+    };
+
     move = (playerId: number, packet: ClientPacket.Movement) => {
         const [x, y] = decodeMoveDirection(packet.direction);
 
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
+        // Accept intent while crafting so held keys resume when the channel ends.
         data.moveDir = [x, y];
     };
 
@@ -129,6 +207,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = player.get(PlayerData);
+        if (data.crafting) return;
 
         // Place-only path: selected structure consumes the attack packet.
         if (data.selectedStructure.id !== -1) {
@@ -146,6 +225,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
+        if (data.crafting) return;
         const attributes = player.get(Attributes);
         const blocking = attributes.get("health.defense.blocking");
         if (!stop && data.attacking) {
@@ -167,6 +247,8 @@ export class PlayerSystem extends System<GameEventMap> {
     selectItem = (playerId: number, { slot }: ClientPacket.SelectItem) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
+        const data = PlayerData.get(player);
+        if (data?.crafting) return;
         const inv = Inventory.get(player);
         if (!inv || slot < 0 || slot >= inv.slots.length) return;
 
@@ -178,6 +260,8 @@ export class PlayerSystem extends System<GameEventMap> {
     moveSlot = (playerId: number, { from, to }: ClientPacket.MoveSlot) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
+        const data = PlayerData.get(player);
+        if (data?.crafting) return;
         const inv = Inventory.get(player);
         if (!inv) return;
         if (!applyMoveSlot(inv, from, to)) return;
@@ -194,6 +278,8 @@ export class PlayerSystem extends System<GameEventMap> {
     ) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
+        const data = PlayerData.get(player);
+        if (data?.crafting) return;
         const inv = Inventory.get(player);
         if (!inv) return;
 
@@ -210,10 +296,12 @@ export class PlayerSystem extends System<GameEventMap> {
     };
 
     placeStructureAt = (
-        _playerId: number,
+        playerId: number,
         { structureId, x, y, rotation }: ClientPacket.PlaceStructureAt
     ) => {
         if (!SERVER_DEBUG) return;
+        const player = this.world.getObject(playerId);
+        if (player && PlayerData.get(player)?.crafting) return;
         this.trigger(GameEvent.PlaceStructure, {
             structureId,
             x,
@@ -249,4 +337,4 @@ export class PlayerSystem extends System<GameEventMap> {
             message,
         });
     };
-}
+};
