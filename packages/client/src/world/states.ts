@@ -90,4 +90,13 @@ export class RotationStates {
         this.lastUpdateTime = serverTime.now();
         this.callback?.();
     }
+
+    /** Jump to a rotation with no interpolation (local look prediction). */
+    snap(state: RotationState) {
+        this.last = state;
+        this.current = state;
+        this.next = state;
+        this.lastUpdateTime = serverTime.now();
+        this.callback?.();
+    }
 }

@@ -1,15 +1,17 @@
-import { lookToward, radians } from "@bundu/shared/transforms";
 import { TILE_SIZE } from "@bundu/shared/tiles";
-import { spriteConfigs } from "../../configs/sprite_configs";
-import { SpriteFactory, ContaineredSprite } from "../../assets/sprite_factory";
-import { ANIMATION, hurt } from "../../animation/animations";
-import { AnimationManager } from "../../animation/runtime";
+import { getStringId } from "@bundu/shared/id_map";
 import { Container, Point, Text } from "pixi.js";
 import GameObject from "../game_object";
-import { getStringId } from "@bundu/shared/id_map";
-import { PlayerAnimations } from "./player_animations";
+import { SpriteFactory } from "../../assets/sprite_factory";
+import { spriteConfigs } from "../../configs/sprite_configs";
+import { AnimationManager } from "../../animation/runtime";
+import { assemble } from "../../visual/assemble";
+import { bindAnimations } from "../../visual/bind";
+import { playerDef } from "../../visual/defs/player";
+import type { AnimContext, PartNode, SlotDef } from "../../visual/types";
 
 type nullish = undefined | null;
+
 export interface Equipment {
     mainhand: number | nullish;
     offhand: number | nullish;
@@ -17,43 +19,21 @@ export interface Equipment {
     backpack: boolean | nullish;
 }
 
-type PlayerParts = {
-    structure: {
-        container: Container;
-        sprite: ContaineredSprite;
-    };
-    body: {
-        container: Container;
-        sprite: ContaineredSprite;
-        helmet: ContaineredSprite;
-    };
-    leftHand: {
-        container: Container;
-        sprite: ContaineredSprite;
-        item: ContaineredSprite;
-    };
-    rightHand: {
-        container: Container;
-        sprite: ContaineredSprite;
-        item: ContaineredSprite;
-    };
-};
-
-export class Player extends GameObject {
-    sprite: PlayerParts;
+export class Player extends GameObject implements AnimContext {
     name: Text;
+    parts: Map<string, PartNode>;
+    private slots: Map<string, { node: PartNode; def: SlotDef }>;
 
-    mainhand?: string;
-    offhand?: string;
-    helmet?: string;
+    mainhand = "";
+    offhand = "";
+    helmet = "";
     backpack?: boolean;
+    blocking = false;
 
-    blocking: boolean;
-
-    /** Client-side look prediction for local input; returns rotation in radians. */
-    predictLook(toward: { x: number; y: number }): number {
-        const rotation = lookToward(this.position, toward) - radians(90);
-        this.addRotation(rotation);
+    /** Client-side look prediction; snaps immediately (no lerp flicker). */
+    predictLook(rotation: number): number {
+        this.rotationStates.snap(rotation);
+        this.container.rotation = rotation;
         return rotation;
     }
 
@@ -66,112 +46,29 @@ export class Player extends GameObject {
         collisionRadius: number
     ) {
         super(id, pos, rotation, collisionRadius, TILE_SIZE);
-        this.sprite = {
-            structure: {
-                container: new Container(),
-                sprite: SpriteFactory.build(""),
-            },
-            body: {
-                container: new Container(),
-                sprite: SpriteFactory.build("player"),
-                helmet: SpriteFactory.build(""),
-            },
-            leftHand: {
-                container: new Container(),
-                sprite: SpriteFactory.build("hand"),
-                item: SpriteFactory.build("diamond_sword"),
-            },
-            rightHand: {
-                container: new Container(),
-                sprite: SpriteFactory.build("hand"),
-                item: SpriteFactory.build(""),
-            },
-        };
+
+        const assembled = assemble(playerDef, this.container);
+        this.parts = assembled.parts;
+        this.slots = assembled.slots;
+
+        const { animations, autoplay } = bindAnimations(
+            playerDef,
+            this.parts,
+            this
+        );
+        for (const [animId, animation] of animations) {
+            this.animations.set(animId, animation);
+        }
+        for (const animId of autoplay) {
+            this.trigger(animId, manager);
+        }
 
         this.name = name;
         this.name.scale.set(0.34);
         this.name.roundPixels = true;
-
         this.name.anchor.set(0.5, 2);
         this.name.zIndex = 100;
-
-        this.offhand = "";
-        this.mainhand = "";
-        this.helmet = "";
-        this.backpack = false;
-
-        this.blocking = false;
-
-        // this.container.pivot.x = this.container.width / 2;
-        // this.container.pivot.y = this.container.height / 2 + 15;
-        // this.container.pivot.y = -0.1;
         this.container.zIndex = 1;
-
-        const structure = this.sprite.structure;
-        const body = this.sprite.body;
-        const leftHand = this.sprite.leftHand;
-        const rightHand = this.sprite.rightHand;
-
-        structure.sprite.renderable = false;
-        leftHand.item.renderable = false;
-        rightHand.item.renderable = false;
-
-        this.container.addChild(leftHand.container);
-        this.container.addChild(rightHand.container);
-        this.container.addChild(body.container);
-        this.container.addChild(structure.container);
-
-        structure.sprite.alpha = 0.5;
-        structure.container.addChild(structure.sprite);
-        structure.sprite.anchor.set(0.5);
-        structure.container.pivot.set(0, -1 * structure.sprite.scale.x);
-
-        body.container.addChild(body.sprite);
-
-        leftHand.container.addChild(leftHand.item);
-        leftHand.container.addChild(leftHand.sprite);
-
-        rightHand.container.addChild(rightHand.item);
-        rightHand.container.addChild(rightHand.sprite);
-
-        body.container.addChild(body.helmet);
-
-        body.sprite.anchor.set(0.5);
-        // body.sprite.scale.set(0.9);
-        body.helmet.anchor.set(0.5);
-
-        // leftHand.container.x = -0.05;
-        leftHand.sprite.anchor.set(0.5);
-        leftHand.container.pivot.set(1, 0);
-        leftHand.container.scale.set(0.5);
-        leftHand.sprite.scale.set(0.5);
-
-        // leftHand.item.anchor.set(1);
-        leftHand.item.scale.set(5);
-
-        // rightHand.container.x = 0.05;
-        rightHand.container.pivot.set(-1, 0);
-        rightHand.sprite.anchor.set(0.5);
-        rightHand.container.scale.set(0.5);
-        rightHand.sprite.scale.set(0.5);
-
-        rightHand.item.anchor.set(1);
-        rightHand.item.scale.set(1.8);
-        this.animations.set(
-            ANIMATION.IDLE_HANDS,
-            PlayerAnimations.idleHands(
-                this.sprite.leftHand.container,
-                this.sprite.rightHand.container,
-                this.sprite.body.container
-            )
-        );
-        this.animations.set(
-            ANIMATION.HURT,
-            hurt([rightHand.sprite, leftHand.sprite, body.sprite])
-        );
-        this.animations.set(ANIMATION.ATTACK, PlayerAnimations.attack(this));
-        this.animations.set(ANIMATION.BLOCK, PlayerAnimations.block(this));
-        this.trigger(ANIMATION.IDLE_HANDS, manager);
 
         this.positionStates.callback = () => {
             this.name.renderable = true;
@@ -200,65 +97,47 @@ export class Player extends GameObject {
     }
 
     updateEquipment() {
-        this.sprite.rightHand.item.renderable = false;
-        this.sprite.leftHand.item.renderable = false;
-        this.sprite.body.helmet.renderable = false;
-
-        if (this.mainhand) {
-            const config = spriteConfigs.get(this.mainhand);
-            if (config) {
-                this.sprite.leftHand.item.renderable = true;
-                SpriteFactory.update(
-                    this.sprite.leftHand.item,
-                    config.hand_display,
-                    this.mainhand
-                );
-            }
+        for (const slot of this.slots.values()) {
+            if (slot.node.attach) slot.node.attach.renderable = false;
         }
 
-        if (this.offhand) {
-            const config = spriteConfigs.get(this.offhand);
-            if (config) {
-                this.sprite.rightHand.item.renderable = true;
-                SpriteFactory.update(
-                    this.sprite.rightHand.item,
-                    config.hand_display,
-                    this.offhand
-                );
-                this.sprite.rightHand.item.x = -this.sprite.rightHand.item.x;
-            }
-        }
+        this.fillSlot("mainhand", this.mainhand);
+        this.fillSlot("offhand", this.offhand);
+        this.fillSlot("helmet", this.helmet);
+    }
 
-        if (this.helmet) {
-            const config = spriteConfigs.get(this.helmet);
-            if (config) {
-                this.sprite.body.helmet.renderable = true;
-                SpriteFactory.update(
-                    this.sprite.body.helmet,
-                    config.body_display,
-                    this.helmet
-                );
-            }
-        }
+    private fillSlot(slotName: string, itemId: string) {
+        if (!itemId) return;
+        const slot = this.slots.get(slotName);
+        const attach = slot?.node.attach;
+        if (!slot || !attach) return;
+
+        const config = spriteConfigs.get(itemId);
+        if (!config) return;
+
+        attach.renderable = true;
+        SpriteFactory.update(attach, config[slot.def.display], itemId);
+        if (slot.def.scale != null) attach.scale.set(slot.def.scale);
+        if (slot.def.mirrorX) attach.x = -attach.x;
     }
 
     setSelectedStructure(id: number, visualScale: number) {
-        this.sprite.structure.sprite.renderable = false;
+        const ghost = this.parts.get("placementGhost");
+        if (!ghost) return;
+
+        ghost.visual.renderable = false;
         const name = getStringId(id);
         if (!name) return;
 
         const config = spriteConfigs.get(name);
         if (!config) return;
 
-        this.sprite.structure.sprite.renderable = true;
-        const worldDisplay = {
-            ...config.world_display,
-            scale: visualScale,
-        };
+        ghost.visual.renderable = true;
         SpriteFactory.update(
-            this.sprite.structure.sprite,
-            worldDisplay,
+            ghost.visual,
+            { ...config.world_display, scale: visualScale },
             name
         );
+        ghost.root.pivot.set(0, -1 * ghost.visual.scale.x);
     }
 }
