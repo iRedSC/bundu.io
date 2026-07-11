@@ -1,4 +1,10 @@
-import { radians, moveInDirection, type BasicPoint } from "@bundu/shared";
+import {
+    attackBoxPoints,
+    attackFacingRadians,
+    moveInDirection,
+    radians,
+    type BasicPoint,
+} from "@bundu/shared";
 import { Physics } from "../components/base.js";
 import { GameObject, System, type World } from "../engine";
 import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
@@ -16,20 +22,16 @@ export function attackBox(
     length: number,
     width: number
 ): SAT.Polygon {
-    const end = moveInDirection({ x: 0, y: 0 }, direction, length);
-    const perpendicularAngle = direction + Math.PI / 2;
-    const halfWidth = width / 2;
-    const p1 = pointToVec(
-        moveInDirection({ x: 0, y: 0 }, perpendicularAngle, halfWidth)
+    const points = attackBoxPoints(
+        { x: start.x, y: start.y },
+        direction,
+        length,
+        width
     );
-    const p2 = pointToVec(moveInDirection(end, perpendicularAngle, halfWidth));
-    const p3 = pointToVec(
-        moveInDirection(end, perpendicularAngle + Math.PI, halfWidth)
+    return new SAT.Polygon(
+        new SAT.Vector(),
+        points.map((p) => new SAT.Vector(p.x, p.y))
     );
-    const p4 = pointToVec(
-        moveInDirection({ x: 0, y: 0 }, perpendicularAngle + Math.PI, halfWidth)
-    );
-    return new SAT.Polygon(start.clone(), [p4, p3, p2, p1, new SAT.Vector()]);
 }
 
 export function testForIntersection(
@@ -78,21 +80,21 @@ export class AttackSystem extends System<GameEventMap> {
             width = hitbox.width;
         }
 
+        // physics.rotation is degrees (client sends degrees); SAT/math use radians.
+        const facing = attackFacingRadians(radians(physics.rotation));
+        const origin = moveInDirection(physics.position, facing, start);
         const hitRange = attackBox(
-            pointToVec(
-                moveInDirection(
-                    physics.position,
-                    physics.rotation + radians(90),
-                    start
-                )
-            ),
-            physics.rotation + radians(90),
+            pointToVec(origin),
+            facing,
             length,
             width
         );
 
         this.world.context.worldPacketManager.emit(ServerPacket.AttackEvent, {
             id: source.id,
+            start,
+            length,
+            width,
         });
 
         const hits = testForIntersection(hitRange, nearby);

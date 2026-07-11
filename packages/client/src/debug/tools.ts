@@ -1,9 +1,11 @@
 import type { Container } from "pixi.js";
 import { getNumericId } from "@bundu/shared/id_map";
+import { registerAttackHitboxDrawer } from "./attack_hitbox";
 import { registerObjectDebugFactory } from "./object_debug";
 import {
     createObjectDebug,
     debugContainer,
+    drawAttackHitbox,
     isDebugOverlayVisible,
     setDebugOverlayVisible,
 } from "./overlay";
@@ -83,6 +85,7 @@ function bindToggle(
  */
 export function mountClientDebug(viewport: Container): ClientDebugHandle {
     registerObjectDebugFactory(createObjectDebug);
+    registerAttackHitboxDrawer(drawAttackHitbox);
     viewport.addChild(debugContainer);
 
     const style = document.createElement("style");
