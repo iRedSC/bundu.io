@@ -15,10 +15,6 @@ const markers = [
     "startConfigHotReload",
     "__dev/sprite-configs",
     "__dev/config-reload",
-    "replaceSpriteConfigs",
-    "reapplyDisplays",
-    "reloadDisplays",
-    "refreshDisplays",
 ];
 
 const files: string[] = [];

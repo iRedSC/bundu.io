@@ -41,35 +41,44 @@ function reapplyDisplays(world: World) {
 export function startConfigHotReload(world: World): () => void {
     const source = new EventSource("/__dev/config-reload");
     let reloading = false;
+    let pending = false;
 
     const reload = async () => {
-        if (reloading) return;
+        if (reloading) {
+            pending = true;
+            return;
+        }
         reloading = true;
         try {
-            const res = await fetch(`/__dev/sprite-configs?t=${Date.now()}`);
-            if (!res.ok) {
-                console.warn(
-                    "[config-hot-reload] fetch failed:",
-                    res.status,
-                    res.statusText
+            do {
+                pending = false;
+                const res = await fetch(
+                    `/__dev/sprite-configs?t=${Date.now()}`
                 );
-                return;
-            }
-            const configs = (await res.json()) as Record<
-                string,
-                FullItemConfig
-            >;
-            replaceSpriteConfigs(configs);
-            reapplyDisplays(world);
-            const sample =
-                configs.diamond_pickaxe?.hand_display ??
-                configs.wood_pickaxe?.hand_display;
-            console.info(
-                "[config-hot-reload] display configs applied",
-                sample
-                    ? { hand_display: sample }
-                    : `(${Object.keys(configs).length} items)`
-            );
+                if (!res.ok) {
+                    console.warn(
+                        "[config-hot-reload] fetch failed:",
+                        res.status,
+                        res.statusText
+                    );
+                    continue;
+                }
+                const configs = (await res.json()) as Record<
+                    string,
+                    FullItemConfig
+                >;
+                replaceSpriteConfigs(configs);
+                reapplyDisplays(world);
+                const sample =
+                    configs.diamond_pickaxe?.hand_display ??
+                    configs.wood_pickaxe?.hand_display;
+                console.info(
+                    "[config-hot-reload] display configs applied",
+                    sample
+                        ? { hand_display: sample }
+                        : `(${Object.keys(configs).length} items)`
+                );
+            } while (pending);
         } catch (err) {
             console.warn("[config-hot-reload] reload failed", err);
         } finally {

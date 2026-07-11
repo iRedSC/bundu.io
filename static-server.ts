@@ -16,7 +16,6 @@ const SPRITE_TYPES_YML = path.join(CONFIG_DIR, "sprite_types.yml");
 
 type SseClient = {
     write: (chunk: string) => void;
-    close: () => void;
 };
 
 const sseClients = new Set<SseClient>();
@@ -43,13 +42,6 @@ function configReloadSse(): Response {
             const encoder = new TextEncoder();
             client = {
                 write: (chunk) => controller.enqueue(encoder.encode(chunk)),
-                close: () => {
-                    try {
-                        controller.close();
-                    } catch {
-                        // already closed
-                    }
-                },
             };
             sseClients.add(client);
             client.write(": connected\n\n");
