@@ -64,9 +64,9 @@ export class Player extends GameObject implements AnimContext {
         }
 
         this.name = name;
-        this.name.scale.set(0.34);
+        this.name.scale.set(0.6);
         this.name.roundPixels = true;
-        this.name.anchor.set(0.5, 2);
+        this.name.anchor.set(0.5, 3);
         this.name.zIndex = 100;
         this.container.zIndex = 1;
 

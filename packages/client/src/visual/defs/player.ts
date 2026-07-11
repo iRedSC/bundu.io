@@ -8,7 +8,7 @@ export const playerDef: ObjectDef = {
         {
             name: "leftHand",
             sprite: "hand",
-            scale: 0.5,
+            scale: 0.7,
             pivot: { x: 1, y: 0 },
             spriteScale: 0.5,
             attach: true,
@@ -17,7 +17,7 @@ export const playerDef: ObjectDef = {
         {
             name: "rightHand",
             sprite: "hand",
-            scale: 0.5,
+            scale: 0.7,
             pivot: { x: -1, y: 0 },
             spriteScale: 0.5,
             attach: true,
