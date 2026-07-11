@@ -75,7 +75,15 @@ export namespace ServerPacket {
         structureId: number;
         structureSize: number;
     };
-    export type AttackEvent = { id: number };
+    export type AttackEvent = {
+        id: number;
+        /** Offset from attacker center along facing before the box starts. */
+        start: number;
+        /** Box length along facing. */
+        length: number;
+        /** Box width perpendicular to facing. */
+        width: number;
+    };
     export type BlockEvent = { id: number; stop: boolean };
     export type HitEvent = { id: number; angle: number };
 }
@@ -179,7 +187,9 @@ export const ServerSchema: {
     [ServerPacket.SetSelectedStructure]: {
         fields: ["structureId", "structureSize"],
     },
-    [ServerPacket.AttackEvent]: { fields: ["id"] },
+    [ServerPacket.AttackEvent]: {
+        fields: ["id", "start", "length", "width"],
+    },
     [ServerPacket.BlockEvent]: { fields: ["id", "stop"] },
     [ServerPacket.HitEvent]: { fields: ["id", "angle"] },
 };

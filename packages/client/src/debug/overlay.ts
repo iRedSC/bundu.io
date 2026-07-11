@@ -1,4 +1,5 @@
 import { Container, Graphics, Text } from "pixi.js";
+import type { BasicPoint } from "@bundu/shared";
 import { TILE_SIZE, WORLD_BOUNDS } from "@bundu/shared/tiles";
 import { TEXT_STYLE } from "@client/assets/text";
 import { Circle } from "./circle";
@@ -8,6 +9,8 @@ import type { ObjectDebug, ObjectDebugInit } from "./types";
 export const debugContainer = new Container();
 debugContainer.zIndex = 1000;
 debugContainer.addChild(createDebugGrid());
+
+const ATTACK_HITBOX_MS = 200;
 
 function createDebugGrid(): Graphics {
     const grid = new Graphics();
@@ -25,6 +28,34 @@ function createDebugGrid(): Graphics {
     }
     grid.stroke({ width: 1, color: 0xffffff, alpha: 0.2 });
     return grid;
+}
+
+/** Ephemeral attack SAT polygon (world-space corners). */
+export function drawAttackHitbox(points: BasicPoint[]) {
+    if (points.length < 3 || !debugContainer.visible) return;
+
+    const first = points[0];
+    if (!first) return;
+
+    const g = new Graphics();
+    g.eventMode = "none";
+    g.zIndex = 10;
+    g.moveTo(first.x, first.y);
+    for (let i = 1; i < points.length; i++) {
+        const p = points[i];
+        if (!p) continue;
+        g.lineTo(p.x, p.y);
+    }
+    g.closePath();
+    g.fill({ color: 0x22c55e, alpha: 0.2 });
+    g.stroke({ width: 2, color: 0x22c55e, alpha: 0.9 });
+    debugContainer.addChild(g);
+
+    setTimeout(() => {
+        if (g.destroyed) return;
+        debugContainer.removeChild(g);
+        g.destroy();
+    }, ATTACK_HITBOX_MS);
 }
 
 class DebugWorldObject implements ObjectDebug {

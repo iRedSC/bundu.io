@@ -11,6 +11,7 @@ export * from "./random";
 export * from "./types";
 export * from "./tiles";
 export * from "./transforms";
+export * from "./attack_box";
 export * from "./range";
 export { ReversableMap } from "./reverseable_map";
 export { Serializer, type SerializedPacket } from "./network/serializer";
