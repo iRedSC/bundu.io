@@ -93,9 +93,7 @@ async function main() {
             gui.craftingMenu.items = [];
             gui.craftingMenu.update();
             input.closeChat();
-            serverTime.synced = false;
-            serverTime.offset = 0;
-            serverTime.targetOffset = 0;
+            serverTime.reset();
         },
         setConnecting: (connecting) => {
             playButton.disabled = connecting;

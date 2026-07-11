@@ -14,7 +14,6 @@ import { Point, Text } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
-import { serverTime } from "@client/globals";
 import GameObject from "./game_object";
 import ObjectContainer from "./object_container";
 import { CombatFx } from "./combat_fx";
@@ -70,7 +69,7 @@ export class World {
 
     tick() {
         AnimationManagers.World.update();
-        this.objects.update(serverTime.now());
+        this.objects.update();
         this.camera.update();
     }
 
@@ -156,17 +155,14 @@ export class World {
         this.renderer.add(structure.id, ...structure.containers);
     };
 
-    moveObject = (packet: ServerPacket.SetPosition, now: number) => {
+    moveObject = (packet: ServerPacket.SetPosition, _now?: number) => {
         const object = this.objects.get(packet.id);
         if (!object) return;
         object.renderable = true;
-        object.addPosition(
-            {
-                x: deciToWorld(packet.x),
-                y: deciToWorld(packet.y),
-            },
-            now
-        );
+        object.addPosition({
+            x: deciToWorld(packet.x),
+            y: deciToWorld(packet.y),
+        });
         this.objects.updating.add(object);
         this.objects.add(object);
     };

@@ -1,23 +1,32 @@
+import { SERVER_TICK_MS } from "@bundu/shared";
+
+/**
+ * Client timing for movement smoothing (Suroi-style).
+ * `serverDt` is the measured gap between the last two inbound batches —
+ * position/rotation lerps use that as their duration, so jitter stretches
+ * the next tween instead of emptying a snapshot buffer.
+ */
 export const serverTime = {
-    targetOffset: 0,
-    offset: 0,
-    /** Render this far behind server time so the snapshot buffer can interpolate. */
-    renderDelay: 100,
-    synced: false,
+    /** Milliseconds between the last two received server batches. */
+    serverDt: SERVER_TICK_MS,
+    lastUpdateAt: 0,
 
     now() {
-        return performance.now() + this.offset - this.renderDelay;
+        return performance.now();
     },
 
-    /** Align to a server batch timestamp (ms since server start). */
-    sync(serverTimestamp: number) {
-        this.targetOffset = serverTimestamp - performance.now();
-        if (!this.synced) {
-            this.offset = this.targetOffset;
-            this.synced = true;
-            return;
+    /** Call once per inbound batch (before applying packets). */
+    noteUpdate() {
+        const now = performance.now();
+        if (this.lastUpdateAt > 0) {
+            // Floor at 1ms so a burst can't divide-by-zero the lerp.
+            this.serverDt = Math.max(1, now - this.lastUpdateAt);
         }
-        // Ease toward the latest sample so clock drift doesn't jump the world.
-        this.offset += (this.targetOffset - this.offset) * 0.1;
+        this.lastUpdateAt = now;
+    },
+
+    reset() {
+        this.serverDt = SERVER_TICK_MS;
+        this.lastUpdateAt = 0;
     },
 };

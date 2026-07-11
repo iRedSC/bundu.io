@@ -81,8 +81,8 @@ export class Player extends GameObject implements AnimContext {
         return [this.container, this.name];
     }
 
-    override update(now: number): boolean {
-        const done = super.update(now);
+    override update(_now?: number): boolean {
+        const done = super.update();
         this.name.position = this.position;
         return done;
     }

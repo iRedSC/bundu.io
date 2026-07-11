@@ -32,7 +32,8 @@ export class ClientPacketReceiver<
 
     process(packets: SerializedPacketArray) {
         const [timestamp, ...rest] = packets;
-        serverTime.sync(timestamp);
+        // Measure inter-batch gap for movement lerps; batch timestamp is unused.
+        serverTime.noteUpdate();
 
         for (const packet of rest) {
             try {

@@ -84,8 +84,8 @@ export default class GameObject {
     }
 
     /** Return true if object is done interpolating */
-    update(now: number): boolean {
-        const { x, y } = this.positionStates.interpolate(now);
+    update(_now?: number): boolean {
+        const { x, y } = this.positionStates.interpolate();
         const rot = this.rotationStates.interpolate();
 
         this.position.set(x, y);
@@ -99,8 +99,8 @@ export default class GameObject {
         );
     }
 
-    addPosition(state: PositionState, time?: number): void {
-        this.positionStates.set(state, time);
+    addPosition(state: PositionState): void {
+        this.positionStates.set(state);
     }
 
     addRotation(radians: RotationState): void {
