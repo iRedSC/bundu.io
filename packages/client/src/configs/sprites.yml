@@ -271,4 +271,19 @@ pine_tree:
 amethyst:
     type: none
     world_display:
+        scale: 2
+
+stone:
+    type: none
+    world_display:
+        scale: 1.7
+
+gold:
+    type: none
+    world_display:
+        scale: 1.7
+
+diamond:
+    type: none
+    world_display:
         scale: 1.7
