@@ -9,6 +9,8 @@ export class Socket extends WebSocket {
         protocols?: string | string[]
     ) {
         super(url, protocols);
+        // ArrayBuffer so inbound decode stays synchronous (no Blob/async race).
+        this.binaryType = "arraybuffer";
     }
 
     sendPacket<I extends keyof ClientPacketMap & number>(

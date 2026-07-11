@@ -1,3 +1,4 @@
+import { SERVER_TICK_MS } from "@bundu/shared";
 import { GameObject } from "./game_object.js";
 import { type AnySystem } from "./system.js";
 import type { ComponentFactory } from "./component.js";
@@ -164,11 +165,14 @@ export class World {
     // -------------------------------------------------------------------
     // Update Loop
     // -------------------------------------------------------------------
-    public update(): void {
-        const now = performance.now();
-        const delta = now - this.lastUpdate;
-        this.gameTime += delta;
-        this.lastUpdate = now;
+    /**
+     * Advance gameplay by one fixed step and run each due system **once**.
+     * No wall-clock catch-up: overruns make the world run slow instead of
+     * collapsing 2–3 fixed moves into one latest-wins SetPosition.
+     */
+    public step(stepMs: number = SERVER_TICK_MS): void {
+        this.gameTime += stepMs;
+        this.lastUpdate = performance.now();
 
         const objectsBySystem = new Map<AnySystem, GameObject[]>();
 
@@ -196,21 +200,18 @@ export class World {
 
             const interval = 1000 / system.tps;
             const lastGT = this.systemLastUpdate.get(system.id) ?? 0;
-            const elapsedGT = this.gameTime - lastGT;
-            if (elapsedGT < interval) continue;
+            if (this.gameTime - lastGT < interval) continue;
 
-            // Catch up missed steps so a slow tick doesn't skip movement entirely.
-            const steps = Math.min(3, Math.floor(elapsedGT / interval));
-            this.systemLastUpdate.set(
-                system.id,
-                lastGT + steps * interval
-            );
-            for (let step = 0; step < steps; step++) {
-                for (const object of objs) {
-                    system.update(this.gameTime, interval, object);
-                }
+            this.systemLastUpdate.set(system.id, lastGT + interval);
+            for (const object of objs) {
+                system.update(this.gameTime, interval, object);
             }
         }
+    }
+
+    /** Alias for {@link step} with the server tick interval. */
+    public update(): void {
+        this.step(SERVER_TICK_MS);
     }
 
     // -------------------------------------------------------------------

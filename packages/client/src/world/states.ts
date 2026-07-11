@@ -1,27 +1,34 @@
-import { lerp, rotationLerp } from "@bundu/shared";
+import { SERVER_TICK_MS, rotationLerp } from "@bundu/shared";
 import { serverTime } from "@client/globals";
-import { movementProbe } from "./movement_probe";
 
 export interface PositionState {
     x: number;
     y: number;
 }
 
+/** Unclamped lerp — t>1 extrapolates along the same segment. */
+function mix(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+}
+
 /**
- * Literal Suroi movement smoothing:
- * - old = previous packet *target* (not the mid-lerp visual)
- * - duration = raw measured inter-batch `serverTime.serverDt`
- * - t clamped to 1 (hold until the next packet)
- * No pad, no extrapolation, no duration clamping.
+ * Mild pad over one tick so late packets don't freeze at the target,
+ * plus a short coast (t>1) so motion stays continuous.
+ */
+const INTERP_MS = SERVER_TICK_MS * 1.05;
+/** How far past the target we may coast (fraction of a tick). */
+const EXTRAP = 0.6;
+
+/**
+ * Entity interpolation: visual → latest over a fixed duration.
+ * Coast briefly if the next packet is late.
  */
 export class PositionStates {
-    private old: PositionState = { x: 0, y: 0 };
-    private target: PositionState = { x: 0, y: 0 };
+    private from: PositionState = { x: 0, y: 0 };
+    private to: PositionState = { x: 0, y: 0 };
     private current: PositionState = { x: 0, y: 0 };
-    private lastChange = 0;
-    private hasTarget = false;
-    /** Optional object id for movementProbe (debug hitch watcher). */
-    probeId = -1;
+    private startedAt = 0;
+    private hasSegment = false;
 
     callback?: () => void;
 
@@ -29,99 +36,97 @@ export class PositionStates {
         this.callback = callback;
     }
 
-    interpolate(now = serverTime.now()): { x: number; y: number } {
-        if (!this.hasTarget) return this.current;
+    get position(): PositionState {
+        return this.current;
+    }
 
-        const t = Math.min((now - this.lastChange) / serverTime.serverDt, 1);
+    interpolate(now = serverTime.now()): { x: number; y: number } {
+        if (!this.hasSegment) return this.current;
+
+        const t = Math.min((now - this.startedAt) / INTERP_MS, 1 + EXTRAP);
         this.current = {
-            x: lerp(this.old.x, this.target.x, t),
-            y: lerp(this.old.y, this.target.y, t),
+            x: mix(this.from.x, this.to.x, t),
+            y: mix(this.from.y, this.to.y, t),
         };
-        if (this.probeId >= 0) {
-            movementProbe.noteLerp(this.probeId, t, false);
-        }
         return this.current;
     }
 
     set(state: PositionState) {
-        const span = this.hasTarget
-            ? Math.hypot(state.x - this.target.x, state.y - this.target.y)
-            : 0;
-
-        if (this.hasTarget) {
-            this.old = { x: this.target.x, y: this.target.y };
-        } else {
-            this.old = { x: state.x, y: state.y };
-            this.current = { x: state.x, y: state.y };
+        if (!this.hasSegment) {
+            this.snap(state);
+            return;
         }
-        this.target = { x: state.x, y: state.y };
-        this.lastChange = serverTime.now();
-        this.hasTarget = true;
 
-        if (this.probeId >= 0) {
-            movementProbe.notePos(
-                this.probeId,
-                span,
-                serverTime.serverDt,
-                this.lastChange
-            );
-        }
+        // Continue from the visual so early packets don't snap.
+        this.from = { x: this.current.x, y: this.current.y };
+        this.to = { x: state.x, y: state.y };
+        this.startedAt = serverTime.now();
+        this.callback?.();
+    }
+
+    /** Hard-set visual + targets (spawn / teleports). */
+    snap(state: PositionState) {
+        this.from = { x: state.x, y: state.y };
+        this.to = { x: state.x, y: state.y };
+        this.current = { x: state.x, y: state.y };
+        this.startedAt = serverTime.now();
+        this.hasSegment = true;
         this.callback?.();
     }
 
     isComplete(): boolean {
-        if (!this.hasTarget) return true;
-        return serverTime.now() - this.lastChange >= serverTime.serverDt;
+        if (!this.hasSegment) return true;
+        return serverTime.now() - this.startedAt >= INTERP_MS * (1 + EXTRAP);
     }
 }
 
 export type RotationState = number;
 
-/** Same model as position: previous target → latest over raw serverDt. */
+/** Same model as position: visual → latest over a fixed tick. */
 export class RotationStates {
-    private last: RotationState = 0;
+    private from: RotationState = 0;
+    private to: RotationState = 0;
     private current: RotationState = 0;
-    private next: RotationState = 0;
-    private hasNext = false;
-    callback?: () => void;
+    private hasSegment = false;
+    private startedAt = serverTime.now();
 
-    private lastUpdateTime = serverTime.now();
+    callback?: () => void;
 
     constructor(callback?: () => void) {
         this.callback = callback;
     }
 
-    interpolate(): number {
-        if (!this.hasNext) return this.last;
+    interpolate(now = serverTime.now()): number {
+        if (!this.hasSegment) return this.current;
 
-        const t = Math.min(
-            (serverTime.now() - this.lastUpdateTime) / serverTime.serverDt,
-            1
-        );
-        this.current = rotationLerp(this.last, this.next, t);
+        const t = Math.min((now - this.startedAt) / SERVER_TICK_MS, 1);
+        this.current = rotationLerp(this.from, this.to, t);
         return this.current;
     }
 
     isComplete(): boolean {
-        if (!this.hasNext) return true;
-        return serverTime.now() - this.lastUpdateTime >= serverTime.serverDt;
+        if (!this.hasSegment) return true;
+        return serverTime.now() - this.startedAt >= SERVER_TICK_MS;
     }
 
     set(state: RotationState) {
-        this.last = this.hasNext ? this.next : state;
-        this.next = state;
-        this.hasNext = true;
-        this.lastUpdateTime = serverTime.now();
+        if (!this.hasSegment) {
+            this.snap(state);
+            return;
+        }
+        this.from = this.current;
+        this.to = state;
+        this.startedAt = serverTime.now();
         this.callback?.();
     }
 
     /** Jump to a rotation with no interpolation (local look prediction). */
     snap(state: RotationState) {
-        this.last = state;
+        this.from = state;
         this.current = state;
-        this.next = state;
-        this.hasNext = true;
-        this.lastUpdateTime = serverTime.now();
+        this.to = state;
+        this.hasSegment = true;
+        this.startedAt = serverTime.now();
         this.callback?.();
     }
 }

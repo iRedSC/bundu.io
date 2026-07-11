@@ -57,13 +57,13 @@ export default class GameObject {
             this.container.renderable = true;
             this.debug.renderable = true;
         });
-        this.positionStates.probeId = id;
         this.positionStates.set({
             x: pos.x,
             y: pos.y,
         });
 
         this.rotationStates = new RotationStates();
+        this.rotationStates.snap(rotation);
         this.container.rotation = rotation;
 
         this.animations = new Map();

@@ -59,8 +59,7 @@ export class InputController {
         const player = this.facade.getLocalPlayer();
         if (!player) return;
 
-        // Screen-space look: zoom/peek must not change aim under a fixed cursor.
-        // Matches the peek camera (player screen pos is zoom-independent).
+        // Screen-space look: zoom must not change aim under a fixed cursor.
         const rotation =
             Math.atan2(
                 mousePos[1] - window.innerHeight / 2,

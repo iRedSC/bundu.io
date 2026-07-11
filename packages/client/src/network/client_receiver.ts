@@ -1,7 +1,5 @@
 import { type SerializedPacket, type Serializer } from "@bundu/shared";
 import type { ServerPacketMap } from "@bundu/shared/packet_definitions";
-import { serverTime } from "@client/globals";
-import { movementProbe } from "../world/movement_probe";
 
 export type SerializedPacketArray = [number, ...SerializedPacket[]];
 
@@ -33,9 +31,6 @@ export class ClientPacketReceiver<
 
     process(packets: SerializedPacketArray) {
         const [timestamp, ...rest] = packets;
-        // Measure inter-batch gap for movement lerps; batch timestamp is unused.
-        serverTime.noteUpdate();
-        movementProbe.noteBatch(performance.now());
 
         for (const packet of rest) {
             try {

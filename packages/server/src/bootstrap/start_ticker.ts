@@ -16,7 +16,8 @@ export async function startTicker(world: World, receiver: TickReceiver) {
 
         receiver.process();
 
-        world.update();
+        // Exactly one fixed sim step per flush — never 0/2/3 catch-up moves.
+        world.step(SERVER_TICK_MS);
 
         playerPacketManager.process(
             world.query([PlayerData]),

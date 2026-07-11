@@ -1,4 +1,4 @@
-import { decodeFromBlob } from "../network/decode";
+import { decodePacketData } from "../network/decode";
 import type { SerializedPacketArray } from "../network/client_receiver";
 import { serializer } from "../network/serializer";
 import { Socket } from "../network/socket";
@@ -71,9 +71,13 @@ export class GameSession {
         );
         this.socket = next;
 
-        next.onmessage = async (ev) => {
-            const data = await decodeFromBlob(ev.data);
+        next.onmessage = (ev) => {
             if (this.socket !== next) return;
+            const raw = ev.data;
+            if (!(raw instanceof ArrayBuffer) && !ArrayBuffer.isView(raw)) {
+                return;
+            }
+            const data = decodePacketData(raw);
             if (!isPacketArray(data)) return;
             this.receiver.process(data);
         };

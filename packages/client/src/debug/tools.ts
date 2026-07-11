@@ -1,7 +1,6 @@
 import type { Container } from "pixi.js";
 import { getNumericId } from "@bundu/shared/id_map";
 import { registerAttackHitboxDrawer } from "./attack_hitbox";
-import { MovementWatcher } from "./movement_watcher";
 import { registerObjectDebugFactory } from "./object_debug";
 import {
     createObjectDebug,
@@ -58,11 +57,6 @@ const TOOLS_CSS = `
 export type ClientDebugHandle = {
     /** Structure id to place on left-click, or null when the tool is off. */
     getPlaceStructureId(): number | null;
-    /** Sample local-player rendered position each frame (no-op when watcher off). */
-    sampleMovement(
-        pos: { x: number; y: number } | null,
-        playerId?: number
-    ): void;
 };
 
 function bindToggle(
@@ -109,21 +103,14 @@ export function mountClientDebug(viewport: Container): ClientDebugHandle {
         <button id="debug-place-wood-wall" class="debug-tool-btn" type="button" aria-pressed="false">
             Place wood wall: Off
         </button>
-        <button id="debug-movement-watch" class="debug-tool-btn" type="button" aria-pressed="false">
-            Movement watch: Off
-        </button>
     `;
     document.body.appendChild(panel);
 
     let placeWoodWall = false;
-    const movementWatcher = new MovementWatcher();
 
     const debugToggle = panel.querySelector<HTMLButtonElement>("#debug-toggle");
     const placeToggle = panel.querySelector<HTMLButtonElement>(
         "#debug-place-wood-wall"
-    );
-    const movementToggle = panel.querySelector<HTMLButtonElement>(
-        "#debug-movement-watch"
     );
 
     if (debugToggle) {
@@ -136,15 +123,8 @@ export function mountClientDebug(viewport: Container): ClientDebugHandle {
             placeWoodWall = active;
         });
     }
-    if (movementToggle) {
-        bindToggle(movementToggle, "Movement watch", false, (active) => {
-            movementWatcher.setActive(active);
-        });
-    }
 
     return {
         getPlaceStructureId: () => (placeWoodWall ? WOOD_WALL_ID : null),
-        sampleMovement: (pos, playerId) =>
-            movementWatcher.sample(pos, playerId ?? -1),
     };
 }

@@ -26,10 +26,6 @@ const GAME_WS_URL =
 
 type ClientDebugHandle = {
     getPlaceStructureId(): number | null;
-    sampleMovement(
-        pos: { x: number; y: number } | null,
-        playerId?: number
-    ): void;
 };
 
 const app = new Application<Renderer<HTMLCanvasElement>>();
@@ -65,7 +61,6 @@ async function main() {
     // Debug tools / overlay — omitted entirely from prod bundles.
     let debug: ClientDebugHandle = {
         getPlaceStructureId: () => null,
-        sampleMovement: () => {},
     };
     if (__DEBUG__) {
         const { mountClientDebug } = await import("./debug/tools");
@@ -172,14 +167,6 @@ async function main() {
         world.tick();
         AnimationManagers.UI.update();
         gui.tick();
-
-        const local = world.objects.get(world.user ?? -1);
-        debug.sampleMovement(
-            local instanceof Player
-                ? { x: local.position.x, y: local.position.y }
-                : null,
-            world.user ?? -1
-        );
     });
 }
 
