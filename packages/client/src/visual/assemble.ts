@@ -21,11 +21,10 @@ export function assemble(def: ObjectDef, root: Container): AssembledObject {
         if (part.zIndex !== undefined) nodeRoot.zIndex = part.zIndex;
         if (part.pivot) nodeRoot.pivot.set(part.pivot.x, part.pivot.y);
 
-        const visual = SpriteFactory.build(part.sprite, {
-            scale: part.spriteScale ?? 1,
-        });
+        const visual = SpriteFactory.build(part.sprite);
         const anchor = part.anchor ?? { x: 0.5, y: 0.5 };
         visual.anchor.set(anchor.x, anchor.y);
+        visual.scale.set(part.spriteScale ?? 1);
         if (part.alpha !== undefined) visual.alpha = part.alpha;
         if (part.visible === false) visual.renderable = false;
 
@@ -35,11 +34,16 @@ export function assemble(def: ObjectDef, root: Container): AssembledObject {
             const attachAnchor = part.attachAnchor ?? { x: 0.5, y: 0.5 };
             attach.anchor.set(attachAnchor.x, attachAnchor.y);
             attach.renderable = false;
-            // Attach under visual so the limb draws on top.
-            nodeRoot.addChild(attach);
         }
 
-        nodeRoot.addChild(visual);
+        // Default: attach under visual (item under hand). attachAbove: helmet on body.
+        if (part.attachAbove) {
+            nodeRoot.addChild(visual);
+            if (attach) nodeRoot.addChild(attach);
+        } else {
+            if (attach) nodeRoot.addChild(attach);
+            nodeRoot.addChild(visual);
+        }
 
         const parent = part.parent ? parts.get(part.parent)?.root : root;
         if (!parent) {

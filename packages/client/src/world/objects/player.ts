@@ -117,6 +117,7 @@ export class Player extends GameObject implements AnimContext {
 
         attach.renderable = true;
         SpriteFactory.update(attach, config[slot.def.display], itemId);
+        if (slot.def.scale != null) attach.scale.set(slot.def.scale);
         if (slot.def.mirrorX) attach.x = -attach.x;
     }
 

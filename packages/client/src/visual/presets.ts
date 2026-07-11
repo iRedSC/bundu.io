@@ -116,41 +116,6 @@ export function wave(nodes: PartNode[]) {
     return animation;
 }
 
-/** Continuous Z rotation on the first part. */
-export function spin(nodes: PartNode[], rpm = 20) {
-    const target = nodes[0]?.root;
-    if (!target) return new Animation();
-
-    const animation = new Animation();
-    let last = 0;
-    animation.keyframes[0] = (a) => {
-        if (a.isFirstKeyframe) {
-            last = Date.now();
-            a.goto(0, 1000);
-        }
-        const now = Date.now();
-        target.rotation += ((now - last) / 1000) * ((rpm * Math.PI * 2) / 60);
-        last = now;
-        if (a.keyframeEnded) a.goto(0, 1000);
-    };
-    return animation;
-}
-
-/** Light alpha flicker on part visuals (campfire flame). */
-export function flicker(nodes: PartNode[]) {
-    const visuals = nodes.map((n) => n.visual);
-    const animation = new Animation();
-
-    animation.keyframes[0] = (a) => {
-        if (a.isFirstKeyframe) a.goto(0, 120);
-        const pulse = 0.75 + 0.25 * Math.sin(a.t * Math.PI);
-        for (const v of visuals) v.alpha = pulse;
-        if (a.keyframeEnded) a.goto(0, random.integer(80, 160));
-    };
-
-    return animation;
-}
-
 function limbRoots(nodes: PartNode[]) {
     const left = nodes[0]?.root;
     const right = nodes[1]?.root;
@@ -268,10 +233,6 @@ export function createPreset(
             return sizeTarget ? hitSize(sizeTarget) : hit(nodes[0]!);
         case "wave":
             return wave(nodes);
-        case "spin":
-            return spin(nodes);
-        case "flicker":
-            return flicker(nodes);
         case "attack":
             return attack(nodes, ctx);
         case "block":

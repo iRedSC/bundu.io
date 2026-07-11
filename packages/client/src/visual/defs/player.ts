@@ -8,7 +8,7 @@ export const playerDef: ObjectDef = {
         {
             name: "leftHand",
             sprite: "hand",
-            scale: 0.7,
+            scale: 0.5,
             pivot: { x: 1, y: 0 },
             spriteScale: 0.5,
             attach: true,
@@ -17,7 +17,7 @@ export const playerDef: ObjectDef = {
         {
             name: "rightHand",
             sprite: "hand",
-            scale: 0.7,
+            scale: 0.5,
             pivot: { x: -1, y: 0 },
             spriteScale: 0.5,
             attach: true,
@@ -28,6 +28,7 @@ export const playerDef: ObjectDef = {
             name: "body",
             sprite: "player",
             attach: true,
+            attachAbove: true,
             zIndex: 2,
         },
         {
@@ -39,8 +40,13 @@ export const playerDef: ObjectDef = {
         },
     ],
     slots: {
-        mainhand: { part: "leftHand", display: "hand_display" },
-        offhand: { part: "rightHand", display: "hand_display", mirrorX: true },
+        mainhand: { part: "leftHand", display: "hand_display", scale: 5 },
+        offhand: {
+            part: "rightHand",
+            display: "hand_display",
+            mirrorX: true,
+            scale: 1.8,
+        },
         helmet: { part: "body", display: "body_display" },
     },
     animations: [

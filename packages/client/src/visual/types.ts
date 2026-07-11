@@ -18,10 +18,12 @@ export type PartDef = PartPose & {
     /** Parent part name; omit to attach to object root. */
     parent?: string;
     anchor?: { x: number; y: number };
-    /** Scale passed to SpriteFactory for the visual. */
+    /** ContaineredSprite.scale on the visual (not SpriteFactory normalize). */
     spriteScale?: number;
     /** Create a hidden attach child for equipment / overlays. */
     attach?: boolean;
+    /** Draw attach above the visual (helmet); default is under (items under hands). */
+    attachAbove?: boolean;
     /** Anchor for the attach child (e.g. offhand grip). */
     attachAnchor?: { x: number; y: number };
     alpha?: number;
@@ -36,16 +38,11 @@ export type SlotDef = {
     display: SlotDisplay;
     /** Flip display x after apply (offhand). */
     mirrorX?: boolean;
+    /** Scale applied to the attach node after SpriteFactory.update. */
+    scale?: number;
 };
 
-export type AnimPreset =
-    | "hurt"
-    | "hit"
-    | "wave"
-    | "spin"
-    | "flicker"
-    | "attack"
-    | "block";
+export type AnimPreset = "hurt" | "hit" | "wave" | "attack" | "block";
 
 export type AnimDef = {
     id: number;
