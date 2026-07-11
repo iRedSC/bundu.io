@@ -123,19 +123,17 @@ async function main() {
         isOverInventory: () => gui.inventory.isInteracting,
     });
 
-    gui.inventory.onSelect = (slot) => {
+    gui.inventory.isLocked = () => {
         const local = world.objects.get(world.user ?? -1);
-        if (local instanceof Player && local.isCrafting) return;
+        return local instanceof Player && local.isCrafting;
+    };
+    gui.inventory.onSelect = (slot) => {
         session.sendPacket(ClientPacket.SelectItem, { slot });
     };
     gui.inventory.onMove = (from, to) => {
-        const local = world.objects.get(world.user ?? -1);
-        if (local instanceof Player && local.isCrafting) return;
         session.sendPacket(ClientPacket.MoveSlot, { from, to });
     };
     gui.inventory.onCursor = (slot, mode) => {
-        const local = world.objects.get(world.user ?? -1);
-        if (local instanceof Player && local.isCrafting) return;
         session.sendPacket(ClientPacket.CursorSlot, { slot, mode });
     };
     gui.inventory.getDropTargetGlobal = () => {

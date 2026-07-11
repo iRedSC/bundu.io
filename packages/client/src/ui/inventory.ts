@@ -110,6 +110,8 @@ export class Inventory {
     onSelect?: SelectCB;
     onMove?: MoveCB;
     onCursor?: CursorCB;
+    /** When true, pointer/drag/cursor handlers skip local mutations. */
+    isLocked?: () => boolean;
     /** Global/stage position where world drops should fly (e.g. local player). */
     getDropTargetGlobal?: () => { x: number; y: number } | null;
 
@@ -188,8 +190,13 @@ export class Inventory {
         button.disableSprite.visible = false;
     }
 
+    private locked(): boolean {
+        return this.isLocked?.() ?? false;
+    }
+
     private wireButton(button: InventoryButton, slot: number) {
         button.button.onpointerdown = (ev) => {
+            if (this.locked()) return;
             this.lastPointer = { x: ev.clientX, y: ev.clientY };
             if (ev.button === 0) {
                 this.dragFrom = slot;
@@ -213,13 +220,15 @@ export class Inventory {
 
         button.button.onpointerup = (ev) => {
             if (ev.button === 2) {
-                this.handleCursorSlot(
-                    slot,
-                    placeModeFromModifiers(
-                        ev.shiftKey,
-                        ev.ctrlKey || ev.metaKey
-                    )
-                );
+                if (!this.locked()) {
+                    this.handleCursorSlot(
+                        slot,
+                        placeModeFromModifiers(
+                            ev.shiftKey,
+                            ev.ctrlKey || ev.metaKey
+                        )
+                    );
+                }
                 button.rightDown = false;
                 button.down = false;
             }
@@ -228,6 +237,8 @@ export class Inventory {
 
     private onWindowPointerMove = (ev: PointerEvent) => {
         this.lastPointer = { x: ev.clientX, y: ev.clientY };
+
+        if (this.locked()) return;
 
         if (this.dragFrom !== null && !this.dragging) {
             const dx = ev.clientX - this.dragStart.x;
@@ -244,6 +255,15 @@ export class Inventory {
     };
 
     private onWindowPointerUp = (ev: PointerEvent) => {
+        if (this.locked()) {
+            this.abortDrag();
+            for (const button of this.buttons) {
+                button.down = false;
+                button.rightDown = false;
+            }
+            return;
+        }
+
         if (ev.button === 2 && this.hoverSlot === null && this.cursor) {
             this.handleCursorSlot(
                 -1,
@@ -279,6 +299,16 @@ export class Inventory {
         this.dragFrom = null;
         this.dragging = false;
         this.dragStack = null;
+    }
+
+    /** Cancel an in-progress drag without mutating slots. */
+    private abortDrag() {
+        const from = this.dragFrom;
+        if (from !== null && this.dragStack) {
+            this.buttons[from]?.setStack(this.slots[from] ?? null);
+            this.syncGhostToCursor();
+        }
+        this.clearDrag();
     }
 
     private pointerLocal(): { x: number; y: number } {
@@ -406,6 +436,7 @@ export class Inventory {
      * Cursor pick / place / swap with fly animations.
      */
     private handleCursorSlot(slot: number, mode: PlaceModeType) {
+        if (this.locked()) return;
         const pointer = this.pointerLocal();
 
         // Pick up from slot into cursor.
