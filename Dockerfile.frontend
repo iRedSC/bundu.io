@@ -26,6 +26,8 @@ FROM oven/bun:1.3.0-slim AS runtime
 WORKDIR /app
 
 ENV PORT=3000
+# Hot-reload / debug endpoints stay off in the shipped image.
+ENV BUNDU_DEBUG=0
 
 COPY --from=build /app/static-server.ts ./static-server.ts
 COPY --from=build /app/public ./public

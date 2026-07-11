@@ -71,6 +71,13 @@ async function main() {
     const world = new World(viewport);
     setupPacketReceiving(receiver, world);
 
+    if (__DEBUG__) {
+        const { startConfigHotReload } = await import(
+            "./debug/config_hot_reload"
+        );
+        startConfigHotReload(world);
+    }
+
     // * GUI
     const gui = createUI();
     app.stage.addChild(gui.container);

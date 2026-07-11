@@ -35,6 +35,15 @@ async function rebuildClient(): Promise<void> {
     }
 }
 
+function isClientConfigYaml(
+    watchRoot: string,
+    filename: string | null
+): boolean {
+    if (!filename || !/\.ya?ml$/i.test(filename)) return false;
+    if (watchRoot !== "packages/client") return false;
+    return filename.replace(/\\/g, "/").startsWith("src/configs/");
+}
+
 function startServer(): Subprocess {
     console.log("[dev] starting game server…");
     return spawn({
@@ -83,7 +92,7 @@ staticProc = spawn({
     cmd: ["bun", "static-server.ts", "--hot"],
     stdout: "inherit",
     stderr: "inherit",
-    env: process.env,
+    env: { ...process.env, BUNDU_DEBUG: "1" },
 });
 
 const clientWatchTargets = [
@@ -97,7 +106,9 @@ const clientWatchTargets = [
 
 let clientDebounce: Timer | undefined;
 for (const target of clientWatchTargets) {
-    watch(target, { recursive: true }, () => {
+    watch(target, { recursive: true }, (_event, filename) => {
+        // Display YAML is hot-reloaded in-browser via the static server SSE.
+        if (isClientConfigYaml(target, filename)) return;
         clearTimeout(clientDebounce);
         clientDebounce = setTimeout(() => {
             void rebuildClient();

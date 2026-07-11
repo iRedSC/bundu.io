@@ -1,9 +1,10 @@
 /**
- * Client-only debug tooling (overlay grid, hitboxes, Debug tools panel).
+ * Client-only debug tooling (overlay grid, hitboxes, Debug tools panel,
+ * display-config hot-reload).
  *
  * Prod entry must not statically import this barrel — use a `__DEBUG__`-guarded
- * dynamic `import("./debug/tools")` from the client entry so Bun can omit the
- * whole tree from production bundles.
+ * dynamic `import("./debug/tools")` / `import("./debug/config_hot_reload")`
+ * from the client entry so Bun can omit the whole tree from production bundles.
  */
 export { DEBUG } from "./flag";
 export { createObjectDebug, registerObjectDebugFactory } from "./object_debug";

@@ -39,6 +39,8 @@ export class Player extends GameObject implements AnimContext {
 
     private craftDuration = 0;
     private craftEndsAt = 0;
+    private selectedStructureId = 0;
+    private selectedStructureScale = 0;
 
     /** Client-side look prediction; snaps immediately (no lerp flicker). */
     predictLook(rotation: number): number {
@@ -184,6 +186,9 @@ export class Player extends GameObject implements AnimContext {
     }
 
     setSelectedStructure(id: number, visualScale: number) {
+        this.selectedStructureId = id;
+        this.selectedStructureScale = visualScale;
+
         const ghost = this.parts.get("placementGhost");
         if (!ghost) return;
 
@@ -201,5 +206,14 @@ export class Player extends GameObject implements AnimContext {
             name
         );
         ghost.root.pivot.set(0, -1 * ghost.visual.scale.x);
+    }
+
+    /** Placement ghost selection, if any. */
+    getStructureGhost(): { id: number; scale: number } | null {
+        if (!this.selectedStructureId) return null;
+        return {
+            id: this.selectedStructureId,
+            scale: this.selectedStructureScale,
+        };
     }
 }
