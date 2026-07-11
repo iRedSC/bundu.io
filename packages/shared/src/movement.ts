@@ -1,3 +1,12 @@
+/** World units applied per server movement tick at base speed. */
+export const PLAYER_MOVE_SPEED = 16;
+
+/** Server simulation / net flush rate. */
+export const SERVER_TPS = 20;
+
+/** Server movement / tick cadence (ms). */
+export const SERVER_TICK_MS = 1000 / SERVER_TPS;
+
 /** Client axis: 0 = negative, 1 = idle, 2 = positive. */
 export type MoveAxis = 0 | 1 | 2;
 
@@ -6,12 +15,6 @@ export type MoveVectorComponent = -1 | 0 | 1;
 
 export type MoveAxes = readonly [MoveAxis, MoveAxis];
 export type MoveVector = readonly [MoveVectorComponent, MoveVectorComponent];
-
-/** World units applied per server movement tick at base speed. */
-export const PLAYER_MOVE_SPEED = 16;
-
-/** Server movement / tick cadence (ms). */
-export const SERVER_TICK_MS = 50;
 
 function clampAxis(value: number): MoveAxis {
     if (value <= 0) return 0;

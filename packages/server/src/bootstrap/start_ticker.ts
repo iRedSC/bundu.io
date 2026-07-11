@@ -1,7 +1,6 @@
+import { SERVER_TICK_MS } from "@bundu/shared";
 import type { World } from "../engine";
 import { PlayerData } from "../components/player";
-
-const TICK_INTERVAL = 50;
 
 type TickReceiver = {
     process(): void;
@@ -29,6 +28,6 @@ export async function startTicker(world: World, receiver: TickReceiver) {
         receiver.clear();
 
         const elapsed = performance.now() - start;
-        await Bun.sleep(Math.max(0, TICK_INTERVAL - elapsed));
+        await Bun.sleep(Math.max(0, SERVER_TICK_MS - elapsed));
     }
 }

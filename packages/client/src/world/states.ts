@@ -1,5 +1,6 @@
 import { lerp, rotationLerp } from "@bundu/shared";
 import { serverTime } from "@client/globals";
+import { movementProbe } from "./movement_probe";
 
 export interface PositionState {
     x: number;
@@ -7,9 +8,11 @@ export interface PositionState {
 }
 
 /**
- * Suroi-style movement smoothing: lerp previous packet target → latest
- * over the measured inter-batch interval (`serverTime.serverDt`).
- * No snapshot buffer, no render delay, no clock sync.
+ * Literal Suroi movement smoothing:
+ * - old = previous packet *target* (not the mid-lerp visual)
+ * - duration = raw measured inter-batch `serverTime.serverDt`
+ * - t clamped to 1 (hold until the next packet)
+ * No pad, no extrapolation, no duration clamping.
  */
 export class PositionStates {
     private old: PositionState = { x: 0, y: 0 };
@@ -17,6 +20,8 @@ export class PositionStates {
     private current: PositionState = { x: 0, y: 0 };
     private lastChange = 0;
     private hasTarget = false;
+    /** Optional object id for movementProbe (debug hitch watcher). */
+    probeId = -1;
 
     callback?: () => void;
 
@@ -32,10 +37,17 @@ export class PositionStates {
             x: lerp(this.old.x, this.target.x, t),
             y: lerp(this.old.y, this.target.y, t),
         };
+        if (this.probeId >= 0) {
+            movementProbe.noteLerp(this.probeId, t, false);
+        }
         return this.current;
     }
 
     set(state: PositionState) {
+        const span = this.hasTarget
+            ? Math.hypot(state.x - this.target.x, state.y - this.target.y)
+            : 0;
+
         if (this.hasTarget) {
             this.old = { x: this.target.x, y: this.target.y };
         } else {
@@ -45,6 +57,15 @@ export class PositionStates {
         this.target = { x: state.x, y: state.y };
         this.lastChange = serverTime.now();
         this.hasTarget = true;
+
+        if (this.probeId >= 0) {
+            movementProbe.notePos(
+                this.probeId,
+                span,
+                serverTime.serverDt,
+                this.lastChange
+            );
+        }
         this.callback?.();
     }
 
@@ -56,6 +77,7 @@ export class PositionStates {
 
 export type RotationState = number;
 
+/** Same model as position: previous target → latest over raw serverDt. */
 export class RotationStates {
     private last: RotationState = 0;
     private current: RotationState = 0;

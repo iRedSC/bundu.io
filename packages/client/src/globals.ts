@@ -1,10 +1,8 @@
 import { SERVER_TICK_MS } from "@bundu/shared";
 
 /**
- * Client timing for movement smoothing (Suroi-style).
- * `serverDt` is the measured gap between the last two inbound batches —
- * position/rotation lerps use that as their duration, so jitter stretches
- * the next tween instead of emptying a snapshot buffer.
+ * Client timing for literal Suroi-style movement smoothing.
+ * `serverDt` is the raw gap between the last two inbound batches.
  */
 export const serverTime = {
     /** Milliseconds between the last two received server batches. */
