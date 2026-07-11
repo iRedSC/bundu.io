@@ -21,9 +21,10 @@ import { GameObject, System, type World } from "../engine";
 import { Attributes } from "../components/attributes.js";
 import { emitVitals } from "../network/vitals.js";
 import {
+    clearMissingEquipment,
     emitEquipment,
     emitInventory,
-    syncMainHand,
+    selectEquipment,
 } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
@@ -134,6 +135,22 @@ export class PlayerSystem extends System<GameEventMap> {
         if (emit) this.emitCraftEvent(player, 0);
     }
 
+    /** Cancel block if equipment no longer grants `health.defense.blocking`. */
+    private clearStaleBlocking(player: GameObject) {
+        const data = PlayerData.get(player);
+        if (!data?.blocking) return;
+        const blocking =
+            Attributes.get(player)?.get("health.defense.blocking") ?? 0;
+        if (blocking > 0) return;
+
+        data.blocking = false;
+        Attributes.get(player)?.clear("blocking");
+        this.world.context.worldPacketManager.emit(ServerPacket.BlockEvent, {
+            id: player.id,
+            stop: true,
+        });
+    }
+
     private finishCraft(player: GameObject) {
         const data = PlayerData.get(player);
         const crafting = data?.crafting;
@@ -158,7 +175,8 @@ export class PlayerSystem extends System<GameEventMap> {
 
         data.score += recipe.score;
 
-        syncMainHand(player);
+        clearMissingEquipment(player);
+        this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
@@ -245,16 +263,18 @@ export class PlayerSystem extends System<GameEventMap> {
         if (data.crafting) return;
         const attributes = player.get(Attributes);
         const blocking = attributes.get("health.defense.blocking");
-        if (!stop && data.attacking) {
-            data.attacking = false;
-        }
-        data.blocking = !stop;
-        if (data.blocking && blocking > 0) {
+
+        if (!stop) {
+            if (!(blocking > 0)) return;
+            if (data.attacking) data.attacking = false;
+            data.blocking = true;
             attributes?.set("movement.speed", "blocking", "multiply", 0.6);
             attributes?.set("health.defense", "blocking", "add", blocking);
         } else {
+            data.blocking = false;
             attributes?.clear("blocking");
         }
+
         this.world.context.worldPacketManager.emit(ServerPacket.BlockEvent, {
             id: player.id,
             stop,
@@ -270,7 +290,8 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!inv || slot < 0 || slot >= inv.slots.length) return;
 
         inv.selected = slot;
-        syncMainHand(player);
+        selectEquipment(player, inv.slots[slot]?.id);
+        this.clearStaleBlocking(player);
         emitEquipment(player, this.world.context.worldPacketManager);
     };
 
@@ -283,7 +304,8 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!inv) return;
         if (!applyMoveSlot(inv, from, to)) return;
 
-        syncMainHand(player);
+        clearMissingEquipment(player);
+        this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
@@ -306,7 +328,8 @@ export class PlayerSystem extends System<GameEventMap> {
                 : PlaceMode.All;
         if (!applyCursorSlot(inv, slot, placeMode)) return;
 
-        syncMainHand(player);
+        clearMissingEquipment(player);
+        this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
@@ -345,7 +368,8 @@ export class PlayerSystem extends System<GameEventMap> {
             const { playerPacketManager, worldPacketManager } =
                 this.world.context;
             emitInventory(player, playerPacketManager);
-            syncMainHand(player);
+            clearMissingEquipment(player);
+            this.clearStaleBlocking(player);
             emitEquipment(player, worldPacketManager);
             return;
         }

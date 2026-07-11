@@ -1,0 +1,65 @@
+book:
+    type: book
+
+resource_book:
+    type: book
+
+time_book:
+    type: book
+
+bird_skull:
+    type: book
+    function: off_hand
+    attributes:
+        attack.damage:
+            op: add
+            value: 5
+        health.regen_amount:
+            op: multiply
+            value: 0
+
+bird_foot:
+    type: book
+    function: off_hand
+    attributes:
+        attack.damage.animal:
+            op: add
+            value: 15
+
+canteen:
+    type: book
+    function: off_hand
+    attributes:
+        water.depletion_amount:
+            op: multiply
+            value: .75
+
+bananna:
+    type: book
+    function: off_hand
+    attributes:
+        hunger.depletion_amount:
+            op: multiply
+            value: .75
+
+amethyst_medallion:
+    type: book
+    function: off_hand
+    attributes:
+        health.defense:
+            op: add
+            value: 2
+
+ruby_medallion:
+    type: book
+    function: off_hand
+    attributes:
+        health.regen_amount:
+            op: add
+            value: 15
+        hunger.depletion_amount:
+            op: add
+            value: 30
+        health.max:
+            op: multiply
+            value: .7

@@ -1,0 +1,134 @@
+helmet:
+    function: wear
+
+hat:
+    function: wear
+
+pickaxe:
+    function: main_hand
+    attributes:
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
+
+knife:
+    function: main_hand
+    attributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
+
+sword:
+    function: main_hand
+    attributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
+        attack.origin:
+            op: add
+            value: 15
+        attack.reach:
+            op: add
+            value: 15
+        attack.sweep:
+            op: add
+            value: 30
+
+book:
+    function: off_hand
+
+building:
+    function: building
+
+food:
+    function: consume
+
+spear:
+    function: main_hand
+    attributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
+        attack.reach:
+            op: add
+            value: 15
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 45
+
+hammer:
+    function: main_hand
+    attributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
+
+axe:
+    function: main_hand
+    attributes:
+        movement.speed:
+            op: multiply
+            value: 0.8
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
+
+shovel:
+    function: main_hand
+    attributes:
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
+
+wrench:
+    function: main_hand
+    attributes:
+        attack.reach:
+            op: add
+            value: 10
+        attack.sweep:
+            op: add
+            value: 30
+        attack.origin:
+            op: add
+            value: 15
+
