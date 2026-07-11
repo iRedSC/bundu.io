@@ -1,4 +1,8 @@
-import { lerp, rotationLerp } from "@bundu/shared";
+import {
+    SERVER_TICK_MS,
+    lerp,
+    rotationLerp,
+} from "@bundu/shared";
 import { serverTime } from "@client/globals";
 
 export interface PositionState {
@@ -6,14 +10,19 @@ export interface PositionState {
     y: number;
 }
 
-export class PositionStates {
-    private last: PositionState = { x: 0, y: 0 };
-    private current: PositionState = this.last;
-    private next?: PositionState;
+type Snapshot = PositionState & { time: number };
 
-    private lastUpdateTime: number = serverTime.now();
-    private lastFrameTime: number = serverTime.now();
-    private readonly smoothingMs = 80;
+const MAX_SNAPSHOTS = 32;
+/** Keep updating briefly after the newest snapshot so a late packet can extend the path. */
+const HOLD_AFTER_MS = SERVER_TICK_MS;
+
+/**
+ * Snapshot-buffer interpolation for all entities (local and remote).
+ * Renders at serverTime.now() (already delayed) between two stamped samples.
+ */
+export class PositionStates {
+    private current: PositionState = { x: 0, y: 0 };
+    private snapshots: Snapshot[] = [];
 
     callback?: () => void;
 
@@ -22,34 +31,72 @@ export class PositionStates {
     }
 
     interpolate(now = serverTime.now()): { x: number; y: number } {
-        if (!this.next) return this.last;
+        const snaps = this.snapshots;
+        if (snaps.length === 0) return this.current;
 
-        const elapsed = Math.max(0, now - this.lastFrameTime);
-        this.lastFrameTime = now;
-        const t = 1 - Math.exp(-elapsed / this.smoothingMs);
+        const first = snaps[0]!;
+        if (snaps.length === 1) {
+            this.current = { x: first.x, y: first.y };
+            return this.current;
+        }
+
+        const latest = snaps[snaps.length - 1]!;
+
+        if (now <= first.time) {
+            this.current = { x: first.x, y: first.y };
+            return this.current;
+        }
+        if (now >= latest.time) {
+            this.current = { x: latest.x, y: latest.y };
+            return this.current;
+        }
+
+        let i = 0;
+        while (i < snaps.length - 1 && snaps[i + 1]!.time < now) i++;
+        const a = snaps[i]!;
+        const b = snaps[i + 1]!;
+        const span = b.time - a.time;
+        const t = span > 0 ? (now - a.time) / span : 1;
 
         this.current = {
-            x: lerp(this.current.x, this.next.x, t),
-            y: lerp(this.current.y, this.next.y, t),
+            x: lerp(a.x, b.x, t),
+            y: lerp(a.y, b.y, t),
         };
         return this.current;
     }
 
-    set(state: PositionState) {
-        if (!this.next) this.current = state;
-        this.last = this.current;
-        this.next = state;
-        this.lastUpdateTime = serverTime.now();
-        this.lastFrameTime = this.lastUpdateTime;
+    /** @param time Server batch timestamp (same clock as serverTime sync). */
+    set(state: PositionState, time = serverTime.now() + serverTime.renderDelay) {
+        const snaps = this.snapshots;
+        const last = snaps.length > 0 ? snaps[snaps.length - 1] : undefined;
+
+        if (last && time < last.time) {
+            // Out-of-order; ignore.
+            return;
+        }
+        if (last && time === last.time) {
+            snaps[snaps.length - 1] = { ...state, time };
+        } else {
+            snaps.push({ ...state, time });
+        }
+        while (snaps.length > MAX_SNAPSHOTS) snaps.shift();
+
+        // Drop samples that are far behind the render point.
+        const renderTime = serverTime.now();
+        while (snaps.length > 2 && snaps[1]!.time < renderTime - SERVER_TICK_MS) {
+            snaps.shift();
+        }
+
+        if (snaps.length === 1) {
+            this.current = { x: state.x, y: state.y };
+        }
         this.callback?.();
     }
 
     isComplete(): boolean {
-        return (
-            !!this.next &&
-            Math.abs(this.current.x - this.next.x) < 0.001 &&
-            Math.abs(this.current.y - this.next.y) < 0.001
-        );
+        if (this.snapshots.length === 0) return true;
+        const latest = this.snapshots[this.snapshots.length - 1]!;
+        return serverTime.now() >= latest.time + HOLD_AFTER_MS;
     }
 }
 

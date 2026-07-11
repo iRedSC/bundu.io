@@ -20,34 +20,36 @@ describe("worldToDeci / deciToWorld", () => {
     }
   });
 
-  test("worldToDeci converts exact decitile world positions", () => {
+  test("worldToDeci converts exact quantum world positions", () => {
     expect(worldToDeci(0)).toBe(0);
-    expect(worldToDeci(10)).toBe(1);
-    expect(worldToDeci(100)).toBe(10);
+    expect(worldToDeci(1)).toBe(1);
+    expect(worldToDeci(10)).toBe(10);
+    expect(worldToDeci(100)).toBe(100);
   });
 
-  test("deciToWorld converts integer decitiles to world units", () => {
+  test("deciToWorld converts integer quanta to world units", () => {
     expect(deciToWorld(0)).toBe(0);
-    expect(deciToWorld(1)).toBe(10);
-    expect(deciToWorld(10)).toBe(100);
+    expect(deciToWorld(1)).toBe(1);
+    expect(deciToWorld(10)).toBe(10);
+    expect(deciToWorld(100)).toBe(100);
   });
 
   test("worldToDeci rounds to nearest", () => {
-    expect(worldToDeci(4)).toBe(0);
-    expect(worldToDeci(5)).toBe(1);
-    expect(worldToDeci(14)).toBe(1);
-    expect(worldToDeci(15)).toBe(2);
+    expect(worldToDeci(0.4)).toBe(0);
+    expect(worldToDeci(0.5)).toBe(1);
+    expect(worldToDeci(1.4)).toBe(1);
+    expect(worldToDeci(1.5)).toBe(2);
   });
 });
 
 describe("quantizeWorld", () => {
-  test("snaps to decitile world positions", () => {
+  test("snaps to 1-world-unit positions", () => {
     expect(quantizeWorld(0)).toBe(0);
     expect(quantizeWorld(10)).toBe(10);
-    expect(quantizeWorld(4)).toBe(0);
-    expect(quantizeWorld(5)).toBe(10);
-    expect(quantizeWorld(14)).toBe(10);
-    expect(quantizeWorld(15)).toBe(20);
+    expect(quantizeWorld(0.4)).toBe(0);
+    expect(quantizeWorld(0.5)).toBe(1);
+    expect(quantizeWorld(1.4)).toBe(1);
+    expect(quantizeWorld(1.5)).toBe(2);
   });
 });
 

@@ -99,8 +99,8 @@ export default class GameObject {
         );
     }
 
-    addPosition(state: PositionState): void {
-        this.positionStates.set(state);
+    addPosition(state: PositionState, time?: number): void {
+        this.positionStates.set(state, time);
     }
 
     addRotation(radians: RotationState): void {

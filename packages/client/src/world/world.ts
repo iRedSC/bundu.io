@@ -156,14 +156,17 @@ export class World {
         this.renderer.add(structure.id, ...structure.containers);
     };
 
-    moveObject = (packet: ServerPacket.SetPosition, _now: number) => {
+    moveObject = (packet: ServerPacket.SetPosition, now: number) => {
         const object = this.objects.get(packet.id);
         if (!object) return;
         object.renderable = true;
-        object.addPosition({
-            x: deciToWorld(packet.x),
-            y: deciToWorld(packet.y),
-        });
+        object.addPosition(
+            {
+                x: deciToWorld(packet.x),
+                y: deciToWorld(packet.y),
+            },
+            now
+        );
         this.objects.updating.add(object);
         this.objects.add(object);
     };

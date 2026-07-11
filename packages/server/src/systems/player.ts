@@ -1,5 +1,8 @@
 import { moveToward } from "@bundu/shared/transforms";
-import { decodeMoveDirection } from "@bundu/shared/movement";
+import {
+    decodeMoveDirection,
+    PLAYER_MOVE_SPEED,
+} from "@bundu/shared/movement";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GroundData, Physics } from "../components/base.js";
 import {
@@ -65,11 +68,12 @@ export class PlayerSystem extends System<GameEventMap> {
         if (data.moveDir[0] === 0 && data.moveDir[1] === 0) {
             return;
         }
-        const baseSpeed = 4;
+        // Fixed step per tick (tps-gated); speed lives on the attribute.
+        const speed = attributes?.get("movement.speed") ?? PLAYER_MOVE_SPEED;
         const target = moveToward(
             { x: 0, y: 0 },
             { x: data.moveDir[0], y: data.moveDir[1] },
-            baseSpeed * attributes?.get("movement.speed", baseSpeed)
+            speed
         );
         this.trigger(GameEvent.Move, {
             object: player,

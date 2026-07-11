@@ -7,6 +7,12 @@ export type MoveVectorComponent = -1 | 0 | 1;
 export type MoveAxes = readonly [MoveAxis, MoveAxis];
 export type MoveVector = readonly [MoveVectorComponent, MoveVectorComponent];
 
+/** World units applied per server movement tick at base speed. */
+export const PLAYER_MOVE_SPEED = 16;
+
+/** Server movement / tick cadence (ms). */
+export const SERVER_TICK_MS = 50;
+
 function clampAxis(value: number): MoveAxis {
     if (value <= 0) return 0;
     if (value >= 2) return 2;
@@ -26,6 +32,14 @@ export function decodeMoveDirection(direction: number): MoveVector {
     const y = ((packed & 0b11) - 1) as MoveVectorComponent;
     const x = (((packed >> 2) & 0b11) - 1) as MoveVectorComponent;
     return [x, y];
+}
+
+/** Client axes → server move vector (-1 / 0 / 1). */
+export function vectorFromAxes(axes: MoveAxes): MoveVector {
+    return [
+        (axes[0] - 1) as MoveVectorComponent,
+        (axes[1] - 1) as MoveVectorComponent,
+    ];
 }
 
 /** Map pressed keys to client axes (opposing keys cancel to idle). */

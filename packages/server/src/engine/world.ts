@@ -199,12 +199,16 @@ export class World {
             const elapsedGT = this.gameTime - lastGT;
             if (elapsedGT < interval) continue;
 
+            // Catch up missed steps so a slow tick doesn't skip movement entirely.
+            const steps = Math.min(3, Math.floor(elapsedGT / interval));
             this.systemLastUpdate.set(
                 system.id,
-                this.gameTime - (elapsedGT % interval)
+                lastGT + steps * interval
             );
-            for (const object of objs) {
-                system.update(this.gameTime, elapsedGT, object);
+            for (let step = 0; step < steps; step++) {
+                for (const object of objs) {
+                    system.update(this.gameTime, interval, object);
+                }
             }
         }
     }

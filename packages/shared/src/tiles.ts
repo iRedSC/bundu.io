@@ -3,8 +3,8 @@ import type { BasicPoint } from "./types";
 /** World units per tile edge. Art is authored at this pixel size per tile. */
 export const TILE_SIZE = 100;
 
-/** Authoritative position quantum: 10 decitiles per tile. */
-export const DECI_PER_TILE = 10;
+/** Authoritative position quantum: 100 units per tile (1 world unit). */
+export const DECI_PER_TILE = 100;
 
 /** World units per decitile. */
 export const WORLD_PER_DECI = TILE_SIZE / DECI_PER_TILE;

@@ -28,8 +28,7 @@ export type InputPlayerFacade = {
 
 /**
  * Owns input game rules (look throttle, movement encoding, chat, attack/block).
- * Mouse/keyboard listeners only report raw events; this controller decides packets
- * and local prediction via the player facade.
+ * Mouse/keyboard listeners only report raw events; this controller decides packets.
  */
 export class InputController {
     private readonly mouse = new MouseInputListener();

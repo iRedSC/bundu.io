@@ -10,6 +10,7 @@ import { Stats } from "../components/stats.js";
 import { GameObject } from "../engine";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { GameObjectData } from "@bundu/shared/object_types.js";
+import { PLAYER_MOVE_SPEED } from "@bundu/shared/movement";
 import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { deciPacketPos } from "./tile_entity.js";
 
@@ -30,7 +31,8 @@ export class Player extends GameObject {
         attributes.data.set("health.regen_amount", "base", "add", 10);
         attributes.data.set("hunger.depletion_amount", "base", "add", 10);
         attributes.data.set("hunger.max", "base", "add", 100);
-        attributes.data.set("movement.speed", "base", "add", 0);
+        // World units per tick at 20 tps.
+        attributes.data.set("movement.speed", "base", "add", PLAYER_MOVE_SPEED);
         attributes.data.set("temperature.max", "base", "add", 200);
         attributes.data.set("water.depletion_amount", "base", "add", 5);
         attributes.data.set("water.max", "base", "add", 100);
