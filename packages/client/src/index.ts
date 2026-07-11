@@ -11,7 +11,6 @@ import { createUI } from "./ui/ui";
 import { initAssets } from "./assets/load";
 import { AnimationManagers } from "./animation/animations";
 import { InputController } from "./input/controller";
-import { serverTime } from "./globals";
 import { Player } from "./world/objects/player";
 import { GameSession } from "./session/game_session";
 
@@ -95,7 +94,6 @@ async function main() {
             gui.craftingMenu.items = [];
             gui.craftingMenu.update();
             input.closeChat();
-            serverTime.reset();
         },
         setConnecting: (connecting) => {
             playButton.disabled = connecting;

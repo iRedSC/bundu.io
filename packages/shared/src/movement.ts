@@ -37,14 +37,6 @@ export function decodeMoveDirection(direction: number): MoveVector {
     return [x, y];
 }
 
-/** Client axes → server move vector (-1 / 0 / 1). */
-export function vectorFromAxes(axes: MoveAxes): MoveVector {
-    return [
-        (axes[0] - 1) as MoveVectorComponent,
-        (axes[1] - 1) as MoveVectorComponent,
-    ];
-}
-
 /** Map pressed keys to client axes (opposing keys cancel to idle). */
 export function axesFromPressedKeys(keys: {
     up: boolean;
