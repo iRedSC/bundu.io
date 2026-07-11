@@ -114,7 +114,10 @@ export function removeItem(
     return true;
 }
 
-/** Remove every requirement; rolls back and returns false if any are missing. */
+/**
+ * Remove every requirement. Returns false without mutating if any are missing
+ * (pre-checked via `hasItems`).
+ */
 export function removeItems(
     inv: Inventory,
     requirements: Map<number, number> | Iterable<[number, number]>
@@ -125,6 +128,63 @@ export function removeItems(
         removeItem(inv, itemId, amount);
     }
     return true;
+}
+
+function cloneSlots(slots: (ItemStack | null)[]): (ItemStack | null)[] {
+    return slots.map((stack) =>
+        stack ? { id: stack.id, count: stack.count } : null
+    );
+}
+
+function restoreSlots(inv: Inventory, snapshot: (ItemStack | null)[]) {
+    for (let i = 0; i < snapshot.length; i++) {
+        const stack = snapshot[i];
+        inv.slots[i] = stack ? { id: stack.id, count: stack.count } : null;
+    }
+}
+
+/**
+ * Atomically remove ingredients and add the product.
+ * Restores slots and returns false if ingredients are missing or the product
+ * cannot fully fit.
+ */
+export function tryConsumeAndAdd(
+    inv: Inventory,
+    requirements: Map<number, number> | Iterable<[number, number]>,
+    productId: number,
+    productAmount: number
+): boolean {
+    const list = Array.from(requirements);
+    if (!hasItems(inv, list)) return false;
+
+    const snapshot = cloneSlots(inv.slots);
+    for (const [itemId, amount] of list) {
+        removeItem(inv, itemId, amount);
+    }
+    if (addItem(inv, productId, productAmount) > 0) {
+        restoreSlots(inv, snapshot);
+        return false;
+    }
+    return true;
+}
+
+/** Dry-run of `tryConsumeAndAdd` — does not mutate `inv`. */
+export function canConsumeAndAdd(
+    inv: Inventory,
+    requirements: Map<number, number> | Iterable<[number, number]>,
+    productId: number,
+    productAmount: number
+): boolean {
+    return tryConsumeAndAdd(
+        {
+            slots: cloneSlots(inv.slots),
+            selected: inv.selected,
+            cursor: inv.cursor,
+        },
+        requirements,
+        productId,
+        productAmount
+    );
 }
 
 function validSlot(inv: Inventory, slot: number): boolean {

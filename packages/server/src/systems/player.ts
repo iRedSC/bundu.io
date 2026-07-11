@@ -7,11 +7,10 @@ import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js"
 import { GroundData, Physics } from "../components/base.js";
 import {
     Inventory,
-    addItem,
+    canConsumeAndAdd,
     cursorSlot as applyCursorSlot,
-    hasItems,
     moveSlot as applyMoveSlot,
-    removeItems,
+    tryConsumeAndAdd,
 } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import {
@@ -146,9 +145,17 @@ export class PlayerSystem extends System<GameEventMap> {
         this.emitCraftEvent(player, 0);
 
         if (!recipe || !inv) return;
-        if (!removeItems(inv, recipe.ingredients)) return;
+        if (
+            !tryConsumeAndAdd(
+                inv,
+                recipe.ingredients,
+                recipe.id,
+                recipe.amount
+            )
+        ) {
+            return;
+        }
 
-        addItem(inv, recipe.id, recipe.amount);
         data.score += recipe.score;
 
         syncMainHand(player);
@@ -167,7 +174,17 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!recipe) return;
 
         const inv = Inventory.get(player);
-        if (!inv || !hasItems(inv, recipe.ingredients)) return;
+        if (
+            !inv ||
+            !canConsumeAndAdd(
+                inv,
+                recipe.ingredients,
+                recipe.id,
+                recipe.amount
+            )
+        ) {
+            return;
+        }
 
         // Stop in-progress combat for the channel.
         data.attacking = false;
