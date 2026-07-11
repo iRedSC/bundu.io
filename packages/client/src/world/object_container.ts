@@ -28,9 +28,9 @@ export default class ObjectContainer {
         this.objects.delete(object.id);
     }
 
-    update(now: number): void {
+    update(_now?: number): void {
         for (const object of this.updating.values()) {
-            const done = object.update(now);
+            const done = object.update();
             if (done) this.updating.delete(object);
         }
     }

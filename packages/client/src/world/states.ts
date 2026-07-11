@@ -1,4 +1,4 @@
-import { lerp, rotationLerp } from "@bundu/shared";
+import { SERVER_TICK_MS, rotationLerp } from "@bundu/shared";
 import { serverTime } from "@client/globals";
 
 export interface PositionState {
@@ -6,14 +6,29 @@ export interface PositionState {
     y: number;
 }
 
-export class PositionStates {
-    private last: PositionState = { x: 0, y: 0 };
-    private current: PositionState = this.last;
-    private next?: PositionState;
+/** Unclamped lerp — t>1 extrapolates along the same segment. */
+function mix(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+}
 
-    private lastUpdateTime: number = serverTime.now();
-    private lastFrameTime: number = serverTime.now();
-    private readonly smoothingMs = 80;
+/**
+ * Mild pad over one tick so late packets don't freeze at the target,
+ * plus a short coast (t>1) so motion stays continuous.
+ */
+const INTERP_MS = SERVER_TICK_MS * 1.05;
+/** How far past the target we may coast (fraction of a tick). */
+const EXTRAP = 0.6;
+
+/**
+ * Entity interpolation: visual → latest over a fixed duration.
+ * Coast briefly if the next packet is late.
+ */
+export class PositionStates {
+    private from: PositionState = { x: 0, y: 0 };
+    private to: PositionState = { x: 0, y: 0 };
+    private current: PositionState = { x: 0, y: 0 };
+    private startedAt = 0;
+    private hasSegment = false;
 
     callback?: () => void;
 
@@ -21,82 +36,103 @@ export class PositionStates {
         this.callback = callback;
     }
 
+    get position(): PositionState {
+        return this.current;
+    }
+
     interpolate(now = serverTime.now()): { x: number; y: number } {
-        if (!this.next) return this.last;
+        if (!this.hasSegment) return this.current;
 
-        const elapsed = Math.max(0, now - this.lastFrameTime);
-        this.lastFrameTime = now;
-        const t = 1 - Math.exp(-elapsed / this.smoothingMs);
-
+        const t = Math.min((now - this.startedAt) / INTERP_MS, 1 + EXTRAP);
         this.current = {
-            x: lerp(this.current.x, this.next.x, t),
-            y: lerp(this.current.y, this.next.y, t),
+            x: mix(this.from.x, this.to.x, t),
+            y: mix(this.from.y, this.to.y, t),
         };
         return this.current;
     }
 
     set(state: PositionState) {
-        if (!this.next) this.current = state;
-        this.last = this.current;
-        this.next = state;
-        this.lastUpdateTime = serverTime.now();
-        this.lastFrameTime = this.lastUpdateTime;
+        if (!this.hasSegment) {
+            this.snap(state);
+            return;
+        }
+
+        // Refresh visual; if coasting past the target, start from `to`
+        // so the next segment doesn't rubber-band from the overshoot.
+        this.interpolate();
+        const elapsed = serverTime.now() - this.startedAt;
+        this.from =
+            elapsed >= INTERP_MS
+                ? { x: this.to.x, y: this.to.y }
+                : { x: this.current.x, y: this.current.y };
+        this.to = { x: state.x, y: state.y };
+        this.startedAt = serverTime.now();
+        this.callback?.();
+    }
+
+    /** Hard-set visual + targets (spawn / teleports). */
+    snap(state: PositionState) {
+        this.from = { x: state.x, y: state.y };
+        this.to = { x: state.x, y: state.y };
+        this.current = { x: state.x, y: state.y };
+        this.startedAt = serverTime.now();
+        this.hasSegment = true;
         this.callback?.();
     }
 
     isComplete(): boolean {
-        return (
-            !!this.next &&
-            Math.abs(this.current.x - this.next.x) < 0.001 &&
-            Math.abs(this.current.y - this.next.y) < 0.001
-        );
+        if (!this.hasSegment) return true;
+        return serverTime.now() - this.startedAt >= INTERP_MS * (1 + EXTRAP);
     }
 }
 
 export type RotationState = number;
 
+/** Same model as position: visual → latest over a fixed tick. */
 export class RotationStates {
-    private last: RotationState = 0;
+    private from: RotationState = 0;
+    private to: RotationState = 0;
     private current: RotationState = 0;
-    private next: RotationState = 0;
-    callback?: () => void;
+    private hasSegment = false;
+    private startedAt = serverTime.now();
 
-    private lastUpdateTime: number = serverTime.now();
-    private readonly updateIntervalMs = 50;
+    callback?: () => void;
 
     constructor(callback?: () => void) {
         this.callback = callback;
     }
 
-    interpolate(): number {
-        if (!this.next) return this.last;
+    interpolate(now = serverTime.now()): number {
+        if (!this.hasSegment) return this.current;
 
-        const now = serverTime.now();
-        const elapsed = now - this.lastUpdateTime;
-        const t = Math.min(elapsed / this.updateIntervalMs, 1);
-
-        this.current = rotationLerp(this.last, this.next, t);
+        const t = Math.min((now - this.startedAt) / SERVER_TICK_MS, 1);
+        this.current = rotationLerp(this.from, this.to, t);
         return this.current;
     }
 
     isComplete(): boolean {
-        const elapsed = serverTime.now() - this.lastUpdateTime;
-        return elapsed >= this.updateIntervalMs;
+        if (!this.hasSegment) return true;
+        return serverTime.now() - this.startedAt >= SERVER_TICK_MS;
     }
 
     set(state: RotationState) {
-        this.last = this.next;
-        this.next = state;
-        this.lastUpdateTime = serverTime.now();
+        if (!this.hasSegment) {
+            this.snap(state);
+            return;
+        }
+        this.from = this.current;
+        this.to = state;
+        this.startedAt = serverTime.now();
         this.callback?.();
     }
 
     /** Jump to a rotation with no interpolation (local look prediction). */
     snap(state: RotationState) {
-        this.last = state;
+        this.from = state;
         this.current = state;
-        this.next = state;
-        this.lastUpdateTime = serverTime.now();
+        this.to = state;
+        this.hasSegment = true;
+        this.startedAt = serverTime.now();
         this.callback?.();
     }
 }

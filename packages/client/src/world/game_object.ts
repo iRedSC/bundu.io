@@ -63,6 +63,7 @@ export default class GameObject {
         });
 
         this.rotationStates = new RotationStates();
+        this.rotationStates.snap(rotation);
         this.container.rotation = rotation;
 
         this.animations = new Map();
@@ -84,8 +85,8 @@ export default class GameObject {
     }
 
     /** Return true if object is done interpolating */
-    update(now: number): boolean {
-        const { x, y } = this.positionStates.interpolate(now);
+    update(_now?: number): boolean {
+        const { x, y } = this.positionStates.interpolate();
         const rot = this.rotationStates.interpolate();
 
         this.position.set(x, y);

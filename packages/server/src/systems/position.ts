@@ -1,9 +1,4 @@
-import {
-    WORLD_BOUNDS,
-    quantizeWorld,
-    worldToDeci,
-    worldToTile,
-} from "@bundu/shared/tiles";
+import { WORLD_BOUNDS, worldToDeci, worldToTile } from "@bundu/shared/tiles";
 import type { BasicPoint } from "@bundu/shared";
 import { Physics, TileEntity } from "../components/base.js";
 import { GameObject, System, type World } from "../engine";
@@ -27,6 +22,8 @@ export const getSizedBounds = (
 /**
  * Position owns Move intent (apply delta) and the single spatial/net write.
  * Collision resolves after Move, then emits Collide once for that write.
+ *
+ * Sim stays full-precision; only the wire packet is quantized.
  */
 export class PositionSystem extends System<GameEventMap> {
     constructor(world: World) {
@@ -68,9 +65,6 @@ export class PositionSystem extends System<GameEventMap> {
         const physics = Physics.get(object);
         if (!physics) return;
 
-        physics.position.x = quantizeWorld(physics.position.x);
-        physics.position.y = quantizeWorld(physics.position.y);
-
         this.world.context.quadtree.insert(object.id, physics.position);
 
         this.world.context.worldPacketManager.set(ServerPacket.SetPosition, {
@@ -82,7 +76,6 @@ export class PositionSystem extends System<GameEventMap> {
 
     move({ object, x, y }: GameEvent.Move) {
         const physics = object.get(Physics);
-        // Keep sub-decitile motion in-tick; publish snaps to the decitile grid.
         physics.position.x = Math.min(
             Math.max(physics.position.x - x, 0),
             WORLD_BOUNDS

@@ -1,11 +1,14 @@
-import { decode, decodeAsync } from "@msgpack/msgpack";
+import { decode } from "@msgpack/msgpack";
 
-export async function decodeFromBlob(blob: Blob) {
-    if (blob.stream) {
-        // Blob#stream(): ReadableStream<Uint8Array> (recommended)
-        return await decodeAsync(blob.stream());
-    } else {
-        // Blob#arrayBuffer(): Promise<ArrayBuffer> (if stream() is not available)
-        return decode(await blob.arrayBuffer());
+/**
+ * Synchronous msgpack decode for inbound WebSocket payloads.
+ * Requires `socket.binaryType = "arraybuffer"` so messages are not Blobs.
+ */
+export function decodePacketData(data: ArrayBuffer | ArrayBufferView): unknown {
+    if (data instanceof ArrayBuffer) {
+        return decode(new Uint8Array(data));
     }
+    return decode(
+        new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+    );
 }

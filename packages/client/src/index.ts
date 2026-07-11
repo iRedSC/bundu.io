@@ -11,7 +11,6 @@ import { createUI } from "./ui/ui";
 import { initAssets } from "./assets/load";
 import { AnimationManagers } from "./animation/animations";
 import { InputController } from "./input/controller";
-import { serverTime } from "./globals";
 import { Player } from "./world/objects/player";
 import { GameSession } from "./session/game_session";
 
@@ -59,7 +58,9 @@ async function main() {
     app.stage.addChild(viewport);
 
     // Debug tools / overlay — omitted entirely from prod bundles.
-    let debug: ClientDebugHandle = { getPlaceStructureId: () => null };
+    let debug: ClientDebugHandle = {
+        getPlaceStructureId: () => null,
+    };
     if (__DEBUG__) {
         const { mountClientDebug } = await import("./debug/tools");
         debug = mountClientDebug(viewport);
@@ -93,9 +94,6 @@ async function main() {
             gui.craftingMenu.items = [];
             gui.craftingMenu.update();
             input.closeChat();
-            serverTime.synced = false;
-            serverTime.offset = 0;
-            serverTime.targetOffset = 0;
         },
         setConnecting: (connecting) => {
             playButton.disabled = connecting;

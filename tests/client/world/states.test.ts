@@ -1,9 +1,14 @@
 import { describe, expect, spyOn, test } from "bun:test";
+import { SERVER_TICK_MS } from "@bundu/shared";
 import { serverTime } from "@client/globals";
 import {
   PositionStates,
   RotationStates,
 } from "../../../packages/client/src/world/states";
+
+/** Mirrors packages/client/src/world/states.ts */
+const INTERP_MS = SERVER_TICK_MS * 1.05;
+const EXTRAP = 0.6;
 
 describe("PositionStates", () => {
   test("returns origin before any set", () => {
@@ -11,7 +16,7 @@ describe("PositionStates", () => {
     expect(states.interpolate()).toEqual({ x: 0, y: 0 });
   });
 
-  test("set invokes callback, snaps first target, then smooths toward later targets", () => {
+  test("snaps first set then lerps visual toward latest over INTERP_MS", () => {
     let calls = 0;
     const states = new PositionStates(() => {
       calls += 1;
@@ -25,39 +30,23 @@ describe("PositionStates", () => {
       expect(calls).toBe(1);
       expect(states.interpolate(fakeNow)).toEqual({ x: 0, y: 0 });
 
-      const target = { x: 100, y: 200 };
-      states.set(target);
+      states.set({ x: 100, y: 200 });
       expect(calls).toBe(2);
+      const segmentStart = fakeNow;
 
-      const dist = (p: { x: number; y: number }) =>
-        Math.hypot(target.x - p.x, target.y - p.y);
+      const mid = states.interpolate(segmentStart + INTERP_MS / 2);
+      expect(mid.x).toBeCloseTo(50, 5);
+      expect(mid.y).toBeCloseTo(100, 5);
+      expect(states.isComplete()).toBe(false);
 
-      // Elapsed ≈ 0: still near the prior position, not snapped to the new target.
-      const first = states.interpolate(fakeNow);
-      expect(dist(first)).toBeGreaterThan(1);
+      fakeNow = segmentStart + INTERP_MS;
+      const atTarget = states.interpolate(fakeNow);
+      expect(atTarget.x).toBeCloseTo(100, 5);
+      expect(atTarget.y).toBeCloseTo(200, 5);
+      expect(states.isComplete()).toBe(false);
 
-      fakeNow += 50;
-      const mid = states.interpolate(fakeNow);
-      fakeNow += 150;
-      const later = states.interpolate(fakeNow);
-
-      expect(dist(mid)).toBeLessThan(dist(first));
-      expect(dist(later)).toBeLessThan(dist(mid));
-
-      let settled = false;
-      for (let i = 0; i < 50; i++) {
-        fakeNow += 100;
-        states.interpolate(fakeNow);
-        if (states.isComplete()) {
-          settled = true;
-          break;
-        }
-      }
-      expect(settled).toBe(true);
-
-      const final = states.interpolate(fakeNow);
-      expect(final.x).toBeCloseTo(target.x, 0);
-      expect(final.y).toBeCloseTo(target.y, 0);
+      fakeNow = segmentStart + INTERP_MS * (1 + EXTRAP);
+      expect(states.isComplete()).toBe(true);
     } finally {
       nowSpy.mockRestore();
     }
@@ -75,9 +64,13 @@ describe("RotationStates", () => {
     const nowSpy = spyOn(serverTime, "now").mockImplementation(() => fakeNow);
 
     try {
+      // Mirror GameObject: snap initial rotation so network sets interpolate.
+      states.snap(0);
+      expect(calls).toBe(1);
+
       const target = Math.PI / 2;
       states.set(target);
-      expect(calls).toBe(1);
+      expect(calls).toBe(2);
 
       const first = states.interpolate();
       expect(Math.abs(target - first)).toBeGreaterThan(0.01);
