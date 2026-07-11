@@ -5,10 +5,16 @@
 import { Glob } from "bun";
 
 const markers = [
+    // Debug tools panel
     "Place wood wall",
     "debug-tools",
     "mountClientDebug",
     "data-bundu-debug",
+    // Display-config hot-reload (dev-only)
+    "config-hot-reload",
+    "startConfigHotReload",
+    "__dev/sprite-configs",
+    "__dev/config-reload",
 ];
 
 const files: string[] = [];

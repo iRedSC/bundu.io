@@ -17,6 +17,7 @@ import { structureDef } from "../../visual/defs/structure";
 /** Placed tile entity. Art is authored at TILE_SIZE px per footprint tile. */
 export class Structure extends GameObject {
     sprite: ContaineredSprite;
+    readonly type: string;
 
     constructor(
         id: number,
@@ -28,14 +29,15 @@ export class Structure extends GameObject {
     ) {
         super(id, pos, radians(rotationDegrees), collisionRadius, visualScale);
 
+        this.type = type;
         const def = structureDef(type);
         const { parts } = assemble(def, this.container);
         const main = parts.get("main");
         if (!main) throw new Error(`structureDef("${type}") missing main part`);
 
-        const config = spriteConfigs.get(type);
-        SpriteFactory.update(main.visual, config?.world_display, type);
         this.sprite = main.visual;
+        const config = spriteConfigs.get(type);
+        SpriteFactory.update(this.sprite, config?.world_display, type);
 
         const { animations } = bindAnimations(def, parts, undefined, this);
         for (const [animId, animation] of animations) {
