@@ -135,6 +135,22 @@ export class PlayerSystem extends System<GameEventMap> {
         if (emit) this.emitCraftEvent(player, 0);
     }
 
+    /** Cancel block if equipment no longer grants `health.defense.blocking`. */
+    private clearStaleBlocking(player: GameObject) {
+        const data = PlayerData.get(player);
+        if (!data?.blocking) return;
+        const blocking =
+            Attributes.get(player)?.get("health.defense.blocking") ?? 0;
+        if (blocking > 0) return;
+
+        data.blocking = false;
+        Attributes.get(player)?.clear("blocking");
+        this.world.context.worldPacketManager.emit(ServerPacket.BlockEvent, {
+            id: player.id,
+            stop: true,
+        });
+    }
+
     private finishCraft(player: GameObject) {
         const data = PlayerData.get(player);
         const crafting = data?.crafting;
@@ -160,6 +176,7 @@ export class PlayerSystem extends System<GameEventMap> {
         data.score += recipe.score;
 
         clearMissingEquipment(player);
+        this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
@@ -274,6 +291,7 @@ export class PlayerSystem extends System<GameEventMap> {
 
         inv.selected = slot;
         selectEquipment(player, inv.slots[slot]?.id);
+        this.clearStaleBlocking(player);
         emitEquipment(player, this.world.context.worldPacketManager);
     };
 
@@ -287,6 +305,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!applyMoveSlot(inv, from, to)) return;
 
         clearMissingEquipment(player);
+        this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
@@ -310,6 +329,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!applyCursorSlot(inv, slot, placeMode)) return;
 
         clearMissingEquipment(player);
+        this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
@@ -349,6 +369,7 @@ export class PlayerSystem extends System<GameEventMap> {
                 this.world.context;
             emitInventory(player, playerPacketManager);
             clearMissingEquipment(player);
+            this.clearStaleBlocking(player);
             emitEquipment(player, worldPacketManager);
             return;
         }
