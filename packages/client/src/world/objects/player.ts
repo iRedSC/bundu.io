@@ -1,6 +1,6 @@
 import { TILE_SIZE } from "@bundu/shared/tiles";
 import { getStringId } from "@bundu/shared/id_map";
-import { Container, Point, Text } from "pixi.js";
+import { Container, Graphics, Point, Text } from "pixi.js";
 import GameObject from "../game_object";
 import { SpriteFactory } from "../../assets/sprite_factory";
 import { spriteConfigs } from "../../configs/sprite_configs";
@@ -19,8 +19,15 @@ export interface Equipment {
     backpack: boolean | nullish;
 }
 
+const CRAFT_BAR_WIDTH = 48;
+const CRAFT_BAR_HEIGHT = 5;
+const CRAFT_BAR_Y = -52;
+const CRAFT_BAR_BG = 0x1a1a1a;
+const CRAFT_BAR_FILL = 0xe8c547;
+
 export class Player extends GameObject implements AnimContext {
     name: Text;
+    craftBar: Graphics;
     parts: Map<string, PartNode>;
     private slots: Map<string, { node: PartNode; def: SlotDef }>;
 
@@ -30,11 +37,18 @@ export class Player extends GameObject implements AnimContext {
     backpack?: boolean;
     blocking = false;
 
+    private craftDuration = 0;
+    private craftEndsAt = 0;
+
     /** Client-side look prediction; snaps immediately (no lerp flicker). */
     predictLook(rotation: number): number {
         this.rotationStates.snap(rotation);
         this.container.rotation = rotation;
         return rotation;
+    }
+
+    get isCrafting(): boolean {
+        return this.craftDuration > 0;
     }
 
     constructor(
@@ -70,21 +84,63 @@ export class Player extends GameObject implements AnimContext {
         this.name.zIndex = 100;
         this.container.zIndex = 1;
 
+        this.craftBar = new Graphics();
+        this.craftBar.zIndex = 101;
+        this.craftBar.visible = false;
+
         this.positionStates.callback = () => {
             this.name.renderable = true;
+            this.craftBar.renderable = true;
             this.container.renderable = true;
             this.debug.renderable = true;
         };
     }
 
     override get containers(): Container[] {
-        return [this.container, this.name];
+        return [this.container, this.name, this.craftBar];
     }
 
     override update(_now?: number): boolean {
         const done = super.update();
         this.name.position = this.position;
-        return done;
+        this.craftBar.position = this.position;
+        this.redrawCraftBar();
+        // Stay in the updating set while the bar is animating.
+        return done && !this.isCrafting;
+    }
+
+    /** `duration > 0` starts the overhead channel; `0` clears it. */
+    setCraftProgress(duration: number) {
+        if (duration <= 0) {
+            this.craftDuration = 0;
+            this.craftEndsAt = 0;
+            this.craftBar.clear();
+            this.craftBar.visible = false;
+            return;
+        }
+        this.craftDuration = duration;
+        this.craftEndsAt = Date.now() + duration;
+        this.craftBar.visible = true;
+        this.redrawCraftBar();
+    }
+
+    private redrawCraftBar() {
+        if (this.craftDuration <= 0) return;
+
+        const remaining = Math.max(0, this.craftEndsAt - Date.now());
+        const progress = 1 - remaining / this.craftDuration;
+        const fillWidth = CRAFT_BAR_WIDTH * Math.min(1, Math.max(0, progress));
+        const x = -CRAFT_BAR_WIDTH / 2;
+
+        this.craftBar.clear();
+        this.craftBar
+            .rect(x, CRAFT_BAR_Y, CRAFT_BAR_WIDTH, CRAFT_BAR_HEIGHT)
+            .fill(CRAFT_BAR_BG);
+        if (fillWidth > 0) {
+            this.craftBar
+                .rect(x, CRAFT_BAR_Y, fillWidth, CRAFT_BAR_HEIGHT)
+                .fill(CRAFT_BAR_FILL);
+        }
     }
 
     setEquipment(equipment?: Equipment) {

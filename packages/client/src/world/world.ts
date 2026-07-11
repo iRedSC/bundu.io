@@ -222,4 +222,11 @@ export class World {
         if (!(player instanceof Player)) return;
         console.log(player.name.text, message);
     };
+
+    craftEvent = ({ id, duration }: ServerPacket.CraftEvent) => {
+        const player = this.objects.get(id);
+        if (!(player instanceof Player)) return;
+        player.setCraftProgress(duration);
+        if (duration > 0) this.objects.updating.add(player);
+    };
 }

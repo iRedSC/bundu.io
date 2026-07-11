@@ -70,6 +70,123 @@ export function addItem(
     return remaining;
 }
 
+/** Total count of `itemId` across all slots. */
+export function countItem(inv: Inventory, itemId: number): number {
+    let total = 0;
+    for (const stack of inv.slots) {
+        if (stack?.id === itemId) total += stack.count;
+    }
+    return total;
+}
+
+/** True when every entry in `requirements` is present in sufficient quantity. */
+export function hasItems(
+    inv: Inventory,
+    requirements: Map<number, number> | Iterable<[number, number]>
+): boolean {
+    for (const [itemId, amount] of requirements) {
+        if (countItem(inv, itemId) < amount) return false;
+    }
+    return true;
+}
+
+/**
+ * Remove items across stacks. Returns false if inventory lacked enough
+ * (inventory is left unchanged on failure).
+ */
+export function removeItem(
+    inv: Inventory,
+    itemId: number,
+    count: number
+): boolean {
+    if (count <= 0) return true;
+    if (countItem(inv, itemId) < count) return false;
+
+    let remaining = count;
+    for (let i = 0; i < inv.slots.length && remaining > 0; i++) {
+        const stack = inv.slots[i];
+        if (!stack || stack.id !== itemId) continue;
+        const take = Math.min(stack.count, remaining);
+        stack.count -= take;
+        remaining -= take;
+        if (stack.count <= 0) inv.slots[i] = null;
+    }
+    return true;
+}
+
+/**
+ * Remove every requirement. Returns false without mutating if any are missing
+ * (pre-checked via `hasItems`).
+ */
+export function removeItems(
+    inv: Inventory,
+    requirements: Map<number, number> | Iterable<[number, number]>
+): boolean {
+    const list = Array.from(requirements);
+    if (!hasItems(inv, list)) return false;
+    for (const [itemId, amount] of list) {
+        removeItem(inv, itemId, amount);
+    }
+    return true;
+}
+
+function cloneSlots(slots: (ItemStack | null)[]): (ItemStack | null)[] {
+    return slots.map((stack) =>
+        stack ? { id: stack.id, count: stack.count } : null
+    );
+}
+
+function restoreSlots(inv: Inventory, snapshot: (ItemStack | null)[]) {
+    for (let i = 0; i < snapshot.length; i++) {
+        const stack = snapshot[i];
+        inv.slots[i] = stack ? { id: stack.id, count: stack.count } : null;
+    }
+}
+
+/**
+ * Atomically remove ingredients and add the product.
+ * Restores slots and returns false if ingredients are missing or the product
+ * cannot fully fit.
+ */
+export function tryConsumeAndAdd(
+    inv: Inventory,
+    requirements: Map<number, number> | Iterable<[number, number]>,
+    productId: number,
+    productAmount: number
+): boolean {
+    const list = Array.from(requirements);
+    if (!hasItems(inv, list)) return false;
+
+    const snapshot = cloneSlots(inv.slots);
+    for (const [itemId, amount] of list) {
+        removeItem(inv, itemId, amount);
+    }
+    if (addItem(inv, productId, productAmount) > 0) {
+        restoreSlots(inv, snapshot);
+        return false;
+    }
+    return true;
+}
+
+/** Dry-run of `tryConsumeAndAdd` — does not mutate `inv`. */
+export function canConsumeAndAdd(
+    inv: Inventory,
+    requirements: Map<number, number> | Iterable<[number, number]>,
+    productId: number,
+    productAmount: number
+): boolean {
+    return tryConsumeAndAdd(
+        {
+            slots: cloneSlots(inv.slots),
+            selected: inv.selected,
+            cursor: inv.cursor,
+        },
+        requirements,
+        productId,
+        productAmount
+    );
+}
+
 function validSlot(inv: Inventory, slot: number): boolean {
     return slot >= 0 && slot < inv.slots.length;
 }

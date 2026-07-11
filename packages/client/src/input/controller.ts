@@ -98,6 +98,7 @@ export class InputController {
     private handlePointerDown(event: PointerEvent) {
         if (!this.facade.isInGame()) return;
         if (this.facade.isOverInventory()) return;
+        if (this.facade.getLocalPlayer()?.isCrafting) return;
         if (event.button === 2) {
             this.sendPacket(ClientPacket.Block, { stop: false });
             return;
@@ -121,6 +122,7 @@ export class InputController {
 
     private handlePointerUp(event: PointerEvent) {
         if (!this.facade.isInGame()) return;
+        if (this.facade.getLocalPlayer()?.isCrafting) return;
         if (event.button === 2) {
             this.sendPacket(ClientPacket.Block, { stop: true });
         }

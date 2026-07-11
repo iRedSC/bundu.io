@@ -4,6 +4,8 @@ import craftingConfig from "../crafting.yml";
 
 export type CraftingRecipeData = {
     duration: number;
+    score?: number;
+    amount?: number;
     ingredients: Record<string, number>;
     flags: string[];
 };
@@ -11,12 +13,16 @@ export type CraftingRecipeData = {
 export class CraftingRecipe {
     id: number;
     duration: number;
+    score: number;
+    amount: number;
     ingredients: Map<number, number>;
     flags: number[];
 
     constructor(id: number, data: Partial<CraftingRecipeData>) {
         this.id = id;
         this.duration = data.duration || 0;
+        this.score = data.score || 0;
+        this.amount = data.amount || 1;
 
         this.ingredients = new Map();
         if (data.ingredients) {

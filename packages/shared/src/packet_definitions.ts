@@ -17,6 +17,8 @@ export const ServerPacket = {
     AttackEvent: 0x11,
     BlockEvent: 0x12,
     HitEvent: 0x13,
+    /** `duration > 0` starts a craft channel; `duration === 0` ends it. */
+    CraftEvent: 0x14,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -86,6 +88,7 @@ export namespace ServerPacket {
     };
     export type BlockEvent = { id: number; stop: boolean };
     export type HitEvent = { id: number; angle: number };
+    export type CraftEvent = { id: number; duration: number };
 }
 
 /** Client → server packet IDs. */
@@ -142,6 +145,7 @@ export type ServerPacketMap = {
     [ServerPacket.AttackEvent]: ServerPacket.AttackEvent;
     [ServerPacket.BlockEvent]: ServerPacket.BlockEvent;
     [ServerPacket.HitEvent]: ServerPacket.HitEvent;
+    [ServerPacket.CraftEvent]: ServerPacket.CraftEvent;
 };
 
 /** ID → payload map for client packets. */
@@ -192,6 +196,7 @@ export const ServerSchema: {
     },
     [ServerPacket.BlockEvent]: { fields: ["id", "stop"] },
     [ServerPacket.HitEvent]: { fields: ["id", "angle"] },
+    [ServerPacket.CraftEvent]: { fields: ["id", "duration"] },
 };
 
 export const ClientSchema: {

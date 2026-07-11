@@ -123,6 +123,10 @@ async function main() {
         isOverInventory: () => gui.inventory.isInteracting,
     });
 
+    gui.inventory.isLocked = () => {
+        const local = world.objects.get(world.user ?? -1);
+        return local instanceof Player && local.isCrafting;
+    };
     gui.inventory.onSelect = (slot) => {
         session.sendPacket(ClientPacket.SelectItem, { slot });
     };
@@ -141,6 +145,8 @@ async function main() {
         });
     };
     gui.craftingMenu.leftclick = (itemId) => {
+        const local = world.objects.get(world.user ?? -1);
+        if (local instanceof Player && local.isCrafting) return;
         session.sendPacket(ClientPacket.CraftItem, { itemId });
     };
 
