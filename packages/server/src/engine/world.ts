@@ -42,7 +42,6 @@ export class World {
 
     private readonly subscriptions = new Map<number, () => void>();
 
-    public lastUpdate = performance.now();
     /** Authoritative gameplay clock (ms). Cooldowns, cadence, and expiry use this — not Date.now()/serverTime. */
     public gameTime = 0;
 
@@ -172,7 +171,6 @@ export class World {
      */
     public step(stepMs: number = SERVER_TICK_MS): void {
         this.gameTime += stepMs;
-        this.lastUpdate = performance.now();
 
         const objectsBySystem = new Map<AnySystem, GameObject[]>();
 
