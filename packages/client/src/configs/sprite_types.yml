@@ -4,16 +4,16 @@ none:
 pickaxe:
     hand_display:
         rotation: -75
-        x: -0.35
+        x: 0
         y: 0.21
-        scale: 0.38
+        scale: 0.6
 
 sword:
     hand_display:
         rotation: -135
         x: 0
-        y: 0.5
-        scale: 0.45
+        y: 0.3
+        scale: 0.75
 
 helmet:
     body_display:
@@ -33,22 +33,22 @@ spear:
     hand_display:
         rotation: -135
         x: 0
-        y: -400
-        scale: 2.2
+        y: 0.35
+        scale: 0.55
 
 hammer:
     hand_display:
         rotation: -100
-        x: 150
-        y: -200
-        scale: 2
+        x: 0.1
+        y: 0.25
+        scale: 0.45
 
 book:
     hand_display:
-        rotation: -100
-        x: 150
-        y: -200
-        scale: 2
+        rotation: -20
+        x: 0
+        y: 0.15
+        scale: 0.4
 wall:
     sprite: unknown_asset
 

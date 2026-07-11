@@ -1,0 +1,67 @@
+wood_wall:
+    type: building
+
+stone_wall:
+    type: building
+
+gold_wall:
+    type: building
+
+diamond_wall:
+    type: building
+
+amethyst_wall:
+    type: building
+
+wood_door:
+    type: building
+
+stone_door:
+    type: building
+
+gold_door:
+    type: building
+
+diamond_door:
+    type: building
+
+amethyst_door:
+    type: building
+
+wood_spike:
+    type: building
+stone_spike:
+    type: building
+
+gold_spike:
+    type: building
+
+diamond_spike:
+    type: building
+
+amethyst_spike:
+    type: building
+
+workbench:
+    type: building
+anvil:
+    type: building
+
+fire_small:
+    type: building
+
+fire_big:
+    type: building
+
+fire_pit:
+    type: building
+
+quick_wood_wall:
+    type: building
+quick_stone_wall:
+    type: building
+quick_stone_spike:
+    type: building
+
+quick_diamond_spike:
+    type: building

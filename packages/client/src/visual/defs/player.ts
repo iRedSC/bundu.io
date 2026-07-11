@@ -40,7 +40,7 @@ export const playerDef: ObjectDef = {
         },
     ],
     slots: {
-        mainhand: { part: "leftHand", display: "hand_display", scale: 5 },
+        mainhand: { part: "leftHand", display: "hand_display", scale: 2.5 },
         offhand: {
             part: "rightHand",
             display: "hand_display",
