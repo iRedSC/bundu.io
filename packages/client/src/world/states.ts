@@ -57,8 +57,14 @@ export class PositionStates {
             return;
         }
 
-        // Continue from the visual so early packets don't snap.
-        this.from = { x: this.current.x, y: this.current.y };
+        // Refresh visual; if coasting past the target, start from `to`
+        // so the next segment doesn't rubber-band from the overshoot.
+        this.interpolate();
+        const elapsed = serverTime.now() - this.startedAt;
+        this.from =
+            elapsed >= INTERP_MS
+                ? { x: this.to.x, y: this.to.y }
+                : { x: this.current.x, y: this.current.y };
         this.to = { x: state.x, y: state.y };
         this.startedAt = serverTime.now();
         this.callback?.();
