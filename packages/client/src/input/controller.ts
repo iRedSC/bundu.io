@@ -4,6 +4,7 @@ import {
     degrees,
     type MoveAxes,
 } from "@bundu/shared";
+import { radians } from "@bundu/shared/transforms";
 import { worldToTile } from "@bundu/shared/tiles";
 import { ClientPacket } from "@bundu/shared/packet_definitions";
 import type { Socket } from "../network/socket";
@@ -59,8 +60,14 @@ export class InputController {
         const player = this.facade.getLocalPlayer();
         if (!player) return;
 
-        const worldPos = this.facade.screenToWorld(mousePos[0], mousePos[1]);
-        const rotation = player.predictLook(worldPos);
+        // Screen-space look: zoom/peek must not change aim under a fixed cursor.
+        // Matches the peek camera (player screen pos is zoom-independent).
+        const rotation =
+            Math.atan2(
+                mousePos[1] - window.innerHeight / 2,
+                mousePos[0] - window.innerWidth / 2
+            ) - radians(90);
+        player.predictLook(rotation);
         this.facade.markUpdating(player);
 
         this.rotationUpdateTick++;

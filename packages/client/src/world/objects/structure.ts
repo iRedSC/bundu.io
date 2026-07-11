@@ -5,12 +5,14 @@ import {
     TILE_SIZE,
 } from "@bundu/shared/tiles";
 import GameObject from "../game_object";
-import { ANIMATION, hit } from "../../animation/animations";
 import { spriteConfigs } from "@client/configs/sprite_configs";
 import {
     SpriteFactory,
-    ContaineredSprite,
+    type ContaineredSprite,
 } from "@client/assets/sprite_factory";
+import { assemble } from "../../visual/assemble";
+import { bindAnimations } from "../../visual/bind";
+import { structureDef } from "../../visual/defs/structure";
 
 /** Placed tile entity. Art is authored at TILE_SIZE px per footprint tile. */
 export class Structure extends GameObject {
@@ -25,13 +27,21 @@ export class Structure extends GameObject {
         visualScale: number = TILE_SIZE
     ) {
         super(id, pos, radians(rotationDegrees), collisionRadius, visualScale);
+
+        const def = structureDef(type);
+        const { parts } = assemble(def, this.container);
+        const main = parts.get("main");
+        if (!main) throw new Error(`structureDef("${type}") missing main part`);
+
         const config = spriteConfigs.get(type);
-        this.sprite = SpriteFactory.build(type, config?.world_display);
+        SpriteFactory.update(main.visual, config?.world_display, type);
+        this.sprite = main.visual;
+
+        const { animations } = bindAnimations(def, parts, undefined, this);
+        for (const [animId, animation] of animations) {
+            this.animations.set(animId, animation);
+        }
 
         this.container.zIndex = 10;
-        this.sprite.anchor.set(0.5);
-        this.container.addChild(this.sprite);
-
-        this.animations.set(ANIMATION.HURT, hit(this));
     }
 }
