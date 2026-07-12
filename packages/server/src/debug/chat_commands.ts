@@ -8,6 +8,20 @@ import { StatList, type StatType, Stats } from "../components/stats.js";
 import type { GameObject } from "../engine";
 import { getNumericId } from "@bundu/shared/id_map.js";
 
+
+const kits: Record<string, Record<string, number>> = {
+    "gold": {
+        "gold_pickaxe": 1,
+        "gold_sword": 1,
+        "gold_helmet": 1
+    },
+    "diamond": {
+        "diamond_pickaxe": 1,
+        "diamond_sword": 1,
+        "diamond_helmet": 1
+    }
+}
+
 /**
  * Debug/cheat slash commands (`/attribute`, `/stat`, `/kill`, `/godmode`, `/give`).
  * Only invoked when SERVER_DEBUG is on.
@@ -63,6 +77,18 @@ export function tryHandleDebugChatCommand(
             const inv = Inventory.get(player);
             if (itemId === undefined || !inv || !(count > 0)) return true;
             addItem(inv, itemId, count);
+            break;
+        }
+        case "kit": {
+            const kitId = command[1];
+            if (kitId === undefined) return true;
+            if (!kits[kitId]) return true;
+            const kit = kits[kitId];
+            const inv = Inventory.get(player);
+            if (!inv) return true;
+            for (const itemId in kit) {
+                addItem(inv, getNumericId(itemId)!, kit[itemId]!);
+            }
             break;
         }
     }
