@@ -16,6 +16,8 @@
 - Always strive for concise, dead simple code.
 - Use architecture to your advantage, make illegal states impossible.
 - If a problem can be solved a simpler way, propose to.
+- Treat code as a disease, the more there is, the more we suffer.
+- Think about DX, make systems easy to consume and extend as a developer.
 
 ## General Preferences
 - If asked to do too much work at once, stop and state that clearly.
@@ -24,4 +26,4 @@
 - Please use Grok 4.5 High for all subagent work.
 
 ## Tests
-- NEVER modify tests without asking. Give a debrief of why they need changed, and only change them on approval.
+- NEVER modify tests without asking. Give a debrief of why they need changed, and only change them on approval. 
