@@ -1,8 +1,13 @@
 id: tree
+variantSource: structured
+
+
 tile:
   size: { width: 300, height: 300 }
   origin: { x: 1, y: 1 }
   spillover: 0
+
+
 parts:
   - name: layer0
     zIndex: 0
@@ -11,13 +16,19 @@ parts:
   - name: layer2
     zIndex: 2
 
+
 variants:
   base:
     layer0: forest_tree_1_0
     layer1: forest_tree_1_1
     layer2: forest_tree_1_2
-    
+
 animations:
   - id: 100
     preset: hit
     parts: [layer0, layer1, layer2]
+  - id: 400
+    preset: tree_sway
+    parts: [layer1, layer2]
+    data: { distance: 0.1, tilt: 2, duration: 7500, stagger: 500 }
+    autoplay: true

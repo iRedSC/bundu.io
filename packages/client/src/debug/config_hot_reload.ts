@@ -5,6 +5,10 @@ import {
 import { Player } from "../world/objects/player";
 import { Structure } from "../world/objects/structure";
 import type { World } from "../world/world";
+import {
+    replaceVisualDefs,
+    type VisualDefs,
+} from "../visual/defs";
 
 function replaceSpriteConfigs(configs: Record<string, FullItemConfig>) {
     spriteConfigs.clear();
@@ -27,6 +31,13 @@ function reapplyDisplays(world: World) {
     }
 }
 
+function reapplyVisualDefs(world: World) {
+    for (const object of world.objects.all()) {
+        if (object instanceof Player) object.reloadVisualDefinition();
+        else if (object instanceof Structure) object.reloadVisualDefinition();
+    }
+}
+
 /**
  * Watches for display-config YAML changes via the static server SSE channel
  * and swaps the live `spriteConfigs` Map without a browser refresh.
@@ -46,23 +57,28 @@ export function startConfigHotReload(world: World): () => void {
         try {
             do {
                 pending = false;
-                const res = await fetch(
-                    `/__dev/sprite-configs?t=${Date.now()}`
-                );
-                if (!res.ok) {
+                const timestamp = Date.now();
+                const [configsRes, defsRes] = await Promise.all([
+                    fetch(`/__dev/sprite-configs?t=${timestamp}`),
+                    fetch(`/__dev/visual-defs?t=${timestamp}`),
+                ]);
+                if (!configsRes.ok || !defsRes.ok) {
                     console.warn(
                         "[config-hot-reload] fetch failed:",
-                        res.status,
-                        res.statusText
+                        configsRes.status,
+                        defsRes.status
                     );
                     continue;
                 }
-                const configs = (await res.json()) as Record<
+                const configs = (await configsRes.json()) as Record<
                     string,
                     FullItemConfig
                 >;
+                const defs = (await defsRes.json()) as VisualDefs;
                 replaceSpriteConfigs(configs);
+                replaceVisualDefs(defs);
                 reapplyDisplays(world);
+                reapplyVisualDefs(world);
                 const sample =
                     configs.diamond_pickaxe?.hand_display ??
                     configs.wood_pickaxe?.hand_display;

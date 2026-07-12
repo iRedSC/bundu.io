@@ -30,6 +30,8 @@ export class Player extends GameObject implements AnimContext {
     craftBar: Graphics;
     parts: Map<string, PartNode>;
     private slots: Map<string, { node: PartNode; def: SlotDef }>;
+    private readonly animationManager: AnimationManager;
+    private readonly visualVariant?: string;
 
     mainhand = "";
     offhand = "";
@@ -63,6 +65,9 @@ export class Player extends GameObject implements AnimContext {
         variant?: string
     ) {
         super(id, pos, rotation, collisionRadius, TILE_SIZE);
+
+        this.animationManager = manager;
+        this.visualVariant = variant;
 
         const assembled = assemble(playerDef, this.container, variant);
         this.parts = assembled.parts;
@@ -163,6 +168,38 @@ export class Player extends GameObject implements AnimContext {
         this.fillSlot("mainhand", this.mainhand);
         this.fillSlot("offhand", this.offhand);
         this.fillSlot("helmet", this.helmet);
+    }
+
+    reloadVisualDefinition() {
+        this.animationManager.remove(this);
+        for (const child of this.container.removeChildren()) {
+            child.destroy({ children: true });
+        }
+        this.animations.clear();
+
+        const assembled = assemble(
+            playerDef,
+            this.container,
+            this.visualVariant
+        );
+        this.parts = assembled.parts;
+        this.slots = assembled.slots;
+
+        const { animations, autoplay } = bindAnimations(
+            playerDef,
+            this.parts,
+            this
+        );
+        for (const [id, animation] of animations) {
+            this.animations.set(id, animation);
+        }
+        this.updateEquipment();
+        for (const id of autoplay) {
+            this.trigger(id, this.animationManager);
+        }
+
+        const ghost = this.getStructureGhost();
+        if (ghost) this.setSelectedStructure(ghost.id, ghost.scale);
     }
 
     private fillSlot(slotName: string, itemId: string) {

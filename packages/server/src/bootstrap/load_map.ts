@@ -20,9 +20,6 @@ const TEST_MAP_BORDER_PADDING_TILES = 3;
 
 const TEST_MAP_RESOURCE_IDS: string[] = [
     "forest_tree",
-    "pine_tree",
-    "pine_tree_snow",
-    "savanah_tree",
     "stone",
     "gold",
     "diamond",

@@ -151,6 +151,7 @@ export class World {
             deciPoint(packet.x, packet.y),
             packet.rotation,
             FOOTPRINT_CIRCLE_RADIUS,
+            AnimationManagers.World,
             TILE_SIZE,
             getVariantName(variantId) ?? "base"
         );

@@ -146,13 +146,6 @@ quick_diamond_spike: quick_diamond_spike.svg
 #* Map Objects
 
 #Trees
-forest_tree: forest_tree1.svg
-forest_tree1: forest_tree1.svg
-forest_tree2: forest_tree2.svg
-forest_tree3: forest_tree3.svg
-forest_tree4: forest_tree4.svg
-forest_tree5: forest_tree5.svg
-forest_tree6: forest_tree6.svg
 forest_tree_1_0: forest_tree_1_0.png
 forest_tree_1_1: forest_tree_1_1.png
 forest_tree_1_2: forest_tree_1_2.png

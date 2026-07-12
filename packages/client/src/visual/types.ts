@@ -43,15 +43,46 @@ export type SlotDef = {
     scale?: number;
 };
 
-export type AnimPreset = "hurt" | "hit" | "wave" | "attack" | "block";
+export type AnimPreset =
+    | "hurt"
+    | "hit"
+    | "wave"
+    | "tree_sway"
+    | "attack"
+    | "block";
 
-export type AnimDef = {
+export type TreeSwayData = {
+    distance?: number;
+    /** Maximum tilt in degrees. */
+    tilt?: number;
+    /** Cycle duration in milliseconds. */
+    duration?: number;
+    /** Millisecond phase offset applied successively to each listed part. */
+    stagger?: number;
+};
+
+type AnimData = {
+    hurt: undefined;
+    hit: undefined;
+    wave: undefined;
+    tree_sway: TreeSwayData;
+    attack: undefined;
+    block: undefined;
+};
+
+type AnimDefBase = {
     id: number;
-    preset: AnimPreset;
     /** Part names the preset targets. */
     parts: string[];
     autoplay?: boolean;
 };
+
+export type AnimDef = {
+    [Preset in AnimPreset]: AnimDefBase & {
+        preset: Preset;
+        data?: AnimData[Preset];
+    };
+}[AnimPreset];
 
 export type ObjectDef = {
     id: string;
@@ -62,16 +93,34 @@ export type ObjectDef = {
     animations?: AnimDef[];
 };
 
-export type TileEntityDef = ObjectDef & {
-    tile: {
-        /** Authored sprite dimensions in pixels. */
-        size: { width: number; height: number };
-        /** Origin tile within the sprite's non-spillover bounds. */
-        origin: { x: number; y: number };
-        /** Decorative pixels outside every edge of the tile grid. */
-        spillover: number;
-    };
+export type TileGeometry = {
+    /** Authored sprite dimensions in pixels. */
+    size: { width: number; height: number };
+    /** Origin tile within the sprite's non-spillover bounds. */
+    origin: { x: number; y: number };
+    /** Decorative pixels outside every edge of the tile grid. */
+    spillover: number;
 };
+
+type TileEntityBase = Omit<ObjectDef, "variants"> & {
+    tile: TileGeometry;
+};
+
+export type StructuredTileEntityDef = TileEntityBase & {
+    variantSource: "structured";
+    variants: Record<string, Record<string, string>>;
+};
+
+export type TextureTileEntityDef = TileEntityBase & {
+    variantSource: "texture";
+    /** Part whose sprite is the decoded texture variant. */
+    texturePart: string;
+    variants?: never;
+};
+
+export type TileEntityDef =
+    | StructuredTileEntityDef
+    | TextureTileEntityDef;
 
 export type PartNode = {
     root: Container;

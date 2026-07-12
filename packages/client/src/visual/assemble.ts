@@ -20,18 +20,16 @@ export function assemble(
     root: Container,
     variant?: string
 ): AssembledObject {
-    const parts = new Map<string, PartNode>();
     const sprites = variant == null ? undefined : def.variants?.[variant];
-    const partNames = new Set(def.parts.map(({ name }) => name));
+    return assembleSprites(def, root, sprites);
+}
 
-    for (const name of Object.keys(sprites ?? {})) {
-        if (!partNames.has(name)) {
-            throw new Error(
-                `ObjectDef "${def.id}": variant ${variant} targets unknown part "${name}"`
-            );
-        }
-    }
-
+function assembleSprites(
+    def: ObjectDef,
+    root: Container,
+    sprites?: Record<string, string>
+): AssembledObject {
+    const parts = new Map<string, PartNode>();
     for (const part of def.parts) {
         const nodeRoot = new Container();
         nodeRoot.x = part.x ?? 0;
@@ -41,12 +39,13 @@ export function assemble(
         if (part.zIndex !== undefined) nodeRoot.zIndex = part.zIndex;
         if (part.pivot) nodeRoot.pivot.set(part.pivot.x, part.pivot.y);
 
-        const visual = SpriteFactory.build(sprites?.[part.name] ?? part.sprite ?? "");
+        const sprite = sprites?.[part.name] ?? part.sprite;
+        const visual = SpriteFactory.build(sprite ?? "");
         const anchor = part.anchor ?? { x: 0.5, y: 0.5 };
         visual.anchor.set(anchor.x, anchor.y);
         visual.scale.set(part.spriteScale ?? 1);
         if (part.alpha !== undefined) visual.alpha = part.alpha;
-        if (part.visible === false) visual.renderable = false;
+        if (!sprite || part.visible === false) visual.renderable = false;
 
         let attach: PartNode["attach"];
         if (part.attach) {
@@ -99,21 +98,24 @@ export function assembleTileEntity(
 ): AssembledObject {
     const { width, height } = def.tile.size;
     const { origin, spillover } = def.tile;
-    const sprites = def.variants?.[variant];
+    const sprites =
+        def.variantSource === "structured"
+            ? def.variants[variant]
+            : { [def.texturePart]: variant };
     const contentWidth = width - spillover * 2;
     const contentHeight = height - spillover * 2;
 
     if (!sprites) {
         throw new Error(`TileEntityDef "${def.id}": unknown variant "${variant}"`);
     }
-    for (const part of def.parts) {
-        if (!part.sprite && !sprites[part.name]) {
-            throw new Error(
-                `TileEntityDef "${def.id}": variant "${variant}" has no sprite for part "${part.name}"`
-            );
-        }
+    if (
+        def.variantSource === "texture" &&
+        !def.parts.some(({ name }) => name === def.texturePart)
+    ) {
+        throw new Error(
+            `TileEntityDef "${def.id}": texturePart "${def.texturePart}" does not exist`
+        );
     }
-
     if (
         contentWidth <= 0 ||
         contentHeight <= 0 ||
@@ -135,7 +137,7 @@ export function assembleTileEntity(
         throw new Error(`TileEntityDef "${def.id}": origin is outside its tile grid`);
     }
 
-    const assembled = assemble(def, root, variant);
+    const assembled = assembleSprites(def, root, sprites);
     const offsetX =
         width / 2 - (spillover + origin.x * TILE_SIZE + TILE_SIZE / 2);
     const offsetY =
