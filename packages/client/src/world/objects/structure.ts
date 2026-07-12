@@ -9,16 +9,16 @@ import {
 } from "@client/assets/sprite_factory";
 import { assemble, assembleTileEntity } from "../../visual/assemble";
 import { bindAnimations } from "../../visual/bind";
-import { structureDef, treeDef } from "../../visual/defs";
+import { structureDef, tileEntityDefs } from "../../visual/defs";
 import type { ObjectDef } from "../../visual/types";
 import type { AnimationManager } from "../../animation/runtime";
 
 /** Placed tile entity. Art is authored at TILE_SIZE px per footprint tile. */
 export class Structure extends GameObject {
-    sprite: ContaineredSprite;
+    sprite!: ContaineredSprite;
     readonly type: string;
     private readonly animationManager: AnimationManager;
-    private readonly usesSpriteConfig: boolean;
+    private usesSpriteConfig = false;
     private readonly variant: string;
 
     constructor(
@@ -36,10 +36,18 @@ export class Structure extends GameObject {
         this.type = type;
         this.variant = variant;
         this.animationManager = animationManager;
-        const isTree = type === "forest_tree";
-        const def: ObjectDef = isTree ? treeDef : { ...structureDef, id: type };
-        const { parts } = isTree
-            ? assembleTileEntity(treeDef, this.container, variant)
+        this.applyVisualDefinition(variant);
+        this.container.zIndex = 10;
+    }
+
+    private applyVisualDefinition(variant: string) {
+        const tileEntity = tileEntityDefs.get(this.type);
+        const def: ObjectDef = tileEntity ?? {
+            ...structureDef,
+            id: this.type,
+        };
+        const { parts } = tileEntity
+            ? assembleTileEntity(tileEntity, this.container, variant)
             : assemble(def, this.container, variant);
         const first = parts.values().next().value;
         if (!first) {
@@ -47,7 +55,7 @@ export class Structure extends GameObject {
         }
 
         this.sprite = first.visual;
-        this.usesSpriteConfig = !isTree;
+        this.usesSpriteConfig = tileEntity === undefined;
         this.refreshSpriteConfig();
 
         const { animations, autoplay } = bindAnimations(
@@ -60,10 +68,8 @@ export class Structure extends GameObject {
             this.animations.set(animId, animation);
         }
         for (const animId of autoplay) {
-            this.trigger(animId, animationManager);
+            this.trigger(animId, this.animationManager);
         }
-
-        this.container.zIndex = 10;
     }
 
     refreshSpriteConfig() {
@@ -79,32 +85,6 @@ export class Structure extends GameObject {
             child.destroy({ children: true });
         }
         this.animations.clear();
-
-        const isTree = this.type === "forest_tree";
-        const def: ObjectDef = isTree
-            ? treeDef
-            : { ...structureDef, id: this.type };
-        const { parts } = isTree
-            ? assembleTileEntity(treeDef, this.container, this.variant)
-            : assemble(def, this.container, this.variant);
-        const first = parts.values().next().value;
-        if (!first) {
-            throw new Error(`Structure definition "${def.id}" has no parts`);
-        }
-        this.sprite = first.visual;
-        this.refreshSpriteConfig();
-
-        const { animations, autoplay } = bindAnimations(
-            def,
-            parts,
-            undefined,
-            this
-        );
-        for (const [id, animation] of animations) {
-            this.animations.set(id, animation);
-        }
-        for (const id of autoplay) {
-            this.trigger(id, this.animationManager);
-        }
+        this.applyVisualDefinition(this.variant);
     }
 }
