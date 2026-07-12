@@ -36,5 +36,6 @@
         "outDir": "dist",
         "strictNullChecks": true
     },
-    "include": ["packages", "tests"]
+    "include": ["packages", "tests"],
+    "exclude": ["packages/figma-plugin"]
 }
