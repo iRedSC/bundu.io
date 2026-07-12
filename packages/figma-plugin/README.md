@@ -15,6 +15,6 @@ Only touching rectangles with the same appearance and stacking context are merge
 
 Enable **Use object size for radius** to calculate each corner independently as half the shorter of its two adjacent edges.
 
-Locked layers default to **Copy only**, which preserves them without transforming them. They can instead be removed from the copy or included in the transformation. Rectangles within masks and hidden rectangles are left unchanged.
+Locked layers default to **No copy**, which removes them from the copy. They can instead be preserved without transforming or included in the transformation. Rectangles within masks and hidden rectangles are left unchanged.
 
 Before publishing, replace the development `id` in `manifest.json` with the ID assigned by Figma.

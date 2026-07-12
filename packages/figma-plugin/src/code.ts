@@ -28,7 +28,7 @@ const UI = `
   #status.error { color: var(--figma-color-text-danger); }
 </style>
 <form id="form">
-  <label>Corner radius (px)<input id="radius" type="number" min="0" step="1" value="${DEFAULT_RADIUS}" required></label>
+  <label>Corner radius (px)<input id="radius" type="number" min="0" step="1" value="${DEFAULT_RADIUS}" required disabled></label>
   <label class="check"><input id="useObjectSize" type="checkbox" checked>Use object size for radius</label>
   <label>Square-to-circle (%)<input id="roundness" type="number" min="0" max="100" step="1" value="${DEFAULT_ROUNDNESS}" required></label>
   <fieldset>
@@ -123,7 +123,7 @@ figma.ui.onmessage = async (message: PluginMessage) => {
         copy.name = `${frame.name} — Squircle`;
         placeBeside(frame, copy);
 
-        if (message.lockedMode === "exclude") removeLockedDescendants(copy);
+        if (message.lockedMode === "exclude") removeLockedChildren(copy);
         const settings: RadiusSettings = {
             fixedRadius: message.radius,
             useObjectSize: message.useObjectSize,
@@ -181,6 +181,7 @@ function mergeRectangles(frame: FrameNode, settings: RadiusSettings, lockedMode:
         const first = group[0];
         if (!first) continue;
 
+        let vector: VectorNode | undefined;
         try {
             const parent = first.parent;
             if (!parent || !("children" in parent)) {
@@ -190,7 +191,7 @@ function mergeRectangles(frame: FrameNode, settings: RadiusSettings, lockedMode:
 
             const index = parent.children.indexOf(first);
             const appearance = getAppearance(first);
-            const vector = createSquircleVector(group, settings);
+            vector = createSquircleVector(group, settings);
             vector.name = first.name;
             setAppearance(vector, appearance);
             parent.insertChild(index, vector);
@@ -198,6 +199,7 @@ function mergeRectangles(frame: FrameNode, settings: RadiusSettings, lockedMode:
             if (group.length > 1) merged += group.length;
             rounded += 1;
         } catch {
+            vector?.remove();
             skipped += group.length;
         }
     }
@@ -358,9 +360,12 @@ function squirclePath(
         const next = requiredAt(points, (index + 1) % points.length);
         const incoming = unit(previous, point);
         const outgoing = unit(point, next);
+        // Filled-on-right boundaries: right turns (positive cross in y-down) are convex.
+        const cross = incoming.x * outgoing.y - incoming.y * outgoing.x;
         const maximum = Math.min(distance(previous, point), distance(point, next)) / 2;
         const radius = Math.min(settings.fixedRadius, maximum);
-        return { point, incoming, outgoing, radius: settings.useObjectSize ? maximum : radius };
+        const cornerRadius = cross > 0 ? (settings.useObjectSize ? maximum : radius) : 0;
+        return { point, incoming, outgoing, radius: cornerRadius };
     });
     const first = requiredAt(corners, 0);
     const start = subtract(first.point, scale(first.incoming, first.radius));
@@ -374,12 +379,11 @@ function squirclePath(
             continue;
         }
 
-        const exponent = 2 / settings.roundness;
+        const power = settings.roundness;
         const center = add(subtract(corner.point, scale(corner.incoming, corner.radius)), scale(corner.outgoing, corner.radius));
         const samples = Math.max(6, Math.ceil(corner.radius / 3));
         for (let sample = 1; sample <= samples; sample += 1) {
             const angle = (Math.PI / 2) * (sample / samples);
-            const power = 2 / exponent;
             const alongIncoming = Math.sin(angle) ** power;
             const againstOutgoing = Math.cos(angle) ** power;
             const point = subtract(
@@ -500,16 +504,6 @@ function touches(left: RectangleNode, right: RectangleNode): boolean {
         a.y <= b.y + b.height + TOUCH_TOLERANCE &&
         b.y <= a.y + a.height + TOUCH_TOLERANCE
     );
-}
-
-function removeLockedDescendants(root: FrameNode): void {
-    for (const child of [...root.children]) {
-        if (child.locked) {
-            child.remove();
-        } else if ("children" in child) {
-            removeLockedChildren(child);
-        }
-    }
 }
 
 function removeLockedChildren(parent: ChildrenMixin): void {
