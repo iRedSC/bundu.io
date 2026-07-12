@@ -2,7 +2,6 @@ import {
     spriteConfigs,
     type FullItemConfig,
 } from "@client/configs/sprite_configs";
-import { SpriteFactory } from "@client/assets/sprite_factory";
 import { Player } from "../world/objects/player";
 import { Structure } from "../world/objects/structure";
 import type { World } from "../world/world";
@@ -23,12 +22,7 @@ function reapplyDisplays(world: World) {
                 object.setSelectedStructure(ghost.id, ghost.scale);
             }
         } else if (object instanceof Structure) {
-            const config = spriteConfigs.get(object.type);
-            SpriteFactory.update(
-                object.sprite,
-                config?.world_display,
-                object.type
-            );
+            object.refreshSpriteConfig();
         }
     }
 }

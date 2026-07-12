@@ -3,6 +3,7 @@ import { Physics, TileEntity, Type } from "../components/base.js";
 import { GameObject } from "../engine";
 import { GameObjectData } from "@bundu/shared/object_types.js";
 import { deciPacketPos } from "./tile_entity.js";
+import { getVariantId } from "@bundu/shared/variant_map.js";
 
 /**
  * A placed structure / static prop — tile entity + type, no harvest data.
@@ -26,7 +27,7 @@ export class Structure extends GameObject {
             y: pos.y,
             rotation: physics.rotation,
             type: GameObjectData.ResourceNodeType,
-            data: [type.id],
+            data: [type.id, getVariantId(type.variant)],
         };
     }
 }

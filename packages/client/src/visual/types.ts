@@ -15,7 +15,7 @@ export type PartPose = {
 export type PartDef = PartPose & {
     name: string;
     /** Texture key; empty string = blank placeholder. */
-    sprite: string;
+    sprite?: string;
     /** Parent part name; omit to attach to object root. */
     parent?: string;
     anchor?: { x: number; y: number };
@@ -56,8 +56,21 @@ export type AnimDef = {
 export type ObjectDef = {
     id: string;
     parts: PartDef[];
+    /** Variant id -> part name -> replacement texture key. */
+    variants?: Record<string, Record<string, string>>;
     slots?: Record<string, SlotDef>;
     animations?: AnimDef[];
+};
+
+export type TileEntityDef = ObjectDef & {
+    tile: {
+        /** Authored sprite dimensions in pixels. */
+        size: { width: number; height: number };
+        /** Origin tile within the sprite's non-spillover bounds. */
+        origin: { x: number; y: number };
+        /** Decorative pixels outside every edge of the tile grid. */
+        spillover: number;
+    };
 };
 
 export type PartNode = {

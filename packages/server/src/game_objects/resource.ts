@@ -4,6 +4,7 @@ import { ResourceConfigs } from "../configs/loaders/resources.js";
 import { GameObject } from "../engine";
 import { GameObjectData } from "@bundu/shared/object_types.js";
 import { deciPacketPos } from "./tile_entity.js";
+import { getVariantId } from "@bundu/shared/variant_map.js";
 
 /**
  * A harvestable tile entity (resource node).
@@ -36,7 +37,7 @@ export class Resource extends GameObject {
             y: pos.y,
             rotation: physics.rotation,
             type: GameObjectData.ResourceNodeType,
-            data: [type.id],
+            data: [type.id, getVariantId(type.variant)],
         };
     }
 }

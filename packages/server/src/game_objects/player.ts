@@ -10,6 +10,7 @@ import { Stats } from "../components/stats.js";
 import { GameObject } from "../engine";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { GameObjectData } from "@bundu/shared/object_types.js";
+import { getVariantId } from "@bundu/shared/variant_map.js";
 import { PLAYER_MOVE_SPEED } from "@bundu/shared/movement";
 import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { deciPacketPos } from "./tile_entity.js";
@@ -78,7 +79,7 @@ export class Player extends GameObject {
                 data.offHand,
                 data.helmet,
                 data.backpack ?? false,
-                data.playerSkin,
+                getVariantId(data.playerSkin),
                 physics.collisionRadius,
             ],
         };

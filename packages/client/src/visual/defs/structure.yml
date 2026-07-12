@@ -1,0 +1,9 @@
+id: structure
+parts:
+  - name: main
+    sprite: ""
+variants: {}
+animations:
+  - id: 100
+    preset: hit
+    parts: [main]

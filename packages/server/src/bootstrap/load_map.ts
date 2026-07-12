@@ -51,7 +51,7 @@ function tryAddResource(
     world.addObject(
         new Resource(
             tileEntityPhysics(origin, rot),
-            { id: getRequiredNumericId(id), variant: 0 },
+            { id: getRequiredNumericId(id), variant: "base" },
             tile
         )
     );

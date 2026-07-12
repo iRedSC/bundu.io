@@ -7,7 +7,7 @@ import { spriteConfigs } from "../../configs/sprite_configs";
 import { AnimationManager } from "../../animation/runtime";
 import { assemble } from "../../visual/assemble";
 import { bindAnimations } from "../../visual/bind";
-import { playerDef } from "../../visual/defs/player";
+import { playerDef } from "../../visual/defs";
 import type { AnimContext, PartNode, SlotDef } from "../../visual/types";
 
 type nullish = undefined | null;
@@ -59,11 +59,12 @@ export class Player extends GameObject implements AnimContext {
         name: Text,
         pos: Point,
         rotation: number,
-        collisionRadius: number
+        collisionRadius: number,
+        variant?: string
     ) {
         super(id, pos, rotation, collisionRadius, TILE_SIZE);
 
-        const assembled = assemble(playerDef, this.container);
+        const assembled = assemble(playerDef, this.container, variant);
         this.parts = assembled.parts;
         this.slots = assembled.slots;
 
