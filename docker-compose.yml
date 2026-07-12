@@ -5,8 +5,6 @@ services:
       dockerfile: containers/frontend/Dockerfile
       args:
         GAME_WS_URL: ${GAME_WS_URL:-ws://localhost:7777}
-    ports:
-      - "3000:3000"
     environment:
       PORT: 3000
     depends_on:
@@ -16,7 +14,5 @@ services:
     build:
       context: .
       dockerfile: containers/server/Dockerfile
-    ports:
-      - "7777:7777"
     environment:
       WS_PORT: 7777

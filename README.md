@@ -29,7 +29,7 @@ bun run client   # build + static host :3000
 docker compose up --build
 ```
 
-| Service   | Port | Image build file        |
+| Service   | Internal port | Image build file        |
 |-----------|------|-------------------------|
 | frontend  | 3000 | `containers/frontend/Dockerfile` |
 | server    | 7777 | `containers/server/Dockerfile`   |
