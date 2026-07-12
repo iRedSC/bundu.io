@@ -37,7 +37,8 @@ export function createPlayer(
             moveDir: [0, 0],
             selectedStructure: {
                 id: -1,
-                cooldown_timestamp: 0,
+                rotation: 0,
+                cursor: { x: tx, y: ty },
             },
         }
     );

@@ -30,6 +30,8 @@ import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { SERVER_DEBUG } from "../debug/flag.js";
 import { PlaceMode } from "@bundu/shared/inventory";
+import { pointToTile } from "@bundu/shared/tiles";
+import { ItemConfigs } from "../configs/loaders/items.js";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
@@ -176,6 +178,7 @@ export class PlayerSystem extends System<GameEventMap> {
         data.score += recipe.score;
 
         clearMissingEquipment(player);
+        this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
@@ -244,12 +247,6 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = player.get(PlayerData);
         if (data.crafting) return;
 
-        // Place-only path: selected structure consumes the attack packet.
-        if (data.selectedStructure.id !== -1) {
-            this.trigger(GameEvent.PlaceSelectedStructure, { object: player });
-            return;
-        }
-
         data.attacking = !stop;
         if (data.lastAttackTime === undefined) {
             data.lastAttackTime = this.world.gameTime;
@@ -291,6 +288,7 @@ export class PlayerSystem extends System<GameEventMap> {
 
         inv.selected = slot;
         selectEquipment(player, inv.slots[slot]?.id);
+        this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         emitEquipment(player, this.world.context.worldPacketManager);
     };
@@ -305,6 +303,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!applyMoveSlot(inv, from, to)) return;
 
         clearMissingEquipment(player);
+        this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
@@ -329,6 +328,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!applyCursorSlot(inv, slot, placeMode)) return;
 
         clearMissingEquipment(player);
+        this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
@@ -347,8 +347,61 @@ export class PlayerSystem extends System<GameEventMap> {
             x,
             y,
             rotation,
+            resultTo: player,
         });
     };
+
+    placeStructure = (playerId: number, _packet: ClientPacket.PlaceStructure) => {
+        const player = this.world.getObject(playerId);
+        if (!player || PlayerData.get(player)?.crafting) return;
+        this.trigger(GameEvent.PlaceSelectedStructure, {
+            object: player,
+        });
+    };
+
+    setStructurePlacement = (
+        playerId: number,
+        { rotation, x, y }: ClientPacket.SetStructurePlacement
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        if (
+            !Number.isSafeInteger(rotation) ||
+            !Number.isSafeInteger(x) ||
+            !Number.isSafeInteger(y)
+        ) {
+            return;
+        }
+
+        const selected = player.get(PlayerData).selectedStructure;
+        selected.rotation = ((rotation % 4) + 4) % 4;
+        selected.cursor = { x, y };
+        this.trigger(GameEvent.ValidateSelectedStructure, { object: player });
+    };
+
+    private syncSelectedStructure(player: GameObject) {
+        const data = player.get(PlayerData);
+        const inv = player.get(Inventory);
+        const id = inv.slots[inv.selected]?.id;
+        const structureId =
+            id !== undefined && ItemConfigs.get(id).function === "building"
+                ? id
+                : -1;
+        if (data.selectedStructure.id === structureId) return;
+
+        data.selectedStructure.id = structureId;
+        if (structureId !== -1) {
+            data.selectedStructure.cursor = pointToTile(player.get(Physics).position);
+        }
+        this.world.context.playerPacketManager.set(
+            player.id,
+            ServerPacket.SetSelectedStructure,
+            { structureId }
+        );
+        if (structureId !== -1) {
+            this.trigger(GameEvent.ValidateSelectedStructure, { object: player });
+        }
+    }
 
     chatMessage = (playerId: number, { message }: ClientPacket.ChatMessage) => {
         const player = this.world.getObject(playerId);
@@ -369,6 +422,7 @@ export class PlayerSystem extends System<GameEventMap> {
                 this.world.context;
             emitInventory(player, playerPacketManager);
             clearMissingEquipment(player);
+            this.syncSelectedStructure(player);
             this.clearStaleBlocking(player);
             emitEquipment(player, worldPacketManager);
             return;

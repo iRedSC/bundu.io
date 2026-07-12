@@ -21,14 +21,11 @@ function reapplyDisplays(world: World) {
     for (const object of world.objects.all()) {
         if (object instanceof Player) {
             object.updateEquipment();
-            const ghost = object.getStructureGhost();
-            if (ghost) {
-                object.setSelectedStructure(ghost.id, ghost.scale);
-            }
         } else if (object instanceof Structure) {
             object.refreshSpriteConfig();
         }
     }
+    world.refreshPlacementGhost();
 }
 
 function reapplyVisualDefs(world: World) {

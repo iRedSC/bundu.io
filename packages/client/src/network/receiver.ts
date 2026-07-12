@@ -29,6 +29,10 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.UpdateEquipment, world.updateEquipment);
     receiver.on(ServerPacket.ChatMessage, world.chatMessage);
     receiver.on(ServerPacket.SetSelectedStructure, world.selectStructure);
+    receiver.on(
+        ServerPacket.PlaceStructureResult,
+        world.placeStructureResult
+    );
 }
 
 export function setupGUIPacketReceiving(

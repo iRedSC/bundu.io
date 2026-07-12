@@ -26,7 +26,7 @@ export class Structure extends GameObject {
             x: pos.x,
             y: pos.y,
             rotation: physics.rotation,
-            type: GameObjectData.ResourceNodeType,
+            type: GameObjectData.StructureType,
             data: [type.id, getVariantId(type.variant)],
         };
     }

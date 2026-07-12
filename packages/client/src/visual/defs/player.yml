@@ -23,11 +23,6 @@ parts:
     attachAbove: true
     zIndex: 2
 
-  - name: placementGhost
-    sprite: ""
-    alpha: 0.5
-    visible: false
-    zIndex: 3
 # Example:
 # variants:
 #   1:

@@ -19,9 +19,13 @@ export namespace GameObjectData {
     /** Tile entity: type id only — footprint/collision come from shared tile rules. */
     export type ResourceNodeData = [type: number, variant?: number];
 
+    export const StructureType = 0x02;
+    export type StructureData = [type: number, variant?: number];
+
     /** Maps LoadObject.type → typed payload tuple. */
     export type ByType = {
         [PlayerType]: PlayerData;
         [ResourceNodeType]: ResourceNodeData;
+        [StructureType]: StructureData;
     };
 }

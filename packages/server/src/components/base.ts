@@ -42,6 +42,12 @@ export const CalculateCollisions = Component.register<CalculateCollisions>(
     () => ({})
 );
 
+/** Explicit exception for non-solid entities such as dropped ground items. */
+export type AllowsPlacementOverlap = {};
+export const AllowsPlacementOverlap = Component.register<AllowsPlacementOverlap>(
+    () => ({})
+);
+
 export type Type = { id: number; variant?: string };
 export const Type = Component.register<Type>(() => ({ id: 0 }));
 
