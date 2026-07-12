@@ -1,0 +1,14 @@
+{
+  "name": "@bundu/figma-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/code.ts --outdir dist --target browser",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.117.0",
+    "typescript": "~5.9.3"
+  }
+}

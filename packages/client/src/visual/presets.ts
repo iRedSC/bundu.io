@@ -3,7 +3,7 @@ import { colorLerp, lerp, radians } from "@bundu/shared/transforms";
 import { random } from "@bundu/shared";
 import { Animation } from "../animation/runtime";
 import { easeIn, easeOut } from "../animation/animations";
-import type { AnimContext, PartNode, SizeTarget } from "./types";
+import type { AnimContext, PartNode, Rotatable } from "./types";
 
 type Tintable = { tint: ColorSource };
 
@@ -34,26 +34,35 @@ export function hurt(nodes: PartNode[]) {
     return animation;
 }
 
-/** Scale punch on a GameObject-like `{ size }` (structure parity). */
-export function hitSize(target: SizeTarget) {
-    const scale = target.size;
+/** Dampened rotational wiggle on hit (structures). */
+export function hitRotation(target: Rotatable) {
+    const kick = radians(14);
     const animation = new Animation();
+    let base = 0;
+    let dir = 1;
 
-    animation.keyframes[0] = (a) => {
-        if (a.isFirstKeyframe) a.goto(0, 100);
-        const t = easeOut(a.t);
-        target.size = lerp(scale, scale / 1.1, t);
-        if (a.keyframeEnded) a.next(400);
+    const apply = (rotation: number) => {
+        // Write container directly — static structures leave the interp
+        // update set, so rotationStates alone never reaches the display.
+        target.rotationStates.snap(rotation);
+        target.rotation = rotation;
     };
 
-    animation.keyframes[1] = (a) => {
-        const t = easeOut(a.t);
-        target.size = lerp(scale / 1.1, scale, t);
+    animation.keyframes[0] = (a) => {
+        if (a.isFirstKeyframe) {
+            base = target.rotation;
+            dir = random.integer(0, 1) ? 1 : -1;
+            a.goto(0, 450);
+        }
+        // ~2.5 oscillations, exponential settle
+        const damp = Math.exp(-5 * a.t);
+        const wiggle = Math.sin(a.t * Math.PI * 5) * kick * damp * dir;
+        apply(base + wiggle);
         if (a.keyframeEnded) a.expired = true;
     };
 
     animation.cleanup = () => {
-        target.size = scale;
+        apply(base);
     };
     return animation;
 }
@@ -66,8 +75,11 @@ export function hit(node: PartNode) {
 
     animation.keyframes[0] = (a) => {
         if (a.isFirstKeyframe) a.goto(0, 100);
+
         const t = easeOut(a.t);
+
         const s = lerp(base, base / 1.1, t);
+
         target.scale.set(s);
         if (a.keyframeEnded) a.next(400);
     };
@@ -224,13 +236,13 @@ export function createPreset(
     name: string,
     nodes: PartNode[],
     ctx: AnimContext,
-    sizeTarget?: SizeTarget
+    rotationTarget?: Rotatable
 ): Animation {
     switch (name) {
         case "hurt":
             return hurt(nodes);
         case "hit":
-            return sizeTarget ? hitSize(sizeTarget) : hit(nodes[0]!);
+            return rotationTarget ? hitRotation(rotationTarget) : hit(nodes[0]!);
         case "wave":
             return wave(nodes);
         case "attack":

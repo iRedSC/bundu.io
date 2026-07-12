@@ -20,7 +20,7 @@
         "serve-frontend": "bun static-server.ts --hot",
         "serve-frontend:prod": "bun static-server.ts",
         "client": "bun run build && bun run serve-frontend",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsc --noEmit && bun run --cwd packages/figma-plugin typecheck",
         "lint": "biome lint .",
         "test": "bun test"
     }
