@@ -20,9 +20,6 @@ const TEST_MAP_BORDER_PADDING_TILES = 3;
 
 const TEST_MAP_RESOURCE_IDS: string[] = [
     "forest_tree",
-    "pine_tree",
-    "pine_tree_snow",
-    "savanah_tree",
     "stone",
     "gold",
     "diamond",
@@ -51,7 +48,7 @@ function tryAddResource(
     world.addObject(
         new Resource(
             tileEntityPhysics(origin, rot),
-            { id: getRequiredNumericId(id), variant: 0 },
+            { id: getRequiredNumericId(id), variant: "base" },
             tile
         )
     );

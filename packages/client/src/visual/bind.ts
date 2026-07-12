@@ -31,7 +31,7 @@ export function bindAnimations(
 
         animations.set(
             anim.id,
-            createPreset(anim.preset, nodes, ctx, rotationTarget)
+            createPreset(anim, nodes, ctx, rotationTarget)
         );
         if (anim.autoplay) autoplay.push(anim.id);
     }

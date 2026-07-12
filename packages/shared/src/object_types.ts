@@ -17,7 +17,7 @@ export namespace GameObjectData {
 
     export const ResourceNodeType = 0x01;
     /** Tile entity: type id only — footprint/collision come from shared tile rules. */
-    export type ResourceNodeData = [type: number];
+    export type ResourceNodeData = [type: number, variant?: number];
 
     /** Maps LoadObject.type → typed payload tuple. */
     export type ByType = {

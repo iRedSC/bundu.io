@@ -9,7 +9,7 @@ export type PlayerData = {
     name: string;
     score: number;
 
-    playerSkin: number;
+    playerSkin: string;
     selectedStructure: {
         id: number;
         cooldown_timestamp: number;
@@ -29,7 +29,7 @@ export type PlayerData = {
 export const PlayerData = Component.register<PlayerData>(() => ({
     name: "unnamed",
     score: 0,
-    playerSkin: 0,
+    playerSkin: "base",
     backpackSkin: 0,
     moveDir: [0, 0],
     selectedStructure: {

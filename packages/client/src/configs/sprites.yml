@@ -258,11 +258,6 @@ bird_skull:
 
 # Tree
 
-forest_tree:
-    type: tree
-    world_display:
-        scale: 2.5
-
 pine_tree:
     type: tree
     world_display:

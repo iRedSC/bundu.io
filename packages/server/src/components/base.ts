@@ -42,7 +42,7 @@ export const CalculateCollisions = Component.register<CalculateCollisions>(
     () => ({})
 );
 
-export type Type = { id: number; variant?: number };
+export type Type = { id: number; variant?: string };
 export const Type = Component.register<Type>(() => ({ id: 0 }));
 
 export type GroundData = {

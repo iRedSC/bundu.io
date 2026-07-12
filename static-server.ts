@@ -7,6 +7,10 @@ const CONFIG_DIR = path.join(
     import.meta.dir,
     "packages/client/src/configs"
 );
+const VISUAL_DEFS_DIR = path.join(
+    import.meta.dir,
+    "packages/client/src/visual/defs"
+);
 const PORT = Number(process.env.PORT ?? 3000);
 /** Dev-only display-config hot-reload. Never enabled in CI/prod images. */
 const DEV_CONFIG_RELOAD = process.env.BUNDU_DEBUG === "1";
@@ -78,16 +82,35 @@ async function spriteConfigsJson(): Promise<Response> {
     });
 }
 
+function visualDefsJson(): Response {
+    const defs = Object.fromEntries(
+        fs.readdirSync(VISUAL_DEFS_DIR)
+            .filter((name) => /\.ya?ml$/i.test(name))
+            .map((name) => [
+                path.basename(name, path.extname(name)),
+                Bun.YAML.parse(
+                    fs.readFileSync(path.join(VISUAL_DEFS_DIR, name), "utf8")
+                ),
+            ])
+    );
+    return Response.json(defs, {
+        headers: { "Cache-Control": "no-store" },
+    });
+}
+
 if (DEV_CONFIG_RELOAD) {
     let debounce: Timer | undefined;
-    fs.watch(CONFIG_DIR, { recursive: true }, (_event, filename) => {
+    const watchYaml = (directory: string) =>
+        fs.watch(directory, { recursive: true }, (_event, filename) => {
         if (!filename || !/\.ya?ml$/i.test(filename)) return;
         clearTimeout(debounce);
         debounce = setTimeout(() => {
             console.log(`[static] configs changed (${filename}) — hot-reload`);
             notifyConfigReload();
         }, 100);
-    });
+        });
+    watchYaml(CONFIG_DIR);
+    watchYaml(VISUAL_DEFS_DIR);
 
     // Keep SSE connections alive past Bun's default idle timeout.
     setInterval(() => {
@@ -121,6 +144,14 @@ serve({
                 } catch (err) {
                     console.error("[static] failed to build sprite configs", err);
                     return new Response("Config error", { status: 500 });
+                }
+            }
+            if (url.pathname === "/__dev/visual-defs") {
+                try {
+                    return visualDefsJson();
+                } catch (err) {
+                    console.error("[static] failed to load visual defs", err);
+                    return new Response("Definition error", { status: 500 });
                 }
             }
         }

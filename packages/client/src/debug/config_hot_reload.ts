@@ -2,10 +2,13 @@ import {
     spriteConfigs,
     type FullItemConfig,
 } from "@client/configs/sprite_configs";
-import { SpriteFactory } from "@client/assets/sprite_factory";
 import { Player } from "../world/objects/player";
 import { Structure } from "../world/objects/structure";
 import type { World } from "../world/world";
+import {
+    replaceVisualDefs,
+    type VisualDefs,
+} from "../visual/defs";
 
 function replaceSpriteConfigs(configs: Record<string, FullItemConfig>) {
     spriteConfigs.clear();
@@ -23,13 +26,15 @@ function reapplyDisplays(world: World) {
                 object.setSelectedStructure(ghost.id, ghost.scale);
             }
         } else if (object instanceof Structure) {
-            const config = spriteConfigs.get(object.type);
-            SpriteFactory.update(
-                object.sprite,
-                config?.world_display,
-                object.type
-            );
+            object.refreshSpriteConfig();
         }
+    }
+}
+
+function reapplyVisualDefs(world: World) {
+    for (const object of world.objects.all()) {
+        if (object instanceof Player) object.reloadVisualDefinition();
+        else if (object instanceof Structure) object.reloadVisualDefinition();
     }
 }
 
@@ -52,23 +57,28 @@ export function startConfigHotReload(world: World): () => void {
         try {
             do {
                 pending = false;
-                const res = await fetch(
-                    `/__dev/sprite-configs?t=${Date.now()}`
-                );
-                if (!res.ok) {
+                const timestamp = Date.now();
+                const [configsRes, defsRes] = await Promise.all([
+                    fetch(`/__dev/sprite-configs?t=${timestamp}`),
+                    fetch(`/__dev/visual-defs?t=${timestamp}`),
+                ]);
+                if (!configsRes.ok || !defsRes.ok) {
                     console.warn(
                         "[config-hot-reload] fetch failed:",
-                        res.status,
-                        res.statusText
+                        configsRes.status,
+                        defsRes.status
                     );
                     continue;
                 }
-                const configs = (await res.json()) as Record<
+                const configs = (await configsRes.json()) as Record<
                     string,
                     FullItemConfig
                 >;
+                const defs = (await defsRes.json()) as VisualDefs;
                 replaceSpriteConfigs(configs);
+                replaceVisualDefs(defs);
                 reapplyDisplays(world);
+                reapplyVisualDefs(world);
                 const sample =
                     configs.diamond_pickaxe?.hand_display ??
                     configs.wood_pickaxe?.hand_display;

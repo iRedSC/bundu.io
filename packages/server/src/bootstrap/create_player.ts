@@ -7,6 +7,7 @@ import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Circle, Vector } from "sat";
 import { serverTime, type World } from "../engine";
 import { Player } from "../game_objects/player";
+import { getVariantName } from "@bundu/shared/variant_map";
 
 const SPAWN_TILE = 75;
 
@@ -31,7 +32,7 @@ export function createPlayer(
         {
             name: username,
             score: 0,
-            playerSkin: skinId,
+            playerSkin: getVariantName(skinId) ?? "base",
 
             moveDir: [0, 0],
             selectedStructure: {

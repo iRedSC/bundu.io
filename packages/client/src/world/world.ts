@@ -20,6 +20,7 @@ import { CombatFx } from "./combat_fx";
 import { GameObjectData } from "@bundu/shared/object_types";
 import { Structure } from "./objects/structure";
 import { getStringId } from "@bundu/shared/id_map";
+import { getVariantName } from "@bundu/shared/variant_map";
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -112,7 +113,7 @@ export class World {
             offhand,
             helmet,
             backpack,
-            _playerSkin,
+            playerSkin,
             collisionRadius,
         ] = packet.data;
         const id = packet.id;
@@ -127,7 +128,8 @@ export class World {
             nameText,
             pos,
             radians(packet.rotation),
-            collisionRadius
+            collisionRadius,
+            getVariantName(playerSkin ?? undefined)
         );
 
         player.setEquipment({ mainhand, offhand, helmet, backpack });
@@ -140,7 +142,7 @@ export class World {
     };
 
     newStructure = (packet: LoadResource) => {
-        const [nodeType] = packet.data;
+        const [nodeType, variantId] = packet.data;
         this.renderer.delete(packet.id);
 
         const structure = new Structure(
@@ -149,7 +151,9 @@ export class World {
             deciPoint(packet.x, packet.y),
             packet.rotation,
             FOOTPRINT_CIRCLE_RADIUS,
-            TILE_SIZE
+            AnimationManagers.World,
+            TILE_SIZE,
+            getVariantName(variantId) ?? "base"
         );
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);

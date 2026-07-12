@@ -1,0 +1,60 @@
+id: player
+parts:
+  - name: leftHand
+    sprite: hand
+    scale: 0.7
+    pivot: { x: 1, y: 0 }
+    spriteScale: 0.5
+    attach: true
+    zIndex: 0
+
+  - name: rightHand
+    sprite: hand
+    scale: 0.7
+    pivot: { x: -1, y: 0 }
+    spriteScale: 0.5
+    attach: true
+    attachAnchor: { x: 1, y: 0.5 }
+    zIndex: 1
+
+  - name: body
+    sprite: player
+    attach: true
+    attachAbove: true
+    zIndex: 2
+
+  - name: placementGhost
+    sprite: ""
+    alpha: 0.5
+    visible: false
+    zIndex: 3
+# Example:
+# variants:
+#   1:
+#     body: alternate_player
+#     leftHand: alternate_hand
+variants: {}
+
+slots:
+  mainhand: { part: leftHand, display: hand_display, scale: 2.5 }
+  offhand:
+    part: rightHand
+    display: hand_display
+    mirrorX: true
+    scale: 1.8
+  helmet: { part: body, display: body_display }
+  
+animations:
+  - id: 200
+    preset: wave
+    parts: [leftHand, rightHand, body]
+    autoplay: true
+  - id: 100
+    preset: hurt
+    parts: [leftHand, rightHand, body]
+  - id: 300
+    preset: attack
+    parts: [leftHand, rightHand, body]
+  - id: 301
+    preset: block
+    parts: [leftHand, rightHand, body]
