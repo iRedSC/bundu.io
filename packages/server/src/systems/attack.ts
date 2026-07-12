@@ -102,7 +102,7 @@ export class AttackSystem extends System<GameEventMap> {
         for (const object of hits.values()) {
             this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
                 id: object.id,
-                angle: 0,
+                angle: facing,
             });
             this.trigger(GameEvent.Hurt, {
                 object,
