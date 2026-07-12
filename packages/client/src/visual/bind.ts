@@ -5,7 +5,7 @@ import {
     type AnimContext,
     type ObjectDef,
     type PartNode,
-    type SizeTarget,
+    type Rotatable,
 } from "./types";
 
 /** Bind ObjectDef animations to part nodes. Returns id → Animation map. */
@@ -13,7 +13,7 @@ export function bindAnimations(
     def: ObjectDef,
     parts: Map<string, PartNode>,
     ctx: AnimContext = EMPTY_ANIM_CONTEXT,
-    sizeTarget?: SizeTarget
+    rotationTarget?: Rotatable
 ): { animations: Map<number, Animation>; autoplay: number[] } {
     const animations = new Map<number, Animation>();
     const autoplay: number[] = [];
@@ -31,7 +31,7 @@ export function bindAnimations(
 
         animations.set(
             anim.id,
-            createPreset(anim.preset, nodes, ctx, sizeTarget)
+            createPreset(anim.preset, nodes, ctx, rotationTarget)
         );
         if (anim.autoplay) autoplay.push(anim.id);
     }

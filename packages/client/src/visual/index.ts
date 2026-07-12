@@ -6,7 +6,7 @@ export type {
     PartDef,
     PartNode,
     PartPose,
-    SizeTarget,
+    Rotatable,
     SlotDef,
     SlotDisplay,
 } from "./types";
