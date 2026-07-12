@@ -19,11 +19,15 @@ export function bindAnimations(
     const autoplay: number[] = [];
 
     for (const anim of def.animations ?? []) {
-        const nodes = anim.parts.flatMap((name) => {
+        const nodes = anim.parts.map((name) => {
             const node = parts.get(name);
-            return node ? [node] : [];
+            if (!node) {
+                throw new Error(
+                    `ObjectDef "${def.id}": anim targets unknown part "${name}"`
+                );
+            }
+            return node;
         });
-        if (nodes.length !== anim.parts.length) continue;
 
         animations.set(
             anim.id,

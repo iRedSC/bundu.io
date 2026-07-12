@@ -40,15 +40,15 @@ export function hit(node: PartNode) {
 
     animation.keyframes[0] = (a) => {
         if (a.isFirstKeyframe) a.goto(0, 100);
-        target.rotation = lerp(base, base / 1.1, easeOut(a.t));
+        target.scale.set(lerp(base, base / 1.1, easeOut(a.t)));
         if (a.keyframeEnded) a.next(400);
     };
 
     animation.keyframes[1] = (a) => {
-        target.rotation = lerp(base / 1.1, base, easeOut(a.t));
+        target.scale.set(lerp(base / 1.1, base, easeOut(a.t)));
         if (a.keyframeEnded) a.expired = true;
     };
 
-    animation.cleanup = () => target.rotation = base;
+    animation.cleanup = () => target.scale.set(base);
     return animation;
 }

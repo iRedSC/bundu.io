@@ -7,7 +7,7 @@ import { treeSway } from "./animations/tree_sway";
 import { wave } from "./animations/wave";
 import type { AnimContext, AnimDef, PartNode, Rotatable } from "./types";
 
-/** Resolve a preset name to an Animation. */
+/** Resolve a preset definition to an Animation. */
 export function createPreset(
     def: AnimDef,
     nodes: PartNode[],
