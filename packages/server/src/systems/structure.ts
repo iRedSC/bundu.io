@@ -11,12 +11,7 @@ import {
     type TileRot,
 } from "@bundu/shared";
 import { Circle, testCircleCircle, Vector } from "sat";
-import {
-    AllowsPlacementOverlap,
-    GroundData,
-    Physics,
-    TileEntity,
-} from "../components/base.js";
+import { GroundData, Physics, TileEntity } from "../components/base.js";
 import { Inventory } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { Attributes } from "../components/attributes.js";
@@ -29,8 +24,16 @@ import {
 import { emitInventory } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
+type PlacementResult = {
+    allowed: boolean;
+    x: number;
+    y: number;
+    rotation: number;
+};
+
 export class StructureSystem extends System<GameEventMap> {
     private readonly reachListeners = new Map<number, () => void>();
+    private readonly lastPlacementResult = new Map<number, string>();
 
     constructor(world: World) {
         super(world, [PlayerData, Attributes], 1);
@@ -44,7 +47,7 @@ export class StructureSystem extends System<GameEventMap> {
             this.validateSelectedStructure,
             [PlayerData]
         );
-        this.listen(GameEvent.Collide, this.validateSelectedStructure, [PlayerData]);
+        this.listen(GameEvent.Move, this.validateSelectedStructure, [PlayerData]);
     }
 
     override enter(player: GameObject) {
@@ -55,9 +58,11 @@ export class StructureSystem extends System<GameEventMap> {
 
     override exit(player: GameObject) {
         const validate = this.reachListeners.get(player.id);
-        if (!validate) return;
-        player.get(Attributes).removeEventListener("placement.reach", validate);
-        this.reachListeners.delete(player.id);
+        if (validate) {
+            player.get(Attributes).removeEventListener("placement.reach", validate);
+            this.reachListeners.delete(player.id);
+        }
+        this.lastPlacementResult.delete(player.id);
     }
 
     placeSelectedStructure({ object: player }: GameEvent.PlaceSelectedStructure) {
@@ -92,32 +97,41 @@ export class StructureSystem extends System<GameEventMap> {
             );
         }
 
-        this.world.context.playerPacketManager.set(
-            player.id,
-            ServerPacket.PlaceStructureResult,
-            {
-                allowed,
-                x: placement?.origin.x ?? 0,
-                y: placement?.origin.y ?? 0,
-                rotation: placement?.rotation ?? 0,
-            }
-        );
+        this.sendPlacementResult(player.id, {
+            allowed,
+            x: placement?.origin.x ?? 0,
+            y: placement?.origin.y ?? 0,
+            rotation: placement?.rotation ?? 0,
+        });
+        if (data.selectedStructure.id === -1) {
+            this.lastPlacementResult.delete(player.id);
+        }
     }
 
     validateSelectedStructure = ({ object }: { object: GameObject }) => {
-        if (object.get(PlayerData).selectedStructure.id === -1) return;
+        if (object.get(PlayerData).selectedStructure.id === -1) {
+            this.lastPlacementResult.delete(object.id);
+            return;
+        }
         const placement = this.selectedPlacement(object);
-        this.world.context.playerPacketManager.set(
-            object.id,
-            ServerPacket.PlaceStructureResult,
-            {
-                allowed: placement?.allowed ?? false,
-                x: placement?.origin.x ?? 0,
-                y: placement?.origin.y ?? 0,
-                rotation: placement?.rotation ?? 0,
-            }
-        );
+        this.sendPlacementResult(object.id, {
+            allowed: placement?.allowed ?? false,
+            x: placement?.origin.x ?? 0,
+            y: placement?.origin.y ?? 0,
+            rotation: placement?.rotation ?? 0,
+        });
     };
+
+    private sendPlacementResult(playerId: number, result: PlacementResult) {
+        const key = `${result.allowed},${result.x},${result.y},${result.rotation}`;
+        if (this.lastPlacementResult.get(playerId) === key) return;
+        this.lastPlacementResult.set(playerId, key);
+        this.world.context.playerPacketManager.set(
+            playerId,
+            ServerPacket.PlaceStructureResult,
+            result
+        );
+    }
 
     private selectedPlacement(player: GameObject) {
         const data = player.get(PlayerData);
@@ -136,14 +150,7 @@ export class StructureSystem extends System<GameEventMap> {
 
         const def = structurePlacementDef(id);
         const reach = Math.max(0, player.get(Attributes).get("placement.reach"));
-        const origin = structureOriginAtPoint(
-            {
-                x: tileCenterWorld(cursor.x),
-                y: tileCenterWorld(cursor.y),
-            },
-            def.blocked,
-            rot
-        );
+        const origin = structureOriginAtPoint(cursor, def.blocked, rot);
         const tile = makeTileEntity(origin, rot, def.blocked);
         const center = footprintCenter(def.blocked, rot);
         const inReach =
@@ -224,19 +231,15 @@ export class StructureSystem extends System<GameEventMap> {
         }
 
         const circle = new Circle(new Vector(), FOOTPRINT_CIRCLE_RADIUS);
-        const dynamic = this.world.query([Physics]).filter(
-            (object) =>
-                !TileEntity.get(object) && !AllowsPlacementOverlap.get(object)
-        );
+        const dynamic = this.world
+            .query([Physics])
+            .filter((object) => !TileEntity.get(object));
         for (const { x, y } of occupied) {
             circle.pos.x = tileCenterWorld(x);
             circle.pos.y = tileCenterWorld(y);
             for (const object of dynamic) {
                 const physics = object.get(Physics);
-                const collider = PlayerData.get(object)
-                    ? new Circle(physics.position, physics.collisionRadius / 2)
-                    : physics.collider;
-                if (testCircleCircle(circle, collider)) {
+                if (testCircleCircle(circle, physics.collider)) {
                     return false;
                 }
             }

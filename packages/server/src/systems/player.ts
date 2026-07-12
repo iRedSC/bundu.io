@@ -398,9 +398,7 @@ export class PlayerSystem extends System<GameEventMap> {
             ServerPacket.SetSelectedStructure,
             { structureId }
         );
-        if (structureId !== -1) {
-            this.trigger(GameEvent.ValidateSelectedStructure, { object: player });
-        }
+        this.trigger(GameEvent.ValidateSelectedStructure, { object: player });
     }
 
     chatMessage = (playerId: number, { message }: ClientPacket.ChatMessage) => {
