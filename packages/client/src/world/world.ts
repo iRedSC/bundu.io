@@ -64,7 +64,6 @@ export class World {
     private placementGhost?: Structure;
     private placementInvalidOverlay?: ContaineredSprite;
     private placementGhostType = 0;
-    private placementGhostPose = "";
     private placementGhostAllowed?: boolean;
 
     constructor(viewport: Viewport) {
@@ -231,12 +230,6 @@ export class World {
 
     placeStructureResult = (packet: ServerPacket.PlaceStructureResult) => {
         if (!this.placementGhost) return;
-        this.placementGhost.position.set(
-            tileCenterWorld(packet.x),
-            tileCenterWorld(packet.y)
-        );
-        this.placementGhost.rotation = radians(packet.rotation * 90);
-        this.placementGhostPose = `${packet.x},${packet.y},${packet.rotation}`;
         if (this.placementGhostAllowed !== packet.allowed) {
             this.placementGhost.sprite.sprite.tint = packet.allowed
                 ? PLACEMENT_GHOST_NORMAL_TINT
@@ -292,17 +285,10 @@ export class World {
 
         const def = structurePlacementDef(placement.id);
         const origin = structureOriginAtPoint(
-            {
-                x: tileCenterWorld(placement.cursor.x),
-                y: tileCenterWorld(placement.cursor.y),
-            },
+            placement.cursor,
             def.blocked,
             placement.rotation
         );
-        const pose = `${origin.x},${origin.y},${placement.rotation}`;
-        if (pose !== this.placementGhostPose) {
-            this.placementGhostPose = pose;
-        }
         this.placementGhost.position.set(
             tileCenterWorld(origin.x),
             tileCenterWorld(origin.y)
@@ -318,7 +304,6 @@ export class World {
         this.placementGhost = undefined;
         this.placementInvalidOverlay = undefined;
         this.placementGhostType = 0;
-        this.placementGhostPose = "";
         this.placementGhostAllowed = undefined;
     }
 
