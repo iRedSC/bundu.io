@@ -80,18 +80,18 @@ export function hit(node: PartNode) {
 
         const s = lerp(base, base / 1.1, t);
 
-        target.rotation = s;
+        target.scale.set(s);
         if (a.keyframeEnded) a.next(400);
     };
 
     animation.keyframes[1] = (a) => {
         const t = easeOut(a.t);
         const s = lerp(base / 1.1, base, t);
-        target.rotation = s;
+        target.scale.set(s);
         if (a.keyframeEnded) a.expired = true;
     };
 
-    animation.cleanup = () => target.rotation = base;
+    animation.cleanup = () => target.scale.set(base);
     return animation;
 }
 
