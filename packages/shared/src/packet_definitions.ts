@@ -19,6 +19,7 @@ export const ServerPacket = {
     HitEvent: 0x13,
     /** `duration > 0` starts a craft channel; `duration === 0` ends it. */
     CraftEvent: 0x14,
+    PlaceStructureResult: 0x15,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -75,7 +76,6 @@ export namespace ServerPacket {
     };
     export type SetSelectedStructure = {
         structureId: number;
-        structureSize: number;
     };
     export type AttackEvent = {
         id: number;
@@ -89,6 +89,12 @@ export namespace ServerPacket {
     export type BlockEvent = { id: number; stop: boolean };
     export type HitEvent = { id: number; angle: number };
     export type CraftEvent = { id: number; duration: number };
+    export type PlaceStructureResult = {
+        allowed: boolean;
+        x: number;
+        y: number;
+        rotation: number;
+    };
 }
 
 /** Client → server packet IDs. */
@@ -103,6 +109,8 @@ export const ClientPacket = {
     CursorSlot: 0x09,
     Block: 0x0c,
     PlaceStructureAt: 0x0d,
+    PlaceStructure: 0x0e,
+    SetStructurePlacement: 0x0f,
 } as const;
 
 export namespace ClientPacket {
@@ -126,6 +134,12 @@ export namespace ClientPacket {
         y: number;
         rotation: number;
     };
+    export type PlaceStructure = {};
+    export type SetStructurePlacement = {
+        rotation: number;
+        x: number;
+        y: number;
+    };
 }
 
 /** ID → payload map for server packets. */
@@ -146,6 +160,7 @@ export type ServerPacketMap = {
     [ServerPacket.BlockEvent]: ServerPacket.BlockEvent;
     [ServerPacket.HitEvent]: ServerPacket.HitEvent;
     [ServerPacket.CraftEvent]: ServerPacket.CraftEvent;
+    [ServerPacket.PlaceStructureResult]: ServerPacket.PlaceStructureResult;
 };
 
 /** ID → payload map for client packets. */
@@ -160,6 +175,8 @@ export type ClientPacketMap = {
     [ClientPacket.CursorSlot]: ClientPacket.CursorSlot;
     [ClientPacket.Block]: ClientPacket.Block;
     [ClientPacket.PlaceStructureAt]: ClientPacket.PlaceStructureAt;
+    [ClientPacket.PlaceStructure]: ClientPacket.PlaceStructure;
+    [ClientPacket.SetStructurePlacement]: ClientPacket.SetStructurePlacement;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -189,7 +206,7 @@ export const ServerSchema: {
     },
     [ServerPacket.RecipeList]: { fields: ["recipes"] },
     [ServerPacket.SetSelectedStructure]: {
-        fields: ["structureId", "structureSize"],
+        fields: ["structureId"],
     },
     [ServerPacket.AttackEvent]: {
         fields: ["id", "start", "length", "width"],
@@ -197,6 +214,9 @@ export const ServerSchema: {
     [ServerPacket.BlockEvent]: { fields: ["id", "stop"] },
     [ServerPacket.HitEvent]: { fields: ["id", "angle"] },
     [ServerPacket.CraftEvent]: { fields: ["id", "duration"] },
+    [ServerPacket.PlaceStructureResult]: {
+        fields: ["allowed", "x", "y", "rotation"],
+    },
 };
 
 export const ClientSchema: {
@@ -215,5 +235,9 @@ export const ClientSchema: {
     [ClientPacket.Block]: { fields: ["stop"] },
     [ClientPacket.PlaceStructureAt]: {
         fields: ["structureId", "x", "y", "rotation"],
+    },
+    [ClientPacket.PlaceStructure]: { fields: [] },
+    [ClientPacket.SetStructurePlacement]: {
+        fields: ["rotation", "x", "y"],
     },
 };

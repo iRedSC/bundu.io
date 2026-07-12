@@ -17,6 +17,7 @@ export class KeyboardInputListener {
 
     onMoveInput: (direction: MoveAxes) => void = () => {};
     onSendChat: (message: string) => void = () => {};
+    onRotateStructure: () => void = () => {};
 
     constructor() {
         this.keybinds = new Keystrokes({
@@ -26,6 +27,7 @@ export class KeyboardInputListener {
                 s: "down",
                 d: "right",
                 enter: "chat",
+                r: "placement_rotate",
             },
         });
 
@@ -106,6 +108,11 @@ export class KeyboardInputListener {
                 document
                     .querySelector(".chat-container")
                     ?.classList.add("hidden");
+            },
+        });
+        this.keybinds.bindKey("placement_rotate", {
+            onPressed: () => {
+                if (!this.chatOpen) this.onRotateStructure();
             },
         });
     }

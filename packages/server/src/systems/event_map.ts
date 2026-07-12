@@ -67,6 +67,7 @@ export namespace GameEvent {
         x: number;
         y: number;
         rotation: number;
+        resultTo?: GameObject;
     };
 
     /** Player has a selected structure — place it at their position. */
@@ -74,6 +75,9 @@ export namespace GameEvent {
     export type PlaceSelectedStructure = {
         object: GameObject;
     };
+
+    export const ValidateSelectedStructure = 26;
+    export type ValidateSelectedStructure = { object: GameObject };
 }
 
 export type GameEventMap = {
@@ -87,6 +91,7 @@ export type GameEventMap = {
     [GameEvent.Kill]: GameEvent.Kill;
     [GameEvent.PlaceStructure]: GameEvent.PlaceStructure;
     [GameEvent.PlaceSelectedStructure]: GameEvent.PlaceSelectedStructure;
+    [GameEvent.ValidateSelectedStructure]: GameEvent.ValidateSelectedStructure;
 };
 
 export type GameEventCallback<T extends keyof GameEventMap> =

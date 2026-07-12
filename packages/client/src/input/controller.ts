@@ -34,6 +34,9 @@ export class InputController {
     private readonly mouse = new MouseInputListener();
     private readonly keyboard = new KeyboardInputListener();
     private rotationUpdateTick = 0;
+    private placementRotation = 0;
+    private placementCursor = { x: 0, y: 0 };
+    private lastPlacementState = "";
     private readonly onPointerDown: (event: PointerEvent) => void;
     private readonly onPointerUp: (event: PointerEvent) => void;
 
@@ -44,6 +47,7 @@ export class InputController {
         this.mouse.onMouseMove = (mousePos) => this.handleMouseMove(mousePos);
         this.keyboard.onMoveInput = (move) => this.handleMoveInput(move);
         this.keyboard.onSendChat = (message) => this.handleSendChat(message);
+        this.keyboard.onRotateStructure = () => this.rotateStructure();
 
         this.onPointerDown = (event) => this.handlePointerDown(event);
         this.onPointerUp = (event) => this.handlePointerUp(event);
@@ -65,12 +69,29 @@ export class InputController {
                 mousePos[1] - window.innerHeight / 2,
                 mousePos[0] - window.innerWidth / 2
             ) - radians(90);
+        const previousRotation = player.rotation;
         player.predictLook(rotation);
+        const world = this.facade.screenToWorld(mousePos[0], mousePos[1]);
+        const cursor = {
+            x: worldToTile(world.x),
+            y: worldToTile(world.y),
+        };
+        this.placementCursor = cursor;
+        const placement = player.getStructureGhost();
+        if (placement) {
+            player.setStructureCursor(cursor);
+            const state = `${placement.id},${this.placementRotation},${cursor.x},${cursor.y}`;
+            if (state !== this.lastPlacementState) {
+                this.sendPlacementState(player);
+            }
+        } else {
+            this.lastPlacementState = "";
+        }
         this.facade.markUpdating(player);
 
         this.rotationUpdateTick++;
         if (
-            Math.abs(player.rotation - rotation) > 0.1 ||
+            Math.abs(previousRotation - rotation) > 0.1 ||
             this.rotationUpdateTick > 5
         ) {
             this.rotationUpdateTick = 0;
@@ -112,8 +133,15 @@ export class InputController {
                 structureId: placeId,
                 x: worldToTile(world.x),
                 y: worldToTile(world.y),
-                rotation: 0,
+                rotation: this.placementRotation,
             });
+            return;
+        }
+
+        const player = this.facade.getLocalPlayer();
+        if (player?.getStructureGhost()) {
+            this.sendPlacementState(player);
+            this.sendPacket(ClientPacket.PlaceStructure, {});
             return;
         }
 
@@ -126,8 +154,30 @@ export class InputController {
         if (event.button === 2) {
             this.sendPacket(ClientPacket.Block, { stop: true });
         }
-        if (event.button === 0 && this.facade.getPlaceStructureId() === null) {
+        if (
+            event.button === 0 &&
+            this.facade.getPlaceStructureId() === null &&
+            !this.facade.getLocalPlayer()?.getStructureGhost()
+        ) {
             this.sendPacket(ClientPacket.Attack, { stop: true });
         }
+    }
+
+    private rotateStructure() {
+        const player = this.facade.getLocalPlayer();
+        if (!player?.getStructureGhost()) return;
+        this.placementRotation = (this.placementRotation + 1) % 4;
+        this.sendPlacementState(player);
+    }
+
+    private sendPlacementState(player: Player) {
+        player.setStructureRotation(this.placementRotation);
+        player.setStructureCursor(this.placementCursor);
+        this.lastPlacementState = `${player.getStructureGhost()?.id ?? 0},${this.placementRotation},${this.placementCursor.x},${this.placementCursor.y}`;
+        this.sendPacket(ClientPacket.SetStructurePlacement, {
+            rotation: this.placementRotation,
+            x: this.placementCursor.x,
+            y: this.placementCursor.y,
+        });
     }
 }

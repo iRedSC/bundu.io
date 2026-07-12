@@ -7,7 +7,12 @@ import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { createGround } from "./ground";
-import { radians } from "@bundu/shared";
+import {
+    radians,
+    structureOriginAtPoint,
+    structurePlacementDef,
+    tileCenterWorld,
+} from "@bundu/shared";
 import { AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { Point, Text } from "pixi.js";
@@ -21,6 +26,10 @@ import { GameObjectData } from "@bundu/shared/object_types";
 import { Structure } from "./objects/structure";
 import { getStringId } from "@bundu/shared/id_map";
 import { getVariantName } from "@bundu/shared/variant_map";
+import {
+    SpriteFactory,
+    type ContaineredSprite,
+} from "../assets/sprite_factory";
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -28,8 +37,16 @@ type LoadPlayer = Extract<
 >;
 type LoadResource = Extract<
     ServerPacket.LoadObject,
-    { type: typeof GameObjectData.ResourceNodeType }
+    {
+        type:
+            | typeof GameObjectData.ResourceNodeType
+            | typeof GameObjectData.StructureType;
+    }
 >;
+
+const PLACEMENT_GHOST_RENDER_ID = -11;
+const PLACEMENT_GHOST_TINT = 0xff5555;
+const PLACEMENT_GHOST_NORMAL_TINT = 0xffffff;
 
 function deciPoint(x: number, y: number): Point {
     return new Point(deciToWorld(x), deciToWorld(y));
@@ -44,6 +61,10 @@ export class World {
     combatFx: CombatFx;
     renderer: LayeredRenderer;
     sky: Sky;
+    private placementGhost?: Structure;
+    private placementInvalidOverlay?: ContaineredSprite;
+    private placementGhostType = 0;
+    private placementGhostAllowed?: boolean;
 
     constructor(viewport: Viewport) {
         this.viewport = viewport;
@@ -65,12 +86,14 @@ export class World {
             this.deleteObjects({ objects: ids });
         }
         this.renderer.delete(-10);
+        this.clearPlacementGhost();
         this.user = undefined;
     }
 
     tick() {
         AnimationManagers.World.update();
         this.objects.update();
+        this.updatePlacementGhost();
         this.camera.update();
     }
 
@@ -101,6 +124,7 @@ export class World {
                 this.newPlayer(packet);
                 break;
             case GameObjectData.ResourceNodeType:
+            case GameObjectData.StructureType:
                 this.newStructure(packet);
                 break;
         }
@@ -199,12 +223,89 @@ export class World {
     selectStructure = (packet: ServerPacket.SetSelectedStructure) => {
         const player = this.objects.get(this.user || -1);
         if (player instanceof Player) {
-            player.setSelectedStructure(
-                packet.structureId,
-                packet.structureSize
-            );
+            player.setSelectedStructure(packet.structureId);
+            this.updatePlacementGhost();
         }
     };
+
+    placeStructureResult = (packet: ServerPacket.PlaceStructureResult) => {
+        if (!this.placementGhost) return;
+        if (this.placementGhostAllowed !== packet.allowed) {
+            this.placementGhost.sprite.sprite.tint = packet.allowed
+                ? PLACEMENT_GHOST_NORMAL_TINT
+                : PLACEMENT_GHOST_TINT;
+            if (this.placementInvalidOverlay) {
+                this.placementInvalidOverlay.renderable = !packet.allowed;
+            }
+            this.placementGhostAllowed = packet.allowed;
+        }
+    };
+
+    refreshPlacementGhost() {
+        this.placementGhostType = 0;
+        this.updatePlacementGhost();
+    }
+
+    private updatePlacementGhost() {
+        const player = this.objects.get(this.user ?? -1);
+        const placement =
+            player instanceof Player ? player.getStructureGhost() : null;
+        if (!(player instanceof Player) || !placement) {
+            this.clearPlacementGhost();
+            return;
+        }
+
+        if (!this.placementGhost || this.placementGhostType !== placement.id) {
+            this.clearPlacementGhost();
+            this.placementGhost = new Structure(
+                PLACEMENT_GHOST_RENDER_ID,
+                getStringId(placement.id),
+                new Point(),
+                placement.rotation * 90,
+                FOOTPRINT_CIRCLE_RADIUS,
+                AnimationManagers.World,
+                TILE_SIZE
+            );
+            this.placementGhost.sprite.alpha = 0.5;
+            this.placementGhost.container.eventMode = "none";
+            this.placementGhostAllowed = undefined;
+            this.placementInvalidOverlay = SpriteFactory.build(
+                "invalid_placement"
+            );
+            this.placementInvalidOverlay.anchor.set(0.5);
+            this.placementInvalidOverlay.alpha = 0.5;
+            this.placementInvalidOverlay.renderable = false;
+            this.placementGhost.container.addChild(this.placementInvalidOverlay);
+            this.placementGhostType = placement.id;
+            this.renderer.add(
+                PLACEMENT_GHOST_RENDER_ID,
+                ...this.placementGhost.containers
+            );
+        }
+
+        const def = structurePlacementDef(placement.id);
+        const origin = structureOriginAtPoint(
+            placement.cursor,
+            def.blocked,
+            placement.rotation
+        );
+        this.placementGhost.position.set(
+            tileCenterWorld(origin.x),
+            tileCenterWorld(origin.y)
+        );
+        this.placementGhost.rotation = radians(placement.rotation * 90);
+    }
+
+    private clearPlacementGhost() {
+        if (!this.placementGhost) return;
+        AnimationManagers.World.remove(this.placementGhost);
+        this.renderer.delete(PLACEMENT_GHOST_RENDER_ID);
+        this.placementGhost.container.destroy({ children: true });
+        this.placementGhost = undefined;
+        this.placementInvalidOverlay = undefined;
+        this.placementGhostType = 0;
+        this.placementGhostAllowed = undefined;
+    }
 
     loadGround = (packet: ServerPacket.LoadGround) => {
         for (const [type, x, y, w, h] of packet.groundData) {

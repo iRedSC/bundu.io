@@ -1,4 +1,9 @@
-import { TILE_SIZE } from "@bundu/shared/tiles";
+import {
+    TILE_SIZE,
+    worldToTile,
+    type TilePos,
+    type TileRot,
+} from "@bundu/shared";
 import { getStringId } from "@bundu/shared/id_map";
 import { Container, Graphics, Point, Text } from "pixi.js";
 import GameObject from "../game_object";
@@ -42,7 +47,8 @@ export class Player extends GameObject implements AnimContext {
     private craftDuration = 0;
     private craftEndsAt = 0;
     private selectedStructureId = 0;
-    private selectedStructureScale = 0;
+    private structureRotation: TileRot = 0;
+    private structureCursor: TilePos = { x: 0, y: 0 };
 
     /** Client-side look prediction; snaps immediately (no lerp flicker). */
     predictLook(rotation: number): number {
@@ -198,8 +204,6 @@ export class Player extends GameObject implements AnimContext {
             this.trigger(id, this.animationManager);
         }
 
-        const ghost = this.getStructureGhost();
-        if (ghost) this.setSelectedStructure(ghost.id, ghost.scale);
     }
 
     private fillSlot(slotName: string, itemId: string) {
@@ -223,35 +227,33 @@ export class Player extends GameObject implements AnimContext {
         }
     }
 
-    setSelectedStructure(id: number, visualScale: number) {
-        this.selectedStructureId = id;
-        this.selectedStructureScale = visualScale;
+    setSelectedStructure(id: number) {
+        this.selectedStructureId = id > 0 ? id : 0;
+        this.structureCursor = {
+            x: worldToTile(this.position.x),
+            y: worldToTile(this.position.y),
+        };
+    }
 
-        const ghost = this.parts.get("placementGhost");
-        if (!ghost) return;
+    setStructureRotation(rotation: number) {
+        this.structureRotation = (((rotation % 4) + 4) % 4) as TileRot;
+    }
 
-        ghost.visual.renderable = false;
-        const name = getStringId(id);
-        if (!name) return;
-
-        const config = spriteConfigs.get(name);
-        if (!config) return;
-
-        ghost.visual.renderable = true;
-        SpriteFactory.update(
-            ghost.visual,
-            { ...config.world_display, scale: visualScale },
-            name
-        );
-        ghost.root.pivot.set(0, -1 * ghost.visual.scale.x);
+    setStructureCursor(cursor: TilePos) {
+        this.structureCursor = cursor;
     }
 
     /** Placement ghost selection, if any. */
-    getStructureGhost(): { id: number; scale: number } | null {
+    getStructureGhost(): {
+        id: number;
+        rotation: TileRot;
+        cursor: TilePos;
+    } | null {
         if (!this.selectedStructureId) return null;
         return {
             id: this.selectedStructureId,
-            scale: this.selectedStructureScale,
+            rotation: this.structureRotation,
+            cursor: this.structureCursor,
         };
     }
 }

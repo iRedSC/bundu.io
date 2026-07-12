@@ -12,7 +12,8 @@ export type PlayerData = {
     playerSkin: string;
     selectedStructure: {
         id: number;
-        cooldown_timestamp: number;
+        rotation: number;
+        cursor: { x: number; y: number };
     };
 
     mainHand?: number;
@@ -34,6 +35,7 @@ export const PlayerData = Component.register<PlayerData>(() => ({
     moveDir: [0, 0],
     selectedStructure: {
         id: -1,
-        cooldown_timestamp: 0,
+        rotation: 0,
+        cursor: { x: 0, y: 0 },
     },
 }));
