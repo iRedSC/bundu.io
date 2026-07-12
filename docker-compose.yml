@@ -2,7 +2,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: containers/frontend/Dockerfile
       args:
         GAME_WS_URL: ${GAME_WS_URL:-ws://localhost:7777}
     ports:
@@ -15,7 +15,7 @@ services:
   server:
     build:
       context: .
-      dockerfile: Dockerfile.server
+      dockerfile: containers/server/Dockerfile
     ports:
       - "7777:7777"
     environment:

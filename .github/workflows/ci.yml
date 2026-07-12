@@ -48,10 +48,10 @@ jobs:
       matrix:
         include:
           - name: frontend
-            dockerfile: Dockerfile.frontend
+            dockerfile: containers/frontend/Dockerfile
             build_args: GAME_WS_URL=ws://localhost:7777
           - name: server
-            dockerfile: Dockerfile.server
+            dockerfile: containers/server/Dockerfile
             build_args: ""
     steps:
       - uses: actions/checkout@v4

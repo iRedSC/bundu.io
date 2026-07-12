@@ -31,8 +31,8 @@ docker compose up --build
 
 | Service   | Port | Image build file        |
 |-----------|------|-------------------------|
-| frontend  | 3000 | `Dockerfile.frontend`   |
-| server    | 7777 | `Dockerfile.server`     |
+| frontend  | 3000 | `containers/frontend/Dockerfile` |
+| server    | 7777 | `containers/server/Dockerfile`   |
 
 ### Environment
 
