@@ -268,6 +268,7 @@ pine_tree:
     world_display:
         scale: 1.6
 
+# Resources
 amethyst:
     type: none
     world_display:
@@ -284,6 +285,11 @@ gold:
         scale: 1.7
 
 diamond:
+    type: none
+    world_display:
+        scale: 1.7
+
+stone_barrier:
     type: none
     world_display:
         scale: 1.7
