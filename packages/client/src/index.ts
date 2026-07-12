@@ -174,8 +174,8 @@ async function main() {
     });
     nameInput.focus();
 
-    app.ticker.add(() => {
-        world.tick();
+    app.ticker.add((ticker) => {
+        world.tick(Math.min(ticker.deltaMS, 50));
         AnimationManagers.UI.update();
         gui.tick();
     });

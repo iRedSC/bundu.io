@@ -30,6 +30,7 @@ import {
     SpriteFactory,
     type ContaineredSprite,
 } from "../assets/sprite_factory";
+import { ParticleSystem } from "@client/rendering/particles/particle_system";
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -61,6 +62,7 @@ export class World {
     combatFx: CombatFx;
     renderer: LayeredRenderer;
     sky: Sky;
+    particles: ParticleSystem;
     private placementGhost?: Structure;
     private placementInvalidOverlay?: ContaineredSprite;
     private placementGhostType = 0;
@@ -71,8 +73,9 @@ export class World {
         this.camera = new Camera(viewport);
         this.sky = new Sky();
         this.renderer = new LayeredRenderer(this.viewport);
+        this.particles = new ParticleSystem(this.viewport);
         this.objects = new ObjectContainer();
-        this.combatFx = new CombatFx(this.objects);
+        this.combatFx = new CombatFx(this.objects, this.particles);
 
         this.viewport.addChild(this.sky);
         this.viewport.sortChildren();
@@ -86,13 +89,15 @@ export class World {
             this.deleteObjects({ objects: ids });
         }
         this.renderer.delete(-10);
+        this.particles.clear();
         this.clearPlacementGhost();
         this.user = undefined;
     }
 
-    tick() {
+    tick(deltaMS: number) {
         AnimationManagers.World.update();
         this.objects.update();
+        this.particles.update(deltaMS);
         this.updatePlacementGhost();
         this.camera.update();
     }
