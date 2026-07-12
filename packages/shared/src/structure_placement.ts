@@ -3,7 +3,6 @@ import {
     SINGLE_TILE,
     TILE_SIZE,
     rotateOffset,
-    tileCenterWorld,
     type TilePos,
     type TileRot,
 } from "./tiles";
@@ -58,7 +57,7 @@ export function structureOriginAtPoint(
 ): TilePos {
     const center = footprintCenter(blocked, rot);
     return {
-        x: Math.round((cursor.x - tileCenterWorld(0)) / TILE_SIZE - center.x),
-        y: Math.round((cursor.y - tileCenterWorld(0)) / TILE_SIZE - center.y),
+        x: Math.round(cursor.x - center.x),
+        y: Math.round(cursor.y - center.y),
     };
 }
