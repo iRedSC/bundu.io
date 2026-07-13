@@ -65,3 +65,6 @@ quick_stone_spike:
 
 quick_diamond_spike:
     type: building
+
+point_generator:
+    type: building

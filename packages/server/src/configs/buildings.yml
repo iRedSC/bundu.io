@@ -100,3 +100,8 @@ quick_diamond_spike:
     class: spike
     health: 100
     damage: 50
+
+point_generator:
+    class: building
+    health: 1000
+    pointsPerSecond: 2

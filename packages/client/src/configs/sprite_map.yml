@@ -138,6 +138,7 @@ fire_pit: fire_pit.svg
 anvil: anvil.svg
 fire_small: fire_big.svg
 fire_big: fire_small.svg
+point_generator: point_generator.png
 
 #Quick buildings
 quick_wood_wall: quick_wood_wall.svg

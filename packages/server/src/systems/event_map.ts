@@ -68,6 +68,7 @@ export namespace GameEvent {
         y: number;
         rotation: number;
         resultTo?: GameObject;
+        placedBy?: GameObject;
     };
 
     /** Player has a selected structure — place it at their position. */

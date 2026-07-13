@@ -279,6 +279,10 @@ item:
         name: Big Fire
         desc: A larger, more intense fire.
 
+    point_generator:
+        name: Point Generator
+        desc: Generates 2 points per second for its owner.
+
     # Quick buildings
     quick_wood_wall:
         name: Quick Wood Wall

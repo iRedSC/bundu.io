@@ -25,6 +25,8 @@ export const Physics = Component.register<Physics>(() => {
 export type TileEntity = {
     origin: TilePos;
     rot: TileRot;
+    /** Player that placed this tile entity, if it was player-placed. */
+    ownerId?: number;
     /** Local blocked offsets (before rotation). */
     blocked: TilePos[];
     /** Cached world tiles currently claimed in the occupancy grid. */

@@ -23,7 +23,17 @@ const DEFAULT_STRUCTURE: StructurePlacementDef = {
 /** Structure-specific geometry lives here; unspecified placeables are one tile. */
 export const STRUCTURE_PLACEMENT_DEFS: Readonly<
     Partial<Record<string, StructurePlacementDef>>
-> = {};
+> = {
+    point_generator: {
+        blocked: [
+            { x: 0, y: 0 },
+            { x: 1, y: 0 },
+            { x: 0, y: 1 },
+            { x: 1, y: 1 },
+        ],
+        ground: [1],
+    },
+};
 
 export function structurePlacementDef(
     structure: string | number

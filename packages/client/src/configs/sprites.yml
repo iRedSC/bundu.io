@@ -228,6 +228,10 @@ fire_small:
     type: building
     sprite: fire_small
 
+point_generator:
+    type: building
+    sprite: point_generator
+
 earmuffs:
     type: hat
     sprite: earmuffs

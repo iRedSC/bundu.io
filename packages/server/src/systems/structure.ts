@@ -80,6 +80,7 @@ export class StructureSystem extends System<GameEventMap> {
                 x: placement.origin.x,
                 y: placement.origin.y,
                 rotation: placement.rotation,
+                placedBy: player,
             });
         }
 
@@ -179,8 +180,15 @@ export class StructureSystem extends System<GameEventMap> {
         y,
         rotation,
         resultTo,
+        placedBy,
     }: GameEvent.PlaceStructure): boolean {
-        const allowed = this.tryPlaceStructure(structureId, x, y, rotation);
+        const allowed = this.tryPlaceStructure(
+            structureId,
+            x,
+            y,
+            rotation,
+            placedBy?.id
+        );
         if (resultTo) {
             this.world.context.playerPacketManager.set(
                 resultTo.id,
@@ -200,7 +208,8 @@ export class StructureSystem extends System<GameEventMap> {
         structureId: number,
         x: number,
         y: number,
-        rotation: number
+        rotation: number,
+        ownerId?: number
     ): boolean {
         if (!Number.isInteger(x) || !Number.isInteger(y)) return false;
 
@@ -209,6 +218,7 @@ export class StructureSystem extends System<GameEventMap> {
         const origin = { x, y };
         const def = structurePlacementDef(structureId);
         const tile = makeTileEntity(origin, rot, def.blocked);
+        tile.ownerId = ownerId;
 
         if (!this.canPlace(tile.occupied, def.ground)) return false;
 

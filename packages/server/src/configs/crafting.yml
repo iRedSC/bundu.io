@@ -645,6 +645,14 @@ fire_pit:
     flags:
         - near_crafting_table
 
+point_generator:
+    score: 500
+    duration: 10000
+    ingredients:
+        wood: 50
+        stone: 100
+        gold: 25
+
 quick_wood_wall:
     score: 25
     duration: 1000

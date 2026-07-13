@@ -17,6 +17,7 @@ import { StructureSystem } from "../systems/structure";
 import { AttributesSystem } from "../systems/attributes";
 import { ResourceSystem } from "../systems/resource";
 import { GroundItemSystem } from "../systems/ground_item";
+import { PointGeneratorSystem } from "../systems/point_generator";
 
 export type ServerWorld = {
     world: World;
@@ -44,6 +45,7 @@ export function createWorld(): ServerWorld {
         .addSystem(new ResourceSystem(world))
         .addSystem(new GroundItemSystem(world))
         .addSystem(new StructureSystem(world))
+        .addSystem(new PointGeneratorSystem(world))
         .addSystem(new RenderDistanceSystem(world));
 
     return { world, playerSystem, receiver };

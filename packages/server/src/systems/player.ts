@@ -374,6 +374,7 @@ export class PlayerSystem extends System<GameEventMap> {
             y,
             rotation,
             resultTo: player,
+            placedBy: player,
         });
     };
 
