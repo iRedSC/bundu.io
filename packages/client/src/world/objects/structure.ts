@@ -187,6 +187,16 @@ export class Structure extends GameObject {
         this.sprite.renderable = true;
     }
 
+    setDoorOpen(open: boolean) {
+        if (!this.usesSpriteConfig) return;
+        const config = spriteConfigs.get(this.type);
+        SpriteFactory.update(
+            this.sprite,
+            config?.world_display,
+            open ? "door_open" : this.type
+        );
+    }
+
     reloadVisualDefinition() {
         this.animationManager.remove(this);
         for (const child of this.container.removeChildren()) {

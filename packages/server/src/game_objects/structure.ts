@@ -1,10 +1,13 @@
 import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { Health, Physics, TileEntity, Type } from "../components/base.js";
+import { Door, Health, Physics, TileEntity, Type } from "../components/base.js";
 import { BuildingConfigs } from "../configs/loaders/buildings.js";
 import { GameObject } from "../engine";
 import { GameObjectData } from "@bundu/shared/object_types.js";
+import { getNumericId } from "@bundu/shared/id_map.js";
 import { deciPacketPos } from "./tile_entity.js";
 import { getVariantId } from "@bundu/shared/variant_map.js";
+
+const WOOD_DOOR_ID = getNumericId("wood_door") ?? -1;
 
 /**
  * A placed structure / static prop with config-defined durability.
@@ -17,6 +20,7 @@ export class Structure extends GameObject {
             .add(new Type(type))
             .add(new TileEntity(tile))
             .add(new Health({ max: maxHealth, value: maxHealth, lastRegen: 0 }));
+        if (type.id === WOOD_DOOR_ID) this.add(new Door());
     }
 
     public override getNewObjectPacket(): ServerPacket.LoadObject | void {

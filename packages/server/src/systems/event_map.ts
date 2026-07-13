@@ -79,6 +79,9 @@ export namespace GameEvent {
 
     export const ValidateSelectedStructure = 26;
     export type ValidateSelectedStructure = { object: GameObject };
+
+    export const ToggleDoor = 27;
+    export type ToggleDoor = { object: GameObject };
 }
 
 export type GameEventMap = {
@@ -93,6 +96,7 @@ export type GameEventMap = {
     [GameEvent.PlaceStructure]: GameEvent.PlaceStructure;
     [GameEvent.PlaceSelectedStructure]: GameEvent.PlaceSelectedStructure;
     [GameEvent.ValidateSelectedStructure]: GameEvent.ValidateSelectedStructure;
+    [GameEvent.ToggleDoor]: GameEvent.ToggleDoor;
 };
 
 export type GameEventCallback<T extends keyof GameEventMap> =

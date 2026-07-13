@@ -219,6 +219,11 @@ export class World {
         }
     };
 
+    updateDoor = (packet: ServerPacket.UpdateDoor) => {
+        const object = this.objects.get(packet.id);
+        if (object instanceof Structure) object.setDoorOpen(packet.open);
+    };
+
     moveObject = (packet: ServerPacket.SetPosition, _now?: number) => {
         const object = this.objects.get(packet.id);
         if (!object) return;

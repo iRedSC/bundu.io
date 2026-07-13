@@ -159,7 +159,7 @@ amethyst_wall:
 
 wood_door:
     type: door
-    sprite: wooden_door
+    sprite: wood_door
 
 stone_door:
     type: door

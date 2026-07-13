@@ -5,7 +5,7 @@ import {
     radians,
     type BasicPoint,
 } from "@bundu/shared";
-import { Physics } from "../components/base.js";
+import { Door, Physics } from "../components/base.js";
 import { GameObject, System, type World } from "../engine";
 import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import SAT from "sat";
@@ -104,6 +104,10 @@ export class AttackSystem extends System<GameEventMap> {
                 id: object.id,
                 angle: facing,
             });
+            if (Door.get(object)) {
+                this.trigger(GameEvent.ToggleDoor, { object });
+                continue;
+            }
             this.trigger(GameEvent.Hurt, {
                 object,
                 source,

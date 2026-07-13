@@ -35,6 +35,7 @@ export function setupPacketReceiving(
         world.placeStructureResult
     );
     receiver.on(ServerPacket.UpdateObjectHealth, world.updateObjectHealth);
+    receiver.on(ServerPacket.UpdateDoor, world.updateDoor);
 }
 
 export function setupGUIPacketReceiving(

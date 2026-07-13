@@ -47,6 +47,9 @@ export const CalculateCollisions = Component.register<CalculateCollisions>(
 export type Type = { id: number; variant?: string };
 export const Type = Component.register<Type>(() => ({ id: 0 }));
 
+export type Door = { open: boolean };
+export const Door = Component.register<Door>(() => ({ open: false }));
+
 export type GroundData = {
     collider: Box;
     type: number;
