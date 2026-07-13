@@ -16,6 +16,7 @@ import { RenderDistanceSystem } from "../systems/render_distance";
 import { StructureSystem } from "../systems/structure";
 import { AttributesSystem } from "../systems/attributes";
 import { ResourceSystem } from "../systems/resource";
+import { GroundItemSystem } from "../systems/ground_item";
 
 export type ServerWorld = {
     world: World;
@@ -41,6 +42,7 @@ export function createWorld(): ServerWorld {
         .addSystem(new HealthSystem(world))
         .addSystem(new AttackSystem(world))
         .addSystem(new ResourceSystem(world))
+        .addSystem(new GroundItemSystem(world))
         .addSystem(new StructureSystem(world))
         .addSystem(new RenderDistanceSystem(world));
 

@@ -3,7 +3,7 @@ import {
     decodeMoveDirection,
     PLAYER_MOVE_SPEED,
 } from "@bundu/shared/movement";
-import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
+import { type ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GroundData, Physics } from "../components/base.js";
 import {
     Inventory,
@@ -17,7 +17,7 @@ import {
     craftingList,
     packCraftingList,
 } from "../configs/loaders/crafting.js";
-import { GameObject, System, type World } from "../engine";
+import { type GameObject, System, type World } from "../engine";
 import { Attributes } from "../components/attributes.js";
 import { emitVitals } from "../network/vitals.js";
 import {
@@ -30,8 +30,14 @@ import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { SERVER_DEBUG } from "../debug/flag.js";
 import { PlaceMode } from "@bundu/shared/inventory";
-import { pointToTile } from "@bundu/shared/tiles";
+import { pointToTile, WORLD_BOUNDS } from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
+import { GroundItem } from "../game_objects/ground_item.js";
+import { moveInDirection } from "@bundu/shared/transforms";
+import { Circle, Vector } from "sat";
+
+const DROP_DISTANCE = 80;
+const DROP_PICKUP_DELAY = 500;
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
@@ -300,7 +306,12 @@ export class PlayerSystem extends System<GameEventMap> {
         if (data?.crafting) return;
         const inv = Inventory.get(player);
         if (!inv) return;
+        const dropped =
+            to === -1 && inv.slots[from]
+                ? { ...inv.slots[from] }
+                : undefined;
         if (!applyMoveSlot(inv, from, to)) return;
+        if (dropped) this.dropItem(player, dropped.id, dropped.count);
 
         clearMissingEquipment(player);
         this.syncSelectedStructure(player);
@@ -325,7 +336,22 @@ export class PlayerSystem extends System<GameEventMap> {
             mode === PlaceMode.Half || mode === PlaceMode.One
                 ? mode
                 : PlaceMode.All;
+        const amount =
+            slot === -1 && inv.cursor
+                ? Math.min(
+                      inv.cursor.count,
+                      placeMode === PlaceMode.Half
+                          ? Math.ceil(inv.cursor.count / 2)
+                          : placeMode === PlaceMode.One
+                            ? 1
+                            : inv.cursor.count
+                  )
+                : 0;
+        const itemId = slot === -1 ? inv.cursor?.id : undefined;
         if (!applyCursorSlot(inv, slot, placeMode)) return;
+        if (itemId !== undefined && amount > 0) {
+            this.dropItem(player, itemId, amount);
+        }
 
         clearMissingEquipment(player);
         this.syncSelectedStructure(player);
@@ -358,6 +384,38 @@ export class PlayerSystem extends System<GameEventMap> {
             object: player,
         });
     };
+
+    private dropItem(player: GameObject, itemId: number, amount: number) {
+        const physics = player.get(Physics);
+        const droppedAt = moveInDirection(
+            physics.position,
+            (physics.rotation * Math.PI) / 180,
+            DROP_DISTANCE
+        );
+        const target = new Vector(
+            Math.min(Math.max(droppedAt.x, 0), WORLD_BOUNDS),
+            Math.min(Math.max(droppedAt.y, 0), WORLD_BOUNDS)
+        );
+
+        const item = new GroundItem(
+            {
+                position: target,
+                collider: new Circle(target, 12),
+                rotation: physics.rotation,
+                collisionRadius: 12,
+                speed: 0,
+            },
+            { itemId, amount, pickupAt: this.world.gameTime + DROP_PICKUP_DELAY }
+        );
+        this.world.addObject(item);
+        this.world.context.worldPacketManager.emit(ServerPacket.DropItem, {
+            id: player.id,
+            objectId: item.id,
+            itemId,
+            x: Math.round(target.x),
+            y: Math.round(target.y),
+        });
+    }
 
     setStructurePlacement = (
         playerId: number,

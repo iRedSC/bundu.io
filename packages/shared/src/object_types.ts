@@ -22,10 +22,14 @@ export namespace GameObjectData {
     export const StructureType = 0x02;
     export type StructureData = [type: number, variant?: number];
 
+    export const GroundItemType = 0x03;
+    export type GroundItemData = [itemId: number, amount: number];
+
     /** Maps LoadObject.type → typed payload tuple. */
     export type ByType = {
         [PlayerType]: PlayerData;
         [ResourceNodeType]: ResourceNodeData;
         [StructureType]: StructureData;
+        [GroundItemType]: GroundItemData;
     };
 }

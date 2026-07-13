@@ -20,6 +20,7 @@ export const ServerPacket = {
     /** `duration > 0` starts a craft channel; `duration === 0` ends it. */
     CraftEvent: 0x14,
     PlaceStructureResult: 0x15,
+    DropItem: 0x16,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -95,6 +96,14 @@ export namespace ServerPacket {
         y: number;
         rotation: number;
     };
+    /** Item spawned by `id` at the given world position. */
+    export type DropItem = {
+        id: number;
+        objectId: number;
+        itemId: number;
+        x: number;
+        y: number;
+    };
 }
 
 /** Client → server packet IDs. */
@@ -161,6 +170,7 @@ export type ServerPacketMap = {
     [ServerPacket.HitEvent]: ServerPacket.HitEvent;
     [ServerPacket.CraftEvent]: ServerPacket.CraftEvent;
     [ServerPacket.PlaceStructureResult]: ServerPacket.PlaceStructureResult;
+    [ServerPacket.DropItem]: ServerPacket.DropItem;
 };
 
 /** ID → payload map for client packets. */
@@ -216,6 +226,9 @@ export const ServerSchema: {
     [ServerPacket.CraftEvent]: { fields: ["id", "duration"] },
     [ServerPacket.PlaceStructureResult]: {
         fields: ["allowed", "x", "y", "rotation"],
+    },
+    [ServerPacket.DropItem]: {
+        fields: ["id", "objectId", "itemId", "x", "y"],
     },
 };
 
