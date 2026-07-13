@@ -14,11 +14,11 @@ export function bindAnimations(
     parts: Map<string, PartNode>,
     ctx: AnimContext = EMPTY_ANIM_CONTEXT,
     rotationTarget?: Rotatable
-): { animations: Map<number, Animation>; autoplay: number[] } {
-    const animations = new Map<number, Animation>();
-    const autoplay: number[] = [];
+): { animations: Map<string, Animation>; autoplay: string[] } {
+    const animations = new Map<string, Animation>();
+    const autoplay: string[] = [];
 
-    for (const anim of def.animations ?? []) {
+    for (const [name, anim] of Object.entries(def.animations)) {
         const nodes = anim.parts.map((name) => {
             const node = parts.get(name);
             if (!node) {
@@ -29,11 +29,8 @@ export function bindAnimations(
             return node;
         });
 
-        animations.set(
-            anim.id,
-            createPreset(anim, nodes, ctx, rotationTarget)
-        );
-        if (anim.autoplay) autoplay.push(anim.id);
+        animations.set(name, createPreset(anim, nodes, ctx, rotationTarget));
+        if (anim.autoplay) autoplay.push(name);
     }
 
     return { animations, autoplay };

@@ -1,6 +1,10 @@
 import { Graphics, type Container, type Point as PixiPoint } from "pixi.js";
 import { radians } from "@bundu/shared";
 import { TILE_SIZE } from "@bundu/shared/tiles";
+import type {
+    EntityStateSnapshot,
+    EntityStateValue,
+} from "@bundu/shared/object_types";
 import GameObject from "../game_object";
 import { spriteConfigs } from "@client/configs/sprite_configs";
 import {
@@ -9,6 +13,10 @@ import {
 } from "@client/assets/sprite_factory";
 import { assemble, assembleTileEntity } from "../../visual/assemble";
 import { bindAnimations } from "../../visual/bind";
+import {
+    EntityStateStore,
+    VisualStateController,
+} from "../../visual/state";
 import { structureDef, tileEntityDefs } from "../../visual/defs";
 import type { ObjectDef } from "../../visual/types";
 import type { AnimationManager } from "../../animation/runtime";
@@ -24,8 +32,10 @@ export class Structure extends GameObject {
     sprite!: ContaineredSprite;
     readonly type: string;
     private readonly animationManager: AnimationManager;
+    private readonly states: EntityStateStore;
+    private stateController?: VisualStateController;
     private usesSpriteConfig = false;
-    private readonly variant: string;
+    private readonly variant?: string;
     private readonly healthBar = new Graphics();
     private healthBarAlpha = 0;
     private healthBarFadeFrom = 0;
@@ -43,15 +53,17 @@ export class Structure extends GameObject {
         collisionRadius: number,
         animationManager: AnimationManager,
         visualScale: number = TILE_SIZE,
-        variant: string = "base",
+        variant?: string,
         health?: number,
-        maxHealth?: number
+        maxHealth?: number,
+        states: EntityStateSnapshot = {}
     ) {
         super(id, pos, radians(rotationDegrees), collisionRadius, visualScale);
 
         this.type = type;
         this.variant = variant;
         this.animationManager = animationManager;
+        this.states = new EntityStateStore(states);
         this.applyVisualDefinition(variant);
         this.container.zIndex = 10;
         this.healthBar.zIndex = 100;
@@ -148,7 +160,7 @@ export class Structure extends GameObject {
             (this.healthBarFadeTo - this.healthBarFadeFrom) * progress;
     }
 
-    private applyVisualDefinition(variant: string) {
+    private applyVisualDefinition(variant?: string) {
         const tileEntity = tileEntityDefs.get(this.type);
         const def: ObjectDef = tileEntity ?? {
             ...structureDef,
@@ -178,6 +190,14 @@ export class Structure extends GameObject {
         for (const animId of autoplay) {
             this.trigger(animId, this.animationManager);
         }
+        this.stateController = new VisualStateController(
+            def,
+            parts,
+            animations,
+            this.states,
+            this.animationManager,
+            this
+        );
     }
 
     refreshSpriteConfig() {
@@ -187,17 +207,13 @@ export class Structure extends GameObject {
         this.sprite.renderable = true;
     }
 
-    setDoorOpen(open: boolean) {
-        if (!this.usesSpriteConfig) return;
-        const config = spriteConfigs.get(this.type);
-        SpriteFactory.update(
-            this.sprite,
-            config?.world_display,
-            open ? "door_open" : this.type
-        );
+    setState(name: string, value: EntityStateValue) {
+        this.states.set(name, value);
     }
 
     reloadVisualDefinition() {
+        this.stateController?.dispose();
+        this.stateController = undefined;
         this.animationManager.remove(this);
         for (const child of this.container.removeChildren()) {
             child.destroy({ children: true });

@@ -1,0 +1,8 @@
+id: point_generator
+extends: single_tile_node
+defaultVariant: point_generator
+
+tile:
+  footprint:
+    - "X#"
+    - "##"

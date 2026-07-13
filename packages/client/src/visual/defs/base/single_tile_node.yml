@@ -1,16 +1,17 @@
 id: single_tile_node
+abstract: true
 variantSource: texture
 texturePart: main
 
 tile:
-  size: { width: 100, height: 100 }
-  origin: { x: 0, y: 0 }
+  footprint:
+    - "X"
   spillover: 0
 
 parts:
   - name: main
 
 animations:
-  - id: 100
+  hit:
     preset: hit
-    parts: [main]
+    parts: main

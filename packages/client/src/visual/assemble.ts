@@ -20,7 +20,9 @@ export function assemble(
     root: Container,
     variant?: string
 ): AssembledObject {
-    const sprites = variant == null ? undefined : def.variants?.[variant];
+    const selectedVariant = variant ?? def.defaultVariant;
+    const sprites =
+        selectedVariant == null ? undefined : def.variants?.[selectedVariant];
     return assembleSprites(def, root, sprites);
 }
 
@@ -32,20 +34,23 @@ function assembleSprites(
     const parts = new Map<string, PartNode>();
     for (const part of def.parts) {
         const nodeRoot = new Container();
-        nodeRoot.x = part.x ?? 0;
-        nodeRoot.y = part.y ?? 0;
-        nodeRoot.scale.set(part.scale ?? 1);
-        nodeRoot.rotation = radians(part.rotation ?? 0);
+        const state = new Container();
+        const animation = new Container();
+        state.x = part.x ?? 0;
+        state.y = part.y ?? 0;
+        state.scale.set(part.scale ?? 1);
+        state.rotation = radians(part.rotation ?? 0);
         if (part.zIndex !== undefined) nodeRoot.zIndex = part.zIndex;
-        if (part.pivot) nodeRoot.pivot.set(part.pivot.x, part.pivot.y);
+        if (part.pivot) state.pivot.set(part.pivot.x, part.pivot.y);
+        state.alpha = part.alpha ?? 1;
+        state.visible = part.visible ?? true;
 
         const sprite = sprites?.[part.name] ?? part.sprite;
         const visual = SpriteFactory.build(sprite ?? "");
         const anchor = part.anchor ?? { x: 0.5, y: 0.5 };
         visual.anchor.set(anchor.x, anchor.y);
         visual.scale.set(part.spriteScale ?? 1);
-        if (part.alpha !== undefined) visual.alpha = part.alpha;
-        if (!sprite || part.visible === false) visual.renderable = false;
+        if (!sprite) visual.renderable = false;
 
         let attach: PartNode["attach"];
         if (part.attach) {
@@ -55,16 +60,19 @@ function assembleSprites(
             attach.renderable = false;
         }
 
+        nodeRoot.addChild(state);
+        state.addChild(animation);
+
         // Default: attach under visual (item under hand). attachAbove: helmet on body.
         if (part.attachAbove) {
-            nodeRoot.addChild(visual);
-            if (attach) nodeRoot.addChild(attach);
+            animation.addChild(visual);
+            if (attach) animation.addChild(attach);
         } else {
-            if (attach) nodeRoot.addChild(attach);
-            nodeRoot.addChild(visual);
+            if (attach) animation.addChild(attach);
+            animation.addChild(visual);
         }
 
-        const parent = part.parent ? parts.get(part.parent)?.root : root;
+        const parent = part.parent ? parts.get(part.parent)?.animation : root;
         if (!parent) {
             throw new Error(
                 `ObjectDef "${def.id}": part "${part.name}" parent "${part.parent}" not found (define parents first)`
@@ -73,7 +81,7 @@ function assembleSprites(
         parent.addChild(nodeRoot);
         parent.sortableChildren = true;
 
-        parts.set(part.name, { root: nodeRoot, visual, attach });
+        parts.set(part.name, { root: nodeRoot, state, animation, visual, attach });
     }
 
     const slots = new Map<string, { node: PartNode; def: SlotDef }>();
@@ -94,19 +102,27 @@ function assembleSprites(
 export function assembleTileEntity(
     def: TileEntityDef,
     root: Container,
-    variant: string
+    variant?: string
 ): AssembledObject {
     const { width, height } = def.tile.size;
     const { origin, spillover } = def.tile;
+    const selectedVariant = variant ?? def.defaultVariant;
+    if (!selectedVariant) {
+        throw new Error(
+            `TileEntityDef "${def.id}": no variant or defaultVariant`
+        );
+    }
     const sprites =
         def.variantSource === "structured"
-            ? def.variants[variant]
-            : { [def.texturePart]: variant };
+            ? def.variants[selectedVariant]
+            : { [def.texturePart]: selectedVariant };
     const contentWidth = width - spillover * 2;
     const contentHeight = height - spillover * 2;
 
     if (!sprites) {
-        throw new Error(`TileEntityDef "${def.id}": unknown variant "${variant}"`);
+        throw new Error(
+            `TileEntityDef "${def.id}": unknown variant "${selectedVariant}"`
+        );
     }
     if (
         def.variantSource === "texture" &&
@@ -146,8 +162,8 @@ export function assembleTileEntity(
     for (const part of def.parts) {
         const node = assembled.parts.get(part.name);
         if (!node) continue;
-        node.root.x += offsetX / TILE_SIZE;
-        node.root.y += offsetY / TILE_SIZE;
+        node.state.x += offsetX / TILE_SIZE;
+        node.state.y += offsetY / TILE_SIZE;
         const scale = part.spriteScale ?? 1;
         node.visual.scale.set(
             (width / TILE_SIZE) * scale,

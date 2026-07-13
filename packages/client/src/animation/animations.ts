@@ -5,14 +5,13 @@ export class AnimationManagers {
     static World: AnimationManager = new AnimationManager();
 }
 
-export enum ANIMATION {
-    HURT = 100,
-
-    IDLE_HANDS = 200,
-
-    ATTACK = 300,
-    BLOCK = 301,
-}
+export const ANIMATION = {
+    HURT: "hurt",
+    HIT: "hit",
+    IDLE_HANDS: "idle_hands",
+    ATTACK: "attack",
+    BLOCK: "block",
+} as const;
 
 /** Ease-out cubic — fast start, soft landing. */
 export const easeOut = (t: number): number => 1 - (1 - t) ** 3;

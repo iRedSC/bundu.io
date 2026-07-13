@@ -83,18 +83,23 @@ async function spriteConfigsJson(): Promise<Response> {
 }
 
 function visualDefsJson(): Response {
-    const defs = Object.fromEntries(
-        fs.readdirSync(VISUAL_DEFS_DIR)
-            .filter((name) => /\.ya?ml$/i.test(name))
-            .map((name) => [
-                path.basename(name, path.extname(name)),
-                Bun.YAML.parse(
-                    fs.readFileSync(path.join(VISUAL_DEFS_DIR, name), "utf8")
-                ),
-            ])
-    );
+    const defs = Object.fromEntries(readVisualDefs(VISUAL_DEFS_DIR));
     return Response.json(defs, {
         headers: { "Cache-Control": "no-store" },
+    });
+}
+
+function readVisualDefs(directory: string): [string, unknown][] {
+    return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+        const filepath = path.join(directory, entry.name);
+        if (entry.isDirectory()) return readVisualDefs(filepath);
+        if (!/\.ya?ml$/i.test(entry.name)) return [];
+
+        const relative = path
+            .relative(VISUAL_DEFS_DIR, filepath)
+            .replace(/\\/g, "/");
+        const key = relative.slice(0, -path.extname(relative).length);
+        return [[key, Bun.YAML.parse(fs.readFileSync(filepath, "utf8"))]];
     });
 }
 

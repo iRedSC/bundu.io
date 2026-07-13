@@ -1,5 +1,8 @@
 type nullish<T> = T | null | undefined;
 
+export type EntityStateValue = boolean | number | string;
+export type EntityStateSnapshot = Record<string, EntityStateValue>;
+
 export namespace GameObjectData {
     export const UnknownType = -0x01;
     export const UnknownData = [];
@@ -25,6 +28,7 @@ export namespace GameObjectData {
         variant?: number,
         health?: number,
         maxHealth?: number,
+        states?: EntityStateSnapshot,
     ];
 
     export const GroundItemType = 0x03;

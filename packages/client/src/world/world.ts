@@ -3,7 +3,7 @@ import {
     TILE_SIZE,
     deciToWorld,
 } from "@bundu/shared/tiles";
-import { ServerPacket } from "@bundu/shared/packet_definitions";
+import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { createGround } from "./ground";
@@ -19,10 +19,11 @@ import { Point, Text } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
-import GameObject from "./game_object";
+import type GameObject from "./game_object";
 import ObjectContainer from "./object_container";
 import { CombatFx } from "./combat_fx";
 import { GameObjectData } from "@bundu/shared/object_types";
+import type { EntityStateSnapshot } from "@bundu/shared/object_types";
 import { Structure } from "./objects/structure";
 import { GroundItem } from "./objects/ground_item";
 import { getStringId } from "@bundu/shared/id_map";
@@ -73,6 +74,7 @@ export class World {
     private placementGhostType = 0;
     private placementGhostAllowed?: boolean;
     private cursorWorld?: { x: number; y: number };
+    private readonly pendingObjectStates = new Map<number, EntityStateSnapshot>();
     private elapsedMS = 0;
 
     constructor(viewport: Viewport) {
@@ -99,6 +101,7 @@ export class World {
         this.particles.clear();
         this.clearPlacementGhost();
         this.cursorWorld = undefined;
+        this.pendingObjectStates.clear();
         this.elapsedMS = 0;
         this.user = undefined;
     }
@@ -193,8 +196,14 @@ export class World {
     };
 
     newStructure = (packet: LoadResource) => {
-        const [nodeType, variantId, health, maxHealth] = packet.data;
+        const [nodeType, variantId, health, maxHealth, initialStates] = packet.data;
         this.renderer.delete(packet.id);
+
+        const pendingStates = this.pendingObjectStates.get(packet.id);
+        this.pendingObjectStates.delete(packet.id);
+        const states = pendingStates
+            ? { ...initialStates, ...pendingStates }
+            : initialStates;
 
         const structure = new Structure(
             packet.id,
@@ -204,9 +213,10 @@ export class World {
             FOOTPRINT_CIRCLE_RADIUS,
             AnimationManagers.World,
             TILE_SIZE,
-            getVariantName(variantId) ?? "base",
+            getVariantName(variantId),
             health,
-            maxHealth
+            maxHealth,
+            states
         );
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
@@ -219,9 +229,16 @@ export class World {
         }
     };
 
-    updateDoor = (packet: ServerPacket.UpdateDoor) => {
+    setObjectState = (packet: ServerPacket.SetObjectState) => {
         const object = this.objects.get(packet.id);
-        if (object instanceof Structure) object.setDoorOpen(packet.open);
+        if (object instanceof Structure) {
+            object.setState(packet.state, packet.value);
+            return;
+        }
+
+        const states = this.pendingObjectStates.get(packet.id) ?? {};
+        states[packet.state] = packet.value;
+        this.pendingObjectStates.set(packet.id, states);
     };
 
     moveObject = (packet: ServerPacket.SetPosition, _now?: number) => {
@@ -246,6 +263,7 @@ export class World {
 
     deleteObjects = ({ objects }: ServerPacket.DeleteObjects) => {
         for (const id of objects) {
+            this.pendingObjectStates.delete(id);
             const object = this.objects.get(id);
             this.objects.delete(id);
             object?.debug.destroy();

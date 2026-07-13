@@ -1,0 +1,3 @@
+id: amethyst_door
+extends: door
+defaultVariant: amethyst_door

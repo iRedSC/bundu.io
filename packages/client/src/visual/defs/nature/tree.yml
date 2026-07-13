@@ -1,12 +1,13 @@
 id: forest_tree
 variantSource: structured
-
+defaultVariant: base
 
 tile:
-  size: { width: 300, height: 300 }
-  origin: { x: 1, y: 1 }
+  footprint:
+    - "###"
+    - "#X#"
+    - "###"
   spillover: 0
-
 
 parts:
   - name: layer0
@@ -16,7 +17,6 @@ parts:
   - name: layer2
     zIndex: 2
 
-
 variants:
   base:
     layer0: forest_tree_1_0
@@ -24,10 +24,10 @@ variants:
     layer2: forest_tree_1_2
 
 animations:
-  - id: 100
+  hit:
     preset: hit
     parts: [layer0, layer1, layer2]
-  - id: 400
+  sway:
     preset: tree_sway
     parts: [layer1, layer2]
     data: { distance: 0.1, tilt: 2, duration: 7500, stagger: 500 }

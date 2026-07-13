@@ -24,9 +24,10 @@ export class DoorSystem extends System<GameEventMap> {
         }
 
         door.open = !door.open;
-        this.world.context.worldPacketManager.set(ServerPacket.UpdateDoor, {
+        this.world.context.worldPacketManager.emit(ServerPacket.SetObjectState, {
             id: object.id,
-            open: door.open,
+            state: "open",
+            value: door.open,
         });
     }
 

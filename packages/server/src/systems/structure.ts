@@ -225,7 +225,7 @@ export class StructureSystem extends System<GameEventMap> {
         this.world.addObject(
             new Structure(
                 tileEntityPhysics(origin, rot),
-                { id: structureId, variant: "base" },
+                { id: structureId },
                 tile
             )
         );

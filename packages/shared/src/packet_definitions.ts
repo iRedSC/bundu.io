@@ -1,4 +1,4 @@
-import type { GameObjectData } from "./object_types";
+import type { EntityStateValue, GameObjectData } from "./object_types";
 
 /** Server → client packet IDs. */
 export const ServerPacket = {
@@ -23,7 +23,7 @@ export const ServerPacket = {
     DropItem: 0x16,
     UpdateObjectHealth: 0x17,
     Leaderboard: 0x18,
-    UpdateDoor: 0x19,
+    SetObjectState: 0x19,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -115,7 +115,11 @@ export namespace ServerPacket {
     export type Leaderboard = {
         entries: { id: number; name: string; score: number }[];
     };
-    export type UpdateDoor = { id: number; open: boolean };
+    export type SetObjectState = {
+        id: number;
+        state: string;
+        value: EntityStateValue;
+    };
 }
 
 /** Client → server packet IDs. */
@@ -185,7 +189,7 @@ export type ServerPacketMap = {
     [ServerPacket.DropItem]: ServerPacket.DropItem;
     [ServerPacket.UpdateObjectHealth]: ServerPacket.UpdateObjectHealth;
     [ServerPacket.Leaderboard]: ServerPacket.Leaderboard;
-    [ServerPacket.UpdateDoor]: ServerPacket.UpdateDoor;
+    [ServerPacket.SetObjectState]: ServerPacket.SetObjectState;
 };
 
 /** ID → payload map for client packets. */
@@ -247,7 +251,7 @@ export const ServerSchema: {
     },
     [ServerPacket.UpdateObjectHealth]: { fields: ["id", "health", "maxHealth"] },
     [ServerPacket.Leaderboard]: { fields: ["entries"] },
-    [ServerPacket.UpdateDoor]: { fields: ["id", "open"] },
+    [ServerPacket.SetObjectState]: { fields: ["id", "state", "value"] },
 };
 
 export const ClientSchema: {
