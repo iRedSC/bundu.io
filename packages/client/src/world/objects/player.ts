@@ -29,9 +29,12 @@ const CRAFT_BAR_HEIGHT = 5;
 const CRAFT_BAR_Y = -52;
 const CRAFT_BAR_BG = 0x1a1a1a;
 const CRAFT_BAR_FILL = 0xe8c547;
+const CHAT_MESSAGE_Y = -88;
+const CHAT_MESSAGE_DURATION = 5_000;
 
 export class Player extends GameObject implements AnimContext {
     name: Text;
+    chatMessage: Text;
     craftBar: Graphics;
     parts: Map<string, PartNode>;
     private slots: Map<string, { node: PartNode; def: SlotDef }>;
@@ -46,6 +49,7 @@ export class Player extends GameObject implements AnimContext {
 
     private craftDuration = 0;
     private craftEndsAt = 0;
+    private chatTimeout?: ReturnType<typeof setTimeout>;
     private selectedStructureId = 0;
     private structureRotation: TileRot = 0;
     private structureCursor: TilePos = { x: 0, y: 0 };
@@ -98,12 +102,21 @@ export class Player extends GameObject implements AnimContext {
         this.name.zIndex = 100;
         this.container.zIndex = 1;
 
+        this.chatMessage = new Text({ text: "", style: name.style });
+        this.chatMessage.scale.set(0.5);
+        this.chatMessage.roundPixels = true;
+        this.chatMessage.anchor.set(0.5, 1);
+        this.chatMessage.position.set(pos.x, pos.y + CHAT_MESSAGE_Y);
+        this.chatMessage.zIndex = 102;
+        this.chatMessage.visible = false;
+
         this.craftBar = new Graphics();
         this.craftBar.zIndex = 101;
         this.craftBar.visible = false;
 
         this.positionStates.callback = () => {
             this.name.renderable = true;
+            this.chatMessage.renderable = true;
             this.craftBar.renderable = true;
             this.container.renderable = true;
             this.debug.renderable = true;
@@ -111,12 +124,16 @@ export class Player extends GameObject implements AnimContext {
     }
 
     override get containers(): Container[] {
-        return [this.container, this.name, this.craftBar];
+        return [this.container, this.name, this.craftBar, this.chatMessage];
     }
 
     override update(_now?: number): boolean {
         const done = super.update();
         this.name.position = this.position;
+        this.chatMessage.position.set(
+            this.position.x,
+            this.position.y + CHAT_MESSAGE_Y
+        );
         this.craftBar.position = this.position;
         this.redrawCraftBar();
         // Stay in the updating set while the bar is animating.
@@ -174,6 +191,15 @@ export class Player extends GameObject implements AnimContext {
         this.fillSlot("mainhand", this.mainhand);
         this.fillSlot("offhand", this.offhand);
         this.fillSlot("helmet", this.helmet);
+    }
+
+    showChatMessage(message: string) {
+        this.chatMessage.text = message;
+        this.chatMessage.visible = true;
+        clearTimeout(this.chatTimeout);
+        this.chatTimeout = setTimeout(() => {
+            this.chatMessage.visible = false;
+        }, CHAT_MESSAGE_DURATION);
     }
 
     reloadVisualDefinition() {

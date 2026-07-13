@@ -330,7 +330,7 @@ export class World {
     chatMessage = ({ id, message }: ServerPacket.ChatMessage) => {
         const player = this.objects.get(id);
         if (!(player instanceof Player)) return;
-        console.log(player.name.text, message);
+        player.showChatMessage(message);
     };
 
     craftEvent = ({ id, duration }: ServerPacket.CraftEvent) => {
