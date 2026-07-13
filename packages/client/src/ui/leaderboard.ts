@@ -14,7 +14,6 @@ export class Leaderboard {
     private readonly rows: Text[] = [];
 
     constructor() {
-        this.container.visible = false;
         this.title.position.set(16, 12);
         this.container.addChild(this.background, this.title);
         this.drawBackground(1);
@@ -25,7 +24,6 @@ export class Leaderboard {
     }
 
     clear() {
-        this.container.visible = false;
         for (const row of this.rows) row.destroy();
         this.rows.length = 0;
         this.drawBackground(1);
