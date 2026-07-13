@@ -54,4 +54,8 @@ export function setupGUIPacketReceiving(
         ui.craftingMenu.items = ui.recipeManager.filter(ui.inventory.items, []);
         ui.craftingMenu.update();
     });
+    receiver.on(
+        ServerPacket.Leaderboard,
+        ui.leaderboard.update.bind(ui.leaderboard)
+    );
 }

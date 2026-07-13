@@ -21,6 +21,7 @@ export const ServerPacket = {
     CraftEvent: 0x14,
     PlaceStructureResult: 0x15,
     DropItem: 0x16,
+    Leaderboard: 0x17,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -104,6 +105,9 @@ export namespace ServerPacket {
         x: number;
         y: number;
     };
+    export type Leaderboard = {
+        entries: { id: number; name: string; score: number }[];
+    };
 }
 
 /** Client → server packet IDs. */
@@ -171,6 +175,7 @@ export type ServerPacketMap = {
     [ServerPacket.CraftEvent]: ServerPacket.CraftEvent;
     [ServerPacket.PlaceStructureResult]: ServerPacket.PlaceStructureResult;
     [ServerPacket.DropItem]: ServerPacket.DropItem;
+    [ServerPacket.Leaderboard]: ServerPacket.Leaderboard;
 };
 
 /** ID → payload map for client packets. */
@@ -230,6 +235,7 @@ export const ServerSchema: {
     [ServerPacket.DropItem]: {
         fields: ["id", "objectId", "itemId", "x", "y"],
     },
+    [ServerPacket.Leaderboard]: { fields: ["entries"] },
 };
 
 export const ClientSchema: {
