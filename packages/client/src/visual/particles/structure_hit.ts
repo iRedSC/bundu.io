@@ -16,7 +16,7 @@ export function structureHit(
         spread: Math.PI / 2,
         speed: [300, 600],
         lifetime: [2000, 3000],
-        size: [40, 50],
+        size: [20, 30],
         endSize: 10,
         gravity: 0,
         friction: 3,
