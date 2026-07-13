@@ -8,6 +8,7 @@ import { Grid } from "./grid";
 import { CraftingMenu, RecipeManager } from "./crafting_menu";
 import { Inventory } from "./inventory";
 import { StatBar } from "./statbars";
+import { Leaderboard } from "./leaderboard";
 import { ITEM_BUTTON_SIZE } from "../constants";
 
 export type UI = {
@@ -18,6 +19,7 @@ export type UI = {
     health: StatBar;
     hunger: StatBar;
     heat: StatBar;
+    leaderboard: Leaderboard;
     tick: () => void;
 };
 
@@ -65,6 +67,7 @@ export function createUI() {
         overlayTint: 0xb02a2a,
         diffTint: 0x5f7b85,
     });
+    const leaderboard = new Leaderboard();
 
     const statContainer = new Container();
     statContainer.pivot.set(statContainer.width / 2, statContainer.height / 2);
@@ -77,6 +80,7 @@ export function createUI() {
     function resize() {
         craftingMenu.resize();
         inventory.resize();
+        leaderboard.resize();
         statContainer.position.set(
             percentOf(50, window.innerWidth) - percentOf(46, (150 + 60) * 3),
             inventory.container.position.y -
@@ -88,6 +92,7 @@ export function createUI() {
     ui.addChild(statContainer);
     ui.addChild(inventory.container);
     ui.addChild(craftingMenu.container);
+    ui.addChild(leaderboard.container);
 
     window.addEventListener("resize", resize);
     resize();
@@ -100,6 +105,7 @@ export function createUI() {
         health,
         hunger,
         heat,
+        leaderboard,
         tick() {
             health.tick();
             hunger.tick();
