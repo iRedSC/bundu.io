@@ -18,6 +18,7 @@ export class KeyboardInputListener {
     onMoveInput: (direction: MoveAxes) => void = () => {};
     onSendChat: (message: string) => void = () => {};
     onRotateStructure: () => void = () => {};
+    onToggleLeaderboard: () => void = () => {};
 
     constructor() {
         this.keybinds = new Keystrokes({
@@ -28,6 +29,7 @@ export class KeyboardInputListener {
                 d: "right",
                 enter: "chat",
                 r: "placement_rotate",
+                tab: "leaderboard",
             },
         });
 
@@ -113,6 +115,11 @@ export class KeyboardInputListener {
         this.keybinds.bindKey("placement_rotate", {
             onPressed: () => {
                 if (!this.chatOpen) this.onRotateStructure();
+            },
+        });
+        this.keybinds.bindKey("leaderboard", {
+            onPressed: () => {
+                if (!this.chatOpen) this.onToggleLeaderboard();
             },
         });
     }

@@ -22,6 +22,7 @@ export const ServerPacket = {
     PlaceStructureResult: 0x15,
     DropItem: 0x16,
     UpdateObjectHealth: 0x17,
+    Leaderboard: 0x18,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -110,6 +111,9 @@ export namespace ServerPacket {
         health: number;
         maxHealth: number;
     };
+    export type Leaderboard = {
+        entries: { id: number; name: string; score: number }[];
+    };
 }
 
 /** Client → server packet IDs. */
@@ -178,6 +182,7 @@ export type ServerPacketMap = {
     [ServerPacket.PlaceStructureResult]: ServerPacket.PlaceStructureResult;
     [ServerPacket.DropItem]: ServerPacket.DropItem;
     [ServerPacket.UpdateObjectHealth]: ServerPacket.UpdateObjectHealth;
+    [ServerPacket.Leaderboard]: ServerPacket.Leaderboard;
 };
 
 /** ID → payload map for client packets. */
@@ -238,6 +243,7 @@ export const ServerSchema: {
         fields: ["id", "objectId", "itemId", "x", "y"],
     },
     [ServerPacket.UpdateObjectHealth]: { fields: ["id", "health", "maxHealth"] },
+    [ServerPacket.Leaderboard]: { fields: ["entries"] },
 };
 
 export const ClientSchema: {

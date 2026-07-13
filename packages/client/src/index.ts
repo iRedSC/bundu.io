@@ -100,6 +100,7 @@ async function main() {
             gui.recipeManager.recipes.clear();
             gui.craftingMenu.items = [];
             gui.craftingMenu.update();
+            gui.leaderboard.clear();
             input.closeChat();
         },
         setConnecting: (connecting) => {
@@ -130,6 +131,7 @@ async function main() {
         getPlaceStructureId: () => debug.getPlaceStructureId(),
         isOverInventory: () => gui.inventory.isInteracting,
     });
+    input.onToggleLeaderboard = () => gui.leaderboard.toggle();
 
     gui.inventory.isLocked = () => {
         const local = world.objects.get(world.user ?? -1);
