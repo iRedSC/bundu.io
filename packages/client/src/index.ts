@@ -125,6 +125,7 @@ async function main() {
         },
         screenToWorld: (screenX, screenY) =>
             viewport.toLocal({ x: screenX, y: screenY }),
+        setCursorWorld: (position) => world.setCursorWorld(position),
         isInGame: () => session.isInGame(),
         getPlaceStructureId: () => debug.getPlaceStructureId(),
         isOverInventory: () => gui.inventory.isInteracting,

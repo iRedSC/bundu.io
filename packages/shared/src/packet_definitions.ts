@@ -21,6 +21,7 @@ export const ServerPacket = {
     CraftEvent: 0x14,
     PlaceStructureResult: 0x15,
     DropItem: 0x16,
+    UpdateObjectHealth: 0x17,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -104,6 +105,11 @@ export namespace ServerPacket {
         x: number;
         y: number;
     };
+    export type UpdateObjectHealth = {
+        id: number;
+        health: number;
+        maxHealth: number;
+    };
 }
 
 /** Client → server packet IDs. */
@@ -171,6 +177,7 @@ export type ServerPacketMap = {
     [ServerPacket.CraftEvent]: ServerPacket.CraftEvent;
     [ServerPacket.PlaceStructureResult]: ServerPacket.PlaceStructureResult;
     [ServerPacket.DropItem]: ServerPacket.DropItem;
+    [ServerPacket.UpdateObjectHealth]: ServerPacket.UpdateObjectHealth;
 };
 
 /** ID → payload map for client packets. */
@@ -230,6 +237,7 @@ export const ServerSchema: {
     [ServerPacket.DropItem]: {
         fields: ["id", "objectId", "itemId", "x", "y"],
     },
+    [ServerPacket.UpdateObjectHealth]: { fields: ["id", "health", "maxHealth"] },
 };
 
 export const ClientSchema: {

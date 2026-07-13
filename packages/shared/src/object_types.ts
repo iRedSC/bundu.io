@@ -20,7 +20,12 @@ export namespace GameObjectData {
     export type ResourceNodeData = [type: number, variant?: number];
 
     export const StructureType = 0x02;
-    export type StructureData = [type: number, variant?: number];
+    export type StructureData = [
+        type: number,
+        variant?: number,
+        health?: number,
+        maxHealth?: number,
+    ];
 
     export const GroundItemType = 0x03;
     export type GroundItemData = [itemId: number, amount: number];

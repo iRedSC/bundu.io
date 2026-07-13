@@ -1,7 +1,8 @@
 import { Attributes } from "../components/attributes.js";
 import { Health } from "../components/base.js";
-import { GameObject, System, type World } from "../engine";
+import { type GameObject, System, type World } from "../engine";
 import { emitVitals } from "../network/vitals.js";
+import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
 /** Matches prior cadence: HealthSystem runs at 1 tps with a 5-tick period. */
@@ -36,13 +37,21 @@ export class HealthSystem extends System<GameEventMap> {
     hurt({ object: target, source, damage }: GameEvent.Hurt) {
         const health = target.get(Health);
         const attributes = target.get(Attributes);
-        let defense = attributes?.get("health.defense") ?? 0;
+        const defense = attributes?.get("health.defense") ?? 0;
 
         damage = damage ?? 0;
         health.value -= Math.round(Math.max(0, damage - defense));
         if (health.value <= 0) {
             this.trigger(GameEvent.Kill, { object: target, source });
         }
+        this.world.context.worldPacketManager.set(
+            ServerPacket.UpdateObjectHealth,
+            {
+                id: target.id,
+                health: Math.max(0, health.value),
+                maxHealth: health.max,
+            }
+        );
         emitVitals(target, this.world.context.playerPacketManager);
     }
 }

@@ -1,4 +1,4 @@
-import type * as PIXI from "pixi.js";
+import { Graphics, type Container, type Point as PixiPoint } from "pixi.js";
 import { radians } from "@bundu/shared";
 import { TILE_SIZE } from "@bundu/shared/tiles";
 import GameObject from "../game_object";
@@ -13,6 +13,12 @@ import { structureDef, tileEntityDefs } from "../../visual/defs";
 import type { ObjectDef } from "../../visual/types";
 import type { AnimationManager } from "../../animation/runtime";
 
+const HEALTH_BAR_WIDTH = 48;
+const HEALTH_BAR_HEIGHT = 5;
+const HEALTH_BAR_Y = -52;
+const HEALTH_BAR_FADE_MS = 150;
+const HEALTH_BAR_DISPLAY_MS = 2_500;
+
 /** Placed tile entity. Art is authored at TILE_SIZE px per footprint tile. */
 export class Structure extends GameObject {
     sprite!: ContaineredSprite;
@@ -20,16 +26,26 @@ export class Structure extends GameObject {
     private readonly animationManager: AnimationManager;
     private usesSpriteConfig = false;
     private readonly variant: string;
+    private readonly healthBar = new Graphics();
+    private healthBarAlpha = 0;
+    private healthBarFadeFrom = 0;
+    private healthBarFadeTo = 0;
+    private healthBarFadeStartedAt = 0;
+    private healthBarShownUntil = 0;
+    private hovered = false;
+    private hasHealth = false;
 
     constructor(
         id: number,
         type: string,
-        pos: PIXI.Point,
+        pos: PixiPoint,
         rotationDegrees: number,
         collisionRadius: number,
         animationManager: AnimationManager,
         visualScale: number = TILE_SIZE,
-        variant: string = "base"
+        variant: string = "base",
+        health?: number,
+        maxHealth?: number
     ) {
         super(id, pos, radians(rotationDegrees), collisionRadius, visualScale);
 
@@ -38,6 +54,98 @@ export class Structure extends GameObject {
         this.animationManager = animationManager;
         this.applyVisualDefinition(variant);
         this.container.zIndex = 10;
+        this.healthBar.zIndex = 100;
+        this.healthBar.position.copyFrom(pos);
+        this.setHealth(health ?? 0, maxHealth ?? 0);
+    }
+
+    override get containers(): Container[] {
+        return [this.container, this.healthBar];
+    }
+
+    override update(_now?: number): boolean {
+        const done = super.update();
+        this.healthBar.position.set(this.position.x, this.position.y);
+        return done;
+    }
+
+    setHealth(health: number, maxHealth: number, time?: number) {
+        const ratio =
+            maxHealth > 0 ? Math.max(0, Math.min(1, health / maxHealth)) : 0;
+        const x = -HEALTH_BAR_WIDTH / 2;
+
+        this.healthBar.clear();
+        this.healthBar
+            .rect(x, HEALTH_BAR_Y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT)
+            .fill(0x1a1a1a);
+        if (ratio > 0) {
+            this.healthBar
+                .rect(x, HEALTH_BAR_Y, HEALTH_BAR_WIDTH * ratio, HEALTH_BAR_HEIGHT)
+                .fill(0xd94b4b);
+        }
+        this.hasHealth = maxHealth > 0;
+        if (time === undefined || !this.hasHealth) {
+            this.healthBar.visible = false;
+            return;
+        }
+
+        this.healthBarShownUntil = Math.max(
+            this.healthBarShownUntil,
+            time + HEALTH_BAR_DISPLAY_MS
+        );
+        this.showHealthBar(time);
+    }
+
+    updateHealthBar(time: number, cursor?: { x: number; y: number }) {
+        if (!this.hasHealth) {
+            this.healthBar.visible = false;
+            return;
+        }
+
+        const hovered =
+            cursor !== undefined &&
+            Math.hypot(
+                cursor.x - this.position.x,
+                cursor.y - this.position.y
+            ) <= Math.max(this.collisionRadius, TILE_SIZE / 2);
+        if (hovered && !this.hovered) this.showHealthBar(time);
+        if (!hovered && this.hovered && time >= this.healthBarShownUntil) {
+            this.hideHealthBar(time);
+        }
+        this.hovered = hovered;
+
+        if (!hovered && time >= this.healthBarShownUntil) {
+            this.hideHealthBar(time);
+        }
+        this.updateHealthBarFade(time);
+        this.healthBar.alpha = this.healthBarAlpha;
+        this.healthBar.visible = this.healthBarAlpha > 0;
+    }
+
+    private showHealthBar(time: number) {
+        this.updateHealthBarFade(time);
+        if (this.healthBarFadeTo === 1) return;
+        this.healthBarFadeFrom = this.healthBarAlpha;
+        this.healthBarFadeTo = 1;
+        this.healthBarFadeStartedAt = time;
+    }
+
+    private hideHealthBar(time: number) {
+        this.updateHealthBarFade(time);
+        if (this.healthBarFadeTo === 0) return;
+        this.healthBarFadeFrom = this.healthBarAlpha;
+        this.healthBarFadeTo = 0;
+        this.healthBarFadeStartedAt = time;
+    }
+
+    private updateHealthBarFade(time: number) {
+        const progress = Math.min(
+            1,
+            (time - this.healthBarFadeStartedAt) / HEALTH_BAR_FADE_MS
+        );
+        this.healthBarAlpha =
+            this.healthBarFadeFrom +
+            (this.healthBarFadeTo - this.healthBarFadeFrom) * progress;
     }
 
     private applyVisualDefinition(variant: string) {

@@ -8,10 +8,14 @@ import mainhandConfig from "../main_hand.yml";
 import offhandConfig from "../off_hand.yml";
 import wearableConfig from "../wearable.yml";
 import placeableConfig from "../placeable.yml";
+import buildingConfig from "../buildings.yml";
 import { type ItemConfig, ItemConfigs } from "./items.js";
+import { BuildingConfigs } from "./buildings.js";
 
 /** Load configs that the server actually uses. */
 export function loadConfigs() {
+    BuildingConfigs.parse(buildingConfig);
+
     ResourceConfigs.parse(resourceConfig, (_id, record, fallback) => {
         const numericItems: Record<number, number> = {};
 

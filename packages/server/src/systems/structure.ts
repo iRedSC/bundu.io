@@ -11,7 +11,7 @@ import {
     type TileRot,
 } from "@bundu/shared";
 import { Circle, testCircleCircle, Vector } from "sat";
-import { GroundData, Physics, TileEntity } from "../components/base.js";
+import { GroundData, Health, Physics, TileEntity } from "../components/base.js";
 import { Inventory } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { Attributes } from "../components/attributes.js";
@@ -48,6 +48,7 @@ export class StructureSystem extends System<GameEventMap> {
             [PlayerData]
         );
         this.listen(GameEvent.Move, this.validateSelectedStructure, [PlayerData]);
+        this.listen(GameEvent.Kill, this.kill, [Health, TileEntity]);
     }
 
     override enter(player: GameObject) {
@@ -120,6 +121,12 @@ export class StructureSystem extends System<GameEventMap> {
             y: placement?.origin.y ?? 0,
             rotation: placement?.rotation ?? 0,
         });
+    };
+
+    private kill = ({ object }: GameEvent.Kill) => {
+        if (!object.active) return;
+        object.active = false;
+        this.trigger(GameEvent.DeleteObject, { object });
     };
 
     private sendPlacementResult(playerId: number, result: PlacementResult) {

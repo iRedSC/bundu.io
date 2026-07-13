@@ -19,6 +19,7 @@ export type InputPlayerFacade = {
     getLocalPlayer(): Player | undefined;
     markUpdating(player: Player): void;
     screenToWorld(screenX: number, screenY: number): { x: number; y: number };
+    setCursorWorld(position: { x: number; y: number }): void;
     isInGame(): boolean;
     /** When set, left-click places this structure id at the cursor tile. */
     getPlaceStructureId(): number | null;
@@ -72,6 +73,7 @@ export class InputController {
         const previousRotation = player.rotation;
         player.predictLook(rotation);
         const world = this.facade.screenToWorld(mousePos[0], mousePos[1]);
+        this.facade.setCursorWorld(world);
         const cursor = {
             x: worldToTile(world.x),
             y: worldToTile(world.y),

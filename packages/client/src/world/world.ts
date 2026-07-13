@@ -72,6 +72,8 @@ export class World {
     private placementInvalidOverlay?: ContaineredSprite;
     private placementGhostType = 0;
     private placementGhostAllowed?: boolean;
+    private cursorWorld?: { x: number; y: number };
+    private elapsedMS = 0;
 
     constructor(viewport: Viewport) {
         this.viewport = viewport;
@@ -96,15 +98,27 @@ export class World {
         this.renderer.delete(-10);
         this.particles.clear();
         this.clearPlacementGhost();
+        this.cursorWorld = undefined;
+        this.elapsedMS = 0;
         this.user = undefined;
     }
 
     tick(deltaMS: number) {
+        this.elapsedMS += deltaMS;
         AnimationManagers.World.update();
         this.objects.update();
+        for (const object of this.objects.all()) {
+            if (object instanceof Structure) {
+                object.updateHealthBar(this.elapsedMS, this.cursorWorld);
+            }
+        }
         this.particles.update(deltaMS);
         this.updatePlacementGhost();
         this.camera.update();
+    }
+
+    setCursorWorld(position: { x: number; y: number }) {
+        this.cursorWorld = position;
     }
 
     private attachLocalPlayer(player: GameObject) {
@@ -179,7 +193,7 @@ export class World {
     };
 
     newStructure = (packet: LoadResource) => {
-        const [nodeType, variantId] = packet.data;
+        const [nodeType, variantId, health, maxHealth] = packet.data;
         this.renderer.delete(packet.id);
 
         const structure = new Structure(
@@ -190,10 +204,19 @@ export class World {
             FOOTPRINT_CIRCLE_RADIUS,
             AnimationManagers.World,
             TILE_SIZE,
-            getVariantName(variantId) ?? "base"
+            getVariantName(variantId) ?? "base",
+            health,
+            maxHealth
         );
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
+    };
+
+    updateObjectHealth = (packet: ServerPacket.UpdateObjectHealth) => {
+        const object = this.objects.get(packet.id);
+        if (object instanceof Structure) {
+            object.setHealth(packet.health, packet.maxHealth, this.elapsedMS);
+        }
     };
 
     moveObject = (packet: ServerPacket.SetPosition, _now?: number) => {
