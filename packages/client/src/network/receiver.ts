@@ -17,6 +17,7 @@ export function setupPacketReceiving(
     world: World
 ) {
     receiver.on(ServerPacket.LoadObject, world.loadObject);
+    receiver.on(ServerPacket.DropItem, world.dropItem);
     receiver.on(ServerPacket.AttackEvent, world.combatFx.attack);
     receiver.on(ServerPacket.BlockEvent, world.combatFx.block);
     receiver.on(ServerPacket.HitEvent, world.combatFx.hurt);

@@ -70,22 +70,22 @@ export class StatBar {
         );
 
         this.base = SpriteFactory.build("stat_bar");
-        this.base.scale.set(0.1);
+        this.base.scale.set(0.1, 0.6);
         this.base.anchor.set(0, 0.5);
         this.base.tint = tint;
 
         this.baseDiff = SpriteFactory.build("stat_bar");
-        this.baseDiff.scale.set(0.1);
+        this.baseDiff.scale.set(0.1, 0.6);
         this.baseDiff.anchor.set(0, 0.5);
         this.baseDiff.tint = diffTint;
 
         this.overlay = SpriteFactory.build("stat_bar");
-        this.overlay.scale.set(0.1);
+        this.overlay.scale.set(0.1, 0.6);
         this.overlay.anchor.set(0, 0.5);
         this.overlay.tint = overlayTint;
 
         this.overlayDiff = SpriteFactory.build("stat_bar");
-        this.overlayDiff.scale.set(0.1);
+        this.overlayDiff.scale.set(0.1, 0.6);
         this.overlayDiff.anchor.set(0, 0.5);
         this.overlayDiff.tint = diffTint;
 

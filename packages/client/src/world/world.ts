@@ -24,6 +24,7 @@ import ObjectContainer from "./object_container";
 import { CombatFx } from "./combat_fx";
 import { GameObjectData } from "@bundu/shared/object_types";
 import { Structure } from "./objects/structure";
+import { GroundItem } from "./objects/ground_item";
 import { getStringId } from "@bundu/shared/id_map";
 import { getVariantName } from "@bundu/shared/variant_map";
 import {
@@ -43,6 +44,10 @@ type LoadResource = Extract<
             | typeof GameObjectData.ResourceNodeType
             | typeof GameObjectData.StructureType;
     }
+>;
+type LoadGroundItem = Extract<
+    ServerPacket.LoadObject,
+    { type: typeof GameObjectData.GroundItemType }
 >;
 
 const PLACEMENT_GHOST_RENDER_ID = -11;
@@ -131,6 +136,9 @@ export class World {
             case GameObjectData.ResourceNodeType:
             case GameObjectData.StructureType:
                 this.newStructure(packet);
+                break;
+            case GameObjectData.GroundItemType:
+                this.newGroundItem(packet);
                 break;
         }
     };
@@ -231,6 +239,43 @@ export class World {
             player.setSelectedStructure(packet.structureId);
             this.updatePlacementGhost();
         }
+    };
+
+    newGroundItem = (packet: LoadGroundItem) => {
+        const existing = this.objects.get(packet.id);
+        if (existing instanceof GroundItem) return;
+
+        const item = new GroundItem(
+            packet.id,
+            packet.data[0],
+            deciPoint(packet.x, packet.y),
+            packet.rotation
+        );
+        this.objects.add(item);
+        this.renderer.add(item.id, ...item.containers);
+    };
+
+    dropItem = (packet: ServerPacket.DropItem) => {
+        const source = this.objects.get(packet.id);
+        if (!source) return;
+
+        const target = deciPoint(packet.x, packet.y);
+        const existing = this.objects.get(packet.objectId);
+        const item =
+            existing instanceof GroundItem
+                ? existing
+                : new GroundItem(
+                packet.objectId,
+                packet.itemId,
+                source.position.clone(),
+                source.rotation * (180 / Math.PI)
+            );
+        if (!(existing instanceof GroundItem)) {
+            this.objects.add(item);
+            this.renderer.add(item.id, ...item.containers);
+        }
+        item.popFrom(source.position.clone(), target);
+        this.objects.updating.add(item);
     };
 
     placeStructureResult = (packet: ServerPacket.PlaceStructureResult) => {

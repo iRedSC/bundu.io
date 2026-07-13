@@ -147,8 +147,8 @@ async function main() {
         const object = world.objects.get(world.user ?? -1);
         if (!(object instanceof Player)) return null;
         return viewport.toGlobal({
-            x: object.position.x,
-            y: object.position.y,
+            x: object.position.x + Math.cos(object.rotation) * 80,
+            y: object.position.y + Math.sin(object.rotation) * 80,
         });
     };
     gui.craftingMenu.leftclick = (itemId) => {

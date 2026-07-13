@@ -83,6 +83,18 @@ export const ResourceData = Component.register<ResourceData>(() => ({
     lastRegen: 0,
 }));
 
+export type GroundItemData = {
+    itemId: number;
+    amount: number;
+    /** Ground items cannot be immediately re-picked by their dropper. */
+    pickupAt: number;
+};
+export const GroundItemData = Component.register<GroundItemData>(() => ({
+    itemId: 0,
+    amount: 0,
+    pickupAt: 0,
+}));
+
 export type Health = {
     max: number;
     value: number;
