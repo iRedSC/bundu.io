@@ -13,17 +13,11 @@ await Bun.build({
     outdir,
     bytecode: false,
     minify: !DEBUG,
-    external: ["pixi.js"],
     define: {
         "process.env.GAME_WS_URL": JSON.stringify(GAME_WS_URL),
         __DEBUG__: DEBUG ? "true" : "false",
     },
 });
-
-await Bun.write(
-    `${outdir}/pixi.mjs`,
-    Bun.file("./node_modules/pixi.js/dist/pixi.mjs")
-);
 
 if (!DEBUG) {
     console.log("[build] production client (debug tools stripped)");

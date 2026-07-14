@@ -173,13 +173,7 @@ serve({
 
         try {
             const stat = fs.statSync(filepath);
-            if (stat.isFile()) {
-                return new Response(file(filepath), {
-                    headers: DEV_CONFIG_RELOAD
-                        ? { "Cache-Control": "no-store" }
-                        : undefined,
-                });
-            }
+            if (stat.isFile()) return new Response(file(filepath));
             return new Response("Not Found", { status: 404 });
         } catch {
             return new Response("Not Found", { status: 404 });

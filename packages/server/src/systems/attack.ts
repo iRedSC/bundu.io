@@ -111,14 +111,13 @@ export class AttackSystem extends System<GameEventMap> {
                 this.trigger(GameEvent.ToggleDoor, { object });
                 continue;
             }
-            const rotting = Boolean(Rotting.get(object));
-            this.claimRottingStructure(source, object, weapon);
             this.trigger(GameEvent.Hurt, {
                 object,
                 source,
-                damage: rotting ? (damage ?? 0) * 2 : damage,
+                damage,
                 weapon,
             });
+            this.claimRottingStructure(source, object, weapon);
         }
     }
 
