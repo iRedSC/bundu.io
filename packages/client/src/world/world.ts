@@ -399,17 +399,22 @@ export class World {
             tileCenterWorld(origin.y)
         );
         this.placementGhost.rotation = radians(placement.rotation * 90);
+        this.placementGhost.syncWorldLayers();
     }
 
     private clearPlacementGhost() {
         if (!this.placementGhost) return;
         AnimationManagers.World.remove(this.placementGhost);
         this.renderer.delete(PLACEMENT_GHOST_RENDER_ID);
-        this.placementGhost.container.destroy({ children: true });
         this.placementGhost = undefined;
         this.placementInvalidOverlay = undefined;
         this.placementGhostType = 0;
         this.placementGhostAllowed = undefined;
+    }
+
+    /** Rebind an object's display list after visuals are rebuilt in place. */
+    reregisterObject(object: GameObject) {
+        this.renderer.replace(object.id, ...object.containers);
     }
 
     loadGround = (packet: ServerPacket.LoadGround) => {

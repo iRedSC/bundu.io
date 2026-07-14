@@ -30,8 +30,12 @@ function reapplyDisplays(world: World) {
 
 function reapplyVisualDefs(world: World) {
     for (const object of world.objects.all()) {
-        if (object instanceof Player) object.reloadVisualDefinition();
-        else if (object instanceof Structure) object.reloadVisualDefinition();
+        if (object instanceof Player) {
+            object.reloadVisualDefinition();
+        } else if (object instanceof Structure) {
+            object.reloadVisualDefinition();
+            world.reregisterObject(object);
+        }
     }
 }
 

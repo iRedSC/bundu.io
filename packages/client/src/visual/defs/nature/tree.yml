@@ -15,13 +15,14 @@ occlusion:
   radius: 1.5
   duration: 200
 
+# World zIndex bands (player = 1): trunk below, canopy above.
 parts:
   - name: layer0
     zIndex: 0
   - name: layer1
-    zIndex: 1
+    zIndex: 10
   - name: layer2
-    zIndex: 2
+    zIndex: 11
 
 variants:
   base:
