@@ -5,8 +5,8 @@ import {
     radians,
     type BasicPoint,
 } from "@bundu/shared";
-import { Door, Physics } from "../components/base.js";
-import { GameObject, System, type World } from "../engine";
+import { Door, Physics, Rotting } from "../components/base.js";
+import { type GameObject, System, type World } from "../engine";
 import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import SAT from "sat";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
@@ -104,7 +104,8 @@ export class AttackSystem extends System<GameEventMap> {
                 id: object.id,
                 angle: facing,
             });
-            if (Door.get(object)) {
+            // Intact doors toggle; rotting doors take damage / claim via Hurt.
+            if (Door.get(object) && !Rotting.get(object)) {
                 this.trigger(GameEvent.ToggleDoor, { object });
                 continue;
             }

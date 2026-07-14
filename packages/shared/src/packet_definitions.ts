@@ -1,4 +1,7 @@
-import type { EntityStateValue, GameObjectData } from "./object_types";
+import type {
+    EntityStateSnapshot,
+    GameObjectData,
+} from "./object_types";
 
 /** Server → client packet IDs. */
 export const ServerPacket = {
@@ -115,10 +118,10 @@ export namespace ServerPacket {
     export type Leaderboard = {
         entries: { id: number; name: string; score: number }[];
     };
+    /** Authoritative entity-state projection (coalesced via worldPacketManager.set). */
     export type SetObjectState = {
         id: number;
-        state: string;
-        value: EntityStateValue;
+        states: EntityStateSnapshot;
     };
 }
 
@@ -251,7 +254,7 @@ export const ServerSchema: {
     },
     [ServerPacket.UpdateObjectHealth]: { fields: ["id", "health", "maxHealth"] },
     [ServerPacket.Leaderboard]: { fields: ["entries"] },
-    [ServerPacket.SetObjectState]: { fields: ["id", "state", "value"] },
+    [ServerPacket.SetObjectState]: { fields: ["id", "states"] },
 };
 
 export const ClientSchema: {

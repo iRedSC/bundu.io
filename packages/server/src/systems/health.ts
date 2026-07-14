@@ -1,5 +1,5 @@
 import { Attributes } from "../components/attributes.js";
-import { Health } from "../components/base.js";
+import { Health, Rotting } from "../components/base.js";
 import { type GameObject, System, type World } from "../engine";
 import { emitVitals } from "../network/vitals.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
@@ -40,6 +40,7 @@ export class HealthSystem extends System<GameEventMap> {
         const defense = attributes?.get("health.defense") ?? 0;
 
         damage = damage ?? 0;
+        if (source && Rotting.get(target)) damage *= 2;
         health.value -= Math.round(Math.max(0, damage - defense));
         if (health.value <= 0) {
             this.trigger(GameEvent.Kill, { object: target, source });

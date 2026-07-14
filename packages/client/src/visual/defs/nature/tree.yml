@@ -13,7 +13,7 @@ tile:
 occlusion:
   state: occluded
   radius: 1.5
-  duration: 200
+alphaFadeMs: 200
 
 # World zIndex bands (player = 1): trunk below, canopy above.
 parts:

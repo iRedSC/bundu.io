@@ -1,9 +1,6 @@
 id: structure
+extends: rottable
 parts:
   - name: main
     sprite: ""
 variants: {}
-animations:
-  hit:
-    preset: hit
-    parts: main

@@ -1,7 +1,7 @@
 import { testCircleCircle } from "sat";
 import { Door, Physics, TileEntity } from "../components/base.js";
 import { System, type GameObject, type World } from "../engine";
-import { ServerPacket } from "@bundu/shared/packet_definitions.js";
+import { syncObjectStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
 /** Handles the collision and visible state of player-operated doors. */
@@ -24,11 +24,7 @@ export class DoorSystem extends System<GameEventMap> {
         }
 
         door.open = !door.open;
-        this.world.context.worldPacketManager.emit(ServerPacket.SetObjectState, {
-            id: object.id,
-            state: "open",
-            value: door.open,
-        });
+        syncObjectStates(this.world, object);
     }
 
     private isBlocked(door: GameObject): boolean {

@@ -33,7 +33,7 @@ export function createPreset(
         case "block":
             return block(nodes, ctx);
         case "rotting":
-            return rotting(nodes);
+            return rotting(nodes, ctx);
         default:
             throw new Error(`Unknown anim preset: ${def satisfies never}`);
     }

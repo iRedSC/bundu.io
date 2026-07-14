@@ -227,6 +227,7 @@ export class World {
             maxHealth,
             states
         );
+        structure.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
     };
@@ -241,13 +242,15 @@ export class World {
     setObjectState = (packet: ServerPacket.SetObjectState) => {
         const object = this.objects.get(packet.id);
         if (object instanceof Structure) {
-            object.setState(packet.state, packet.value);
+            object.applyStates(packet.states);
             return;
         }
 
-        const states = this.pendingObjectStates.get(packet.id) ?? {};
-        states[packet.state] = packet.value;
-        this.pendingObjectStates.set(packet.id, states);
+        const pending = this.pendingObjectStates.get(packet.id) ?? {};
+        this.pendingObjectStates.set(packet.id, {
+            ...pending,
+            ...packet.states,
+        });
     };
 
     moveObject = (packet: ServerPacket.SetPosition, _now?: number) => {
@@ -336,9 +339,12 @@ export class World {
     placeStructureResult = (packet: ServerPacket.PlaceStructureResult) => {
         if (!this.placementGhost) return;
         if (this.placementGhostAllowed !== packet.allowed) {
-            this.placementGhost.sprite.sprite.tint = packet.allowed
-                ? PLACEMENT_GHOST_NORMAL_TINT
-                : PLACEMENT_GHOST_TINT;
+            this.placementGhost.setGhostAppearance(
+                0.5,
+                packet.allowed
+                    ? PLACEMENT_GHOST_NORMAL_TINT
+                    : PLACEMENT_GHOST_TINT
+            );
             if (this.placementInvalidOverlay) {
                 this.placementInvalidOverlay.renderable = !packet.allowed;
             }
@@ -371,7 +377,10 @@ export class World {
                 AnimationManagers.World,
                 TILE_SIZE
             );
-            this.placementGhost.sprite.alpha = 0.5;
+            this.placementGhost.setGhostAppearance(
+                0.5,
+                PLACEMENT_GHOST_NORMAL_TINT
+            );
             this.placementGhost.container.eventMode = "none";
             this.placementGhostAllowed = undefined;
             this.placementInvalidOverlay = SpriteFactory.build(
@@ -380,7 +389,8 @@ export class World {
             this.placementInvalidOverlay.anchor.set(0.5);
             this.placementInvalidOverlay.alpha = 0.5;
             this.placementInvalidOverlay.renderable = false;
-            this.placementGhost.container.addChild(this.placementInvalidOverlay);
+            this.placementInvalidOverlay.zIndex = 100;
+            this.placementGhost.addSyncedOverlay(this.placementInvalidOverlay);
             this.placementGhostType = placement.id;
             this.renderer.add(
                 PLACEMENT_GHOST_RENDER_ID,

@@ -1,5 +1,6 @@
-import type { Container } from "pixi.js";
+import type { Container, Texture } from "pixi.js";
 import type { ContaineredSprite } from "../assets/sprite_factory";
+import type { ParticleBurst } from "../rendering/particles/types";
 import type { RotationStates } from "../world/states";
 
 /** Pose on a part's root container (degrees for rotation). */
@@ -91,8 +92,6 @@ export type OcclusionDef = {
     state: string;
     /** World radius in tiles from the object origin. */
     radius: number;
-    /** Alpha fade duration in ms when the occlusion state changes. */
-    duration?: number;
 };
 
 export type ObjectDef = {
@@ -106,6 +105,11 @@ export type ObjectDef = {
     animations: Readonly<Record<string, AnimDef>>;
     states: Readonly<Record<string, StateDef>>;
     stateOrder: readonly string[];
+    /**
+     * Fade part alpha overrides over this many ms after the first resolve.
+     * Used by occlusion and any other state-driven alpha changes.
+     */
+    alphaFadeMs?: number;
     occlusion?: OcclusionDef;
 };
 
@@ -114,6 +118,8 @@ export type StateValue = boolean | number | string;
 export type PartOverride = PartPose & {
     alpha?: number;
     visible?: boolean;
+    /** 1 = unchanged, 0 = fully desaturated. */
+    saturation?: number;
     filters?: string[];
 };
 
@@ -161,7 +167,7 @@ export type TileEntityDef =
 export type PartNode = {
     /** Authored layout and parentage; persistent state and animation never mutate it. */
     root: Container;
-    /** Persistent transforms resolved from active entity states (pose, alpha, filters). */
+    /** Persistent transforms resolved from active entity states (pose, alpha, filters, saturation). */
     state: Container;
     /** Transient motion + authored pivot (presets rotate/translate around this). */
     animation: Container;
@@ -174,6 +180,14 @@ export type AnimContext = {
     blocking: boolean;
     mainhand: string;
     offhand: string;
+    /** Optional particle emit for ambient presets (rotting crumble). */
+    emitParticles?: (burst: ParticleBurst) => void;
+    particleAnchor?: () => {
+        texture: Texture;
+        x: number;
+        y: number;
+        radius: number;
+    };
 };
 
 /** GameObject-rotated hit target (structure hurt punch). */
