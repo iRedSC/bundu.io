@@ -360,11 +360,9 @@ function squirclePath(
         const next = requiredAt(points, (index + 1) % points.length);
         const incoming = unit(previous, point);
         const outgoing = unit(point, next);
-        // Filled-on-right boundaries: right turns (positive cross in y-down) are convex.
-        const cross = incoming.x * outgoing.y - incoming.y * outgoing.x;
         const maximum = Math.min(distance(previous, point), distance(point, next)) / 2;
         const radius = Math.min(settings.fixedRadius, maximum);
-        const cornerRadius = cross > 0 ? (settings.useObjectSize ? maximum : radius) : 0;
+        const cornerRadius = settings.useObjectSize ? maximum : radius;
         return { point, incoming, outgoing, radius: cornerRadius };
     });
     const first = requiredAt(corners, 0);
