@@ -1,4 +1,7 @@
-import { Application, type Renderer } from "pixi.js";
+import {
+    Application,
+    type Renderer,
+} from "pixi.js";
 import {
     receiver,
     setupGUIPacketReceiving,
@@ -178,6 +181,7 @@ async function main() {
     nameInput.focus();
 
     app.ticker.add((ticker) => {
+        viewport.update(ticker.deltaMS);
         world.tick(Math.min(ticker.deltaMS, 50));
         AnimationManagers.UI.update();
         gui.tick();

@@ -12,16 +12,3 @@ states:
             zIndex: 0
             alpha: 0.6
             scale: 0.9
-  rotting:
-    default: false
-    values:
-      true:
-        parts:
-          main:
-            filters: [grayscale]
-        animations: [rotting]
-
-animations:
-  rotting:
-    preset: rotting
-    parts: main

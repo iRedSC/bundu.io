@@ -48,6 +48,8 @@ export class Structure extends GameObject {
     private hasHealth = false;
     /** Top-level part roots promoted for world zIndex sorting via LayeredRenderer. */
     private worldLayers: Container[] = [];
+    private rotting = false;
+    private nextCrumbleAt = 0;
 
     constructor(
         id: number,
@@ -68,6 +70,7 @@ export class Structure extends GameObject {
         this.variant = variant;
         this.animationManager = animationManager;
         this.states = new EntityStateStore(states);
+        this.rotting = states.rotting === true;
         this.applyVisualDefinition(variant);
         this.container.zIndex = DEFAULT_STRUCTURE_Z;
         this.healthBar.zIndex = 100;
@@ -248,6 +251,13 @@ export class Structure extends GameObject {
 
     setState(name: string, value: EntityStateValue) {
         this.states.set(name, value);
+        if (name === "rotting") this.rotting = value === true;
+    }
+
+    shouldCrumble(time: number): boolean {
+        if (!this.rotting || time < this.nextCrumbleAt) return false;
+        this.nextCrumbleAt = time + 800 + Math.random() * 700;
+        return true;
     }
 
     tickVisual(time: number) {

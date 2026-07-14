@@ -34,6 +34,7 @@ import {
 } from "../assets/sprite_factory";
 import { ParticleSystem } from "@client/rendering/particles/particle_system";
 import { updateOcclusion } from "./occlusion";
+import { structureCrumble } from "../visual/particles/structure_crumble";
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -122,6 +123,16 @@ export class World {
         for (const object of this.objects.all()) {
             if (object instanceof Structure) {
                 object.updateHealthBar(this.elapsedMS, this.cursorWorld);
+                if (object.shouldCrumble(this.elapsedMS)) {
+                    this.particles.burst(
+                        structureCrumble(
+                            object.sprite.sprite.texture,
+                            object.position.x,
+                            object.position.y,
+                            object.collisionRadius
+                        )
+                    );
+                }
             }
         }
         this.particles.update(deltaMS);

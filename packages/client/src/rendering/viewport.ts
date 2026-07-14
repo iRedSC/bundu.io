@@ -7,8 +7,8 @@ export function createViewport(app: PIXI.Application) {
     const viewport = new Viewport({
         worldHeight: WORLD_SIZE,
         worldWidth: WORLD_SIZE,
-        ticker: app.ticker,
         events: app.renderer.events,
+        noTicker: true,
     });
 
     viewport.sortableChildren = true;

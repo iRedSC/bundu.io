@@ -88,6 +88,10 @@ export const ResourceData = Component.register<ResourceData>(() => ({
     lastRegen: 0,
 }));
 
+/** A structure whose owner died and can be claimed or will decay. */
+export type Rotting = Record<string, never>;
+export const Rotting = Component.register<Rotting>(() => ({}));
+
 export type GroundItemData = {
     itemId: number;
     amount: number;

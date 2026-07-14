@@ -1,5 +1,12 @@
 import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { Door, Health, Physics, TileEntity, Type } from "../components/base.js";
+import {
+    Door,
+    Health,
+    Physics,
+    Rotting,
+    TileEntity,
+    Type,
+} from "../components/base.js";
 import { BuildingConfigs } from "../configs/loaders/buildings.js";
 import { GameObject } from "../engine";
 import { GameObjectData } from "@bundu/shared/object_types.js";
@@ -45,6 +52,11 @@ export class Structure extends GameObject {
 
     private getStateSnapshot() {
         const door = Door.get(this);
-        return door ? { open: door.open } : undefined;
+        const rotting = Rotting.get(this);
+        if (!door && !rotting) return undefined;
+        return {
+            ...(door ? { open: door.open } : {}),
+            ...(rotting ? { rotting: true } : {}),
+        };
     }
 }
