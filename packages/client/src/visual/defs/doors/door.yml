@@ -6,7 +6,7 @@ states:
   open:
     default: false
     values:
-      true:
+      "true":
         parts:
           main:
             zIndex: 0

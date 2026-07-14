@@ -16,7 +16,7 @@ states:
   rotting:
     default: false
     values:
-      true:
+      "true":
         parts:
           main:
             saturation: 0

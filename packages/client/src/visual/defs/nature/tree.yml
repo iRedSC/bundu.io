@@ -34,7 +34,7 @@ states:
   occluded:
     default: false
     values:
-      true:
+      "true":
         parts:
           layer1: { alpha: 0.35 }
           layer2: { alpha: 0.35 }
