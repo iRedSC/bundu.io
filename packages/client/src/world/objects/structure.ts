@@ -37,7 +37,7 @@ const DEFAULT_STRUCTURE_Z = 10;
 
 /** Placed tile entity. Art is authored at TILE_SIZE px per footprint tile. */
 export class Structure extends GameObject {
-    sprite!: ContaineredSprite;
+    private _sprite?: ContaineredSprite;
     readonly type: string;
     private readonly animationManager: AnimationManager;
     private readonly states: EntityStateStore;
@@ -92,6 +92,15 @@ export class Structure extends GameObject {
             ...this.syncedOverlays,
             this.healthBar,
         ];
+    }
+
+    get sprite(): ContaineredSprite {
+        if (!this._sprite) throw new Error("Structure sprite is unavailable");
+        return this._sprite;
+    }
+
+    set sprite(value: ContaineredSprite) {
+        this._sprite = value;
     }
 
     override update(_now?: number): boolean {

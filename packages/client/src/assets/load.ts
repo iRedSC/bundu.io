@@ -17,7 +17,9 @@ export async function initAssets(): Promise<void> {
         loadedAssets.set(alias, Assets.get(src));
     }
 
-    unknownAsset = loadedAssets.get("unknown_asset")!;
+    const fallback = loadedAssets.get("unknown_asset");
+    if (!fallback) throw new Error("Missing unknown_asset");
+    unknownAsset = fallback;
     console.debug("Assets loaded");
 }
 
