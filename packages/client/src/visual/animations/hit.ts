@@ -34,7 +34,7 @@ export function hitRotation(target: Rotatable) {
 
 /** Scale punch on the first part's root. */
 export function hit(node: PartNode) {
-    const target = node.root;
+    const target = node.animation;
     const base = target.scale.x;
     const animation = new Animation();
 

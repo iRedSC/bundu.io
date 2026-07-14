@@ -3,6 +3,7 @@ import { attack } from "./animations/attack";
 import { block } from "./animations/block";
 import { hit, hitRotation } from "./animations/hit";
 import { hurt } from "./animations/hurt";
+import { rotting } from "./animations/rotting";
 import { treeSway } from "./animations/tree_sway";
 import { wave } from "./animations/wave";
 import type { AnimContext, AnimDef, PartNode, Rotatable } from "./types";
@@ -31,6 +32,8 @@ export function createPreset(
             return attack(nodes, ctx);
         case "block":
             return block(nodes, ctx);
+        case "rotting":
+            return rotting(nodes);
         default:
             throw new Error(`Unknown anim preset: ${def satisfies never}`);
     }

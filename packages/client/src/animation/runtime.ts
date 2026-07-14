@@ -34,7 +34,7 @@ export class Animation {
  * \@prop `t` — the `t` value of the current keyframe, ranges from `0-1` as the normalized `duration`.
  */
 class ActiveAnimation {
-    id?: number;
+    id?: string;
     keyframes: Keyframes;
     currentKeyframe: number;
     expired: boolean;
@@ -58,7 +58,7 @@ class ActiveAnimation {
      * Call the current keyframe.
      */
     update() {
-        let frame = this.keyframes[this.currentKeyframe];
+        const frame = this.keyframes[this.currentKeyframe];
         if (frame && this.expired === false) {
             frame(this);
             this.firstFrameTrigger = false;
@@ -122,28 +122,27 @@ class ActiveAnimation {
      * The current keyframe has ended.
      */
     get keyframeEnded() {
-        let ended = Date.now() > this.start + this.duration;
-        return ended;
+        return Date.now() > this.start + this.duration;
     }
     /**
      * The current keyframe is the very first in the animation.
      */
     get isFirstKeyframe() {
-        return this.duration === -1 ? true : false;
+        return this.duration === -1;
     }
 
     /**
      * The `t` value of the current keyframe, ranges from `0-1` as the normalized `duration`.
      */
     get t() {
-        let msSinceStart = Date.now() - this.start;
-        let t = msSinceStart / this.duration;
+        const msSinceStart = Date.now() - this.start;
+        const t = msSinceStart / this.duration;
         return t > 1 ? 1 : t;
     }
 }
 
 type ValidActiveAnimation = {
-    id?: number;
+    id?: string;
     expired: boolean;
     update(): void;
     end(): void;
@@ -153,18 +152,17 @@ type AnimationSource = {
     active?: boolean;
     renderable?: boolean;
     visible?: boolean;
-    [key: string]: any;
 };
 
 function getSource(
     sources: Map<AnimationSource, ValidActiveAnimation[]>,
     source: AnimationSource
 ): ValidActiveAnimation[] {
-    const value = sources.get(source);
-    if (value === undefined) {
-        sources.set(source, []);
-    }
-    return sources.get(source)!;
+    const existing = sources.get(source);
+    if (existing) return existing;
+    const animations: ValidActiveAnimation[] = [];
+    sources.set(source, animations);
+    return animations;
 }
 
 /**
@@ -180,6 +178,9 @@ export class AnimationManager {
     }
 
     clear() {
+        for (const animations of this.sources.values()) {
+            for (const animation of animations) animation.end();
+        }
         this.sources.clear();
     }
 
@@ -196,7 +197,7 @@ export class AnimationManager {
      */
     add(
         source: AnimationSource,
-        id: number,
+        id: string,
         animation: ValidActiveAnimation
     ): void {
         animation.id = id;
@@ -214,7 +215,7 @@ export class AnimationManager {
      */
     set(
         source: AnimationSource,
-        id: number,
+        id: string,
         animation: ValidActiveAnimation,
         replace: boolean = false
     ): void {
@@ -247,17 +248,23 @@ export class AnimationManager {
      * @param source the animation source
      * @param id optional, the specific animation id to remove
      */
-    remove(source: AnimationSource | undefined, id?: number): void {
+    remove(source: AnimationSource | undefined, id?: string): void {
         if (source === undefined) {
             return;
         }
         if (id === undefined) {
+            for (const animation of this.sources.get(source) ?? []) {
+                animation.end();
+            }
             this.sources.delete(source);
             return;
         }
         const foundSource = this.sources.get(source);
         if (!foundSource) {
             return;
+        }
+        for (const animation of foundSource) {
+            if (animation.id === id) animation.end();
         }
         this.sources.set(
             source,
@@ -274,7 +281,7 @@ export class AnimationManager {
      * skips updating animations from that source.
      */
     update() {
-        for (let [source, animations] of this.sources.entries()) {
+        for (const [source, animations] of this.sources.entries()) {
             if (
                 source.active === false ||
                 source.renderable === false ||

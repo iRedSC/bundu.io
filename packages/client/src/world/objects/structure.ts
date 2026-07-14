@@ -1,6 +1,10 @@
 import { Graphics, type Container, type Point as PixiPoint } from "pixi.js";
 import { radians } from "@bundu/shared";
 import { TILE_SIZE } from "@bundu/shared/tiles";
+import type {
+    EntityStateSnapshot,
+    EntityStateValue,
+} from "@bundu/shared/object_types";
 import GameObject from "../game_object";
 import { spriteConfigs } from "@client/configs/sprite_configs";
 import {
@@ -9,8 +13,12 @@ import {
 } from "@client/assets/sprite_factory";
 import { assemble, assembleTileEntity } from "../../visual/assemble";
 import { bindAnimations } from "../../visual/bind";
+import {
+    EntityStateStore,
+    VisualStateController,
+} from "../../visual/state";
 import { structureDef, tileEntityDefs } from "../../visual/defs";
-import type { ObjectDef } from "../../visual/types";
+import type { ObjectDef, PartNode } from "../../visual/types";
 import type { AnimationManager } from "../../animation/runtime";
 
 const HEALTH_BAR_WIDTH = 48;
@@ -18,14 +26,18 @@ const HEALTH_BAR_HEIGHT = 5;
 const HEALTH_BAR_Y = -52;
 const HEALTH_BAR_FADE_MS = 150;
 const HEALTH_BAR_DISPLAY_MS = 2_500;
+/** World zIndex when a top-level part omits `zIndex`. */
+const DEFAULT_STRUCTURE_Z = 10;
 
 /** Placed tile entity. Art is authored at TILE_SIZE px per footprint tile. */
 export class Structure extends GameObject {
     sprite!: ContaineredSprite;
     readonly type: string;
     private readonly animationManager: AnimationManager;
+    private readonly states: EntityStateStore;
+    private stateController?: VisualStateController;
     private usesSpriteConfig = false;
-    private readonly variant: string;
+    private readonly variant?: string;
     private readonly healthBar = new Graphics();
     private healthBarAlpha = 0;
     private healthBarFadeFrom = 0;
@@ -34,6 +46,8 @@ export class Structure extends GameObject {
     private healthBarShownUntil = 0;
     private hovered = false;
     private hasHealth = false;
+    /** Top-level part roots promoted for world zIndex sorting via LayeredRenderer. */
+    private worldLayers: Container[] = [];
 
     constructor(
         id: number,
@@ -43,30 +57,46 @@ export class Structure extends GameObject {
         collisionRadius: number,
         animationManager: AnimationManager,
         visualScale: number = TILE_SIZE,
-        variant: string = "base",
+        variant?: string,
         health?: number,
-        maxHealth?: number
+        maxHealth?: number,
+        states: EntityStateSnapshot = {}
     ) {
         super(id, pos, radians(rotationDegrees), collisionRadius, visualScale);
 
         this.type = type;
         this.variant = variant;
         this.animationManager = animationManager;
+        this.states = new EntityStateStore(states);
         this.applyVisualDefinition(variant);
-        this.container.zIndex = 10;
+        this.container.zIndex = DEFAULT_STRUCTURE_Z;
         this.healthBar.zIndex = 100;
         this.healthBar.position.copyFrom(pos);
         this.setHealth(health ?? 0, maxHealth ?? 0);
     }
 
     override get containers(): Container[] {
-        return [this.container, this.healthBar];
+        return [this.container, ...this.worldLayers, this.healthBar];
     }
 
     override update(_now?: number): boolean {
         const done = super.update();
-        this.healthBar.position.set(this.position.x, this.position.y);
+        this.syncWorldLayers();
         return done;
+    }
+
+    /** Copy object transform onto promoted layers (also used by placement ghost). */
+    syncWorldLayers(): void {
+        const { x, y } = this.container.position;
+        const rotation = this.container.rotation;
+        const scaleX = this.container.scale.x;
+        const scaleY = this.container.scale.y;
+        for (const layer of this.worldLayers) {
+            layer.position.set(x, y);
+            layer.rotation = rotation;
+            layer.scale.set(scaleX, scaleY);
+        }
+        this.healthBar.position.set(x, y);
     }
 
     setHealth(health: number, maxHealth: number, time?: number) {
@@ -148,7 +178,7 @@ export class Structure extends GameObject {
             (this.healthBarFadeTo - this.healthBarFadeFrom) * progress;
     }
 
-    private applyVisualDefinition(variant: string) {
+    private applyVisualDefinition(variant?: string) {
         const tileEntity = tileEntityDefs.get(this.type);
         const def: ObjectDef = tileEntity ?? {
             ...structureDef,
@@ -162,6 +192,7 @@ export class Structure extends GameObject {
             throw new Error(`Structure definition "${def.id}" has no parts`);
         }
 
+        this.promoteWorldLayers(def, parts);
         this.sprite = first.visual;
         this.usesSpriteConfig = tileEntity === undefined;
         this.refreshSpriteConfig();
@@ -178,6 +209,34 @@ export class Structure extends GameObject {
         for (const animId of autoplay) {
             this.trigger(animId, this.animationManager);
         }
+        this.stateController = new VisualStateController(
+            def,
+            parts,
+            animations,
+            this.states,
+            this.animationManager,
+            this
+        );
+    }
+
+    /**
+     * Lift top-level parts out of the object root so their authored `zIndex`
+     * participates in viewport sorting via LayeredRenderer.
+     */
+    private promoteWorldLayers(
+        def: ObjectDef,
+        parts: Map<string, PartNode>
+    ): void {
+        this.worldLayers = [];
+        for (const part of def.parts) {
+            if (part.parent) continue;
+            const node = parts.get(part.name);
+            if (!node) continue;
+            node.root.removeFromParent();
+            node.root.zIndex = part.zIndex ?? DEFAULT_STRUCTURE_Z;
+            this.worldLayers.push(node.root);
+        }
+        this.syncWorldLayers();
     }
 
     refreshSpriteConfig() {
@@ -187,18 +246,27 @@ export class Structure extends GameObject {
         this.sprite.renderable = true;
     }
 
-    setDoorOpen(open: boolean) {
-        if (!this.usesSpriteConfig) return;
-        const config = spriteConfigs.get(this.type);
-        SpriteFactory.update(
-            this.sprite,
-            config?.world_display,
-            open ? "door_open" : this.type
-        );
+    setState(name: string, value: EntityStateValue) {
+        this.states.set(name, value);
     }
 
+    tickVisual(time: number) {
+        // Keep promoted layers in sync when anims mutate container (e.g. hit wiggle)
+        // without the object being in the position/rotation updating set.
+        this.syncWorldLayers();
+        this.stateController?.tick(time);
+    }
+
+    /**
+     * Rebuild visuals. Caller must `renderer.replace(id, ...containers)` so
+     * newly promoted layers are tracked (hot reload).
+     */
     reloadVisualDefinition() {
+        this.stateController?.dispose();
+        this.stateController = undefined;
         this.animationManager.remove(this);
+        // Abandon old world layers; LayeredRenderer.replace destroys orphans.
+        this.worldLayers = [];
         for (const child of this.container.removeChildren()) {
             child.destroy({ children: true });
         }

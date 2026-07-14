@@ -1,5 +1,5 @@
 import { round } from "@bundu/shared";
-import { Animation, AnimationManager } from "../animation/runtime";
+import type { Animation, AnimationManager } from "../animation/runtime";
 import { createObjectDebug } from "../debug/object_debug";
 import type { ObjectDebug } from "../debug/types";
 import {
@@ -8,7 +8,7 @@ import {
     type PositionState,
     type RotationState,
 } from "./states";
-import { Container, Point } from "pixi.js";
+import { Container, type Point } from "pixi.js";
 
 /**
  * The base object for rendering something in the world.
@@ -27,7 +27,7 @@ export default class GameObject {
 
     debug: ObjectDebug;
 
-    animations: Map<number, Animation>;
+    animations: Map<string, Animation>;
     active?: boolean;
     collisionRadius: number;
 
@@ -109,7 +109,7 @@ export default class GameObject {
     }
 
     /** Trigger an animation state */
-    trigger(id: number, manager: AnimationManager, replace: boolean = false) {
+    trigger(id: string, manager: AnimationManager, replace: boolean = false) {
         if (!this.animations) {
             return;
         }

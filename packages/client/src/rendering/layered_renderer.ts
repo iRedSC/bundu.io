@@ -29,4 +29,19 @@ export class LayeredRenderer {
             set.add(child);
         }
     }
+
+    /** Swap display objects for an id; destroys previous ones not in the new set. */
+    replace(id: number, ...containers: Container[]): void {
+        const prev = this.byObject.get(id);
+        const next = new Set(containers);
+        if (prev) {
+            for (const child of prev) {
+                if (!next.has(child)) child.destroy({ children: true });
+            }
+        }
+        for (const child of containers) {
+            this.parent.addChild(child);
+        }
+        this.byObject.set(id, next);
+    }
 }

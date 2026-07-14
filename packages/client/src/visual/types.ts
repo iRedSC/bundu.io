@@ -49,7 +49,8 @@ export type AnimPreset =
     | "wave"
     | "tree_sway"
     | "attack"
-    | "block";
+    | "block"
+    | "rotting";
 
 export type TreeSwayData = {
     distance?: number;
@@ -68,10 +69,10 @@ type AnimData = {
     tree_sway: TreeSwayData;
     attack: undefined;
     block: undefined;
+    rotting: undefined;
 };
 
 type AnimDefBase = {
-    id: number;
     /** Part names the preset targets. */
     parts: string[];
     autoplay?: boolean;
@@ -84,13 +85,46 @@ export type AnimDef = {
     };
 }[AnimPreset];
 
+/** Client-local fade when the local player stands under this object. */
+export type OcclusionDef = {
+    /** Entity state toggled true/false by the occlusion driver. */
+    state: string;
+    /** World radius in tiles from the object origin. */
+    radius: number;
+    /** Alpha fade duration in ms when the occlusion state changes. */
+    duration?: number;
+};
+
 export type ObjectDef = {
     id: string;
+    abstract: boolean;
     parts: PartDef[];
+    defaultVariant?: string;
     /** Variant id -> part name -> replacement texture key. */
     variants?: Record<string, Record<string, string>>;
     slots?: Record<string, SlotDef>;
-    animations?: AnimDef[];
+    animations: Readonly<Record<string, AnimDef>>;
+    states: Readonly<Record<string, StateDef>>;
+    stateOrder: readonly string[];
+    occlusion?: OcclusionDef;
+};
+
+export type StateValue = boolean | number | string;
+
+export type PartOverride = PartPose & {
+    alpha?: number;
+    visible?: boolean;
+    filters?: string[];
+};
+
+export type StateOverride = {
+    parts?: Record<string, PartOverride>;
+    animations?: string[];
+};
+
+export type StateDef = {
+    default: StateValue;
+    values: Record<string, StateOverride>;
 };
 
 export type TileGeometry = {
@@ -100,6 +134,8 @@ export type TileGeometry = {
     origin: { x: number; y: number };
     /** Decorative pixels outside every edge of the tile grid. */
     spillover: number;
+    /** Occupied local tile offsets relative to origin. */
+    footprint: readonly { x: number; y: number }[];
 };
 
 type TileEntityBase = Omit<ObjectDef, "variants"> & {
@@ -123,7 +159,12 @@ export type TileEntityDef =
     | TextureTileEntityDef;
 
 export type PartNode = {
+    /** Authored layout and parentage; persistent state and animation never mutate it. */
     root: Container;
+    /** Persistent transforms resolved from active entity states (pose, alpha, filters). */
+    state: Container;
+    /** Transient motion + authored pivot (presets rotate/translate around this). */
+    animation: Container;
     visual: ContaineredSprite;
     attach?: ContaineredSprite;
 };

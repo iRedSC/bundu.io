@@ -4,7 +4,7 @@ import {
     moveInDirection,
     radians,
 } from "@bundu/shared";
-import { ServerPacket } from "@bundu/shared/packet_definitions";
+import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { debugAttackHitbox } from "../debug/attack_hitbox";
 import { Player } from "./objects/player";
@@ -33,7 +33,10 @@ export class CombatFx {
     block = ({ id, stop }: ServerPacket.BlockEvent) => {
         const object = this.objects.get(id);
         if (!object || !(object instanceof Player)) return;
-        if (stop) return (object.blocking = false);
+        if (stop) {
+            object.blocking = false;
+            return;
+        }
         object.blocking = true;
         object.trigger(ANIMATION.BLOCK, AnimationManagers.World);
     };
@@ -41,7 +44,11 @@ export class CombatFx {
     hurt = ({ id, angle }: ServerPacket.HitEvent) => {
         const object = this.objects.get(id);
         if (!object) return;
-        object.trigger(ANIMATION.HURT, AnimationManagers.World, true);
+        object.trigger(
+            object instanceof Structure ? ANIMATION.HIT : ANIMATION.HURT,
+            AnimationManagers.World,
+            true
+        );
         if (!(object instanceof Structure)) return;
 
         const hitX = object.position.x - Math.cos(angle) * object.collisionRadius;

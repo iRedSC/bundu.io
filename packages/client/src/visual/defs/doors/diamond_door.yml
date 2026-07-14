@@ -1,0 +1,3 @@
+id: diamond_door
+extends: door
+defaultVariant: diamond_door

@@ -12,10 +12,10 @@ export function treeSway(nodes: PartNode[], data: TreeSwayData = {}) {
     const duration = data.duration ?? DURATION;
     const stagger = data.stagger ?? 0;
     if (duration <= 0) throw new Error("tree_sway duration must be positive");
-    const bases = nodes.map(({ root }) => ({
-        x: root.x,
-        y: root.y,
-        rotation: root.rotation,
+    const bases = nodes.map(({ animation }) => ({
+        x: animation.x,
+        y: animation.y,
+        rotation: animation.rotation,
     }));
     const animation = new Animation();
 
@@ -28,10 +28,11 @@ export function treeSway(nodes: PartNode[], data: TreeSwayData = {}) {
             const base = bases[i];
             if (!base) continue;
             const nodePhase = phase - (i * stagger / duration) * Math.PI * 2;
-            node.root.x = base.x + Math.sin(nodePhase) * distance;
-            node.root.y =
+            node.animation.x = base.x + Math.sin(nodePhase) * distance;
+            node.animation.y =
                 base.y + Math.sin(nodePhase * 2) * distance * 0.25;
-            node.root.rotation = base.rotation + Math.sin(nodePhase) * tilt;
+            node.animation.rotation =
+                base.rotation + Math.sin(nodePhase) * tilt;
         }
 
         if (a.keyframeEnded) a.goto(0, duration);
@@ -41,9 +42,9 @@ export function treeSway(nodes: PartNode[], data: TreeSwayData = {}) {
         for (const [i, node] of nodes.entries()) {
             const base = bases[i];
             if (!base) continue;
-            node.root.x = base.x;
-            node.root.y = base.y;
-            node.root.rotation = base.rotation;
+            node.animation.x = base.x;
+            node.animation.y = base.y;
+            node.animation.rotation = base.rotation;
         }
     };
 

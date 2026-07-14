@@ -4,6 +4,6 @@ parts:
     sprite: ""
 variants: {}
 animations:
-  - id: 100
+  hit:
     preset: hit
-    parts: [main]
+    parts: main

@@ -40,16 +40,16 @@ slots:
   helmet: { part: body, display: body_display }
   
 animations:
-  - id: 200
+  wave:
     preset: wave
     parts: [leftHand, rightHand, body]
     autoplay: true
-  - id: 100
+  hurt:
     preset: hurt
     parts: [leftHand, rightHand, body]
-  - id: 300
+  attack:
     preset: attack
     parts: [leftHand, rightHand, body]
-  - id: 301
+  block:
     preset: block
     parts: [leftHand, rightHand, body]
