@@ -107,7 +107,7 @@ export class AttackSystem extends System<GameEventMap> {
                 id: object.id,
                 angle: facing,
             });
-            if (Door.get(object)) {
+            if (Door.get(object) && !Rotting.get(object)) {
                 this.trigger(GameEvent.ToggleDoor, { object });
                 continue;
             }
@@ -117,7 +117,7 @@ export class AttackSystem extends System<GameEventMap> {
                 damage,
                 weapon,
             });
-            this.claimRottingStructure(source, object, weapon);
+            if (object.active) this.claimRottingStructure(source, object, weapon);
         }
     }
 
