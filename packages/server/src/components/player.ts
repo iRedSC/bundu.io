@@ -26,6 +26,7 @@ export type PlayerData = {
     blocking?: boolean;
     lastAttackTime?: number;
     crafting?: CraftingState;
+    cheatsEnabled?: boolean;
 };
 export const PlayerData = Component.register<PlayerData>(() => ({
     name: "unnamed",

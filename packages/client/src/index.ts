@@ -181,6 +181,9 @@ async function main() {
         world.tick(Math.min(ticker.deltaMS, 50));
         AnimationManagers.UI.update();
         gui.tick();
+        const local = world.objects.get(world.user ?? -1);
+        gui.craftingMenu.craftingItemId =
+            local instanceof Player ? local.craftingItemId : null;
     });
 }
 

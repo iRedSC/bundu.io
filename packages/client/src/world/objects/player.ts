@@ -49,6 +49,7 @@ export class Player extends GameObject implements AnimContext {
 
     private craftDuration = 0;
     private craftEndsAt = 0;
+    craftingItemId: number | null = null;
     private chatTimeout?: ReturnType<typeof setTimeout>;
     private selectedStructureId = 0;
     private structureRotation: TileRot = 0;
@@ -141,16 +142,18 @@ export class Player extends GameObject implements AnimContext {
     }
 
     /** `duration > 0` starts the overhead channel; `0` clears it. */
-    setCraftProgress(duration: number) {
+    setCraftProgress(duration: number, itemId: number) {
         if (duration <= 0) {
             this.craftDuration = 0;
             this.craftEndsAt = 0;
+            this.craftingItemId = null;
             this.craftBar.clear();
             this.craftBar.visible = false;
             return;
         }
         this.craftDuration = duration;
         this.craftEndsAt = Date.now() + duration;
+        this.craftingItemId = itemId;
         this.craftBar.visible = true;
         this.redrawCraftBar();
     }

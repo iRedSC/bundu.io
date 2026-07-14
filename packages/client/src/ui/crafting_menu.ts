@@ -3,6 +3,7 @@ import { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Container } from "pixi.js";
+import { colorLerp, lerp } from "@bundu/shared/transforms";
 
 const CRAFTING_COLORS = {
     empty: 0x777777,
@@ -62,6 +63,7 @@ export class CraftingMenu {
     grid: Grid;
     private rightClickCB?: Callback;
     private leftClickCB?: Callback;
+    craftingItemId: number | null = null;
 
     constructor(grid: Grid) {
         this.grid = grid;
@@ -108,7 +110,16 @@ export class CraftingMenu {
 
     tick() {
         for (const button of this.buttons) {
-            tickItemButton(button, CRAFTING_COLORS);
+            const active = button.item === this.craftingItemId;
+            tickItemButton(button, CRAFTING_COLORS, 0, active ? 0.94 : 1);
+            button.button.alpha = lerp(button.button.alpha, active ? 1 : this.craftingItemId === null ? 1 : 0.35, 0.2);
+            if (active) {
+                button.background.tint = colorLerp(
+                    Number(button.background.tint),
+                    0xd7a72f,
+                    0.2
+                );
+            }
         }
     }
 

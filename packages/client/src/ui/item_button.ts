@@ -22,7 +22,8 @@ export type ItemButtonColors = {
 export function tickItemButton(
     button: ItemButton,
     colors: ItemButtonColors,
-    restY = 0
+    restY = 0,
+    restScale = 1
 ) {
     button.background.rotation = lerp(
         button.background.rotation,
@@ -74,7 +75,7 @@ export function tickItemButton(
         return;
     }
 
-    button.button.scale.set(lerp(button.button.scale.x, 1, 0.1));
+    button.button.scale.set(lerp(button.button.scale.x, restScale, 0.1));
     if (button.item) {
         button.background.tint = colorLerp(
             Number(button.background.tint),

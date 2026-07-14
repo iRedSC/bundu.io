@@ -36,6 +36,7 @@ const FLY_SNAP = 3;
 export class InventoryButton extends ItemButton {
     amount: Text;
     private restY: number;
+    selected = false;
 
     constructor() {
         super();
@@ -68,7 +69,12 @@ export class InventoryButton extends ItemButton {
     }
 
     tick() {
-        tickItemButton(this, INVENTORY_COLORS, this.restY);
+        tickItemButton(
+            this,
+            INVENTORY_COLORS,
+            this.restY,
+            this.selected ? 0.92 : 1
+        );
     }
 }
 
@@ -126,6 +132,7 @@ export class Inventory {
     private dragStack: ItemStack | null = null;
     private dragStart = { x: 0, y: 0 };
     private hoverSlot: number | null = null;
+    private selectedSlot = 0;
     private lastPointer = { x: 0, y: 0 };
 
     constructor() {
@@ -162,6 +169,8 @@ export class Inventory {
                 this.slots.pop();
             }
         }
+
+        this.selectedSlot = Math.min(this.selectedSlot, this.buttons.length - 1);
 
         inventoryGrid.arrange(this.buttons);
         this.container.addChild(this.ghost.button);
@@ -283,6 +292,7 @@ export class Inventory {
                     this.finishDrag(from, to);
                     this.onMove?.(from, to);
                 } else {
+                    this.selectedSlot = this.dragFrom;
                     this.onSelect?.(this.dragFrom);
                 }
                 this.clearDrag();
@@ -626,7 +636,8 @@ export class Inventory {
     }
 
     tick() {
-        for (const button of this.buttons) {
+        for (const [slot, button] of this.buttons.entries()) {
+            button.selected = slot === this.selectedSlot;
             button.tick();
         }
 

@@ -63,14 +63,10 @@ export class PositionStates {
             return;
         }
 
-        // Refresh visual; if coasting past the target, start from `to`
-        // so the next segment doesn't rubber-band from the overshoot.
+        // Always continue from the rendered position. Resetting to `to` after
+        // coasting makes the first packet after standing still visibly snap back.
         this.interpolate();
-        const elapsed = serverTime.now() - this.startedAt;
-        this.from =
-            elapsed >= this.interpolationMS
-                ? { x: this.to.x, y: this.to.y }
-                : { x: this.current.x, y: this.current.y };
+        this.from = { x: this.current.x, y: this.current.y };
         this.to = { x: state.x, y: state.y };
         this.startedAt = serverTime.now();
         this.callback?.();

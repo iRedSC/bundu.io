@@ -16,3 +16,4 @@ services:
       dockerfile: containers/server/Dockerfile
     environment:
       WS_PORT: 7777
+      BUNDU_CHEAT_PHRASE: ${BUNDU_CHEAT_PHRASE:-}

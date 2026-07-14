@@ -461,10 +461,10 @@ export class World {
         player.showChatMessage(message);
     };
 
-    craftEvent = ({ id, duration }: ServerPacket.CraftEvent) => {
+    craftEvent = ({ id, duration, itemId }: ServerPacket.CraftEvent) => {
         const player = this.objects.get(id);
         if (!(player instanceof Player)) return;
-        player.setCraftProgress(duration);
+        player.setCraftProgress(duration, itemId);
         if (duration > 0) this.objects.updating.add(player);
     };
 }

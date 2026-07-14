@@ -28,7 +28,7 @@ import {
 } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
-import { SERVER_DEBUG } from "../debug/flag.js";
+import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
 import { PlaceMode } from "@bundu/shared/inventory";
 import { pointToTile, WORLD_BOUNDS } from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
@@ -129,10 +129,11 @@ export class PlayerSystem extends System<GameEventMap> {
         socket?.close();
     }
 
-    private emitCraftEvent(player: GameObject, duration: number) {
+    private emitCraftEvent(player: GameObject, duration: number, itemId = -1) {
         this.world.context.worldPacketManager.emit(ServerPacket.CraftEvent, {
             id: player.id,
             duration,
+            itemId,
         });
     }
 
@@ -228,7 +229,7 @@ export class PlayerSystem extends System<GameEventMap> {
             itemId,
             endsAt: this.world.gameTime + recipe.duration,
         };
-        this.emitCraftEvent(player, recipe.duration);
+        this.emitCraftEvent(player, recipe.duration, recipe.id);
     };
 
     move = (playerId: number, packet: ClientPacket.Movement) => {
@@ -464,8 +465,13 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
 
+        if (CHEAT_PHRASE && message === CHEAT_PHRASE) {
+            PlayerData.get(player).cheatsEnabled = true;
+            return;
+        }
+
         if (
-            SERVER_DEBUG &&
+            PlayerData.get(player).cheatsEnabled &&
             tryHandleDebugChatCommand(
                 player,
                 message,

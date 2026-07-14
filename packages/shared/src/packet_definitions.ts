@@ -95,7 +95,7 @@ export namespace ServerPacket {
     };
     export type BlockEvent = { id: number; stop: boolean };
     export type HitEvent = { id: number; angle: number };
-    export type CraftEvent = { id: number; duration: number };
+    export type CraftEvent = { id: number; duration: number; itemId: number };
     export type PlaceStructureResult = {
         allowed: boolean;
         x: number;
@@ -245,7 +245,7 @@ export const ServerSchema: {
     },
     [ServerPacket.BlockEvent]: { fields: ["id", "stop"] },
     [ServerPacket.HitEvent]: { fields: ["id", "angle"] },
-    [ServerPacket.CraftEvent]: { fields: ["id", "duration"] },
+    [ServerPacket.CraftEvent]: { fields: ["id", "duration", "itemId"] },
     [ServerPacket.PlaceStructureResult]: {
         fields: ["allowed", "x", "y", "rotation"],
     },

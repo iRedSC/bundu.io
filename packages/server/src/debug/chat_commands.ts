@@ -24,7 +24,7 @@ const kits: Record<string, Record<string, number>> = {
 
 /**
  * Debug/cheat slash commands (`/attribute`, `/stat`, `/kill`, `/godmode`, `/give`).
- * Only invoked when SERVER_DEBUG is on.
+ * Only invoked after a player unlocks cheats with the configured phrase.
  * Returns true when the message was treated as a command (handled or rejected).
  */
 export function tryHandleDebugChatCommand(
