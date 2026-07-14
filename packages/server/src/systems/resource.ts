@@ -15,7 +15,10 @@ export class ResourceSystem extends System<GameEventMap> {
     }
 
     override enter(resource: GameObject) {
-        resource.get(ResourceData).lastRegen = this.world.gameTime;
+        const data = resource.get(ResourceData);
+        data.lastRegen = this.world.gameTime;
+        const decay = ResourceConfigs.get(resource.get(Type).id).decay;
+        if (decay !== null) data.decayAt = this.world.gameTime + decay * 1000;
     }
 
     override update(time: number, _delta: number, resource: GameObject) {

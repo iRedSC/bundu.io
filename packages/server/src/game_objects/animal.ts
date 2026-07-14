@@ -1,0 +1,35 @@
+import { GameObject } from "../engine/game_object.js";
+import { AnimalData, Health, Physics, CalculateCollisions, Type } from "../components/base.js";
+import { AnimalConfigs } from "../configs/loaders/animals.js";
+import { GameObjectData } from "@bundu/shared/object_types.js";
+import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
+import { deciPacketPos } from "./tile_entity.js";
+
+export class Animal extends GameObject {
+    constructor(type: Type, physics: Physics) {
+        super();
+        const config = AnimalConfigs.get(type.id);
+        const health = { value: config.health, max: config.health, lastRegen: 0 };
+        this.add(new Type(type))
+            .add(new Physics(physics))
+            .add(new Health(health))
+            .add(new CalculateCollisions())
+            .add(new AnimalData({
+                type: type.id,
+                home: { x: physics.position.x, y: physics.position.y },
+                path: [], state: "idle", stateUntil: 0, nextThinkAt: 0, nextAttackAt: 0,
+            }));
+    }
+
+    override getNewObjectPacket(): ServerPacket.LoadObject {
+        const physics = this.get(Physics);
+        const health = this.get(Health);
+        const type = this.get(Type);
+        const pos = deciPacketPos(physics);
+        return {
+            id: this.id, x: pos.x, y: pos.y, rotation: 0,
+            type: GameObjectData.AnimalType,
+            data: [type.id, physics.collisionRadius, health.value, health.max],
+        };
+    }
+}

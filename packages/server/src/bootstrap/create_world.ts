@@ -20,6 +20,7 @@ import { GroundItemSystem } from "../systems/ground_item";
 import { PointGeneratorSystem } from "../systems/point_generator";
 import { DoorSystem } from "../systems/door";
 import { RottingSystem } from "../systems/rotting";
+import { AnimalSystem } from "../systems/animal";
 
 export type ServerWorld = {
     world: World;
@@ -47,6 +48,7 @@ export function createWorld(): ServerWorld {
         .addSystem(new RottingSystem(world))
         .addSystem(new DoorSystem(world))
         .addSystem(new ResourceSystem(world))
+        .addSystem(new AnimalSystem(world))
         .addSystem(new GroundItemSystem(world))
         .addSystem(new StructureSystem(world))
         .addSystem(new PointGeneratorSystem(world))

@@ -79,7 +79,8 @@ amethyst:
         amethyst: 20
 
 bear_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
     multipliers:
         knife: 2
     items:
@@ -87,7 +88,8 @@ bear_dead:
         bear_fur: 1
 
 deer_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
     multipliers:
         knife: 2
     items:
@@ -95,7 +97,8 @@ deer_dead:
         deer_hide: 1
 
 raindeer_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
     multipliers:
         knife: 2
     items:
@@ -103,7 +106,8 @@ raindeer_dead:
         deer_hide: 2
 
 ram_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
     multipliers:
         knife: 2
     items:
@@ -111,7 +115,8 @@ ram_dead:
         ram_wool: 1
 
 elephant_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
     multipliers:
         knife: 2
     items:
@@ -119,7 +124,8 @@ elephant_dead:
         elephant_tusk: 1
 
 alligator_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
     multipliers:
         knife: 2
     items:
@@ -128,7 +134,8 @@ alligator_dead:
         tooth: 2
 
 komodo_dragon_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
     multipliers:
         knife: 2
     items:
@@ -137,10 +144,12 @@ komodo_dragon_dead:
         tooth: 4
 
 bee_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
 
 fish_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
     multipliers:
         knife: 2
     items:
@@ -149,7 +158,8 @@ fish_dead:
 
 
 queen_bee_dead:
-    duration: 30
+    decay: 30
+    destroy_on_empty: true
     multipliers:
         knife: 2
     items:

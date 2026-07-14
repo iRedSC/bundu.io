@@ -11,10 +11,13 @@ import placeableConfig from "../placeable.yml";
 import buildingConfig from "../buildings.yml";
 import { type ItemConfig, ItemConfigs } from "./items.js";
 import { BuildingConfigs } from "./buildings.js";
+import { AnimalConfigs } from "./animals.js";
+import animalConfig from "../entities.yml";
 
 /** Load configs that the server actually uses. */
 export function loadConfigs() {
     BuildingConfigs.parse(buildingConfig);
+    AnimalConfigs.parse(animalConfig);
 
     ResourceConfigs.parse(resourceConfig, (_id, record, fallback) => {
         const numericItems: Record<number, number> = {};

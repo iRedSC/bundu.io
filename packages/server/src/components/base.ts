@@ -116,3 +116,25 @@ export const Health = Component.register<Health>(() => ({
     value: 100,
     lastRegen: 0,
 }));
+
+export type AnimalData = {
+    /** Stable config/type id. */
+    type: number;
+    home: { x: number; y: number };
+    targetId?: number;
+    destination?: { x: number; y: number };
+    path: { x: number; y: number }[];
+    state: "idle" | "wander" | "chase" | "flee";
+    stateUntil: number;
+    nextThinkAt: number;
+    nextAttackAt: number;
+};
+export const AnimalData = Component.register<AnimalData>(() => ({
+    type: 0,
+    home: { x: 0, y: 0 },
+    path: [],
+    state: "idle",
+    stateUntil: 0,
+    nextThinkAt: 0,
+    nextAttackAt: 0,
+}));

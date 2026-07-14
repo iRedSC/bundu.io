@@ -1,93 +1,115 @@
-# anger = 0: scared, 1: no reaction, 2: agressive
+# hostile attacks on sight; neutral retaliates; passive flees when hit; scared flees on sight.
 
 elephant:
     health: 2500
-    score: 2500
-    anger: 1
-    speed: 1
+    behavior: neutral
+    detectionRange: 300
+    loseSightRange: 750
+    passiveSpeed: 5
+    activeSpeed: 10
     attack_damage: 90
-    size: 6
-    wander_range: 75
-    spawns: elephant_dead
+    collision_radius: 200
+    corpse: elephant_dead
+    spawn_count: 2
 
 bear:
     health: 350
     score: 500
-    anger: 2
-    speed: 1
+    behavior: hostile
+    detectionRange: 300
+    loseSightRange: 450
+    passiveSpeed: 7
+    activeSpeed: 11
     attack_damage: 35
-    size: 4
-    wander_range: 75
-    spawns: bear_dead
+    collision_radius: 40
+    corpse: bear_dead
+    spawn_count: 4
 
 ram:
     health: 500
     score: 800
-    anger: 1
-    speed: 1
+    behavior: neutral
+    detectionRange: 300
+    loseSightRange: 450
+    passiveSpeed: 10
+    activeSpeed: 13
     attack_damage: 45
-    size: 4
-    wander_range: 75
-    spawns: ram_dead
+    collision_radius: 40
+    corpse: ram_dead
+    spawn_count: 4
 
 deer:
     health: 100
     score: 250
-    anger: 0
-    speed: 1
-    size: 3
-    wander_range: 75
-    spawns: deer_dead
+    behavior: passive
+    detectionRange: 300
+    loseSightRange: 450
+    passiveSpeed: 11
+    activeSpeed: 14
+    collision_radius: 30
+    corpse: deer_dead
+    spawn_count: 8
 
 
 raindeer:
     health: 175
     score: 500
-    anger: 0
-    speed: 1
-    size: 3
-    wander_range: 75
-    spawns: raindeer_dead
+    behavior: passive
+    detectionRange: 300
+    loseSightRange: 450
+    passiveSpeed: 11
+    activeSpeed: 14
+    collision_radius: 30
+    corpse: raindeer_dead
 
 komodo_dragon:
     health: 800
     score: 2000
-    anger: 2
-    speed: 1
+    behavior: hostile
+    detectionRange: 300
+    loseSightRange: 450
+    passiveSpeed: 9
+    activeSpeed: 11
     attack_damage: 65
-    size: 4
-    wander_range: 75
-    spawns: komodo_dragon_dead
+    collision_radius: 40
+    corpse: komodo_dragon_dead
+    spawn_count: 3
 
 alligator:
     health: 700
     score: 1500
-    anger: 2
-    speed: 1
+    behavior: hostile
+    detectionRange: 300
+    loseSightRange: 450
+    passiveSpeed: 8
+    activeSpeed: 11
     attack_damage: 45
-    size: 4
-    wander_range: 75
-    spawns: alligator_dead
+    collision_radius: 40
+    corpse: alligator_dead
+    spawn_count: 3
 
 bee:
     health: 200
     score: 200
-    anger: 2
-    speed: 1
+    behavior: hostile
+    detectionRange: 300
+    loseSightRange: 450
+    passiveSpeed: 14
+    activeSpeed: 17
     attack_damage: 15
-    size: 2
-    wander_range: 75
-    spawns: bee_dead
+    collision_radius: 20
+    corpse: bee_dead
+    spawn_count: 8
 
 queen_bee:
     health: 250
     score: 500
-    anger: 2
-    speed: 1
+    behavior: hostile
+    detectionRange: 300
+    loseSightRange: 450
+    passiveSpeed: 10
+    activeSpeed: 10
     attack_damage: 60
-    size: 8
-    wander_range: 75
-    spawns: queen_bee_dead
-
-
-
+    collision_radius: 80
+    corpse: queen_bee_dead
+    spawn_count: 1

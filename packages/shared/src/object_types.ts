@@ -34,11 +34,16 @@ export namespace GameObjectData {
     export const GroundItemType = 0x03;
     export type GroundItemData = [itemId: number, amount: number];
 
+    /** Autonomous living actor. Rotation is derived by clients from movement. */
+    export const AnimalType = 0x04;
+    export type AnimalData = [type: number, collisionRadius: number, health: number, maxHealth: number];
+
     /** Maps LoadObject.type → typed payload tuple. */
     export type ByType = {
         [PlayerType]: PlayerData;
         [ResourceNodeType]: ResourceNodeData;
         [StructureType]: StructureData;
         [GroundItemType]: GroundItemData;
+        [AnimalType]: AnimalData;
     };
 }

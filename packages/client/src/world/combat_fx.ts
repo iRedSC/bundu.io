@@ -8,6 +8,7 @@ import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { debugAttackHitbox } from "../debug/attack_hitbox";
 import { Player } from "./objects/player";
+import { Animal } from "./objects/animal";
 import type ObjectContainer from "./object_container";
 import type { ParticleSystem } from "../rendering/particles/particle_system";
 import { structureHit } from "../visual/particles/structure_hit";
@@ -25,7 +26,10 @@ export class CombatFx {
         if (!object) return;
         object.trigger(ANIMATION.ATTACK, AnimationManagers.World, true);
 
-        const facing = attackFacingRadians(object.rotation);
+        const facing =
+            object instanceof Animal
+                ? object.rotation
+                : attackFacingRadians(object.rotation);
         const origin = moveInDirection(object.position, facing, start);
         debugAttackHitbox(attackBoxPoints(origin, facing, length, width));
     };

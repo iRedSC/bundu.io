@@ -36,7 +36,8 @@ export default class GameObject {
         pos: Point,
         rotation: number,
         collisionRadius: number,
-        visualScale: number = collisionRadius
+        visualScale: number = collisionRadius,
+        interpolationMS?: number
     ) {
         this.container = new Container();
         this.container.zIndex = 0;
@@ -53,10 +54,13 @@ export default class GameObject {
         this.container.position = pos;
         this.size = visualScale;
 
-        this.positionStates = new PositionStates(() => {
-            this.container.renderable = true;
-            this.debug.renderable = true;
-        });
+        this.positionStates = new PositionStates(
+            () => {
+                this.container.renderable = true;
+                this.debug.renderable = true;
+            },
+            interpolationMS
+        );
         this.positionStates.set({
             x: pos.x,
             y: pos.y,
