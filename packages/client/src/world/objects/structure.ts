@@ -18,8 +18,14 @@ import {
     VisualStateController,
 } from "../../visual/state";
 import { structureDef, tileEntityDefs } from "../../visual/defs";
-import type { ObjectDef, PartNode } from "../../visual/types";
+import type {
+    AnimContext,
+    ObjectDef,
+    PartNode,
+} from "../../visual/types";
+import { EMPTY_ANIM_CONTEXT } from "../../visual/types";
 import type { AnimationManager } from "../../animation/runtime";
+import type { ParticleBurst } from "../../rendering/particles/types";
 
 const HEALTH_BAR_WIDTH = 48;
 const HEALTH_BAR_HEIGHT = 5;
@@ -35,6 +41,7 @@ export class Structure extends GameObject {
     readonly type: string;
     private readonly animationManager: AnimationManager;
     private readonly states: EntityStateStore;
+    private readonly animContext: AnimContext = { ...EMPTY_ANIM_CONTEXT };
     private stateController?: VisualStateController;
     private usesSpriteConfig = false;
     private readonly variant?: string;
@@ -48,8 +55,9 @@ export class Structure extends GameObject {
     private hasHealth = false;
     /** Top-level part roots promoted for world zIndex sorting via LayeredRenderer. */
     private worldLayers: Container[] = [];
-    private rotting = false;
-    private nextCrumbleAt = 0;
+    /** World-space overlays synced like healthBar (placement invalid mark). */
+    private syncedOverlays: Container[] = [];
+    private visuals: ContaineredSprite[] = [];
 
     constructor(
         id: number,
@@ -70,7 +78,6 @@ export class Structure extends GameObject {
         this.variant = variant;
         this.animationManager = animationManager;
         this.states = new EntityStateStore(states);
-        this.rotting = states.rotting === true;
         this.applyVisualDefinition(variant);
         this.container.zIndex = DEFAULT_STRUCTURE_Z;
         this.healthBar.zIndex = 100;
@@ -79,7 +86,12 @@ export class Structure extends GameObject {
     }
 
     override get containers(): Container[] {
-        return [this.container, ...this.worldLayers, this.healthBar];
+        return [
+            this.container,
+            ...this.worldLayers,
+            ...this.syncedOverlays,
+            this.healthBar,
+        ];
     }
 
     override update(_now?: number): boolean {
@@ -99,7 +111,36 @@ export class Structure extends GameObject {
             layer.rotation = rotation;
             layer.scale.set(scaleX, scaleY);
         }
+        for (const overlay of this.syncedOverlays) {
+            overlay.position.set(x, y);
+            overlay.rotation = rotation;
+        }
         this.healthBar.position.set(x, y);
+    }
+
+    /** Wire particle bursts for ambient presets (rotting crumble). */
+    enableParticles(emit: (burst: ParticleBurst) => void): void {
+        this.animContext.emitParticles = emit;
+        this.animContext.particleAnchor = () => ({
+            texture: this.sprite.sprite.texture,
+            x: this.position.x,
+            y: this.position.y,
+            radius: this.collisionRadius,
+        });
+    }
+
+    /** Attach a world-space overlay that follows this structure (placement X). */
+    addSyncedOverlay(overlay: Container): void {
+        this.syncedOverlays.push(overlay);
+        this.syncWorldLayers();
+    }
+
+    /** Ghost tint/alpha across all promoted visual layers. */
+    setGhostAppearance(alpha: number, tint: number): void {
+        for (const visual of this.visuals) {
+            visual.alpha = alpha;
+            visual.sprite.tint = tint;
+        }
     }
 
     setHealth(health: number, maxHealth: number, time?: number) {
@@ -196,6 +237,7 @@ export class Structure extends GameObject {
         }
 
         this.promoteWorldLayers(def, parts);
+        this.visuals = [...parts.values()].map((part) => part.visual);
         this.sprite = first.visual;
         this.usesSpriteConfig = tileEntity === undefined;
         this.refreshSpriteConfig();
@@ -203,7 +245,7 @@ export class Structure extends GameObject {
         const { animations, autoplay } = bindAnimations(
             def,
             parts,
-            undefined,
+            this.animContext,
             this
         );
         for (const [animId, animation] of animations) {
@@ -251,13 +293,12 @@ export class Structure extends GameObject {
 
     setState(name: string, value: EntityStateValue) {
         this.states.set(name, value);
-        if (name === "rotting") this.rotting = value === true;
     }
 
-    shouldCrumble(time: number): boolean {
-        if (!this.rotting || time < this.nextCrumbleAt) return false;
-        this.nextCrumbleAt = time + 800 + Math.random() * 700;
-        return true;
+    applyStates(states: EntityStateSnapshot) {
+        for (const [name, value] of Object.entries(states)) {
+            this.states.set(name, value);
+        }
     }
 
     tickVisual(time: number) {
@@ -277,6 +318,7 @@ export class Structure extends GameObject {
         this.animationManager.remove(this);
         // Abandon old world layers; LayeredRenderer.replace destroys orphans.
         this.worldLayers = [];
+        this.visuals = [];
         for (const child of this.container.removeChildren()) {
             child.destroy({ children: true });
         }

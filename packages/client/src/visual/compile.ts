@@ -216,6 +216,7 @@ function compilePartOverride(value: unknown, path: string): PartOverride {
         scale: optionalNumber(raw.scale, `${path}.scale`), rotation: optionalNumber(raw.rotation, `${path}.rotation`),
         zIndex: optionalNumber(raw.zIndex, `${path}.zIndex`), pivot: point(raw.pivot, `${path}.pivot`),
         alpha: optionalNumber(raw.alpha, `${path}.alpha`), visible: optionalBoolean(raw.visible, `${path}.visible`),
+        saturation: optionalNumber(raw.saturation, `${path}.saturation`),
         filters: compileFilters(raw.filters, `${path}.filters`),
     };
 }
@@ -278,11 +279,7 @@ function compileOcclusion(
     }
     const radius = number(raw.radius, `${path}.radius`);
     if (radius <= 0) throw new Error(`${path}.radius: must be positive`);
-    const duration = optionalNumber(raw.duration, `${path}.duration`);
-    if (duration !== undefined && duration < 0) {
-        throw new Error(`${path}.duration: must be non-negative`);
-    }
-    return { state, radius, duration };
+    return { state, radius };
 }
 
 function compileFootprint(value: unknown, path: string): TileGeometry {
@@ -368,6 +365,10 @@ function compileDef(raw: RawDef): ObjectDef | TileEntityDef {
     const states = compileStates(raw.states, `${id}.states`, partNames, new Set(Object.keys(animations)));
     const stateNames = new Set(Object.keys(states));
     const occlusion = compileOcclusion(raw.occlusion, `${id}.occlusion`, stateNames);
+    const alphaFadeMs = optionalNumber(raw.alphaFadeMs, `${id}.alphaFadeMs`);
+    if (alphaFadeMs !== undefined && alphaFadeMs < 0) {
+        throw new Error(`${id}.alphaFadeMs: must be non-negative`);
+    }
     const base: ObjectDef = {
         id,
         abstract: raw.abstract === undefined ? false : boolean(raw.abstract, `${id}.abstract`),
@@ -378,6 +379,7 @@ function compileDef(raw: RawDef): ObjectDef | TileEntityDef {
         animations,
         states,
         stateOrder: Object.keys(states),
+        alphaFadeMs,
         occlusion,
     };
     if (raw.tile === undefined) return base;

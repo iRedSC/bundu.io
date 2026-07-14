@@ -5,15 +5,12 @@ import {
     radians,
     type BasicPoint,
 } from "@bundu/shared";
-import { Door, Physics, Rotting, TileEntity } from "../components/base.js";
-import { getNumericId } from "@bundu/shared/id_map.js";
+import { Door, Physics, Rotting } from "../components/base.js";
 import { type GameObject, System, type World } from "../engine";
 import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import SAT from "sat";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-
-const DIAMOND_SWORD_ID = getNumericId("diamond_sword");
 
 function pointToVec(point: BasicPoint) {
     return new SAT.Vector(point.x, point.y);
@@ -107,6 +104,7 @@ export class AttackSystem extends System<GameEventMap> {
                 id: object.id,
                 angle: facing,
             });
+            // Intact doors toggle; rotting doors take damage / claim via Hurt.
             if (Door.get(object) && !Rotting.get(object)) {
                 this.trigger(GameEvent.ToggleDoor, { object });
                 continue;
@@ -117,25 +115,6 @@ export class AttackSystem extends System<GameEventMap> {
                 damage,
                 weapon,
             });
-            if (object.active) this.claimRottingStructure(source, object, weapon);
         }
-    }
-
-    private claimRottingStructure(
-        player: GameObject,
-        target: GameObject,
-        weapon?: number
-    ): void {
-        if (weapon !== DIAMOND_SWORD_ID || !Rotting.get(target)) return;
-        const tile = TileEntity.get(target);
-        if (!tile) return;
-
-        target.remove(Rotting);
-        tile.ownerId = player.id;
-        this.world.context.worldPacketManager.emit(ServerPacket.SetObjectState, {
-            id: target.id,
-            state: "rotting",
-            value: false,
-        });
     }
 }

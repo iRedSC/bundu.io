@@ -1,22 +1,6 @@
 id: structure
+extends: rottable
 parts:
   - name: main
     sprite: ""
 variants: {}
-animations:
-  hit:
-    preset: hit
-    parts: main
-  rotting:
-    preset: rotting
-    parts: main
-
-states:
-  rotting:
-    default: false
-    values:
-      true:
-        parts:
-          main:
-            filters: [grayscale]
-        animations: [rotting]

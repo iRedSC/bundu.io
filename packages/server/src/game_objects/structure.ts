@@ -1,3 +1,4 @@
+import type { EntityStateSnapshot } from "@bundu/shared/object_types.js";
 import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import {
     Door,
@@ -50,13 +51,16 @@ export class Structure extends GameObject {
         };
     }
 
-    private getStateSnapshot() {
-        const door = Door.get(this);
-        const rotting = Rotting.get(this);
-        if (!door && !rotting) return undefined;
-        return {
-            ...(door ? { open: door.open } : {}),
-            ...(rotting ? { rotting: true } : {}),
+    /**
+     * Project sim components into the client entity-state snapshot.
+     * Always includes `rotting` so clears coalesce correctly via SetObjectState.
+     */
+    getStateSnapshot(): EntityStateSnapshot {
+        const states: EntityStateSnapshot = {
+            rotting: Rotting.get(this) !== undefined,
         };
+        const door = Door.get(this);
+        if (door) states.open = door.open;
+        return states;
     }
 }

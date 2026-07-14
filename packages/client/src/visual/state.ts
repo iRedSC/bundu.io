@@ -99,7 +99,7 @@ export class VisualStateController {
             }
         }
 
-        const fadeMs = this.primed ? (this.def.occlusion?.duration ?? 0) : 0;
+        const fadeMs = this.primed ? (this.def.alphaFadeMs ?? 0) : 0;
         for (const [name, node] of this.parts) {
             const override = overrides.get(name);
             applyPartOverride(node, override, fadeMs > 0);
@@ -109,10 +109,10 @@ export class VisualStateController {
         this.primed = true;
     }
 
-    /** Advance occlusion alpha fades. */
+    /** Advance part alpha fades. */
     tick(time: number): void {
         this.time = time;
-        const fadeMs = this.def.occlusion?.duration ?? 0;
+        const fadeMs = this.def.alphaFadeMs ?? 0;
         if (fadeMs <= 0 || this.alphaTweens.size === 0) return;
 
         for (const [name, tween] of this.alphaTweens) {
@@ -246,6 +246,9 @@ function applyPartOverride(
     state.visible = override?.visible ?? base.visible;
     for (const filter of stateFilters.get(node) ?? []) filter.destroy();
     const filters = (override?.filters ?? []).map(createFilter);
+    if (override?.saturation !== undefined) {
+        filters.push(createSaturationFilter(override.saturation));
+    }
     stateFilters.set(node, filters);
     state.filters = filters;
 }
@@ -254,5 +257,12 @@ function createFilter(name: string): ColorMatrixFilter {
     if (name !== "grayscale") throw new Error(`Unknown visual filter "${name}"`);
     const filter = new ColorMatrixFilter();
     filter.greyscale(1, false);
+    return filter;
+}
+
+/** Authored 1 = unchanged, 0 = fully desaturated (Pixi saturate is -1..1 around 0). */
+function createSaturationFilter(saturation: number): ColorMatrixFilter {
+    const filter = new ColorMatrixFilter();
+    filter.saturate(saturation - 1, false);
     return filter;
 }

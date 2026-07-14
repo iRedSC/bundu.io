@@ -1,4 +1,5 @@
 import player from "./defs/actors/player.yml";
+import rottable from "./defs/base/rottable.yml";
 import singleTileNode from "./defs/base/single_tile_node.yml";
 import amethystDoor from "./defs/doors/amethyst_door.yml";
 import diamondDoor from "./defs/doors/diamond_door.yml";
@@ -24,6 +25,7 @@ const bundledDefs: Record<string, unknown> = {
     gold_door: goldDoor,
     player,
     point_generator: pointGenerator,
+    rottable,
     single_tile_node: singleTileNode,
     stone_door: stoneDoor,
     structure,
