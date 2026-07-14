@@ -154,12 +154,13 @@ const baseStates = new WeakMap<PartNode, BasePartState>();
 
 function applyPartOverride(node: PartNode, override?: PartOverride): void {
     const state = node.state;
+    const animation = node.animation;
     const base = baseStates.get(node) ?? {
         x: state.x,
         y: state.y,
         scale: state.scale.x,
         rotation: state.rotation,
-        pivot: { x: state.pivot.x, y: state.pivot.y },
+        pivot: { x: animation.pivot.x, y: animation.pivot.y },
         alpha: state.alpha,
         visible: state.visible,
         zIndex: node.root.zIndex,
@@ -172,7 +173,7 @@ function applyPartOverride(node: PartNode, override?: PartOverride): void {
         override?.rotation === undefined
             ? base.rotation
             : radians(override.rotation);
-    state.pivot.set(
+    animation.pivot.set(
         override?.pivot?.x ?? base.pivot.x,
         override?.pivot?.y ?? base.pivot.y
     );

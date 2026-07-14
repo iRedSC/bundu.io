@@ -150,9 +150,9 @@ export type TileEntityDef =
 export type PartNode = {
     /** Authored layout and parentage; persistent state and animation never mutate it. */
     root: Container;
-    /** Persistent transforms resolved from active entity states. */
+    /** Persistent transforms resolved from active entity states (pose, alpha, filters). */
     state: Container;
-    /** Transient transforms owned by animations. */
+    /** Transient motion + authored pivot (presets rotate/translate around this). */
     animation: Container;
     visual: ContaineredSprite;
     attach?: ContaineredSprite;

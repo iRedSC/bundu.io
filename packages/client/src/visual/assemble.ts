@@ -41,7 +41,8 @@ function assembleSprites(
         state.scale.set(part.scale ?? 1);
         state.rotation = radians(part.rotation ?? 0);
         if (part.zIndex !== undefined) nodeRoot.zIndex = part.zIndex;
-        if (part.pivot) state.pivot.set(part.pivot.x, part.pivot.y);
+        // Pivot lives on animation so presets rotate/translate around the authored origin.
+        if (part.pivot) animation.pivot.set(part.pivot.x, part.pivot.y);
         state.alpha = part.alpha ?? 1;
         state.visible = part.visible ?? true;
 
