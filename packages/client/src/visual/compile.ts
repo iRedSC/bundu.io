@@ -3,6 +3,7 @@ import type {
     AnimDef,
     AnimPreset,
     ObjectDef,
+    OcclusionDef,
     PartDef,
     PartOverride,
     SlotDef,
@@ -264,6 +265,26 @@ function compileStates(value: unknown, path: string, parts: Set<string>, animati
     return result;
 }
 
+function compileOcclusion(
+    value: unknown,
+    path: string,
+    states: ReadonlySet<string>
+): OcclusionDef | undefined {
+    if (value === undefined) return undefined;
+    const raw = record(value, path);
+    const state = string(raw.state, `${path}.state`);
+    if (!states.has(state)) {
+        throw new Error(`${path}.state: unknown state "${state}"`);
+    }
+    const radius = number(raw.radius, `${path}.radius`);
+    if (radius <= 0) throw new Error(`${path}.radius: must be positive`);
+    const duration = optionalNumber(raw.duration, `${path}.duration`);
+    if (duration !== undefined && duration < 0) {
+        throw new Error(`${path}.duration: must be non-negative`);
+    }
+    return { state, radius, duration };
+}
+
 function compileFootprint(value: unknown, path: string): TileGeometry {
     const raw = record(value, path);
     const rows = array(raw.footprint, `${path}.footprint`).map((row, index) => string(row, `${path}.footprint[${index}]`));
@@ -345,6 +366,8 @@ function compileDef(raw: RawDef): ObjectDef | TileEntityDef {
     const partNames = new Set(parts.map(({ name }) => name));
     const animations = compileAnimations(raw.animations, `${id}.animations`, partNames);
     const states = compileStates(raw.states, `${id}.states`, partNames, new Set(Object.keys(animations)));
+    const stateNames = new Set(Object.keys(states));
+    const occlusion = compileOcclusion(raw.occlusion, `${id}.occlusion`, stateNames);
     const base: ObjectDef = {
         id,
         abstract: raw.abstract === undefined ? false : boolean(raw.abstract, `${id}.abstract`),
@@ -355,6 +378,7 @@ function compileDef(raw: RawDef): ObjectDef | TileEntityDef {
         animations,
         states,
         stateOrder: Object.keys(states),
+        occlusion,
     };
     if (raw.tile === undefined) return base;
     const tile = compileFootprint(raw.tile, `${id}.tile`);

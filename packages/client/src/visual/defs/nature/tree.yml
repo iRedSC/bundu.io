@@ -9,6 +9,12 @@ tile:
     - "###"
   spillover: 0
 
+# Fade canopy when the local player stands under the art.
+occlusion:
+  state: occluded
+  radius: 1.5
+  duration: 200
+
 parts:
   - name: layer0
     zIndex: 0
@@ -22,6 +28,15 @@ variants:
     layer0: forest_tree_1_0
     layer1: forest_tree_1_1
     layer2: forest_tree_1_2
+
+states:
+  occluded:
+    default: false
+    values:
+      true:
+        parts:
+          layer1: { alpha: 0.35 }
+          layer2: { alpha: 0.35 }
 
 animations:
   hit:

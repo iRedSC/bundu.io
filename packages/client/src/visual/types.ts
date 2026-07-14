@@ -85,6 +85,16 @@ export type AnimDef = {
     };
 }[AnimPreset];
 
+/** Client-local fade when the local player stands under this object. */
+export type OcclusionDef = {
+    /** Entity state toggled true/false by the occlusion driver. */
+    state: string;
+    /** World radius in tiles from the object origin. */
+    radius: number;
+    /** Alpha fade duration in ms when the occlusion state changes. */
+    duration?: number;
+};
+
 export type ObjectDef = {
     id: string;
     abstract: boolean;
@@ -96,6 +106,7 @@ export type ObjectDef = {
     animations: Readonly<Record<string, AnimDef>>;
     states: Readonly<Record<string, StateDef>>;
     stateOrder: readonly string[];
+    occlusion?: OcclusionDef;
 };
 
 export type StateValue = boolean | number | string;

@@ -33,6 +33,7 @@ import {
     type ContaineredSprite,
 } from "../assets/sprite_factory";
 import { ParticleSystem } from "@client/rendering/particles/particle_system";
+import { updateOcclusion } from "./occlusion";
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -110,6 +111,14 @@ export class World {
         this.elapsedMS += deltaMS;
         AnimationManagers.World.update();
         this.objects.update();
+        for (const object of this.objects.all()) {
+            if (object instanceof Structure) {
+                object.tickVisual(this.elapsedMS);
+            }
+        }
+        const localPlayer =
+            this.user !== undefined ? this.objects.get(this.user) : undefined;
+        updateOcclusion(localPlayer, this.objects.all());
         for (const object of this.objects.all()) {
             if (object instanceof Structure) {
                 object.updateHealthBar(this.elapsedMS, this.cursorWorld);

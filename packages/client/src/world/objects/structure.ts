@@ -211,6 +211,10 @@ export class Structure extends GameObject {
         this.states.set(name, value);
     }
 
+    tickVisual(time: number) {
+        this.stateController?.tick(time);
+    }
+
     reloadVisualDefinition() {
         this.stateController?.dispose();
         this.stateController = undefined;

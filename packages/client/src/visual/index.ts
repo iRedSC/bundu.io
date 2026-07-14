@@ -3,6 +3,7 @@ export type {
     AnimDef,
     AnimPreset,
     ObjectDef,
+    OcclusionDef,
     PartDef,
     PartNode,
     PartPose,

@@ -1,4 +1,4 @@
-import { radians } from "@bundu/shared/transforms";
+import { lerp, radians } from "@bundu/shared/transforms";
 import type {
     EntityStateSnapshot,
     EntityStateValue,
@@ -47,10 +47,19 @@ type AnimationSource = {
     visible?: boolean;
 };
 
+type AlphaTween = {
+    from: number;
+    to: number;
+    startedAt: number;
+};
+
 /** Resolves persistent visual state and owns animations requested by that state. */
 export class VisualStateController {
     private readonly activeAnimations = new Set<string>();
+    private readonly alphaTweens = new Map<string, AlphaTween>();
     private readonly unsubscribe: () => void;
+    private time = 0;
+    private primed = false;
 
     constructor(
         private readonly def: ObjectDef,
@@ -90,19 +99,62 @@ export class VisualStateController {
             }
         }
 
+        const fadeMs = this.primed ? (this.def.occlusion?.duration ?? 0) : 0;
         for (const [name, node] of this.parts) {
-            applyPartOverride(node, overrides.get(name));
+            const override = overrides.get(name);
+            applyPartOverride(node, override, fadeMs > 0);
+            if (fadeMs > 0) this.retargetAlpha(name, node, override);
         }
         this.syncAnimations(desiredAnimations);
+        this.primed = true;
+    }
+
+    /** Advance occlusion alpha fades. */
+    tick(time: number): void {
+        this.time = time;
+        const fadeMs = this.def.occlusion?.duration ?? 0;
+        if (fadeMs <= 0 || this.alphaTweens.size === 0) return;
+
+        for (const [name, tween] of this.alphaTweens) {
+            const node = this.parts.get(name);
+            if (!node) {
+                this.alphaTweens.delete(name);
+                continue;
+            }
+            const t = Math.min(1, (time - tween.startedAt) / fadeMs);
+            node.state.alpha = lerp(tween.from, tween.to, t);
+            if (t >= 1) this.alphaTweens.delete(name);
+        }
     }
 
     dispose(): void {
         this.unsubscribe();
+        this.alphaTweens.clear();
         for (const name of this.activeAnimations) {
             this.animationManager.remove(this.animationSource, name);
         }
         this.activeAnimations.clear();
         for (const node of this.parts.values()) applyPartOverride(node);
+    }
+
+    private retargetAlpha(
+        name: string,
+        node: PartNode,
+        override?: PartOverride
+    ): void {
+        const base = ensureBase(node);
+        const target = override?.alpha ?? base.alpha;
+        const existing = this.alphaTweens.get(name);
+        if (existing?.to === target) return;
+        if (node.state.alpha === target) {
+            this.alphaTweens.delete(name);
+            return;
+        }
+        this.alphaTweens.set(name, {
+            from: node.state.alpha,
+            to: target,
+            startedAt: this.time,
+        });
     }
 
     private syncAnimations(desired: ReadonlySet<string>): void {
@@ -152,10 +204,12 @@ type BasePartState = {
 const stateFilters = new WeakMap<PartNode, ColorMatrixFilter[]>();
 const baseStates = new WeakMap<PartNode, BasePartState>();
 
-function applyPartOverride(node: PartNode, override?: PartOverride): void {
+function ensureBase(node: PartNode): BasePartState {
     const state = node.state;
     const animation = node.animation;
-    const base = baseStates.get(node) ?? {
+    const existing = baseStates.get(node);
+    if (existing) return existing;
+    const base: BasePartState = {
         x: state.x,
         y: state.y,
         scale: state.scale.x,
@@ -166,6 +220,17 @@ function applyPartOverride(node: PartNode, override?: PartOverride): void {
         zIndex: node.root.zIndex,
     };
     baseStates.set(node, base);
+    return base;
+}
+
+function applyPartOverride(
+    node: PartNode,
+    override?: PartOverride,
+    deferAlpha = false
+): void {
+    const state = node.state;
+    const animation = node.animation;
+    const base = ensureBase(node);
     node.root.zIndex = override?.zIndex ?? base.zIndex;
     state.position.set(override?.x ?? base.x, override?.y ?? base.y);
     state.scale.set(override?.scale ?? base.scale);
@@ -177,7 +242,7 @@ function applyPartOverride(node: PartNode, override?: PartOverride): void {
         override?.pivot?.x ?? base.pivot.x,
         override?.pivot?.y ?? base.pivot.y
     );
-    state.alpha = override?.alpha ?? base.alpha;
+    if (!deferAlpha) state.alpha = override?.alpha ?? base.alpha;
     state.visible = override?.visible ?? base.visible;
     for (const filter of stateFilters.get(node) ?? []) filter.destroy();
     const filters = (override?.filters ?? []).map(createFilter);
