@@ -34,6 +34,7 @@ import {
 } from "../assets/sprite_factory";
 import { ParticleSystem } from "@client/rendering/particles/particle_system";
 import { updateOcclusion } from "./occlusion";
+import { Animal } from "./objects/animal";
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -51,6 +52,7 @@ type LoadGroundItem = Extract<
     ServerPacket.LoadObject,
     { type: typeof GameObjectData.GroundItemType }
 >;
+type LoadAnimal = Extract<ServerPacket.LoadObject, { type: typeof GameObjectData.AnimalType }>;
 
 const PLACEMENT_GHOST_RENDER_ID = -11;
 const PLACEMENT_GHOST_TINT = 0xff5555;
@@ -165,6 +167,9 @@ export class World {
                 break;
             case GameObjectData.GroundItemType:
                 this.newGroundItem(packet);
+                break;
+            case GameObjectData.AnimalType:
+                this.newAnimal(packet);
                 break;
         }
     };
@@ -311,6 +316,14 @@ export class World {
         );
         this.objects.add(item);
         this.renderer.add(item.id, ...item.containers);
+    };
+
+    newAnimal = (packet: LoadAnimal) => {
+        this.renderer.delete(packet.id);
+        const [type, collisionRadius] = packet.data;
+        const animal = new Animal(packet.id, type, deciPoint(packet.x, packet.y), collisionRadius);
+        this.objects.add(animal);
+        this.renderer.add(animal.id, ...animal.containers);
     };
 
     dropItem = (packet: ServerPacket.DropItem) => {

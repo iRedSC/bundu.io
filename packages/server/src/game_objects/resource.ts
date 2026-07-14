@@ -10,7 +10,7 @@ import { getVariantId } from "@bundu/shared/variant_map.js";
  * A harvestable tile entity (resource node).
  */
 export class Resource extends GameObject {
-    constructor(physics: Physics, type: Type, tile: TileEntity) {
+    constructor(physics: Physics, type: Type, tile?: TileEntity) {
         super();
 
         const config = ResourceConfigs.get(type.id);
@@ -22,8 +22,8 @@ export class Resource extends GameObject {
             })
         )
             .add(new Physics(physics))
-            .add(new Type(type))
-            .add(new TileEntity(tile));
+            .add(new Type(type));
+        if (tile) this.add(new TileEntity(tile));
     }
 
     public override getNewObjectPacket(): ServerPacket.LoadObject | void {

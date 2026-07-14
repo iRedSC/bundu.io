@@ -32,7 +32,10 @@ export class PositionStates {
 
     callback?: () => void;
 
-    constructor(callback?: () => void) {
+    constructor(
+        callback?: () => void,
+        private readonly interpolationMS = INTERP_MS
+    ) {
         this.callback = callback;
     }
 
@@ -43,7 +46,10 @@ export class PositionStates {
     interpolate(now = serverTime.now()): { x: number; y: number } {
         if (!this.hasSegment) return this.current;
 
-        const t = Math.min((now - this.startedAt) / INTERP_MS, 1 + EXTRAP);
+        const t = Math.min(
+            (now - this.startedAt) / this.interpolationMS,
+            1 + EXTRAP
+        );
         this.current = {
             x: mix(this.from.x, this.to.x, t),
             y: mix(this.from.y, this.to.y, t),
@@ -62,7 +68,7 @@ export class PositionStates {
         this.interpolate();
         const elapsed = serverTime.now() - this.startedAt;
         this.from =
-            elapsed >= INTERP_MS
+            elapsed >= this.interpolationMS
                 ? { x: this.to.x, y: this.to.y }
                 : { x: this.current.x, y: this.current.y };
         this.to = { x: state.x, y: state.y };
@@ -82,7 +88,10 @@ export class PositionStates {
 
     isComplete(): boolean {
         if (!this.hasSegment) return true;
-        return serverTime.now() - this.startedAt >= INTERP_MS * (1 + EXTRAP);
+        return (
+            serverTime.now() - this.startedAt >=
+            this.interpolationMS * (1 + EXTRAP)
+        );
     }
 }
 

@@ -2,12 +2,15 @@ import { random } from "@bundu/shared";
 import { getNumericId } from "@bundu/shared/id_map";
 import {
     WORLD_TILES,
+    worldToTile,
     type TileRot,
 } from "@bundu/shared/tiles";
-import { Box, Vector } from "sat";
+import { Box, Circle, Vector } from "sat";
 import type { World } from "../engine";
 import { Ground } from "../game_objects/ground";
 import { Resource } from "../game_objects/resource";
+import { Animal } from "../game_objects/animal";
+import { AnimalConfigs } from "../configs/loaders/animals";
 import {
     makeTileEntity,
     tileEntityPhysics,
@@ -25,6 +28,7 @@ const TEST_MAP_RESOURCE_IDS: string[] = [
     "diamond",
     "amethyst",
 ];
+const TEST_MAP_ANIMAL_IDS = ["bear", "deer", "ram", "elephant", "komodo_dragon", "alligator", "bee"];
 
 function getRequiredNumericId(id: string) {
     const numericId = getNumericId(id);
@@ -95,6 +99,41 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
         );
         const rot = random.integer(0, 3) as TileRot;
         if (tryAddResource(world, id, tx, ty, rot)) placed++;
+    }
+
+    for (const id of TEST_MAP_ANIMAL_IDS) {
+        const typeId = getRequiredNumericId(id);
+        const config = AnimalConfigs.get(typeId);
+        let spawned = 0;
+        let spawnAttempts = 0;
+        while (
+            spawned < config.spawn_count &&
+            spawnAttempts++ < config.spawn_count * 8
+        ) {
+            const position = new Vector(
+                random.integer(TEST_MAP_BORDER_PADDING_TILES * 100, (WORLD_TILES - TEST_MAP_BORDER_PADDING_TILES) * 100),
+                random.integer(TEST_MAP_BORDER_PADDING_TILES * 100, (WORLD_TILES - TEST_MAP_BORDER_PADDING_TILES) * 100)
+            );
+            if (
+                world.context.occupancy.get(
+                    worldToTile(position.x),
+                    worldToTile(position.y)
+                ) !== undefined
+            ) {
+                continue;
+            }
+            world.addObject(new Animal(
+                { id: typeId, variant: "base" },
+                {
+                    position,
+                    collider: new Circle(position, config.collision_radius),
+                    collisionRadius: config.collision_radius,
+                    rotation: 0,
+                    speed: config.passiveSpeed,
+                }
+            ));
+            spawned++;
+        }
     }
 
     playerSystem.trigger(GameEvent.PlaceStructure, {
