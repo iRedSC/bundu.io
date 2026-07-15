@@ -133,13 +133,6 @@ export class World {
 
         for (const object of this.objects.values()) {
             this.indexObject(object, system);
-            if (
-                object.active &&
-                system.enter &&
-                this.hasSystem(object, system)
-            ) {
-                system.enter(object);
-            }
         }
         return this;
     }

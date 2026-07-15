@@ -19,11 +19,14 @@ export class OccupancyGrid {
         return true;
     }
 
-    /** Claim tiles for an entity. Releases any prior claim first. */
+    /** Atomically replace an entity's prior claim when every tile is available. */
     occupy(entityId: number, tiles: readonly TilePos[]): boolean {
-        this.release(entityId);
-        if (!this.canPlace(tiles)) return false;
+        for (const { x, y } of tiles) {
+            const occupant = this.cells.get(tileKey(x, y));
+            if (occupant !== undefined && occupant !== entityId) return false;
+        }
 
+        this.release(entityId);
         const keys: number[] = [];
         for (const { x, y } of tiles) {
             const key = tileKey(x, y);

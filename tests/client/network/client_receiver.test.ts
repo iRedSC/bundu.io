@@ -1,5 +1,14 @@
-import { describe, expect, test, beforeEach, mock } from "bun:test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  spyOn,
+  test,
+} from "bun:test";
 import { Serializer } from "@bundu/shared";
+import { clientTime } from "@client/globals";
 import {
   ClientPacketReceiver,
   type SerializedPacketArray,
@@ -13,83 +22,86 @@ const TestSchema = {
 
 type TestDataMap = {
   1: { a: number; b: string };
-  2: {};
+  2: Record<never, never>;
   3: { x: number; y: number; z: number };
 };
 
 describe("ClientPacketReceiver", () => {
-  let serializer: Serializer<TestDataMap>;
   let receiver: ClientPacketReceiver<TestDataMap>;
 
   beforeEach(() => {
-    serializer = new Serializer<TestDataMap>(TestSchema);
-    receiver = new ClientPacketReceiver<TestDataMap>(serializer);
+    clientTime.resetServerSync();
+    receiver = new ClientPacketReceiver(new Serializer<TestDataMap>(TestSchema));
   });
 
-  test("dispatches registered callbacks with deserialized data and batch timestamp", () => {
-    const on1 = mock((_packet: TestDataMap[1], _timestamp: number) => {});
-    const on3 = mock((_packet: TestDataMap[3], _timestamp: number) => {});
+  afterEach(() => {
+    mock.restore();
+    clientTime.resetServerSync();
+  });
 
-    receiver.on(1, on1);
-    receiver.on(3, on3);
+  test("dispatches a batch in wire order with decoded payloads and its timestamp", () => {
+    const calls: Array<[TestDataMap[1] | TestDataMap[3], number]> = [];
+    receiver.on(1, (packet, timestamp) => calls.push([packet, timestamp]));
+    receiver.on(3, (packet, timestamp) => calls.push([packet, timestamp]));
+
+    receiver.process([
+      1_234,
+      [3, 1, 2, 3],
+      [1, 42, "hi"],
+      [1, 7, "again"],
+    ]);
+
+    expect(calls).toEqual([
+      [{ x: 1, y: 2, z: 3 }, 1_234],
+      [{ a: 42, b: "hi" }, 1_234],
+      [{ a: 7, b: "again" }, 1_234],
+    ]);
+  });
+
+  test("replaces a packet handler when the same id is registered again", () => {
+    const first = mock(() => {});
+    const replacement = mock(() => {});
+    receiver.on(2, first);
+    receiver.on(2, replacement);
+
+    receiver.process([10, [2]]);
+
+    expect(first).not.toHaveBeenCalled();
+    expect(replacement).toHaveBeenCalledWith({}, 10);
+  });
+
+  test("reports malformed packets, drops them, and continues the batch", () => {
+    const handler = mock(() => {});
+    const error = spyOn(console, "error").mockImplementation(() => {});
+    receiver.on(1, handler);
 
     const batch: SerializedPacketArray = [
-      1234,
-      [1, 42, "hi"],
-      [3, 1, 2, 3],
+      100,
+      [99, "bad"],
+      [1, 1],
+      [1, 5, "ok"],
     ];
-    receiver.process(batch);
+    expect(() => receiver.process(batch)).not.toThrow();
 
-    expect(on1).toHaveBeenCalledTimes(1);
-    expect(on1).toHaveBeenCalledWith({ a: 42, b: "hi" }, 1234);
-    expect(on1.mock.calls[0]![0]).not.toHaveProperty("id");
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith({ a: 5, b: "ok" }, 100);
+    expect(error).toHaveBeenCalledTimes(2);
+    expect(error.mock.calls[0]?.slice(0, 2)).toEqual([
+      "Dropped bad packet",
+      [99, "bad"],
+    ]);
+    expect(error.mock.calls[1]?.slice(0, 2)).toEqual([
+      "Dropped bad packet",
+      [1, 1],
+    ]);
 
-    expect(on3).toHaveBeenCalledTimes(1);
-    expect(on3).toHaveBeenCalledWith({ x: 1, y: 2, z: 3 }, 1234);
-    expect(on3.mock.calls[0]![0]).not.toHaveProperty("id");
   });
 
-  test("empty-fields packet dispatches {}", () => {
-    const on2 = mock((_packet: TestDataMap[2], _timestamp: number) => {});
-    receiver.on(2, on2);
+  test("synchronizes the presentation clock from the batch timestamp", () => {
+    spyOn(clientTime, "now").mockReturnValue(1_000);
 
-    receiver.process([999, [2]]);
+    receiver.process([700]);
 
-    expect(on2).toHaveBeenCalledTimes(1);
-    expect(on2).toHaveBeenCalledWith({}, 999);
-    expect(on2.mock.calls[0]![0]).not.toHaveProperty("id");
-  });
-
-  test("continues after a bad/unknown packet without throwing", () => {
-    const on1 = mock((_packet: TestDataMap[1], _timestamp: number) => {});
-    receiver.on(1, on1);
-
-    expect(() =>
-      receiver.process([
-        100,
-        [99, "bad"],
-        [1, 1],
-        [1, 5, "ok"],
-      ]),
-    ).not.toThrow();
-
-    expect(on1).toHaveBeenCalledTimes(1);
-    expect(on1).toHaveBeenCalledWith({ a: 5, b: "ok" }, 100);
-  });
-
-  test("skips packets with no registered callback", () => {
-    const on1 = mock((_packet: TestDataMap[1], _timestamp: number) => {});
-    receiver.on(1, on1);
-
-    expect(() =>
-      receiver.process([
-        50,
-        [3, 1, 2, 3],
-        [1, 9, "yes"],
-      ]),
-    ).not.toThrow();
-
-    expect(on1).toHaveBeenCalledTimes(1);
-    expect(on1).toHaveBeenCalledWith({ a: 9, b: "yes" }, 50);
+    expect(clientTime.fromServer(800)).toBe(1_100);
   });
 });

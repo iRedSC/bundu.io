@@ -69,11 +69,15 @@ export abstract class GameObject {
     }
 
     public remove(component: Component<unknown>): GameObject {
-        this.components = this.components.filter(
-            (listComponent) => listComponent.id !== component.id
+        const index = this.components.findIndex(
+            (existing) => existing.id === component.id
         );
+        if (index === -1) return this;
+
+        const [removed] = this.components.splice(index, 1);
+        if (!removed) return this;
         for (const handler of this.subscriptions) {
-            handler(this, undefined, component);
+            handler(this, undefined, removed);
         }
         return this;
     }

@@ -28,14 +28,20 @@ export class RecipeManager {
                 ingredientMap.set(ingredient[0], ingredient[1]);
             }
 
-            this.recipes.set(item, [ingredientMap, flags]);
+            this.recipes.set(item, [ingredientMap, [...flags]]);
         }
     }
 
-    filter(items: Map<number, number>, _flags: number[]): number[] {
+    filter(items: Map<number, number>, flags: number[]): number[] {
         const craftable: number[] = [];
+        const availableFlags = new Set(flags);
         nextRecipe: for (const [recipeId, recipe] of this.recipes.entries()) {
             const ingredients = recipe[0];
+            const requiredFlags = recipe[1];
+
+            for (const flag of requiredFlags) {
+                if (!availableFlags.has(flag)) continue nextRecipe;
+            }
 
             for (const [id, recipeAmount] of ingredients.entries()) {
                 const itemsAmount = items.get(id);

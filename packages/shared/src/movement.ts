@@ -45,7 +45,7 @@ export function axesFromPressedKeys(keys: {
     right: boolean;
 }): MoveAxes {
     const x: MoveAxis =
-        keys.left === keys.right ? 1 : keys.left ? 2 : 0;
+        keys.left === keys.right ? 1 : keys.right ? 2 : 0;
     const y: MoveAxis = keys.up === keys.down ? 1 : keys.up ? 2 : 0;
     return [x, y];
 }

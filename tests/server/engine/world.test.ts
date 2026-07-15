@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import {
   Component,
   GameObject,
@@ -8,22 +8,17 @@ import {
 } from "@bundu/server/engine";
 
 type Vec = { x: number; y: number };
+type TrackEvents = {
+  ping: string;
+  targeted: { object: GameObject; value: string };
+};
 
 class Entity extends GameObject {}
-
-type TrackEvents = { ping: string };
 
 class TrackingSystem extends System<TrackEvents> {
   entered: GameObject[] = [];
   exited: GameObject[] = [];
-
-  constructor(
-    world: World,
-    components: ComponentFactory<Vec>[],
-    tps?: number
-  ) {
-    super(world, components, tps);
-  }
+  updates: Array<{ time: number; delta: number; object: GameObject }> = [];
 
   override enter(object: GameObject) {
     this.entered.push(object);
@@ -32,31 +27,13 @@ class TrackingSystem extends System<TrackEvents> {
   override exit(object: GameObject) {
     this.exited.push(object);
   }
+
+  override update(time: number, delta: number, object: GameObject) {
+    this.updates.push({ time, delta, object });
+  }
 }
 
-describe("Component.register", () => {
-  test("factory id is stable; default and custom data; Factory.get reads object", () => {
-    const Position = Component.register<Vec>(() => ({ x: 0, y: 0 }));
-    const Velocity = Component.register<Vec>(() => ({ x: 1, y: 1 }));
-
-    const positionId = Position.id;
-    expect(Velocity.id).not.toBe(positionId);
-
-    const def = new Position();
-    expect(def.id).toBe(positionId);
-    expect(Position.id).toBe(positionId);
-    expect(def.data).toEqual({ x: 0, y: 0 });
-
-    const custom = new Position({ x: 3, y: 4 });
-    expect(custom.id).toBe(positionId);
-    expect(custom.data).toEqual({ x: 3, y: 4 });
-
-    const obj = new Entity().add(new Position({ x: 9, y: 8 }));
-    expect(Position.get(obj)).toEqual({ x: 9, y: 8 });
-  });
-});
-
-describe("GameObject", () => {
+describe("Component and GameObject", () => {
   let Position: ComponentFactory<Vec>;
   let Velocity: ComponentFactory<Vec>;
 
@@ -65,63 +42,59 @@ describe("GameObject", () => {
     Velocity = Component.register(() => ({ x: 0, y: 0 }));
   });
 
-  test("unique ids; add/remove/has/get; subscribe and unsubscribe; chaining", () => {
-    const a = new Entity();
-    const b = new Entity();
-    expect(a.id).not.toBe(b.id);
-    expect(a.active).toBe(true);
+  test("component factories create independent defaults and expose object data", () => {
+    const first = new Position();
+    const second = new Position();
+    first.data.x = 10;
+    const object = new Entity().add(second);
 
+    expect(second.data).toEqual({ x: 0, y: 0 });
+    expect(Position.get(object)).toBe(second.data);
+    expect(Position.id).toBe(first.id);
+    expect(Velocity.id).not.toBe(Position.id);
+  });
+
+  test("add rejects duplicate component types without changing the object", () => {
+    const object = new Entity();
+    const first = new Position({ x: 1, y: 2 });
+    object.add(first);
+
+    expect(() => object.add(new Position({ x: 3, y: 4 }))).toThrow(
+      /already has component/,
+    );
+    expect(object.get(Position)).toBe(first.data);
+    expect(object.components).toEqual([first]);
+  });
+
+  test("subscriptions observe real component changes and can unsubscribe", () => {
+    const object = new Entity();
     const events: Array<{
       added?: Component<unknown>;
       removed?: Component<unknown>;
     }> = [];
-    const unsub = a.subscribe((_obj, added, removed) => {
+    const unsubscribe = object.subscribe((_object, added, removed) => {
       events.push({ added, removed });
     });
+    const position = new Position();
+    const absentVelocity = new Velocity();
 
-    const pos = new Position({ x: 1, y: 2 });
-    const vel = new Velocity({ x: 3, y: 4 });
+    object.add(position);
+    object.remove(absentVelocity);
+    expect(events).toEqual([{ added: position, removed: undefined }]);
+    expect(object.get(Position)).toBe(position.data);
 
-    expect(a.add(pos)).toBe(a);
-    expect(a.add(vel)).toBe(a);
-    expect(events).toHaveLength(2);
-    expect(events[0]?.added).toBe(pos);
-    expect(events[0]?.removed).toBeUndefined();
-    expect(events[1]?.added).toBe(vel);
+    object.remove(position);
+    unsubscribe();
+    object.add(new Velocity());
 
-    expect(a.hasComponents([])).toBe(true);
-    expect(a.hasComponents([Position])).toBe(true);
-    expect(a.hasComponents([Position, Velocity])).toBe(true);
-
-    expect(a.get(Position)).toEqual({ x: 1, y: 2 });
-    expect(a.get(Velocity)).toEqual({ x: 3, y: 4 });
-
-    expect(a.remove(pos)).toBe(a);
-    expect(events).toHaveLength(3);
-    expect(events[2]?.added).toBeUndefined();
-    expect(events[2]?.removed?.id).toBe(pos.id);
-    expect(a.hasComponents([Position])).toBe(false);
-    expect(a.get(Position)).toBeUndefined();
-    expect(a.hasComponents([Velocity])).toBe(true);
-
-    unsub();
-    a.add(new Position({ x: 5, y: 6 }));
-    expect(events).toHaveLength(3);
-  });
-
-  test("get(all) returns every matching component's data", () => {
-    const obj = new Entity()
-      .add(new Position({ x: 1, y: 1 }))
-      .add(new Position({ x: 2, y: 2 }));
-
-    expect(obj.get(Position, true)).toEqual([
-      { x: 1, y: 1 },
-      { x: 2, y: 2 },
+    expect(events).toEqual([
+      { added: position, removed: undefined },
+      { added: undefined, removed: position },
     ]);
   });
 });
 
-describe("World + System", () => {
+describe("World and System", () => {
   let Position: ComponentFactory<Vec>;
   let Velocity: ComponentFactory<Vec>;
   let world: World;
@@ -135,82 +108,137 @@ describe("World + System", () => {
     world.addSystem(system);
   });
 
-  test("addObject / getObject / removeObject", () => {
-    const obj = new Entity().add(new Position()).add(new Velocity());
+  test("tracks objects by id without duplicating the same instance", () => {
+    const object = new Entity().add(new Position()).add(new Velocity());
 
-    expect(world.addObject(obj)).toBe(world);
-    expect(world.getObject(obj.id)).toBe(obj);
-    expect(world.addObject(obj)).toBe(world);
+    expect(world.addObject(object).addObject(object)).toBe(world);
+    expect(world.getObject(object.id)).toBe(object);
     expect(world.objects.size).toBe(1);
 
-    expect(world.removeObject(obj)).toBe(world);
-    expect(world.getObject(obj.id)).toBeUndefined();
+    expect(world.removeObject(object)).toBe(world);
+    expect(world.getObject(object.id)).toBeUndefined();
   });
 
-  test("enter when object qualifies; exit when it no longer qualifies or is removed", () => {
-    const obj = new Entity().add(new Position());
-    world.addObject(obj);
-    expect(system.entered).toHaveLength(0);
+  test("enters and exits systems exactly when component eligibility changes", () => {
+    const object = new Entity().add(new Position());
+    const velocity = new Velocity();
+    world.addObject(object);
 
-    obj.add(new Velocity());
-    expect(system.entered).toEqual([obj]);
+    object.add(velocity);
+    object.remove(velocity);
+    object.add(velocity);
+    world.removeObject(object);
 
-    obj.remove(new Velocity());
-    expect(system.exited).toEqual([obj]);
-
-    obj.add(new Velocity());
-    expect(system.entered).toEqual([obj, obj]);
-
-    world.removeObject(obj);
-    expect(system.exited).toEqual([obj, obj]);
+    expect(system.entered).toEqual([object, object]);
+    expect(system.exited).toEqual([object, object]);
   });
 
-  test("query returns objects with all listed components", () => {
+  test("adding a system enters each already-eligible object once", () => {
+    const otherWorld = new World();
+    const object = new Entity().add(new Position()).add(new Velocity());
+    const lateSystem = new TrackingSystem(otherWorld, [Position, Velocity]);
+    otherWorld.addObject(object);
+
+    otherWorld.addSystem(lateSystem);
+
+    expect(lateSystem.entered).toEqual([object]);
+  });
+
+  test("queries all required components and respects an explicit id selection", () => {
     const both = new Entity().add(new Position()).add(new Velocity());
-    const onlyPos = new Entity().add(new Position());
-    world.addObject(both).addObject(onlyPos);
+    const onlyPosition = new Entity().add(new Position());
+    const neither = new Entity();
+    world.addObject(both).addObject(onlyPosition).addObject(neither);
 
     expect(world.query([Position, Velocity])).toEqual([both]);
-    expect(world.query([Position])).toEqual(
-      expect.arrayContaining([both, onlyPos])
-    );
-    expect(world.query([Position], [both.id])).toEqual([both]);
-    expect(world.query([])).toEqual(expect.arrayContaining([both, onlyPos]));
+    expect(world.query([Position])).toEqual([both, onlyPosition]);
+    expect(world.query([], [neither.id, 999, both.id])).toEqual([
+      neither,
+      both,
+    ]);
   });
 
-  test("addSystem throws if system is already attached to a world", () => {
-    const other = new World();
-    expect(() => other.addSystem(system)).toThrow(/already in use/i);
+  test("runs systems at their configured cadence with gameplay time", () => {
+    const cadenceWorld = new World();
+    const cadenceSystem = new TrackingSystem(cadenceWorld, [Position], 10);
+    const object = new Entity().add(new Position());
+    cadenceWorld.addSystem(cadenceSystem).addObject(object);
+
+    cadenceWorld.step(40);
+    cadenceWorld.step(60);
+    cadenceWorld.step(250);
+
+    expect(cadenceWorld.gameTime).toBe(350);
+    expect(cadenceSystem.updates).toEqual([
+      { time: 100, delta: 100, object },
+      { time: 350, delta: 100, object },
+    ]);
   });
 
-  test("inactive object is removed on update", () => {
-    const obj = new Entity().add(new Position()).add(new Velocity());
-    world.addObject(obj);
-    obj.active = false;
+  test("removes inactive objects before systems can update them", () => {
+    const object = new Entity().add(new Position()).add(new Velocity());
+    world.addObject(object);
+    object.active = false;
+
     world.update();
-    expect(world.getObject(obj.id)).toBeUndefined();
+
+    expect(world.getObject(object.id)).toBeUndefined();
+    expect(system.updates).toEqual([]);
+    expect(system.exited).toEqual([object]);
   });
 
-  test("listen + trigger delivers; once listeners fire only once", () => {
-    const received: string[] = [];
-    const onceReceived: string[] = [];
-
-    system.listen("ping", (data) => {
-      received.push(data);
-    });
-    system.listen(
-      "ping",
-      (data) => {
-        onceReceived.push(data);
-      },
-      undefined,
-      true
-    );
+  test("dispatches persistent and once-only listeners", () => {
+    const persistent: string[] = [];
+    const once: string[] = [];
+    system.listen("ping", (value) => persistent.push(value));
+    system.listen("ping", (value) => once.push(value), undefined, true);
 
     system.trigger("ping", "a");
     system.trigger("ping", "b");
 
-    expect(received).toEqual(["a", "b"]);
-    expect(onceReceived).toEqual(["a"]);
+    expect(persistent).toEqual(["a", "b"]);
+    expect(once).toEqual(["a"]);
+  });
+
+  test("filters object events by listener component requirements", () => {
+    const listener = mock(() => {});
+    const eligible = new Entity().add(new Position());
+    const ineligible = new Entity();
+    system.listen("targeted", listener, [Position]);
+
+    system.trigger("targeted", { object: ineligible, value: "no" });
+    system.trigger("targeted", { object: eligible, value: "yes" });
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({ object: eligible, value: "yes" });
+  });
+
+  test("rejects systems constructed for another world", () => {
+    expect(() => new World().addSystem(system)).toThrow("System already in use.");
+  });
+
+  test("removing a system exits tracked objects and detaches future changes", () => {
+    const object = new Entity().add(new Position()).add(new Velocity());
+    world.addObject(object);
+
+    expect(world.removeSystem(system)).toBe(world);
+    object.remove(new Velocity());
+    object.add(new Velocity());
+
+    expect(system.exited).toEqual([object]);
+    expect(system.entered).toEqual([object]);
+    expect(world.systems.has(system.id)).toBe(false);
+  });
+
+  test("destroy clears registries and unsubscribes from retained objects", () => {
+    const object = new Entity().add(new Position());
+    world.addObject(object);
+
+    world.destroy();
+    object.add(new Velocity());
+
+    expect(world.objects.size).toBe(0);
+    expect(world.systems.size).toBe(0);
+    expect(system.entered).toEqual([]);
   });
 });

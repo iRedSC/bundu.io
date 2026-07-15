@@ -28,21 +28,21 @@ export class ReversableMap<K, V> extends Map<K, V> {
     }
 
     override delete(key: K) {
-        const value = this.get(key);
-        if (value === undefined) {
+        if (!this.has(key)) {
             return false;
         }
+        const value = this.get(key);
         super.delete(key);
-        this._valueMap.delete(value);
+        this._valueMap.delete(value as V);
         return true;
     }
 
     deletev(value: V) {
-        const key = this._valueMap.get(value);
-        if (key === undefined) {
+        if (!this._valueMap.has(value)) {
             return false;
         }
-        return this.delete(key);
+        const key = this._valueMap.get(value);
+        return this.delete(key as K);
     }
 
     hasv(value: V) {
