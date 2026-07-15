@@ -47,6 +47,7 @@ export class Player extends GameObject implements AnimContext {
     helmet = "";
     backpack?: boolean;
     blocking = false;
+    eatingDuration?: number;
 
     private craftDuration = 0;
     private craftEndsAt = 0;
@@ -286,6 +287,16 @@ export class Player extends GameObject implements AnimContext {
             rotation: this.structureRotation,
             cursor: this.structureCursor,
         };
+    }
+
+    setEating(duration: number) {
+        if (duration <= 0) {
+            this.eatingDuration = undefined;
+            this.animationManager.remove(this, "eat");
+            return;
+        }
+        this.eatingDuration = duration;
+        this.trigger("eat", this.animationManager, true);
     }
 
     override dispose(): void {

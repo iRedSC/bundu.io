@@ -56,7 +56,11 @@ building:
     function: building
 
 food:
-    function: consume
+    function: off_hand
+    attributes:
+        eating.movement_speed_multiplier:
+            op: multiply
+            value: 0.6
 
 spear:
     function: main_hand
@@ -131,4 +135,3 @@ wrench:
         attack.origin:
             op: add
             value: 15
-

@@ -20,6 +20,7 @@ export const AttributeList = [
 
     "hunger.max",
     "hunger.depletion_amount",
+    "eating.movement_speed_multiplier",
 
     "temperature.max",
     "temperature.warmth",

@@ -5,6 +5,11 @@ export type CraftingState = {
     endsAt: number;
 };
 
+export type EatingState = {
+    itemId: number;
+    endsAt: number;
+};
+
 export type PlayerData = {
     name: string;
     score: number;
@@ -26,6 +31,7 @@ export type PlayerData = {
     blocking?: boolean;
     lastAttackTime?: number;
     crafting?: CraftingState;
+    eating?: EatingState;
     cheatsEnabled?: boolean;
 };
 export const PlayerData = Component.register<PlayerData>(() => ({

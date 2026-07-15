@@ -34,6 +34,12 @@ export class Player extends GameObject {
         attributes.data.set("health.regen_amount", "base", "add", 10);
         attributes.data.set("hunger.depletion_amount", "base", "add", 10);
         attributes.data.set("hunger.max", "base", "add", 100);
+        attributes.data.set(
+            "eating.movement_speed_multiplier",
+            "base",
+            "multiply",
+            1
+        );
         // World units per tick at 20 tps.
         attributes.data.set("movement.speed", "base", "add", PLAYER_MOVE_SPEED);
         attributes.data.set(
@@ -50,7 +56,7 @@ export class Player extends GameObject {
         const health = new Health({ value: 200, max: 200, lastRegen: 0 });
 
         const stats = new Stats();
-        stats.data.set("hunger", { value: 100, min: 0, max: 100 });
+        stats.data.set("hunger", { value: 100, min: 0, max: 200 });
         stats.data.set("temperature", { value: 100, min: 0, max: 200 });
         stats.data.set("water", { value: 100, min: 0, max: 100 });
 

@@ -45,6 +45,12 @@ export class CombatFx {
         object.trigger(ANIMATION.BLOCK, AnimationManagers.World);
     };
 
+    eat = ({ id, duration }: ServerPacket.EatEvent) => {
+        const object = this.objects.get(id);
+        if (!object || !(object instanceof Player)) return;
+        object.setEating(duration);
+    };
+
     hurt = ({ id, angle }: ServerPacket.HitEvent) => {
         const object = this.objects.get(id);
         if (!object) return;
