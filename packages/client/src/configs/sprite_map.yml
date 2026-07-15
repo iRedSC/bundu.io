@@ -110,11 +110,11 @@ stone_barrier: stone_barrier.svg
 
 #Walls
 friendly_wall: friendly_wall.svg
-wood_wall: wood_wall.svg
-stone_wall: stone_wall.svg
-gold_wall: gold_wall.svg
-diamond_wall: diamond_wall.svg
-amethyst_wall: amethyst_wall.svg
+wood_wall: wood_wall.png
+stone_wall: stone_wall.png
+gold_wall: gold_wall.png
+diamond_wall: diamond_wall.png
+amethyst_wall: amethyst_wall.png
 
 #Spike
 wood_spike: wood_spike.svg
