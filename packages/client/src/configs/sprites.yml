@@ -155,6 +155,10 @@ amethyst_wall:
     type: wall
     sprite: amethyst_wall
 
+red_wall:
+    type: wall
+    sprite: red_wall
+
 # Door
 
 wood_door:
