@@ -496,6 +496,17 @@ amethyst_wall:
         - near_fire
         - near_anvil
 
+red_wall:
+    score: 120
+    duration: 7000
+    ingredients:
+        amethyst_wall: 1
+        red: 17
+        amethyst: 7
+    flags:
+        - near_crafting_table
+        - near_fire
+        - near_anvil
 #Doors
 
 wood_door:

@@ -18,6 +18,10 @@ amethyst_wall:
     class: wall
     health: 7500
 
+red_wall:
+    class: wall
+    health: 9000
+
 wood_door:
     class: door
     health: 2000
