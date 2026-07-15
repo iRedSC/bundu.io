@@ -74,6 +74,13 @@ function clearSlot(target: GameObject, data: PlayerData, slot: EquipSlot) {
     Attributes.get(target)?.clear(SLOT_ATTR_ID[slot]);
 }
 
+/** Clear mainhand when it holds `itemId` (e.g. structure stack depleted). */
+export function clearMainHandIf(target: GameObject, itemId: number) {
+    const data = PlayerData.get(target);
+    if (!data || data.mainHand !== itemId) return;
+    clearSlot(target, data, "mainHand");
+}
+
 function setSlot(
     target: GameObject,
     data: PlayerData,
@@ -121,6 +128,10 @@ export function selectEquipment(target: GameObject, itemId: number | undefined) 
             break;
         case "off_hand":
             toggleSlot(target, data, "offHand", itemId, config.attributes);
+            break;
+        case "building":
+            // Structures occupy mainhand only; offhand stays put.
+            toggleSlot(target, data, "mainHand", itemId, config.attributes);
             break;
         default:
             break;
