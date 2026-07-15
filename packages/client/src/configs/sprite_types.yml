@@ -49,6 +49,13 @@ book:
         x: 0
         y: 0.15
         scale: 0.4
+
+food:
+    hand_display:
+        rotation: -20
+        x: 0
+        y: 0.15
+        scale: 0.4
 wall:
     sprite: unknown_asset
 
