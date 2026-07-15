@@ -47,6 +47,7 @@ export type SlotDef = {
 export type AnimPreset =
     | "hurt"
     | "hit"
+    | "place"
     | "wave"
     | "tree_sway"
     | "bob"
@@ -73,6 +74,7 @@ export type BobData = {
 type AnimData = {
     hurt: undefined;
     hit: undefined;
+    place: undefined;
     wave: undefined;
     tree_sway: TreeSwayData;
     bob: BobData;
