@@ -1,4 +1,9 @@
-import { moveToward } from "@bundu/shared/transforms";
+import {
+    moveToward,
+    moveInDirection,
+    radians,
+} from "@bundu/shared/transforms";
+import { attackFacingRadians } from "@bundu/shared/attack_box";
 import {
     decodeMoveDirection,
     PLAYER_MOVE_SPEED,
@@ -36,7 +41,6 @@ import { PlaceMode } from "@bundu/shared/inventory";
 import { pointToTile, WORLD_BOUNDS, worldToDeci } from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { GroundItem } from "../game_objects/ground_item.js";
-import { moveInDirection } from "@bundu/shared/transforms";
 import { Circle, Vector } from "sat";
 
 const DROP_DISTANCE = 80;
@@ -503,7 +507,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const physics = player.get(Physics);
         const droppedAt = moveInDirection(
             physics.position,
-            (physics.rotation * Math.PI) / 180,
+            attackFacingRadians(radians(physics.rotation)),
             DROP_DISTANCE
         );
         const target = new Vector(
