@@ -470,8 +470,9 @@ export class PlayerSystem extends System<GameEventMap> {
             return;
         }
 
+        const data = PlayerData.get(player);
         if (
-            PlayerData.get(player).cheatsEnabled &&
+            (data.cheatsEnabled || SERVER_DEBUG) &&
             tryHandleDebugChatCommand(
                 player,
                 message,
