@@ -81,11 +81,14 @@ export type ResourceData = {
     items: Record<number, number>;
     decayAt: number | null;
     lastRegen: number;
+    /** Visual/physics scale multiplier; identity = 1. Copied from animals onto corpses. */
+    scale: number;
 };
 export const ResourceData = Component.register<ResourceData>(() => ({
     items: {},
     decayAt: null,
     lastRegen: 0,
+    scale: 1,
 }));
 
 /** A structure whose owner died and can be claimed or will decay. */
@@ -125,16 +128,25 @@ export type AnimalData = {
     destination?: { x: number; y: number };
     path: { x: number; y: number }[];
     state: "idle" | "wander" | "chase" | "flee";
+    /** Next idle roam session when `hasHome` (homeward vs wander). */
+    roamPhase: "home" | "wander";
     stateUntil: number;
     nextThinkAt: number;
     nextAttackAt: number;
+    /** Next periodic aggroSwitch / aggroLevel check. */
+    nextAggroCheckAt: number;
+    /** While gameTime is below this, the animal will not acquire a target. */
+    lostAggroUntil: number;
 };
 export const AnimalData = Component.register<AnimalData>(() => ({
     type: 0,
     home: { x: 0, y: 0 },
     path: [],
     state: "idle",
+    roamPhase: "home",
     stateUntil: 0,
     nextThinkAt: 0,
     nextAttackAt: 0,
+    nextAggroCheckAt: 0,
+    lostAggroUntil: 0,
 }));

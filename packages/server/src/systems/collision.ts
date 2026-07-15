@@ -1,17 +1,15 @@
-import {
-    FOOTPRINT_CIRCLE_RADIUS,
-    tileCenterWorld,
-} from "@bundu/shared/tiles";
-import { CalculateCollisions, Physics, TileEntity } from "../components/base.js";
+import { TILE_SIZE } from "@bundu/shared/tiles";
+import { AnimalData, CalculateCollisions, Physics, TileEntity } from "../components/base.js";
 import { System, GameObject, type World } from "../engine";
-import { tilesOverlappingCircle } from "./position.js";
-import { Circle, Response, testCircleCircle, Vector } from "sat";
+import { getSizedBounds, tilesOverlappingCircle } from "./position.js";
+import { Box, Response, testCirclePolygon, Vector } from "sat";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
-const MAX_COLLISION_TRIES = 3;
+const MAX_COLLISION_TRIES = 5;
 
 /**
- * After Move applies intent, push movers out of occupied footprint circles,
+ * After Move applies intent, push movers out of occupied footprint tiles
+ * (solid tile AABBs — seals diagonal gaps that inscribed circles leave),
  * then emit Collide once.
  */
 export class CollisionSystem extends System<GameEventMap> {
@@ -23,18 +21,19 @@ export class CollisionSystem extends System<GameEventMap> {
 
     afterMove({ object }: GameEvent.Move) {
         this.resolve(object, 0);
+        this.separateAnimals(object);
         this.trigger(GameEvent.Collide, { object });
     }
 
     private resolve(target: GameObject, tries: number) {
         const physics = target.get(Physics);
         const { occupancy } = this.world.context;
-        const reach = physics.collisionRadius + FOOTPRINT_CIRCLE_RADIUS;
+        const reach = physics.collisionRadius + TILE_SIZE;
         const bounds = tilesOverlappingCircle(physics.position, reach);
 
         const response = new Response();
-        const center = new Vector();
-        const tileCircle = new Circle(center, FOOTPRINT_CIRCLE_RADIUS);
+        const corner = new Vector();
+        const tileBox = new Box(corner, TILE_SIZE, TILE_SIZE);
         let hit = false;
 
         for (let tx = bounds.minX; tx <= bounds.maxX; tx++) {
@@ -45,9 +44,10 @@ export class CollisionSystem extends System<GameEventMap> {
                 const other = this.world.getObject(entityId);
                 if (!other || !TileEntity.get(other)) continue;
 
-                center.x = tileCenterWorld(tx);
-                center.y = tileCenterWorld(ty);
-                if (testCircleCircle(physics.collider, tileCircle, response)) {
+                corner.x = tx * TILE_SIZE;
+                corner.y = ty * TILE_SIZE;
+                response.clear();
+                if (testCirclePolygon(physics.collider, tileBox.toPolygon(), response)) {
                     hit = true;
                     physics.position.sub(response.overlapV);
                 }
@@ -56,6 +56,37 @@ export class CollisionSystem extends System<GameEventMap> {
 
         if (hit && tries < MAX_COLLISION_TRIES) {
             this.resolve(target, tries + 1);
+        }
+    }
+
+    /** Soft push so animals don't stack on the same spot. */
+    private separateAnimals(target: GameObject) {
+        if (!AnimalData.get(target)) return;
+        const physics = target.get(Physics);
+        const pad = physics.collisionRadius * 2;
+        const others = this.world.query(
+            [AnimalData, Physics],
+            this.world.context.quadtree.query(
+                getSizedBounds(physics.position, pad, pad)
+            )
+        );
+
+        for (const other of others) {
+            if (other.id === target.id) continue;
+            const otherPhys = other.get(Physics);
+            const dx = physics.position.x - otherPhys.position.x;
+            const dy = physics.position.y - otherPhys.position.y;
+            const dist = Math.hypot(dx, dy);
+            const minDist = physics.collisionRadius + otherPhys.collisionRadius;
+            if (dist >= minDist) continue;
+
+            if (dist < 1e-6) {
+                physics.position.x += minDist * 0.5;
+                continue;
+            }
+            const push = (minDist - dist) * 0.5;
+            physics.position.x += (dx / dist) * push;
+            physics.position.y += (dy / dist) * push;
         }
     }
 }

@@ -17,7 +17,7 @@ import {
     EntityStateStore,
     VisualStateController,
 } from "../../visual/state";
-import { structureDef, tileEntityDefs } from "../../visual/defs";
+import { animalDef, structureDef, tileEntityDefs } from "../../visual/defs";
 import type {
     AnimContext,
     ObjectDef,
@@ -295,6 +295,23 @@ export class Structure extends GameObject {
 
     refreshSpriteConfig() {
         if (!this.usesSpriteConfig) return;
+        const livingId = this.type.endsWith("_dead")
+            ? this.type.slice(0, -"_dead".length)
+            : undefined;
+        // Corpses must match living animals: unit-normalized sprite + ContaineredSprite.scale
+        // (same as assemble), not world_display normalize which drifts from that pipeline.
+        if (livingId) {
+            try {
+                const body = animalDef(livingId).parts.find((p) => p.name === "body");
+                const spriteScale = body?.spriteScale ?? 1;
+                SpriteFactory.update(this.sprite, { scale: 1 }, this.type);
+                this.sprite.scale.set(spriteScale);
+                this.sprite.renderable = true;
+                return;
+            } catch {
+                /* not a known animal — use sprite config below */
+            }
+        }
         const config = spriteConfigs.get(this.type);
         SpriteFactory.update(this.sprite, config?.world_display, this.type);
         this.sprite.renderable = true;

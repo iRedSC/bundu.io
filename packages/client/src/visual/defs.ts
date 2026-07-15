@@ -1,4 +1,14 @@
+import alligator from "./defs/actors/alligator.yml";
+import animal from "./defs/actors/animal.yml";
+import bear from "./defs/actors/bear.yml";
+import bee from "./defs/actors/bee.yml";
+import deer from "./defs/actors/deer.yml";
+import elephant from "./defs/actors/elephant.yml";
+import komodoDragon from "./defs/actors/komodo_dragon.yml";
 import player from "./defs/actors/player.yml";
+import queenBee from "./defs/actors/queen_bee.yml";
+import raindeer from "./defs/actors/raindeer.yml";
+import ram from "./defs/actors/ram.yml";
 import rottable from "./defs/base/rottable.yml";
 import singleTileNode from "./defs/base/single_tile_node.yml";
 import amethystDoor from "./defs/doors/amethyst_door.yml";
@@ -19,12 +29,22 @@ import type {
 } from "./types";
 
 const bundledDefs: Record<string, unknown> = {
+    alligator,
+    animal,
     amethyst_door: amethystDoor,
+    bear,
+    bee,
+    deer,
     diamond_door: diamondDoor,
     door,
+    elephant,
     gold_door: goldDoor,
+    komodo_dragon: komodoDragon,
     player,
     point_generator: pointGenerator,
+    queen_bee: queenBee,
+    raindeer,
+    ram,
     rottable,
     single_tile_node: singleTileNode,
     stone_door: stoneDoor,
@@ -65,6 +85,10 @@ export let singleTileNodeDef = tileDef(visualDefs, "single_tile_node") as Textur
 export let pointGeneratorDef = tileDef(visualDefs, "point_generator") as TextureTileEntityDef;
 export let treeDef = tileDef(visualDefs, "forest_tree") as StructuredTileEntityDef;
 export let tileEntityDefs = concreteTileDefs(visualDefs);
+
+export function animalDef(id: string): ObjectDef {
+    return objectDef(visualDefs, id);
+}
 
 /** Compile the complete registry before publishing any hot-reloaded definitions. */
 export function replaceVisualDefs(raw: VisualDefs) {

@@ -15,12 +15,19 @@ export namespace GameObjectData {
         helmet: nullish<number>,
         backpack: boolean,
         playerSkin: nullish<number>,
-        collisionRadius: number
+        collisionRadius: number,
+        /** `physics.scale` multiplier; identity = 1. */
+        scale: number
     ];
 
     export const ResourceNodeType = 0x01;
-    /** Tile entity: type id only — footprint/collision come from shared tile rules. */
-    export type ResourceNodeData = [type: number, variant?: number];
+    /** Free-floating or tile resource. Optional radius/scale override footprint defaults. */
+    export type ResourceNodeData = [
+        type: number,
+        variant?: number,
+        collisionRadius?: number,
+        scale?: number
+    ];
 
     export const StructureType = 0x02;
     export type StructureData = [
@@ -36,7 +43,14 @@ export namespace GameObjectData {
 
     /** Autonomous living actor. Rotation is derived by clients from movement. */
     export const AnimalType = 0x04;
-    export type AnimalData = [type: number, collisionRadius: number, health: number, maxHealth: number];
+    export type AnimalData = [
+        type: number,
+        collisionRadius: number,
+        health: number,
+        maxHealth: number,
+        /** `physics.scale` multiplier; identity = 1. */
+        scale: number
+    ];
 
     /** Maps LoadObject.type → typed payload tuple. */
     export type ByType = {

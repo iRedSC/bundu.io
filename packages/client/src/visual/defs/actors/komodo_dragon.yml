@@ -1,0 +1,9 @@
+id: komodo_dragon
+extends: animal
+parts:
+  - name: body
+    sprite: komodo_dragon
+    spriteScale: 3.125
+animations:
+  idle:
+    data: { amplitude: 0.01 }

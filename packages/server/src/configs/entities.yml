@@ -1,4 +1,10 @@
 # hostile attacks on sight; neutral retaliates; passive flees when hit; scared flees on sight.
+# `scale` is size in tiles: 1 → diameter = 1 tile (radius 50) and client visual root = TILE_SIZE. Default 1.
+# `hasHome`: idle roam alternates homeward + wander sessions when true.
+# `structure_attack_reach`: extra range past collisionRadius when smashing blocking structures (default 66).
+# aggroSwitch: never | onHit | random — how aggro retargets when other players interact.
+# aggroLevel: high | medium | low — how locked-on the animal stays (see animals loader).
+# aggroAt: list of structure type ids (e.g. wood_wall) to attack when no player target is available.
 
 elephant:
     health: 2500
@@ -8,7 +14,10 @@ elephant:
     passiveSpeed: 5
     activeSpeed: 10
     attack_damage: 90
-    collision_radius: 200
+    scale: 4
+    hasHome: true
+    aggroSwitch: onHit
+    aggroLevel: high
     corpse: elephant_dead
     spawn_count: 2
 
@@ -21,9 +30,14 @@ bear:
     passiveSpeed: 7
     activeSpeed: 11
     attack_damage: 35
-    collision_radius: 40
+    scale: 0.8
+    hasHome: true
+    aggroSwitch: onHit
+    aggroLevel: medium
     corpse: bear_dead
     spawn_count: 4
+    aggroAt:
+        - wood_wall
 
 ram:
     health: 500
@@ -34,32 +48,33 @@ ram:
     passiveSpeed: 10
     activeSpeed: 13
     attack_damage: 45
-    collision_radius: 40
+    scale: 0.8
+    aggroSwitch: onHit
+    aggroLevel: medium
     corpse: ram_dead
     spawn_count: 4
 
 deer:
     health: 100
     score: 250
-    behavior: passive
+    behavior: scared
     detectionRange: 300
-    loseSightRange: 450
+    loseSightRange: 700
     passiveSpeed: 11
     activeSpeed: 14
-    collision_radius: 30
+    scale: 0.6
     corpse: deer_dead
     spawn_count: 8
-
 
 raindeer:
     health: 175
     score: 500
-    behavior: passive
+    behavior: scared
     detectionRange: 300
-    loseSightRange: 450
+    loseSightRange: 700
     passiveSpeed: 11
     activeSpeed: 14
-    collision_radius: 30
+    scale: 0.6
     corpse: raindeer_dead
 
 komodo_dragon:
@@ -67,11 +82,13 @@ komodo_dragon:
     score: 2000
     behavior: hostile
     detectionRange: 300
-    loseSightRange: 450
+    loseSightRange: 700
     passiveSpeed: 9
     activeSpeed: 11
     attack_damage: 65
-    collision_radius: 40
+    scale: 0.8
+    aggroSwitch: random
+    aggroLevel: low
     corpse: komodo_dragon_dead
     spawn_count: 3
 
@@ -84,20 +101,27 @@ alligator:
     passiveSpeed: 8
     activeSpeed: 11
     attack_damage: 45
-    collision_radius: 40
+    scale: 0.8
+    aggroSwitch: onHit
+    aggroLevel: high
     corpse: alligator_dead
     spawn_count: 3
+    aggroAt:
+        - wood_wall
 
 bee:
     health: 200
     score: 200
     behavior: hostile
     detectionRange: 300
-    loseSightRange: 450
+    loseSightRange: 300
     passiveSpeed: 14
     activeSpeed: 17
     attack_damage: 15
-    collision_radius: 20
+    scale: 0.4
+    hasHome: true
+    aggroSwitch: random
+    aggroLevel: low
     corpse: bee_dead
     spawn_count: 8
 
@@ -110,6 +134,9 @@ queen_bee:
     passiveSpeed: 10
     activeSpeed: 10
     attack_damage: 60
-    collision_radius: 80
+    scale: 1.6
+    hasHome: true
+    aggroSwitch: onHit
+    aggroLevel: high
     corpse: queen_bee_dead
     spawn_count: 1

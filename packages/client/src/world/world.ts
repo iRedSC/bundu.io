@@ -183,6 +183,7 @@ export class World {
             backpack,
             playerSkin,
             collisionRadius,
+            scale,
         ] = packet.data;
         const id = packet.id;
         this.renderer.delete(id);
@@ -197,6 +198,7 @@ export class World {
             pos,
             radians(packet.rotation),
             collisionRadius,
+            scale,
             getVariantName(playerSkin ?? undefined)
         );
 
@@ -210,27 +212,45 @@ export class World {
     };
 
     newStructure = (packet: LoadResource) => {
-        const [nodeType, variantId, health, maxHealth, initialStates] = packet.data;
+        const isResource = packet.type === GameObjectData.ResourceNodeType;
+        const [nodeType, variantId, a, b, c] = packet.data;
         this.renderer.delete(packet.id);
 
         const pendingStates = this.pendingObjectStates.get(packet.id);
         this.pendingObjectStates.delete(packet.id);
-        const states = pendingStates
-            ? { ...initialStates, ...pendingStates }
-            : initialStates;
+
+        let collisionRadius = FOOTPRINT_CIRCLE_RADIUS;
+        let visualScale = TILE_SIZE;
+        let health: number | undefined;
+        let maxHealth: number | undefined;
+        let states: EntityStateSnapshot | undefined;
+
+        if (isResource) {
+            const radius = a;
+            const scale = b;
+            if (typeof radius === "number") collisionRadius = radius;
+            if (typeof scale === "number") visualScale = TILE_SIZE * scale;
+        } else {
+            health = a as number | undefined;
+            maxHealth = b as number | undefined;
+            const initialStates = c as EntityStateSnapshot | undefined;
+            states = pendingStates
+                ? { ...initialStates, ...pendingStates }
+                : initialStates;
+        }
 
         const structure = new Structure(
             packet.id,
             getStringId(nodeType),
             deciPoint(packet.x, packet.y),
             packet.rotation,
-            FOOTPRINT_CIRCLE_RADIUS,
+            collisionRadius,
             AnimationManagers.World,
-            TILE_SIZE,
+            visualScale,
             getVariantName(variantId),
             health,
             maxHealth,
-            states
+            states ?? {}
         );
         structure.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(structure);
@@ -320,8 +340,14 @@ export class World {
 
     newAnimal = (packet: LoadAnimal) => {
         this.renderer.delete(packet.id);
-        const [type, collisionRadius] = packet.data;
-        const animal = new Animal(packet.id, type, deciPoint(packet.x, packet.y), collisionRadius);
+        const [type, collisionRadius, , , scale] = packet.data;
+        const animal = new Animal(
+            packet.id,
+            type,
+            deciPoint(packet.x, packet.y),
+            collisionRadius,
+            scale
+        );
         this.objects.add(animal);
         this.renderer.add(animal.id, ...animal.containers);
     };

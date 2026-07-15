@@ -10,7 +10,7 @@ import { getVariantId } from "@bundu/shared/variant_map.js";
  * A harvestable tile entity (resource node).
  */
 export class Resource extends GameObject {
-    constructor(physics: Physics, type: Type, tile?: TileEntity) {
+    constructor(physics: Physics, type: Type, tile?: TileEntity, scale = 1) {
         super();
 
         const config = ResourceConfigs.get(type.id);
@@ -19,6 +19,7 @@ export class Resource extends GameObject {
                 items: structuredClone(config.items),
                 decayAt: config.decay,
                 lastRegen: 0,
+                scale,
             })
         )
             .add(new Physics(physics))
@@ -29,6 +30,7 @@ export class Resource extends GameObject {
     public override getNewObjectPacket(): ServerPacket.LoadObject | void {
         const physics = this.get(Physics);
         const type = this.get(Type);
+        const scale = this.get(ResourceData).scale;
         const pos = deciPacketPos(physics);
 
         return {
@@ -37,7 +39,7 @@ export class Resource extends GameObject {
             y: pos.y,
             rotation: physics.rotation,
             type: GameObjectData.ResourceNodeType,
-            data: [type.id, getVariantId(type.variant)],
+            data: [type.id, getVariantId(type.variant), physics.collisionRadius, scale],
         };
     }
 }

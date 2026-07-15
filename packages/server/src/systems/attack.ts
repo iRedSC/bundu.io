@@ -5,7 +5,7 @@ import {
     radians,
     type BasicPoint,
 } from "@bundu/shared";
-import { Door, Physics, Rotting } from "../components/base.js";
+import { AnimalData, Door, Physics, Rotting } from "../components/base.js";
 import { type GameObject, System, type World } from "../engine";
 import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import SAT from "sat";
@@ -89,6 +89,15 @@ export class AttackSystem extends System<GameEventMap> {
             length,
             width
         );
+
+        // Sync animal facing so the client can aim the attack anim (animals
+        // otherwise only derive facing from movement).
+        if (AnimalData.get(source)) {
+            this.world.context.worldPacketManager.set(ServerPacket.SetRotation, {
+                id: source.id,
+                rotation: physics.rotation,
+            });
+        }
 
         this.world.context.worldPacketManager.emit(ServerPacket.AttackEvent, {
             id: source.id,

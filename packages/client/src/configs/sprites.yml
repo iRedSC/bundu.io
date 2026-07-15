@@ -292,3 +292,50 @@ stone_barrier:
     type: none
     world_display:
         scale: 1.7
+
+# Animal corpses — sized like living animals via ObjectDef spriteScale (see Structure.refreshSpriteConfig).
+# world_display.scale is unused for *_dead; kept as documentation of the living art scale.
+bear_dead:
+    type: none
+    world_display:
+        scale: 1
+
+deer_dead:
+    type: none
+    world_display:
+        scale: 1
+
+ram_dead:
+    type: none
+    world_display:
+        scale: 1
+
+elephant_dead:
+    type: none
+    world_display:
+        scale: 1
+
+alligator_dead:
+    type: none
+    world_display:
+        scale: 1
+
+komodo_dragon_dead:
+    type: none
+    world_display:
+        scale: 1
+
+bee_dead:
+    type: none
+    world_display:
+        scale: 1
+
+queen_bee_dead:
+    type: none
+    world_display:
+        scale: 1
+
+raindeer_dead:
+    type: none
+    world_display:
+        scale: 1

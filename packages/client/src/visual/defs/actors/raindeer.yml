@@ -1,0 +1,6 @@
+id: raindeer
+extends: animal
+parts:
+  - name: body
+    sprite: raindeer
+    spriteScale: 3.335

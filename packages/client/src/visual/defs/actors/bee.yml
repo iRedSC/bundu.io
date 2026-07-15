@@ -1,0 +1,9 @@
+id: bee
+extends: animal
+parts:
+  - name: body
+    sprite: bee
+    spriteScale: 2.5
+animations:
+  idle:
+    data: { amplitude: 0.02 }
