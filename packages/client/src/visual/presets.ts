@@ -1,6 +1,7 @@
 import type { Animation } from "../animation/runtime";
 import { attack } from "./animations/attack";
 import { block } from "./animations/block";
+import { eat } from "./animations/eat";
 import { bob } from "./animations/bob";
 import { hit, hitRotation } from "./animations/hit";
 import { hurt } from "./animations/hurt";
@@ -38,6 +39,8 @@ export function createPreset(
             return attack(nodes, ctx);
         case "block":
             return block(nodes, ctx);
+        case "eat":
+            return eat(nodes, ctx);
         case "rotting":
             return rotting(nodes, ctx);
         default:

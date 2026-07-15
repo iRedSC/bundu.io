@@ -11,6 +11,7 @@ export const ANIMATION = {
     IDLE_HANDS: "idle_hands",
     ATTACK: "attack",
     BLOCK: "block",
+    EAT: "eat",
 } as const;
 
 /** Ease-out cubic — fast start, soft landing. */

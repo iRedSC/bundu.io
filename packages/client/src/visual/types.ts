@@ -53,6 +53,7 @@ export type AnimPreset =
     | "lunge"
     | "attack"
     | "block"
+    | "eat"
     | "rotting";
 
 export type TreeSwayData = {
@@ -79,6 +80,7 @@ type AnimData = {
     lunge: undefined;
     attack: undefined;
     block: undefined;
+    eat: undefined;
     rotting: undefined;
 };
 
@@ -189,6 +191,7 @@ export type AnimContext = {
     blocking: boolean;
     mainhand: string;
     offhand: string;
+    eatingDuration?: number;
     /** Optional particle emit for ambient presets (rotting crumble). */
     emitParticles?: (burst: ParticleBurst) => void;
     particleAnchor?: () => {
