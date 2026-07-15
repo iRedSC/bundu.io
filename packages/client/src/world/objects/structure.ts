@@ -195,6 +195,7 @@ export class Structure extends GameObject {
             ) <= Math.max(this.collisionRadius, TILE_SIZE / 2);
         if (hovered && !this.hovered) this.showHealthBar(time);
         if (!hovered && this.hovered && time >= this.healthBarShownUntil) {
+            // Hover-only: drop immediately. Hit hold still active: keep showing.
             this.hideHealthBar(time);
         }
         this.hovered = hovered;

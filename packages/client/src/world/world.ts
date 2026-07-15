@@ -277,14 +277,16 @@ export class World {
 
     updateObjectHealth = (
         packet: ServerPacket.UpdateObjectHealth,
-        serverTimestamp: number
+        _serverTimestamp: number
     ) => {
         const object = this.objects.get(packet.id);
         if (object instanceof Structure) {
+            // Hold duration must use receive time — fromServer(sendTime) can
+            // already be past `now`, so the bar would hide on the next tick.
             object.setHealth(
                 packet.health,
                 packet.maxHealth,
-                clientTime.fromServer(serverTimestamp)
+                clientTime.now()
             );
         }
     };
@@ -304,26 +306,27 @@ export class World {
         });
     };
 
-    moveObject = (packet: ServerPacket.SetPosition, serverTimestamp: number) => {
+    moveObject = (packet: ServerPacket.SetPosition, _serverTimestamp: number) => {
         const object = this.objects.get(packet.id);
         if (!object) return;
         object.renderable = true;
-        object.addPosition(
-            { x: deciToWorld(packet.x), y: deciToWorld(packet.y) },
-            clientTime.fromServer(serverTimestamp)
-        );
+        // Receive-time segment start — send-time makes t≈1 on arrival (choppy).
+        object.addPosition({
+            x: deciToWorld(packet.x),
+            y: deciToWorld(packet.y),
+        });
         this.objects.updating.add(object);
         this.objects.add(object);
     };
 
-    rotateObject = (packet: ServerPacket.SetRotation, serverTimestamp: number) => {
+    rotateObject = (
+        packet: ServerPacket.SetRotation,
+        _serverTimestamp: number
+    ) => {
         if (packet.id === this.user) return;
         const object = this.objects.get(packet.id);
         if (!object) return;
-        object.addRotation(
-            radians(packet.rotation),
-            clientTime.fromServer(serverTimestamp)
-        );
+        object.addRotation(radians(packet.rotation));
         this.objects.updating.add(object);
     };
 
