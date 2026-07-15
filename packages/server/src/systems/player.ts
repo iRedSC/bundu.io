@@ -23,6 +23,7 @@ import { Attributes } from "../components/attributes.js";
 import { Stats } from "../components/stats.js";
 import { emitVitals } from "../network/vitals.js";
 import {
+    clearMainHandIf,
     clearMissingEquipment,
     emitEquipment,
     emitInventory,
@@ -344,6 +345,10 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         const data = player.get(PlayerData);
         if (data.crafting || data.eating) return;
+        if (data.selectedStructure.id !== -1) {
+            data.attacking = false;
+            return;
+        }
 
         data.attacking = !stop;
         if (data.lastAttackTime === undefined) {
@@ -550,15 +555,26 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = player.get(PlayerData);
         const inv = player.get(Inventory);
         const id = inv.slots[inv.selected]?.id;
-        const structureId =
-            id !== undefined && ItemConfigs.get(id).function === "building"
-                ? id
-                : -1;
+        const heldBuilding =
+            id !== undefined &&
+            ItemConfigs.get(id).function === "building" &&
+            data.mainHand === id;
+        const structureId = heldBuilding ? id : -1;
+
+        if (
+            structureId === -1 &&
+            data.mainHand !== undefined &&
+            ItemConfigs.get(data.mainHand).function === "building"
+        ) {
+            clearMainHandIf(player, data.mainHand);
+        }
         if (data.selectedStructure.id === structureId) return;
 
         data.selectedStructure.id = structureId;
         if (structureId !== -1) {
             data.selectedStructure.cursor = pointToTile(player.get(Physics).position);
+        } else {
+            data.attacking = false;
         }
         this.world.context.playerPacketManager.set(
             player.id,

@@ -13,7 +13,7 @@ import {
     structurePlacementDef,
     tileCenterWorld,
 } from "@bundu/shared";
-import { AnimationManagers } from "../animation/animations";
+import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { Point, Text } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
@@ -36,6 +36,7 @@ import { ParticleSystem } from "@client/rendering/particles/particle_system";
 import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
 import { clientTime } from "@client/globals";
+import { structurePlace } from "../visual/particles/structure_place";
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -79,6 +80,8 @@ export class World {
     private placementGhostAllowed?: boolean;
     private cursorWorld?: { x: number; y: number };
     private readonly pendingObjectStates = new Map<number, EntityStateSnapshot>();
+    /** Fired when server reports placement validity for the current ghost. */
+    onPlacementValidity?: (allowed: boolean) => void;
 
     constructor(viewport: Viewport) {
         this.viewport = viewport;
@@ -263,6 +266,14 @@ export class World {
         structure.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
+        structure.trigger(ANIMATION.PLACE, AnimationManagers.World, true);
+        this.particles.burst(
+            structurePlace(
+                structure.sprite.sprite.texture,
+                structure.position.x,
+                structure.position.y
+            )
+        );
     };
 
     updateObjectHealth = (
@@ -402,8 +413,7 @@ export class World {
     };
 
     placeStructureResult = (packet: ServerPacket.PlaceStructureResult) => {
-        if (!this.placementGhost) return;
-        if (this.placementGhostAllowed !== packet.allowed) {
+        if (this.placementGhost) {
             this.placementGhost.setGhostAppearance(
                 0.5,
                 packet.allowed
@@ -415,7 +425,14 @@ export class World {
             }
             this.placementGhostAllowed = packet.allowed;
         }
+
+        this.onPlacementValidity?.(packet.allowed);
     };
+
+    /** Whether the ghost's last server result allows placement. */
+    isPlacementAllowed(): boolean | undefined {
+        return this.placementGhostAllowed;
+    }
 
     refreshPlacementGhost() {
         this.placementGhostType = 0;

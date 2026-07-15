@@ -1,4 +1,4 @@
-import { degrees, moveToward } from "@bundu/shared/transforms.js";
+import { attackFacingRadians, degrees, moveToward, radians } from "@bundu/shared";
 import {
     worldToTile,
     tileCenterWorld,
@@ -496,13 +496,15 @@ export class AnimalSystem extends System<GameEventMap> {
         if (typeof corpseId !== "number") return;
         const position = new Vector(physics.position.x, physics.position.y);
         const baseRadius = TILE_SIZE / 2;
+        // Living animals render in movement-facing space (0° = east); physics.rotation
+        // uses the attack/player convention (0° = up). Convert so the corpse matches.
         this.world.addObject(
             new Resource(
                 {
                     position,
                     collider: new Circle(position, baseRadius),
                     collisionRadius: baseRadius,
-                    rotation: physics.rotation,
+                    rotation: degrees(attackFacingRadians(radians(physics.rotation))),
                     speed: 0,
                 },
                 { id: corpseId, variant: "base" },

@@ -132,8 +132,10 @@ async function main() {
         isInGame: () => session.isInGame(),
         getPlaceStructureId: () => debug.getPlaceStructureId(),
         isOverInventory: () => gui.inventory.isInteracting,
+        isPlacementAllowed: () => world.isPlacementAllowed(),
     });
     input.onToggleLeaderboard = () => gui.leaderboard.toggle();
+    world.onPlacementValidity = (allowed) => input.onPlacementValidity(allowed);
 
     gui.inventory.isLocked = () => {
         const local = world.objects.get(world.user ?? -1);
@@ -183,6 +185,7 @@ async function main() {
 
     const tick = (ticker: { deltaMS: number }) => {
         const now = clientTime.now();
+        input.update();
         world.tick(Math.min(ticker.deltaMS, 50), now);
         AnimationManagers.UI.update(now);
         gui.tick(now);
