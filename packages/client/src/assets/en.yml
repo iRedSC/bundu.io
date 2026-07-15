@@ -208,6 +208,10 @@ item:
         name: Amethyst Wall
         desc: A wall made of amethyst.
 
+    red_wall:
+        name: Red Wall
+        desc: A wall made of red.
+
     # Spike
     wood_spike:
         name: Wooden Spike

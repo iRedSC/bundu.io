@@ -75,6 +75,7 @@ stone: 53
 gold: 54
 diamond: 55
 amethyst: 56
+red: 170
 
 # * PLACEABLE
 
@@ -85,6 +86,7 @@ stone_wall: 59
 gold_wall: 60
 diamond_wall: 61
 amethyst_wall: 62
+red_wall: 169
 
 # Spike
 wood_spike: 63
