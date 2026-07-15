@@ -5,6 +5,7 @@
     "workspaces": ["packages/*"],
     "devDependencies": {
         "@biomejs/biome": "2.5.3",
+        "@msgpack/msgpack": "^3.1.3",
         "@types/bun": "^1.3.14",
         "@types/sat": "^0.0.35"
     },
@@ -22,6 +23,7 @@
         "client": "bun run build && bun run serve-frontend",
         "typecheck": "tsc --noEmit && bun run --cwd packages/figma-plugin typecheck",
         "lint": "biome lint .",
-        "test": "bun test"
+        "test": "bun test",
+        "test:integration": "bun run scripts/ci/websocket-smoke.ts"
     }
 }
