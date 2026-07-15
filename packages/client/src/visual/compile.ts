@@ -21,6 +21,7 @@ type RawDef = Record<string, unknown>;
 const ANIM_PRESETS = new Set<AnimPreset>([
     "hurt",
     "hit",
+    "place",
     "wave",
     "tree_sway",
     "bob",

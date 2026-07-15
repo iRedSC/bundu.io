@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM oven/bun:1.3.0 AS deps
+FROM oven/bun:1.3.14 AS deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
@@ -11,7 +11,7 @@ COPY packages/shared/package.json ./packages/shared/
 
 RUN bun install --frozen-lockfile
 
-FROM oven/bun:1.3.0-slim AS runtime
+FROM oven/bun:1.3.14-slim AS runtime
 WORKDIR /app
 
 ENV WS_PORT=7777

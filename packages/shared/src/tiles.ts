@@ -91,3 +91,30 @@ export function pointToTile(pos: BasicPoint): TilePos {
 
 /** Single-tile footprint at local origin — default for props/resources. */
 export const SINGLE_TILE: readonly TilePos[] = [{ x: 0, y: 0 }];
+
+/** Inclusive Bresenham tiles from `a` to `b` (including both ends). */
+export function tilesOnLine(a: TilePos, b: TilePos): TilePos[] {
+    const tiles: TilePos[] = [];
+    let x = a.x;
+    let y = a.y;
+    const dx = Math.abs(b.x - a.x);
+    const dy = Math.abs(b.y - a.y);
+    const sx = a.x < b.x ? 1 : -1;
+    const sy = a.y < b.y ? 1 : -1;
+    let err = dx - dy;
+
+    for (;;) {
+        tiles.push({ x, y });
+        if (x === b.x && y === b.y) break;
+        const e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y += sy;
+        }
+    }
+    return tiles;
+}
