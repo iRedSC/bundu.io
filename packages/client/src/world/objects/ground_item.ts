@@ -1,11 +1,30 @@
-import { lerp, radians } from "@bundu/shared/transforms";
 import { getStringId } from "@bundu/shared/id_map";
-import type { Point } from "pixi.js";
+import { lerp, radians } from "@bundu/shared/transforms";
+import type { Container, Point } from "pixi.js";
 import { SpriteFactory } from "@client/assets/sprite_factory";
+import { AnimationManagers } from "../../animation/animations";
+import { Animation } from "../../animation/runtime";
 import GameObject from "../game_object";
 
-const ITEM_SIZE = 36;
+const ITEM_SIZE = 54;
 const POP_LERP = 0.16;
+const WIGGLE = "wiggle";
+const WIGGLE_TILT = radians(10);
+const WIGGLE_MS = 2_400;
+
+/** Slow looping tilt on the item sprite (container keeps drop facing). */
+function itemWiggle(sprite: Container) {
+    const animation = new Animation();
+    animation.keyframes[0] = (a) => {
+        if (a.isFirstKeyframe) a.goto(0, WIGGLE_MS);
+        sprite.rotation = Math.sin(a.t * Math.PI * 2) * WIGGLE_TILT;
+        if (a.keyframeEnded) a.goto(0, WIGGLE_MS);
+    };
+    animation.cleanup = () => {
+        sprite.rotation = 0;
+    };
+    return animation;
+}
 
 /** A rendered item stack. Drops briefly travel from their thrower to the ground. */
 export class GroundItem extends GameObject {
@@ -19,6 +38,9 @@ export class GroundItem extends GameObject {
         sprite.anchor.set(0.5);
         this.container.addChild(sprite);
         this.container.zIndex = 2;
+
+        this.animations.set(WIGGLE, itemWiggle(sprite));
+        this.trigger(WIGGLE, AnimationManagers.World);
     }
 
     popFrom(origin: Point, target: Point) {
@@ -45,5 +67,10 @@ export class GroundItem extends GameObject {
         this.container.scale.set(1);
         this.target = undefined;
         return true;
+    }
+
+    override dispose(): void {
+        AnimationManagers.World.remove(this);
+        super.dispose();
     }
 }
