@@ -37,7 +37,7 @@ export class Player extends GameObject {
         attributes.data.set(
             "eating.movement_speed_multiplier",
             "base",
-            "multiply",
+            "add",
             1
         );
         // World units per tick at 20 tps.

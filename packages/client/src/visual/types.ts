@@ -189,6 +189,7 @@ export type PartNode = {
 /** Mutable state presets like attack/block read each frame. */
 export type AnimContext = {
     blocking: boolean;
+    eating: boolean;
     mainhand: string;
     offhand: string;
     eatingDuration?: number;
@@ -207,6 +208,7 @@ export type Rotatable = { rotationStates: RotationStates, rotation: number };
 
 export const EMPTY_ANIM_CONTEXT: AnimContext = {
     blocking: false,
+    eating: false,
     mainhand: "",
     offhand: "",
 };

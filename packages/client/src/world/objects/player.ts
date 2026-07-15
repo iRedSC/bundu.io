@@ -15,6 +15,7 @@ import { bindAnimations } from "../../visual/bind";
 import { playerDef } from "../../visual/defs";
 import type { AnimContext, PartNode, SlotDef } from "../../visual/types";
 import { clientTime } from "@client/globals";
+import type { ParticleBurst } from "../../rendering/particles/types";
 
 type nullish = undefined | null;
 
@@ -47,7 +48,10 @@ export class Player extends GameObject implements AnimContext {
     helmet = "";
     backpack?: boolean;
     blocking = false;
+    eating = false;
     eatingDuration?: number;
+    emitParticles?: AnimContext["emitParticles"];
+    particleAnchor?: AnimContext["particleAnchor"];
 
     private craftDuration = 0;
     private craftEndsAt = 0;
@@ -291,12 +295,27 @@ export class Player extends GameObject implements AnimContext {
 
     setEating(duration: number) {
         if (duration <= 0) {
+            this.eating = false;
             this.eatingDuration = undefined;
-            this.animationManager.remove(this, "eat");
             return;
         }
+        this.eating = true;
         this.eatingDuration = duration;
         this.trigger("eat", this.animationManager, true);
+    }
+
+    enableParticles(emit: (burst: ParticleBurst) => void): void {
+        this.emitParticles = emit;
+        this.particleAnchor = () => {
+            const hand = this.parts.get("rightHand");
+            if (!hand) throw new Error("Player visual is missing the right hand");
+            return {
+                texture: hand.attach?.sprite.texture ?? hand.visual.sprite.texture,
+                x: this.position.x,
+                y: this.position.y - this.collisionRadius * 0.5,
+                radius: this.collisionRadius,
+            };
+        };
     }
 
     override dispose(): void {
