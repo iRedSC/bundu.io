@@ -24,7 +24,6 @@ COPY --from=deps /app/packages/shared/package.json ./packages/shared/
 
 COPY packages/server ./packages/server
 COPY packages/shared ./packages/shared
-COPY --from=deps /app/packages/server/node_modules ./packages/server/node_modules
 COPY tsconfig.json ./
 
 EXPOSE 7777
