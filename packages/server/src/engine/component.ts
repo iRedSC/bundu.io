@@ -1,4 +1,4 @@
-import { GameObject } from "./game_object.js";
+import type { GameObject } from "./game_object.js";
 
 let NEXT_COMPONENT_ID = 1;
 
@@ -41,10 +41,12 @@ export abstract class Component<D> {
             }
 
             static get(object: GameObject): C {
-                return object.get<C>(this as unknown as ComponentFactory<C>);
+                return object.get<C>(
+                    RegisteredComponent as unknown as ComponentFactory<C>
+                );
             }
         }
 
-        return RegisteredComponent as any as ComponentFactory<C>;
+        return RegisteredComponent as unknown as ComponentFactory<C>;
     }
 }

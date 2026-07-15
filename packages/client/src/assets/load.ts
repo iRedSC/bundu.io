@@ -1,6 +1,6 @@
 import { getStringId } from "@bundu/shared/id_map";
 import SpriteMap from "../configs/sprite_map.yml";
-import { Assets, Texture } from "pixi.js";
+import { Assets, type Texture } from "pixi.js";
 
 const loadedAssets = new Map<string, Texture>();
 let unknownAsset: Texture;

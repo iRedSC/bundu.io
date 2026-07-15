@@ -89,9 +89,9 @@ export default class GameObject {
     }
 
     /** Return true if object is done interpolating */
-    update(_now?: number): boolean {
-        const { x, y } = this.positionStates.interpolate();
-        const rot = this.rotationStates.interpolate();
+    update(now?: number): boolean {
+        const { x, y } = this.positionStates.interpolate(now);
+        const rot = this.rotationStates.interpolate(now);
 
         this.position.set(x, y);
         this.container.rotation = rot;
@@ -99,17 +99,17 @@ export default class GameObject {
         this.debug.sync(x, y, `${round(x)}, ${round(y)}`);
 
         return (
-            this.positionStates.isComplete() &&
-            this.rotationStates.isComplete()
+            this.positionStates.isComplete(now) &&
+            this.rotationStates.isComplete(now)
         );
     }
 
-    addPosition(state: PositionState): void {
-        this.positionStates.set(state);
+    addPosition(state: PositionState, now?: number): void {
+        this.positionStates.set(state, now);
     }
 
-    addRotation(radians: RotationState): void {
-        this.rotationStates.set(radians);
+    addRotation(radians: RotationState, now?: number): void {
+        this.rotationStates.set(radians, now);
     }
 
     /** Trigger an animation state */
@@ -141,5 +141,11 @@ export default class GameObject {
 
     get size() {
         return this.container.scale._x;
+    }
+
+    /** Release non-renderer resources owned by this client entity. */
+    dispose(): void {
+        this.debug.destroy();
+        this.animations.clear();
     }
 }

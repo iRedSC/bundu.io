@@ -1,7 +1,7 @@
 import { WORLD_BOUNDS, worldToDeci, worldToTile } from "@bundu/shared/tiles";
 import type { BasicPoint } from "@bundu/shared";
 import { Physics, TileEntity } from "../components/base.js";
-import { GameObject, System, type World } from "../engine";
+import { type GameObject, System, type World } from "../engine";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 

@@ -20,7 +20,8 @@ export type UI = {
     hunger: StatBar;
     heat: StatBar;
     leaderboard: Leaderboard;
-    tick: () => void;
+    tick: (now?: number) => void;
+    destroy: () => void;
 };
 
 export function createUI() {
@@ -106,12 +107,20 @@ export function createUI() {
         hunger,
         heat,
         leaderboard,
-        tick() {
+        tick(now?: number) {
             health.tick();
             hunger.tick();
             heat.tick();
-            inventory.tick();
-            craftingMenu.tick();
+            inventory.tick(now);
+            craftingMenu.tick(now);
+        },
+        destroy() {
+            window.removeEventListener("resize", resize);
+            inventory.destroy();
+            for (const button of craftingMenu.buttons) button.destroy();
+            craftingMenu.buttons.length = 0;
+            leaderboard.clear();
+            ui.destroy({ children: true });
         },
     };
 }

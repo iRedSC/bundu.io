@@ -1,11 +1,8 @@
-import { getNumericId } from "@bundu/shared/id_map";
 import { TileEntity, Type } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { BuildingConfigs } from "../configs/loaders/buildings.js";
 import { type GameObject, System, type World } from "../engine";
 import type { GameEventMap } from "./event_map.js";
-
-const POINT_GENERATOR_ID = getNumericId("point_generator");
 
 export class PointGeneratorSystem extends System<GameEventMap> {
     constructor(world: World) {
@@ -13,7 +10,8 @@ export class PointGeneratorSystem extends System<GameEventMap> {
     }
 
     override update(_time: number, _delta: number, generator: GameObject) {
-        if (generator.get(Type).id !== POINT_GENERATOR_ID) return;
+        const points = BuildingConfigs.get(generator.get(Type).id).pointsPerSecond;
+        if (points <= 0) return;
 
         const ownerId = generator.get(TileEntity).ownerId;
         if (ownerId === undefined) return;
@@ -22,6 +20,6 @@ export class PointGeneratorSystem extends System<GameEventMap> {
         const player = owner && PlayerData.get(owner);
         if (!player) return;
 
-        player.score += BuildingConfigs.get(POINT_GENERATOR_ID).pointsPerSecond;
+        player.score += points;
     }
 }

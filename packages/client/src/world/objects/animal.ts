@@ -10,6 +10,7 @@ import { animalDef } from "../../visual/defs";
 import type { ObjectDef } from "../../visual/types";
 import GameObject from "../game_object";
 import type { PositionState } from "../states";
+import { clientTime } from "@client/globals";
 
 function angleDelta(from: number, to: number): number {
     let delta = to - from;
@@ -25,7 +26,7 @@ export class Animal extends GameObject {
     private lastTarget = { x: 0, y: 0 };
     private facing = 0;
     private targetFacing = 0;
-    private lastVisualAt = performance.now();
+    private lastVisualAt = clientTime.now();
 
     constructor(
         id: number,
@@ -74,17 +75,17 @@ export class Animal extends GameObject {
         this.face(attackFacingRadians(rotation));
     }
 
-    override addPosition(position: PositionState): void {
+    override addPosition(position: PositionState, now?: number): void {
         const dx = position.x - this.lastTarget.x;
         const dy = position.y - this.lastTarget.y;
         if (Math.hypot(dx, dy) > 0.05) {
             this.targetFacing = Math.atan2(dy, dx);
         }
         this.lastTarget = position;
-        super.addPosition(position);
+        super.addPosition(position, now);
     }
 
-    override update(now = performance.now()): boolean {
+    override update(now = clientTime.now()): boolean {
         const done = super.update(now);
         const elapsed = Math.min(now - this.lastVisualAt, 20);
         this.facing = rotationLerp(
@@ -96,5 +97,10 @@ export class Animal extends GameObject {
         this.lastVisualAt = now;
         const turning = Math.abs(angleDelta(this.facing, this.targetFacing)) > 0.02;
         return done && !turning;
+    }
+
+    override dispose(): void {
+        AnimationManagers.World.remove(this);
+        super.dispose();
     }
 }

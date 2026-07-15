@@ -1,5 +1,6 @@
-import { type SerializedPacket, type Serializer } from "@bundu/shared";
+import type { SerializedPacket, Serializer } from "@bundu/shared";
 import type { ServerPacketMap } from "@bundu/shared/packet_definitions";
+import { clientTime } from "@client/globals";
 
 export type SerializedPacketArray = [number, ...SerializedPacket[]];
 
@@ -31,6 +32,7 @@ export class ClientPacketReceiver<
 
     process(packets: SerializedPacketArray) {
         const [timestamp, ...rest] = packets;
+        clientTime.synchronize(timestamp);
 
         for (const packet of rest) {
             try {

@@ -133,4 +133,8 @@ export class KeyboardInputListener {
         }
         document.querySelector(".chat-container")?.classList.add("hidden");
     }
+
+    destroy(): void {
+        this.keybinds.unbindEnvironment();
+    }
 }

@@ -1,4 +1,4 @@
-import { type BasicPoint } from "./types";
+import type { BasicPoint } from "./types";
 import { moveInDirection } from "./transforms";
 
 /**

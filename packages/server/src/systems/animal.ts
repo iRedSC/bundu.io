@@ -389,8 +389,11 @@ export class AnimalSystem extends System<GameEventMap> {
             players.length > 0 &&
             (data.targetId !== undefined || config.behavior === "hostile")
         ) {
-            data.targetId = players[random.integer(0, players.length - 1)]!.id;
-            data.lostAggroUntil = 0;
+            const target = players[random.integer(0, players.length - 1)];
+            if (target) {
+                data.targetId = target.id;
+                data.lostAggroUntil = 0;
+            }
         }
 
         if (data.targetId === undefined || config.aggroLevel === "high") return;
@@ -480,10 +483,12 @@ export class AnimalSystem extends System<GameEventMap> {
         }
     };
 
-    private kill = ({ object }: GameEvent.Kill) => {
+    private kill = ({ object, source }: GameEvent.Kill) => {
         if (!object.active) return;
         const physics = object.get(Physics);
         const config = AnimalConfigs.get(object.get(Type).id);
+        const player = source && PlayerData.get(source);
+        if (player) player.score += config.score;
         const corpseId = getNumericId(config.corpse);
         const scale = object.get(Attributes).get("physics.scale");
         object.active = false;

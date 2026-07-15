@@ -105,4 +105,21 @@ export class GameSession {
             this.hooks.onDisconnected();
         };
     }
+
+    destroy(): void {
+        const socket = this.socket;
+        this.socket = null;
+        this.connecting = false;
+        if (!socket) return;
+        socket.onopen = null;
+        socket.onclose = null;
+        socket.onmessage = null;
+        socket.onerror = null;
+        if (
+            socket.readyState === WebSocket.OPEN ||
+            socket.readyState === WebSocket.CONNECTING
+        ) {
+            socket.close();
+        }
+    }
 }

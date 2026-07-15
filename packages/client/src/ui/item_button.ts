@@ -1,5 +1,5 @@
 import { Container } from "pixi.js";
-import { SpriteFactory, ContaineredSprite } from "../assets/sprite_factory";
+import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { percentOf } from "@bundu/shared/math";
 import { getStringId } from "@bundu/shared/id_map";
@@ -23,7 +23,8 @@ export function tickItemButton(
     button: ItemButton,
     colors: ItemButtonColors,
     restY = 0,
-    restScale = 1
+    restScale = 1,
+    now = performance.now()
 ) {
     button.background.rotation = lerp(
         button.background.rotation,
@@ -63,7 +64,7 @@ export function tickItemButton(
     if (button.hovering) {
         button.background.rotation = rotationLerp(
             button.background.rotation,
-            Math.sin(Date.now() / 500) * 0.3,
+            Math.sin(now / 500) * 0.3,
             0.2
         );
         button.button.scale.set(lerp(button.button.scale.x, 1.1, 0.1));

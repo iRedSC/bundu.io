@@ -32,7 +32,7 @@ export class Resource extends GameObject {
         if (tile) this.add(new TileEntity(tile));
     }
 
-    public override getNewObjectPacket(): ServerPacket.LoadObject | void {
+    public override getNewObjectPacket(): ServerPacket.LoadObject | undefined {
         const physics = this.get(Physics);
         const type = this.get(Type);
         const scale = this.get(Attributes).get("physics.scale");

@@ -1,5 +1,10 @@
 import { Physics } from "../components/base.js";
-import { System, GameObject, type World, type ServerContext } from "../engine";
+import {
+    System,
+    type GameObject,
+    type ServerContext,
+    type World,
+} from "../engine";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { Range } from "@bundu/shared";

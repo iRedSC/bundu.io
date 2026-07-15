@@ -5,15 +5,16 @@ import {
     type TileRot,
 } from "@bundu/shared";
 import { getStringId } from "@bundu/shared/id_map";
-import { Container, Graphics, Point, Text } from "pixi.js";
+import { type Container, Graphics, type Point, Text } from "pixi.js";
 import GameObject from "../game_object";
 import { SpriteFactory } from "../../assets/sprite_factory";
 import { spriteConfigs } from "../../configs/sprite_configs";
-import { AnimationManager } from "../../animation/runtime";
+import type { AnimationManager } from "../../animation/runtime";
 import { assemble } from "../../visual/assemble";
 import { bindAnimations } from "../../visual/bind";
 import { playerDef } from "../../visual/defs";
 import type { AnimContext, PartNode, SlotDef } from "../../visual/types";
+import { clientTime } from "@client/globals";
 
 type nullish = undefined | null;
 
@@ -129,21 +130,21 @@ export class Player extends GameObject implements AnimContext {
         return [this.container, this.name, this.craftBar, this.chatMessage];
     }
 
-    override update(_now?: number): boolean {
-        const done = super.update();
+    override update(now?: number): boolean {
+        const done = super.update(now);
         this.name.position = this.position;
         this.chatMessage.position.set(
             this.position.x,
             this.position.y + CHAT_MESSAGE_Y
         );
         this.craftBar.position = this.position;
-        this.redrawCraftBar();
+        this.redrawCraftBar(now);
         // Stay in the updating set while the bar is animating.
         return done && !this.isCrafting;
     }
 
     /** `duration > 0` starts the overhead channel; `0` clears it. */
-    setCraftProgress(duration: number, itemId: number) {
+    setCraftProgress(duration: number, itemId: number, startedAt: number) {
         if (duration <= 0) {
             this.craftDuration = 0;
             this.craftEndsAt = 0;
@@ -153,16 +154,16 @@ export class Player extends GameObject implements AnimContext {
             return;
         }
         this.craftDuration = duration;
-        this.craftEndsAt = Date.now() + duration;
+        this.craftEndsAt = startedAt + duration;
         this.craftingItemId = itemId;
         this.craftBar.visible = true;
-        this.redrawCraftBar();
+        this.redrawCraftBar(startedAt);
     }
 
-    private redrawCraftBar() {
+    private redrawCraftBar(now = clientTime.now()) {
         if (this.craftDuration <= 0) return;
 
-        const remaining = Math.max(0, this.craftEndsAt - Date.now());
+        const remaining = Math.max(0, this.craftEndsAt - now);
         const progress = 1 - remaining / this.craftDuration;
         const fillWidth = CRAFT_BAR_WIDTH * Math.min(1, Math.max(0, progress));
         const x = -CRAFT_BAR_WIDTH / 2;
@@ -285,5 +286,11 @@ export class Player extends GameObject implements AnimContext {
             rotation: this.structureRotation,
             cursor: this.structureCursor,
         };
+    }
+
+    override dispose(): void {
+        clearTimeout(this.chatTimeout);
+        this.animationManager.remove(this);
+        super.dispose();
     }
 }

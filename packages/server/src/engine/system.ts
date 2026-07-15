@@ -1,6 +1,6 @@
-import { type ComponentFactory } from "./component.js";
-import { GameObject } from "./game_object.js";
-import { World } from "./world.js";
+import type { ComponentFactory } from "./component.js";
+import type { GameObject } from "./game_object.js";
+import type { World } from "./world.js";
 
 let NEXT_SYSTEM_ID = 1;
 

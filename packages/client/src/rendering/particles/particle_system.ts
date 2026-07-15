@@ -134,6 +134,15 @@ export class ParticleSystem {
         this.active.length = 0;
     }
 
+    destroy(): void {
+        this.clear();
+        for (const container of this.containers.values()) {
+            container.removeFromParent();
+            container.destroy();
+        }
+        this.containers.clear();
+    }
+
     private getContainer(texture: Texture): ParticleContainer {
         const existing = this.containers.get(texture);
         if (existing) return existing;

@@ -9,18 +9,18 @@ const SHAKE = radians(2.2);
 /** Soft continuous shake + sparse crumble while rotting is active. */
 export function rotting(nodes: PartNode[], ctx: AnimContext) {
     const animation = new Animation();
-    let offset = Math.random() * Math.PI * 2;
+    const offset = Math.random() * Math.PI * 2;
     let nextCrumbleAt = 0;
 
     animation.keyframes[0] = (active) => {
         if (active.isFirstKeyframe) {
             active.goto(0, DURATION);
-            nextCrumbleAt = Date.now() + 800 + Math.random() * 700;
+            nextCrumbleAt = active.now + 800 + Math.random() * 700;
         }
         const rotation = Math.sin(active.t * Math.PI * 6 + offset) * SHAKE;
         for (const node of nodes) node.animation.rotation = rotation;
 
-        const now = Date.now();
+        const now = active.now;
         if (
             now >= nextCrumbleAt &&
             ctx.emitParticles &&

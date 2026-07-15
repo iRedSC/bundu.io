@@ -2,6 +2,7 @@ import { ServerPacketReceiver, World } from "../engine";
 import { loadConfigs } from "../configs/loaders/load";
 import { PlayerSystem } from "../systems/player";
 import {
+    ClientPacketGuards,
     type ClientPacketMap,
     ClientSchema,
 } from "@bundu/shared/packet_definitions";
@@ -35,7 +36,7 @@ export function createWorld(): ServerWorld {
 
     const playerSystem = new PlayerSystem(world);
     const serializer = new Serializer<ClientPacketMap>(ClientSchema);
-    const receiver = new ServerPacketReceiver(serializer);
+    const receiver = new ServerPacketReceiver(serializer, ClientPacketGuards);
     setupPacketReceiving(receiver, playerSystem);
 
     world

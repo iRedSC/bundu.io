@@ -3,7 +3,7 @@ import {
     tileCenterWorld,
 } from "@bundu/shared/tiles";
 import { AnimalData, CalculateCollisions, Physics, TileEntity } from "../components/base.js";
-import { System, GameObject, type World } from "../engine";
+import { System, type GameObject, type World } from "../engine";
 import { getSizedBounds, tilesOverlappingCircle } from "./position.js";
 import { Circle, Response, testCircleCircle, Vector } from "sat";
 import { GameEvent, type GameEventMap } from "./event_map.js";

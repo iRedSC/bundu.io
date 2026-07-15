@@ -1,5 +1,6 @@
 import { getNumericId } from "@bundu/shared/id_map";
 import { flagMap } from "@bundu/shared/flag_map";
+import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import craftingConfig from "../crafting.yml";
 
 export type CraftingRecipeData = {
@@ -46,7 +47,7 @@ export class CraftingRecipe {
         }
     }
 
-    pack() {
+    pack(): ServerPacket.RecipeList["recipes"][number] {
         return [this.id, Array.from(this.ingredients.entries()), this.flags];
     }
 }
@@ -55,7 +56,7 @@ export const craftingList: Map<number, CraftingRecipe> = new Map();
 
 for (const [k, v] of Object.entries(craftingConfig)) {
     const numericId = getNumericId(k);
-    if (numericId === undefined) throw new Error("No ID matching: " + k);
+    if (numericId === undefined) throw new Error(`No ID matching: ${k}`);
     const recipe = new CraftingRecipe(
         numericId,
         v as Partial<CraftingRecipeData>
@@ -64,7 +65,7 @@ for (const [k, v] of Object.entries(craftingConfig)) {
 }
 
 export function packCraftingList() {
-    const packet: any[] = [];
+    const packet: ServerPacket.RecipeList["recipes"] = [];
     for (const recipe of craftingList.values()) {
         packet.push(recipe.pack());
     }

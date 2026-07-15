@@ -138,7 +138,7 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
     }
 
     playerSystem.trigger(GameEvent.PlaceStructure, {
-        structureId: 2,
+        structureId: getRequiredNumericId("wood_wall"),
         x: 77,
         y: 75,
         rotation: 0,

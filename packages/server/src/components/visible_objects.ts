@@ -1,4 +1,4 @@
-import { Component, GameObject } from "../engine";
+import { Component, type GameObject } from "../engine";
 
 export type VisibleObjects = {
     visible: Set<GameObject>;

@@ -1,5 +1,5 @@
 import { round } from "./math";
-import { type BasicPoint } from "./types";
+import type { BasicPoint } from "./types";
 
 export function rotationLerp(a: number, b: number, t: number): number {
     t = Math.min(1, t);
@@ -34,8 +34,8 @@ export function degrees(radians: number) {
 }
 
 export function lookToward(origin: BasicPoint, toward: BasicPoint) {
-    let x = toward.x - origin.x;
-    let y = toward.y - origin.y;
+    const x = toward.x - origin.x;
+    const y = toward.y - origin.y;
     return Math.atan2(y, x);
 }
 

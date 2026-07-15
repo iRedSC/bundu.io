@@ -18,6 +18,7 @@ ENV GAME_WS_URL=$GAME_WS_URL
 ENV BUNDU_DEBUG=0
 
 COPY tsconfig.json build.ts index.html static-server.ts ./
+COPY scripts ./scripts
 COPY packages ./packages
 COPY public ./public
 

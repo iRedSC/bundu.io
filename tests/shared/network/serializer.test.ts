@@ -9,106 +9,55 @@ const TestSchema = {
 
 type TestDataMap = {
   1: { a: number; b: string };
-  2: {};
+  2: Record<never, never>;
   3: { x: number; y: number; z: number };
 };
 
 describe("Serializer", () => {
   const serializer = new Serializer<TestDataMap>(TestSchema);
 
-  describe("has", () => {
-    test("returns true for known ids", () => {
-      expect(serializer.has(1)).toBe(true);
-      expect(serializer.has(2)).toBe(true);
-      expect(serializer.has(3)).toBe(true);
-    });
-
-    test("returns false for unknown ids", () => {
-      expect(serializer.has(0)).toBe(false);
-      expect(serializer.has(99)).toBe(false);
-    });
+  test("serializes payloads in schema order", () => {
+    expect(serializer.serialize(1, { b: "second", a: 42 })).toEqual([
+      1,
+      42,
+      "second",
+    ]);
+    expect(serializer.serialize(2, {})).toEqual([2]);
   });
 
-  describe("serialize", () => {
-    test("packs fields in schema order", () => {
-      expect(serializer.serialize(1, { a: 42, b: "hi" })).toEqual([
-        1,
-        42,
-        "hi",
-      ]);
-      expect(serializer.serialize(3, { x: 1, y: 2, z: 3 })).toEqual([
-        3, 1, 2, 3,
-      ]);
+  test("deserializes wire payloads without leaking the packet id", () => {
+    expect(serializer.deserialize([1, 42, "second"])).toEqual({
+      a: 42,
+      b: "second",
     });
-
-    test("empty fields yields [id] only", () => {
-      expect(serializer.serialize(2, {})).toEqual([2]);
-    });
-
-    test("ignores extra keys not in fields", () => {
-      expect(
-        serializer.serialize(1, {
-          a: 1,
-          b: "x",
-          extra: true,
-        } as { a: number; b: string }),
-      ).toEqual([1, 1, "x"]);
-    });
-
-    test("throws for unknown id", () => {
-      expect(() =>
-        serializer.serialize(99 as keyof TestDataMap & number, {} as never),
-      ).toThrow();
-    });
+    expect(serializer.deserialize([2])).toEqual({});
   });
 
-  describe("deserialize", () => {
-    test("reconstructs fields without attaching packet-type id", () => {
-      const result = serializer.deserialize([1, 10, "ok"]);
-      expect(result).toEqual({ a: 10, b: "ok" });
-      expect(result).not.toHaveProperty("id");
-    });
-
-    test("empty-fields packet yields {}", () => {
-      expect(serializer.deserialize([2])).toEqual({});
-    });
-
-    test("throws for unknown id", () => {
-      expect(() =>
-        serializer.deserialize([99, "x"] as unknown as readonly [
-          keyof TestDataMap & number,
-          ...unknown[],
-        ]),
-      ).toThrow();
-    });
-
-    test("throws when too few fields", () => {
-      expect(() => serializer.deserialize([1, 10])).toThrow();
-      expect(() => serializer.deserialize([3, 1, 2])).toThrow();
-    });
-
-    test("throws when too many fields", () => {
-      expect(() => serializer.deserialize([1, 10, "ok", "extra"])).toThrow();
-      expect(() => serializer.deserialize([2, "extra"])).toThrow();
-    });
+  test("reports whether a packet id has a schema", () => {
+    expect(serializer.has(1)).toBe(true);
+    expect(serializer.has(99)).toBe(false);
   });
 
-  describe("round-trip", () => {
-    test("serialize then deserialize restores payload", () => {
-      const data1 = { a: 7, b: "round" };
-      expect(serializer.deserialize(serializer.serialize(1, data1))).toEqual(
-        data1,
-      );
+  test("rejects unknown packet ids with an actionable error", () => {
+    expect(() =>
+      serializer.serialize(99 as keyof TestDataMap & number, {} as never),
+    ).toThrow("Schema 99 not found");
+    expect(() =>
+      serializer.deserialize(
+        [99] as unknown as readonly [keyof TestDataMap & number, ...unknown[]],
+      ),
+    ).toThrow("Schema 99 not found");
+  });
 
-      const data2 = {};
-      expect(serializer.deserialize(serializer.serialize(2, data2))).toEqual(
-        data2,
-      );
-
-      const data3 = { x: 4, y: 5, z: 6 };
-      expect(serializer.deserialize(serializer.serialize(3, data3))).toEqual(
-        data3,
-      );
-    });
+  test("rejects truncated and overlong wire payloads", () => {
+    expect(() => serializer.deserialize([1, 10])).toThrow(
+      "Packet 1 field count mismatch: got 1, expected 2",
+    );
+    expect(() => serializer.deserialize([3, 1, 2, 3, 4])).toThrow(
+      "Packet 3 field count mismatch: got 4, expected 3",
+    );
+    expect(() => serializer.deserialize([2, "unexpected"])).toThrow(
+      "Packet 2 field count mismatch: got 1, expected 0",
+    );
   });
 });

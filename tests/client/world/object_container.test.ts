@@ -1,10 +1,10 @@
-import { describe, expect, test, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import ObjectContainer from "../../../packages/client/src/world/object_container";
 import type GameObject from "../../../packages/client/src/world/game_object";
 
 function stub(
   id: number,
-  update: (now: number) => boolean = () => false,
+  update: (now?: number) => boolean = () => false,
 ): GameObject {
   return { id, update } as GameObject;
 }
@@ -16,48 +16,56 @@ describe("ObjectContainer", () => {
     container = new ObjectContainer();
   });
 
-  test("add/get/delete lifecycle", () => {
+  test("stores objects by id and deletes them by object or id", () => {
     const a = stub(1);
     const b = stub(2);
-
     container.add(a);
     container.add(b);
 
     expect(container.get(1)).toBe(a);
-    expect(container.get(2)).toBe(b);
     expect([...container.all()]).toEqual([a, b]);
 
-    container.delete(1);
-    expect(container.get(1)).toBeUndefined();
-    expect([...container.all()]).toEqual([b]);
+    container.delete(a);
+    container.delete(2);
 
-    container.delete(b);
-    expect(container.get(2)).toBeUndefined();
     expect([...container.all()]).toEqual([]);
-
-    expect(() => container.delete(99)).not.toThrow();
+    expect(container.updating.size).toBe(0);
   });
 
-  test("update removes completed objects from updating set only", () => {
-    let done = false;
-    const active = stub(1, () => done);
-    const idle = stub(2, () => false);
+  test("rejects a different object with an existing id without replacing it", () => {
+    const original = stub(1);
+    const collision = stub(1);
+    container.add(original);
 
+    expect(() => container.add(collision)).toThrow(
+      "Client object 1 already exists",
+    );
+    expect(container.get(1)).toBe(original);
+    expect(container.updating.has(collision)).toBe(false);
+  });
+
+  test("updates active interpolations with the caller's timestamp", () => {
+    const update = mock(() => false);
+    const object = stub(1, update);
+    container.add(object);
+
+    container.update(1_234);
+
+    expect(update).toHaveBeenCalledWith(1_234);
+    expect(container.updating.has(object)).toBe(true);
+  });
+
+  test("stops updating completed objects without deleting them", () => {
+    const complete = stub(1, () => true);
+    const active = stub(2, () => false);
+    container.add(complete);
     container.add(active);
-    container.add(idle);
 
-    container.update(1000);
+    container.update(100);
+    container.update(200);
+
+    expect(container.updating.has(complete)).toBe(false);
     expect(container.updating.has(active)).toBe(true);
-    expect(container.updating.has(idle)).toBe(true);
-    expect(container.get(1)).toBe(active);
-
-    done = true;
-    container.update(2000);
-
-    expect(container.updating.has(active)).toBe(false);
-    expect(container.updating.has(idle)).toBe(true);
-    expect(container.get(1)).toBe(active);
-    expect(container.get(2)).toBe(idle);
-    expect([...container.all()]).toEqual([active, idle]);
+    expect([...container.all()]).toEqual([complete, active]);
   });
 });

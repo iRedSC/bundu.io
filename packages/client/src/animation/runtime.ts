@@ -27,9 +27,9 @@ export class Animation {
  * \@prop `keyframes` — the {@link Keyframes} that make up the animation\
  * \@prop `currentKeyframe` — id of the keyframe that will be used in the `update()` method\
  * \@prop `expired` — whether or not the animation is expired. Will be removed from any {@link AnimationManager}s if true.\
- * \@prop `start` — the starting time of the current keyframe. Gets set to `Date.now()` when switch keyframes.\
+ * \@prop `start` — the monotonic start time of the current keyframe.\
  * \@prop `duration` — the duration of the current keyframe, in miliseconds.\
- * \@prop `keyframeEnded` — whether or not the current keyframe has ended (if `Date.now()` is greater than `start` + `duration`)\
+ * \@prop `keyframeEnded` — whether the current keyframe has ended.\
  * \@prop `isFirstKeyframe` — whether or not thee current keyframe is the first one since the animation started\
  * \@prop `t` — the `t` value of the current keyframe, ranges from `0-1` as the normalized `duration`.
  */
@@ -42,9 +42,11 @@ class ActiveAnimation {
     duration: number;
     firstFrameTrigger: boolean;
     cleanup?: Keyframe;
+    private time: number;
 
     constructor(keyframes: Keyframes, cleanup?: Keyframe) {
-        this.start = Date.now();
+        this.time = clientTime.now();
+        this.start = this.time;
         // -1 marks "not yet timed"; callers use isFirstKeyframe + goto/next to set duration
         this.duration = -1;
         this.expired = false;
@@ -57,7 +59,8 @@ class ActiveAnimation {
     /**
      * Call the current keyframe.
      */
-    update() {
+    update(now = clientTime.now()) {
+        this.time = now;
         const frame = this.keyframes[this.currentKeyframe];
         if (frame && this.expired === false) {
             frame(this);
@@ -71,7 +74,7 @@ class ActiveAnimation {
      */
     next(durationMS: number) {
         if (this.keyframes[this.currentKeyframe + 1]) {
-            this.start = Date.now();
+            this.start = this.time;
             this.duration = durationMS;
             this.currentKeyframe++;
             this.firstFrameTrigger = true;
@@ -84,7 +87,7 @@ class ActiveAnimation {
      */
     previous(durationMS: number) {
         if (this.keyframes[this.currentKeyframe - 1]) {
-            this.start = Date.now();
+            this.start = this.time;
             this.duration = durationMS;
             this.currentKeyframe--;
             this.firstFrameTrigger = true;
@@ -98,7 +101,7 @@ class ActiveAnimation {
      */
     goto(frame: number, durationMS: number) {
         if (this.keyframes[frame]) {
-            this.start = Date.now();
+            this.start = this.time;
             this.duration = durationMS;
             this.currentKeyframe = frame;
             this.firstFrameTrigger = true;
@@ -111,7 +114,7 @@ class ActiveAnimation {
      */
     end() {
         if (!this.cleanup) return;
-        this.start = Date.now();
+        this.start = this.time;
         this.duration = 0;
         this.currentKeyframe = -1;
         this.firstFrameTrigger = true;
@@ -122,7 +125,7 @@ class ActiveAnimation {
      * The current keyframe has ended.
      */
     get keyframeEnded() {
-        return Date.now() > this.start + this.duration;
+        return this.time > this.start + this.duration;
     }
     /**
      * The current keyframe is the very first in the animation.
@@ -135,16 +138,20 @@ class ActiveAnimation {
      * The `t` value of the current keyframe, ranges from `0-1` as the normalized `duration`.
      */
     get t() {
-        const msSinceStart = Date.now() - this.start;
+        const msSinceStart = this.time - this.start;
         const t = msSinceStart / this.duration;
         return t > 1 ? 1 : t;
+    }
+
+    get now() {
+        return this.time;
     }
 }
 
 type ValidActiveAnimation = {
     id?: string;
     expired: boolean;
-    update(): void;
+    update(now?: number): void;
     end(): void;
 };
 
@@ -280,7 +287,7 @@ export class AnimationManager {
      * If the source has any of `active`, `renderable`, or `visible` properties set to `false`,
      * skips updating animations from that source.
      */
-    update() {
+    update(now = clientTime.now()) {
         for (const [source, animations] of this.sources.entries()) {
             if (
                 source.active === false ||
@@ -294,7 +301,7 @@ export class AnimationManager {
                 if (animation.expired) {
                     animation.end();
                 } else {
-                    animation.update();
+                    animation.update(now);
                     remaining.push(animation);
                 }
             }
@@ -302,3 +309,4 @@ export class AnimationManager {
         }
     }
 }
+import { clientTime } from "@client/globals";
