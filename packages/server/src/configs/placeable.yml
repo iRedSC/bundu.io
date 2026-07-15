@@ -13,6 +13,9 @@ diamond_wall:
 amethyst_wall:
     type: building
 
+red_wall:
+    type: building
+
 wood_door:
     type: building
 
