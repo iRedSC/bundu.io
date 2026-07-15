@@ -52,8 +52,8 @@ export function createUI() {
     });
 
     const hunger = new StatBar({
-        max: 100,
-        split: false,
+        max: 200,
+        split: true,
         icon: "hunger_bar_icon",
         tint: 0xb06b30,
         overlayTint: 0xd48457,

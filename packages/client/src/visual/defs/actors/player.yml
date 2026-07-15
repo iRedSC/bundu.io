@@ -53,3 +53,6 @@ animations:
   block:
     preset: block
     parts: [leftHand, rightHand, body]
+  eat:
+    preset: eat
+    parts: [leftHand, rightHand, body]

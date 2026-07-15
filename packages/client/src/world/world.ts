@@ -211,6 +211,7 @@ export class World {
         );
 
         player.setEquipment({ mainhand, offhand, helmet, backpack });
+        player.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
 
