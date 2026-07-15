@@ -4,9 +4,11 @@ import {
     TILE_SIZE,
     WORLD_TILES,
     footprintCenter,
+    pointToTile,
     structureOriginAtPoint,
     structurePlacementDef,
     tileCenterWorld,
+    tilesOnLine,
     type TilePos,
     type TileRot,
 } from "@bundu/shared";
@@ -21,7 +23,7 @@ import {
     makeTileEntity,
     tileEntityPhysics,
 } from "../game_objects/tile_entity.js";
-import { emitInventory } from "../network/inventory.js";
+import { emitEquipment, emitInventory, clearMainHandIf, clearMissingEquipment } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
 type PlacementResult = {
@@ -92,6 +94,7 @@ export class StructureSystem extends System<GameEventMap> {
 
         if (!inv.slots[inv.selected] || inv.slots[inv.selected]?.id !== structureId) {
             data.selectedStructure.id = -1;
+            clearMainHandIf(player, structureId);
             this.world.context.playerPacketManager.set(
                 player.id,
                 ServerPacket.SetSelectedStructure,
@@ -99,6 +102,12 @@ export class StructureSystem extends System<GameEventMap> {
             );
         }
 
+        clearMissingEquipment(player);
+        emitEquipment(player, this.world.context.worldPacketManager);
+
+        // Always notify after a place attempt — validate may have already sent the
+        // same allowed/origin key, and the client needs the place signal.
+        this.lastPlacementResult.delete(player.id);
         this.sendPlacementResult(player.id, {
             allowed,
             x: placement?.origin.x ?? 0,
@@ -166,10 +175,15 @@ export class StructureSystem extends System<GameEventMap> {
                 tileCenterWorld(origin.x) + center.x * TILE_SIZE - physics.position.x,
                 tileCenterWorld(origin.y) + center.y * TILE_SIZE - physics.position.y
             ) <= reach;
+        const lineClear = this.hasPlacementLine(
+            physics.position,
+            cursor,
+            player.id
+        );
         return {
             origin,
             rotation: rot,
-            allowed: inReach && this.canPlace(tile.occupied, def.ground),
+            allowed: inReach && lineClear && this.canPlace(tile.occupied, def.ground),
         };
     }
 
@@ -264,6 +278,56 @@ export class StructureSystem extends System<GameEventMap> {
         return true;
     }
 
+    /**
+     * Line from player to target tile: blocked by other players (segment vs
+     * collider — includes overlapping someone on top of you) or structures
+     * not owned by the placer. Owned structures do not block the line.
+     */
+    private hasPlacementLine(
+        from: { x: number; y: number },
+        to: TilePos,
+        placerId: number
+    ): boolean {
+        const toX = tileCenterWorld(to.x);
+        const toY = tileCenterWorld(to.y);
+
+        for (const object of this.world.query([Physics])) {
+            if (object.id === placerId || TileEntity.get(object)) continue;
+            const { collider } = object.get(Physics);
+            if (
+                segmentHitsCircle(
+                    from.x,
+                    from.y,
+                    toX,
+                    toY,
+                    collider.pos.x,
+                    collider.pos.y,
+                    collider.r
+                )
+            ) {
+                return false;
+            }
+        }
+
+        const fromTile = pointToTile(from);
+        const tiles = tilesOnLine(fromTile, to);
+        for (let i = 0; i < tiles.length - 1; i++) {
+            const tile = tiles[i];
+            if (!tile) continue;
+            // Skip the placer's own tile for structure blocking — standing in
+            // an owned doorway shouldn't brick placement; enemies still block
+            // via the segment test above if they're dynamic.
+            if (tile.x === fromTile.x && tile.y === fromTile.y) continue;
+
+            const occupantId = this.world.context.occupancy.get(tile.x, tile.y);
+            if (occupantId === undefined) continue;
+            const occupant = this.world.getObject(occupantId);
+            const entity = occupant ? TileEntity.get(occupant) : undefined;
+            if (entity && entity.ownerId !== placerId) return false;
+        }
+        return true;
+    }
+
     private hasGround(
         occupied: readonly TilePos[],
         allowedTypes: readonly number[]
@@ -287,4 +351,26 @@ export class StructureSystem extends System<GameEventMap> {
 function normalizeRotation(rotation: number): TileRot | undefined {
     if (!Number.isInteger(rotation)) return undefined;
     return (((rotation % 4) + 4) % 4) as TileRot;
+}
+
+/** True when segment AB comes within `radius` of point C. */
+function segmentHitsCircle(
+    ax: number,
+    ay: number,
+    bx: number,
+    by: number,
+    cx: number,
+    cy: number,
+    radius: number
+): boolean {
+    const abx = bx - ax;
+    const aby = by - ay;
+    const acx = cx - ax;
+    const acy = cy - ay;
+    const abLenSq = abx * abx + aby * aby;
+    if (abLenSq === 0) return acx * acx + acy * acy <= radius * radius;
+    const t = Math.max(0, Math.min(1, (acx * abx + acy * aby) / abLenSq));
+    const dx = cx - (ax + t * abx);
+    const dy = cy - (ay + t * aby);
+    return dx * dx + dy * dy <= radius * radius;
 }

@@ -264,6 +264,46 @@ bird_skull:
     type: book
     sprite: bird_skull
 
+bandage:
+    type: food
+    sprite: bandage
+
+meat:
+    type: food
+    sprite: meat
+
+meat_cooked:
+    type: food
+    sprite: meat_cooked
+
+blue_berry:
+    type: food
+    sprite: blue_berry
+
+red_berry:
+    type: food
+    sprite: red_berry
+
+honey:
+    type: food
+    sprite: honey
+
+mango:
+    type: food
+    sprite: mango
+
+komodo_dragon_eye:
+    type: food
+    sprite: komodo_dragon_eye
+
+miracle_fruit:
+    type: food
+    sprite: miracle_fruit
+
+bottle_water:
+    type: food
+    sprite: bottle_water
+
 # Tree
 
 pine_tree:

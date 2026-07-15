@@ -8,6 +8,9 @@ animations:
   hit:
     preset: hit
     parts: main
+  place:
+    preset: place
+    parts: main
   rotting:
     preset: rotting
     parts: main

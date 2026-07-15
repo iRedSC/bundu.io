@@ -13,6 +13,8 @@ export type ItemConfig = {
     stats: Record<string, number>;
     flags: string[];
     unequip_delay: number;
+    can_saturate: boolean;
+    eat_duration_ms: number;
 };
 
 const fallback: ItemConfig = {
@@ -23,6 +25,8 @@ const fallback: ItemConfig = {
     stats: {},
     flags: [],
     unequip_delay: 0,
+    can_saturate: false,
+    eat_duration_ms: 1000,
 };
 
 export const ItemConfigs = new ConfigLoader<ItemConfig>(fallback);
