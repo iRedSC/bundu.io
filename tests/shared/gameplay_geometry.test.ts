@@ -32,11 +32,12 @@ describe("movement wire directions", () => {
   });
 
   test("maps pressed keys to axes and cancels opposing inputs", () => {
+    // Server applies position -= moveDir, so left encodes as +x (axis 2).
     expect(
-      axesFromPressedKeys({ up: true, down: false, left: false, right: true }),
+      axesFromPressedKeys({ up: true, down: false, left: true, right: false }),
     ).toEqual([2, 2]);
     expect(
-      axesFromPressedKeys({ up: false, down: true, left: true, right: false }),
+      axesFromPressedKeys({ up: false, down: true, left: false, right: true }),
     ).toEqual([0, 0]);
     expect(
       axesFromPressedKeys({ up: true, down: true, left: true, right: true }),

@@ -47,12 +47,14 @@ export type SlotDef = {
 export type AnimPreset =
     | "hurt"
     | "hit"
+    | "place"
     | "wave"
     | "tree_sway"
     | "bob"
     | "lunge"
     | "attack"
     | "block"
+    | "eat"
     | "rotting";
 
 export type TreeSwayData = {
@@ -73,12 +75,14 @@ export type BobData = {
 type AnimData = {
     hurt: undefined;
     hit: undefined;
+    place: undefined;
     wave: undefined;
     tree_sway: TreeSwayData;
     bob: BobData;
     lunge: undefined;
     attack: undefined;
     block: undefined;
+    eat: undefined;
     rotting: undefined;
 };
 
@@ -187,8 +191,10 @@ export type PartNode = {
 /** Mutable state presets like attack/block read each frame. */
 export type AnimContext = {
     blocking: boolean;
+    eating: boolean;
     mainhand: string;
     offhand: string;
+    eatingDuration?: number;
     /** Optional particle emit for ambient presets (rotting crumble). */
     emitParticles?: (burst: ParticleBurst) => void;
     particleAnchor?: () => {
@@ -204,6 +210,7 @@ export type Rotatable = { rotationStates: RotationStates, rotation: number };
 
 export const EMPTY_ANIM_CONTEXT: AnimContext = {
     blocking: false,
+    eating: false,
     mainhand: "",
     offhand: "",
 };

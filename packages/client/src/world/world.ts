@@ -13,7 +13,7 @@ import {
     structurePlacementDef,
     tileCenterWorld,
 } from "@bundu/shared";
-import { AnimationManagers } from "../animation/animations";
+import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { Point, Text } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
@@ -36,6 +36,7 @@ import { ParticleSystem } from "@client/rendering/particles/particle_system";
 import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
 import { clientTime } from "@client/globals";
+import { structurePlace } from "../visual/particles/structure_place";
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -79,6 +80,8 @@ export class World {
     private placementGhostAllowed?: boolean;
     private cursorWorld?: { x: number; y: number };
     private readonly pendingObjectStates = new Map<number, EntityStateSnapshot>();
+    /** Fired when server reports placement validity for the current ghost. */
+    onPlacementValidity?: (allowed: boolean) => void;
 
     constructor(viewport: Viewport) {
         this.viewport = viewport;
@@ -208,6 +211,7 @@ export class World {
         );
 
         player.setEquipment({ mainhand, offhand, helmet, backpack });
+        player.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
 
@@ -262,18 +266,28 @@ export class World {
         structure.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
+        structure.trigger(ANIMATION.PLACE, AnimationManagers.World, true);
+        this.particles.burst(
+            structurePlace(
+                structure.sprite.sprite.texture,
+                structure.position.x,
+                structure.position.y
+            )
+        );
     };
 
     updateObjectHealth = (
         packet: ServerPacket.UpdateObjectHealth,
-        serverTimestamp: number
+        _serverTimestamp: number
     ) => {
         const object = this.objects.get(packet.id);
         if (object instanceof Structure) {
+            // Hold duration must use receive time — fromServer(sendTime) can
+            // already be past `now`, so the bar would hide on the next tick.
             object.setHealth(
                 packet.health,
                 packet.maxHealth,
-                clientTime.fromServer(serverTimestamp)
+                clientTime.now()
             );
         }
     };
@@ -293,26 +307,27 @@ export class World {
         });
     };
 
-    moveObject = (packet: ServerPacket.SetPosition, serverTimestamp: number) => {
+    moveObject = (packet: ServerPacket.SetPosition, _serverTimestamp: number) => {
         const object = this.objects.get(packet.id);
         if (!object) return;
         object.renderable = true;
-        object.addPosition(
-            { x: deciToWorld(packet.x), y: deciToWorld(packet.y) },
-            clientTime.fromServer(serverTimestamp)
-        );
+        // Receive-time segment start — send-time makes t≈1 on arrival (choppy).
+        object.addPosition({
+            x: deciToWorld(packet.x),
+            y: deciToWorld(packet.y),
+        });
         this.objects.updating.add(object);
         this.objects.add(object);
     };
 
-    rotateObject = (packet: ServerPacket.SetRotation, serverTimestamp: number) => {
+    rotateObject = (
+        packet: ServerPacket.SetRotation,
+        _serverTimestamp: number
+    ) => {
         if (packet.id === this.user) return;
         const object = this.objects.get(packet.id);
         if (!object) return;
-        object.addRotation(
-            radians(packet.rotation),
-            clientTime.fromServer(serverTimestamp)
-        );
+        object.addRotation(radians(packet.rotation));
         this.objects.updating.add(object);
     };
 
@@ -398,8 +413,7 @@ export class World {
     };
 
     placeStructureResult = (packet: ServerPacket.PlaceStructureResult) => {
-        if (!this.placementGhost) return;
-        if (this.placementGhostAllowed !== packet.allowed) {
+        if (this.placementGhost) {
             this.placementGhost.setGhostAppearance(
                 0.5,
                 packet.allowed
@@ -411,7 +425,14 @@ export class World {
             }
             this.placementGhostAllowed = packet.allowed;
         }
+
+        this.onPlacementValidity?.(packet.allowed);
     };
+
+    /** Whether the ghost's last server result allows placement. */
+    isPlacementAllowed(): boolean | undefined {
+        return this.placementGhostAllowed;
+    }
 
     refreshPlacementGhost() {
         this.placementGhostType = 0;

@@ -1,16 +1,21 @@
-import { moveToward, moveInDirection, radians } from "@bundu/shared/transforms";
+import {
+    moveToward,
+    moveInDirection,
+    radians,
+} from "@bundu/shared/transforms";
 import { attackFacingRadians } from "@bundu/shared/attack_box";
 import {
     decodeMoveDirection,
     PLAYER_MOVE_SPEED,
 } from "@bundu/shared/movement";
 import { type ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { GroundData, Physics } from "../components/base.js";
+import { GroundData, Health, Physics } from "../components/base.js";
 import {
     Inventory,
     canConsumeAndAdd,
     cursorSlot as applyCursorSlot,
     moveSlot as applyMoveSlot,
+    removeItem,
     tryConsumeAndAdd,
 } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
@@ -20,8 +25,10 @@ import {
 } from "../configs/loaders/crafting.js";
 import { type GameObject, System, type World } from "../engine";
 import { Attributes } from "../components/attributes.js";
+import { Stats } from "../components/stats.js";
 import { emitVitals } from "../network/vitals.js";
 import {
+    clearMainHandIf,
     clearMissingEquipment,
     emitEquipment,
     emitInventory,
@@ -54,6 +61,10 @@ export class PlayerSystem extends System<GameEventMap> {
 
         if (data.crafting && time >= data.crafting.endsAt) {
             this.finishCraft(player);
+        }
+
+        if (data.eating && time >= data.eating.endsAt) {
+            this.finishEating(player);
         }
 
         if (data.attacking && data.lastAttackTime && !data.blocking && !data.crafting) {
@@ -121,6 +132,7 @@ export class PlayerSystem extends System<GameEventMap> {
     kill({ object: target }: GameEvent.Kill) {
         if (!target.active) return;
         this.clearCraft(target);
+        this.clearEating(target);
         target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
         const { socketManager } = this.world.context;
@@ -142,6 +154,89 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!data?.crafting) return;
         data.crafting = undefined;
         if (emit) this.emitCraftEvent(player, 0);
+    }
+
+    private clearEating(player: GameObject, emit = true) {
+        const data = PlayerData.get(player);
+        if (!data?.eating) return;
+        data.eating = undefined;
+        Attributes.get(player)?.clear("eating");
+        if (emit) {
+            this.world.context.worldPacketManager.emit(ServerPacket.EatEvent, {
+                id: player.id,
+                duration: 0,
+            });
+        }
+    }
+
+    private finishEating(player: GameObject) {
+        const data = PlayerData.get(player);
+        const eating = data?.eating;
+        const inventory = Inventory.get(player);
+        if (!data || !eating || !inventory) return;
+
+        const config = ItemConfigs.get(eating.itemId);
+        if (
+            data.offHand !== eating.itemId ||
+            config.type !== "food" ||
+            !removeItem(inventory, eating.itemId, 1)
+        ) {
+            this.clearEating(player);
+            return;
+        }
+
+        const stats = Stats.get(player);
+        const hungerAmount = config.stats.hunger ?? 0;
+        if (hungerAmount !== 0) {
+            const hunger = stats.get("hunger");
+            stats.set("hunger", {
+                value: Math.min(
+                    hunger.value + hungerAmount,
+                    config.can_saturate ? 200 : 100
+                ),
+                min: 0,
+                max: 200,
+            });
+        }
+
+        const healthDelta = config.stats.health ?? 0;
+        const health = Health.get(player);
+        if (health && healthDelta !== 0) {
+            health.value = Math.max(
+                0,
+                Math.min(health.max, health.value + healthDelta)
+            );
+        }
+
+        this.clearEating(player);
+        clearMissingEquipment(player);
+        const { playerPacketManager, worldPacketManager } = this.world.context;
+        emitInventory(player, playerPacketManager);
+        emitEquipment(player, worldPacketManager);
+        emitVitals(player, playerPacketManager);
+    }
+
+    private startEating(player: GameObject, itemId: number) {
+        const data = PlayerData.get(player);
+        const attributes = Attributes.get(player);
+        const config = ItemConfigs.get(itemId);
+        if (!data || !attributes || data.eating || config.type !== "food") return;
+
+        data.attacking = false;
+        data.eating = {
+            itemId,
+            endsAt: this.world.gameTime + config.eat_duration_ms,
+        };
+        attributes.set(
+            "movement.speed",
+            "eating",
+            "multiply",
+            attributes.get("eating.movement_speed_multiplier")
+        );
+        this.world.context.worldPacketManager.emit(ServerPacket.EatEvent, {
+            id: player.id,
+            duration: config.eat_duration_ms,
+        });
     }
 
     /** Cancel block if equipment no longer grants `health.defense.blocking`. */
@@ -197,6 +292,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         const data = PlayerData.get(player);
         if (!data || data.crafting) return;
+        this.clearEating(player);
 
         const recipe = craftingList.get(itemId);
         if (!recipe) return;
@@ -252,7 +348,11 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = player.get(PlayerData);
-        if (data.crafting) return;
+        if (data.crafting || data.eating) return;
+        if (data.selectedStructure.id !== -1) {
+            data.attacking = false;
+            return;
+        }
 
         data.attacking = !stop;
         if (data.lastAttackTime === undefined) {
@@ -265,7 +365,20 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         const data = PlayerData.get(player);
         if (data.crafting) return;
+        if (data.eating) {
+            if (stop) this.clearEating(player);
+            return;
+        }
         const attributes = player.get(Attributes);
+        const itemId = data.offHand;
+        if (
+            !stop &&
+            itemId !== undefined &&
+            ItemConfigs.get(itemId).type === "food"
+        ) {
+            this.startEating(player, itemId);
+            return;
+        }
         const blocking = attributes.get("health.defense.blocking");
 
         if (!stop) {
@@ -290,6 +403,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         const data = PlayerData.get(player);
         if (data?.crafting) return;
+        this.clearEating(player);
         const inv = Inventory.get(player);
         if (!inv || slot < 0 || slot >= inv.slots.length) return;
 
@@ -305,6 +419,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         const data = PlayerData.get(player);
         if (data?.crafting) return;
+        this.clearEating(player);
         const inv = Inventory.get(player);
         if (!inv) return;
         const dropped =
@@ -330,6 +445,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         const data = PlayerData.get(player);
         if (data?.crafting) return;
+        this.clearEating(player);
         const inv = Inventory.get(player);
         if (!inv) return;
 
@@ -389,7 +505,6 @@ export class PlayerSystem extends System<GameEventMap> {
 
     private dropItem(player: GameObject, itemId: number, amount: number) {
         const physics = player.get(Physics);
-        // Same facing convention as attacks (sprite 0° = up → math facing).
         const droppedAt = moveInDirection(
             physics.position,
             attackFacingRadians(radians(physics.rotation)),
@@ -444,15 +559,26 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = player.get(PlayerData);
         const inv = player.get(Inventory);
         const id = inv.slots[inv.selected]?.id;
-        const structureId =
-            id !== undefined && ItemConfigs.get(id).function === "building"
-                ? id
-                : -1;
+        const heldBuilding =
+            id !== undefined &&
+            ItemConfigs.get(id).function === "building" &&
+            data.mainHand === id;
+        const structureId = heldBuilding ? id : -1;
+
+        if (
+            structureId === -1 &&
+            data.mainHand !== undefined &&
+            ItemConfigs.get(data.mainHand).function === "building"
+        ) {
+            clearMainHandIf(player, data.mainHand);
+        }
         if (data.selectedStructure.id === structureId) return;
 
         data.selectedStructure.id = structureId;
         if (structureId !== -1) {
             data.selectedStructure.cursor = pointToTile(player.get(Physics).position);
+        } else {
+            data.attacking = false;
         }
         this.world.context.playerPacketManager.set(
             player.id,
@@ -471,8 +597,9 @@ export class PlayerSystem extends System<GameEventMap> {
             return;
         }
 
+        const data = PlayerData.get(player);
         if (
-            PlayerData.get(player).cheatsEnabled &&
+            (data.cheatsEnabled || SERVER_DEBUG) &&
             tryHandleDebugChatCommand(
                 player,
                 message,

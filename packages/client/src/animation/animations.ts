@@ -8,9 +8,11 @@ export const AnimationManagers = {
 export const ANIMATION = {
     HURT: "hurt",
     HIT: "hit",
+    PLACE: "place",
     IDLE_HANDS: "idle_hands",
     ATTACK: "attack",
     BLOCK: "block",
+    EAT: "eat",
 } as const;
 
 /** Ease-out cubic — fast start, soft landing. */

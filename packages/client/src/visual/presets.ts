@@ -1,10 +1,12 @@
 import type { Animation } from "../animation/runtime";
 import { attack } from "./animations/attack";
 import { block } from "./animations/block";
+import { eat } from "./animations/eat";
 import { bob } from "./animations/bob";
 import { hit, hitRotation } from "./animations/hit";
 import { hurt } from "./animations/hurt";
 import { lunge } from "./animations/lunge";
+import { place } from "./animations/place";
 import { rotting } from "./animations/rotting";
 import { treeSway } from "./animations/tree_sway";
 import { wave } from "./animations/wave";
@@ -26,6 +28,11 @@ export function createPreset(
             if (!node) throw new Error("hit preset needs one part");
             return hit(node);
         }
+        case "place": {
+            const node = nodes[0];
+            if (!node) throw new Error("place preset needs one part");
+            return place(node);
+        }
         case "wave":
             return wave(nodes);
         case "tree_sway":
@@ -38,6 +45,8 @@ export function createPreset(
             return attack(nodes, ctx);
         case "block":
             return block(nodes, ctx);
+        case "eat":
+            return eat(nodes, ctx);
         case "rotting":
             return rotting(nodes, ctx);
         default:
