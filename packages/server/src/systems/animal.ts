@@ -4,6 +4,7 @@ import {
     tileCenterWorld,
     WORLD_TILES,
     TILE_SIZE,
+    FOOTPRINT_CIRCLE_RADIUS,
 } from "@bundu/shared/tiles.js";
 import { random } from "@bundu/shared/random.js";
 import { AnimalData, Health, Physics, TileEntity, Type } from "../components/base.js";
@@ -28,22 +29,22 @@ type Tile = { x: number; y: number };
 const key = (tile: Tile) => `${tile.x},${tile.y}`;
 const distance = (a: Tile, b: Tile) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 
-/** True if a circle overlaps any occupied tile AABB (matches CollisionSystem). */
+/** True if a circle overlaps any occupied tile footprint circle (matches CollisionSystem). */
 function footprintOverlaps(
     world: World,
     x: number,
     y: number,
     radius: number
 ): boolean {
-    const bounds = tilesOverlappingCircle({ x, y }, radius);
+    const bounds = tilesOverlappingCircle({ x, y }, radius + FOOTPRINT_CIRCLE_RADIUS);
     for (let tx = bounds.minX; tx <= bounds.maxX; tx++) {
         for (let ty = bounds.minY; ty <= bounds.maxY; ty++) {
             if (world.context.occupancy.get(tx, ty) === undefined) continue;
-            const left = tx * TILE_SIZE;
-            const top = ty * TILE_SIZE;
-            const closestX = Math.max(left, Math.min(x, left + TILE_SIZE));
-            const closestY = Math.max(top, Math.min(y, top + TILE_SIZE));
-            if (Math.hypot(x - closestX, y - closestY) < radius) return true;
+            const cx = tileCenterWorld(tx);
+            const cy = tileCenterWorld(ty);
+            if (Math.hypot(x - cx, y - cy) < radius + FOOTPRINT_CIRCLE_RADIUS) {
+                return true;
+            }
         }
     }
     return false;
@@ -194,14 +195,20 @@ export class AnimalSystem extends System<GameEventMap> {
                     x: tileCenterWorld(tile.x),
                     y: tileCenterWorld(tile.y),
                 }));
-                // Fully blocked while chasing or going home — smash what's in the way.
-                if (
-                    data.path.length === 0 &&
-                    (data.state === "chase" || data.state === "wander") &&
-                    config.attack_damage > 0
-                ) {
-                    const blocker = firstBlocker(this.world, start, goal);
-                    if (blocker && this.attackObstacle(time, animal, blocker)) {
+                // Fully blocked while chasing — smash destructible obstacles in the way.
+                // Wander: abandon the destination so think() can pick a new roam target.
+                if (data.path.length === 0) {
+                    if (data.state === "chase" && config.attack_damage > 0) {
+                        const blocker = firstBlocker(this.world, start, goal);
+                        if (
+                            blocker &&
+                            this.attackObstacle(time, animal, blocker)
+                        ) {
+                            return;
+                        }
+                    }
+                    if (data.state === "wander") {
+                        data.destination = undefined;
                         return;
                     }
                 }
@@ -239,7 +246,14 @@ export class AnimalSystem extends System<GameEventMap> {
         animal: GameObject,
         blocker: { id: number; tile: Tile }
     ): boolean {
-        if (!this.world.getObject(blocker.id)) return false;
+        const obstacle = this.world.getObject(blocker.id);
+        // Resources/harvest nodes ignore animal Hurt — only smash Health-bearing structures.
+        if (!obstacle || !Health.get(obstacle)) {
+            const data = animal.get(AnimalData);
+            data.destination = undefined;
+            data.path = [];
+            return false;
+        }
         const data = animal.get(AnimalData);
         const physics = animal.get(Physics);
         const config = AnimalConfigs.get(animal.get(Type).id);
@@ -248,7 +262,7 @@ export class AnimalSystem extends System<GameEventMap> {
         const dx = targetX - physics.position.x;
         const dy = targetY - physics.position.y;
         physics.rotation = degrees(Math.atan2(dy, dx) - Math.PI / 2);
-        const reach = physics.collisionRadius + config.structure_attack_reach;
+        const reach = animal.get(Attributes).get("attack.reach");
         const d = Math.hypot(dx, dy);
         if (d > reach) {
             data.destination = { x: targetX, y: targetY };
@@ -436,9 +450,7 @@ export class AnimalSystem extends System<GameEventMap> {
         const data = animal.get(AnimalData); const physics = animal.get(Physics); const other = target.get(Physics); const config = AnimalConfigs.get(animal.get(Type).id);
         data.state = "chase"; data.targetId = target.id;
         const d = Math.hypot(other.position.x - physics.position.x, other.position.y - physics.position.y);
-        const reach = TileEntity.get(target)
-            ? physics.collisionRadius + config.structure_attack_reach
-            : config.attack_reach;
+        const reach = animal.get(Attributes).get("attack.reach");
         if (d <= reach) {
             data.destination = undefined; data.path = [];
             if (time >= data.nextAttackAt) { data.nextAttackAt = time + config.attack_interval_ms; this.trigger(GameEvent.Attack, { object: animal, damage: config.attack_damage, hitbox: { start: 0, length: reach, width: physics.collisionRadius * 2 } }); }
@@ -478,12 +490,13 @@ export class AnimalSystem extends System<GameEventMap> {
         this.trigger(GameEvent.DeleteObject, { object });
         if (typeof corpseId !== "number") return;
         const position = new Vector(physics.position.x, physics.position.y);
+        const baseRadius = TILE_SIZE / 2;
         this.world.addObject(
             new Resource(
                 {
                     position,
-                    collider: new Circle(position, physics.collisionRadius),
-                    collisionRadius: physics.collisionRadius,
+                    collider: new Circle(position, baseRadius),
+                    collisionRadius: baseRadius,
                     rotation: physics.rotation,
                     speed: 0,
                 },

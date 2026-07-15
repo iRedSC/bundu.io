@@ -42,11 +42,11 @@ type LoadPlayer = Extract<
 >;
 type LoadResource = Extract<
     ServerPacket.LoadObject,
-    {
-        type:
-            | typeof GameObjectData.ResourceNodeType
-            | typeof GameObjectData.StructureType;
-    }
+    { type: typeof GameObjectData.ResourceNodeType }
+>;
+type LoadStructure = Extract<
+    ServerPacket.LoadObject,
+    { type: typeof GameObjectData.StructureType }
 >;
 type LoadGroundItem = Extract<
     ServerPacket.LoadObject,
@@ -162,6 +162,8 @@ export class World {
                 this.newPlayer(packet);
                 break;
             case GameObjectData.ResourceNodeType:
+                this.newResource(packet);
+                break;
             case GameObjectData.StructureType:
                 this.newStructure(packet);
                 break;
@@ -211,42 +213,47 @@ export class World {
         }
     };
 
-    newStructure = (packet: LoadResource) => {
-        const isResource = packet.type === GameObjectData.ResourceNodeType;
-        const [nodeType, variantId, a, b, c] = packet.data;
+    newResource = (packet: LoadResource) => {
+        const [nodeType, variantId, collisionRadius, scale] = packet.data;
         this.renderer.delete(packet.id);
-
-        const pendingStates = this.pendingObjectStates.get(packet.id);
         this.pendingObjectStates.delete(packet.id);
-
-        let collisionRadius = FOOTPRINT_CIRCLE_RADIUS;
-        let visualScale = TILE_SIZE;
-        let health: number | undefined;
-        let maxHealth: number | undefined;
-        let states: EntityStateSnapshot | undefined;
-
-        if (isResource) {
-            const radius = a;
-            const scale = b;
-            if (typeof radius === "number") collisionRadius = radius;
-            if (typeof scale === "number") visualScale = TILE_SIZE * scale;
-        } else {
-            health = a as number | undefined;
-            maxHealth = b as number | undefined;
-            const initialStates = c as EntityStateSnapshot | undefined;
-            states = pendingStates
-                ? { ...initialStates, ...pendingStates }
-                : initialStates;
-        }
 
         const structure = new Structure(
             packet.id,
             getStringId(nodeType),
             deciPoint(packet.x, packet.y),
             packet.rotation,
-            collisionRadius,
+            typeof collisionRadius === "number"
+                ? collisionRadius
+                : FOOTPRINT_CIRCLE_RADIUS,
             AnimationManagers.World,
-            visualScale,
+            typeof scale === "number" ? TILE_SIZE * scale : TILE_SIZE,
+            getVariantName(variantId)
+        );
+        structure.enableParticles((burst) => this.particles.burst(burst));
+        this.objects.add(structure);
+        this.renderer.add(structure.id, ...structure.containers);
+    };
+
+    newStructure = (packet: LoadStructure) => {
+        const [nodeType, variantId, health, maxHealth, initialStates] =
+            packet.data;
+        this.renderer.delete(packet.id);
+
+        const pendingStates = this.pendingObjectStates.get(packet.id);
+        this.pendingObjectStates.delete(packet.id);
+        const states = pendingStates
+            ? { ...initialStates, ...pendingStates }
+            : initialStates;
+
+        const structure = new Structure(
+            packet.id,
+            getStringId(nodeType),
+            deciPoint(packet.x, packet.y),
+            packet.rotation,
+            FOOTPRINT_CIRCLE_RADIUS,
+            AnimationManagers.World,
+            TILE_SIZE,
             getVariantName(variantId),
             health,
             maxHealth,

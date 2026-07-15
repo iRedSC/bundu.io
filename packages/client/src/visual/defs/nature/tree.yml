@@ -15,7 +15,8 @@ occlusion:
     radius: 1.5
 alphaFadeMs: 200
 
-# World zIndex bands (player = 1): trunk below, canopy above.
+# World zIndex bands (player = 1): layered canopy stack above the player.
+# layer0/1 sit with mid foliage; layer2/3 are the upper canopy (occlusion fades these).
 parts:
     - name: layer0
       zIndex: 11

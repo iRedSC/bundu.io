@@ -14,8 +14,13 @@ export class Animal extends GameObject {
         const config = AnimalConfigs.get(type.id);
         const health = { value: config.health, max: config.health, lastRegen: 0 };
         const attributes = new Attributes();
+        const baseRadius = TILE_SIZE / 2;
         // scale 1 → diameter = 1 tile (radius = TILE_SIZE / 2)
-        bindPhysicsScale(attributes.data, physics, config.scale, TILE_SIZE / 2);
+        attributes.data.set("attack.reach", "base", "add", config.attack_reach);
+        attributes.data.addEventListener("physics.scale", (scale) => {
+            attributes.data.set("attack.reach", "body", "add", baseRadius * scale);
+        });
+        bindPhysicsScale(attributes.data, physics, config.scale, baseRadius);
         this.add(new Type(type))
             .add(new Physics(physics))
             .add(new Health(health))

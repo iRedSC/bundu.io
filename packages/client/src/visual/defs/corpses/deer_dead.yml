@@ -1,0 +1,6 @@
+id: deer_dead
+extends: corpse
+parts:
+  - name: body
+    sprite: deer_dead
+    spriteScale: 2.5

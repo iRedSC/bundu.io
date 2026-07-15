@@ -1,15 +1,17 @@
-import { TILE_SIZE } from "@bundu/shared/tiles";
+import {
+    FOOTPRINT_CIRCLE_RADIUS,
+    tileCenterWorld,
+} from "@bundu/shared/tiles";
 import { AnimalData, CalculateCollisions, Physics, TileEntity } from "../components/base.js";
 import { System, GameObject, type World } from "../engine";
 import { getSizedBounds, tilesOverlappingCircle } from "./position.js";
-import { Box, Response, testCirclePolygon, Vector } from "sat";
+import { Circle, Response, testCircleCircle, Vector } from "sat";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
 const MAX_COLLISION_TRIES = 5;
 
 /**
- * After Move applies intent, push movers out of occupied footprint tiles
- * (solid tile AABBs — seals diagonal gaps that inscribed circles leave),
+ * After Move applies intent, push movers out of occupied footprint circles,
  * then emit Collide once.
  */
 export class CollisionSystem extends System<GameEventMap> {
@@ -22,18 +24,19 @@ export class CollisionSystem extends System<GameEventMap> {
     afterMove({ object }: GameEvent.Move) {
         this.resolve(object, 0);
         this.separateAnimals(object);
+        this.resolve(object, 0);
         this.trigger(GameEvent.Collide, { object });
     }
 
     private resolve(target: GameObject, tries: number) {
         const physics = target.get(Physics);
         const { occupancy } = this.world.context;
-        const reach = physics.collisionRadius + TILE_SIZE;
+        const reach = physics.collisionRadius + FOOTPRINT_CIRCLE_RADIUS;
         const bounds = tilesOverlappingCircle(physics.position, reach);
 
         const response = new Response();
-        const corner = new Vector();
-        const tileBox = new Box(corner, TILE_SIZE, TILE_SIZE);
+        const center = new Vector();
+        const tileCircle = new Circle(center, FOOTPRINT_CIRCLE_RADIUS);
         let hit = false;
 
         for (let tx = bounds.minX; tx <= bounds.maxX; tx++) {
@@ -44,10 +47,10 @@ export class CollisionSystem extends System<GameEventMap> {
                 const other = this.world.getObject(entityId);
                 if (!other || !TileEntity.get(other)) continue;
 
-                corner.x = tx * TILE_SIZE;
-                corner.y = ty * TILE_SIZE;
+                center.x = tileCenterWorld(tx);
+                center.y = tileCenterWorld(ty);
                 response.clear();
-                if (testCirclePolygon(physics.collider, tileBox.toPolygon(), response)) {
+                if (testCircleCircle(physics.collider, tileCircle, response)) {
                     hit = true;
                     physics.position.sub(response.overlapV);
                 }
@@ -81,10 +84,11 @@ export class CollisionSystem extends System<GameEventMap> {
             if (dist >= minDist) continue;
 
             if (dist < 1e-6) {
-                physics.position.x += minDist * 0.5;
+                physics.position.x += minDist;
                 continue;
             }
-            const push = (minDist - dist) * 0.5;
+            // Move the active animal fully out of overlap (other may move next tick).
+            const push = minDist - dist;
             physics.position.x += (dx / dist) * push;
             physics.position.y += (dy / dist) * push;
         }

@@ -23,12 +23,11 @@ export type AnimalConfig = {
     wander_distance: number;
     attack_damage: number;
     attack_interval_ms: number;
-    attack_reach: number;
     /**
-     * Extra world units past collisionRadius when attacking a blocking structure.
-     * Effective reach = collisionRadius + structure_attack_reach.
+     * Seed for `attack.reach` attribute (world units past body radius).
+     * Effective reach = attack_reach + collisionRadius.
      */
-    structure_attack_reach: number;
+    attack_reach: number;
     /**
      * How aggro retargets when other players interact.
      * - never: keep current target
@@ -66,8 +65,6 @@ export const AnimalConfigs = new ConfigLoader<AnimalConfig>({
     attack_damage: 0,
     attack_interval_ms: 1000,
     attack_reach: 65,
-    // Footprint radius (50) + slack so animals can hit walls they're pressed against.
-    structure_attack_reach: 66,
     aggroSwitch: "never",
     aggroLevel: "high",
     aggroAt: [],

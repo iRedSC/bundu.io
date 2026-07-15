@@ -17,7 +17,7 @@ import {
     EntityStateStore,
     VisualStateController,
 } from "../../visual/state";
-import { animalDef, structureDef, tileEntityDefs } from "../../visual/defs";
+import { lookupObjectDef, structureDef, tileEntityDefs } from "../../visual/defs";
 import type {
     AnimContext,
     ObjectDef,
@@ -44,6 +44,8 @@ export class Structure extends GameObject {
     private readonly animContext: AnimContext = { ...EMPTY_ANIM_CONTEXT };
     private stateController?: VisualStateController;
     private usesSpriteConfig = false;
+    /** When set, world_display.scale multiplies this (ObjectDef spriteScale) instead of replacing it. */
+    private authoredSpriteScale?: number;
     private readonly variant?: string;
     private readonly healthBar = new Graphics();
     private healthBarAlpha = 0;
@@ -233,7 +235,8 @@ export class Structure extends GameObject {
 
     private applyVisualDefinition(variant?: string) {
         const tileEntity = tileEntityDefs.get(this.type);
-        const def: ObjectDef = tileEntity ?? {
+        const objectVisual = lookupObjectDef(this.type);
+        const def: ObjectDef = tileEntity ?? objectVisual ?? {
             ...structureDef,
             id: this.type,
         };
@@ -249,6 +252,15 @@ export class Structure extends GameObject {
         this.visuals = [...parts.values()].map((part) => part.visual);
         this.sprite = first.visual;
         this.usesSpriteConfig = tileEntity === undefined;
+        // Authored scale from the part that became `this.sprite` (first assembled part).
+        if (objectVisual) {
+            const spritePart = def.parts.find(
+                (p) => parts.get(p.name)?.visual === this.sprite
+            );
+            this.authoredSpriteScale = spritePart?.spriteScale ?? 1;
+        } else {
+            this.authoredSpriteScale = undefined;
+        }
         this.refreshSpriteConfig();
 
         const { animations, autoplay } = bindAnimations(
@@ -295,25 +307,27 @@ export class Structure extends GameObject {
 
     refreshSpriteConfig() {
         if (!this.usesSpriteConfig) return;
-        const livingId = this.type.endsWith("_dead")
-            ? this.type.slice(0, -"_dead".length)
-            : undefined;
-        // Corpses must match living animals: unit-normalized sprite + ContaineredSprite.scale
-        // (same as assemble), not world_display normalize which drifts from that pipeline.
-        if (livingId) {
-            try {
-                const body = animalDef(livingId).parts.find((p) => p.name === "body");
-                const spriteScale = body?.spriteScale ?? 1;
-                SpriteFactory.update(this.sprite, { scale: 1 }, this.type);
-                this.sprite.scale.set(spriteScale);
-                this.sprite.renderable = true;
-                return;
-            } catch {
-                /* not a known animal — use sprite config below */
-            }
-        }
         const config = spriteConfigs.get(this.type);
-        SpriteFactory.update(this.sprite, config?.world_display, this.type);
+        if (this.authoredSpriteScale !== undefined) {
+            // Unit-normalize texture; world_display.scale multiplies ObjectDef spriteScale
+            // (does not replace container / physics visualScale).
+            const display = config?.world_display;
+            SpriteFactory.update(
+                this.sprite,
+                {
+                    x: display?.x,
+                    y: display?.y,
+                    rotation: display?.rotation,
+                    scale: 1,
+                },
+                this.type
+            );
+            this.sprite.scale.set(
+                this.authoredSpriteScale * (display?.scale ?? 1)
+            );
+        } else {
+            SpriteFactory.update(this.sprite, config?.world_display, this.type);
+        }
         this.sprite.renderable = true;
     }
 

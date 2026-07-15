@@ -1,7 +1,7 @@
 # hostile attacks on sight; neutral retaliates; passive flees when hit; scared flees on sight.
 # `scale` is size in tiles: 1 → diameter = 1 tile (radius 50) and client visual root = TILE_SIZE. Default 1.
 # `hasHome`: idle roam alternates homeward + wander sessions when true.
-# `structure_attack_reach`: extra range past collisionRadius when smashing blocking structures (default 66).
+# `attack_reach`: seed for attack.reach attribute; effective reach = attack_reach + collisionRadius.
 # aggroSwitch: never | onHit | random — how aggro retargets when other players interact.
 # aggroLevel: high | medium | low — how locked-on the animal stays (see animals loader).
 # aggroAt: list of structure type ids (e.g. wood_wall) to attack when no player target is available.

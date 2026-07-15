@@ -81,14 +81,11 @@ export type ResourceData = {
     items: Record<number, number>;
     decayAt: number | null;
     lastRegen: number;
-    /** Visual/physics scale multiplier; identity = 1. Copied from animals onto corpses. */
-    scale: number;
 };
 export const ResourceData = Component.register<ResourceData>(() => ({
     items: {},
     decayAt: null,
     lastRegen: 0,
-    scale: 1,
 }));
 
 /** A structure whose owner died and can be claimed or will decay. */
