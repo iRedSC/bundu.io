@@ -17,7 +17,15 @@ import animalConfig from "../entities.yml";
 /** Load configs that the server actually uses. */
 export function loadConfigs() {
     BuildingConfigs.parse(buildingConfig);
-    AnimalConfigs.parse(animalConfig);
+    AnimalConfigs.parse(animalConfig, (_id, record, fallback) => {
+        const names = record.aggroAt as unknown as string[] | undefined;
+        if (names) {
+            record.aggroAt = names
+                .map((name) => getNumericId(name))
+                .filter((id): id is number => typeof id === "number");
+        }
+        return mergeObjects(record, undefined, fallback);
+    });
 
     ResourceConfigs.parse(resourceConfig, (_id, record, fallback) => {
         const numericItems: Record<number, number> = {};

@@ -1,6 +1,7 @@
 import { random } from "@bundu/shared";
 import { getNumericId } from "@bundu/shared/id_map";
 import {
+    TILE_SIZE,
     WORLD_TILES,
     worldToTile,
     type TileRot,
@@ -126,8 +127,8 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
                 { id: typeId, variant: "base" },
                 {
                     position,
-                    collider: new Circle(position, config.collision_radius),
-                    collisionRadius: config.collision_radius,
+                    collider: new Circle(position, TILE_SIZE / 2),
+                    collisionRadius: TILE_SIZE / 2,
                     rotation: 0,
                     speed: config.passiveSpeed,
                 }

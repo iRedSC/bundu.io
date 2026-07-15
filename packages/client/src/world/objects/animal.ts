@@ -1,100 +1,77 @@
 import { getStringId } from "@bundu/shared/id_map";
-import { colorLerp, lerp, rotationLerp } from "@bundu/shared/transforms";
+import { attackFacingRadians } from "@bundu/shared";
+import { TILE_SIZE } from "@bundu/shared/tiles";
+import { rotationLerp } from "@bundu/shared/transforms";
 import type { Point } from "pixi.js";
-import { Container } from "pixi.js";
-import {
-    SpriteFactory,
-    type ContaineredSprite,
-} from "@client/assets/sprite_factory";
-import { ANIMATION, AnimationManagers } from "../../animation/animations";
-import { Animation } from "../../animation/runtime";
-import { animalVisual } from "@client/configs/animals";
+import { AnimationManagers } from "../../animation/animations";
+import { assemble } from "../../visual/assemble";
+import { bindAnimations } from "../../visual/bind";
+import { animalDef } from "../../visual/defs";
+import type { ObjectDef } from "../../visual/types";
 import GameObject from "../game_object";
 import type { PositionState } from "../states";
 
-function idle(body: Container, bob: number): Animation {
-    const animation = new Animation();
-    animation.keyframes[0] = (active) => {
-        if (active.isFirstKeyframe) active.goto(0, 1_200);
-        const wave = Math.sin(active.t * Math.PI * 2);
-        body.position.y = wave * bob * 0.35;
-        body.scale.set(1 + wave * 0.025, 1 - wave * 0.025);
-        if (active.keyframeEnded) active.goto(0, 1_200);
-    };
-    animation.cleanup = () => {
-        body.position.y = 0;
-        body.scale.set(1);
-    };
-    return animation;
-}
-
-function hurt(sprite: ContaineredSprite): Animation {
-    const animation = new Animation();
-    let tint = 0xffffff;
-    animation.keyframes[0] = (active) => {
-        if (active.isFirstKeyframe) {
-            tint = Number(sprite.sprite.tint);
-            active.goto(0, 100);
-        }
-        sprite.sprite.tint = colorLerp(tint, 0xff0000, active.t);
-        if (active.keyframeEnded) active.next(250);
-    };
-    animation.keyframes[1] = (active) => {
-        sprite.sprite.tint = colorLerp(0xff0000, tint, active.t);
-        if (active.keyframeEnded) active.expired = true;
-    };
-    animation.cleanup = () => {
-        sprite.sprite.tint = tint;
-    };
-    return animation;
-}
-
-function attack(root: Container): Animation {
-    const animation = new Animation();
-    animation.keyframes[0] = (active) => {
-        if (active.isFirstKeyframe) active.goto(0, 100);
-        root.position.x = lerp(0, 18, active.t);
-        if (active.keyframeEnded) active.next(150);
-    };
-    animation.keyframes[1] = (active) => {
-        root.position.x = lerp(18, 0, active.t);
-        if (active.keyframeEnded) active.expired = true;
-    };
-    animation.cleanup = () => {
-        root.position.x = 0;
-    };
-    return animation;
+function angleDelta(from: number, to: number): number {
+    let delta = to - from;
+    delta = ((delta + Math.PI) % (2 * Math.PI)) - Math.PI;
+    if (delta > Math.PI) delta -= 2 * Math.PI;
+    else if (delta < -Math.PI) delta += 2 * Math.PI;
+    return delta;
 }
 
 /** A server-authoritative actor whose facing and idle motion are purely visual. */
 export class Animal extends GameObject {
-    private readonly visual = new Container();
-    private readonly body = new Container();
-    private readonly bob: number;
+    private readonly typeId: string;
     private lastTarget = { x: 0, y: 0 };
     private facing = 0;
     private targetFacing = 0;
     private lastVisualAt = performance.now();
 
-    constructor(id: number, typeId: number, position: Point, collisionRadius: number) {
-        super(id, position, 0, collisionRadius, 1, 250);
-        const type = getStringId(typeId);
-        const config = animalVisual(type);
-        this.bob = config.bob;
-        const sprite = SpriteFactory.build(type);
-        sprite.anchor.set(0.5);
-        sprite.width = config.scale;
-        sprite.height = config.scale;
-        this.body.addChild(sprite);
-        this.visual.addChild(this.body);
-        this.visual.rotation = -Math.PI / 2;
-        this.container.addChild(this.visual);
+    constructor(
+        id: number,
+        typeId: number,
+        position: Point,
+        collisionRadius: number,
+        scale = 1
+    ) {
+        super(id, position, 0, collisionRadius, TILE_SIZE * (scale ?? 1), 250);
+        this.typeId = getStringId(typeId);
+        this.applyVisualDefinition(animalDef(this.typeId));
         this.container.zIndex = 5;
         this.lastTarget = { x: position.x, y: position.y };
-        this.animations.set("animal_idle", idle(this.body, this.bob));
-        this.animations.set(ANIMATION.HURT, hurt(sprite));
-        this.animations.set(ANIMATION.ATTACK, attack(this.visual));
-        this.trigger("animal_idle", AnimationManagers.World);
+    }
+
+    private applyVisualDefinition(def: ObjectDef) {
+        const assembled = assemble(def, this.container);
+        const { animations, autoplay } = bindAnimations(def, assembled.parts);
+        for (const [animId, animation] of animations) {
+            this.animations.set(animId, animation);
+        }
+        for (const animId of autoplay) {
+            this.trigger(animId, AnimationManagers.World);
+        }
+    }
+
+    reloadVisualDefinition() {
+        AnimationManagers.World.remove(this);
+        for (const child of this.container.removeChildren()) {
+            child.destroy({ children: true });
+        }
+        this.animations.clear();
+        this.applyVisualDefinition(animalDef(this.typeId));
+    }
+
+    /** Turn toward a world-space direction (radians, 0 = east) — lerps in update. */
+    face(direction: number) {
+        this.targetFacing = direction;
+    }
+
+    /**
+     * Server attack/look sync uses the player convention (0° = up).
+     * Convert to movement-facing space so the sprite aims correctly.
+     */
+    override addRotation(rotation: number): void {
+        this.face(attackFacingRadians(rotation));
     }
 
     override addPosition(position: PositionState): void {
@@ -117,6 +94,7 @@ export class Animal extends GameObject {
         );
         this.container.rotation = this.facing;
         this.lastVisualAt = now;
-        return done;
+        const turning = Math.abs(angleDelta(this.facing, this.targetFacing)) > 0.02;
+        return done && !turning;
     }
 }

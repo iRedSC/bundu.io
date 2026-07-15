@@ -1,8 +1,10 @@
 import type { Animation } from "../animation/runtime";
 import { attack } from "./animations/attack";
 import { block } from "./animations/block";
+import { bob } from "./animations/bob";
 import { hit, hitRotation } from "./animations/hit";
 import { hurt } from "./animations/hurt";
+import { lunge } from "./animations/lunge";
 import { rotting } from "./animations/rotting";
 import { treeSway } from "./animations/tree_sway";
 import { wave } from "./animations/wave";
@@ -28,6 +30,10 @@ export function createPreset(
             return wave(nodes);
         case "tree_sway":
             return treeSway(nodes, def.data);
+        case "bob":
+            return bob(nodes, def.data);
+        case "lunge":
+            return lunge(nodes);
         case "attack":
             return attack(nodes, ctx);
         case "block":

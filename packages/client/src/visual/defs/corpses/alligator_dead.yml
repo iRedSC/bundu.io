@@ -1,0 +1,6 @@
+id: alligator_dead
+extends: corpse
+parts:
+  - name: body
+    sprite: alligator_dead
+    spriteScale: 2.5

@@ -1,0 +1,6 @@
+id: ram_dead
+extends: corpse
+parts:
+  - name: body
+    sprite: ram_dead
+    spriteScale: 1.875

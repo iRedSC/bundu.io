@@ -4,6 +4,7 @@ import {
     Health,
     Physics,
 } from "../components/base.js";
+import { bindPhysicsScale } from "../components/physics_scale.js";
 import { emptySlots, Inventory } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { Stats } from "../components/stats.js";
@@ -44,6 +45,7 @@ export class Player extends GameObject {
         attributes.data.set("temperature.max", "base", "add", 200);
         attributes.data.set("water.depletion_amount", "base", "add", 5);
         attributes.data.set("water.max", "base", "add", 100);
+        bindPhysicsScale(attributes.data, physics);
 
         const health = new Health({ value: 200, max: 200, lastRegen: 0 });
 
@@ -73,6 +75,7 @@ export class Player extends GameObject {
     public override getNewObjectPacket(): ServerPacket.LoadObject {
         const physics = this.get(Physics);
         const data = this.get(PlayerData);
+        const scale = this.get(Attributes).get("physics.scale");
         const pos = deciPacketPos(physics);
         return {
             id: this.id,
@@ -88,6 +91,7 @@ export class Player extends GameObject {
                 data.backpack ?? false,
                 getVariantId(data.playerSkin),
                 physics.collisionRadius,
+                scale,
             ],
         };
     }

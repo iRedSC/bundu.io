@@ -1,0 +1,6 @@
+id: elephant_dead
+extends: corpse
+parts:
+  - name: body
+    sprite: elephant_dead
+    spriteScale: 1.1

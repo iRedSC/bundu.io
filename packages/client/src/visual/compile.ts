@@ -13,6 +13,7 @@ import type {
     TileEntityDef,
     TileGeometry,
     TreeSwayData,
+    BobData,
 } from "./types";
 
 type RawDef = Record<string, unknown>;
@@ -22,6 +23,8 @@ const ANIM_PRESETS = new Set<AnimPreset>([
     "hit",
     "wave",
     "tree_sway",
+    "bob",
+    "lunge",
     "attack",
     "block",
     "rotting",
@@ -193,7 +196,7 @@ function compileAnimations(value: unknown, path: string, parts: Set<string>): Re
             preset: preset as AnimPreset,
             parts: targets,
             autoplay: optionalBoolean(raw.autoplay, `${path}.${name}.autoplay`),
-            data: raw.data === undefined ? undefined : record(raw.data, `${path}.${name}.data`) as TreeSwayData,
+            data: raw.data === undefined ? undefined : record(raw.data, `${path}.${name}.data`) as TreeSwayData | BobData,
         } as AnimDef;
     }
     return result;

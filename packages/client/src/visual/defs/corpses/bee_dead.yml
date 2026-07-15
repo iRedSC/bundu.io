@@ -1,0 +1,6 @@
+id: bee_dead
+extends: corpse
+parts:
+  - name: body
+    sprite: bee_dead
+    spriteScale: 2.5

@@ -1,0 +1,6 @@
+id: bear_dead
+extends: corpse
+parts:
+  - name: body
+    sprite: bear_dead
+    spriteScale: 2.5

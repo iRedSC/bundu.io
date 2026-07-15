@@ -73,9 +73,10 @@ export class Player extends GameObject implements AnimContext {
         pos: Point,
         rotation: number,
         collisionRadius: number,
+        scale = 1,
         variant?: string
     ) {
-        super(id, pos, rotation, collisionRadius, TILE_SIZE);
+        super(id, pos, rotation, collisionRadius, TILE_SIZE * (scale ?? 1));
 
         this.animationManager = manager;
         this.visualVariant = variant;

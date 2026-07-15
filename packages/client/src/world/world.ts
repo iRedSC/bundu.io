@@ -42,11 +42,11 @@ type LoadPlayer = Extract<
 >;
 type LoadResource = Extract<
     ServerPacket.LoadObject,
-    {
-        type:
-            | typeof GameObjectData.ResourceNodeType
-            | typeof GameObjectData.StructureType;
-    }
+    { type: typeof GameObjectData.ResourceNodeType }
+>;
+type LoadStructure = Extract<
+    ServerPacket.LoadObject,
+    { type: typeof GameObjectData.StructureType }
 >;
 type LoadGroundItem = Extract<
     ServerPacket.LoadObject,
@@ -162,6 +162,8 @@ export class World {
                 this.newPlayer(packet);
                 break;
             case GameObjectData.ResourceNodeType:
+                this.newResource(packet);
+                break;
             case GameObjectData.StructureType:
                 this.newStructure(packet);
                 break;
@@ -183,6 +185,7 @@ export class World {
             backpack,
             playerSkin,
             collisionRadius,
+            scale,
         ] = packet.data;
         const id = packet.id;
         this.renderer.delete(id);
@@ -197,6 +200,7 @@ export class World {
             pos,
             radians(packet.rotation),
             collisionRadius,
+            scale,
             getVariantName(playerSkin ?? undefined)
         );
 
@@ -209,8 +213,31 @@ export class World {
         }
     };
 
-    newStructure = (packet: LoadResource) => {
-        const [nodeType, variantId, health, maxHealth, initialStates] = packet.data;
+    newResource = (packet: LoadResource) => {
+        const [nodeType, variantId, collisionRadius, scale] = packet.data;
+        this.renderer.delete(packet.id);
+        this.pendingObjectStates.delete(packet.id);
+
+        const structure = new Structure(
+            packet.id,
+            getStringId(nodeType),
+            deciPoint(packet.x, packet.y),
+            packet.rotation,
+            typeof collisionRadius === "number"
+                ? collisionRadius
+                : FOOTPRINT_CIRCLE_RADIUS,
+            AnimationManagers.World,
+            typeof scale === "number" ? TILE_SIZE * scale : TILE_SIZE,
+            getVariantName(variantId)
+        );
+        structure.enableParticles((burst) => this.particles.burst(burst));
+        this.objects.add(structure);
+        this.renderer.add(structure.id, ...structure.containers);
+    };
+
+    newStructure = (packet: LoadStructure) => {
+        const [nodeType, variantId, health, maxHealth, initialStates] =
+            packet.data;
         this.renderer.delete(packet.id);
 
         const pendingStates = this.pendingObjectStates.get(packet.id);
@@ -230,7 +257,7 @@ export class World {
             getVariantName(variantId),
             health,
             maxHealth,
-            states
+            states ?? {}
         );
         structure.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(structure);
@@ -320,8 +347,14 @@ export class World {
 
     newAnimal = (packet: LoadAnimal) => {
         this.renderer.delete(packet.id);
-        const [type, collisionRadius] = packet.data;
-        const animal = new Animal(packet.id, type, deciPoint(packet.x, packet.y), collisionRadius);
+        const [type, collisionRadius, , , scale] = packet.data;
+        const animal = new Animal(
+            packet.id,
+            type,
+            deciPoint(packet.x, packet.y),
+            collisionRadius,
+            scale
+        );
         this.objects.add(animal);
         this.renderer.add(animal.id, ...animal.containers);
     };

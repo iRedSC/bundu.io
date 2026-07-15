@@ -296,3 +296,50 @@ stone_barrier:
     type: none
     world_display:
         scale: 1.7
+
+# Animal corpses — ObjectDef spriteScale is the base; world_display.scale multiplies it
+# (identity = 1). Does not replace container/physics visualScale from the load packet.
+bear_dead:
+    type: none
+    world_display:
+        scale: 1
+
+deer_dead:
+    type: none
+    world_display:
+        scale: 1
+
+ram_dead:
+    type: none
+    world_display:
+        scale: 1
+
+elephant_dead:
+    type: none
+    world_display:
+        scale: 1
+
+alligator_dead:
+    type: none
+    world_display:
+        scale: 1
+
+komodo_dragon_dead:
+    type: none
+    world_display:
+        scale: 1
+
+bee_dead:
+    type: none
+    world_display:
+        scale: 1
+
+queen_bee_dead:
+    type: none
+    world_display:
+        scale: 1
+
+raindeer_dead:
+    type: none
+    world_display:
+        scale: 1

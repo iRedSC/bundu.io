@@ -9,6 +9,8 @@ export const AttributeList = [
 
     "movement.speed",
 
+    "physics.scale",
+
     "placement.reach",
 
     "health.max",

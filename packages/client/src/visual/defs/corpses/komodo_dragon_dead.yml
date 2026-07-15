@@ -1,0 +1,6 @@
+id: komodo_dragon_dead
+extends: corpse
+parts:
+  - name: body
+    sprite: komodo_dragon_dead
+    spriteScale: 3.125

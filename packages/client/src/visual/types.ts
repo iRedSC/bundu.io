@@ -49,6 +49,8 @@ export type AnimPreset =
     | "hit"
     | "wave"
     | "tree_sway"
+    | "bob"
+    | "lunge"
     | "attack"
     | "block"
     | "rotting";
@@ -63,11 +65,18 @@ export type TreeSwayData = {
     stagger?: number;
 };
 
+export type BobData = {
+    /** Peak bob displacement in tile-root local units (1 = one tile at scale 1) before the 0.35 factor. */
+    amplitude?: number;
+};
+
 type AnimData = {
     hurt: undefined;
     hit: undefined;
     wave: undefined;
     tree_sway: TreeSwayData;
+    bob: BobData;
+    lunge: undefined;
     attack: undefined;
     block: undefined;
     rotting: undefined;

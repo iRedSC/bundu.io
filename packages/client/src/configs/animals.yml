@@ -1,9 +1,0 @@
-bear: { scale: 200, bob: 3 }
-deer: { scale: 150, bob: 3 }
-ram: { scale: 150, bob: 3 }
-elephant: { scale: 440, bob: 4 }
-alligator: { scale: 200, bob: 2 }
-komodo_dragon: { scale: 250, bob: 2 }
-bee: { scale: 100, bob: 4 }
-queen_bee: { scale: 160, bob: 5 }
-raindeer: { scale: 200, bob: 3 }

@@ -1,0 +1,7 @@
+id: corpse
+abstract: true
+
+parts:
+  - name: body
+    # Match living animal pose (art faces -Y in local space).
+    rotation: -90

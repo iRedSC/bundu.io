@@ -1,0 +1,9 @@
+id: elephant
+extends: animal
+parts:
+  - name: body
+    sprite: elephant
+    spriteScale: 1.1
+animations:
+  idle:
+    data: { amplitude: 0.02 }

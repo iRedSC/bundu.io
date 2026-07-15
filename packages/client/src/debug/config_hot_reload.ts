@@ -2,6 +2,7 @@ import {
     spriteConfigs,
     type FullItemConfig,
 } from "@client/configs/sprite_configs";
+import { Animal } from "../world/objects/animal";
 import { Player } from "../world/objects/player";
 import { Structure } from "../world/objects/structure";
 import type { World } from "../world/world";
@@ -31,6 +32,8 @@ function reapplyDisplays(world: World) {
 function reapplyVisualDefs(world: World) {
     for (const object of world.objects.all()) {
         if (object instanceof Player) {
+            object.reloadVisualDefinition();
+        } else if (object instanceof Animal) {
             object.reloadVisualDefinition();
         } else if (object instanceof Structure) {
             object.reloadVisualDefinition();

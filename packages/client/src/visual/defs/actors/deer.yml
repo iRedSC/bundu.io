@@ -1,0 +1,6 @@
+id: deer
+extends: animal
+parts:
+  - name: body
+    sprite: deer
+    spriteScale: 2.5
