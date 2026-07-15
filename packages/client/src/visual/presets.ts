@@ -5,6 +5,7 @@ import { bob } from "./animations/bob";
 import { hit, hitRotation } from "./animations/hit";
 import { hurt } from "./animations/hurt";
 import { lunge } from "./animations/lunge";
+import { place } from "./animations/place";
 import { rotting } from "./animations/rotting";
 import { treeSway } from "./animations/tree_sway";
 import { wave } from "./animations/wave";
@@ -25,6 +26,11 @@ export function createPreset(
             const node = nodes[0];
             if (!node) throw new Error("hit preset needs one part");
             return hit(node);
+        }
+        case "place": {
+            const node = nodes[0];
+            if (!node) throw new Error("place preset needs one part");
+            return place(node);
         }
         case "wave":
             return wave(nodes);
