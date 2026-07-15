@@ -9,6 +9,6 @@
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.117.0",
-    "typescript": "~5.9.3"
+    "typescript": "~7.0.2"
   }
 }
