@@ -45,8 +45,8 @@ export function normalizeSprite(sprite: Sprite, baseScale: number = 1) {
 type DisplayConfig = { x: number; y: number; scale: number; rotation: number };
 
 const DEFAULT_CONFIG = { x: 0, y: 0, scale: 1, rotation: 0 };
-export class SpriteFactory {
-    static build(
+export const SpriteFactory = {
+    build(
         texture: string | number,
         config?: Partial<DisplayConfig>
     ): ContaineredSprite {
@@ -63,9 +63,9 @@ export class SpriteFactory {
         sprite.rotation = radians(fullConfig.rotation);
         const container = new ContaineredSprite(sprite);
         return container;
-    }
+    },
 
-    static update(
+    update(
         container: ContaineredSprite,
         config?: Partial<DisplayConfig>,
         texture?: string
@@ -84,5 +84,5 @@ export class SpriteFactory {
         normalizeSprite(sprite, fullConfig.scale);
         sprite.rotation = radians(fullConfig.rotation);
         return container;
-    }
-}
+    },
+};

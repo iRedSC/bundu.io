@@ -1,12 +1,12 @@
 import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { Component, type ComponentFactory } from "./component.js";
+import type { Component, ComponentFactory } from "./component.js";
 
 let NEXT_OBJECT_ID = 1;
 
 export type Subscription = (
     object: GameObject,
-    added?: Component<any>,
-    removed?: Component<any>
+    added?: Component<unknown>,
+    removed?: Component<unknown>
 ) => void;
 
 function getComponents<T>(component: ComponentFactory<T>): T;
@@ -33,7 +33,7 @@ function getComponents<T>(
  * A game object holds different components, and can be put into a world.
  */
 export abstract class GameObject {
-    public components: Component<any>[] = [];
+    public components: Component<unknown>[] = [];
     private subscriptions: Set<Subscription> = new Set();
 
     public id: number;
@@ -55,25 +55,30 @@ export abstract class GameObject {
         };
     }
 
-    public add(component: Component<any>): GameObject {
+    public add(component: Component<unknown>): GameObject {
+        if (this.components.some((existing) => existing.id === component.id)) {
+            throw new Error(
+                `GameObject ${this.id} already has component ${component.id}`
+            );
+        }
         this.components.push(component);
-        this.subscriptions.forEach((handler) =>
-            handler(this, component, undefined)
-        );
+        for (const handler of this.subscriptions) {
+            handler(this, component, undefined);
+        }
         return this;
     }
 
-    public remove(component: Component<any>): GameObject {
+    public remove(component: Component<unknown>): GameObject {
         this.components = this.components.filter(
             (listComponent) => listComponent.id !== component.id
         );
-        this.subscriptions.forEach((handler) =>
-            handler(this, undefined, component)
-        );
+        for (const handler of this.subscriptions) {
+            handler(this, undefined, component);
+        }
         return this;
     }
 
-    public hasComponents(components: ComponentFactory<any>[]): boolean {
+    public hasComponents(components: readonly { readonly id: number }[]): boolean {
         if (components.length === 0) {
             return true;
         }
@@ -90,9 +95,10 @@ export abstract class GameObject {
 
     public get: typeof getComponents = getComponents.bind(this);
 
-    public getNewObjectPacket(): ServerPacket.LoadObject | void {
+    public getNewObjectPacket(): ServerPacket.LoadObject | undefined {
         console.error(
             "Attempted to serialize GameObject that did not implement serialization method!"
         );
+        return undefined;
     }
 }

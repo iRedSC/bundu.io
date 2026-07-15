@@ -1,5 +1,5 @@
 import { SERVER_TICK_MS, rotationLerp } from "@bundu/shared";
-import { serverTime } from "@client/globals";
+import { clientTime } from "@client/globals";
 
 export interface PositionState {
     x: number;
@@ -43,7 +43,7 @@ export class PositionStates {
         return this.current;
     }
 
-    interpolate(now = serverTime.now()): { x: number; y: number } {
+    interpolate(now = clientTime.now()): { x: number; y: number } {
         if (!this.hasSegment) return this.current;
 
         const t = Math.min(
@@ -57,7 +57,7 @@ export class PositionStates {
         return this.current;
     }
 
-    set(state: PositionState) {
+    set(state: PositionState, now = clientTime.now()) {
         if (!this.hasSegment) {
             this.snap(state);
             return;
@@ -65,27 +65,27 @@ export class PositionStates {
 
         // Always continue from the rendered position. Resetting to `to` after
         // coasting makes the first packet after standing still visibly snap back.
-        this.interpolate();
+        this.interpolate(now);
         this.from = { x: this.current.x, y: this.current.y };
         this.to = { x: state.x, y: state.y };
-        this.startedAt = serverTime.now();
+        this.startedAt = now;
         this.callback?.();
     }
 
     /** Hard-set visual + targets (spawn / teleports). */
-    snap(state: PositionState) {
+    snap(state: PositionState, now = clientTime.now()) {
         this.from = { x: state.x, y: state.y };
         this.to = { x: state.x, y: state.y };
         this.current = { x: state.x, y: state.y };
-        this.startedAt = serverTime.now();
+        this.startedAt = now;
         this.hasSegment = true;
         this.callback?.();
     }
 
-    isComplete(): boolean {
+    isComplete(now = clientTime.now()): boolean {
         if (!this.hasSegment) return true;
         return (
-            serverTime.now() - this.startedAt >=
+            now - this.startedAt >=
             this.interpolationMS * (1 + EXTRAP)
         );
     }
@@ -99,7 +99,7 @@ export class RotationStates {
     private to: RotationState = 0;
     private current: RotationState = 0;
     private hasSegment = false;
-    private startedAt = serverTime.now();
+    private startedAt = clientTime.now();
 
     callback?: () => void;
 
@@ -107,7 +107,7 @@ export class RotationStates {
         this.callback = callback;
     }
 
-    interpolate(now = serverTime.now()): number {
+    interpolate(now = clientTime.now()): number {
         if (!this.hasSegment) return this.current;
 
         const t = Math.min((now - this.startedAt) / SERVER_TICK_MS, 1);
@@ -115,29 +115,29 @@ export class RotationStates {
         return this.current;
     }
 
-    isComplete(): boolean {
+    isComplete(now = clientTime.now()): boolean {
         if (!this.hasSegment) return true;
-        return serverTime.now() - this.startedAt >= SERVER_TICK_MS;
+        return now - this.startedAt >= SERVER_TICK_MS;
     }
 
-    set(state: RotationState) {
+    set(state: RotationState, now = clientTime.now()) {
         if (!this.hasSegment) {
             this.snap(state);
             return;
         }
         this.from = this.current;
         this.to = state;
-        this.startedAt = serverTime.now();
+        this.startedAt = now;
         this.callback?.();
     }
 
     /** Jump to a rotation with no interpolation (local look prediction). */
-    snap(state: RotationState) {
+    snap(state: RotationState, now = clientTime.now()) {
         this.from = state;
         this.current = state;
         this.to = state;
         this.hasSegment = true;
-        this.startedAt = serverTime.now();
+        this.startedAt = now;
         this.callback?.();
     }
 }

@@ -8,6 +8,8 @@ import { type GameObject, System, type World } from "../engine";
 import { emitInventory } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
+const UNARMED_HARVEST = { type: "pickaxe", level: 0 } as const;
+
 export class ResourceSystem extends System<GameEventMap> {
     constructor(world: World) {
         super(world, [ResourceData], 1);
@@ -56,7 +58,8 @@ export class ResourceSystem extends System<GameEventMap> {
             player.mainHand === undefined
                 ? undefined
                 : ItemConfigs.get(player.mainHand);
-        const toolType = tool?.type ?? "pickaxe";
+        const toolType = tool?.type ?? UNARMED_HARVEST.type;
+        const toolLevel = tool?.level ?? UNARMED_HARVEST.level;
         const multiplier = config.multipliers[toolType];
         if (config.exclusive && multiplier === undefined) return;
 
@@ -65,7 +68,7 @@ export class ResourceSystem extends System<GameEventMap> {
             Math.floor(
                 config.level === -1
                     ? (multiplier ?? 1)
-                    : ((tool?.level ?? 0) - config.level + 1) *
+                    : (toolLevel - config.level + 1) *
                           (multiplier ?? 1)
             )
         );
@@ -84,6 +87,7 @@ export class ResourceSystem extends System<GameEventMap> {
         if (gathered === 0) return;
 
         data.items[itemId] = remaining - gathered;
+        player.score += (config.score ?? 0) * gathered;
         emitInventory(source, this.world.context.playerPacketManager);
 
         if (

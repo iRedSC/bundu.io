@@ -3,7 +3,7 @@ import { Health, Rotting, TileEntity } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { type GameObject, System, type World } from "../engine";
 import { Structure } from "../game_objects/structure.js";
-import { syncObjectStates } from "../network/object_state.js";
+import { syncStructureStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 
 const ROT_DAMAGE_PER_SECOND = 3;
@@ -32,7 +32,7 @@ export class RottingSystem extends System<GameEventMap> {
 
             tile.ownerId = undefined;
             structure.add(new Rotting());
-            syncObjectStates(this.world, structure);
+            syncStructureStates(this.world, structure);
         }
     };
 
@@ -50,6 +50,6 @@ export class RottingSystem extends System<GameEventMap> {
 
         object.remove(Rotting);
         tile.ownerId = source.id;
-        syncObjectStates(this.world, object);
+        syncStructureStates(this.world, object);
     };
 }

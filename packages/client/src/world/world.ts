@@ -35,6 +35,7 @@ import {
 import { ParticleSystem } from "@client/rendering/particles/particle_system";
 import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
+import { clientTime } from "@client/globals";
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -78,7 +79,6 @@ export class World {
     private placementGhostAllowed?: boolean;
     private cursorWorld?: { x: number; y: number };
     private readonly pendingObjectStates = new Map<number, EntityStateSnapshot>();
-    private elapsedMS = 0;
 
     constructor(viewport: Viewport) {
         this.viewport = viewport;
@@ -97,25 +97,28 @@ export class World {
         this.camera.follow(null);
 
         const ids = Array.from(this.objects.all(), (object) => object.id);
-        if (ids.length > 0) {
-            this.deleteObjects({ objects: ids });
-        }
+        for (const id of ids) this.removeClientObject(id);
         this.renderer.delete(-10);
         this.particles.clear();
         this.clearPlacementGhost();
         this.cursorWorld = undefined;
         this.pendingObjectStates.clear();
-        this.elapsedMS = 0;
         this.user = undefined;
     }
 
-    tick(deltaMS: number) {
-        this.elapsedMS += deltaMS;
-        AnimationManagers.World.update();
-        this.objects.update();
+    destroy(): void {
+        this.clear();
+        this.particles.destroy();
+        this.sky.removeFromParent();
+        this.sky.destroy();
+    }
+
+    tick(deltaMS: number, now = clientTime.now()) {
+        AnimationManagers.World.update(now);
+        this.objects.update(now);
         for (const object of this.objects.all()) {
             if (object instanceof Structure) {
-                object.tickVisual(this.elapsedMS);
+                object.tickVisual(now);
             }
         }
         const localPlayer =
@@ -123,7 +126,7 @@ export class World {
         updateOcclusion(localPlayer, this.objects.all());
         for (const object of this.objects.all()) {
             if (object instanceof Structure) {
-                object.updateHealthBar(this.elapsedMS, this.cursorWorld);
+                object.updateHealthBar(now, this.cursorWorld);
             }
         }
         this.particles.update(deltaMS);
@@ -188,7 +191,7 @@ export class World {
             scale,
         ] = packet.data;
         const id = packet.id;
-        this.renderer.delete(id);
+        this.removeClientObject(id);
 
         const pos = deciPoint(packet.x, packet.y);
         const nameText = new Text(name, TEXT_STYLE);
@@ -215,8 +218,7 @@ export class World {
 
     newResource = (packet: LoadResource) => {
         const [nodeType, variantId, collisionRadius, scale] = packet.data;
-        this.renderer.delete(packet.id);
-        this.pendingObjectStates.delete(packet.id);
+        this.removeClientObject(packet.id);
 
         const structure = new Structure(
             packet.id,
@@ -238,10 +240,8 @@ export class World {
     newStructure = (packet: LoadStructure) => {
         const [nodeType, variantId, health, maxHealth, initialStates] =
             packet.data;
-        this.renderer.delete(packet.id);
-
         const pendingStates = this.pendingObjectStates.get(packet.id);
-        this.pendingObjectStates.delete(packet.id);
+        this.removeClientObject(packet.id);
         const states = pendingStates
             ? { ...initialStates, ...pendingStates }
             : initialStates;
@@ -264,19 +264,27 @@ export class World {
         this.renderer.add(structure.id, ...structure.containers);
     };
 
-    updateObjectHealth = (packet: ServerPacket.UpdateObjectHealth) => {
+    updateObjectHealth = (
+        packet: ServerPacket.UpdateObjectHealth,
+        serverTimestamp: number
+    ) => {
         const object = this.objects.get(packet.id);
         if (object instanceof Structure) {
-            object.setHealth(packet.health, packet.maxHealth, this.elapsedMS);
+            object.setHealth(
+                packet.health,
+                packet.maxHealth,
+                clientTime.fromServer(serverTimestamp)
+            );
         }
     };
 
-    setObjectState = (packet: ServerPacket.SetObjectState) => {
+    setStructureState = (packet: ServerPacket.SetStructureState) => {
         const object = this.objects.get(packet.id);
         if (object instanceof Structure) {
             object.applyStates(packet.states);
             return;
         }
+        if (object) return;
 
         const pending = this.pendingObjectStates.get(packet.id) ?? {};
         this.pendingObjectStates.set(packet.id, {
@@ -285,36 +293,44 @@ export class World {
         });
     };
 
-    moveObject = (packet: ServerPacket.SetPosition, _now?: number) => {
+    moveObject = (packet: ServerPacket.SetPosition, serverTimestamp: number) => {
         const object = this.objects.get(packet.id);
         if (!object) return;
         object.renderable = true;
-        object.addPosition({
-            x: deciToWorld(packet.x),
-            y: deciToWorld(packet.y),
-        });
+        object.addPosition(
+            { x: deciToWorld(packet.x), y: deciToWorld(packet.y) },
+            clientTime.fromServer(serverTimestamp)
+        );
         this.objects.updating.add(object);
         this.objects.add(object);
     };
 
-    rotateObject = (packet: ServerPacket.SetRotation, _now: number) => {
+    rotateObject = (packet: ServerPacket.SetRotation, serverTimestamp: number) => {
         if (packet.id === this.user) return;
         const object = this.objects.get(packet.id);
         if (!object) return;
-        object.addRotation(radians(packet.rotation));
+        object.addRotation(
+            radians(packet.rotation),
+            clientTime.fromServer(serverTimestamp)
+        );
         this.objects.updating.add(object);
     };
 
     deleteObjects = ({ objects }: ServerPacket.DeleteObjects) => {
         for (const id of objects) {
-            this.pendingObjectStates.delete(id);
-            const object = this.objects.get(id);
-            this.objects.delete(id);
-            object?.debug.destroy();
-            AnimationManagers.World.remove(object);
-            this.renderer.delete(id);
+            this.removeClientObject(id);
         }
     };
+
+    private removeClientObject(id: number): void {
+        this.pendingObjectStates.delete(id);
+        const object = this.objects.get(id);
+        if (object) {
+            this.objects.delete(object);
+            object.dispose();
+        }
+        this.renderer.delete(id);
+    }
 
     updateEquipment = (packet: ServerPacket.UpdateEquipment) => {
         const player = this.objects.get(packet.id);
@@ -332,8 +348,7 @@ export class World {
     };
 
     newGroundItem = (packet: LoadGroundItem) => {
-        const existing = this.objects.get(packet.id);
-        if (existing instanceof GroundItem) return;
+        this.removeClientObject(packet.id);
 
         const item = new GroundItem(
             packet.id,
@@ -346,7 +361,7 @@ export class World {
     };
 
     newAnimal = (packet: LoadAnimal) => {
-        this.renderer.delete(packet.id);
+        this.removeClientObject(packet.id);
         const [type, collisionRadius, , , scale] = packet.data;
         const animal = new Animal(
             packet.id,
@@ -460,7 +475,7 @@ export class World {
 
     private clearPlacementGhost() {
         if (!this.placementGhost) return;
-        AnimationManagers.World.remove(this.placementGhost);
+        this.placementGhost.dispose();
         this.renderer.delete(PLACEMENT_GHOST_RENDER_ID);
         this.placementGhost = undefined;
         this.placementInvalidOverlay = undefined;
@@ -494,10 +509,17 @@ export class World {
         player.showChatMessage(message);
     };
 
-    craftEvent = ({ id, duration, itemId }: ServerPacket.CraftEvent) => {
+    craftEvent = (
+        { id, duration, itemId }: ServerPacket.CraftEvent,
+        serverTimestamp: number
+    ) => {
         const player = this.objects.get(id);
         if (!(player instanceof Player)) return;
-        player.setCraftProgress(duration, itemId);
+        player.setCraftProgress(
+            duration,
+            itemId,
+            clientTime.fromServer(serverTimestamp)
+        );
         if (duration > 0) this.objects.updating.add(player);
     };
 }

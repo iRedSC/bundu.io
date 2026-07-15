@@ -62,6 +62,13 @@ export class InputController {
         this.keyboard.closeChat();
     }
 
+    destroy(): void {
+        document.removeEventListener("pointerdown", this.onPointerDown);
+        document.removeEventListener("pointerup", this.onPointerUp);
+        this.mouse.destroy();
+        this.keyboard.destroy();
+    }
+
     private handleMouseMove(mousePos: [number, number]) {
         const player = this.facade.getLocalPlayer();
         if (!player) return;

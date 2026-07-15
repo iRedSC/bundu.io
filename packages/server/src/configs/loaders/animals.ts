@@ -5,6 +5,7 @@ export type AggroSwitch = "never" | "onHit" | "random";
 export type AggroLevel = "high" | "medium" | "low";
 
 export type AnimalConfig = {
+    score: number;
     behavior: AnimalBehavior;
     health: number;
     /** Detection/retention distance in world units. */
@@ -53,6 +54,7 @@ export type AnimalConfig = {
 };
 
 export const AnimalConfigs = new ConfigLoader<AnimalConfig>({
+    score: 0,
     behavior: "passive",
     health: 100,
     detectionRange: 300,

@@ -1,4 +1,8 @@
-import { type SerializedPacket, type Serializer } from "@bundu/shared";
+import type {
+    PacketGuards,
+    SerializedPacket,
+    Serializer,
+} from "@bundu/shared";
 import type { ClientPacketMap } from "@bundu/shared/packet_definitions";
 
 type Handler<
@@ -16,7 +20,10 @@ export class ServerPacketReceiver<
         Handler<DataMap, keyof DataMap & number>
     >();
 
-    constructor(private serializer: Serializer<DataMap>) {}
+    constructor(
+        private serializer: Serializer<DataMap>,
+        private guards?: PacketGuards<DataMap>
+    ) {}
 
     on<I extends keyof DataMap & number>(
         id: I,
@@ -45,6 +52,10 @@ export class ServerPacketReceiver<
                     const data = this.serializer.deserialize(
                         packet as [typeof id, ...unknown[]]
                     );
+                    const guard = this.guards?.[id];
+                    if (guard && !guard(data)) {
+                        throw new Error(`Packet ${id} contains invalid values`);
+                    }
                     this.handlers.get(id)?.(playerId, data);
                 } catch (error) {
                     console.error(

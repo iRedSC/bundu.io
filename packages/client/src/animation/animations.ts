@@ -1,9 +1,9 @@
 import { AnimationManager } from "./runtime";
 
-export class AnimationManagers {
-    static UI: AnimationManager = new AnimationManager();
-    static World: AnimationManager = new AnimationManager();
-}
+export const AnimationManagers = {
+    UI: new AnimationManager(),
+    World: new AnimationManager(),
+};
 
 export const ANIMATION = {
     HURT: "hurt",

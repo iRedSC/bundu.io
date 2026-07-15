@@ -68,13 +68,19 @@ export class InventoryButton extends ItemButton {
         this.item = itemId;
     }
 
-    tick() {
+    tick(now?: number) {
         tickItemButton(
             this,
             INVENTORY_COLORS,
             this.restY,
-            this.selected ? 0.92 : 1
+            this.selected ? 0.92 : 1,
+            now
         );
+    }
+
+    override destroy(): void {
+        this.amount.destroy();
+        super.destroy();
     }
 }
 
@@ -635,10 +641,10 @@ export class Inventory {
         this.resize();
     }
 
-    tick() {
+    tick(now?: number) {
         for (const [slot, button] of this.buttons.entries()) {
             button.selected = slot === this.selectedSlot;
-            button.tick();
+            button.tick(now);
         }
 
         const pointer = this.pointerLocal();
@@ -720,6 +726,17 @@ export class Inventory {
                 this.finishFly(fly);
             }
         }
+    }
+
+    destroy(): void {
+        window.removeEventListener("pointermove", this.onWindowPointerMove);
+        window.removeEventListener("pointerup", this.onWindowPointerUp);
+        for (const button of this.buttons) button.destroy();
+        for (const fly of this.flies) fly.view.destroy();
+        this.ghost.destroy();
+        this.buttons.length = 0;
+        this.flies.length = 0;
+        this.container.destroy({ children: false });
     }
 
     resize() {

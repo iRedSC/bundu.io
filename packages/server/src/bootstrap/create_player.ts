@@ -5,7 +5,7 @@ import {
 } from "@bundu/shared/tiles";
 import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Circle, Vector } from "sat";
-import { serverTime, type World } from "../engine";
+import type { World } from "../engine";
 import { Player } from "../game_objects/player";
 import { getVariantName } from "@bundu/shared/variant_map";
 
@@ -50,7 +50,6 @@ export function createPlayer(
         ServerPacket.ClientConnectionInfo,
         {
             playerId: player.id,
-            serverStartTime: serverTime.start,
         }
     );
     console.log("Added client info packet");

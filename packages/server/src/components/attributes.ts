@@ -163,12 +163,13 @@ export class AttributesData {
         duration?: number,
         now?: number
     ) {
-        if (!this.types[type]) this.types[type] = {};
+        this.types[type] ??= {};
+        const modifiers = this.types[type];
         const modifier: AttributeModifier = { operation, value };
         if (duration !== undefined) {
             modifier.expires = (now ?? this.now) + duration;
         }
-        this.types[type]![id] = modifier;
+        modifiers[id] = modifier;
 
         this.notify(type);
         return this;

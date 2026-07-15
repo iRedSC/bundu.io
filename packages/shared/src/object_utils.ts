@@ -1,7 +1,5 @@
 export function mergeObjs(...arr: object[]) {
-    return arr.reduce((acc, val) => {
-        return { ...acc, ...val };
-    }, {});
+    return Object.assign({}, ...arr);
 }
 
 export function mergeObjects<T extends object>(

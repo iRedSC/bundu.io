@@ -1,6 +1,6 @@
 import { file, serve } from "bun";
-import path from "path";
-import fs from "fs";
+import path from "node:path";
+import fs from "node:fs";
 
 const PUBLIC_DIR = path.join(import.meta.dir, "public");
 const CONFIG_DIR = path.join(
@@ -161,10 +161,10 @@ serve({
             }
         }
 
-        let pathname = url.pathname.endsWith("/")
+        const pathname = url.pathname.endsWith("/")
             ? `${url.pathname}index.html`
             : url.pathname;
-        let filepath = path.join(PUBLIC_DIR, pathname);
+        const filepath = path.join(PUBLIC_DIR, pathname);
 
         // Security: prevent directory traversal
         if (!filepath.startsWith(PUBLIC_DIR)) {

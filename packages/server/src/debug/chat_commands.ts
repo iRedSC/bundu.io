@@ -86,8 +86,9 @@ export function tryHandleDebugChatCommand(
             const kit = kits[kitId];
             const inv = Inventory.get(player);
             if (!inv) return true;
-            for (const itemId in kit) {
-                addItem(inv, getNumericId(itemId)!, kit[itemId]!);
+            for (const [itemId, count] of Object.entries(kit)) {
+                const numericId = getNumericId(itemId);
+                if (numericId !== undefined) addItem(inv, numericId, count);
             }
             break;
         }

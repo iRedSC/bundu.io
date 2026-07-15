@@ -45,8 +45,8 @@ export class StatsData {
         min?: number;
         max?: number;
     } {
-        this.types[type] = this.types[type] ?? { value: 0 };
-        return this.types[type]!;
+        this.types[type] ??= { value: 0 };
+        return this.types[type];
     }
 
     /**
@@ -57,11 +57,11 @@ export class StatsData {
      * @param max optional max to clamp the value
      */
     set(type: StatType, data: { value: number; min?: number; max?: number }) {
-        this.types[type] = this.types[type] ?? data;
-        let stat = this.types[type]!;
-        if (data.min) stat.min = data.min;
-        if (data.max) stat.max = data.max;
-        stat.value = clamp(data.value, stat!.min ?? null, stat!.max ?? null);
+        this.types[type] ??= data;
+        const stat = this.types[type];
+        if (data.min !== undefined) stat.min = data.min;
+        if (data.max !== undefined) stat.max = data.max;
+        stat.value = clamp(data.value, stat.min ?? null, stat.max ?? null);
     }
 }
 

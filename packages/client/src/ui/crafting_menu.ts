@@ -1,5 +1,5 @@
 import { ItemButton, tickItemButton } from "./item_button";
-import { Grid } from "./grid";
+import type { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Container } from "pixi.js";
@@ -81,7 +81,6 @@ export class CraftingMenu {
                 button.destroy();
             });
         } else {
-            console.log(this.buttons.length, this.items.length);
             const add = this.items.length - this.buttons.length;
             for (let i = 0; i < add; i++) {
                 const button = new ItemButton();
@@ -100,18 +99,24 @@ export class CraftingMenu {
 
     set rightclick(value: Callback) {
         this.rightClickCB = value;
-        this.buttons.forEach((b) => (b.rightclick = value));
+        for (const button of this.buttons) button.rightclick = value;
     }
 
     set leftclick(value: Callback) {
         this.leftClickCB = value;
-        this.buttons.forEach((b) => (b.leftclick = value));
+        for (const button of this.buttons) button.leftclick = value;
     }
 
-    tick() {
+    tick(now?: number) {
         for (const button of this.buttons) {
             const active = button.item === this.craftingItemId;
-            tickItemButton(button, CRAFTING_COLORS, 0, active ? 0.94 : 1);
+            tickItemButton(
+                button,
+                CRAFTING_COLORS,
+                0,
+                active ? 0.94 : 1,
+                now
+            );
             button.button.alpha = lerp(button.button.alpha, active ? 1 : this.craftingItemId === null ? 1 : 0.35, 0.2);
             if (active) {
                 button.background.tint = colorLerp(

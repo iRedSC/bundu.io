@@ -1,22 +1,28 @@
 import { ReversableMap } from "@bundu/shared";
-import { type ServerWebSocket } from "bun";
+import type { ServerWebSocket } from "bun";
+
+export type GameSocketData = {
+    username: string;
+    playerId: number;
+    skinId: number;
+};
 
 export class SocketManager {
-    private map = new ReversableMap<ServerWebSocket<any>, number>();
+    private map = new ReversableMap<ServerWebSocket<GameSocketData>, number>();
 
     getSocket(playerId: number) {
         return this.map.getv(playerId);
     }
 
-    getPlayerId(socket: ServerWebSocket<any>) {
+    getPlayerId(socket: ServerWebSocket<GameSocketData>) {
         return this.map.get(socket);
     }
 
-    addClient(socket: ServerWebSocket<any>, playerId: number) {
+    addClient(socket: ServerWebSocket<GameSocketData>, playerId: number) {
         this.map.set(socket, playerId);
     }
 
-    deleteClient(value: ServerWebSocket<any> | number) {
+    deleteClient(value: ServerWebSocket<GameSocketData> | number) {
         if (typeof value === "number") return this.map.deletev(value);
         this.map.delete(value);
     }

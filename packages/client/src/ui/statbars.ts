@@ -1,5 +1,5 @@
 import { clamp, lerp } from "@bundu/shared/transforms";
-import { ContaineredSprite, SpriteFactory } from "../assets/sprite_factory";
+import { type ContaineredSprite, SpriteFactory } from "../assets/sprite_factory";
 import { type ColorSource, Container } from "pixi.js";
 
 export type StatBarOptions = {

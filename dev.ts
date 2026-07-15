@@ -1,5 +1,5 @@
 import { spawn, type Subprocess } from "bun";
-import { watch } from "fs";
+import { watch } from "node:fs";
 
 let building = false;
 let rebuildQueued = false;

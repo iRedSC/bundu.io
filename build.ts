@@ -1,4 +1,5 @@
-import { rm } from "fs/promises";
+import { rm } from "node:fs/promises";
+import { generateVisualDefs } from "./scripts/generate-visual-defs";
 
 const GAME_WS_URL = process.env.GAME_WS_URL ?? "ws://localhost:7777";
 
@@ -6,6 +7,7 @@ const GAME_WS_URL = process.env.GAME_WS_URL ?? "ws://localhost:7777";
 const DEBUG = process.env.BUNDU_DEBUG === "1";
 
 const outdir = "./public/site";
+await generateVisualDefs();
 await rm(outdir, { recursive: true, force: true });
 
 await Bun.build({

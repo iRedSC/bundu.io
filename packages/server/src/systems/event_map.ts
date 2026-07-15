@@ -1,4 +1,4 @@
-import { GameObject } from "../engine";
+import type { GameObject } from "../engine";
 import type { SystemEventCallback } from "../engine";
 
 /**

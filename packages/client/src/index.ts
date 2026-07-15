@@ -6,13 +6,14 @@ import {
 } from "./network/receiver";
 import { ClientPacket } from "@bundu/shared/packet_definitions";
 import { World } from "./world/world";
-import { createViewport } from "./rendering/viewport";
+import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
 import { initAssets } from "./assets/load";
 import { AnimationManagers } from "./animation/animations";
 import { InputController } from "./input/controller";
 import { Player } from "./world/objects/player";
 import { GameSession } from "./session/game_session";
+import { clientTime } from "./globals";
 
 declare const __DEBUG__: boolean;
 
@@ -92,6 +93,7 @@ async function main() {
         buildSocketUrl,
         getUsername: () => nameInput.value.trim(),
         resetLocalState: () => {
+            clientTime.resetServerSync();
             world.clear();
             gui.health.update(0);
             gui.hunger.update(0);
@@ -165,26 +167,45 @@ async function main() {
 
     viewport.sortChildren();
 
-    playButton.addEventListener("click", (event) => {
+    const handlePlay = (event: MouseEvent) => {
         event.preventDefault();
         session.connect();
-    });
-    nameInput.addEventListener("keydown", (event) => {
+    };
+    const handleNameKey = (event: KeyboardEvent) => {
         if (event.key === "Enter") {
             event.preventDefault();
             session.connect();
         }
-    });
+    };
+    playButton.addEventListener("click", handlePlay);
+    nameInput.addEventListener("keydown", handleNameKey);
     nameInput.focus();
 
-    app.ticker.add((ticker) => {
-        world.tick(Math.min(ticker.deltaMS, 50));
-        AnimationManagers.UI.update();
-        gui.tick();
+    const tick = (ticker: { deltaMS: number }) => {
+        const now = clientTime.now();
+        world.tick(Math.min(ticker.deltaMS, 50), now);
+        AnimationManagers.UI.update(now);
+        gui.tick(now);
         const local = world.objects.get(world.user ?? -1);
         gui.craftingMenu.craftingItemId =
             local instanceof Player ? local.craftingItemId : null;
-    });
+    };
+    app.ticker.add(tick);
+
+    const destroy = () => {
+        session.destroy();
+        app.ticker.remove(tick);
+        playButton.removeEventListener("click", handlePlay);
+        nameInput.removeEventListener("keydown", handleNameKey);
+        input.destroy();
+        world.destroy();
+        gui.destroy();
+        destroyViewport(viewport);
+        document.oncontextmenu = null;
+        app.canvas.remove();
+        app.destroy();
+    };
+    window.addEventListener("pagehide", destroy, { once: true });
 }
 
 main();

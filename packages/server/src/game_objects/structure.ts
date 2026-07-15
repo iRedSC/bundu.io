@@ -29,7 +29,7 @@ export class Structure extends GameObject {
         if (config.class === "door") this.add(new Door());
     }
 
-    public override getNewObjectPacket(): ServerPacket.LoadObject | void {
+    public override getNewObjectPacket(): ServerPacket.LoadObject | undefined {
         const physics = this.get(Physics);
         const type = this.get(Type);
         const health = this.get(Health);
@@ -53,7 +53,7 @@ export class Structure extends GameObject {
 
     /**
      * Project sim components into the client entity-state snapshot.
-     * Always includes `rotting` so clears coalesce correctly via SetObjectState.
+     * Always includes `rotting` so clears coalesce via SetStructureState.
      */
     getStateSnapshot(): EntityStateSnapshot {
         const states: EntityStateSnapshot = {

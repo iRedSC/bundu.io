@@ -2,6 +2,8 @@ import type {
     EntityStateSnapshot,
     GameObjectData,
 } from "./object_types";
+import { PlaceMode } from "./inventory";
+import type { PacketGuards } from "./network/serializer";
 
 /** Server → client packet IDs. */
 export const ServerPacket = {
@@ -26,7 +28,7 @@ export const ServerPacket = {
     DropItem: 0x16,
     UpdateObjectHealth: 0x17,
     Leaderboard: 0x18,
-    SetObjectState: 0x19,
+    SetStructureState: 0x19,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -72,7 +74,6 @@ export namespace ServerPacket {
     };
     export type ClientConnectionInfo = {
         playerId: number;
-        serverStartTime: number;
     };
     export type RecipeList = {
         recipes: [
@@ -102,7 +103,7 @@ export namespace ServerPacket {
         y: number;
         rotation: number;
     };
-    /** Item spawned by `id` at the given world position. */
+    /** Item spawned by `id` at the given integer decitile position. */
     export type DropItem = {
         id: number;
         objectId: number;
@@ -118,8 +119,8 @@ export namespace ServerPacket {
     export type Leaderboard = {
         entries: { id: number; name: string; score: number }[];
     };
-    /** Authoritative entity-state projection (coalesced via worldPacketManager.set). */
-    export type SetObjectState = {
+    /** Authoritative structure-state projection (coalesced latest-wins). */
+    export type SetStructureState = {
         id: number;
         states: EntityStateSnapshot;
     };
@@ -162,7 +163,7 @@ export namespace ClientPacket {
         y: number;
         rotation: number;
     };
-    export type PlaceStructure = {};
+    export type PlaceStructure = Record<string, never>;
     export type SetStructurePlacement = {
         rotation: number;
         x: number;
@@ -192,7 +193,7 @@ export type ServerPacketMap = {
     [ServerPacket.DropItem]: ServerPacket.DropItem;
     [ServerPacket.UpdateObjectHealth]: ServerPacket.UpdateObjectHealth;
     [ServerPacket.Leaderboard]: ServerPacket.Leaderboard;
-    [ServerPacket.SetObjectState]: ServerPacket.SetObjectState;
+    [ServerPacket.SetStructureState]: ServerPacket.SetStructureState;
 };
 
 /** ID → payload map for client packets. */
@@ -234,7 +235,7 @@ export const ServerSchema: {
     [ServerPacket.ChatMessage]: { fields: ["id", "message"] },
     [ServerPacket.LoadGround]: { fields: ["groundData"] },
     [ServerPacket.ClientConnectionInfo]: {
-        fields: ["playerId", "serverStartTime"],
+        fields: ["playerId"],
     },
     [ServerPacket.RecipeList]: { fields: ["recipes"] },
     [ServerPacket.SetSelectedStructure]: {
@@ -254,7 +255,7 @@ export const ServerSchema: {
     },
     [ServerPacket.UpdateObjectHealth]: { fields: ["id", "health", "maxHealth"] },
     [ServerPacket.Leaderboard]: { fields: ["entries"] },
-    [ServerPacket.SetObjectState]: { fields: ["id", "states"] },
+    [ServerPacket.SetStructureState]: { fields: ["id", "states"] },
 };
 
 export const ClientSchema: {
@@ -279,3 +280,84 @@ export const ClientSchema: {
         fields: ["rotation", "x", "y"],
     },
 };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null;
+const isFiniteNumber = (value: unknown): value is number =>
+    typeof value === "number" && Number.isFinite(value);
+const isSafeInteger = (value: unknown): value is number =>
+    typeof value === "number" && Number.isSafeInteger(value);
+const isBoolean = (value: unknown): value is boolean =>
+    typeof value === "boolean";
+const hasSafeInteger = (value: Record<string, unknown>, key: string) =>
+    isSafeInteger(value[key]);
+
+/** Establishes safe wire values before authoritative handlers run. */
+export const ClientPacketGuards = {
+    [ClientPacket.Rotation]: (value: unknown): value is ClientPacket.Rotation =>
+        isRecord(value) &&
+        isFiniteNumber(value.rotation) &&
+        Math.abs(value.rotation) <= 360,
+    [ClientPacket.Movement]: (value: unknown): value is ClientPacket.Movement =>
+        isRecord(value) &&
+        isSafeInteger(value.direction) &&
+        [1, 2, 3, 5, 6, 7, 9, 10, 11].includes(value.direction),
+    [ClientPacket.Attack]: (value: unknown): value is ClientPacket.Attack =>
+        isRecord(value) && isBoolean(value.stop),
+    [ClientPacket.SelectItem]: (value: unknown): value is ClientPacket.SelectItem =>
+        isRecord(value) &&
+        isSafeInteger(value.slot) &&
+        value.slot >= 0 &&
+        value.slot <= 255,
+    [ClientPacket.MoveSlot]: (value: unknown): value is ClientPacket.MoveSlot =>
+        isRecord(value) &&
+        isSafeInteger(value.from) &&
+        value.from >= 0 &&
+        value.from <= 255 &&
+        isSafeInteger(value.to) &&
+        value.to >= -1 &&
+        value.to <= 255,
+    [ClientPacket.CraftItem]: (value: unknown): value is ClientPacket.CraftItem =>
+        isRecord(value) && isSafeInteger(value.itemId) && value.itemId >= 0,
+    [ClientPacket.ChatMessage]: (
+        value: unknown
+    ): value is ClientPacket.ChatMessage =>
+        isRecord(value) &&
+        typeof value.message === "string" &&
+        value.message.length > 0 &&
+        value.message.length <= 256,
+    [ClientPacket.CursorSlot]: (value: unknown): value is ClientPacket.CursorSlot =>
+        isRecord(value) &&
+        isSafeInteger(value.slot) &&
+        value.slot >= -1 &&
+        value.slot <= 255 &&
+        (value.mode === PlaceMode.All ||
+            value.mode === PlaceMode.Half ||
+            value.mode === PlaceMode.One),
+    [ClientPacket.Block]: (value: unknown): value is ClientPacket.Block =>
+        isRecord(value) && isBoolean(value.stop),
+    [ClientPacket.PlaceStructureAt]: (
+        value: unknown
+    ): value is ClientPacket.PlaceStructureAt =>
+        isRecord(value) &&
+        isSafeInteger(value.structureId) &&
+        value.structureId > 0 &&
+        hasSafeInteger(value, "x") &&
+        hasSafeInteger(value, "y") &&
+        isSafeInteger(value.rotation) &&
+        value.rotation >= 0 &&
+        value.rotation <= 3,
+    [ClientPacket.PlaceStructure]: (
+        value: unknown
+    ): value is ClientPacket.PlaceStructure =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.SetStructurePlacement]: (
+        value: unknown
+    ): value is ClientPacket.SetStructurePlacement =>
+        isRecord(value) &&
+        isSafeInteger(value.rotation) &&
+        value.rotation >= 0 &&
+        value.rotation <= 3 &&
+        hasSafeInteger(value, "x") &&
+        hasSafeInteger(value, "y"),
+} satisfies PacketGuards<ClientPacketMap>;

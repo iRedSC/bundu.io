@@ -1,5 +1,5 @@
 import { Attributes } from "../components/attributes.js";
-import { GameObject, System, type World } from "../engine";
+import { type GameObject, System, type World } from "../engine";
 import type { GameEventMap } from "./event_map.js";
 
 /**

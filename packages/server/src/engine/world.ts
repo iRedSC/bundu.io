@@ -1,7 +1,6 @@
 import { SERVER_TICK_MS } from "@bundu/shared";
-import { GameObject } from "./game_object.js";
-import { type AnySystem } from "./system.js";
-import type { ComponentFactory } from "./component.js";
+import type { GameObject } from "./game_object.js";
+import type { AnySystem } from "./system.js";
 import type { ServerContext } from "./server_context.js";
 
 /** Utility: check if all elements of subSet exist in superSet */
@@ -15,7 +14,7 @@ function isSubset<T>(subSet: Set<T>, superSet: Set<T>): boolean {
 /** Pull a GameObject from event payloads that carry an `object` field. */
 function eventPayloadObject(data: unknown): GameObject | undefined {
     if (typeof data !== "object" || data === null) return undefined;
-    if (!Object.prototype.hasOwnProperty.call(data, "object")) return undefined;
+    if (!Object.hasOwn(data, "object")) return undefined;
     const object = (data as { object?: unknown }).object;
     return object ? (object as GameObject) : undefined;
 }
@@ -226,11 +225,7 @@ export class World {
 
         for (const object of targets) {
             if (!object) continue;
-            if (
-                object.hasComponents(
-                    components as ComponentFactory<unknown>[]
-                )
-            ) {
+            if (object.hasComponents(components)) {
                 found.push(object);
             }
         }
@@ -257,9 +252,10 @@ export class World {
         }
 
         const systems = single ? [single] : this.systems.values();
+        const objectSystemSet = this.objectSystems.get(object.id);
+        if (!objectSystemSet) return;
 
         for (const system of systems) {
-            const objectSystemSet = this.objectSystems.get(object.id)!;
             const componentSet = new Set(object.components.map((c) => c.id));
             const qualifies = isSubset(system.componentIds, componentSet);
             const already = objectSystemSet.has(system);

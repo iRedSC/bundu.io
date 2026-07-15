@@ -365,4 +365,11 @@ export class Structure extends GameObject {
         this.animations.clear();
         this.applyVisualDefinition(this.variant);
     }
+
+    override dispose(): void {
+        this.stateController?.dispose();
+        this.stateController = undefined;
+        this.animationManager.remove(this);
+        super.dispose();
+    }
 }

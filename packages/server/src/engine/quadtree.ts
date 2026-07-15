@@ -66,7 +66,7 @@ class InternalQuadtree {
 
     clear() {
         this.objects.clear();
-        for (let node of this.nodes) {
+        for (const node of this.nodes) {
             node.clear();
         }
         this.nodes = [];
@@ -109,7 +109,7 @@ class InternalQuadtree {
         );
         const objects = this.objects;
         this.objects = new Map();
-        for (let id of objects.keys()) {
+        for (const id of objects.keys()) {
             this.insert(id, objectList);
         }
     }
@@ -123,7 +123,7 @@ class InternalQuadtree {
     private recombine() {
         if (!this.canRecombine()) return;
 
-        for (let node of this.nodes) {
+        for (const node of this.nodes) {
             node.clear();
         }
         this.nodes = [];
@@ -141,7 +141,7 @@ class InternalQuadtree {
             return found;
         }
 
-        for (let id of this.objects.keys()) {
+        for (const id of this.objects.keys()) {
             const position = objectList.get(id);
             if (!position) continue;
 
@@ -150,7 +150,7 @@ class InternalQuadtree {
             }
         }
 
-        for (let node of this.nodes) {
+        for (const node of this.nodes) {
             node.query(range, objectList, found);
         }
 
@@ -160,7 +160,7 @@ class InternalQuadtree {
     delete(objectID: number) {
         this.objects.delete(objectID);
 
-        for (let node of this.nodes) {
+        for (const node of this.nodes) {
             node.delete(objectID);
         }
 
@@ -170,7 +170,7 @@ class InternalQuadtree {
     insert(id: number, objectList: QuadtreeObjectList): boolean {
         const position = objectList.get(id);
         if (!position) {
-            console.error("CANNOT ADD OBJECT " + id + " TO TREE");
+            console.error(`CANNOT ADD OBJECT ${id} TO TREE`);
             return false;
         }
         if (!this.bounds.contains(position)) {
@@ -184,7 +184,7 @@ class InternalQuadtree {
             if (!this.nodes.length) {
                 this.divide(objectList);
             }
-            for (let node of this.nodes) {
+            for (const node of this.nodes) {
                 if (node.bounds.contains(position)) {
                     if (node.insert(id, objectList)) {
                         return true;
@@ -197,7 +197,7 @@ class InternalQuadtree {
 
     rebuild(objects: QuadtreeObjectList) {
         this.clear();
-        for (let id of objects.keys()) {
+        for (const id of objects.keys()) {
             this.insert(id, objects);
         }
     }

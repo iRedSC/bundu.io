@@ -30,7 +30,7 @@ import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
 import { PlaceMode } from "@bundu/shared/inventory";
-import { pointToTile, WORLD_BOUNDS } from "@bundu/shared/tiles";
+import { pointToTile, WORLD_BOUNDS, worldToDeci } from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { GroundItem } from "../game_objects/ground_item.js";
 import { moveInDirection } from "@bundu/shared/transforms";
@@ -414,8 +414,8 @@ export class PlayerSystem extends System<GameEventMap> {
             id: player.id,
             objectId: item.id,
             itemId,
-            x: Math.round(target.x),
-            y: Math.round(target.y),
+            x: worldToDeci(target.x),
+            y: worldToDeci(target.y),
         });
     }
 

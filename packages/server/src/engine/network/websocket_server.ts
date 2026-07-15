@@ -1,20 +1,18 @@
 import { decode } from "@msgpack/msgpack";
-import { type ServerWebSocket } from "bun";
-import type { SocketManager } from "./socket_manager";
-
-type WebSocketData = { username: string; playerId: number; skinId: number };
+import type { ServerWebSocket } from "bun";
+import type { GameSocketData, SocketManager } from "./socket_manager";
 
 type ValidPacket = [number, ...unknown[]];
 
 function isValidPacket(value: unknown): value is ValidPacket {
-    return Array.isArray(value) && typeof value[0] === "number";
+    return Array.isArray(value) && Number.isSafeInteger(value[0]);
 }
 
 export class ServerController {
-    connect: (socket: ServerWebSocket<WebSocketData>) => void = () => {};
-    disconnect: (socket: ServerWebSocket<WebSocketData>) => void = () => {};
+    connect: (socket: ServerWebSocket<GameSocketData>) => void = () => {};
+    disconnect: (socket: ServerWebSocket<GameSocketData>) => void = () => {};
     message: (
-        socket: ServerWebSocket<WebSocketData>,
+        socket: ServerWebSocket<GameSocketData>,
         message: ValidPacket
     ) => void = () => {};
     createPlayer: (username: string, skinId: number) => number;
@@ -29,7 +27,7 @@ export class ServerController {
     }
 
     start(port: number) {
-        const server = Bun.serve<WebSocketData>({
+        const server = Bun.serve<GameSocketData>({
             port,
             fetch: (req, server) => {
                 const url = new URL(req.url);

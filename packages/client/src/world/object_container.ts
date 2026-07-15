@@ -1,4 +1,4 @@
-import GameObject from "./game_object";
+import type GameObject from "./game_object";
 
 /** Simple id → object map with an updating set for interpolation. */
 export default class ObjectContainer {
@@ -11,6 +11,10 @@ export default class ObjectContainer {
     }
 
     add(object: GameObject): void {
+        const existing = this.objects.get(object.id);
+        if (existing && existing !== object) {
+            throw new Error(`Client object ${object.id} already exists`);
+        }
         this.objects.set(object.id, object);
         this.updating.add(object);
     }
@@ -28,9 +32,9 @@ export default class ObjectContainer {
         this.objects.delete(object.id);
     }
 
-    update(_now?: number): void {
+    update(now?: number): void {
         for (const object of this.updating.values()) {
-            const done = object.update();
+            const done = object.update(now);
             if (done) this.updating.delete(object);
         }
     }

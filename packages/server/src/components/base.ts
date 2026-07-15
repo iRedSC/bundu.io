@@ -39,7 +39,7 @@ export const TileEntity = Component.register<TileEntity>(() => ({
     occupied: [],
 }));
 
-export type CalculateCollisions = {};
+export type CalculateCollisions = Record<string, never>;
 export const CalculateCollisions = Component.register<CalculateCollisions>(
     () => ({})
 );

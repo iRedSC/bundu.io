@@ -1,4 +1,4 @@
-import { Serializer, type SerializedPacket } from "@bundu/shared";
+import type { Serializer, SerializedPacket } from "@bundu/shared";
 import type {
     ServerPacketMap,
     ServerPacketID,

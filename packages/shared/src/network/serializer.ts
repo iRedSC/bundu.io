@@ -1,5 +1,9 @@
 export type SerializedPacket = [number, ...unknown[]];
 
+export type PacketGuards<DataMap extends Record<number, object>> = {
+    [K in keyof DataMap & number]: (data: unknown) => data is DataMap[K];
+};
+
 /** Packs/unpacks packets by field order. One type param: the ID → payload map. */
 export class Serializer<DataMap extends Record<number, object>> {
     private schemas = new Map<number, { fields: readonly string[] }>();
