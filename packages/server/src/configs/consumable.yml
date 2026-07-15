@@ -43,6 +43,7 @@ komodo_dragon_eye:
 
 miracle_fruit:
     type: food
+    can_saturate: true
     stats:
         hunger: 35
         health: -10

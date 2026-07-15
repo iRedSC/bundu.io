@@ -28,6 +28,7 @@ const ANIM_PRESETS = new Set<AnimPreset>([
     "lunge",
     "attack",
     "block",
+    "eat",
     "rotting",
 ]);
 const VISUAL_FILTERS = new Set(["grayscale"]);

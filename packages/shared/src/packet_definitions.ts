@@ -29,6 +29,8 @@ export const ServerPacket = {
     UpdateObjectHealth: 0x17,
     Leaderboard: 0x18,
     SetStructureState: 0x19,
+    /** `duration > 0` starts eating; `duration === 0` cancels or completes it. */
+    EatEvent: 0x1a,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -124,6 +126,7 @@ export namespace ServerPacket {
         id: number;
         states: EntityStateSnapshot;
     };
+    export type EatEvent = { id: number; duration: number };
 }
 
 /** Client → server packet IDs. */
@@ -194,6 +197,7 @@ export type ServerPacketMap = {
     [ServerPacket.UpdateObjectHealth]: ServerPacket.UpdateObjectHealth;
     [ServerPacket.Leaderboard]: ServerPacket.Leaderboard;
     [ServerPacket.SetStructureState]: ServerPacket.SetStructureState;
+    [ServerPacket.EatEvent]: ServerPacket.EatEvent;
 };
 
 /** ID → payload map for client packets. */
@@ -256,6 +260,7 @@ export const ServerSchema: {
     [ServerPacket.UpdateObjectHealth]: { fields: ["id", "health", "maxHealth"] },
     [ServerPacket.Leaderboard]: { fields: ["entries"] },
     [ServerPacket.SetStructureState]: { fields: ["id", "states"] },
+    [ServerPacket.EatEvent]: { fields: ["id", "duration"] },
 };
 
 export const ClientSchema: {
