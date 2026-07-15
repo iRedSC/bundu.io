@@ -156,14 +156,12 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!data?.eating) return;
         data.eating = undefined;
         Attributes.get(player)?.clear("eating");
-        if (emit) this.emitEatEvent(player, 0);
-    }
-
-    private emitEatEvent(player: GameObject, duration: number) {
-        const packet = { id: player.id, duration };
-        const { playerPacketManager, worldPacketManager } = this.world.context;
-        playerPacketManager.add(player.id, ServerPacket.EatEvent, packet);
-        worldPacketManager.emit(ServerPacket.EatEvent, packet);
+        if (emit) {
+            this.world.context.worldPacketManager.emit(ServerPacket.EatEvent, {
+                id: player.id,
+                duration: 0,
+            });
+        }
     }
 
     private finishEating(player: GameObject) {
@@ -230,7 +228,10 @@ export class PlayerSystem extends System<GameEventMap> {
             "multiply",
             attributes.get("eating.movement_speed_multiplier")
         );
-        this.emitEatEvent(player, config.eat_duration_ms);
+        this.world.context.worldPacketManager.emit(ServerPacket.EatEvent, {
+            id: player.id,
+            duration: config.eat_duration_ms,
+        });
     }
 
     /** Cancel block if equipment no longer grants `health.defense.blocking`. */
