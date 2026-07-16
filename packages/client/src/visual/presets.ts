@@ -24,7 +24,12 @@ export function createPreset(
             return hurt(nodes);
         case "hit": {
             if (rotationTarget) {
-                return hitRotation(rotationTarget, ctx, def.data);
+                // Bound preset is a no-angle fallback; CombatFx plays parameterized hits.
+                return hitRotation(rotationTarget, {
+                    angle: 0,
+                    knockback: false,
+                    data: def.data,
+                });
             }
             const node = nodes[0];
             if (!node) throw new Error("hit preset needs one part");

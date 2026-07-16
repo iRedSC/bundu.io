@@ -111,9 +111,9 @@ export class AttackSystem extends System<GameEventMap> {
         hits.delete(source.id);
         for (const object of hits.values()) {
             const targetPhysics = Physics.get(object);
-            // Angle from the target toward the hit origin (not attacker facing).
+            // Attack direction from the hit origin into the target (not attacker facing).
             const angle = targetPhysics
-                ? lookToward(targetPhysics.position, origin)
+                ? lookToward(origin, targetPhysics.position)
                 : facing;
             // Intact doors toggle; rotting doors take damage / claim via Hurt.
             if (Door.get(object) && !Rotting.get(object)) {

@@ -208,10 +208,6 @@ export type AnimContext = {
         y: number;
         radius: number;
     };
-    /** Radians from structure center toward the hit origin. */
-    hitImpactAngle?: number;
-    /** Successful hits also push the structure away from the hit origin. */
-    hitKnockback?: boolean;
 };
 
 /** GameObject-rotated hit target (structure hurt punch). */

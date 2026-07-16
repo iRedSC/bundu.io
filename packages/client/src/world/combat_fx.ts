@@ -60,13 +60,13 @@ export class CombatFx {
             return;
         }
 
-        object.reactToHit(angle, success);
-        object.trigger(ANIMATION.HIT, AnimationManagers.World, true);
+        // Same wiggle for success/fail; knockback + particles only on success.
+        object.playHit(angle, success);
         if (!success) return;
 
-        // Impact point on the rim toward the hit origin; debris sprays inward.
-        const hitX = object.position.x + Math.cos(angle) * object.collisionRadius;
-        const hitY = object.position.y + Math.sin(angle) * object.collisionRadius;
+        // Impact on the rim facing the attacker (opposite attack direction).
+        const hitX = object.position.x - Math.cos(angle) * object.collisionRadius;
+        const hitY = object.position.y - Math.sin(angle) * object.collisionRadius;
         this.particles.burst(
             structureHit(
                 object.sprite.sprite.texture,

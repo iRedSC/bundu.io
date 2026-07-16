@@ -1,37 +1,44 @@
 import { lerp, radians } from "@bundu/shared/transforms";
 import { easeOut } from "../../animation/animations";
 import { Animation } from "../../animation/runtime";
-import type { AnimContext, HitData, HitTarget, PartNode } from "../types";
+import type { HitData, HitTarget, PartNode } from "../types";
 
 const DEFAULT_KICK_DEGREES = 14;
 const DEFAULT_DURATION_MS = 450;
-/** Peak positional push away from the hit origin on successful hits. */
-const KNOCKBACK_DISTANCE = 6;
+/** Peak positional push along the attack direction on successful hits. */
+const KNOCKBACK_DISTANCE = 22;
+
+export type HitRotationOptions = {
+    /** Radians: direction from hit origin into the target (attack direction). */
+    angle: number;
+    /** Successful hits also push the target along `angle`. */
+    knockback: boolean;
+    data?: HitData;
+    /** Keep promoted world layers in sync when mutating the object transform. */
+    onApply?: () => void;
+};
 
 /** Dampened rotational wiggle on hit (structures); optional knockback on success. */
-export function hitRotation(
-    target: HitTarget,
-    ctx: AnimContext,
-    data?: HitData
-) {
-    const kick = radians(data?.kick ?? DEFAULT_KICK_DEGREES);
-    const duration = data?.duration ?? DEFAULT_DURATION_MS;
+export function hitRotation(target: HitTarget, options: HitRotationOptions) {
+    const kick = radians(options.data?.kick ?? DEFAULT_KICK_DEGREES);
+    const duration = options.data?.duration ?? DEFAULT_DURATION_MS;
+    const { angle, knockback, onApply } = options;
     const animation = new Animation();
     let baseRot = 0;
     let baseX = 0;
     let baseY = 0;
     let dir = 1;
-    let away = 0;
-    let knockback = false;
 
     const applyRotation = (rotation: number) => {
         target.rotationStates.snap(rotation);
         target.rotation = rotation;
+        onApply?.();
     };
 
     const applyPosition = (x: number, y: number) => {
         target.positionStates.snap({ x, y });
         target.position.set(x, y);
+        onApply?.();
     };
 
     animation.keyframes[0] = (a) => {
@@ -39,11 +46,8 @@ export function hitRotation(
             baseRot = target.rotation;
             baseX = target.position.x;
             baseY = target.position.y;
-            const impact = ctx.hitImpactAngle ?? 0;
-            // Lean based on which side the hit origin is on (not random / facing).
-            dir = Math.sin(impact - baseRot) >= 0 ? 1 : -1;
-            away = impact + Math.PI;
-            knockback = ctx.hitKnockback === true;
+            // Lean based on hit origin side relative to current facing.
+            dir = Math.sin(angle + Math.PI - baseRot) >= 0 ? 1 : -1;
             a.goto(0, duration);
         }
         const damp = Math.exp(-5 * a.t);
@@ -52,8 +56,8 @@ export function hitRotation(
         if (knockback) {
             const offset = Math.sin(a.t * Math.PI) * KNOCKBACK_DISTANCE;
             applyPosition(
-                baseX + Math.cos(away) * offset,
-                baseY + Math.sin(away) * offset
+                baseX + Math.cos(angle) * offset,
+                baseY + Math.sin(angle) * offset
             );
         }
         if (a.keyframeEnded) a.expired = true;
