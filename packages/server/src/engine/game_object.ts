@@ -3,6 +3,14 @@ import type { Component, ComponentFactory } from "./component.js";
 
 let NEXT_OBJECT_ID = 1;
 
+export function restoreObjectId(object: GameObject, id: number): void {
+    if (!Number.isSafeInteger(id) || id < 1) {
+        throw new Error(`Invalid restored object id ${id}`);
+    }
+    object.id = id;
+    NEXT_OBJECT_ID = Math.max(NEXT_OBJECT_ID, id + 1);
+}
+
 export type Subscription = (
     object: GameObject,
     added?: Component<unknown>,

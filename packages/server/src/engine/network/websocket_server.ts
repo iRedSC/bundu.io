@@ -15,14 +15,14 @@ export class ServerController {
         socket: ServerWebSocket<GameSocketData>,
         message: ValidPacket
     ) => void = () => {};
-    createPlayer: (username: string, skinId: number) => number;
+    createPlayer: (username: string, skinId: number, sessionId: string) => number;
     manager: SocketManager;
     requiredPackFingerprint: string | undefined;
     http: (request: Request, url: URL) => Response | undefined = () => undefined;
 
     constructor(
         manager: SocketManager,
-        createPlayer: (username: string, skinId: number) => number
+        createPlayer: (username: string, skinId: number, sessionId: string) => number
     ) {
         this.createPlayer = createPlayer;
         this.manager = manager;
@@ -52,9 +52,15 @@ export class ServerController {
                 }
                 const username = url.searchParams.get("username") ?? "unnamed";
                 const skin_id = Number(url.searchParams.get("skin_id")) || 0;
+                const sessionId = url.searchParams.get("session_id") ?? crypto.randomUUID();
 
                 const success = server.upgrade(req, {
-                    data: { playerId: -1, username, skinId: skin_id },
+                    data: {
+                        playerId: -1,
+                        username,
+                        sessionId,
+                        skinId: skin_id,
+                    },
                 });
 
                 if (success) return;
@@ -65,12 +71,16 @@ export class ServerController {
                 open: (ws) => {
                     const playerId = this.createPlayer(
                         ws.data.username,
-                        ws.data.skinId
+                        ws.data.skinId,
+                        ws.data.sessionId
                     );
                     ws.data.playerId = playerId;
                     this.manager.addClient(ws, playerId);
                     this.connect(ws);
-                    console.log(`Socket connected: ${ws.data.username}`);
+                    console.log(
+                        `Socket connected: ${ws.data.username} ` +
+                            `(session ${ws.data.sessionId.slice(0, 8)}, player ${playerId})`
+                    );
                 },
 
                 message: (ws, message) => {

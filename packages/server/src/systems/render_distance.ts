@@ -55,6 +55,11 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         this.listen(GameEvent.DeleteObject, this.deleteObject, [Physics]);
     }
 
+    loadView(object: GameObject): void {
+        object.get(VisibleObjects).visible.clear();
+        this.update(this.world.gameTime, 0, object);
+    }
+
     override update(_time: number, _delta: number, object: GameObject): void {
         const physics = object.get(Physics);
         const visibleObjects = object.get(VisibleObjects);
