@@ -54,7 +54,8 @@ export function hitRotation(target: HitTarget, options: HitRotationOptions) {
         const wiggle = Math.sin(a.t * Math.PI * 5) * kick * damp * dir;
         applyRotation(baseRot + wiggle);
         if (knockback) {
-            const offset = Math.sin(a.t * Math.PI) * KNOCKBACK_DISTANCE;
+            // Same duration + damp as the wiggle so the push settles with it.
+            const offset = Math.sin(a.t * Math.PI) * KNOCKBACK_DISTANCE * damp;
             applyPosition(
                 baseX + Math.cos(angle) * offset,
                 baseY + Math.sin(angle) * offset
