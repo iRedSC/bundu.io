@@ -5,6 +5,7 @@ import {
 } from "@bundu/shared/transforms";
 import { attackFacingRadians } from "@bundu/shared/attack_box";
 import { decodeMoveDirection } from "@bundu/shared/movement";
+import { SESSION_ENDED_CLOSE } from "@bundu/shared/session";
 import { type ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GroundData, Health, Physics } from "../components/base.js";
 import {
@@ -51,6 +52,9 @@ export class PlayerSystem extends System<GameEventMap> {
     }
 
     override update(time: number, _delta: number, player: GameObject): void {
+        // Soft-disconnected players stay alive but ignore sim intent / channels.
+        if (!this.world.context.socketManager.getSocket(player.id)) return;
+
         const data = player.get(PlayerData);
         const attributes = player.get(Attributes);
 
@@ -106,13 +110,34 @@ export class PlayerSystem extends System<GameEventMap> {
         });
     }
 
-    override enter(player: GameObject) {
+    /** Clear ephemeral intent when the socket detaches (player stays alive). */
+    parkDisconnected(player: GameObject) {
+        const data = PlayerData.get(player);
+        if (!data) return;
+        data.moveDir = [0, 0];
+        data.attacking = false;
+        if (data.blocking) {
+            data.blocking = false;
+            Attributes.get(player)?.clear("blocking");
+        }
+        this.clearCraft(player, false);
+        this.clearEating(player, false);
+    }
+
+    /**
+     * Socket bind sync - sole place for client-only spawn packets.
+     * System `enter` stays free of client delivery (indexing only).
+     */
+    syncSession(player: GameObject) {
         const groundObjects = this.world.query([GroundData]);
         const packets = groundObjects.map((ground) => {
             const data = ground.get(GroundData);
             return data.createPacket();
         });
         const { playerPacketManager, worldPacketManager } = this.world.context;
+        playerPacketManager.set(player.id, ServerPacket.ClientConnectionInfo, {
+            playerId: player.id,
+        });
         playerPacketManager.set(player.id, ServerPacket.LoadGround, {
             groundData: packets,
         });
@@ -128,12 +153,14 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!target.active) return;
         this.clearCraft(target);
         this.clearEating(target);
+        const data = PlayerData.get(target);
+        if (data) data.sessionId = undefined;
         target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
         const { socketManager } = this.world.context;
         const socket = socketManager.getSocket(target.id);
         socketManager.deleteClient(target.id);
-        socket?.close();
+        socket?.close(SESSION_ENDED_CLOSE, "session ended");
     }
 
     private emitCraftEvent(player: GameObject, duration: number, itemId = -1) {

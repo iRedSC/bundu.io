@@ -14,6 +14,7 @@ export * from "./structure_placement";
 export * from "./transforms";
 export * from "./attack_box";
 export * from "./range";
+export * from "./session";
 export { ReversableMap } from "./reverseable_map";
 export {
     Serializer,

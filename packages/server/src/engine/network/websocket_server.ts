@@ -1,4 +1,5 @@
 import { decode } from "@msgpack/msgpack";
+import { SESSION_REJECTED_CLOSE } from "@bundu/shared/session";
 import type { ServerWebSocket } from "bun";
 import type { GameSocketData, SocketManager } from "./socket_manager";
 
@@ -74,6 +75,10 @@ export class ServerController {
                         ws.data.skinId,
                         ws.data.sessionId
                     );
+                    if (playerId < 0) {
+                        ws.close(SESSION_REJECTED_CLOSE, "session in use");
+                        return;
+                    }
                     ws.data.playerId = playerId;
                     this.manager.addClient(ws, playerId);
                     this.connect(ws);
