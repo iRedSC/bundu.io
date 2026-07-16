@@ -16,7 +16,10 @@ import {
     removeItem,
     tryConsumeAndAdd,
 } from "../components/inventory.js";
-import { PlayerData } from "../components/player.js";
+import {
+    clearEphemeralPlayerIntent,
+    PlayerData,
+} from "../components/player.js";
 import {
     craftingList,
     packCraftingList,
@@ -114,14 +117,11 @@ export class PlayerSystem extends System<GameEventMap> {
     parkDisconnected(player: GameObject) {
         const data = PlayerData.get(player);
         if (!data) return;
-        data.moveDir = [0, 0];
-        data.attacking = false;
-        if (data.blocking) {
-            data.blocking = false;
-            Attributes.get(player)?.clear("blocking");
-        }
+        if (data.blocking) Attributes.get(player)?.clear("blocking");
+        // clearCraft/clearEating before intent wipe so attribute side effects still run.
         this.clearCraft(player, false);
         this.clearEating(player, false);
+        clearEphemeralPlayerIntent(data);
     }
 
     /**

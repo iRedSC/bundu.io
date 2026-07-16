@@ -50,3 +50,12 @@ export const PlayerData = Component.register<PlayerData>(() => ({
         cursor: { x: 0, y: 0 },
     },
 }));
+
+/** Ephemeral intent / channels — never durable across disconnect or checkpoint. */
+export function clearEphemeralPlayerIntent(data: PlayerData): void {
+    data.moveDir = [0, 0];
+    data.attacking = false;
+    data.blocking = false;
+    data.crafting = undefined;
+    data.eating = undefined;
+}
