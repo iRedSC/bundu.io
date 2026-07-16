@@ -14,6 +14,8 @@ export type PacketReceiver = {
 };
 
 export type GameSessionHooks = {
+    prepareConnection: () => Promise<void>;
+    autoReconnect: boolean;
     buildSocketUrl: (username: string) => string;
     getUsername: () => string;
     resetLocalState: () => void;
@@ -29,6 +31,10 @@ export type GameSessionHooks = {
 export class GameSession {
     private socket: GameSocket | null = null;
     private connecting = false;
+    private generation = 0;
+    private reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    private reconnectDelay = 250;
+    private destroyed = false;
 
     constructor(
         private readonly receiver: PacketReceiver,
@@ -45,8 +51,14 @@ export class GameSession {
     }
 
     connect(): void {
+        if (this.destroyed) return;
         if (this.connecting) return;
         if (this.socket && this.socket.readyState === WebSocket.OPEN) return;
+
+        void this.open(++this.generation);
+    }
+
+    private async open(generation: number): Promise<void> {
 
         this.connecting = true;
         this.hooks.setConnecting(true);
@@ -64,6 +76,19 @@ export class GameSession {
                 this.socket.close();
             }
         }
+
+        try {
+            await this.hooks.prepareConnection();
+        } catch (error) {
+            if (generation !== this.generation) return;
+            this.connecting = false;
+            this.hooks.setConnecting(false);
+            this.hooks.onDisconnected();
+            console.error("Connection preparation failed", error);
+            this.scheduleReconnect();
+            return;
+        }
+        if (generation !== this.generation) return;
 
         const next = new Socket(
             this.hooks.buildSocketUrl(this.hooks.getUsername()),
@@ -85,6 +110,7 @@ export class GameSession {
         next.onopen = () => {
             if (this.socket !== next) return;
             this.connecting = false;
+            this.reconnectDelay = 250;
             this.hooks.setConnecting(false);
             this.hooks.onConnected();
         };
@@ -103,10 +129,27 @@ export class GameSession {
             this.socket = null;
             this.hooks.resetLocalState();
             this.hooks.onDisconnected();
+            this.scheduleReconnect();
         };
     }
 
+    private scheduleReconnect(): void {
+        if (!this.hooks.autoReconnect || this.destroyed || this.reconnectTimer) {
+            return;
+        }
+        const delay = this.reconnectDelay;
+        this.reconnectDelay = Math.min(2_000, delay * 2);
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = undefined;
+            this.connect();
+        }, delay);
+    }
+
     destroy(): void {
+        this.destroyed = true;
+        this.generation++;
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = undefined;
         const socket = this.socket;
         this.socket = null;
         this.connecting = false;

@@ -13,6 +13,8 @@ export type EatingState = {
 export type PlayerData = {
     name: string;
     score: number;
+    /** Stable browser-session identity used for dev checkpoint reattachment. */
+    sessionId?: string;
 
     playerSkin: string;
     selectedStructure: {

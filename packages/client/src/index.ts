@@ -9,7 +9,10 @@ import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
 import { initAssets } from "./assets/load";
-import { loadResourcePacks } from "./assets/resource_packs";
+import {
+    getResourcePackFingerprint,
+    loadResourcePacks,
+} from "./assets/resource_packs";
 import { AnimationManagers } from "./animation/animations";
 import { InputController } from "./input/controller";
 import { Player } from "./world/objects/player";
@@ -40,8 +43,16 @@ function setMenuVisible(visible: boolean) {
 }
 
 let packFingerprint = "";
+const sessionId = sessionStorage.getItem("bundu.session_id") ?? crypto.randomUUID();
+sessionStorage.setItem("bundu.session_id", sessionId);
 
 async function synchronizeResourcePacks() {
+    if (
+        packFingerprint &&
+        (await getResourcePackFingerprint(GAME_WS_URL)) === packFingerprint
+    ) {
+        return;
+    }
     const resourcePacks = await loadResourcePacks(GAME_WS_URL);
     await initAssets(resourcePacks.assets);
     replaceVisualDefs(
@@ -55,6 +66,7 @@ function buildSocketUrl(username: string) {
     const url = new URL(GAME_WS_URL);
     url.searchParams.set("username", username || "unnamed");
     url.searchParams.set("skin_id", "0");
+    url.searchParams.set("session_id", sessionId);
     url.searchParams.set("packs", packFingerprint);
     return url.toString();
 }
@@ -105,6 +117,8 @@ async function main() {
     ) as HTMLButtonElement;
 
     const session = new GameSession(receiver, {
+        prepareConnection: synchronizeResourcePacks,
+        autoReconnect: __DEBUG__,
         buildSocketUrl,
         getUsername: () => nameInput.value.trim(),
         resetLocalState: () => {
