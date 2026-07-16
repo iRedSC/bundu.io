@@ -1,19 +1,43 @@
-import { Assets, type Texture } from "pixi.js";
+import { Assets, Texture } from "pixi.js";
 import type { ResourceAssetSource } from "./resource_packs";
 
 const loadedAssets = new Map<string, Texture>();
 let unknownAsset: Texture;
 
+function parserFor(path: string): "svg" | "texture" {
+    const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
+    if (ext === "svg") return "svg";
+    if (
+        ext === "png" ||
+        ext === "jpg" ||
+        ext === "jpeg" ||
+        ext === "webp" ||
+        ext === "avif" ||
+        ext === "gif"
+    ) {
+        return "texture";
+    }
+    throw new Error(`Unsupported pack texture type: ${path}`);
+}
+
 export async function initAssets(
     sources: readonly ResourceAssetSource[]
 ): Promise<void> {
-    const bundles = sources;
-
-    await Assets.load(bundles.map((b) => b.src));
+    await Assets.load(
+        sources.map(({ path, src }) => ({
+            alias: path,
+            src,
+            parser: parserFor(path),
+        }))
+    );
 
     loadedAssets.clear();
-    for (const { path, src } of bundles) {
-        loadedAssets.set(path, Assets.get(src));
+    for (const { path } of sources) {
+        const texture = Assets.get(path);
+        if (!(texture instanceof Texture)) {
+            throw new Error(`Failed to load pack texture: ${path}`);
+        }
+        loadedAssets.set(path, texture);
     }
 
     const fallback = loadedAssets.get("bundu/misc/unknown_asset.svg");

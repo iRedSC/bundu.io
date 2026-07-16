@@ -120,6 +120,17 @@ function assetUrl(base: URL, path: string): URL {
     return packUrl(base, `/packs/assets/${encoded}`);
 }
 
+function mimeFor(path: string): string {
+    const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
+    if (ext === "svg") return "image/svg+xml";
+    if (ext === "png") return "image/png";
+    if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+    if (ext === "webp") return "image/webp";
+    if (ext === "avif") return "image/avif";
+    if (ext === "gif") return "image/gif";
+    return "application/octet-stream";
+}
+
 function revokeObjectUrls() {
     for (const url of objectUrls) URL.revokeObjectURL(url);
     objectUrls = [];
@@ -156,7 +167,9 @@ export async function loadResourcePacks(
     const assets = await Promise.all(
         manifest.assets.map(async (asset) => {
             const data = await verified(assetUrl(base, asset.path), asset.hash, asset.size);
-            const src = URL.createObjectURL(new Blob([new Uint8Array(data)]));
+            const src = URL.createObjectURL(
+                new Blob([new Uint8Array(data)], { type: mimeFor(asset.path) })
+            );
             objectUrls.push(src);
             return { path: asset.path, src };
         })
