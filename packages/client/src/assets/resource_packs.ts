@@ -99,15 +99,25 @@ async function verified(url: URL, expectedHash: string, size?: number) {
     return data;
 }
 
-function httpOrigin(websocketUrl: string): URL {
-    const origin = new URL(websocketUrl);
-    origin.protocol = origin.protocol === "wss:" ? "https:" : "http:";
-    return origin;
+/** HTTP base of the game server, preserving any path prefix from GAME_WS_URL. */
+function httpBase(websocketUrl: string): URL {
+    const base = new URL(websocketUrl);
+    base.protocol = base.protocol === "wss:" ? "https:" : "http:";
+    base.search = "";
+    base.hash = "";
+    // Trailing slash so relative pack paths append under the WS path prefix.
+    if (!base.pathname.endsWith("/")) base.pathname += "/";
+    return base;
 }
 
-function assetUrl(origin: URL, path: string): URL {
+/** Resolve a pack path under the game server base (not the site origin root). */
+function packUrl(base: URL, path: string): URL {
+    return new URL(path.replace(/^\//, ""), base);
+}
+
+function assetUrl(base: URL, path: string): URL {
     const encoded = path.split("/").map(encodeURIComponent).join("/");
-    return new URL(`/packs/assets/${encoded}`, origin);
+    return packUrl(base, `/packs/assets/${encoded}`);
 }
 
 function revokeObjectUrls() {
@@ -117,7 +127,7 @@ function revokeObjectUrls() {
 
 async function fetchManifest(websocketUrl: string): Promise<Manifest> {
     const response = await fetch(
-        new URL("/packs/manifest.json", httpOrigin(websocketUrl)),
+        packUrl(httpBase(websocketUrl), "/packs/manifest.json"),
         { cache: "no-store" }
     );
     if (!response.ok) {
@@ -135,9 +145,9 @@ export async function getResourcePackFingerprint(
 export async function loadResourcePacks(
     websocketUrl: string
 ): Promise<LoadedResourcePacks> {
-    const origin = httpOrigin(websocketUrl);
+    const base = httpBase(websocketUrl);
     const manifest = await fetchManifest(websocketUrl);
-    const visualUrl = new URL(manifest.visuals.url, origin);
+    const visualUrl = packUrl(base, manifest.visuals.url);
     const visualData = await verified(visualUrl, manifest.visuals.hash);
     const visualRaw: unknown = JSON.parse(new TextDecoder().decode(visualData));
     const visualDefs = record(visualRaw, "visual definitions") as VisualDefs;
@@ -145,7 +155,7 @@ export async function loadResourcePacks(
     revokeObjectUrls();
     const assets = await Promise.all(
         manifest.assets.map(async (asset) => {
-            const data = await verified(assetUrl(origin, asset.path), asset.hash, asset.size);
+            const data = await verified(assetUrl(base, asset.path), asset.hash, asset.size);
             const src = URL.createObjectURL(new Blob([new Uint8Array(data)]));
             objectUrls.push(src);
             return { path: asset.path, src };

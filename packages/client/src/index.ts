@@ -141,6 +141,23 @@ async function synchronizeResourcePacksWithRetry(
         : new Error("Resource pack sync failed");
 }
 
+/** Quiet when already synced; otherwise show pack loading UI. */
+async function prepareConnectionPacks(): Promise<void> {
+    if (packFingerprint) {
+        try {
+            if (
+                (await getResourcePackFingerprint(GAME_WS_URL)) ===
+                packFingerprint
+            ) {
+                return;
+            }
+        } catch {
+            // Fall through to visible sync.
+        }
+    }
+    await synchronizeResourcePacksWithRetry();
+}
+
 function buildSocketUrl(username: string) {
     const url = new URL(GAME_WS_URL);
     url.searchParams.set("username", username || "unnamed");
@@ -150,15 +167,11 @@ function buildSocketUrl(username: string) {
     return url.toString();
 }
 
-async function waitForInitialPacks(): Promise<void> {
-    try {
-        await synchronizeResourcePacksWithRetry();
-        return;
-    } catch {
-        // Fall through to manual retry / back-to-menu.
-    }
-
-    const playButton = element<HTMLButtonElement>("play-button");
+/** Load packs only after the user clicks Play (servers may differ). */
+async function waitForPlayPackSync(
+    playButton: HTMLButtonElement,
+    nameInput: HTMLInputElement
+): Promise<void> {
     await new Promise<void>((resolve) => {
         const tryLoad = () => {
             void synchronizeResourcePacksWithRetry()
@@ -179,19 +192,31 @@ async function waitForInitialPacks(): Promise<void> {
             event.stopImmediatePropagation();
             tryLoad();
         };
+        const onNameKey = (event: KeyboardEvent) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            tryLoad();
+        };
         const cleanup = () => {
             packRetryButton.removeEventListener("click", tryLoad);
             packBackButton.removeEventListener("click", onBack);
             playButton.removeEventListener("click", onPlay, true);
+            nameInput.removeEventListener("keydown", onNameKey);
         };
         packRetryButton.addEventListener("click", tryLoad);
         packBackButton.addEventListener("click", onBack);
         playButton.addEventListener("click", onPlay, true);
+        nameInput.addEventListener("keydown", onNameKey);
     });
 }
 
 async function main() {
-    await waitForInitialPacks();
+    const nameInput = element<HTMLInputElement>("name-input");
+    const playButton = element<HTMLButtonElement>("play-button");
+    nameInput.focus();
+
+    // Packs belong to the chosen server — fetch only when joining.
+    await waitForPlayPackSync(playButton, nameInput);
 
     await app.init({
         resizeTo: window,
@@ -230,13 +255,8 @@ async function main() {
     app.stage.addChild(gui.container);
     setupGUIPacketReceiving(receiver, gui);
 
-    const nameInput = document.getElementById("name-input") as HTMLInputElement;
-    const playButton = document.getElementById(
-        "play-button"
-    ) as HTMLButtonElement;
-
     const session = new GameSession(receiver, {
-        prepareConnection: synchronizeResourcePacks,
+        prepareConnection: prepareConnectionPacks,
         autoReconnect: true,
         buildSocketUrl,
         getUsername: () => nameInput.value.trim(),
@@ -276,6 +296,14 @@ async function main() {
             setMenuVisible(true);
             nameInput.focus();
         },
+    });
+
+    packRetryButton.addEventListener("click", () => {
+        void session.connect();
+    });
+    packBackButton.addEventListener("click", () => {
+        hidePackOverlays();
+        setMenuVisible(true);
     });
 
     // * Keyboard / mouse inputs
@@ -344,7 +372,9 @@ async function main() {
     };
     playButton.addEventListener("click", handlePlay);
     nameInput.addEventListener("keydown", handleNameKey);
-    nameInput.focus();
+
+    // User already pressed Play to load packs — join immediately.
+    session.connect();
 
     const tick = (ticker: { deltaMS: number }) => {
         const now = clientTime.now();
