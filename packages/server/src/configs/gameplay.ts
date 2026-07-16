@@ -25,6 +25,9 @@ export type GameplayConfig = {
         movingMultiplier: number;
         attackingMultiplier: number;
     };
+    temperature: {
+        tickPeriodMs: number;
+    };
     health: { regenIntervalMs: number; rottingDamageMultiplier: number };
     spikes: {
         attackIntervalMs: number;
@@ -121,6 +124,7 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
     const root = record(value, "gameplay");
     const animal = record(root.animal_ai, "gameplay.animal_ai");
     const hunger = record(root.hunger, "gameplay.hunger");
+    const temperature = record(root.temperature, "gameplay.temperature");
     const health = record(root.health, "gameplay.health");
     const spikes = record(root.spikes, "gameplay.spikes");
     const rotting = record(root.rotting, "gameplay.rotting");
@@ -154,6 +158,13 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
             drainPeriodMs: number(hunger, "drain_period_ms", "gameplay.hunger"),
             movingMultiplier: number(hunger, "moving_multiplier", "gameplay.hunger"),
             attackingMultiplier: number(hunger, "attacking_multiplier", "gameplay.hunger"),
+        },
+        temperature: {
+            tickPeriodMs: number(
+                temperature,
+                "tick_period_ms",
+                "gameplay.temperature"
+            ),
         },
         health: {
             regenIntervalMs: number(health, "regen_interval_ms", "gameplay.health"),
