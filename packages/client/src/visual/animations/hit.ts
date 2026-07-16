@@ -6,8 +6,8 @@ import type { HitTarget, PartNode } from "../types";
 /** HitEvent strength is clamped to this range on the server. */
 export const HIT_STRENGTH_MAX = 10;
 
-const WIGGLE_DEG = { min: 5, max: 18 } as const;
-const KNOCKBACK_PX = { min: 0, max: 28 } as const;
+const WIGGLE_DEG = { min: 8, max: 24 } as const;
+const KNOCKBACK_PX = { min: 4, max: 48 } as const;
 const PARTICLE_COUNT = { min: 0, max: 8 } as const;
 const DEFAULT_DURATION_MS = 450;
 
