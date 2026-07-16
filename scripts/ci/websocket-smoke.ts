@@ -25,18 +25,18 @@ const containsChatReply = (value: unknown) =>
             packet[2] === "ci-smoke"
     );
 
-function httpOrigin(websocketUrl: string): URL {
-    const origin = new URL(websocketUrl);
-    origin.protocol = origin.protocol === "wss:" ? "https:" : "http:";
-    origin.pathname = "/";
-    origin.search = "";
-    origin.hash = "";
-    return origin;
+function httpBase(websocketUrl: string): URL {
+    const base = new URL(websocketUrl);
+    base.protocol = base.protocol === "wss:" ? "https:" : "http:";
+    base.search = "";
+    base.hash = "";
+    if (!base.pathname.endsWith("/")) base.pathname += "/";
+    return base;
 }
 
 async function packFingerprint(websocketUrl: string): Promise<string> {
     const response = await fetch(
-        new URL("/packs/manifest.json", httpOrigin(websocketUrl)),
+        new URL("packs/manifest.json", httpBase(websocketUrl)),
         { cache: "no-store" }
     );
     if (!response.ok) {
