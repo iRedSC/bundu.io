@@ -1,4 +1,5 @@
 import { Component } from "../engine";
+import type { AttributesData } from "./attributes";
 
 export type CraftingState = {
     itemId: number;
@@ -58,4 +59,15 @@ export function clearEphemeralPlayerIntent(data: PlayerData): void {
     data.blocking = false;
     data.crafting = undefined;
     data.eating = undefined;
+}
+
+/**
+ * Attribute sources for block/eat channels (no duration).
+ * Clear with intent so restore/park cannot leave modifiers without flags.
+ */
+export function clearEphemeralPlayerAttributeSources(
+    attributes: AttributesData
+): void {
+    attributes.clear("blocking");
+    attributes.clear("eating");
 }
