@@ -16,6 +16,7 @@ export class ConfigLoader<D extends object> {
         records: Record<string, Partial<D>>,
         callback?: (id: string, record: Partial<D>, fallback: D) => D
     ) {
+        this.entries.clear();
         for (const [id, record] of Object.entries(records)) {
             const modifiedRecord = callback
                 ? callback(id, record, this.fallback)

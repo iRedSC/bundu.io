@@ -17,6 +17,8 @@ export class ServerController {
     ) => void = () => {};
     createPlayer: (username: string, skinId: number) => number;
     manager: SocketManager;
+    requiredPackFingerprint: string | undefined;
+    http: (request: Request, url: URL) => Response | undefined = () => undefined;
 
     constructor(
         manager: SocketManager,
@@ -31,6 +33,17 @@ export class ServerController {
             port,
             fetch: (req, server) => {
                 const url = new URL(req.url);
+                const response = this.http(req, url);
+                if (response) return response;
+                if (
+                    this.requiredPackFingerprint &&
+                    url.searchParams.get("packs") !== this.requiredPackFingerprint
+                ) {
+                    return Response.json(
+                        { error: "Resource pack mismatch" },
+                        { status: 409 }
+                    );
+                }
                 const username = url.searchParams.get("username") ?? "unnamed";
                 const skin_id = Number(url.searchParams.get("skin_id")) || 0;
 

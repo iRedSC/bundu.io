@@ -22,9 +22,12 @@ export async function startTicker(world: World, receiver: TickReceiver) {
         world.step(SERVER_TICK_MS);
 
         const players = world.query([PlayerData]);
-        leaderboard.update(players, playerPacketManager);
+        const connectedPlayers = players.filter((player) =>
+            socketManager.getSocket(player.id)
+        );
+        leaderboard.update(connectedPlayers, playerPacketManager);
         playerPacketManager.process(
-            players,
+            connectedPlayers,
             socketManager,
             worldPacketManager
         );

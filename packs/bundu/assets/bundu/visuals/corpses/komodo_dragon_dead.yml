@@ -1,0 +1,6 @@
+id: komodo_dragon_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/komodo_dragon/komodo_dragon_dead.svg
+    spriteScale: 3.125

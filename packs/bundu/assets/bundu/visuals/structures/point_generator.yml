@@ -1,0 +1,11 @@
+id: point_generator
+extends: single_tile_node
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/crafting/point_generator.png
+
+tile:
+  footprint:
+    - "X#"
+    - "##"

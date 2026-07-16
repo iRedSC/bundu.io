@@ -1,0 +1,6 @@
+id: deer
+extends: animal
+parts:
+  body:
+    sprite: bundu/entity/animal/deer/deer.svg
+    spriteScale: 2.5

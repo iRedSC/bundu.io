@@ -6,7 +6,6 @@ import type {
     EntityStateValue,
 } from "@bundu/shared/object_types";
 import GameObject from "../game_object";
-import { spriteConfigs } from "@client/configs/sprite_configs";
 import {
     SpriteFactory,
     type ContaineredSprite,
@@ -17,7 +16,12 @@ import {
     EntityStateStore,
     VisualStateController,
 } from "../../visual/state";
-import { lookupObjectDef, structureDef, tileEntityDefs } from "../../visual/defs";
+import {
+    lookupContextVisual,
+    lookupObjectDef,
+    structureDef,
+    tileEntityDefs,
+} from "../../visual/defs";
 import type {
     AnimContext,
     ObjectDef,
@@ -43,8 +47,8 @@ export class Structure extends GameObject {
     private readonly states: EntityStateStore;
     private readonly animContext: AnimContext = { ...EMPTY_ANIM_CONTEXT };
     private stateController?: VisualStateController;
-    private usesSpriteConfig = false;
-    /** When set, world_display.scale multiplies this (ObjectDef spriteScale) instead of replacing it. */
+    private usesContextVisual = false;
+    /** When set, context scale multiplies this instead of replacing it. */
     private authoredSpriteScale?: number;
     private readonly variant?: string;
     private readonly healthBar = new Graphics();
@@ -252,7 +256,7 @@ export class Structure extends GameObject {
         this.promoteWorldLayers(def, parts);
         this.visuals = [...parts.values()].map((part) => part.visual);
         this.sprite = first.visual;
-        this.usesSpriteConfig = tileEntity === undefined;
+        this.usesContextVisual = tileEntity === undefined;
         // Authored scale from the part that became `this.sprite` (first assembled part).
         if (objectVisual) {
             const spritePart = def.parts.find(
@@ -262,7 +266,7 @@ export class Structure extends GameObject {
         } else {
             this.authoredSpriteScale = undefined;
         }
-        this.refreshSpriteConfig();
+        this.refreshVisualContext();
 
         const { animations, autoplay } = bindAnimations(
             def,
@@ -306,28 +310,28 @@ export class Structure extends GameObject {
         this.syncWorldLayers();
     }
 
-    refreshSpriteConfig() {
-        if (!this.usesSpriteConfig) return;
-        const config = spriteConfigs.get(this.type);
+    refreshVisualContext() {
+        if (!this.usesContextVisual) return;
+        const context = lookupContextVisual(this.type)?.contexts.world;
+        if (!context?.texture) return;
         if (this.authoredSpriteScale !== undefined) {
-            // Unit-normalize texture; world_display.scale multiplies ObjectDef spriteScale
+            // Unit-normalize texture; context scale multiplies ObjectDef spriteScale
             // (does not replace container / physics visualScale).
-            const display = config?.world_display;
             SpriteFactory.update(
                 this.sprite,
                 {
-                    x: display?.x,
-                    y: display?.y,
-                    rotation: display?.rotation,
+                    x: context.x,
+                    y: context.y,
+                    rotation: context.rotation,
                     scale: 1,
                 },
-                this.type
+                context.texture
             );
             this.sprite.scale.set(
-                this.authoredSpriteScale * (display?.scale ?? 1)
+                this.authoredSpriteScale * (context.scale ?? 1)
             );
         } else {
-            SpriteFactory.update(this.sprite, config?.world_display, this.type);
+            SpriteFactory.update(this.sprite, context, context.texture);
         }
         this.sprite.renderable = true;
     }

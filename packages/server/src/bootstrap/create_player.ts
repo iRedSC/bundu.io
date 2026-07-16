@@ -1,33 +1,30 @@
-import { random } from "@bundu/shared";
-import {
-    PLAYER_HITBOX_RADIUS,
-    tileCenterWorld,
-} from "@bundu/shared/tiles";
+import { tileCenterWorld } from "@bundu/shared/tiles";
 import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Circle, Vector } from "sat";
 import type { World } from "../engine";
 import { Player } from "../game_objects/player";
 import { getVariantName } from "@bundu/shared/variant_map";
 
-const SPAWN_TILE = 75;
+import { gameplayConfig } from "../configs/gameplay";
 
 export function createPlayer(
     world: World,
     username: string,
     skinId: number
 ): number {
-    const tx = random.integer(SPAWN_TILE, SPAWN_TILE);
-    const ty = random.integer(SPAWN_TILE, SPAWN_TILE);
+    const config = gameplayConfig().player;
+    const tx = config.spawnTile.x;
+    const ty = config.spawnTile.y;
     const position = new Vector(tileCenterWorld(tx), tileCenterWorld(ty));
-    const collider = new Circle(position, PLAYER_HITBOX_RADIUS);
+    const collider = new Circle(position, config.collisionRadius);
 
     const player = new Player(
         {
             position,
             collider,
-            collisionRadius: PLAYER_HITBOX_RADIUS,
+            collisionRadius: config.collisionRadius,
             rotation: 0,
-            speed: 10,
+            speed: config.physicsSpeed,
         },
         {
             name: username,
@@ -43,7 +40,7 @@ export function createPlayer(
         }
     );
     world.addObject(player);
-    console.log("added player object");
+    console.log(`Added player ${player.id}`);
 
     world.context.playerPacketManager.set(
         player.id,
@@ -52,7 +49,5 @@ export function createPlayer(
             playerId: player.id,
         }
     );
-    console.log("Added client info packet");
-
     return player.id;
 }

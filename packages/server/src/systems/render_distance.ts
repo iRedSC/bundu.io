@@ -9,19 +9,18 @@ import { GameEvent, type GameEventMap } from "./event_map.js";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { Range } from "@bundu/shared";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
-
-const RENDER_DISTANCE_X = 2200;
-const RENDER_DISTANCE_Y = 1250;
+import { gameplayConfig } from "../configs/gameplay.js";
 
 function getRenderBounds(physics: Physics): Range {
+    const distance = gameplayConfig().renderDistance;
     return new Range(
         {
-            x: physics.position.x - RENDER_DISTANCE_X,
-            y: physics.position.y - RENDER_DISTANCE_Y,
+            x: physics.position.x - distance.x,
+            y: physics.position.y - distance.y,
         },
         {
-            x: physics.position.x + RENDER_DISTANCE_X,
-            y: physics.position.y + RENDER_DISTANCE_Y,
+            x: physics.position.x + distance.x,
+            y: physics.position.y + distance.y,
         }
     );
 }

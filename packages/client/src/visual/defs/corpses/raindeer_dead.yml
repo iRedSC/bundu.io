@@ -1,6 +1,0 @@
-id: raindeer_dead
-extends: corpse
-parts:
-  - name: body
-    sprite: raindeer_dead
-    spriteScale: 3.335

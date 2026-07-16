@@ -466,7 +466,7 @@ export class World {
             this.placementGhost.container.eventMode = "none";
             this.placementGhostAllowed = undefined;
             this.placementInvalidOverlay = SpriteFactory.build(
-                "invalid_placement"
+                "bundu/ui/invalid_placement.png"
             );
             this.placementInvalidOverlay.anchor.set(0.5);
             this.placementInvalidOverlay.alpha = 0.5;

@@ -33,11 +33,21 @@ export type PartDef = PartPose & {
     visible?: boolean;
 };
 
-export type SlotDisplay = "hand_display" | "body_display" | "world_display";
+export type VisualContent =
+    | { texture: string; visual?: never }
+    | { texture?: never; visual: string };
+
+export type VisualContext = PartPose & VisualContent;
+
+export type ContextualVisualDef = {
+    id: string;
+    abstract: boolean;
+    contexts: Readonly<Record<string, VisualContext>>;
+};
 
 export type SlotDef = {
     part: string;
-    display: SlotDisplay;
+    context: string;
     /** Flip display x after apply (offhand). */
     mirrorX?: boolean;
     /** Scale applied to the attach node after SpriteFactory.update. */
@@ -157,25 +167,10 @@ export type TileGeometry = {
     footprint: readonly { x: number; y: number }[];
 };
 
-type TileEntityBase = Omit<ObjectDef, "variants"> & {
+export type TileEntityDef = ObjectDef & {
     tile: TileGeometry;
-};
-
-export type StructuredTileEntityDef = TileEntityBase & {
-    variantSource: "structured";
     variants: Record<string, Record<string, string>>;
 };
-
-export type TextureTileEntityDef = TileEntityBase & {
-    variantSource: "texture";
-    /** Part whose sprite is the decoded texture variant. */
-    texturePart: string;
-    variants?: never;
-};
-
-export type TileEntityDef =
-    | StructuredTileEntityDef
-    | TextureTileEntityDef;
 
 export type PartNode = {
     /** Authored layout and parentage; persistent state and animation never mutate it. */
@@ -185,8 +180,11 @@ export type PartNode = {
     /** Transient motion + authored pivot (presets rotate/translate around this). */
     animation: Container;
     visual: ContaineredSprite;
-    attach?: ContaineredSprite;
+    attach?: Container;
+    attachAnchor?: { x: number; y: number };
 };
+
+export type VisualDef = ObjectDef | TileEntityDef | ContextualVisualDef;
 
 /** Mutable state presets like attack/block read each frame. */
 export type AnimContext = {

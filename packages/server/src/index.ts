@@ -4,6 +4,7 @@ import { loadMap } from "./bootstrap/load_map";
 import { createPlayer } from "./bootstrap/create_player";
 import { startTicker } from "./bootstrap/start_ticker";
 import { GameEvent } from "./systems/event_map";
+import { resourcePacks } from "./configs/resource_packs";
 
 const { world, playerSystem, receiver } = createWorld();
 loadMap(world, playerSystem);
@@ -13,6 +14,56 @@ const { socketManager } = world.context;
 const controller = new ServerController(socketManager, (username, skinId) =>
     createPlayer(world, username, skinId)
 );
+
+const packHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+};
+
+controller.requiredPackFingerprint = resourcePacks.manifest.fingerprint;
+controller.http = (request, url) => {
+    if (!url.pathname.startsWith("/packs/")) return;
+    if (request.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: packHeaders });
+    }
+    if (request.method !== "GET") {
+        return new Response("Method Not Allowed", {
+            status: 405,
+            headers: packHeaders,
+        });
+    }
+    if (url.pathname === "/packs/manifest.json") {
+        return Response.json(resourcePacks.manifest, {
+            headers: { ...packHeaders, "Cache-Control": "no-store" },
+        });
+    }
+    if (url.pathname === "/packs/visuals.json") {
+        if (url.searchParams.get("hash") !== resourcePacks.manifest.visuals.hash) {
+            return new Response("Not Found", { status: 404, headers: packHeaders });
+        }
+        return new Response(resourcePacks.visualsJson, {
+            headers: {
+                ...packHeaders,
+                "Content-Type": "application/json",
+                "Cache-Control": "public, max-age=31536000, immutable",
+            },
+        });
+    }
+    const prefix = "/packs/assets/";
+    if (!url.pathname.startsWith(prefix)) {
+        return new Response("Not Found", { status: 404, headers: packHeaders });
+    }
+    const asset = resourcePacks.asset(url.pathname.slice(prefix.length));
+    if (!asset || url.searchParams.get("hash") !== asset.hash) {
+        return new Response("Not Found", { status: 404, headers: packHeaders });
+    }
+    return new Response(Bun.file(asset.filename), {
+        headers: {
+            ...packHeaders,
+            "Cache-Control": "public, max-age=31536000, immutable",
+        },
+    });
+};
 
 controller.disconnect = (socket) => {
     const playerId = socket.data.playerId;

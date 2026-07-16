@@ -1,0 +1,9 @@
+id: alligator
+extends: animal
+parts:
+  body:
+    sprite: bundu/entity/animal/alligator/alligator.svg
+    spriteScale: 2.5
+animations:
+  idle:
+    data: { amplitude: 0.01 }

@@ -1,0 +1,9 @@
+id: bee
+extends: animal
+parts:
+  body:
+    sprite: bundu/entity/animal/bee/bee.svg
+    spriteScale: 2.5
+animations:
+  idle:
+    data: { amplitude: 0.02 }

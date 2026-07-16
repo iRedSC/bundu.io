@@ -1,0 +1,9 @@
+id: elephant
+extends: animal
+parts:
+  body:
+    sprite: bundu/entity/animal/elephant/elephant.svg
+    spriteScale: 1.1
+animations:
+  idle:
+    data: { amplitude: 0.02 }

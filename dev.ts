@@ -1,5 +1,6 @@
 import { spawn, type Subprocess } from "bun";
-import { watch } from "node:fs";
+import { statSync, watch } from "node:fs";
+import path from "node:path";
 
 let building = false;
 let rebuildQueued = false;
@@ -35,15 +36,6 @@ async function rebuildClient(): Promise<void> {
     }
 }
 
-function isClientConfigYaml(
-    watchRoot: string,
-    filename: string | null
-): boolean {
-    if (!filename || !/\.ya?ml$/i.test(filename)) return false;
-    if (watchRoot !== "packages/client") return false;
-    return filename.replace(/\\/g, "/").startsWith("src/configs/");
-}
-
 function startServer(): Subprocess {
     console.log("[dev] starting game server…");
     return spawn({
@@ -54,9 +46,9 @@ function startServer(): Subprocess {
     });
 }
 
-function requestServerReload(): void {
+function requestServerReload(source: string): void {
     if (shuttingDown || !serverProc) return;
-    console.log("\n[dev] shared/server changed — reloading game server…");
+    console.log(`\n[dev] ${source} changed — reloading game server…`);
     serverReload = true;
     try {
         serverProc.kill();
@@ -101,14 +93,27 @@ const clientWatchTargets = [
     "packages/client",
     "packages/shared",
     "public/style.css",
-    "public/assets",
 ];
+
+function watchScoped(target: string, changed: (source: string) => void): void {
+    const absolute = path.resolve(target);
+    const directory = statSync(absolute).isDirectory();
+    watch(absolute, { recursive: directory }, (_event, filename) => {
+        if (!directory) return changed(target);
+        if (!filename) return;
+        const filepath = path.resolve(absolute, filename.toString());
+        if (!filepath.startsWith(`${absolute}${path.sep}`)) return;
+        changed(path.relative(process.cwd(), filepath).replaceAll("\\", "/"));
+    });
+}
+
+function isClientPackSource(source: string): boolean {
+    return /^packs\/[^/]+\/assets(?:\/|$)/.test(source);
+}
 
 let clientDebounce: Timer | undefined;
 for (const target of clientWatchTargets) {
-    watch(target, { recursive: true }, (_event, filename) => {
-        // Display YAML is hot-reloaded in-browser via the static server SSE.
-        if (isClientConfigYaml(target, filename)) return;
+    watchScoped(target, () => {
         clearTimeout(clientDebounce);
         clientDebounce = setTimeout(() => {
             void rebuildClient();
@@ -117,11 +122,12 @@ for (const target of clientWatchTargets) {
 }
 
 let serverDebounce: Timer | undefined;
-for (const target of ["packages/server", "packages/shared"]) {
-    watch(target, { recursive: true }, () => {
+for (const target of ["packages/server", "packages/shared", "packs"]) {
+    watchScoped(target, (source) => {
+        if (isClientPackSource(source)) return;
         clearTimeout(serverDebounce);
         serverDebounce = setTimeout(() => {
-            requestServerReload();
+            requestServerReload(source);
         }, 150);
     });
 }

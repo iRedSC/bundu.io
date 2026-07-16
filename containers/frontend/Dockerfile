@@ -20,6 +20,7 @@ ENV BUNDU_DEBUG=0
 COPY tsconfig.json build.ts index.html static-server.ts ./
 COPY scripts ./scripts
 COPY packages ./packages
+COPY packs ./packs
 COPY public ./public
 
 RUN bun run build
@@ -33,6 +34,7 @@ ENV BUNDU_DEBUG=0
 
 COPY --from=build /app/static-server.ts ./static-server.ts
 COPY --from=build /app/public ./public
+COPY --from=build /app/packs ./packs
 
 EXPOSE 3000
 CMD ["bun", "static-server.ts"]

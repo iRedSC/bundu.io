@@ -55,10 +55,8 @@ function assembleSprites(
 
         let attach: PartNode["attach"];
         if (part.attach) {
-            attach = SpriteFactory.build("");
-            const attachAnchor = part.attachAnchor ?? { x: 0.5, y: 0.5 };
-            attach.anchor.set(attachAnchor.x, attachAnchor.y);
-            attach.renderable = false;
+            attach = new Container();
+            attach.visible = false;
         }
 
         nodeRoot.addChild(state);
@@ -82,7 +80,14 @@ function assembleSprites(
         parent.addChild(nodeRoot);
         parent.sortableChildren = true;
 
-        parts.set(part.name, { root: nodeRoot, state, animation, visual, attach });
+        parts.set(part.name, {
+            root: nodeRoot,
+            state,
+            animation,
+            visual,
+            attach,
+            attachAnchor: part.attachAnchor,
+        });
     }
 
     const slots = new Map<string, { node: PartNode; def: SlotDef }>();
@@ -113,24 +118,13 @@ export function assembleTileEntity(
             `TileEntityDef "${def.id}": no variant or defaultVariant`
         );
     }
-    const sprites =
-        def.variantSource === "structured"
-            ? def.variants[selectedVariant]
-            : { [def.texturePart]: selectedVariant };
+    const sprites = def.variants[selectedVariant];
     const contentWidth = width - spillover * 2;
     const contentHeight = height - spillover * 2;
 
     if (!sprites) {
         throw new Error(
             `TileEntityDef "${def.id}": unknown variant "${selectedVariant}"`
-        );
-    }
-    if (
-        def.variantSource === "texture" &&
-        !def.parts.some(({ name }) => name === def.texturePart)
-    ) {
-        throw new Error(
-            `TileEntityDef "${def.id}": texturePart "${def.texturePart}" does not exist`
         );
     }
     if (

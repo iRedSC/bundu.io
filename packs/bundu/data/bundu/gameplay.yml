@@ -1,0 +1,77 @@
+animal_ai:
+  think_interval_ms: 250
+  path_limit: 96
+  aggro_check_interval_ms: 2500
+  aggro_lost_ms: 1000
+  aggro_drop_chance_percent: 35
+  medium_aggro_range_ratio: 0.5
+  wander_min_ms: 1500
+  wander_variance_ms: 2500
+  flee_ms: 1500
+  clearance_step_tiles: 0.25
+
+hunger:
+  drain_period_ms: 60000
+  moving_multiplier: 1.2
+  attacking_multiplier: 1.1
+
+health:
+  regen_interval_ms: 5000
+  rotting_damage_multiplier: 2
+
+rotting:
+  damage_per_second: 3
+  claim_weapon: diamond_sword
+
+items:
+  pickup_radius: 55
+  drop_distance: 80
+  drop_pickup_delay_ms: 500
+  ground_collision_radius: 12
+
+render_distance:
+  x: 2200
+  y: 1250
+
+player:
+  spawn_tile: { x: 75, y: 75 }
+  collision_radius: 42
+  physics_speed: 10
+  base_attributes:
+    attack.damage: 1
+    attack.origin: 30
+    attack.reach: 70
+    attack.sweep: 50
+    attack.speed: 2
+    health.max: 200
+    health.regen_amount: 10
+    hunger.depletion_amount: 10
+    hunger.max: 100
+    eating.movement_speed_multiplier: 1
+    movement.speed: 16
+    placement.reach: 200
+    temperature.max: 200
+    water.depletion_amount: 5
+    water.max: 100
+  initial_health: 200
+  initial_stats:
+    hunger: { value: 100, min: 0, max: 200 }
+    temperature: { value: 100, min: 0, max: 200 }
+    water: { value: 100, min: 0, max: 100 }
+  attack_movement_multiplier: 0.7
+  attack_movement_duration_ms: 500
+  blocking_movement_multiplier: 0.6
+  hunger_saturation_limit: 200
+  hunger_normal_limit: 100
+
+worldgen:
+  resource_count: 450
+  border_padding_tiles: 3
+  placement_attempt_multiplier: 8
+  resources: [forest_tree, stone, gold, diamond, amethyst]
+  animals: [bear, deer, ram, elephant, komodo_dragon, alligator, bee]
+  starter_structure:
+    id: wood_wall
+    x: 77
+    y: 75
+    rotation: 0

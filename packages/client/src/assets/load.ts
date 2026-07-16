@@ -1,30 +1,28 @@
-import { getStringId } from "@bundu/shared/id_map";
-import SpriteMap from "../configs/sprite_map.yml";
 import { Assets, type Texture } from "pixi.js";
+import type { ResourceAssetSource } from "./resource_packs";
 
 const loadedAssets = new Map<string, Texture>();
 let unknownAsset: Texture;
 
-export async function initAssets(): Promise<void> {
-    const bundles = Object.entries(SpriteMap).map(([key, value]) => ({
-        alias: key,
-        src: `./assets/${value}`,
-    }));
+export async function initAssets(
+    sources: readonly ResourceAssetSource[]
+): Promise<void> {
+    const bundles = sources;
 
     await Assets.load(bundles.map((b) => b.src));
 
-    for (const { alias, src } of bundles) {
-        loadedAssets.set(alias, Assets.get(src));
+    loadedAssets.clear();
+    for (const { path, src } of bundles) {
+        loadedAssets.set(path, Assets.get(src));
     }
 
-    const fallback = loadedAssets.get("unknown_asset");
+    const fallback = loadedAssets.get("bundu/misc/unknown_asset.svg");
     if (!fallback) throw new Error("Missing unknown_asset");
     unknownAsset = fallback;
     console.debug("Assets loaded");
 }
 
-export function getAsset(asset?: string | number): Texture {
-    if (typeof asset === "number") asset = getStringId(asset);
+export function getAsset(asset?: string): Texture {
     if (!asset) return unknownAsset;
     return loadedAssets.get(asset) || unknownAsset;
 }

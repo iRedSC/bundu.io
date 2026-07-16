@@ -1,45 +1,71 @@
-import { ResourceConfigs } from "./resources.js";
+import { type ResourceConfig, ResourceConfigs } from "./resources.js";
 import { getNumericId } from "@bundu/shared/id_map";
 import { mergeObjects, mergeObjs } from "@bundu/shared";
-import resourceConfig from "../resources.yml";
-import itemTypes from "../item_types.yml";
-import consumableConfig from "../consumable.yml";
-import mainhandConfig from "../main_hand.yml";
-import offhandConfig from "../off_hand.yml";
-import wearableConfig from "../wearable.yml";
-import placeableConfig from "../placeable.yml";
-import buildingConfig from "../buildings.yml";
 import { type ItemConfig, ItemConfigs } from "./items.js";
-import { BuildingConfigs } from "./buildings.js";
-import { AnimalConfigs } from "./animals.js";
-import animalConfig from "../entities.yml";
+import { type BuildingConfig, BuildingConfigs } from "./buildings.js";
+import { type AnimalConfig, AnimalConfigs } from "./animals.js";
+import { packs } from "../packs.js";
+import { gameplayConfig, setGameplayConfig } from "../gameplay.js";
+import { loadCraftingConfigs } from "./crafting.js";
 
 /** Load configs that the server actually uses. */
 export function loadConfigs() {
-    BuildingConfigs.parse(buildingConfig);
-    AnimalConfigs.parse(animalConfig, (_id, record, fallback) => {
-        const names = record.aggroAt as unknown as string[] | undefined;
-        if (names) {
-            record.aggroAt = names
-                .map((name) => getNumericId(name))
-                .filter((id): id is number => typeof id === "number");
+    setGameplayConfig(packs.document("bundu", "gameplay"));
+    const buildingConfig = packs.records("bundu", "buildings");
+    const animalConfig = packs.records("bundu", "entities");
+    const resourceConfig = packs.records("bundu", "resources");
+    const itemTypes = packs.records("bundu", "items/types");
+    const consumableConfig = packs.records("bundu", "items/consumable");
+    const mainhandConfig = packs.records("bundu", "items/main_hand");
+    const offhandConfig = packs.records("bundu", "items/off_hand");
+    const wearableConfig = packs.records("bundu", "items/wearable");
+    const placeableConfig = packs.records("bundu", "items/placeable");
+
+    const requireId = (id: string, path: string): number => {
+        const numeric = getNumericId(id);
+        if (numeric === undefined) throw new Error(`${path}: unknown id "${id}"`);
+        return numeric;
+    };
+    const validateIds = (records: Record<string, unknown>, path: string) => {
+        for (const id of Object.keys(records)) requireId(id, `${path}.${id}`);
+    };
+    validateIds(buildingConfig, "buildings");
+    validateIds(animalConfig, "entities");
+    validateIds(resourceConfig, "resources");
+
+    loadCraftingConfigs(packs.records("bundu", "recipes"));
+    BuildingConfigs.parse(
+        buildingConfig as Record<string, Partial<BuildingConfig>>
+    );
+    AnimalConfigs.parse(
+        animalConfig as Record<string, Partial<AnimalConfig>>,
+        (id, record, fallback) => {
+            const names = record.aggroAt as unknown as string[] | undefined;
+            if (names) {
+                record.aggroAt = names.map((name) =>
+                    requireId(name, `entities.${id}.aggroAt`)
+                );
+            }
+            return mergeObjects(record, undefined, fallback);
         }
-        return mergeObjects(record, undefined, fallback);
-    });
+    );
 
-    ResourceConfigs.parse(resourceConfig, (_id, record, fallback) => {
-        const numericItems: Record<number, number> = {};
+    ResourceConfigs.parse(
+        resourceConfig as Record<string, Partial<ResourceConfig>>,
+        (resource, record, fallback) => {
+            const numericItems: Record<number, number> = {};
 
-        if (!record.items) record.items = {};
+            if (!record.items) record.items = {};
 
-        for (const [item, amount] of Object.entries(record.items)) {
-            const id = getNumericId(item);
-            if (typeof id === "number") numericItems[id] = amount;
+            for (const [item, amount] of Object.entries(record.items)) {
+                const id = requireId(item, `resources.${resource}.items`);
+                numericItems[id] = amount;
+            }
+
+            record.items = numericItems;
+            return mergeObjects(record, undefined, fallback);
         }
-
-        record.items = numericItems;
-        return mergeObjects(record, undefined, fallback);
-    });
+    );
 
     const types = itemTypes as Partial<Record<string, Partial<ItemConfig>>>;
 
@@ -68,6 +94,20 @@ export function loadConfigs() {
         wearableConfig,
         placeableConfig
     ) as Record<string, Partial<ItemConfig>>;
+    validateIds(itemConfigData, "items");
 
     ItemConfigs.parse(itemConfigData, typesCallback);
+
+    const gameplay = gameplayConfig();
+    requireId(gameplay.rotting.claimWeapon, "gameplay.rotting.claim_weapon");
+    for (const id of gameplay.worldgen.resources) {
+        requireId(id, "gameplay.worldgen.resources");
+    }
+    for (const id of gameplay.worldgen.animals) {
+        requireId(id, "gameplay.worldgen.animals");
+    }
+    requireId(
+        gameplay.worldgen.starterStructure.id,
+        "gameplay.worldgen.starter_structure.id"
+    );
 }

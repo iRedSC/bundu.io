@@ -9,11 +9,13 @@ import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
 import { initAssets } from "./assets/load";
+import { loadResourcePacks } from "./assets/resource_packs";
 import { AnimationManagers } from "./animation/animations";
 import { InputController } from "./input/controller";
 import { Player } from "./world/objects/player";
 import { GameSession } from "./session/game_session";
 import { clientTime } from "./globals";
+import { replaceVisualDefs } from "./visual/defs";
 
 declare const __DEBUG__: boolean;
 
@@ -37,15 +39,28 @@ function setMenuVisible(visible: boolean) {
     });
 }
 
+let packFingerprint = "";
+
+async function synchronizeResourcePacks() {
+    const resourcePacks = await loadResourcePacks(GAME_WS_URL);
+    await initAssets(resourcePacks.assets);
+    replaceVisualDefs(
+        resourcePacks.visualDefs,
+        resourcePacks.assets.map((asset) => asset.path)
+    );
+    packFingerprint = resourcePacks.fingerprint;
+}
+
 function buildSocketUrl(username: string) {
     const url = new URL(GAME_WS_URL);
     url.searchParams.set("username", username || "unnamed");
     url.searchParams.set("skin_id", "0");
+    url.searchParams.set("packs", packFingerprint);
     return url.toString();
 }
 
 async function main() {
-    await initAssets();
+    await synchronizeResourcePacks();
 
     await app.init({
         resizeTo: window,
@@ -211,4 +226,11 @@ async function main() {
     window.addEventListener("pagehide", destroy, { once: true });
 }
 
-main();
+main().catch((error: unknown) => {
+    console.error("Client startup failed", error);
+    const button = document.getElementById("play-button");
+    if (!(button instanceof HTMLButtonElement)) return;
+    button.disabled = true;
+    button.textContent = "Resource pack failed";
+    button.title = error instanceof Error ? error.message : String(error);
+});

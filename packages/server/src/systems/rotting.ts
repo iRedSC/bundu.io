@@ -5,9 +5,7 @@ import { type GameObject, System, type World } from "../engine";
 import { Structure } from "../game_objects/structure.js";
 import { syncStructureStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-
-const ROT_DAMAGE_PER_SECOND = 3;
-const DIAMOND_SWORD_ID = getNumericId("diamond_sword");
+import { gameplayConfig } from "../configs/gameplay.js";
 
 /** Marks a dead player's structures as claimable and decays them over time. */
 export class RottingSystem extends System<GameEventMap> {
@@ -20,7 +18,7 @@ export class RottingSystem extends System<GameEventMap> {
     override update(_time: number, _delta: number, structure: GameObject): void {
         this.trigger(GameEvent.Hurt, {
             object: structure,
-            damage: ROT_DAMAGE_PER_SECOND,
+            damage: gameplayConfig().rotting.damagePerSecond,
         });
     }
 
@@ -43,7 +41,8 @@ export class RottingSystem extends System<GameEventMap> {
         weapon,
     }: GameEvent.Hurt): void => {
         if (!source || !object.active) return;
-        if (weapon !== DIAMOND_SWORD_ID || !Rotting.get(object)) return;
+        const claimWeapon = getNumericId(gameplayConfig().rotting.claimWeapon);
+        if (weapon !== claimWeapon || !Rotting.get(object)) return;
 
         const tile = TileEntity.get(object);
         if (!tile) return;

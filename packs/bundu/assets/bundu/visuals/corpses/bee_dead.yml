@@ -1,0 +1,6 @@
+id: bee_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/bee/bee_dead.svg
+    spriteScale: 2.5

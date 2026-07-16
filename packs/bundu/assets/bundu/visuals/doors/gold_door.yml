@@ -1,0 +1,6 @@
+id: gold_door
+extends: door
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/door/gold_door.svg

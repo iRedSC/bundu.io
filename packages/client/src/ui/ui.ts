@@ -44,7 +44,7 @@ export function createUI() {
 
     const health = new StatBar({
         max: 200,
-        icon: "health_bar_icon",
+        icon: "bundu/ui/health_bar_icon.svg",
         tint: 0x88fa57,
         overlayTint: 0x37ad98,
         diffTint: 0xd4ffe4,
@@ -54,7 +54,7 @@ export function createUI() {
     const hunger = new StatBar({
         max: 200,
         split: true,
-        icon: "hunger_bar_icon",
+        icon: "bundu/ui/hunger_bar_icon.svg",
         tint: 0xb06b30,
         overlayTint: 0xd48457,
         diffTint: 0x6e5648,
@@ -63,7 +63,7 @@ export function createUI() {
     const heat = new StatBar({
         max: 200,
         split: true,
-        icon: "heat_bar_icon",
+        icon: "bundu/ui/heat_bar_icon.svg",
         tint: 0xb85a48,
         overlayTint: 0xb02a2a,
         diffTint: 0x5f7b85,

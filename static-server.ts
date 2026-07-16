@@ -3,20 +3,20 @@ import path from "node:path";
 import fs from "node:fs";
 
 const PUBLIC_DIR = path.join(import.meta.dir, "public");
-const CONFIG_DIR = path.join(
-    import.meta.dir,
-    "packages/client/src/configs"
-);
 const VISUAL_DEFS_DIR = path.join(
     import.meta.dir,
-    "packages/client/src/visual/defs"
+    "packs/bundu/assets/bundu/visuals"
 );
+const TEXTURE_DIR = path.join(
+    import.meta.dir,
+    "packs/bundu/assets/bundu/textures"
+);
+const ASSET_ROOTS: Readonly<Record<string, string>> = {
+    bundu: TEXTURE_DIR,
+};
 const PORT = Number(process.env.PORT ?? 3000);
-/** Dev-only display-config hot-reload. Never enabled in CI/prod images. */
+/** Dev-only visual-definition hot reload. Never enabled in CI/prod images. */
 const DEV_CONFIG_RELOAD = process.env.BUNDU_DEBUG === "1";
-
-const SPRITES_YML = path.join(CONFIG_DIR, "sprites.yml");
-const SPRITE_TYPES_YML = path.join(CONFIG_DIR, "sprite_types.yml");
 
 type SseClient = {
     write: (chunk: string) => void;
@@ -66,22 +66,6 @@ function configReloadSse(): Response {
     });
 }
 
-async function spriteConfigsJson(): Promise<Response> {
-    // Dynamic import so prod images (no packages/) never load client config code.
-    const { buildSpriteConfigs } = await import(
-        "./packages/client/src/configs/build_sprite_configs"
-    );
-    const sprites = Bun.YAML.parse(fs.readFileSync(SPRITES_YML, "utf8"));
-    const spriteTypes = Bun.YAML.parse(
-        fs.readFileSync(SPRITE_TYPES_YML, "utf8")
-    );
-    return Response.json(buildSpriteConfigs(sprites, spriteTypes), {
-        headers: {
-            "Cache-Control": "no-store",
-        },
-    });
-}
-
 function visualDefsJson(): Response {
     const defs = Object.fromEntries(readVisualDefs(VISUAL_DEFS_DIR));
     return Response.json(defs, {
@@ -114,7 +98,6 @@ if (DEV_CONFIG_RELOAD) {
             notifyConfigReload();
         }, 100);
         });
-    watchYaml(CONFIG_DIR);
     watchYaml(VISUAL_DEFS_DIR);
 
     // Keep SSE connections alive past Bun's default idle timeout.
@@ -143,14 +126,6 @@ serve({
             if (url.pathname === "/__dev/config-reload") {
                 return configReloadSse();
             }
-            if (url.pathname === "/__dev/sprite-configs") {
-                try {
-                    return await spriteConfigsJson();
-                } catch (err) {
-                    console.error("[static] failed to build sprite configs", err);
-                    return new Response("Config error", { status: 500 });
-                }
-            }
             if (url.pathname === "/__dev/visual-defs") {
                 try {
                     return visualDefsJson();
@@ -164,10 +139,17 @@ serve({
         const pathname = url.pathname.endsWith("/")
             ? `${url.pathname}index.html`
             : url.pathname;
-        const filepath = path.join(PUBLIC_DIR, pathname);
+        const assetPath = pathname.startsWith("/assets/")
+            ? pathname.slice("/assets/".length)
+            : undefined;
+        const [namespace, ...assetParts] = assetPath?.split("/") ?? [];
+        const root = namespace ? ASSET_ROOTS[namespace] : PUBLIC_DIR;
+        if (!root) return new Response("Not Found", { status: 404 });
+        const relative = assetPath ? assetParts.join("/") : pathname;
+        const filepath = path.join(root, relative);
 
         // Security: prevent directory traversal
-        if (!filepath.startsWith(PUBLIC_DIR)) {
+        if (filepath !== root && !filepath.startsWith(`${root}${path.sep}`)) {
             return new Response("Forbidden", { status: 403 });
         }
 
@@ -183,5 +165,5 @@ serve({
 
 console.log(`Client running at http://localhost:${PORT}/site/`);
 if (DEV_CONFIG_RELOAD) {
-    console.log("[static] display config hot-reload enabled");
+    console.log("[static] visual definition hot-reload enabled");
 }

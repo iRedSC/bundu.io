@@ -1,0 +1,6 @@
+id: savanah_tree
+extends: single_tile_node
+defaultVariant: base
+variants:
+  base:
+    main: bundu/decoration/savannah/savannah_tree1.svg
