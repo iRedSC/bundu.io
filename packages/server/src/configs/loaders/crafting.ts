@@ -1,7 +1,6 @@
 import { getNumericId } from "@bundu/shared/id_map";
 import { flagMap } from "@bundu/shared/flag_map";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
-import craftingConfig from "../crafting.yml";
 
 export type CraftingRecipeData = {
     duration: number;
@@ -30,8 +29,7 @@ export class CraftingRecipe {
             for (const [k, v] of Object.entries(data.ingredients)) {
                 const id = getNumericId(k);
                 if (id === undefined) {
-                    console.warn(`${k} not found in ID Map`);
-                    continue;
+                    throw new Error(`recipes.${this.id}.ingredients: unknown item "${k}"`);
                 }
                 this.ingredients.set(id, v);
             }
@@ -40,8 +38,7 @@ export class CraftingRecipe {
         for (const flag of data.flags || []) {
             const flagId = flagMap.get(flag);
             if (flagId === undefined) {
-                console.warn(`${flag} not found in flag ID Map`);
-                continue;
+                throw new Error(`recipes.${this.id}.flags: unknown flag "${flag}"`);
             }
             this.flags.push(flagId);
         }
@@ -54,14 +51,21 @@ export class CraftingRecipe {
 
 export const craftingList: Map<number, CraftingRecipe> = new Map();
 
-for (const [k, v] of Object.entries(craftingConfig)) {
-    const numericId = getNumericId(k);
-    if (numericId === undefined) throw new Error(`No ID matching: ${k}`);
-    const recipe = new CraftingRecipe(
-        numericId,
-        v as Partial<CraftingRecipeData>
-    );
-    craftingList.set(numericId, recipe);
+export function loadCraftingConfigs(
+    records: Record<string, unknown>
+): void {
+    craftingList.clear();
+    for (const [id, value] of Object.entries(records)) {
+        const numericId = getNumericId(id);
+        if (numericId === undefined) throw new Error(`No ID matching: ${id}`);
+        craftingList.set(
+            numericId,
+            new CraftingRecipe(
+                numericId,
+                value as Partial<CraftingRecipeData>
+            )
+        );
+    }
 }
 
 export function packCraftingList() {

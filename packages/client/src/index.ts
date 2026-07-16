@@ -9,11 +9,16 @@ import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
 import { initAssets } from "./assets/load";
+import {
+    getResourcePackFingerprint,
+    loadResourcePacks,
+} from "./assets/resource_packs";
 import { AnimationManagers } from "./animation/animations";
 import { InputController } from "./input/controller";
 import { Player } from "./world/objects/player";
 import { GameSession } from "./session/game_session";
 import { clientTime } from "./globals";
+import { replaceVisualDefs } from "./visual/defs";
 
 declare const __DEBUG__: boolean;
 
@@ -24,6 +29,9 @@ declare namespace globalThis {
 const GAME_WS_URL =
     process.env.GAME_WS_URL ?? "ws://localhost:7777";
 
+const PACK_SYNC_ATTEMPTS = 5;
+const PACK_SYNC_RETRY_MS = 1000;
+
 type ClientDebugHandle = {
     getPlaceStructureId(): number | null;
 };
@@ -33,19 +41,133 @@ globalThis.__PIXI_APP__ = app;
 
 function setMenuVisible(visible: boolean) {
     document.querySelectorAll(".menu").forEach((item) => {
+        if (item.id === "pack-loading" || item.id === "pack-error") return;
         item.classList.toggle("hidden", !visible);
     });
+}
+
+function element<T extends HTMLElement>(id: string): T {
+    const node = document.getElementById(id);
+    if (!node) throw new Error(`Missing #${id}`);
+    return node as T;
+}
+
+const packLoading = element<HTMLElement>("pack-loading");
+const packError = element<HTMLElement>("pack-error");
+const packErrorMessage = element<HTMLElement>("pack-error-message");
+const packRetryButton = element<HTMLButtonElement>("pack-retry-button");
+const packBackButton = element<HTMLButtonElement>("pack-back-button");
+
+function showPackLoading() {
+    packError.classList.add("hidden");
+    packLoading.classList.remove("hidden");
+}
+
+function hidePackOverlays() {
+    packLoading.classList.add("hidden");
+    packError.classList.add("hidden");
+}
+
+function showPackError(error: unknown) {
+    packLoading.classList.add("hidden");
+    packErrorMessage.textContent =
+        error instanceof Error
+            ? error.message
+            : String(error || "Start the game server and try again.");
+    packError.classList.remove("hidden");
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+let packFingerprint = "";
+
+async function synchronizeResourcePacks() {
+    const resourcePacks = await loadResourcePacks(GAME_WS_URL);
+    await initAssets(resourcePacks.assets);
+    replaceVisualDefs(
+        resourcePacks.visualDefs,
+        resourcePacks.assets.map((asset) => asset.path)
+    );
+    packFingerprint = resourcePacks.fingerprint;
+}
+
+async function synchronizeResourcePacksWithRetry(
+    attempts = PACK_SYNC_ATTEMPTS
+): Promise<void> {
+    showPackLoading();
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+        try {
+            await synchronizeResourcePacks();
+            hidePackOverlays();
+            return;
+        } catch (error) {
+            lastError = error;
+            console.warn(
+                `Resource pack sync failed (attempt ${attempt}/${attempts})`,
+                error
+            );
+            if (attempt < attempts) await sleep(PACK_SYNC_RETRY_MS);
+        }
+    }
+    showPackError(lastError);
+    throw lastError instanceof Error
+        ? lastError
+        : new Error("Resource pack sync failed");
 }
 
 function buildSocketUrl(username: string) {
     const url = new URL(GAME_WS_URL);
     url.searchParams.set("username", username || "unnamed");
     url.searchParams.set("skin_id", "0");
+    url.searchParams.set("packs", packFingerprint);
     return url.toString();
 }
 
+async function waitForInitialPacks(): Promise<void> {
+    try {
+        await synchronizeResourcePacksWithRetry();
+        return;
+    } catch {
+        // Fall through to manual retry / back-to-menu.
+    }
+
+    const playButton = element<HTMLButtonElement>("play-button");
+    await new Promise<void>((resolve) => {
+        const tryLoad = () => {
+            void synchronizeResourcePacksWithRetry()
+                .then(() => {
+                    cleanup();
+                    resolve();
+                })
+                .catch(() => {
+                    // Error overlay already shown; allow another retry.
+                });
+        };
+        const onBack = () => {
+            hidePackOverlays();
+            setMenuVisible(true);
+        };
+        const onPlay = (event: Event) => {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            tryLoad();
+        };
+        const cleanup = () => {
+            packRetryButton.removeEventListener("click", tryLoad);
+            packBackButton.removeEventListener("click", onBack);
+            playButton.removeEventListener("click", onPlay, true);
+        };
+        packRetryButton.addEventListener("click", tryLoad);
+        packBackButton.addEventListener("click", onBack);
+        playButton.addEventListener("click", onPlay, true);
+    });
+}
+
 async function main() {
-    await initAssets();
+    await waitForInitialPacks();
 
     await app.init({
         resizeTo: window,
@@ -92,6 +214,11 @@ async function main() {
     const session = new GameSession(receiver, {
         buildSocketUrl,
         getUsername: () => nameInput.value.trim(),
+        prepareConnection: async () => {
+            const next = await getResourcePackFingerprint(GAME_WS_URL);
+            if (next === packFingerprint) return;
+            await synchronizeResourcePacks();
+        },
         resetLocalState: () => {
             clientTime.resetServerSync();
             world.clear();
@@ -211,4 +338,7 @@ async function main() {
     window.addEventListener("pagehide", destroy, { once: true });
 }
 
-main();
+main().catch((error: unknown) => {
+    console.error("Client startup failed", error);
+    showPackError(error);
+});

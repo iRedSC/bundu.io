@@ -4,10 +4,7 @@ import {
     radians,
 } from "@bundu/shared/transforms";
 import { attackFacingRadians } from "@bundu/shared/attack_box";
-import {
-    decodeMoveDirection,
-    PLAYER_MOVE_SPEED,
-} from "@bundu/shared/movement";
+import { decodeMoveDirection } from "@bundu/shared/movement";
 import { type ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GroundData, Health, Physics } from "../components/base.js";
 import {
@@ -42,9 +39,7 @@ import { pointToTile, WORLD_BOUNDS, worldToDeci } from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { GroundItem } from "../game_objects/ground_item.js";
 import { Circle, Vector } from "sat";
-
-const DROP_DISTANCE = 80;
-const DROP_PICKUP_DELAY = 500;
+import { gameplayConfig } from "../configs/gameplay.js";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
@@ -87,8 +82,8 @@ export class PlayerSystem extends System<GameEventMap> {
                     "movement.speed",
                     "attacking",
                     "multiply",
-                    0.7,
-                    500,
+                    gameplayConfig().player.attackMovementMultiplier,
+                    gameplayConfig().player.attackMovementDurationMs,
                     time
                 );
                 data.lastAttackTime = time;
@@ -98,7 +93,7 @@ export class PlayerSystem extends System<GameEventMap> {
             return;
         }
         // Fixed step per tick (tps-gated); speed lives on the attribute.
-        const speed = attributes?.get("movement.speed") ?? PLAYER_MOVE_SPEED;
+        const speed = attributes.get("movement.speed");
         const target = moveToward(
             { x: 0, y: 0 },
             { x: data.moveDir[0], y: data.moveDir[1] },
@@ -192,10 +187,12 @@ export class PlayerSystem extends System<GameEventMap> {
             stats.set("hunger", {
                 value: Math.min(
                     hunger.value + hungerAmount,
-                    config.can_saturate ? 200 : 100
+                    config.can_saturate
+                        ? gameplayConfig().player.hungerSaturationLimit
+                        : gameplayConfig().player.hungerNormalLimit
                 ),
                 min: 0,
-                max: 200,
+                max: gameplayConfig().player.hungerSaturationLimit,
             });
         }
 
@@ -385,8 +382,13 @@ export class PlayerSystem extends System<GameEventMap> {
             if (!(blocking > 0)) return;
             if (data.attacking) data.attacking = false;
             data.blocking = true;
-            attributes?.set("movement.speed", "blocking", "multiply", 0.6);
-            attributes?.set("health.defense", "blocking", "add", blocking);
+            attributes.set(
+                "movement.speed",
+                "blocking",
+                "multiply",
+                gameplayConfig().player.blockingMovementMultiplier
+            );
+            attributes.set("health.defense", "blocking", "add", blocking);
         } else {
             data.blocking = false;
             attributes?.clear("blocking");
@@ -505,10 +507,11 @@ export class PlayerSystem extends System<GameEventMap> {
 
     private dropItem(player: GameObject, itemId: number, amount: number) {
         const physics = player.get(Physics);
+        const config = gameplayConfig().items;
         const droppedAt = moveInDirection(
             physics.position,
             attackFacingRadians(radians(physics.rotation)),
-            DROP_DISTANCE
+            config.dropDistance
         );
         const target = new Vector(
             Math.min(Math.max(droppedAt.x, 0), WORLD_BOUNDS),
@@ -518,12 +521,16 @@ export class PlayerSystem extends System<GameEventMap> {
         const item = new GroundItem(
             {
                 position: target,
-                collider: new Circle(target, 12),
+                collider: new Circle(target, config.groundCollisionRadius),
                 rotation: physics.rotation,
-                collisionRadius: 12,
+                collisionRadius: config.groundCollisionRadius,
                 speed: 0,
             },
-            { itemId, amount, pickupAt: this.world.gameTime + DROP_PICKUP_DELAY }
+            {
+                itemId,
+                amount,
+                pickupAt: this.world.gameTime + config.dropPickupDelayMs,
+            }
         );
         this.world.addObject(item);
         this.world.context.worldPacketManager.emit(ServerPacket.DropItem, {

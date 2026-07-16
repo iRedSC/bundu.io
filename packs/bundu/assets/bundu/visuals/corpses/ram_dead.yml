@@ -1,0 +1,6 @@
+id: ram_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/ram/ram_dead.svg
+    spriteScale: 1.875

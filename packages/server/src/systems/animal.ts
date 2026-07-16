@@ -18,12 +18,7 @@ import { Circle, Vector } from "sat";
 import { getNumericId } from "@bundu/shared/id_map.js";
 import { SERVER_TICK_MS } from "@bundu/shared/movement.js";
 import { Attributes } from "../components/attributes.js";
-
-const THINK_MS = 250;
-const PATH_LIMIT = 96;
-const AGGRO_CHECK_MS = 2500;
-const AGGRO_LOST_MS = 1000;
-const AGGRO_DROP_CHANCE = 35; // percent, rolled every AGGRO_CHECK_MS
+import { gameplayConfig } from "../configs/gameplay.js";
 
 type Tile = { x: number; y: number };
 const key = (tile: Tile) => `${tile.x},${tile.y}`;
@@ -70,7 +65,13 @@ function hasClearance(
 ): boolean {
     const dist = Math.hypot(toX - fromX, toY - fromY);
     if (dist < 1e-6) return !footprintOverlaps(world, fromX, fromY, radius);
-    const steps = Math.max(1, Math.ceil(dist / (TILE_SIZE * 0.25)));
+    const steps = Math.max(
+        1,
+        Math.ceil(
+            dist /
+                (TILE_SIZE * gameplayConfig().animalAi.clearanceStepTiles)
+        )
+    );
     for (let i = 0; i <= steps; i++) {
         const t = i / steps;
         if (
@@ -93,7 +94,7 @@ function pathTo(world: World, start: Tile, goal: Tile, radius: number): Tile[] {
     const previous = new Map<string, Tile>();
     const cost = new Map([[key(start), 0]]);
     const closed = new Set<string>();
-    while (open.length && closed.size < PATH_LIMIT) {
+    while (open.length && closed.size < gameplayConfig().animalAi.pathLimit) {
         open.sort((a, b) => (cost.get(key(a)) ?? 0) + distance(a, goal) - ((cost.get(key(b)) ?? 0) + distance(b, goal)));
         const current = open.shift();
         if (!current) break;
@@ -168,7 +169,10 @@ export class AnimalSystem extends System<GameEventMap> {
     override update(time: number, delta: number, animal: GameObject) {
         const data = animal.get(AnimalData); const physics = animal.get(Physics);
         const config = AnimalConfigs.get(animal.get(Type).id);
-        if (time >= data.nextThinkAt) { data.nextThinkAt = time + THINK_MS; this.think(time, animal); }
+        if (time >= data.nextThinkAt) {
+            data.nextThinkAt = time + gameplayConfig().animalAi.thinkIntervalMs;
+            this.think(time, animal);
+        }
         const target = data.destination;
         if (!target) return;
         if (data.path.length === 0) {
@@ -309,7 +313,8 @@ export class AnimalSystem extends System<GameEventMap> {
         }
 
         if (time >= data.nextAggroCheckAt) {
-            data.nextAggroCheckAt = time + AGGRO_CHECK_MS;
+            data.nextAggroCheckAt =
+                time + gameplayConfig().animalAi.aggroCheckIntervalMs;
             this.tickAggro(time, animal, players);
         }
 
@@ -406,10 +411,16 @@ export class AnimalSystem extends System<GameEventMap> {
         const d = playerDistance(physics, target);
         const roll =
             config.aggroLevel === "low" ||
-            d > config.loseSightRange * 0.5;
-        if (roll && random.integer(1, 100) <= AGGRO_DROP_CHANCE) {
+            d >
+                config.loseSightRange *
+                    gameplayConfig().animalAi.mediumAggroRangeRatio;
+        if (
+            roll &&
+            random.integer(1, 100) <=
+                gameplayConfig().animalAi.aggroDropChancePercent
+        ) {
             data.targetId = undefined;
-            data.lostAggroUntil = time + AGGRO_LOST_MS;
+            data.lostAggroUntil = time + gameplayConfig().animalAi.aggroLostMs;
             data.destination = undefined;
             data.path = [];
             data.state = "idle";
@@ -425,7 +436,9 @@ export class AnimalSystem extends System<GameEventMap> {
         }
 
         data.state = "wander";
-        data.stateUntil = time + 1500 + random.integer(0, 2500);
+        const ai = gameplayConfig().animalAi;
+        data.stateUntil =
+            time + ai.wanderMinMs + random.integer(0, ai.wanderVarianceMs);
         data.path = [];
 
         if (!config.hasHome) {
@@ -465,7 +478,7 @@ export class AnimalSystem extends System<GameEventMap> {
     private flee(animal: GameObject, threat: GameObject, time: number) {
         const data = animal.get(AnimalData); const physics = animal.get(Physics); const other = threat.get(Physics); const config = AnimalConfigs.get(animal.get(Type).id);
         const angle = Math.atan2(physics.position.y - other.position.y, physics.position.x - other.position.x);
-        data.state = "flee"; data.stateUntil = time + 1500; data.targetId = undefined; data.path = [];
+        data.state = "flee"; data.stateUntil = time + gameplayConfig().animalAi.fleeMs; data.targetId = undefined; data.path = [];
         data.destination = { x: physics.position.x + Math.cos(angle) * config.wander_distance, y: physics.position.y + Math.sin(angle) * config.wander_distance };
     }
 

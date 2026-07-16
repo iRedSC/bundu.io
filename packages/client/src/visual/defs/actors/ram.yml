@@ -1,6 +1,0 @@
-id: ram
-extends: animal
-parts:
-  - name: body
-    sprite: ram
-    spriteScale: 1.875

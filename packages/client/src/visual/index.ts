@@ -13,9 +13,10 @@ export type {
     StateOverride,
     StateValue,
     SlotDef,
-    SlotDisplay,
-    StructuredTileEntityDef,
-    TextureTileEntityDef,
+    ContextualVisualDef,
+    VisualContent,
+    VisualContext,
+    VisualDef,
     TileEntityDef,
     TileGeometry,
     TreeSwayData,
@@ -28,6 +29,7 @@ export {
     type AssembledObject,
 } from "./assemble";
 export { bindAnimations } from "./bind";
+export { mountVisualContext, type MountedVisual } from "./context";
 export { createPreset } from "./presets";
 export { EntityStateStore, VisualStateController } from "./state";
 export {
@@ -37,4 +39,5 @@ export {
     tileEntityDefs,
     treeDef,
     visualDefs,
+    contextVisualDefs,
 } from "./defs";

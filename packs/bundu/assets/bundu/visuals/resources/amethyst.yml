@@ -1,0 +1,10 @@
+id: amethyst
+extends: single_tile_node
+defaultVariant: base
+variants:
+    base:
+        main: bundu/item/material/amethyst.svg
+
+parts:
+    main:
+        scale: 2

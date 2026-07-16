@@ -1,0 +1,6 @@
+id: raindeer_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/reindeer/reindeer_dead.svg
+    spriteScale: 3.335

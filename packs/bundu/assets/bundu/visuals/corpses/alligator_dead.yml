@@ -1,0 +1,6 @@
+id: alligator_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/alligator/alligator_dead.svg
+    spriteScale: 2.5

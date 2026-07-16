@@ -1,7 +1,0 @@
-id: bear
-extends: animal
-parts:
-  - name: body
-    sprite: bear
-    # Authored for scale 0.8 → net visual ≈ 200
-    spriteScale: 2.5

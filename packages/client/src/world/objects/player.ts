@@ -7,13 +7,15 @@ import {
 import { getStringId } from "@bundu/shared/id_map";
 import { type Container, Graphics, type Point, Text } from "pixi.js";
 import GameObject from "../game_object";
-import { SpriteFactory } from "../../assets/sprite_factory";
-import { spriteConfigs } from "../../configs/sprite_configs";
 import type { AnimationManager } from "../../animation/runtime";
 import { assemble } from "../../visual/assemble";
 import { bindAnimations } from "../../visual/bind";
 import { playerDef } from "../../visual/defs";
 import type { AnimContext, PartNode, SlotDef } from "../../visual/types";
+import {
+    mountVisualContext,
+    type MountedVisual,
+} from "../../visual/context";
 import { clientTime } from "@client/globals";
 import type { ParticleBurst } from "../../rendering/particles/types";
 
@@ -40,6 +42,7 @@ export class Player extends GameObject implements AnimContext {
     craftBar: Graphics;
     parts: Map<string, PartNode>;
     private slots: Map<string, { node: PartNode; def: SlotDef }>;
+    private readonly slotVisuals = new Map<string, MountedVisual>();
     private readonly animationManager: AnimationManager;
     private readonly visualVariant?: string;
 
@@ -194,9 +197,7 @@ export class Player extends GameObject implements AnimContext {
     }
 
     updateEquipment() {
-        for (const slot of this.slots.values()) {
-            if (slot.node.attach) slot.node.attach.renderable = false;
-        }
+        this.clearEquipmentVisuals();
 
         this.fillSlot("mainhand", this.mainhand);
         this.fillSlot("offhand", this.offhand);
@@ -213,6 +214,7 @@ export class Player extends GameObject implements AnimContext {
     }
 
     reloadVisualDefinition() {
+        this.clearEquipmentVisuals();
         this.animationManager.remove(this);
         for (const child of this.container.removeChildren()) {
             child.destroy({ children: true });
@@ -247,12 +249,14 @@ export class Player extends GameObject implements AnimContext {
         const slot = this.slots.get(slotName);
         const attach = slot?.node.attach;
         if (!slot || !attach) return;
-
-        const config = spriteConfigs.get(itemId);
-        if (!config) return;
-
-        attach.renderable = true;
-        SpriteFactory.update(attach, config[slot.def.display], itemId);
+        const mounted = mountVisualContext(itemId, slot.def.context, attach, {
+            animationManager: this.animationManager,
+            animationContext: this,
+            anchor: slot.node.attachAnchor,
+        });
+        if (!mounted) return;
+        this.slotVisuals.set(slotName, mounted);
+        attach.visible = true;
         if (slot.def.scale != null) {
             attach.scale.set(
                 slot.def.mirrorX ? -slot.def.scale : slot.def.scale,
@@ -260,6 +264,16 @@ export class Player extends GameObject implements AnimContext {
             );
         } else if (slot.def.mirrorX) {
             attach.scale.x = -Math.abs(attach.scale.x || 1);
+        }
+    }
+
+    private clearEquipmentVisuals() {
+        for (const mounted of this.slotVisuals.values()) mounted.destroy();
+        this.slotVisuals.clear();
+        for (const slot of this.slots.values()) {
+            if (!slot.node.attach) continue;
+            slot.node.attach.visible = false;
+            slot.node.attach.scale.set(1);
         }
     }
 
@@ -309,8 +323,9 @@ export class Player extends GameObject implements AnimContext {
         this.particleAnchor = () => {
             const hand = this.parts.get("rightHand");
             if (!hand) throw new Error("Player visual is missing the right hand");
+            const held = this.slotVisuals.get("offhand")?.sprites[0];
             return {
-                texture: hand.attach?.sprite.texture ?? hand.visual.sprite.texture,
+                texture: held?.sprite.texture ?? hand.visual.sprite.texture,
                 x: this.position.x,
                 y: this.position.y - this.collisionRadius * 0.5,
                 radius: this.collisionRadius,
@@ -320,6 +335,7 @@ export class Player extends GameObject implements AnimContext {
 
     override dispose(): void {
         clearTimeout(this.chatTimeout);
+        this.clearEquipmentVisuals();
         this.animationManager.remove(this);
         super.dispose();
     }

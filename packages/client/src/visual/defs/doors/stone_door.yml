@@ -1,3 +1,0 @@
-id: stone_door
-extends: door
-defaultVariant: stone_door

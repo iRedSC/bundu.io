@@ -1,0 +1,6 @@
+id: raindeer
+extends: animal
+parts:
+  body:
+    sprite: bundu/entity/animal/reindeer/reindeer.svg
+    spriteScale: 3.335

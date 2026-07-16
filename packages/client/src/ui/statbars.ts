@@ -52,12 +52,12 @@ export class StatBar {
         this.icon.anchor.set(0.5);
         this.icon.scale.set(0.2);
 
-        this.outline = SpriteFactory.build("stat_bar_outline");
+        this.outline = SpriteFactory.build("bundu/ui/stat_bar_outline.svg");
         this.outline.anchor.set(0, 0.5);
         this.outline.scale.set(0.95);
         this.outline.tint = tint;
 
-        this.circle = SpriteFactory.build("stat_bar_circle");
+        this.circle = SpriteFactory.build("bundu/ui/stat_bar_circle.svg");
         this.circle.anchor.set(0.5);
         this.circle.scale.set(0.2);
         this.circle.tint = tint;
@@ -69,22 +69,22 @@ export class StatBar {
             this.container.height / 2
         );
 
-        this.base = SpriteFactory.build("stat_bar");
+        this.base = SpriteFactory.build("bundu/ui/stat_bar.svg");
         this.base.scale.set(0.1, 0.6);
         this.base.anchor.set(0, 0.5);
         this.base.tint = tint;
 
-        this.baseDiff = SpriteFactory.build("stat_bar");
+        this.baseDiff = SpriteFactory.build("bundu/ui/stat_bar.svg");
         this.baseDiff.scale.set(0.1, 0.6);
         this.baseDiff.anchor.set(0, 0.5);
         this.baseDiff.tint = diffTint;
 
-        this.overlay = SpriteFactory.build("stat_bar");
+        this.overlay = SpriteFactory.build("bundu/ui/stat_bar.svg");
         this.overlay.scale.set(0.1, 0.6);
         this.overlay.anchor.set(0, 0.5);
         this.overlay.tint = overlayTint;
 
-        this.overlayDiff = SpriteFactory.build("stat_bar");
+        this.overlayDiff = SpriteFactory.build("bundu/ui/stat_bar.svg");
         this.overlayDiff.scale.set(0.1, 0.6);
         this.overlayDiff.anchor.set(0, 0.5);
         this.overlayDiff.tint = diffTint;

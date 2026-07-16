@@ -1,0 +1,8 @@
+id: single_tile_node
+abstract: true
+extends: rottable
+
+tile:
+  footprint:
+    - "X"
+  spillover: 0

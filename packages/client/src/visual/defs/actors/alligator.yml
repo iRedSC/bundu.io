@@ -1,9 +1,0 @@
-id: alligator
-extends: animal
-parts:
-  - name: body
-    sprite: alligator
-    spriteScale: 2.5
-animations:
-  idle:
-    data: { amplitude: 0.01 }

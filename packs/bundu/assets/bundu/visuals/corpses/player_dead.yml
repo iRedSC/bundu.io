@@ -1,0 +1,5 @@
+id: player_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/player/player_dead.svg

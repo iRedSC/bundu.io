@@ -1,7 +1,3 @@
-import {
-    spriteConfigs,
-    type FullItemConfig,
-} from "@client/configs/sprite_configs";
 import { Animal } from "../world/objects/animal";
 import { Player } from "../world/objects/player";
 import { Structure } from "../world/objects/structure";
@@ -10,24 +6,6 @@ import {
     replaceVisualDefs,
     type VisualDefs,
 } from "../visual/defs";
-
-function replaceSpriteConfigs(configs: Record<string, FullItemConfig>) {
-    spriteConfigs.clear();
-    for (const [name, config] of Object.entries(configs)) {
-        spriteConfigs.set(name, config);
-    }
-}
-
-function reapplyDisplays(world: World) {
-    for (const object of world.objects.all()) {
-        if (object instanceof Player) {
-            object.updateEquipment();
-        } else if (object instanceof Structure) {
-            object.refreshSpriteConfig();
-        }
-    }
-    world.refreshPlacementGhost();
-}
 
 function reapplyVisualDefs(world: World) {
     for (const object of world.objects.all()) {
@@ -40,11 +18,11 @@ function reapplyVisualDefs(world: World) {
             world.reregisterObject(object);
         }
     }
+    world.refreshPlacementGhost();
 }
 
 /**
- * Watches for display-config YAML changes via the static server SSE channel
- * and swaps the live `spriteConfigs` Map without a browser refresh.
+ * Watches visual-definition YAML and atomically replaces the live registry.
  * Debug builds only — must not ship in prod (see check-prod-debug).
  */
 export function startConfigHotReload(world: World): () => void {
@@ -62,35 +40,22 @@ export function startConfigHotReload(world: World): () => void {
             do {
                 pending = false;
                 const timestamp = Date.now();
-                const [configsRes, defsRes] = await Promise.all([
-                    fetch(`/__dev/sprite-configs?t=${timestamp}`),
-                    fetch(`/__dev/visual-defs?t=${timestamp}`),
-                ]);
-                if (!configsRes.ok || !defsRes.ok) {
+                const defsRes = await fetch(
+                    `/__dev/visual-defs?t=${timestamp}`
+                );
+                if (!defsRes.ok) {
                     console.warn(
                         "[config-hot-reload] fetch failed:",
-                        configsRes.status,
                         defsRes.status
                     );
                     continue;
                 }
-                const configs = (await configsRes.json()) as Record<
-                    string,
-                    FullItemConfig
-                >;
                 const defs = (await defsRes.json()) as VisualDefs;
-                replaceSpriteConfigs(configs);
                 replaceVisualDefs(defs);
-                reapplyDisplays(world);
                 reapplyVisualDefs(world);
-                const sample =
-                    configs.diamond_pickaxe?.hand_display ??
-                    configs.wood_pickaxe?.hand_display;
                 console.info(
-                    "[config-hot-reload] display configs applied",
-                    sample
-                        ? { hand_display: sample }
-                        : `(${Object.keys(configs).length} items)`
+                    "[config-hot-reload] visual definitions applied",
+                    `(${Object.keys(defs).length} files)`
                 );
             } while (pending);
         } catch (err) {

@@ -4,9 +4,7 @@ import { type GameObject, System, type World } from "../engine";
 import { emitVitals } from "../network/vitals.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-
-/** Matches prior cadence: HealthSystem runs at 1 tps with a 5-tick period. */
-const REGEN_INTERVAL_MS = 5000;
+import { gameplayConfig } from "../configs/gameplay.js";
 
 export class HealthSystem extends System<GameEventMap> {
     constructor(world: World) {
@@ -24,7 +22,7 @@ export class HealthSystem extends System<GameEventMap> {
         const attributes = object.get(Attributes);
         if (!attributes) return;
 
-        if (time - health.lastRegen < REGEN_INTERVAL_MS) return;
+        if (time - health.lastRegen < gameplayConfig().health.regenIntervalMs) return;
 
         health.lastRegen = time;
         const regen = attributes.get("health.regen_amount");
@@ -40,7 +38,9 @@ export class HealthSystem extends System<GameEventMap> {
         const defense = attributes?.get("health.defense") ?? 0;
 
         damage = damage ?? 0;
-        if (source && Rotting.get(target)) damage *= 2;
+        if (source && Rotting.get(target)) {
+            damage *= gameplayConfig().health.rottingDamageMultiplier;
+        }
         health.value -= Math.round(Math.max(0, damage - defense));
         if (health.value <= 0) {
             this.trigger(GameEvent.Kill, { object: target, source });

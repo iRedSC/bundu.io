@@ -1,0 +1,6 @@
+id: elephant_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/elephant/elephant_dead.svg
+    spriteScale: 1.1

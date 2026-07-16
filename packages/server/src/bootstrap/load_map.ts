@@ -18,18 +18,7 @@ import {
 } from "../game_objects/tile_entity";
 import { GameEvent } from "../systems/event_map";
 import type { PlayerSystem } from "../systems/player";
-
-const TEST_MAP_RESOURCE_COUNT = 450;
-const TEST_MAP_BORDER_PADDING_TILES = 3;
-
-const TEST_MAP_RESOURCE_IDS: string[] = [
-    "forest_tree",
-    "stone",
-    "gold",
-    "diamond",
-    "amethyst",
-];
-const TEST_MAP_ANIMAL_IDS = ["bear", "deer", "ram", "elephant", "komodo_dragon", "alligator", "bee"];
+import { gameplayConfig } from "../configs/gameplay";
 
 function getRequiredNumericId(id: string) {
     const numericId = getNumericId(id);
@@ -62,6 +51,7 @@ function tryAddResource(
 
 /** Procedural test map + starter structure placement. */
 export function loadMap(world: World, playerSystem: PlayerSystem) {
+    const worldgen = gameplayConfig().worldgen;
     // Ground AABB in tile coordinates (client scales by TILE_SIZE).
     world.addObject(
         new Ground({
@@ -83,37 +73,45 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
 
     let placed = 0;
     let attempts = 0;
-    const maxAttempts = TEST_MAP_RESOURCE_COUNT * 8;
+    const maxAttempts =
+        worldgen.resourceCount * worldgen.placementAttemptMultiplier;
     while (
-        placed < TEST_MAP_RESOURCE_COUNT &&
+        placed < worldgen.resourceCount &&
         attempts < maxAttempts
     ) {
         attempts++;
-        const id = random.choice(TEST_MAP_RESOURCE_IDS);
+        const id = random.choice(worldgen.resources);
         const tx = random.integer(
-            TEST_MAP_BORDER_PADDING_TILES,
-            WORLD_TILES - 1 - TEST_MAP_BORDER_PADDING_TILES
+            worldgen.borderPaddingTiles,
+            WORLD_TILES - 1 - worldgen.borderPaddingTiles
         );
         const ty = random.integer(
-            TEST_MAP_BORDER_PADDING_TILES,
-            WORLD_TILES - 1 - TEST_MAP_BORDER_PADDING_TILES
+            worldgen.borderPaddingTiles,
+            WORLD_TILES - 1 - worldgen.borderPaddingTiles
         );
         const rot = random.integer(0, 3) as TileRot;
         if (tryAddResource(world, id, tx, ty, rot)) placed++;
     }
 
-    for (const id of TEST_MAP_ANIMAL_IDS) {
+    for (const id of worldgen.animals) {
         const typeId = getRequiredNumericId(id);
-        const config = AnimalConfigs.get(typeId);
+        const animal = AnimalConfigs.get(typeId);
         let spawned = 0;
         let spawnAttempts = 0;
         while (
-            spawned < config.spawn_count &&
-            spawnAttempts++ < config.spawn_count * 8
+            spawned < animal.spawn_count &&
+            spawnAttempts++ <
+                animal.spawn_count * worldgen.placementAttemptMultiplier
         ) {
             const position = new Vector(
-                random.integer(TEST_MAP_BORDER_PADDING_TILES * 100, (WORLD_TILES - TEST_MAP_BORDER_PADDING_TILES) * 100),
-                random.integer(TEST_MAP_BORDER_PADDING_TILES * 100, (WORLD_TILES - TEST_MAP_BORDER_PADDING_TILES) * 100)
+                random.integer(
+                    worldgen.borderPaddingTiles * TILE_SIZE,
+                    (WORLD_TILES - worldgen.borderPaddingTiles) * TILE_SIZE
+                ),
+                random.integer(
+                    worldgen.borderPaddingTiles * TILE_SIZE,
+                    (WORLD_TILES - worldgen.borderPaddingTiles) * TILE_SIZE
+                )
             );
             if (
                 world.context.occupancy.get(
@@ -130,17 +128,18 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
                     collider: new Circle(position, TILE_SIZE / 2),
                     collisionRadius: TILE_SIZE / 2,
                     rotation: 0,
-                    speed: config.passiveSpeed,
+                    speed: animal.passiveSpeed,
                 }
             ));
             spawned++;
         }
     }
 
+    const starter = worldgen.starterStructure;
     playerSystem.trigger(GameEvent.PlaceStructure, {
-        structureId: getRequiredNumericId("wood_wall"),
-        x: 77,
-        y: 75,
-        rotation: 0,
+        structureId: getRequiredNumericId(starter.id),
+        x: starter.x,
+        y: starter.y,
+        rotation: starter.rotation as TileRot,
     });
 }

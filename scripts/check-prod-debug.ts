@@ -13,7 +13,6 @@ const markers = [
     // Display-config hot-reload (dev-only)
     "config-hot-reload",
     "startConfigHotReload",
-    "__dev/sprite-configs",
     "__dev/config-reload",
 ];
 

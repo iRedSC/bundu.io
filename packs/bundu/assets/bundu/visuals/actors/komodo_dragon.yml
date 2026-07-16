@@ -1,0 +1,9 @@
+id: komodo_dragon
+extends: animal
+parts:
+  body:
+    sprite: bundu/entity/animal/komodo_dragon/komodo_dragon.svg
+    spriteScale: 3.125
+animations:
+  idle:
+    data: { amplitude: 0.01 }

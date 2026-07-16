@@ -1,0 +1,6 @@
+id: structure
+extends: rottable
+parts:
+  main:
+    sprite: ""
+variants: {}

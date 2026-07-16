@@ -47,7 +47,7 @@ type DisplayConfig = { x: number; y: number; scale: number; rotation: number };
 const DEFAULT_CONFIG = { x: 0, y: 0, scale: 1, rotation: 0 };
 export const SpriteFactory = {
     build(
-        texture: string | number,
+        texture: string,
         config?: Partial<DisplayConfig>
     ): ContaineredSprite {
         const fullConfig = mergeObjects<DisplayConfig>(

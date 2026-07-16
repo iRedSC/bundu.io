@@ -10,10 +10,12 @@ import type {
     StateDef,
     StateOverride,
     StateValue,
-    TileEntityDef,
     TileGeometry,
     TreeSwayData,
     BobData,
+    ContextualVisualDef,
+    VisualContext,
+    VisualDef,
 } from "./types";
 
 type RawDef = Record<string, unknown>;
@@ -38,6 +40,10 @@ function record(value: unknown, path: string): RawDef {
         throw new Error(`${path}: expected an object`);
     }
     return value as RawDef;
+}
+
+function partRecord(value: unknown, path: string): RawDef {
+    return value === null ? {} : record(value, path);
 }
 
 function string(value: unknown, path: string): string {
@@ -99,24 +105,22 @@ function mergeRecords(parent: RawDef, child: RawDef): RawDef {
     return merged;
 }
 
-function mergeParts(parent: unknown, child: unknown, id: string): unknown[] {
-    const inherited = parent === undefined ? [] : array(parent, `${id}.parts`);
-    const additions = child === undefined ? [] : array(child, `${id}.parts`);
-    const byName = new Map<string, RawDef>();
-    for (const item of inherited) {
-        const part = record(item, `${id}.parts`);
-        byName.set(string(part.name, `${id}.parts.name`), part);
-    }
-    for (const item of additions) {
-        const part = record(item, `${id}.parts`);
-        const name = string(part.name, `${id}.parts.name`);
-        const base = byName.get(name);
+function mergeParts(parent: unknown, child: unknown, id: string): RawDef {
+    const inherited = parent === undefined ? {} : record(parent, `${id}.parts`);
+    const additions = child === undefined ? {} : record(child, `${id}.parts`);
+    const merged = { ...inherited };
+    for (const [name, value] of Object.entries(additions)) {
+        const part = partRecord(value, `${id}.parts.${name}`);
+        const baseValue = merged[name];
+        const base = baseValue === undefined
+            ? undefined
+            : partRecord(baseValue, `${id}.parts.${name}`);
         if (base?.parent !== undefined && part.parent !== undefined && base.parent !== part.parent) {
             throw new Error(`${id}.parts.${name}.parent: inherited parts cannot be reparented`);
         }
-        byName.set(name, base ? mergeRecords(base, part) : part);
+        merged[name] = base ? mergeRecords(base, part) : part;
     }
-    return [...byName.values()];
+    return merged;
 }
 
 function array(value: unknown, path: string): unknown[] {
@@ -158,10 +162,10 @@ function resolveRawDefs(input: Record<string, unknown>): Map<string, RawDef> {
     return resolved;
 }
 
-function compilePart(value: unknown, path: string): PartDef {
-    const raw = record(value, path);
+function compilePart(name: string, value: unknown, path: string): PartDef {
+    const raw = partRecord(value, path);
     return {
-        name: string(raw.name, `${path}.name`),
+        name,
         sprite: raw.sprite === undefined ? undefined : typeof raw.sprite === "string" ? raw.sprite : string(raw.sprite, `${path}.sprite`),
         parent: raw.parent === undefined ? undefined : string(raw.parent, `${path}.parent`),
         x: optionalNumber(raw.x, `${path}.x`),
@@ -177,6 +181,52 @@ function compilePart(value: unknown, path: string): PartDef {
         attachAnchor: point(raw.attachAnchor, `${path}.attachAnchor`),
         alpha: optionalNumber(raw.alpha, `${path}.alpha`),
         visible: optionalBoolean(raw.visible, `${path}.visible`),
+    };
+}
+
+function compileContext(value: unknown, path: string, defaultTexture?: string): VisualContext {
+    const raw = record(value, path);
+    const texture = raw.texture === undefined
+        ? undefined
+        : string(raw.texture, `${path}.texture`);
+    const visual = raw.visual === undefined
+        ? undefined
+        : string(raw.visual, `${path}.visual`);
+    if (texture !== undefined && visual !== undefined) {
+        throw new Error(`${path}: expected exactly one of texture or visual`);
+    }
+    const pose = {
+        x: optionalNumber(raw.x, `${path}.x`),
+        y: optionalNumber(raw.y, `${path}.y`),
+        scale: optionalNumber(raw.scale, `${path}.scale`),
+        rotation: optionalNumber(raw.rotation, `${path}.rotation`),
+        zIndex: optionalNumber(raw.zIndex, `${path}.zIndex`),
+        pivot: point(raw.pivot, `${path}.pivot`),
+    };
+    if (visual !== undefined) return { ...pose, visual };
+    const resolvedTexture = texture ?? defaultTexture;
+    if (!resolvedTexture) {
+        throw new Error(`${path}: expected texture, visual, or a definition texture`);
+    }
+    return { ...pose, texture: resolvedTexture };
+}
+
+function compileContextualDef(raw: RawDef): ContextualVisualDef {
+    const id = string(raw.id, "definition.id");
+    const defaultTexture = raw.texture === undefined
+        ? undefined
+        : string(raw.texture, `${id}.texture`);
+    const contexts: Record<string, VisualContext> = {};
+    for (const [name, value] of Object.entries(record(raw.contexts, `${id}.contexts`))) {
+        contexts[name] = compileContext(value, `${id}.contexts.${name}`, defaultTexture);
+    }
+    if (Object.keys(contexts).length === 0) {
+        throw new Error(`${id}.contexts: expected at least one context`);
+    }
+    return {
+        id,
+        abstract: raw.abstract === undefined ? false : boolean(raw.abstract, `${id}.abstract`),
+        contexts,
     };
 }
 
@@ -324,9 +374,8 @@ function compileSlots(value: unknown, path: string, parts: Set<string>): Record<
         const raw = record(slot, `${path}.${name}`);
         const part = string(raw.part, `${path}.${name}.part`);
         if (!parts.has(part)) throw new Error(`${path}.${name}.part: unknown part "${part}"`);
-        const display = string(raw.display, `${path}.${name}.display`);
-        if (display !== "hand_display" && display !== "body_display" && display !== "world_display") throw new Error(`${path}.${name}.display: unknown display "${display}"`);
-        result[name] = { part, display, mirrorX: optionalBoolean(raw.mirrorX, `${path}.${name}.mirrorX`), scale: optionalNumber(raw.scale, `${path}.${name}.scale`) };
+        const context = string(raw.context, `${path}.${name}.context`);
+        result[name] = { part, context, mirrorX: optionalBoolean(raw.mirrorX, `${path}.${name}.mirrorX`), scale: optionalNumber(raw.scale, `${path}.${name}.scale`) };
     }
     return result;
 }
@@ -343,11 +392,12 @@ function compileVariants(value: unknown, path: string, parts: Set<string>): Reco
     return result;
 }
 
-function compileDef(raw: RawDef): ObjectDef | TileEntityDef {
+function compileDef(raw: RawDef): VisualDef {
+    if (raw.contexts !== undefined) return compileContextualDef(raw);
     const id = string(raw.id, "definition.id");
-    const authoredParts = array(raw.parts, `${id}.parts`).map((part, index) => compilePart(part, `${id}.parts[${index}]`));
+    const authoredParts = Object.entries(record(raw.parts, `${id}.parts`))
+        .map(([name, part]) => compilePart(name, part, `${id}.parts.${name}`));
     const partByName = new Map(authoredParts.map((part) => [part.name, part]));
-    if (partByName.size !== authoredParts.length) throw new Error(`${id}.parts: duplicate part name`);
     const parts: PartDef[] = [];
     const visiting = new Set<string>();
     const visited = new Set<string>();
@@ -389,23 +439,44 @@ function compileDef(raw: RawDef): ObjectDef | TileEntityDef {
     };
     if (raw.tile === undefined) return base;
     const tile = compileFootprint(raw.tile, `${id}.tile`);
-    const source = string(raw.variantSource, `${id}.variantSource`);
-    if (source === "structured") {
-        if (!base.variants) throw new Error(`${id}.variants: structured definitions require variants`);
-        if (!base.abstract && !base.defaultVariant) throw new Error(`${id}.defaultVariant: concrete definitions require a default variant`);
-        if (base.defaultVariant && !base.variants[base.defaultVariant]) throw new Error(`${id}.defaultVariant: unknown variant "${base.defaultVariant}"`);
-        return { ...base, tile, variantSource: source, variants: base.variants };
-    }
-    if (source !== "texture") throw new Error(`${id}.variantSource: expected "structured" or "texture"`);
-    const texturePart = string(raw.texturePart, `${id}.texturePart`);
-    if (!partNames.has(texturePart)) throw new Error(`${id}.texturePart: unknown part "${texturePart}"`);
+    const variants = base.variants ?? {};
     if (!base.abstract && !base.defaultVariant) throw new Error(`${id}.defaultVariant: concrete definitions require a default variant`);
-    const { variants: _variants, ...withoutVariants } = base;
-    return { ...withoutVariants, tile, variantSource: source, texturePart };
+    if (base.defaultVariant && !variants[base.defaultVariant]) throw new Error(`${id}.defaultVariant: unknown variant "${base.defaultVariant}"`);
+    return { ...base, tile, variants };
 }
 
-export type CompiledVisualDefs = ReadonlyMap<string, ObjectDef | TileEntityDef>;
+export type CompiledVisualDefs = ReadonlyMap<string, VisualDef>;
 
 export function compileVisualDefs(input: Record<string, unknown>): CompiledVisualDefs {
-    return new Map([...resolveRawDefs(input)].map(([id, raw]) => [id, compileDef(raw)]));
+    const flattened = Object.fromEntries(
+        Object.entries(input).flatMap(([source, value]) => {
+            if (Array.isArray(value)) {
+                return value.map((entry, index) => [
+                    `${source}[${index}]`,
+                    entry,
+                ]);
+            }
+            const raw = record(value, source);
+            if ("id" in raw) return [[source, value]];
+            return Object.entries(raw).map(([id, definition]) => [
+                `${source}.${id}`,
+                { id, ...record(definition, `${source}.${id}`) },
+            ]);
+        })
+    );
+    const defs = new Map([...resolveRawDefs(flattened)].map(([id, raw]) => [id, compileDef(raw)]));
+    for (const def of defs.values()) {
+        if (!("contexts" in def)) continue;
+        for (const [name, context] of Object.entries(def.contexts)) {
+            if (!context.visual) continue;
+            const target = defs.get(context.visual);
+            if (!target) {
+                throw new Error(`${def.id}.contexts.${name}.visual: unknown visual "${context.visual}"`);
+            }
+            if ("contexts" in target) {
+                throw new Error(`${def.id}.contexts.${name}.visual: "${context.visual}" is not an assembled visual`);
+            }
+        }
+    }
+    return defs;
 }

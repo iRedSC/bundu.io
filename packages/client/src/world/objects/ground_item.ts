@@ -5,6 +5,7 @@ import { SpriteFactory } from "@client/assets/sprite_factory";
 import { AnimationManagers } from "../../animation/animations";
 import { Animation } from "../../animation/runtime";
 import GameObject from "../game_object";
+import { lookupContextVisual } from "../../visual/defs";
 
 const ITEM_SIZE = 54;
 const POP_LERP = 0.16;
@@ -32,7 +33,9 @@ export class GroundItem extends GameObject {
 
     constructor(id: number, itemId: number, position: Point, rotation: number) {
         super(id, position, radians(rotation), 12, 1);
-        const sprite = SpriteFactory.build(getStringId(itemId));
+        const name = getStringId(itemId);
+        const texture = lookupContextVisual(name)?.contexts.world?.texture;
+        const sprite = SpriteFactory.build(texture ?? "bundu/misc/unknown_asset.svg");
         sprite.width = ITEM_SIZE;
         sprite.height = ITEM_SIZE;
         sprite.anchor.set(0.5);

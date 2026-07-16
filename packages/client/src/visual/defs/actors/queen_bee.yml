@@ -1,9 +1,0 @@
-id: queen_bee
-extends: animal
-parts:
-  - name: body
-    sprite: queen_bee
-    spriteScale: 1
-animations:
-  idle:
-    data: { amplitude: 0.025 }

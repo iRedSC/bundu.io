@@ -1,0 +1,11 @@
+id: stone
+extends: single_tile_node
+defaultVariant: base
+
+variants:
+    base:
+        main: bundu/item/material/stone.svg
+
+parts:
+    main:
+        scale: 1.4
