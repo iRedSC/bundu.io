@@ -54,12 +54,14 @@ export class Structure extends GameObject {
 
     /**
      * Project sim components into the client entity-state snapshot.
-     * Always includes `rotting` / `spiked` so clears coalesce via SetStructureState.
+     * Always includes `rotting` / `spiked` / `ownerId` so clears coalesce via SetStructureState.
+     * `ownerId` is `-1` when unowned (rotting or never placed by a player).
      */
     getStateSnapshot(): EntityStateSnapshot {
         const states: EntityStateSnapshot = {
             rotting: Rotting.get(this) !== undefined,
             spiked: Spiked.get(this) !== undefined,
+            ownerId: this.get(TileEntity).ownerId ?? -1,
         };
         const door = Door.get(this);
         if (door) states.open = door.open;
