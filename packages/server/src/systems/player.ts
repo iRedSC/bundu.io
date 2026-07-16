@@ -17,6 +17,7 @@ import {
     tryConsumeAndAdd,
 } from "../components/inventory.js";
 import {
+    clearEphemeralPlayerAttributeSources,
     clearEphemeralPlayerIntent,
     PlayerData,
 } from "../components/player.js";
@@ -117,10 +118,11 @@ export class PlayerSystem extends System<GameEventMap> {
     parkDisconnected(player: GameObject) {
         const data = PlayerData.get(player);
         if (!data) return;
-        if (data.blocking) Attributes.get(player)?.clear("blocking");
-        // clearCraft/clearEating before intent wipe so attribute side effects still run.
+        // clearCraft/clearEating before intent wipe so channel side effects still run.
         this.clearCraft(player, false);
         this.clearEating(player, false);
+        const attributes = Attributes.get(player);
+        if (attributes) clearEphemeralPlayerAttributeSources(attributes);
         clearEphemeralPlayerIntent(data);
     }
 
