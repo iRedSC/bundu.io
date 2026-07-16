@@ -109,20 +109,28 @@ export class AttackSystem extends System<GameEventMap> {
         const hits = testForIntersection(hitRange, nearby);
         hits.delete(source.id);
         for (const object of hits.values()) {
-            this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
-                id: object.id,
-                angle: facing,
-            });
             // Intact doors toggle; rotting doors take damage / claim via Hurt.
             if (Door.get(object) && !Rotting.get(object)) {
+                this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
+                    id: object.id,
+                    angle: facing,
+                    success: true,
+                });
                 this.trigger(GameEvent.ToggleDoor, { object });
                 continue;
             }
+            const hit = { success: true };
             this.trigger(GameEvent.Hurt, {
                 object,
                 source,
                 damage,
                 weapon,
+                hit,
+            });
+            this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
+                id: object.id,
+                angle: facing,
+                success: hit.success,
             });
         }
     }

@@ -1,5 +1,5 @@
 import { Attributes } from "../components/attributes.js";
-import { Health, Rotting } from "../components/base.js";
+import { Health, Rotting, TileEntity } from "../components/base.js";
 import { type GameObject, System, type World } from "../engine";
 import { emitVitals } from "../network/vitals.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
@@ -32,7 +32,7 @@ export class HealthSystem extends System<GameEventMap> {
         emitVitals(object, this.world.context.playerPacketManager);
     }
 
-    hurt({ object: target, source, damage }: GameEvent.Hurt) {
+    hurt({ object: target, source, damage, hit }: GameEvent.Hurt) {
         const health = target.get(Health);
         const attributes = target.get(Attributes);
         const defense = attributes?.get("health.defense") ?? 0;
@@ -41,7 +41,15 @@ export class HealthSystem extends System<GameEventMap> {
         if (source && Rotting.get(target)) {
             damage *= gameplayConfig().health.rottingDamageMultiplier;
         }
-        health.value -= Math.round(Math.max(0, damage - defense));
+        const applied = Math.round(Math.max(0, damage - defense));
+        health.value -= applied;
+
+        // Structures only: weak hits get unsuccessful FX. Actors keep default success.
+        if (hit && TileEntity.get(target)) {
+            const fraction = gameplayConfig().health.structureHitSuccessFraction;
+            hit.success = health.max > 0 && applied >= health.max * fraction;
+        }
+
         if (health.value <= 0) {
             this.trigger(GameEvent.Kill, { object: target, source });
         }

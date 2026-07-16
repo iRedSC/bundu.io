@@ -3,7 +3,7 @@ import { attack } from "./animations/attack";
 import { block } from "./animations/block";
 import { eat } from "./animations/eat";
 import { bob } from "./animations/bob";
-import { hit, hitRotation } from "./animations/hit";
+import { hit, hitRotation, weakHitRotation } from "./animations/hit";
 import { hurt } from "./animations/hurt";
 import { lunge } from "./animations/lunge";
 import { place } from "./animations/place";
@@ -23,10 +23,16 @@ export function createPreset(
         case "hurt":
             return hurt(nodes);
         case "hit": {
-            if (rotationTarget) return hitRotation(rotationTarget);
+            if (rotationTarget) return hitRotation(rotationTarget, def.data);
             const node = nodes[0];
             if (!node) throw new Error("hit preset needs one part");
             return hit(node);
+        }
+        case "weak_hit": {
+            if (!rotationTarget) {
+                throw new Error("weak_hit preset needs a rotation target");
+            }
+            return weakHitRotation(rotationTarget);
         }
         case "place": {
             const node = nodes[0];

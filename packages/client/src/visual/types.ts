@@ -57,6 +57,7 @@ export type SlotDef = {
 export type AnimPreset =
     | "hurt"
     | "hit"
+    | "weak_hit"
     | "place"
     | "wave"
     | "tree_sway"
@@ -66,6 +67,13 @@ export type AnimPreset =
     | "block"
     | "eat"
     | "rotting";
+
+export type HitData = {
+    /** Peak rotation kick in degrees. Default 14. */
+    kick?: number;
+    /** Animation duration in milliseconds. Default 450. */
+    duration?: number;
+};
 
 export type TreeSwayData = {
     distance?: number;
@@ -84,7 +92,8 @@ export type BobData = {
 
 type AnimData = {
     hurt: undefined;
-    hit: undefined;
+    hit: HitData;
+    weak_hit: undefined;
     place: undefined;
     wave: undefined;
     tree_sway: TreeSwayData;

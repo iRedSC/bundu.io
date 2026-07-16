@@ -51,15 +51,21 @@ export class CombatFx {
         object.setEating(duration);
     };
 
-    hurt = ({ id, angle }: ServerPacket.HitEvent) => {
+    hurt = ({ id, angle, success }: ServerPacket.HitEvent) => {
         const object = this.objects.get(id);
         if (!object) return;
+
+        if (!(object instanceof Structure)) {
+            object.trigger(ANIMATION.HURT, AnimationManagers.World, true);
+            return;
+        }
+
         object.trigger(
-            object instanceof Structure ? ANIMATION.HIT : ANIMATION.HURT,
+            success ? ANIMATION.HIT : ANIMATION.HIT_FAIL,
             AnimationManagers.World,
             true
         );
-        if (!(object instanceof Structure)) return;
+        if (!success) return;
 
         const hitX = object.position.x - Math.cos(angle) * object.collisionRadius;
         const hitY = object.position.y - Math.sin(angle) * object.collisionRadius;

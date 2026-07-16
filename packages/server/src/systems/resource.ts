@@ -45,13 +45,23 @@ export class ResourceSystem extends System<GameEventMap> {
         data.lastRegen = time;
     }
 
-    private gather = ({ object: resource, source }: GameEvent.Hurt) => {
-        if (!source) return;
+    private gather = ({ object: resource, source, hit }: GameEvent.Hurt) => {
+        const report = (success: boolean) => {
+            if (hit) hit.success = success;
+        };
+
+        if (!source) {
+            report(false);
+            return;
+        }
 
         const player = PlayerData.get(source);
         const inventory = Inventory.get(source);
         const type = Type.get(resource);
-        if (!player || !inventory || !type) return;
+        if (!player || !inventory || !type) {
+            report(false);
+            return;
+        }
 
         const config = ResourceConfigs.get(type.id);
         const tool =
@@ -61,7 +71,10 @@ export class ResourceSystem extends System<GameEventMap> {
         const toolType = tool?.type ?? UNARMED_HARVEST.type;
         const toolLevel = tool?.level ?? UNARMED_HARVEST.level;
         const multiplier = config.multipliers[toolType];
-        if (config.exclusive && multiplier === undefined) return;
+        if (config.exclusive && multiplier === undefined) {
+            report(false);
+            return;
+        }
 
         const amount = Math.max(
             0,
@@ -72,23 +85,33 @@ export class ResourceSystem extends System<GameEventMap> {
                           (multiplier ?? 1)
             )
         );
-        if (amount === 0) return;
+        if (amount === 0) {
+            report(false);
+            return;
+        }
 
         const data = resource.get(ResourceData);
         const available = Object.entries(data.items).filter(
             ([, remaining]) => remaining > 0
         );
-        if (available.length === 0) return;
+        if (available.length === 0) {
+            report(false);
+            return;
+        }
 
         const [itemKey, remaining] = random.choice(available);
         const itemId = Number(itemKey);
         const requested = Math.min(amount, remaining);
         const gathered = requested - addItem(inventory, itemId, requested);
-        if (gathered === 0) return;
+        if (gathered === 0) {
+            report(false);
+            return;
+        }
 
         data.items[itemId] = remaining - gathered;
         player.score += (config.score ?? 0) * gathered;
         emitInventory(source, this.world.context.playerPacketManager);
+        report(true);
 
         if (
             config.destroy_on_empty &&

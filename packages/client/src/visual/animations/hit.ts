@@ -2,11 +2,17 @@ import { random } from "@bundu/shared";
 import { lerp, radians } from "@bundu/shared/transforms";
 import { easeOut } from "../../animation/animations";
 import { Animation } from "../../animation/runtime";
-import type { PartNode, Rotatable } from "../types";
+import type { HitData, PartNode, Rotatable } from "../types";
+
+const DEFAULT_KICK_DEGREES = 14;
+const DEFAULT_DURATION_MS = 450;
+const WEAK_KICK_DEGREES = 5;
+const WEAK_DURATION_MS = 280;
 
 /** Dampened rotational wiggle on hit (structures). */
-export function hitRotation(target: Rotatable) {
-    const kick = radians(14);
+export function hitRotation(target: Rotatable, data?: HitData) {
+    const kick = radians(data?.kick ?? DEFAULT_KICK_DEGREES);
+    const duration = data?.duration ?? DEFAULT_DURATION_MS;
     const animation = new Animation();
     let base = 0;
     let dir = 1;
@@ -20,7 +26,7 @@ export function hitRotation(target: Rotatable) {
         if (a.isFirstKeyframe) {
             base = target.rotation;
             dir = random.integer(0, 1) ? 1 : -1;
-            a.goto(0, 450);
+            a.goto(0, duration);
         }
         const damp = Math.exp(-5 * a.t);
         const wiggle = Math.sin(a.t * Math.PI * 5) * kick * damp * dir;
@@ -30,6 +36,14 @@ export function hitRotation(target: Rotatable) {
 
     animation.cleanup = () => apply(base);
     return animation;
+}
+
+/** Weaker wiggle for unsuccessful structure / resource hits. */
+export function weakHitRotation(target: Rotatable) {
+    return hitRotation(target, {
+        kick: WEAK_KICK_DEGREES,
+        duration: WEAK_DURATION_MS,
+    });
 }
 
 /** Scale punch on the first part's root. */

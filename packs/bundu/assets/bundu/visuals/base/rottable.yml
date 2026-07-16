@@ -8,6 +8,9 @@ animations:
   hit:
     preset: hit
     parts: main
+  hit_fail:
+    preset: weak_hit
+    parts: main
   place:
     preset: place
     parts: main
