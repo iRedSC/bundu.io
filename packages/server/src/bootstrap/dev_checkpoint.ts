@@ -21,6 +21,7 @@ import {
 import { Attributes, type AttributesData } from "../components/attributes";
 import { Inventory, type Inventory as InventoryData } from "../components/inventory";
 import {
+    clearEphemeralPlayerAttributeSources,
     clearEphemeralPlayerIntent,
     PlayerData,
     type PlayerData as PlayerState,
@@ -277,7 +278,10 @@ const playerHandler: KindHandler<"player"> = {
         const object = new Player(physics, data);
         restoreObjectId(object, snapshot.id);
         Object.assign(object.get(Inventory), structuredClone(snapshot.inventory));
-        restoreAttributes(object.get(Attributes), snapshot.attributes);
+        const attributes = object.get(Attributes);
+        restoreAttributes(attributes, snapshot.attributes);
+        // Intent wiped above; drop block/eat modifiers that came back with attrs.
+        clearEphemeralPlayerAttributeSources(attributes);
         applyPhysicsRadius(physics, snapshot.physics.collisionRadius);
         object.get(Stats).types = structuredClone(snapshot.stats);
         // Sockets / VisibleObjects stay ephemeral — never restored.
@@ -405,6 +409,10 @@ const structureHandler: KindHandler<"structure"> = {
         if (snapshot.door) Object.assign(object.get(Door), snapshot.door);
         if (snapshot.rotting) object.add(new Rotting());
         addWithHealth(world, object, snapshot.health);
+        // PositionSystem.enter always occupies; open doors must release.
+        if (snapshot.door?.open) {
+            world.context.occupancy.release(object.id);
+        }
     },
 };
 
