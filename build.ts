@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 import { generateVisualDefs } from "./scripts/generate-visual-defs";
 
 const GAME_WS_URL = process.env.GAME_WS_URL ?? "ws://localhost:7777";
@@ -20,6 +20,11 @@ await Bun.build({
         __DEBUG__: DEBUG ? "true" : "false",
     },
 });
+
+// Runtime Pixi loads use string paths (not bundler imports), so copy sprites
+// into the site output. Needed when the deploy root is `public/site/` (no
+// sibling `/assets`), and also for docker at `/site/assets/…`.
+await cp("./public/assets", `${outdir}/assets`, { recursive: true });
 
 if (!DEBUG) {
     console.log("[build] production client (debug tools stripped)");
