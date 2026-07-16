@@ -1,3 +1,4 @@
+import { isHardSessionClose } from "@bundu/shared/session";
 import { decodePacketData } from "../network/decode";
 import type { SerializedPacketArray } from "../network/client_receiver";
 import { serializer } from "../network/serializer";
@@ -5,16 +6,15 @@ import { Socket } from "../network/socket";
 
 export type GameSocket = Socket;
 
-function isPacketArray(data: unknown): data is SerializedPacketArray {
-    return Array.isArray(data) && typeof data[0] === "number";
-}
-
 export type PacketReceiver = {
     process(packets: SerializedPacketArray): void;
 };
 
+function isPacketArray(data: unknown): data is SerializedPacketArray {
+    return Array.isArray(data) && typeof data[0] === "number";
+}
+
 export type GameSessionHooks = {
-    /** Re-negotiate packs before each connect (handles server reload / 409). */
     prepareConnection: () => Promise<void>;
     autoReconnect: boolean;
     buildSocketUrl: (username: string) => string;
@@ -22,7 +22,10 @@ export type GameSessionHooks = {
     resetLocalState: () => void;
     setConnecting: (connecting: boolean) => void;
     onConnected: () => void;
-    onDisconnected: () => void;
+    /** Soft blip / supervised reload — keep game UI, reconnect with same token. */
+    onSoftDisconnected: () => void;
+    /** Death, rejected reclaim, intentional leave — show menu, drop token. */
+    onHardDisconnected: () => void;
 };
 
 /**
@@ -36,6 +39,8 @@ export class GameSession {
     private reconnectTimer: ReturnType<typeof setTimeout> | undefined;
     private reconnectDelay = 250;
     private destroyed = false;
+    /** True after a successful open until a hard failure or intentional leave. */
+    private hadSession = false;
 
     constructor(
         private readonly receiver: PacketReceiver,
@@ -51,15 +56,21 @@ export class GameSession {
         return this.socket !== null && this.socket.readyState === WebSocket.OPEN;
     }
 
+    /** User pressed Play — hard-fail any in-flight soft reconnect and open fresh. */
     connect(): void {
         if (this.destroyed) return;
         if (this.connecting) return;
         if (this.socket && this.socket.readyState === WebSocket.OPEN) return;
 
-        void this.open(++this.generation);
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = undefined;
+        void this.open(++this.generation, { soft: false });
     }
 
-    private async open(generation: number): Promise<void> {
+    private async open(
+        generation: number,
+        { soft }: { soft: boolean }
+    ): Promise<void> {
         this.connecting = true;
         this.hooks.setConnecting(true);
         this.hooks.resetLocalState();
@@ -83,9 +94,14 @@ export class GameSession {
             if (generation !== this.generation) return;
             this.connecting = false;
             this.hooks.setConnecting(false);
-            this.hooks.onDisconnected();
+            if (soft && this.hadSession) {
+                this.hooks.onSoftDisconnected();
+                this.scheduleReconnect();
+            } else {
+                this.hadSession = false;
+                this.hooks.onHardDisconnected();
+            }
             console.error("Connection preparation failed", error);
-            this.scheduleReconnect();
             return;
         }
         if (generation !== this.generation) return;
@@ -111,6 +127,7 @@ export class GameSession {
             if (this.socket !== next) return;
             this.connecting = false;
             this.reconnectDelay = 250;
+            this.hadSession = true;
             this.hooks.setConnecting(false);
             this.hooks.onConnected();
         };
@@ -122,13 +139,21 @@ export class GameSession {
             this.hooks.setConnecting(false);
         };
 
-        next.onclose = () => {
+        next.onclose = (ev) => {
             this.connecting = false;
             this.hooks.setConnecting(false);
             if (this.socket !== next) return;
             this.socket = null;
             this.hooks.resetLocalState();
-            this.hooks.onDisconnected();
+
+            const hard = isHardSessionClose(ev.code);
+            if (hard || !this.hadSession) {
+                this.hadSession = false;
+                this.hooks.onHardDisconnected();
+                return;
+            }
+
+            this.hooks.onSoftDisconnected();
             this.scheduleReconnect();
         };
     }
@@ -141,7 +166,7 @@ export class GameSession {
         this.reconnectDelay = Math.min(2_000, delay * 2);
         this.reconnectTimer = setTimeout(() => {
             this.reconnectTimer = undefined;
-            this.connect();
+            void this.open(++this.generation, { soft: true });
         }, delay);
     }
 

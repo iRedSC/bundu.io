@@ -186,6 +186,7 @@ export function saveDevCheckpoint(world: World): void {
     const checkpoint: DevCheckpoint = {
         format: 1,
         gameTime: world.gameTime,
+        // Alive objects only (soft-disconnected players stay active).
         objects: [...world.objects.values()]
             .filter((object) => object.active)
             .map(snapshotObject)

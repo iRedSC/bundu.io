@@ -13,7 +13,10 @@ export type EatingState = {
 export type PlayerData = {
     name: string;
     score: number;
-    /** Stable browser-session identity used for dev checkpoint reattachment. */
+    /**
+     * Unguessable reclaim token. Survives soft-disconnect; cleared on death.
+     * Client stores it (sessionStorage) and sends it on reconnect.
+     */
     sessionId?: string;
 
     playerSkin: string;
