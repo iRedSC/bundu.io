@@ -8,7 +8,7 @@ let unknownAsset: Texture;
 export async function initAssets(): Promise<void> {
     const bundles = Object.entries(SpriteMap).map(([key, value]) => ({
         alias: key,
-        src: `../assets/${value}`,
+        src: `./assets/${value}`,
     }));
 
     await Assets.load(bundles.map((b) => b.src));

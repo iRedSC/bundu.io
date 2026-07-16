@@ -122,11 +122,15 @@ jobs:
           container=$(docker run --detach --publish 13000:3000 "${{ steps.image.outputs.name }}:${GITHUB_SHA::7}")
           trap 'docker rm --force "$container"' EXIT
           for attempt in {1..20}; do
-            curl --fail --silent --show-error http://127.0.0.1:13000/site/ >/dev/null && exit 0
+            curl --fail --silent --show-error http://127.0.0.1:13000/site/ >/dev/null && break
             sleep 1
+            if [ "$attempt" -eq 20 ]; then
+              docker logs "$container"
+              exit 1
+            fi
           done
-          docker logs "$container"
-          exit 1
+          curl --fail --silent --show-error \
+            http://127.0.0.1:13000/site/assets/player_hat.svg >/dev/null
 
       - name: Smoke test server image
         if: matrix.name == 'server'
