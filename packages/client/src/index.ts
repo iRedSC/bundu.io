@@ -43,8 +43,23 @@ function setMenuVisible(visible: boolean) {
 }
 
 let packFingerprint = "";
-const sessionId = sessionStorage.getItem("bundu.session_id") ?? crypto.randomUUID();
-sessionStorage.setItem("bundu.session_id", sessionId);
+const SESSION_KEY = "bundu.session_id";
+
+function readSessionId(): string {
+    return sessionStorage.getItem(SESSION_KEY) ?? crypto.randomUUID();
+}
+
+function ensureSessionId(): string {
+    const sessionId = readSessionId();
+    sessionStorage.setItem(SESSION_KEY, sessionId);
+    return sessionId;
+}
+
+function dropSessionId(): void {
+    sessionStorage.removeItem(SESSION_KEY);
+}
+
+ensureSessionId();
 
 async function synchronizeResourcePacks() {
     if (
@@ -66,7 +81,7 @@ function buildSocketUrl(username: string) {
     const url = new URL(GAME_WS_URL);
     url.searchParams.set("username", username || "unnamed");
     url.searchParams.set("skin_id", "0");
-    url.searchParams.set("session_id", sessionId);
+    url.searchParams.set("session_id", ensureSessionId());
     url.searchParams.set("packs", packFingerprint);
     return url.toString();
 }
@@ -118,7 +133,7 @@ async function main() {
 
     const session = new GameSession(receiver, {
         prepareConnection: synchronizeResourcePacks,
-        autoReconnect: __DEBUG__,
+        autoReconnect: true,
         buildSocketUrl,
         getUsername: () => nameInput.value.trim(),
         resetLocalState: () => {
@@ -136,9 +151,24 @@ async function main() {
         },
         setConnecting: (connecting) => {
             playButton.disabled = connecting;
+            if (connecting && !document.querySelector(".menu:not(.hidden)")) {
+                playButton.textContent = "Reconnecting…";
+            } else if (!connecting) {
+                playButton.textContent = "Play";
+            }
         },
-        onConnected: () => setMenuVisible(false),
-        onDisconnected: () => {
+        onConnected: () => {
+            playButton.textContent = "Play";
+            setMenuVisible(false);
+        },
+        onSoftDisconnected: () => {
+            // Keep game shell visible; reconnect with the same reclaim token.
+            setMenuVisible(false);
+            playButton.textContent = "Reconnecting…";
+        },
+        onHardDisconnected: () => {
+            dropSessionId();
+            playButton.textContent = "Play";
             setMenuVisible(true);
             nameInput.focus();
         },

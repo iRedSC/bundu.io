@@ -1,5 +1,4 @@
 import { tileCenterWorld } from "@bundu/shared/tiles";
-import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Circle, Vector } from "sat";
 import type { World } from "../engine";
 import { Player } from "../game_objects/player";
@@ -8,6 +7,9 @@ import { getVariantName } from "@bundu/shared/variant_map";
 
 import { gameplayConfig } from "../configs/gameplay";
 
+/** Negative ids are reclaim failures — caller must reject the socket. */
+export const RECLAIM_REJECTED = -1;
+
 export function createPlayer(
     world: World,
     username: string,
@@ -15,41 +17,24 @@ export function createPlayer(
     sessionId: string
 ): number {
     const players = world.query([PlayerData]);
-    let restored = players.find(
-        (object) => object.get(PlayerData).sessionId === sessionId
+    const existing = players.find(
+        (object) =>
+            object.active && object.get(PlayerData).sessionId === sessionId
     );
-    let matchedByName = false;
-    if (!restored && process.env.BUNDU_DEBUG === "1") {
-        const candidates = players.filter((object) => {
-            const data = object.get(PlayerData);
-            return (
-                data.name === username &&
-                world.context.socketManager.getSocket(object.id) === undefined
-            );
-        });
-        if (candidates.length === 1) {
-            restored = candidates[0];
-            matchedByName = true;
+
+    if (existing) {
+        if (world.context.socketManager.getSocket(existing.id)) {
+            return RECLAIM_REJECTED;
         }
-    }
-    if (restored) {
-        const data = restored.get(PlayerData);
+        const data = existing.get(PlayerData);
         data.name = username;
-        data.sessionId = sessionId;
         data.moveDir = [0, 0];
         data.attacking = false;
         data.blocking = false;
-        restored.active = true;
-        world.context.playerPacketManager.set(
-            restored.id,
-            ServerPacket.ClientConnectionInfo,
-            { playerId: restored.id }
-        );
         console.log(
-            `[dev] reattached player ${restored.id} to session ${sessionId.slice(0, 8)}` +
-                (matchedByName ? " (migrated by username)" : "")
+            `Reclaimed player ${existing.id} for session ${sessionId.slice(0, 8)}`
         );
-        return restored.id;
+        return existing.id;
     }
 
     const config = gameplayConfig().player;
@@ -83,14 +68,6 @@ export function createPlayer(
     world.addObject(player);
     console.log(
         `Added player ${player.id} for session ${sessionId.slice(0, 8)}`
-    );
-
-    world.context.playerPacketManager.set(
-        player.id,
-        ServerPacket.ClientConnectionInfo,
-        {
-            playerId: player.id,
-        }
     );
     return player.id;
 }

@@ -3,7 +3,6 @@ import { createWorld } from "./bootstrap/create_world";
 import { loadMap } from "./bootstrap/load_map";
 import { createPlayer } from "./bootstrap/create_player";
 import { startTicker } from "./bootstrap/start_ticker";
-import { GameEvent } from "./systems/event_map";
 import { resourcePacks } from "./configs/resource_packs";
 import {
     restoreDevCheckpoint,
@@ -22,8 +21,8 @@ const controller = new ServerController(socketManager, (username, skinId, sessio
 
 controller.connect = (socket) => {
     const player = world.getObject(socket.data.playerId);
-    if (!player) return;
-    playerSystem.enter(player);
+    if (!player?.active) return;
+    playerSystem.syncSession(player);
     renderDistanceSystem.loadView(player);
 };
 
@@ -77,14 +76,14 @@ controller.http = (request, url) => {
     });
 };
 
+/** Soft-disconnect: detach socket only — player stays alive for reclaim. */
 controller.disconnect = (socket) => {
     const playerId = socket.data.playerId;
     if (playerId < 0) return;
     socketManager.deleteClient(playerId);
     const player = world.getObject(playerId);
     if (!player?.active) return;
-    player.active = false;
-    playerSystem.trigger(GameEvent.DeleteObject, { object: player });
+    playerSystem.parkDisconnected(player);
 };
 
 controller.message = (socket, packet) => {
