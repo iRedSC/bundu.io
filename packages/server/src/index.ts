@@ -33,7 +33,11 @@ const packHeaders = {
 
 controller.requiredPackFingerprint = resourcePacks.manifest.fingerprint;
 controller.http = (request, url) => {
-    if (!url.pathname.startsWith("/packs/")) return;
+    // Proxies may keep a mount prefix (e.g. /server/na/packs/...).
+    const packsOffset = url.pathname.indexOf("/packs/");
+    if (packsOffset < 0) return;
+    const packPath = url.pathname.slice(packsOffset);
+
     if (request.method === "OPTIONS") {
         return new Response(null, { status: 204, headers: packHeaders });
     }
@@ -43,12 +47,12 @@ controller.http = (request, url) => {
             headers: packHeaders,
         });
     }
-    if (url.pathname === "/packs/manifest.json") {
+    if (packPath === "/packs/manifest.json") {
         return Response.json(resourcePacks.manifest, {
             headers: { ...packHeaders, "Cache-Control": "no-store" },
         });
     }
-    if (url.pathname === "/packs/visuals.json") {
+    if (packPath === "/packs/visuals.json") {
         if (url.searchParams.get("hash") !== resourcePacks.manifest.visuals.hash) {
             return new Response("Not Found", { status: 404, headers: packHeaders });
         }
@@ -61,10 +65,10 @@ controller.http = (request, url) => {
         });
     }
     const prefix = "/packs/assets/";
-    if (!url.pathname.startsWith(prefix)) {
+    if (!packPath.startsWith(prefix)) {
         return new Response("Not Found", { status: 404, headers: packHeaders });
     }
-    const asset = resourcePacks.asset(url.pathname.slice(prefix.length));
+    const asset = resourcePacks.asset(packPath.slice(prefix.length));
     if (!asset || url.searchParams.get("hash") !== asset.hash) {
         return new Response("Not Found", { status: 404, headers: packHeaders });
     }

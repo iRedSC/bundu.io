@@ -124,6 +124,11 @@ button:disabled {
     font-family: "Nunito", system-ui, sans-serif;
 }
 
+/* Must beat .pack-overlay { display: flex } — same specificity, later rule. */
+.pack-overlay.hidden {
+    display: none;
+}
+
 .pack-overlay-title {
     font-family: "Aoboshi One", serif;
     font-size: 1.5rem;
