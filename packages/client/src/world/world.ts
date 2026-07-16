@@ -144,6 +144,16 @@ export class World {
     private attachLocalPlayer(player: GameObject) {
         console.info(`Found user (id ${player.id}), loading..`);
         this.camera.follow(player.container);
+        this.refreshStructureOwnership();
+    }
+
+    /** Tint owned structure health bars once the local player id is known. */
+    private refreshStructureOwnership() {
+        for (const object of this.objects.all()) {
+            if (object instanceof Structure) {
+                object.setLocalPlayerId(this.user);
+            }
+        }
     }
 
     clientConnectionInfo = (packet?: ServerPacket.ClientConnectionInfo) => {
@@ -263,6 +273,7 @@ export class World {
             maxHealth,
             states ?? {}
         );
+        structure.setLocalPlayerId(this.user);
         structure.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
@@ -296,6 +307,7 @@ export class World {
         const object = this.objects.get(packet.id);
         if (object instanceof Structure) {
             object.applyStates(packet.states);
+            object.setLocalPlayerId(this.user);
             return;
         }
         if (object) return;

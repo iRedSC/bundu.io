@@ -38,8 +38,19 @@ const HEALTH_BAR_HEIGHT = 5;
 const HEALTH_BAR_Y = -52;
 const HEALTH_BAR_FADE_MS = 150;
 const HEALTH_BAR_DISPLAY_MS = 2_500;
+const HEALTH_BAR_ENEMY = 0xd94b4b;
+/** Matches local HUD health tint. */
+const HEALTH_BAR_FRIENDLY = 0x88fa57;
+/** Plus mark under friendly bars (colorblind cue). */
+const FRIENDLY_MARK_Y = HEALTH_BAR_Y + HEALTH_BAR_HEIGHT + 6;
+const FRIENDLY_MARK_ARM = 3;
 /** World zIndex when a top-level part omits `zIndex`. */
 const DEFAULT_STRUCTURE_Z = 10;
+
+function ownerIdFromStates(states: EntityStateSnapshot): number {
+    const value = states.ownerId;
+    return typeof value === "number" ? value : -1;
+}
 
 /** Placed tile entity. Art is authored at TILE_SIZE px per footprint tile. */
 export class Structure extends GameObject {
@@ -61,6 +72,11 @@ export class Structure extends GameObject {
     private healthBarShownUntil = 0;
     private hovered = false;
     private hasHealth = false;
+    private health = 0;
+    private maxHealth = 0;
+    /** `-1` = unowned. Compared to `localPlayerId` for friendly tint. */
+    private ownerId = -1;
+    private localPlayerId?: number;
     /** Top-level part roots promoted for world zIndex sorting via LayeredRenderer. */
     private worldLayers: Container[] = [];
     /** World-space overlays synced like healthBar (placement invalid mark). */
@@ -86,6 +102,7 @@ export class Structure extends GameObject {
         this.variant = variant;
         this.animationManager = animationManager;
         this.states = new EntityStateStore(states);
+        this.ownerId = ownerIdFromStates(states);
         this.applyVisualDefinition(variant);
         this.container.zIndex = DEFAULT_STRUCTURE_Z;
         this.healthBar.zIndex = 100;
@@ -172,20 +189,10 @@ export class Structure extends GameObject {
     }
 
     setHealth(health: number, maxHealth: number, time?: number) {
-        const ratio =
-            maxHealth > 0 ? Math.max(0, Math.min(1, health / maxHealth)) : 0;
-        const x = -HEALTH_BAR_WIDTH / 2;
-
-        this.healthBar.clear();
-        this.healthBar
-            .rect(x, HEALTH_BAR_Y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT)
-            .fill(0x1a1a1a);
-        if (ratio > 0) {
-            this.healthBar
-                .rect(x, HEALTH_BAR_Y, HEALTH_BAR_WIDTH * ratio, HEALTH_BAR_HEIGHT)
-                .fill(0xd94b4b);
-        }
+        this.health = health;
+        this.maxHealth = maxHealth;
         this.hasHealth = maxHealth > 0;
+        this.drawHealthBar();
         if (time === undefined || !this.hasHealth) {
             this.healthBar.visible = false;
             return;
@@ -196,6 +203,48 @@ export class Structure extends GameObject {
             time + HEALTH_BAR_DISPLAY_MS
         );
         this.showHealthBar(time);
+    }
+
+    /** Recompute friendly tint when the local player id becomes known or changes. */
+    setLocalPlayerId(localPlayerId: number | undefined) {
+        if (this.localPlayerId === localPlayerId) return;
+        this.localPlayerId = localPlayerId;
+        this.drawHealthBar();
+    }
+
+    private get friendly(): boolean {
+        return (
+            this.localPlayerId !== undefined &&
+            this.ownerId === this.localPlayerId
+        );
+    }
+
+    private drawHealthBar() {
+        const ratio =
+            this.maxHealth > 0
+                ? Math.max(0, Math.min(1, this.health / this.maxHealth))
+                : 0;
+        const x = -HEALTH_BAR_WIDTH / 2;
+        const fill = this.friendly ? HEALTH_BAR_FRIENDLY : HEALTH_BAR_ENEMY;
+
+        this.healthBar.clear();
+        this.healthBar
+            .rect(x, HEALTH_BAR_Y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT)
+            .fill(0x1a1a1a);
+        if (ratio > 0) {
+            this.healthBar
+                .rect(x, HEALTH_BAR_Y, HEALTH_BAR_WIDTH * ratio, HEALTH_BAR_HEIGHT)
+                .fill(fill);
+        }
+        if (this.friendly && this.hasHealth) {
+            // Horizontal + vertical arms of a small plus under the bar.
+            this.healthBar
+                .rect(-FRIENDLY_MARK_ARM, FRIENDLY_MARK_Y - 1, FRIENDLY_MARK_ARM * 2, 2)
+                .fill(HEALTH_BAR_FRIENDLY);
+            this.healthBar
+                .rect(-1, FRIENDLY_MARK_Y - FRIENDLY_MARK_ARM, 2, FRIENDLY_MARK_ARM * 2)
+                .fill(HEALTH_BAR_FRIENDLY);
+        }
     }
 
     updateHealthBar(time: number, cursor?: { x: number; y: number }) {
@@ -351,11 +400,19 @@ export class Structure extends GameObject {
 
     setState(name: string, value: EntityStateValue) {
         this.states.set(name, value);
+        if (name === "ownerId" && typeof value === "number") {
+            this.ownerId = value;
+            this.drawHealthBar();
+        }
     }
 
     applyStates(states: EntityStateSnapshot) {
         for (const [name, value] of Object.entries(states)) {
             this.states.set(name, value);
+        }
+        if ("ownerId" in states) {
+            this.ownerId = ownerIdFromStates(states);
+            this.drawHealthBar();
         }
     }
 
