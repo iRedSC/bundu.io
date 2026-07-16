@@ -54,9 +54,9 @@ export namespace GameEvent {
         weapon?: number;
         /**
          * Set by AttackSystem for combat hits. Listeners that own the outcome
-         * (resources / structures) write `success` for HitEvent FX.
+         * (resources / structures) write `strength` (0–10) for HitEvent FX.
          */
-        hit?: { success: boolean };
+        hit?: { strength: number };
     };
 
     export const Kill = 14;

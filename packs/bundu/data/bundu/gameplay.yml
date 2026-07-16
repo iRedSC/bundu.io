@@ -18,8 +18,6 @@ hunger:
 health:
   regen_interval_ms: 5000
   rotting_damage_multiplier: 2
-  # Hits dealing less than this fraction of max health use unsuccessful hit FX.
-  structure_hit_success_fraction: 0.03
 
 rotting:
   damage_per_second: 3

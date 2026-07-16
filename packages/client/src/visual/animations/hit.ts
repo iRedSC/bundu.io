@@ -1,27 +1,40 @@
-import { lerp, radians } from "@bundu/shared/transforms";
+import { clamp, lerp, radians } from "@bundu/shared/transforms";
 import { easeOut } from "../../animation/animations";
 import { Animation } from "../../animation/runtime";
-import type { HitData, HitTarget, PartNode } from "../types";
+import type { HitTarget, PartNode } from "../types";
 
-const DEFAULT_KICK_DEGREES = 14;
+/** HitEvent strength is clamped to this range on the server. */
+export const HIT_STRENGTH_MAX = 10;
+
+const WIGGLE_DEG = { min: 5, max: 18 } as const;
+const KNOCKBACK_PX = { min: 0, max: 28 } as const;
+const PARTICLE_COUNT = { min: 0, max: 8 } as const;
 const DEFAULT_DURATION_MS = 450;
-/** Peak positional push along the attack direction on successful hits. */
-const KNOCKBACK_DISTANCE = 22;
+
+/** Map strength 0–10 onto clamped FX magnitudes. */
+export function hitFxFromStrength(strength: number) {
+    const t = clamp(strength, 0, HIT_STRENGTH_MAX) / HIT_STRENGTH_MAX;
+    return {
+        kickDegrees: lerp(WIGGLE_DEG.min, WIGGLE_DEG.max, t),
+        knockback: lerp(KNOCKBACK_PX.min, KNOCKBACK_PX.max, t),
+        particles: Math.round(lerp(PARTICLE_COUNT.min, PARTICLE_COUNT.max, t)),
+    };
+}
 
 export type HitRotationOptions = {
     /** Radians: direction from hit origin into the target (attack direction). */
     angle: number;
-    /** Successful hits also push the target along `angle`. */
-    knockback: boolean;
-    data?: HitData;
+    /** Peak wiggle in degrees (already clamped via hitFxFromStrength). */
+    kickDegrees: number;
+    /** Peak knockback distance in world px (0 = rotation only). */
+    knockback: number;
     /** Keep promoted world layers in sync when mutating the object transform. */
     onApply?: () => void;
 };
 
-/** Dampened rotational wiggle on hit (structures); optional knockback on success. */
+/** Dampened rotational wiggle on hit (structures); scaled knockback. */
 export function hitRotation(target: HitTarget, options: HitRotationOptions) {
-    const kick = radians(options.data?.kick ?? DEFAULT_KICK_DEGREES);
-    const duration = options.data?.duration ?? DEFAULT_DURATION_MS;
+    const kick = radians(options.kickDegrees);
     const { angle, knockback, onApply } = options;
     const animation = new Animation();
     let baseRot = 0;
@@ -48,14 +61,14 @@ export function hitRotation(target: HitTarget, options: HitRotationOptions) {
             baseY = target.position.y;
             // Lean based on hit origin side relative to current facing.
             dir = Math.sin(angle + Math.PI - baseRot) >= 0 ? 1 : -1;
-            a.goto(0, duration);
+            a.goto(0, DEFAULT_DURATION_MS);
         }
         const damp = Math.exp(-5 * a.t);
         const wiggle = Math.sin(a.t * Math.PI * 5) * kick * damp * dir;
         applyRotation(baseRot + wiggle);
-        if (knockback) {
+        if (knockback > 0) {
             // Same duration + damp as the wiggle so the push settles with it.
-            const offset = Math.sin(a.t * Math.PI) * KNOCKBACK_DISTANCE * damp;
+            const offset = Math.sin(a.t * Math.PI) * knockback * damp;
             applyPosition(
                 baseX + Math.cos(angle) * offset,
                 baseY + Math.sin(angle) * offset
@@ -66,7 +79,7 @@ export function hitRotation(target: HitTarget, options: HitRotationOptions) {
 
     animation.cleanup = () => {
         applyRotation(baseRot);
-        if (knockback) applyPosition(baseX, baseY);
+        if (knockback > 0) applyPosition(baseX, baseY);
     };
     return animation;
 }

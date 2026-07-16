@@ -97,7 +97,7 @@ export namespace ServerPacket {
         width: number;
     };
     export type BlockEvent = { id: number; stop: boolean };
-    export type HitEvent = { id: number; angle: number; success: boolean };
+    export type HitEvent = { id: number; angle: number; strength: number };
     export type CraftEvent = { id: number; duration: number; itemId: number };
     export type PlaceStructureResult = {
         allowed: boolean;
@@ -249,7 +249,7 @@ export const ServerSchema: {
         fields: ["id", "start", "length", "width"],
     },
     [ServerPacket.BlockEvent]: { fields: ["id", "stop"] },
-    [ServerPacket.HitEvent]: { fields: ["id", "angle", "success"] },
+    [ServerPacket.HitEvent]: { fields: ["id", "angle", "strength"] },
     [ServerPacket.CraftEvent]: { fields: ["id", "duration", "itemId"] },
     [ServerPacket.PlaceStructureResult]: {
         fields: ["allowed", "x", "y", "rotation"],

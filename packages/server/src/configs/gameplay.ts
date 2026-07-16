@@ -28,7 +28,6 @@ export type GameplayConfig = {
     health: {
         regenIntervalMs: number;
         rottingDamageMultiplier: number;
-        structureHitSuccessFraction: number;
     };
     rotting: { damagePerSecond: number; claimWeapon: string };
     items: {
@@ -156,11 +155,6 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
         health: {
             regenIntervalMs: number(health, "regen_interval_ms", "gameplay.health"),
             rottingDamageMultiplier: number(health, "rotting_damage_multiplier", "gameplay.health"),
-            structureHitSuccessFraction: number(
-                health,
-                "structure_hit_success_fraction",
-                "gameplay.health"
-            ),
         },
         rotting: {
             damagePerSecond: number(rotting, "damage_per_second", "gameplay.rotting"),

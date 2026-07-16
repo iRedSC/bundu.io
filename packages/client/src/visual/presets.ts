@@ -27,8 +27,8 @@ export function createPreset(
                 // Bound preset is a no-angle fallback; CombatFx plays parameterized hits.
                 return hitRotation(rotationTarget, {
                     angle: 0,
-                    knockback: false,
-                    data: def.data,
+                    kickDegrees: def.data?.kick ?? 14,
+                    knockback: 0,
                 });
             }
             const node = nodes[0];

@@ -44,10 +44,11 @@ export class HealthSystem extends System<GameEventMap> {
         const applied = Math.round(Math.max(0, damage - defense));
         health.value -= applied;
 
-        // Structures only: weak hits get unsuccessful FX. Actors keep default success.
+        // Structures: strength = % of max health dealt this hit, clamped 0–10.
         if (hit && TileEntity.get(target)) {
-            const fraction = gameplayConfig().health.structureHitSuccessFraction;
-            hit.success = health.max > 0 && applied >= health.max * fraction;
+            const percent =
+                health.max > 0 ? (applied / health.max) * 100 : 0;
+            hit.strength = Math.min(10, Math.max(0, percent));
         }
 
         if (health.value <= 0) {

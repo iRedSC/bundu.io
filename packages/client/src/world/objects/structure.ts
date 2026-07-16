@@ -146,10 +146,11 @@ export class Structure extends GameObject {
         });
     }
 
-    /** Play hit wiggle (and optional knockback). Fresh animation so angle/knockback are captured per hit. */
-    playHit(angle: number, knockback: boolean): void {
+    /** Play hit wiggle scaled by strength (kick + knockback already clamped). */
+    playHit(angle: number, kickDegrees: number, knockback: number): void {
         const animation = hitRotation(this, {
             angle,
+            kickDegrees,
             knockback,
             onApply: () => this.syncWorldLayers(),
         });

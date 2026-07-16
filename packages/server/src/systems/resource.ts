@@ -46,12 +46,12 @@ export class ResourceSystem extends System<GameEventMap> {
     }
 
     private gather = ({ object: resource, source, hit }: GameEvent.Hurt) => {
-        const report = (success: boolean) => {
-            if (hit) hit.success = success;
+        const report = (strength: number) => {
+            if (hit) hit.strength = Math.min(10, Math.max(0, strength));
         };
 
         if (!source) {
-            report(false);
+            report(0);
             return;
         }
 
@@ -59,7 +59,7 @@ export class ResourceSystem extends System<GameEventMap> {
         const inventory = Inventory.get(source);
         const type = Type.get(resource);
         if (!player || !inventory || !type) {
-            report(false);
+            report(0);
             return;
         }
 
@@ -72,7 +72,7 @@ export class ResourceSystem extends System<GameEventMap> {
         const toolLevel = tool?.level ?? UNARMED_HARVEST.level;
         const multiplier = config.multipliers[toolType];
         if (config.exclusive && multiplier === undefined) {
-            report(false);
+            report(0);
             return;
         }
 
@@ -86,7 +86,7 @@ export class ResourceSystem extends System<GameEventMap> {
             )
         );
         if (amount === 0) {
-            report(false);
+            report(0);
             return;
         }
 
@@ -95,7 +95,7 @@ export class ResourceSystem extends System<GameEventMap> {
             ([, remaining]) => remaining > 0
         );
         if (available.length === 0) {
-            report(false);
+            report(0);
             return;
         }
 
@@ -104,14 +104,14 @@ export class ResourceSystem extends System<GameEventMap> {
         const requested = Math.min(amount, remaining);
         const gathered = requested - addItem(inventory, itemId, requested);
         if (gathered === 0) {
-            report(false);
+            report(0);
             return;
         }
 
         data.items[itemId] = remaining - gathered;
         player.score += (config.score ?? 0) * gathered;
         emitInventory(source, this.world.context.playerPacketManager);
-        report(true);
+        report(gathered);
 
         if (
             config.destroy_on_empty &&

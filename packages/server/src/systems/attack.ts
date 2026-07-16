@@ -120,12 +120,12 @@ export class AttackSystem extends System<GameEventMap> {
                 this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
                     id: object.id,
                     angle,
-                    success: true,
+                    strength: 1,
                 });
                 this.trigger(GameEvent.ToggleDoor, { object });
                 continue;
             }
-            const hit = { success: true };
+            const hit = { strength: 0 };
             this.trigger(GameEvent.Hurt, {
                 object,
                 source,
@@ -136,7 +136,7 @@ export class AttackSystem extends System<GameEventMap> {
             this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
                 id: object.id,
                 angle,
-                success: hit.success,
+                strength: hit.strength,
             });
         }
     }
