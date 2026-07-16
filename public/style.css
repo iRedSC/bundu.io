@@ -106,3 +106,40 @@ button:disabled {
     left: 50%;
     transform: translate(-50%, -50%);
 }
+
+.pack-overlay {
+    z-index: 4;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    background: rgba(12, 18, 14, 0.72);
+    color: #f2f0e4;
+    pointer-events: all;
+    font-family: "Nunito", system-ui, sans-serif;
+}
+
+.pack-overlay-title {
+    font-family: "Aoboshi One", serif;
+    font-size: 1.5rem;
+}
+
+.pack-overlay-detail {
+    max-width: 28rem;
+    opacity: 0.9;
+}
+
+.pack-overlay-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.pack-overlay-actions button {
+    margin-left: 0;
+}

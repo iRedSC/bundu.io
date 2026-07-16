@@ -25,21 +25,55 @@ const containsChatReply = (value: unknown) =>
             packet[2] === "ci-smoke"
     );
 
+function httpOrigin(websocketUrl: string): URL {
+    const origin = new URL(websocketUrl);
+    origin.protocol = origin.protocol === "wss:" ? "https:" : "http:";
+    origin.pathname = "/";
+    origin.search = "";
+    origin.hash = "";
+    return origin;
+}
+
+async function packFingerprint(websocketUrl: string): Promise<string> {
+    const response = await fetch(
+        new URL("/packs/manifest.json", httpOrigin(websocketUrl)),
+        { cache: "no-store" }
+    );
+    if (!response.ok) {
+        throw new Error(`Failed to fetch pack manifest (${response.status})`);
+    }
+    const manifest: unknown = await response.json();
+    if (
+        !manifest ||
+        typeof manifest !== "object" ||
+        typeof (manifest as { fingerprint?: unknown }).fingerprint !== "string" ||
+        !(manifest as { fingerprint: string }).fingerprint
+    ) {
+        throw new Error("Pack manifest missing fingerprint");
+    }
+    return (manifest as { fingerprint: string }).fingerprint;
+}
+
 async function connect(deadline: number): Promise<WebSocket> {
     while (Date.now() < deadline) {
-        const socket = await new Promise<WebSocket | undefined>((resolve) => {
-            const candidate = new WebSocket(
-                `${url}?username=ci-smoke&skin_id=0`
-            );
-            candidate.binaryType = "arraybuffer";
-            candidate.addEventListener("open", () => resolve(candidate), {
-                once: true,
+        try {
+            const fingerprint = await packFingerprint(url);
+            const socket = await new Promise<WebSocket | undefined>((resolve) => {
+                const candidate = new WebSocket(
+                    `${url}?username=ci-smoke&skin_id=0&packs=${encodeURIComponent(fingerprint)}`
+                );
+                candidate.binaryType = "arraybuffer";
+                candidate.addEventListener("open", () => resolve(candidate), {
+                    once: true,
+                });
+                candidate.addEventListener("error", () => resolve(undefined), {
+                    once: true,
+                });
             });
-            candidate.addEventListener("error", () => resolve(undefined), {
-                once: true,
-            });
-        });
-        if (socket) return socket;
+            if (socket) return socket;
+        } catch {
+            // Server may still be starting.
+        }
         await Bun.sleep(100);
     }
     throw new Error(`Could not connect to ${url}`);

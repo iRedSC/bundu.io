@@ -30,16 +30,28 @@ function hash(data: string | Uint8Array): string {
 
 function files(directory: string): string[] {
     if (!fs.existsSync(directory)) return [];
-    return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-        const filename = path.join(directory, entry.name);
-        return entry.isDirectory() ? files(filename) : [filename];
-    });
+    return fs
+        .readdirSync(directory, { withFileTypes: true })
+        .flatMap((entry) => {
+            const filename = path.join(directory, entry.name);
+            return entry.isDirectory() ? files(filename) : [filename];
+        })
+        .sort((left, right) => left.localeCompare(right));
 }
 
-function hashDirectory(directory: string): string {
+/** Hash pack.yml + assets/ only — data/ edits must not force visual renegotiation. */
+function hashPackResourceInputs(packDirectory: string): string {
     const digest = createHash("sha256");
-    for (const filename of files(directory).sort()) {
-        const relative = path.relative(directory, filename).replaceAll("\\", "/");
+    const packYml = path.join(packDirectory, "pack.yml");
+    const packContent = fs.readFileSync(packYml);
+    digest.update(`pack.yml:${packContent.length}:`);
+    digest.update(packContent);
+
+    const assetsDirectory = path.join(packDirectory, "assets");
+    for (const filename of files(assetsDirectory)) {
+        const relative = path
+            .relative(assetsDirectory, filename)
+            .replaceAll("\\", "/");
         const content = fs.readFileSync(filename);
         digest.update(`${relative.length}:${relative}:${content.length}:`);
         digest.update(content);
@@ -65,7 +77,9 @@ export class ResourcePackService {
         for (const pack of packs.packs) {
             const assetsRoot = path.join(pack.directory, "assets");
             for (const namespaceEntry of fs.existsSync(assetsRoot)
-                ? fs.readdirSync(assetsRoot, { withFileTypes: true })
+                ? fs
+                      .readdirSync(assetsRoot, { withFileTypes: true })
+                      .sort((left, right) => left.name.localeCompare(right.name))
                 : []) {
                 if (!namespaceEntry.isDirectory()) continue;
                 const namespace = namespaceEntry.name;
@@ -96,7 +110,9 @@ export class ResourcePackService {
                     );
                     if ("id" in document) {
                         if (typeof document.id !== "string" || !document.id) {
-                            throw new Error(`${filename}.id: expected a non-empty string`);
+                            throw new Error(
+                                `${filename}.id: expected a non-empty string`
+                            );
                         }
                         visuals[document.id] = document;
                     } else {
@@ -115,7 +131,7 @@ export class ResourcePackService {
             id: pack.manifest.id,
             version: pack.manifest.version,
             format: pack.manifest.format,
-            hash: hashDirectory(pack.directory),
+            hash: hashPackResourceInputs(pack.directory),
         }));
         const fingerprint = hash(
             JSON.stringify({ format: 1, packs: packEntries, visualsHash, assets })

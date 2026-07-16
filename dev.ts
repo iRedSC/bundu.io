@@ -107,10 +107,6 @@ function watchScoped(target: string, changed: (source: string) => void): void {
     });
 }
 
-function isClientPackSource(source: string): boolean {
-    return /^packs\/[^/]+\/assets(?:\/|$)/.test(source);
-}
-
 let clientDebounce: Timer | undefined;
 for (const target of clientWatchTargets) {
     watchScoped(target, () => {
@@ -124,7 +120,6 @@ for (const target of clientWatchTargets) {
 let serverDebounce: Timer | undefined;
 for (const target of ["packages/server", "packages/shared", "packs"]) {
     watchScoped(target, (source) => {
-        if (isClientPackSource(source)) return;
         clearTimeout(serverDebounce);
         serverDebounce = setTimeout(() => {
             requestServerReload(source);

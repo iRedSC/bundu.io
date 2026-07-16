@@ -1,6 +1,3 @@
-/** World units applied per server movement tick at base speed. */
-export const PLAYER_MOVE_SPEED = 16;
-
 /** Server simulation / net flush rate. */
 export const SERVER_TPS = 20;
 
