@@ -27,7 +27,10 @@ bear:
 Record resources (`entities`, `resources`, `buildings`, recipes, and item
 files) overlay by top-level key; the overriding entry replaces that entry in
 full. Single-document resources such as `gameplay` replace the complete
-document. Run `bun run validate:packs` after editing.
+document. Base gameplay data is always requested under the `bundu` namespace
+(`data/bundu/...`); overlay packs replace those documents by writing the same
+paths. Run `bun run validate:packs` after editing — it checks resource, entity,
+building, and item visuals against the compiled pack stack.
 
 Set `BUNDU_PACK_ROOT` to load packs from a different directory.
 

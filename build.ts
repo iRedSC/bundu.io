@@ -19,11 +19,6 @@ await Bun.build({
     },
 });
 
-// Runtime Pixi loads use string paths (not bundler imports), so copy sprites
-// into the site output. Needed when the deploy root is `public/site/` (no
-// sibling `/assets`), and also for docker at `/site/assets/…`.
-await cp("./public/assets", `${outdir}/assets`, { recursive: true });
-
 if (!DEBUG) {
     console.log("[build] production client (debug tools stripped)");
 } else {

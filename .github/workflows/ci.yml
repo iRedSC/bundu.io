@@ -37,6 +37,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Validate packs
+        run: bun run validate:packs
+
       - name: Integration smoke test
         run: bun run test:integration
 
@@ -129,8 +132,6 @@ jobs:
               exit 1
             fi
           done
-          curl --fail --silent --show-error \
-            http://127.0.0.1:13000/site/assets/player_hat.svg >/dev/null
 
       - name: Smoke test server image
         if: matrix.name == 'server'

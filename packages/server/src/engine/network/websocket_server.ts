@@ -35,6 +35,12 @@ export class ServerController {
                 const url = new URL(req.url);
                 const response = this.http(req, url);
                 if (response) return response;
+
+                const isWebsocketUpgrade =
+                    req.headers.get("upgrade")?.toLowerCase() === "websocket";
+                if (!isWebsocketUpgrade) {
+                    return new Response("Not Found", { status: 404 });
+                }
                 if (
                     this.requiredPackFingerprint &&
                     url.searchParams.get("packs") !== this.requiredPackFingerprint

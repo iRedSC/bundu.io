@@ -11,7 +11,7 @@ export type AnimalConfig = {
     /** Detection/retention distance in world units. */
     detectionRange: number;
     loseSightRange: number;
-    /** World units per 20 TPS tick; matches PLAYER_MOVE_SPEED. */
+    /** World units per 20 TPS tick. */
     passiveSpeed: number;
     activeSpeed: number;
     /**

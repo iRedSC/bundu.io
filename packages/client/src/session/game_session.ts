@@ -16,6 +16,8 @@ export type PacketReceiver = {
 export type GameSessionHooks = {
     buildSocketUrl: (username: string) => string;
     getUsername: () => string;
+    /** Re-negotiate packs before each connect (handles server reload / 409). */
+    prepareConnection: () => Promise<void>;
     resetLocalState: () => void;
     setConnecting: (connecting: boolean) => void;
     onConnected: () => void;
@@ -64,6 +66,21 @@ export class GameSession {
                 this.socket.close();
             }
         }
+
+        void this.openSocket();
+    }
+
+    private async openSocket(): Promise<void> {
+        try {
+            await this.hooks.prepareConnection();
+        } catch (error) {
+            console.error("Failed to prepare connection", error);
+            this.connecting = false;
+            this.hooks.setConnecting(false);
+            this.hooks.onDisconnected();
+            return;
+        }
+        if (!this.connecting) return;
 
         const next = new Socket(
             this.hooks.buildSocketUrl(this.hooks.getUsername()),

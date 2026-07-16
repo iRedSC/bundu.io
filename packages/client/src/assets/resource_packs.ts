@@ -24,6 +24,8 @@ type Manifest = {
     assets: ManifestAsset[];
 };
 
+let objectUrls: string[] = [];
+
 function record(value: unknown, path: string): Record<string, unknown> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
         throw new Error(`${path}: expected an object`);
@@ -108,6 +110,11 @@ function assetUrl(origin: URL, path: string): URL {
     return new URL(`/packs/assets/${encoded}`, origin);
 }
 
+function revokeObjectUrls() {
+    for (const url of objectUrls) URL.revokeObjectURL(url);
+    objectUrls = [];
+}
+
 async function fetchManifest(websocketUrl: string): Promise<Manifest> {
     const response = await fetch(
         new URL("/packs/manifest.json", httpOrigin(websocketUrl)),
@@ -135,21 +142,19 @@ export async function loadResourcePacks(
     const visualRaw: unknown = JSON.parse(new TextDecoder().decode(visualData));
     const visualDefs = record(visualRaw, "visual definitions") as VisualDefs;
 
-    const assets = manifest.assets.map((asset) => {
-        const url = assetUrl(origin, asset.path);
-        url.searchParams.set("hash", asset.hash);
-        return { ...asset, url };
-    });
-    await Promise.all(
-        assets.map((asset) => verified(asset.url, asset.hash, asset.size))
+    revokeObjectUrls();
+    const assets = await Promise.all(
+        manifest.assets.map(async (asset) => {
+            const data = await verified(assetUrl(origin, asset.path), asset.hash, asset.size);
+            const src = URL.createObjectURL(new Blob([new Uint8Array(data)]));
+            objectUrls.push(src);
+            return { path: asset.path, src };
+        })
     );
 
     return {
         fingerprint: manifest.fingerprint,
         visualDefs,
-        assets: assets.map((asset) => ({
-            path: asset.path,
-            src: asset.url.toString(),
-        })),
+        assets,
     };
 }

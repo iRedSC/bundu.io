@@ -18,9 +18,6 @@ export const WORLD_BOUNDS = WORLD_TILES * TILE_SIZE;
 /** Player visual radius — touches tile edges when centered. */
 export const PLAYER_VISUAL_RADIUS = TILE_SIZE / 2;
 
-/** Player collision radius — slightly under visual for fair edge feel. */
-export const PLAYER_HITBOX_RADIUS = 42;
-
 /** Circle collider on each occupied footprint tile. */
 export const FOOTPRINT_CIRCLE_RADIUS = TILE_SIZE / 2;
 

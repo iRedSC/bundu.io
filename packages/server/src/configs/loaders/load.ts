@@ -20,6 +20,7 @@ export function loadConfigs() {
     const offhandConfig = packs.records("bundu", "items/off_hand");
     const wearableConfig = packs.records("bundu", "items/wearable");
     const placeableConfig = packs.records("bundu", "items/placeable");
+    const materialConfig = packs.records("bundu", "items/materials");
 
     const requireId = (id: string, path: string): number => {
         const numeric = getNumericId(id);
@@ -92,7 +93,8 @@ export function loadConfigs() {
         mainhandConfig,
         offhandConfig,
         wearableConfig,
-        placeableConfig
+        placeableConfig,
+        materialConfig
     ) as Record<string, Partial<ItemConfig>>;
     validateIds(itemConfigData, "items");
 
