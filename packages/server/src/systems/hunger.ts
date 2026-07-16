@@ -13,6 +13,9 @@ export class HungerSystem extends System<GameEventMap> {
     }
 
     override update(_time: number, delta: number, player: GameObject): void {
+        // Soft-park: disconnected players do not drain hunger.
+        if (!this.world.context.socketManager.getSocket(player.id)) return;
+
         const data = player.get(PlayerData);
         const attributes = player.get(Attributes);
         const hunger = player.get(Stats).get("hunger");
