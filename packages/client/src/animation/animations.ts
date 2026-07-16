@@ -8,7 +8,6 @@ export const AnimationManagers = {
 export const ANIMATION = {
     HURT: "hurt",
     HIT: "hit",
-    HIT_FAIL: "hit_fail",
     PLACE: "place",
     IDLE_HANDS: "idle_hands",
     ATTACK: "attack",

@@ -46,9 +46,6 @@ animations:
     hit:
         preset: hit
         parts: [layer0, layer1, layer2]
-    hit_fail:
-        preset: weak_hit
-        parts: [layer0, layer1, layer2]
     sway:
         preset: tree_sway
         parts: [layer1, layer2, layer3]

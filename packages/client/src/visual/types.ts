@@ -1,7 +1,7 @@
 import type { Container, Texture } from "pixi.js";
 import type { ContaineredSprite } from "../assets/sprite_factory";
 import type { ParticleBurst } from "../rendering/particles/types";
-import type { RotationStates } from "../world/states";
+import type { RotationStates, PositionStates } from "../world/states";
 
 /** Pose on a part's root container (degrees for rotation). */
 export type PartPose = {
@@ -57,7 +57,6 @@ export type SlotDef = {
 export type AnimPreset =
     | "hurt"
     | "hit"
-    | "weak_hit"
     | "place"
     | "wave"
     | "tree_sway"
@@ -93,7 +92,6 @@ export type BobData = {
 type AnimData = {
     hurt: undefined;
     hit: HitData;
-    weak_hit: undefined;
     place: undefined;
     wave: undefined;
     tree_sway: TreeSwayData;
@@ -210,10 +208,20 @@ export type AnimContext = {
         y: number;
         radius: number;
     };
+    /** Radians from structure center toward the hit origin. */
+    hitImpactAngle?: number;
+    /** Successful hits also push the structure away from the hit origin. */
+    hitKnockback?: boolean;
 };
 
 /** GameObject-rotated hit target (structure hurt punch). */
-export type Rotatable = { rotationStates: RotationStates, rotation: number };
+export type Rotatable = { rotationStates: RotationStates; rotation: number };
+
+/** Structure hit target with position for knockback. */
+export type HitTarget = Rotatable & {
+    position: { x: number; y: number; set(x: number, y: number): void };
+    positionStates: PositionStates;
+};
 
 export const EMPTY_ANIM_CONTEXT: AnimContext = {
     blocking: false,

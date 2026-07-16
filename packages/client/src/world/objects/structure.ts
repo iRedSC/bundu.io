@@ -144,6 +144,12 @@ export class Structure extends GameObject {
         });
     }
 
+    /** Set hit-reaction inputs read by the `hit` preset (impact angle + knockback). */
+    reactToHit(angle: number, knockback: boolean): void {
+        this.animContext.hitImpactAngle = angle;
+        this.animContext.hitKnockback = knockback;
+    }
+
     /** Attach a world-space overlay that follows this structure (placement X). */
     addSyncedOverlay(overlay: Container): void {
         this.syncedOverlays.push(overlay);
