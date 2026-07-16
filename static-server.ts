@@ -129,8 +129,9 @@ function resolveTexture(namespace: string, relative: string): string | undefined
     if (!roots) return undefined;
     // Later packs override earlier ones.
     for (let index = roots.length - 1; index >= 0; index--) {
-        const filepath = path.join(roots[index]!, relative);
-        const root = roots[index]!;
+        const root = roots[index];
+        if (!root) continue;
+        const filepath = path.join(root, relative);
         if (filepath !== root && !filepath.startsWith(`${root}${path.sep}`)) {
             continue;
         }
