@@ -1,6 +1,5 @@
 import { Container, type DestroyOptions, Sprite } from "pixi.js";
 import { getAsset } from "./load";
-import { mergeObjects } from "@bundu/shared/object_utils";
 import { radians } from "@bundu/shared/transforms";
 
 export class ContaineredSprite extends Container {
@@ -45,16 +44,23 @@ export function normalizeSprite(sprite: Sprite, baseScale: number = 1) {
 type DisplayConfig = { x: number; y: number; scale: number; rotation: number };
 
 const DEFAULT_CONFIG = { x: 0, y: 0, scale: 1, rotation: 0 };
+
+/** Sparse visual contexts may include explicit `undefined` pose keys. */
+function resolveConfig(config?: Partial<DisplayConfig>): DisplayConfig {
+    return {
+        x: config?.x ?? DEFAULT_CONFIG.x,
+        y: config?.y ?? DEFAULT_CONFIG.y,
+        scale: config?.scale ?? DEFAULT_CONFIG.scale,
+        rotation: config?.rotation ?? DEFAULT_CONFIG.rotation,
+    };
+}
+
 export const SpriteFactory = {
     build(
         texture: string,
         config?: Partial<DisplayConfig>
     ): ContaineredSprite {
-        const fullConfig = mergeObjects<DisplayConfig>(
-            undefined,
-            config,
-            DEFAULT_CONFIG
-        );
+        const fullConfig = resolveConfig(config);
 
         const sprite = new Sprite(getAsset(texture));
         sprite.x = fullConfig.x;
@@ -71,11 +77,7 @@ export const SpriteFactory = {
         texture?: string
     ) {
         const sprite = container.sprite;
-        const fullConfig = mergeObjects<DisplayConfig>(
-            undefined,
-            config,
-            DEFAULT_CONFIG
-        );
+        const fullConfig = resolveConfig(config);
         if (texture) {
             sprite.texture = getAsset(texture);
         }
