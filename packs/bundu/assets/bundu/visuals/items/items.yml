@@ -60,18 +60,26 @@ item/type/food:
 item/type/wall:
   abstract: true
   extends: item/type/none
+  contexts:
+    hand: { rotation: -20, x: 0, y: 0.2, scale: 0.45 }
 
 item/type/door:
   abstract: true
   extends: item/type/none
+  contexts:
+    hand: { rotation: -20, x: 0, y: 0.2, scale: 0.45 }
 
 item/type/spike:
   abstract: true
   extends: item/type/none
+  contexts:
+    hand: { rotation: -20, x: 0, y: 0.2, scale: 0.45 }
 
 item/type/building:
   abstract: true
   extends: item/type/none
+  contexts:
+    hand: { rotation: -20, x: 0, y: 0.2, scale: 0.45 }
 
 item/type/tree:
   abstract: true
