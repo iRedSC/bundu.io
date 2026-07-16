@@ -5,15 +5,27 @@ import { createPlayer } from "./bootstrap/create_player";
 import { startTicker } from "./bootstrap/start_ticker";
 import { GameEvent } from "./systems/event_map";
 import { resourcePacks } from "./configs/resource_packs";
+import {
+    restoreDevCheckpoint,
+    saveDevCheckpoint,
+} from "./bootstrap/dev_checkpoint";
 
-const { world, playerSystem, receiver } = createWorld();
-loadMap(world, playerSystem);
+const { world, playerSystem, renderDistanceSystem, receiver } = createWorld();
+const DEBUG = process.env.BUNDU_DEBUG === "1";
+if (!DEBUG || !restoreDevCheckpoint(world)) loadMap(world, playerSystem);
 
 const { socketManager } = world.context;
 
-const controller = new ServerController(socketManager, (username, skinId) =>
-    createPlayer(world, username, skinId)
+const controller = new ServerController(socketManager, (username, skinId, sessionId) =>
+    createPlayer(world, username, skinId, sessionId)
 );
+
+controller.connect = (socket) => {
+    const player = world.getObject(socket.data.playerId);
+    if (!player) return;
+    playerSystem.enter(player);
+    renderDistanceSystem.loadView(player);
+};
 
 const packHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -82,3 +94,18 @@ controller.message = (socket, packet) => {
 const WS_PORT = Number(process.env.WS_PORT ?? 7777);
 controller.start(WS_PORT);
 startTicker(world, receiver);
+
+if (DEBUG) {
+    let checkpointing = false;
+    process.on("SIGTERM", () => {
+        if (checkpointing) return;
+        checkpointing = true;
+        try {
+            saveDevCheckpoint(world);
+            process.exit(0);
+        } catch (error) {
+            console.error("[dev] checkpoint failed", error);
+            process.exit(1);
+        }
+    });
+}

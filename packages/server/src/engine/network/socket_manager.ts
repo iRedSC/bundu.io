@@ -3,6 +3,7 @@ import type { ServerWebSocket } from "bun";
 
 export type GameSocketData = {
     username: string;
+    sessionId: string;
     playerId: number;
     skinId: number;
 };

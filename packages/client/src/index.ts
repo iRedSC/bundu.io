@@ -82,8 +82,16 @@ function sleep(ms: number): Promise<void> {
 }
 
 let packFingerprint = "";
+const sessionId = sessionStorage.getItem("bundu.session_id") ?? crypto.randomUUID();
+sessionStorage.setItem("bundu.session_id", sessionId);
 
 async function synchronizeResourcePacks() {
+    if (
+        packFingerprint &&
+        (await getResourcePackFingerprint(GAME_WS_URL)) === packFingerprint
+    ) {
+        return;
+    }
     const resourcePacks = await loadResourcePacks(GAME_WS_URL);
     await initAssets(resourcePacks.assets);
     replaceVisualDefs(
@@ -122,6 +130,7 @@ function buildSocketUrl(username: string) {
     const url = new URL(GAME_WS_URL);
     url.searchParams.set("username", username || "unnamed");
     url.searchParams.set("skin_id", "0");
+    url.searchParams.set("session_id", sessionId);
     url.searchParams.set("packs", packFingerprint);
     return url.toString();
 }
@@ -212,13 +221,10 @@ async function main() {
     ) as HTMLButtonElement;
 
     const session = new GameSession(receiver, {
+        prepareConnection: synchronizeResourcePacks,
+        autoReconnect: __DEBUG__,
         buildSocketUrl,
         getUsername: () => nameInput.value.trim(),
-        prepareConnection: async () => {
-            const next = await getResourcePackFingerprint(GAME_WS_URL);
-            if (next === packFingerprint) return;
-            await synchronizeResourcePacks();
-        },
         resetLocalState: () => {
             clientTime.resetServerSync();
             world.clear();

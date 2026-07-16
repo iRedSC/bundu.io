@@ -27,6 +27,7 @@ import { HungerSystem } from "../systems/hunger";
 export type ServerWorld = {
     world: World;
     playerSystem: PlayerSystem;
+    renderDistanceSystem: RenderDistanceSystem;
     receiver: ServerPacketReceiver;
 };
 
@@ -36,6 +37,7 @@ export function createWorld(): ServerWorld {
     loadConfigs();
 
     const playerSystem = new PlayerSystem(world);
+    const renderDistanceSystem = new RenderDistanceSystem(world);
     const serializer = new Serializer<ClientPacketMap>(ClientSchema);
     const receiver = new ServerPacketReceiver(serializer, ClientPacketGuards);
     setupPacketReceiving(receiver, playerSystem);
@@ -55,7 +57,7 @@ export function createWorld(): ServerWorld {
         .addSystem(new GroundItemSystem(world))
         .addSystem(new StructureSystem(world))
         .addSystem(new PointGeneratorSystem(world))
-        .addSystem(new RenderDistanceSystem(world));
+        .addSystem(renderDistanceSystem);
 
-    return { world, playerSystem, receiver };
+    return { world, playerSystem, renderDistanceSystem, receiver };
 }

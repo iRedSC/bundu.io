@@ -1,6 +1,6 @@
 export { Component, type ComponentFactory } from "./component";
 export { World } from "./world";
-export { GameObject } from "./game_object";
+export { GameObject, restoreObjectId } from "./game_object";
 export { ServerPacketReceiver } from "./network/packets/server_receiver";
 export { System, type SystemEventCallback } from "./system";
 export { ServerController } from "./network/websocket_server";
