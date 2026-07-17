@@ -13,7 +13,6 @@ import {
 } from "@bundu/shared";
 import { Circle, testCircleCircle, Vector } from "sat";
 import {
-    GroundData,
     Health,
     Physics,
     Spiked,
@@ -29,6 +28,7 @@ import {
     makeTileEntity,
     tileEntityPhysics,
 } from "../game_objects/tile_entity.js";
+import { topGroundAt } from "./ground_at.js";
 import {
     emitEquipment,
     emitInventory,
@@ -498,19 +498,10 @@ export class StructureSystem extends System<GameEventMap> {
         occupied: readonly TilePos[],
         allowedTypes: readonly number[]
     ): boolean {
-        const grounds = this.world.query([GroundData]);
-        return occupied.every(({ x, y }) =>
-            grounds.some((ground) => {
-                const { collider, type } = ground.get(GroundData);
-                return (
-                    allowedTypes.includes(type) &&
-                    x >= collider.pos.x &&
-                    y >= collider.pos.y &&
-                    x < collider.pos.x + collider.w &&
-                    y < collider.pos.y + collider.h
-                );
-            })
-        );
+        return occupied.every(({ x, y }) => {
+            const top = topGroundAt(this.world, x, y);
+            return top !== undefined && allowedTypes.includes(top.type);
+        });
     }
 }
 

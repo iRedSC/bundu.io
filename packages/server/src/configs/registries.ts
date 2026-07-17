@@ -44,7 +44,12 @@ function applyTags<K extends RegistryName>(registry: Registry<K>): void {
     for (const [tag, sources] of packs.registryTags(registry.name)) {
         for (const source of sources) {
             const method = source.replace ? "defineTag" : "appendTag";
-            registry[method](tag, source.values, source.namespace);
+            registry[method](
+                tag,
+                source.values,
+                source.namespace,
+                source.category
+            );
         }
     }
     registry.validateTags();

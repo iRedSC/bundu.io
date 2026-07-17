@@ -23,12 +23,12 @@ export type InputPlayerFacade = {
     screenToWorld(screenX: number, screenY: number): { x: number; y: number };
     setCursorWorld(position: { x: number; y: number }): void;
     isInGame(): boolean;
-    /** When set, left-click places this structure id at the cursor tile. */
-    getPlaceStructureId(): number | null;
     /** True when pointer is over inventory UI (skip attack/block). */
     isOverInventory(): boolean;
     /** Last ghost validation from the server (`undefined` = not yet known). */
     isPlacementAllowed(): boolean | undefined;
+    /** Freecam mode — suppress body input packets. */
+    isFreecam(): boolean;
 };
 
 /**
@@ -79,6 +79,10 @@ export class InputController {
      * walking (camera move) still places under the mouse without wiggling.
      */
     update() {
+        if (this.facade.isFreecam()) {
+            this.stopPlacing();
+            return;
+        }
         if (!this.placing) return;
         if (!this.facade.isInGame()) {
             this.stopPlacing();
@@ -104,12 +108,17 @@ export class InputController {
 
     /** Ghost became valid while held — place immediately at the current cursor. */
     onPlacementValidity(allowed: boolean) {
+        if (this.facade.isFreecam()) return;
         if (!this.placing || !allowed) return;
         const player = this.facade.getLocalPlayer();
         if (player?.getStructureGhost()) this.tryPlaceAtCursor(player);
     }
 
     private handlePointerMove(event: PointerEvent) {
+        if (this.facade.isFreecam()) {
+            this.stopPlacing();
+            return;
+        }
         if (!this.placing || (event.buttons & 1) === 0) return;
         this.syncCursorFromScreen(event.clientX, event.clientY);
         const player = this.facade.getLocalPlayer();
@@ -121,6 +130,7 @@ export class InputController {
     }
 
     private handleMouseMove(mousePos: [number, number]) {
+        if (this.facade.isFreecam()) return;
         const player = this.facade.getLocalPlayer();
         if (!player) return;
 
@@ -157,6 +167,12 @@ export class InputController {
     private handleMoveInput(move: MoveAxes) {
         const chat = document.querySelector<HTMLInputElement>("#chat-input");
         if (chat === document.activeElement) return;
+        if (this.facade.isFreecam()) {
+            this.sendPacket(ClientPacket.Movement, {
+                direction: encodeMoveDirection(0, 0),
+            });
+            return;
+        }
 
         this.sendPacket(ClientPacket.Movement, {
             direction: encodeMoveDirection(move[0], move[1]),
@@ -171,6 +187,7 @@ export class InputController {
 
     private handlePointerDown(event: PointerEvent) {
         if (!this.facade.isInGame()) return;
+        if (this.facade.isFreecam()) return;
         if (this.facade.isOverInventory()) return;
         if (this.facade.getLocalPlayer()?.isCrafting) return;
         if (event.button === 2) {
@@ -178,18 +195,6 @@ export class InputController {
             return;
         }
         if (event.button !== 0) return;
-
-        const placeId = this.facade.getPlaceStructureId();
-        if (placeId !== null) {
-            const world = this.facade.screenToWorld(event.clientX, event.clientY);
-            this.sendPacket(ClientPacket.PlaceStructureAt, {
-                structureId: placeId,
-                x: worldToTile(world.x),
-                y: worldToTile(world.y),
-                rotation: this.placementRotation,
-            });
-            return;
-        }
 
         const player = this.facade.getLocalPlayer();
         if (player?.getStructureGhost()) {
@@ -205,16 +210,17 @@ export class InputController {
 
     private handlePointerUp(event: PointerEvent) {
         if (!this.facade.isInGame()) return;
+        if (this.facade.isFreecam()) {
+            this.stopPlacing();
+            return;
+        }
         if (this.facade.getLocalPlayer()?.isCrafting) return;
         if (event.button === 2) {
             this.sendPacket(ClientPacket.Block, { stop: true });
         }
         if (event.button === 0) {
             this.stopPlacing();
-            if (
-                this.facade.getPlaceStructureId() === null &&
-                !this.facade.getLocalPlayer()?.getStructureGhost()
-            ) {
+            if (!this.facade.getLocalPlayer()?.getStructureGhost()) {
                 this.sendPacket(ClientPacket.Attack, { stop: true });
             }
         }

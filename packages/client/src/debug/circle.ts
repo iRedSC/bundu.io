@@ -17,6 +17,6 @@ export class Circle extends PIXI.Graphics {
         this.position = pos;
 
         this.circle(0, 0, r);
-        this.stroke({ width: s, color: c });
+        this.stroke({ width: s, color: c, pixelLine: true });
     }
 }

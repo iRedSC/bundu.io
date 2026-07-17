@@ -40,6 +40,16 @@ export type PlayerData = {
     crafting?: CraftingState;
     eating?: EatingState;
     cheatsEnabled?: boolean;
+    /** Soft-despawned spectator/editor camera; sim paused, hidden from peers. */
+    freecam?: boolean;
+    /** Last client screenspace AOI while freecam is active. */
+    freecamView?: {
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+        overview: boolean;
+    };
 };
 export const PlayerData = Component.register<PlayerData>(() => ({
     name: "unnamed",

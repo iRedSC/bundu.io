@@ -67,7 +67,7 @@ type CheckpointKind =
     | "animal"
     | "player";
 
-type ObjectSnapshot =
+export type ObjectSnapshot =
     | ({
           kind: "ground";
           x: number;
@@ -433,7 +433,7 @@ const HANDLERS: { [K in CheckpointKind]: KindHandler<K> } = {
 
 const MATCH_ORDER = Object.values(HANDLERS);
 
-function snapshotObject(object: GameObject): ObjectSnapshot {
+export function snapshotObject(object: GameObject): ObjectSnapshot {
     for (const handler of MATCH_ORDER) {
         if (handler.match(object)) return handler.snapshot(object);
     }
@@ -443,7 +443,7 @@ function snapshotObject(object: GameObject): ObjectSnapshot {
     );
 }
 
-function restoreObject(world: World, snapshot: ObjectSnapshot): void {
+export function restoreObject(world: World, snapshot: ObjectSnapshot): void {
     switch (snapshot.kind) {
         case "ground":
             HANDLERS.ground.restore(world, snapshot);

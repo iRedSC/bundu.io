@@ -5,10 +5,11 @@ import {
     setupGUIPacketReceiving,
     setupPacketReceiving,
 } from "./network/receiver";
-import { ClientPacket } from "@bundu/shared/packet_definitions";
+import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
 import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
+import { createAdminEditor } from "./admin/editor";
 import { initAssets } from "./assets/load";
 import {
     getResourcePackFingerprint,
@@ -33,10 +34,6 @@ const GAME_WS_URL =
 
 const PACK_SYNC_ATTEMPTS = 5;
 const PACK_SYNC_RETRY_MS = 1000;
-
-type ClientDebugHandle = {
-    getPlaceStructureId(): number | null;
-};
 
 const app = new Application<Renderer<HTMLCanvasElement>>();
 globalThis.__PIXI_APP__ = app;
@@ -235,12 +232,9 @@ async function main() {
     app.stage.addChild(viewport);
 
     // Debug tools / overlay — omitted entirely from prod bundles.
-    let debug: ClientDebugHandle = {
-        getPlaceStructureId: () => null,
-    };
     if (__DEBUG__) {
         const { mountClientDebug } = await import("./debug/tools");
-        debug = mountClientDebug(viewport);
+        mountClientDebug(viewport);
         const { initDevtools } = await import("@pixi/devtools");
         await initDevtools({ app });
     }
@@ -267,6 +261,7 @@ async function main() {
         getUsername: () => nameInput.value.trim(),
         resetLocalState: () => {
             clientTime.resetServerSync();
+            setFreecamUi(false);
             world.clear();
             gui.health.update(0);
             gui.hunger.update(0);
@@ -303,6 +298,27 @@ async function main() {
         },
     });
 
+    const editor = createAdminEditor(
+        session.sendPacket,
+        (screenX, screenY) => viewport.toLocal({ x: screenX, y: screenY }),
+        world,
+        viewport
+    );
+    app.stage.addChild(editor.container);
+
+    const setFreecamUi = (enabled: boolean) => {
+        world.setFreecamMode(enabled);
+        gui.container.visible = !enabled;
+        editor.setActive(enabled);
+    };
+
+    receiver.on(ServerPacket.FreecamMode, ({ enabled }) => {
+        setFreecamUi(enabled);
+    });
+
+    world.onViewBounds = (bounds) => {
+        session.sendPacket(ClientPacket.ViewBounds, bounds);
+    };
     packRetryButton.addEventListener("click", () => {
         void session.connect();
     });
@@ -326,9 +342,9 @@ async function main() {
             viewport.toLocal({ x: screenX, y: screenY }),
         setCursorWorld: (position) => world.setCursorWorld(position),
         isInGame: () => session.isInGame(),
-        getPlaceStructureId: () => debug.getPlaceStructureId(),
         isOverInventory: () => gui.inventory.isInteracting,
         isPlacementAllowed: () => world.isPlacementAllowed(),
+        isFreecam: () => world.camera.isFreecam(),
     });
     input.onToggleLeaderboard = () => gui.leaderboard.toggle();
     input.onShowWorldHover = (show) => world.setShowAllHover(show);
@@ -388,6 +404,7 @@ async function main() {
         world.tick(Math.min(ticker.deltaMS, 50), now);
         AnimationManagers.UI.update(now);
         gui.tick(now);
+        editor.tick(now);
         const local = world.objects.get(world.user ?? -1);
         gui.craftingMenu.craftingRecipeId =
             local instanceof Player ? local.craftingRecipeId : null;
@@ -401,6 +418,7 @@ async function main() {
         nameInput.removeEventListener("keydown", handleNameKey);
         input.destroy();
         world.destroy();
+        editor.destroy();
         gui.destroy();
         destroyViewport(viewport);
         document.oncontextmenu = null;

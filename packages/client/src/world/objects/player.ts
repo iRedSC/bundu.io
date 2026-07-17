@@ -92,6 +92,8 @@ export class Player extends GameObject implements AnimContext {
 
         this.animationManager = manager;
         this.visualVariant = variant;
+        this.parts = new Map();
+        this.slots = new Map();
 
         const assembled = assemble(playerDef, this.container, variant);
         this.parts = assembled.parts;
@@ -228,6 +230,8 @@ export class Player extends GameObject implements AnimContext {
             child.destroy({ children: true });
         }
         this.animations.clear();
+        this.parts.clear();
+        this.slots.clear();
 
         const assembled = assemble(
             playerDef,

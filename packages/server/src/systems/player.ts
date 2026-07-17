@@ -43,8 +43,12 @@ import {
     selectEquipment,
 } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
+import { topGroundAt } from "./ground_at.js";
+import { groundWire } from "./ground_wire.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
+import { clearEditorHistory } from "../admin/history.js";
+import { clearAnimalsFrozenFor } from "../admin/state.js";
 import { PlaceMode } from "@bundu/shared/inventory";
 import {
     pointToTile,
@@ -58,19 +62,28 @@ import { Circle, Vector } from "sat";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { flagMap } from "@bundu/shared/flag_map";
 import { gameRegistries } from "../configs/registries.js";
+import type { RenderDistanceSystem } from "./render_distance.js";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
  */
 export class PlayerSystem extends System<GameEventMap> {
+    private renderDistanceSystem?: RenderDistanceSystem;
+
     constructor(world: World) {
         super(world, [PlayerData, Physics]);
         this.listen(GameEvent.Kill, this.kill, [PlayerData]);
     }
 
+    setRenderDistanceSystem(system: RenderDistanceSystem): void {
+        this.renderDistanceSystem = system;
+    }
+
     override update(time: number, _delta: number, player: GameObject): void {
         // Soft-disconnected players stay alive but ignore sim intent / channels.
         if (!this.world.context.socketManager.getSocket(player.id)) return;
+        // Freecam: body parked — no combat/move ticks.
+        if (PlayerData.get(player)?.freecam) return;
 
         const data = player.get(PlayerData);
         const attributes = player.get(Attributes);
@@ -137,6 +150,8 @@ export class PlayerSystem extends System<GameEventMap> {
         const attributes = Attributes.get(player);
         if (attributes) clearEphemeralPlayerAttributeSources(attributes);
         clearEphemeralPlayerIntent(data);
+        clearAnimalsFrozenFor(player.id);
+        clearEditorHistory(player.id);
     }
 
     /**
@@ -144,11 +159,9 @@ export class PlayerSystem extends System<GameEventMap> {
      * System `enter` stays free of client delivery (indexing only).
      */
     syncSession(player: GameObject) {
-        const groundObjects = this.world.query([GroundData]);
-        const packets = groundObjects.map((ground) => {
-            const data = ground.get(GroundData);
-            return data.createPacket();
-        });
+        const packets = [...this.world.query([GroundData])]
+            .sort((a, b) => a.id - b.id)
+            .map((ground) => groundWire(ground));
         const { playerPacketManager, worldPacketManager, dayCycle } =
             this.world.context;
         playerPacketManager.set(player.id, ServerPacket.ClientConnectionInfo, {
@@ -174,6 +187,8 @@ export class PlayerSystem extends System<GameEventMap> {
         this.clearEating(target);
         const data = PlayerData.get(target);
         if (data) data.sessionId = undefined;
+        clearAnimalsFrozenFor(target.id);
+        clearEditorHistory(target.id);
         target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
         const { socketManager } = this.world.context;
@@ -349,18 +364,16 @@ export class PlayerSystem extends System<GameEventMap> {
         if (data.mainHand === book || data.offHand === book) add("holding_book");
 
         const tile = pointToTile(physics.position);
-        const inWater = this.world.query([GroundData]).some((ground) => {
-            const config = ground.get(GroundData);
-            const location = registries.ground_type.location(config.type);
-            return (
-                location.endsWith(":water") &&
-                tile.x >= config.collider.pos.x &&
-                tile.y >= config.collider.pos.y &&
-                tile.x < config.collider.pos.x + config.collider.w &&
-                tile.y < config.collider.pos.y + config.collider.h
-            );
-        });
-        if (inWater) add("in_water");
+        const top = topGroundAt(this.world, tile.x, tile.y);
+        if (top) {
+            const location = registries.ground_type.location(top.type);
+            if (
+                location.endsWith(":water") ||
+                location.endsWith(":ocean")
+            ) {
+                add("in_water");
+            }
+        }
         return required.every((flag) => available.has(flag));
     }
 
@@ -451,6 +464,10 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
+        if (data.freecam) {
+            data.moveDir = [0, 0];
+            return;
+        }
         // Accept intent while crafting so held keys resume when the channel ends.
         data.moveDir = [x, y];
     };
@@ -458,12 +475,14 @@ export class PlayerSystem extends System<GameEventMap> {
     rotate = (playerId: number, { rotation }: ClientPacket.Rotation) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
+        if (PlayerData.get(player)?.freecam) return;
         this.trigger(GameEvent.Rotate, { object: player, rotation });
     };
 
     attack = (playerId: number, { stop }: ClientPacket.Attack) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
+        if (PlayerData.get(player)?.freecam) return;
         const data = player.get(PlayerData);
         if (data.crafting || data.eating) return;
         if (data.selectedStructure.id !== -1) {
@@ -480,6 +499,7 @@ export class PlayerSystem extends System<GameEventMap> {
     block = (playerId: number, { stop }: ClientPacket.Block) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
+        if (PlayerData.get(player)?.freecam) return;
         const data = PlayerData.get(player);
         if (data.crafting) return;
         if (data.eating) {
@@ -598,23 +618,6 @@ export class PlayerSystem extends System<GameEventMap> {
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
-    };
-
-    placeStructureAt = (
-        playerId: number,
-        { structureId, x, y, rotation }: ClientPacket.PlaceStructureAt
-    ) => {
-        if (!SERVER_DEBUG) return;
-        const player = this.world.getObject(playerId);
-        if (player && PlayerData.get(player)?.crafting) return;
-        this.trigger(GameEvent.PlaceStructure, {
-            structureId,
-            x,
-            y,
-            rotation,
-            resultTo: player,
-            placedBy: player,
-        });
     };
 
     placeStructure = (playerId: number, _packet: ClientPacket.PlaceStructure) => {
@@ -759,7 +762,8 @@ export class PlayerSystem extends System<GameEventMap> {
                         players,
                         playerPacketManager
                     );
-                }
+                },
+                (target) => this.toggleFreecam(target)
             )
         ) {
             const { playerPacketManager, worldPacketManager } =
@@ -776,4 +780,27 @@ export class PlayerSystem extends System<GameEventMap> {
             message,
         });
     };
+
+    viewBounds = (playerId: number, packet: ClientPacket.ViewBounds) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        this.renderDistanceSystem?.setViewBounds(player, packet);
+    };
+
+    private toggleFreecam(player: GameObject): void {
+        const data = PlayerData.get(player);
+        if (!data || !this.renderDistanceSystem) return;
+        if (data.freecam) {
+            clearAnimalsFrozenFor(player.id);
+            clearEditorHistory(player.id);
+            this.renderDistanceSystem.exitFreecam(player);
+            return;
+        }
+        this.clearCraft(player, false);
+        this.clearEating(player, false);
+        const attributes = Attributes.get(player);
+        if (attributes) clearEphemeralPlayerAttributeSources(attributes);
+        clearEphemeralPlayerIntent(data);
+        this.renderDistanceSystem.enterFreecam(player);
+    }
 };

@@ -1,13 +1,19 @@
 import {
     FOOTPRINT_CIRCLE_RADIUS,
     TILE_SIZE,
+    WORLD_BOUNDS,
+    WORLD_TILES,
     deciToWorld,
+    worldToTile,
 } from "@bundu/shared/tiles";
-import type { ServerPacket } from "@bundu/shared/packet_definitions";
+import {
+    FREECAM_MAX_VIEW_EXTENT,
+    type ServerPacket,
+} from "@bundu/shared/packet_definitions";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { SkyUndoLayer } from "./sky_undo_layer";
-import { createGround } from "./ground";
+import { createGround, GROUND_Z_BASE } from "./ground";
 import {
     radians,
     structureOriginAtPoint,
@@ -15,7 +21,7 @@ import {
 } from "@bundu/shared";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
-import { Point, Text, type Renderer } from "pixi.js";
+import { Point, Text, type Container, type Renderer } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
@@ -47,6 +53,12 @@ import { Animal } from "./objects/animal";
 import { clientTime } from "@client/globals";
 import { structurePlace } from "../visual/particles/structure_place";
 
+/**
+ * Unload movers only when freecam can see most of the map.
+ * (~80% of world half-extent — far beyond play render distance.)
+ */
+const FREECAM_OVERVIEW_HALF = WORLD_BOUNDS * 0.4;
+
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
     { type: typeof GameObjectData.PlayerType }
@@ -66,8 +78,14 @@ type LoadGroundItem = Extract<
 type LoadAnimal = Extract<ServerPacket.LoadObject, { type: typeof GameObjectData.AnimalType }>;
 
 const PLACEMENT_GHOST_RENDER_ID = -11;
+const GROUND_RENDER_ID = -10;
 const PLACEMENT_GHOST_TINT = 0xff5555;
 const PLACEMENT_GHOST_NORMAL_TINT = 0xffffff;
+
+/** Freecam delete-mode hover outline (world pixels). */
+export type EditorDeleteHover =
+    | { kind: "circle"; x: number; y: number; radius: number }
+    | { kind: "rect"; x: number; y: number; w: number; h: number };
 
 function deciPoint(x: number, y: number): Point {
     return new Point(deciToWorld(x), deciToWorld(y));
@@ -93,6 +111,19 @@ export class World {
     /** Hold Tab: treat every structure as hovered for health bars. */
     private showAllHover = false;
     private readonly pendingObjectStates = new Map<number, EntityStateSnapshot>();
+    /**
+     * Client ground patches. Stack order / unload / delete-hover use entity `id`
+     * (higher id on top) — same contract as server `topGroundAt` and map YAML.
+     */
+    private readonly groundPatches: {
+        id: number;
+        type: number;
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        gfx: Container;
+    }[] = [];
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
 
@@ -115,11 +146,13 @@ export class World {
     }
 
     clear() {
+        this.camera.setFreecam(false);
         this.camera.follow(null);
 
         const ids = Array.from(this.objects.all(), (object) => object.id);
         for (const id of ids) this.removeClientObject(id);
-        this.renderer.delete(-10);
+        this.renderer.delete(GROUND_RENDER_ID);
+        this.groundPatches.length = 0;
         this.shadows.clear();
         this.particles.clear();
         this.clearPlacementGhost();
@@ -161,6 +194,16 @@ export class World {
         this.particles.update(deltaMS);
         this.updatePlacementGhost();
         this.camera.update();
+        if (this.camera.isFreecam()) {
+            if (this.onViewBounds) {
+                const bounds = this.currentViewBounds();
+                const key = `${bounds.minX | 0},${bounds.minY | 0},${bounds.maxX | 0},${bounds.maxY | 0},${bounds.overview ? 1 : 0}`;
+                if (key !== this.lastViewBoundsKey) {
+                    this.lastViewBoundsKey = key;
+                    this.onViewBounds(bounds);
+                }
+            }
+        }
     }
 
     private syncSkyUndo(): void {
@@ -202,9 +245,78 @@ export class World {
 
     private attachLocalPlayer(player: GameObject) {
         console.info(`Found user (id ${player.id}), loading..`);
-        this.camera.follow(player.container);
+        if (!this.camera.isFreecam()) {
+            this.camera.follow(player.container);
+        }
         this.refreshStructureOwnership();
     }
+
+    /**
+     * Enter/exit freecam spectate mode: detach camera, hide the local avatar.
+     */
+    setFreecamMode(enabled: boolean): void {
+        this.camera.setFreecam(enabled);
+        const local =
+            this.user !== undefined ? this.objects.get(this.user) : undefined;
+        if (local) {
+            local.container.visible = !enabled;
+            if (local instanceof Player) {
+                local.name.visible = !enabled;
+                local.chatMessage.visible = !enabled && local.chatMessage.visible;
+                local.craftBar.visible = !enabled && local.craftBar.visible;
+            }
+            if (!enabled) {
+                this.camera.follow(local.container);
+            }
+        }
+        this.lastViewBoundsKey = "";
+    }
+
+    /** World AABB for freecam AOI; overview when larger than play render distance. */
+    currentViewBounds(): {
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+        overview: boolean;
+    } {
+        const bounds = this.camera.worldBounds();
+        let { minX, minY, maxX, maxY } = bounds;
+        const width = maxX - minX;
+        const height = maxY - minY;
+        // Clamp to wire limit (keeps packets valid at extreme freecam zoom).
+        if (width > FREECAM_MAX_VIEW_EXTENT) {
+            const cx = (minX + maxX) / 2;
+            const half = FREECAM_MAX_VIEW_EXTENT / 2;
+            minX = cx - half;
+            maxX = cx + half;
+        }
+        if (height > FREECAM_MAX_VIEW_EXTENT) {
+            const cy = (minY + maxY) / 2;
+            const half = FREECAM_MAX_VIEW_EXTENT / 2;
+            minY = cy - half;
+            maxY = cy + half;
+        }
+        const halfX = (maxX - minX) / 2;
+        const halfY = (maxY - minY) / 2;
+        return {
+            minX,
+            minY,
+            maxX,
+            maxY,
+            overview: halfX > FREECAM_OVERVIEW_HALF || halfY > FREECAM_OVERVIEW_HALF,
+        };
+    }
+
+    private lastViewBoundsKey = "";
+    /** Optional sink for throttled ViewBounds while freecam is on. */
+    onViewBounds?: (bounds: {
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+        overview: boolean;
+    }) => void;
 
     /** Tint owned structure health bars once the local player id is known. */
     private refreshStructureOwnership() {
@@ -513,6 +625,10 @@ export class World {
     }
 
     private updatePlacementGhost() {
+        if (this.camera.isFreecam()) {
+            this.clearPlacementGhost();
+            return;
+        }
         const player = this.objects.get(this.user ?? -1);
         const placement =
             player instanceof Player ? player.getStructureGhost() : null;
@@ -585,19 +701,101 @@ export class World {
     }
 
     loadGround = (packet: ServerPacket.LoadGround) => {
-        for (const [type, x, y, w, h] of packet.groundData) {
-            this.renderer.add(
-                -10,
-                createGround(
-                    type,
-                    x * TILE_SIZE,
-                    y * TILE_SIZE,
-                    w * TILE_SIZE,
-                    h * TILE_SIZE
-                )
+        for (const [id, type, x, y, w, h] of packet.groundData) {
+            // Resync / undo restore: replace any prior gfx for this entity id.
+            for (let i = this.groundPatches.length - 1; i >= 0; i--) {
+                const existing = this.groundPatches[i];
+                if (!existing || existing.id !== id) continue;
+                this.groundPatches.splice(i, 1);
+                this.renderer.remove(GROUND_RENDER_ID, existing.gfx);
+                break;
+            }
+            const gfx = createGround(
+                type,
+                x * TILE_SIZE,
+                y * TILE_SIZE,
+                w * TILE_SIZE,
+                h * TILE_SIZE,
+                GROUND_Z_BASE + id
             );
+            this.groundPatches.push({ id, type, x, y, w, h, gfx });
+            this.renderer.add(GROUND_RENDER_ID, gfx);
         }
     };
+
+    unloadGround = (packet: ServerPacket.UnloadGround) => {
+        for (const [id] of packet.groundData) {
+            for (let i = this.groundPatches.length - 1; i >= 0; i--) {
+                const patch = this.groundPatches[i];
+                if (!patch || patch.id !== id) continue;
+                this.groundPatches.splice(i, 1);
+                this.renderer.remove(GROUND_RENDER_ID, patch.gfx);
+                break;
+            }
+        }
+    };
+
+    /**
+     * What AdminDeleteAt would hit under a tile — for delete-mode hover outline.
+     * Priority matches server: solid → animal → topmost editable ground.
+     * Solids use origin-tile match (not full collision radius) so large visuals
+     * don't steal hover from ground patches on neighboring tiles.
+     */
+    pickEditorDeleteHover(tx: number, ty: number): EditorDeleteHover | null {
+        for (const object of this.objects.all()) {
+            if (!(object instanceof Structure)) continue;
+            if (
+                worldToTile(object.position.x) !== tx ||
+                worldToTile(object.position.y) !== ty
+            ) {
+                continue;
+            }
+            return {
+                kind: "circle",
+                x: object.position.x,
+                y: object.position.y,
+                radius: Math.max(object.collisionRadius, TILE_SIZE / 2),
+            };
+        }
+
+        for (const object of this.objects.all()) {
+            if (!(object instanceof Animal)) continue;
+            if (
+                worldToTile(object.position.x) !== tx ||
+                worldToTile(object.position.y) !== ty
+            ) {
+                continue;
+            }
+            return {
+                kind: "circle",
+                x: object.position.x,
+                y: object.position.y,
+                radius: Math.max(object.collisionRadius, TILE_SIZE / 2),
+            };
+        }
+
+        let top: (typeof this.groundPatches)[number] | undefined;
+        for (const patch of this.groundPatches) {
+            if (patch.w >= WORLD_TILES && patch.h >= WORLD_TILES) continue;
+            if (
+                tx < patch.x ||
+                ty < patch.y ||
+                tx >= patch.x + patch.w ||
+                ty >= patch.y + patch.h
+            ) {
+                continue;
+            }
+            if (!top || patch.id > top.id) top = patch;
+        }
+        if (!top) return null;
+        return {
+            kind: "rect",
+            x: top.x * TILE_SIZE,
+            y: top.y * TILE_SIZE,
+            w: top.w * TILE_SIZE,
+            h: top.h * TILE_SIZE,
+        };
+    }
 
     chatMessage = ({ id, message }: ServerPacket.ChatMessage) => {
         const player = this.objects.get(id);

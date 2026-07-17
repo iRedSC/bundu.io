@@ -9,6 +9,7 @@ import { Serializer } from "@bundu/shared";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
 import { AnimationManagers } from "../animation/animations";
+import { downloadMapYaml } from "../admin/map_export";
 
 export const receiver = new ClientPacketReceiver(
     new Serializer<ServerPacketMap>(ServerSchema)
@@ -29,6 +30,7 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.SetRotation, world.rotateObject);
     receiver.on(ServerPacket.DeleteObjects, world.deleteObjects);
     receiver.on(ServerPacket.LoadGround, world.loadGround);
+    receiver.on(ServerPacket.UnloadGround, world.unloadGround);
     receiver.on(ServerPacket.ClientConnectionInfo, world.clientConnectionInfo);
     receiver.on(ServerPacket.UpdateEquipment, world.updateEquipment);
     receiver.on(ServerPacket.ChatMessage, world.chatMessage);
@@ -41,6 +43,13 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.SetStructureState, world.setStructureState);
     receiver.on(ServerPacket.SetTimeOfDay, ({ period }) => {
         world.sky.setTime(period, AnimationManagers.World);
+    });
+    receiver.on(ServerPacket.AdminMapYaml, ({ yaml, saved }) => {
+        if (saved) {
+            window.alert("Map saved on server.");
+            return;
+        }
+        downloadMapYaml(yaml);
     });
 }
 

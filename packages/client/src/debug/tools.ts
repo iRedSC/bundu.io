@@ -1,13 +1,12 @@
 import type { Container } from "pixi.js";
-import { clientRegistries } from "../configs/registries";
 import { registerAttackHitboxDrawer } from "./attack_hitbox";
 import { registerObjectDebugFactory } from "./object_debug";
 import {
     createObjectDebug,
     debugContainer,
     drawAttackHitbox,
-    isDebugOverlayVisible,
-    setDebugOverlayVisible,
+    isDebugHitboxesVisible,
+    setDebugHitboxesVisible,
 } from "./overlay";
 
 const TOOLS_CSS = `
@@ -52,10 +51,7 @@ const TOOLS_CSS = `
 }
 `;
 
-export type ClientDebugHandle = {
-    /** Structure id to place on left-click, or null when the tool is off. */
-    getPlaceStructureId(): number | null;
-};
+export type ClientDebugHandle = Record<string, never>;
 
 function bindToggle(
     button: HTMLButtonElement,
@@ -82,7 +78,6 @@ function bindToggle(
  * Only imported when `__DEBUG__` is true (see client entry).
  */
 export function mountClientDebug(viewport: Container): ClientDebugHandle {
-    const woodWallId = clientRegistries().structure.resolve("wood_wall", "bundu");
     registerObjectDebugFactory(createObjectDebug);
     registerAttackHitboxDrawer(drawAttackHitbox);
     viewport.addChild(debugContainer);
@@ -98,32 +93,22 @@ export function mountClientDebug(viewport: Container): ClientDebugHandle {
     panel.setAttribute("aria-label", "Debug tools");
     panel.innerHTML = `
         <h2 class="debug-tools-title">Debug tools</h2>
-        <button id="debug-toggle" class="debug-tool-btn" type="button">Debug: On</button>
-        <button id="debug-place-wood-wall" class="debug-tool-btn" type="button" aria-pressed="false">
-            Place wood wall: Off
-        </button>
+        <button id="debug-hitboxes" class="debug-tool-btn" type="button">Hitboxes: On</button>
     `;
     document.body.appendChild(panel);
 
-    let placeWoodWall = false;
+    const hitboxesToggle = panel.querySelector<HTMLButtonElement>("#debug-hitboxes");
 
-    const debugToggle = panel.querySelector<HTMLButtonElement>("#debug-toggle");
-    const placeToggle = panel.querySelector<HTMLButtonElement>(
-        "#debug-place-wood-wall"
-    );
-
-    if (debugToggle) {
-        bindToggle(debugToggle, "Debug", isDebugOverlayVisible(), (visible) => {
-            setDebugOverlayVisible(visible);
-        });
-    }
-    if (placeToggle) {
-        bindToggle(placeToggle, "Place wood wall", false, (active) => {
-            placeWoodWall = active;
-        });
+    if (hitboxesToggle) {
+        bindToggle(
+            hitboxesToggle,
+            "Hitboxes",
+            isDebugHitboxesVisible(),
+            (visible) => {
+                setDebugHitboxesVisible(visible);
+            }
+        );
     }
 
-    return {
-        getPlaceStructureId: () => (placeWoodWall ? woodWallId : null),
-    };
+    return {};
 }

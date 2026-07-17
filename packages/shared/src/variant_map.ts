@@ -20,3 +20,8 @@ export function getVariantId(name: string | undefined): number | undefined {
     if (id == null) throw new Error(`Unknown variant: ${name}`);
     return id;
 }
+
+/** All registered variant names (for editor random-variant mode). */
+export function listVariantNames(): readonly string[] {
+    return [...variantMap.keys()];
+}

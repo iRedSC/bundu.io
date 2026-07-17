@@ -30,6 +30,10 @@ export class NearFireSystem extends System<GameEventMap> {
             this.clearWarmth(attributes);
             return;
         }
+        if (PlayerData.get(player)?.freecam) {
+            this.clearWarmth(attributes);
+            return;
+        }
 
         const warmth = this.strongestNearbyWarmth(player);
         this.applyWarmth(attributes, warmth);

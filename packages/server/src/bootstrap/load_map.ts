@@ -1,5 +1,4 @@
 import { random } from "@bundu/shared";
-import type { RegistryId } from "@bundu/shared/registry";
 import {
     TILE_SIZE,
     WORLD_TILES,
@@ -8,46 +7,21 @@ import {
 } from "@bundu/shared/tiles";
 import { Box, Circle, Vector } from "sat";
 import type { World } from "../engine";
+import { tryAddResource } from "../game_objects/add_resource";
 import { Ground } from "../game_objects/ground";
-import { Resource } from "../game_objects/resource";
 import { Animal } from "../game_objects/animal";
 import { AnimalConfigs } from "../configs/loaders/animals";
-import {
-    makeTileEntity,
-    tileEntityPhysics,
-} from "../game_objects/tile_entity";
 import { GameEvent } from "../systems/event_map";
 import type { PlayerSystem } from "../systems/player";
 import { gameplayConfig } from "../configs/gameplay";
 import { gameRegistries } from "../configs/registries";
 import { GroundTypeConfigs } from "../configs/loaders/ground_types";
 
-function tryAddResource(
-    world: World,
-    id: RegistryId<"resource">,
-    tx: number,
-    ty: number,
-    rot: TileRot = 0
-): boolean {
-    const origin = { x: tx, y: ty };
-    const tile = makeTileEntity(origin, rot);
-    if (!world.context.occupancy.canPlace(tile.occupied)) return false;
-
-    world.addObject(
-        new Resource(
-            tileEntityPhysics(origin, rot),
-            { id, variant: "base" },
-            tile
-        )
-    );
-    return true;
-}
-
 /** Procedural test map + starter structure placement. */
 export function loadMap(world: World, playerSystem: PlayerSystem) {
     const worldgen = gameplayConfig().worldgen;
     const registries = gameRegistries();
-    const groundType = registries.ground_type.resolve("grass", "bundu");
+    const groundType = registries.ground_type.resolve("ocean", "bundu");
     const ground = GroundTypeConfigs.get(groundType);
     const barrier = registries.resource.resolve("stone_barrier", "bundu");
     const resourceTypes = registries.resource.resolveSet(

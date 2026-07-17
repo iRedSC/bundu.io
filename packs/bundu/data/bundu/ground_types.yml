@@ -1,3 +1,23 @@
 grass:
     speed_multiplier: 1
     color: "#2a462b"
+
+ocean:
+    speed_multiplier: 0.65
+    color: "#1a5f8a"
+
+savannah:
+    speed_multiplier: 1
+    color: "#b8954a"
+
+island:
+    speed_multiplier: 1
+    color: "#c9b07a"
+
+mountain:
+    speed_multiplier: 0.85
+    color: "#6a6e68"
+
+snow:
+    speed_multiplier: 0.9
+    color: "#dfe8ed"

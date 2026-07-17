@@ -22,6 +22,7 @@ export type SourcedRecord = {
 export type SourcedTag = SourcedRecord & {
     replace: boolean;
     values: string[];
+    category: boolean;
 };
 
 function object(value: unknown, source: string): Record<string, unknown> {
@@ -225,12 +226,16 @@ export class PackStack {
                     if (raw.replace !== undefined && typeof raw.replace !== "boolean") {
                         throw new Error(`${filename}.replace: expected a boolean`);
                     }
+                    if (raw.category !== undefined && typeof raw.category !== "boolean") {
+                        throw new Error(`${filename}.category: expected a boolean`);
+                    }
                     const id = `#${namespace}:${relative}`;
                     const sources = merged.get(id) ?? [];
                     sources.push({
                         namespace,
                         source: filename,
                         replace: raw.replace === true,
+                        category: raw.category === true,
                         values: raw.values as string[],
                         value: raw,
                     });
