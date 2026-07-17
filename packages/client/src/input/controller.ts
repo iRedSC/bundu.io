@@ -49,6 +49,7 @@ export class InputController {
     private readonly onPointerUp: (event: PointerEvent) => void;
     private readonly onPointerMove: (event: PointerEvent) => void;
     onToggleLeaderboard: () => void = () => {};
+    onShowWorldHover: (show: boolean) => void = () => {};
 
     constructor(
         private readonly sendPacket: SendPacket,
@@ -59,6 +60,7 @@ export class InputController {
         this.keyboard.onSendChat = (message) => this.handleSendChat(message);
         this.keyboard.onRotateStructure = () => this.rotateStructure();
         this.keyboard.onToggleLeaderboard = () => this.onToggleLeaderboard();
+        this.keyboard.onShowWorldHover = (show) => this.onShowWorldHover(show);
 
         this.onPointerDown = (event) => this.handlePointerDown(event);
         this.onPointerUp = (event) => this.handlePointerUp(event);

@@ -264,18 +264,23 @@ export class Structure extends GameObject {
         }
     }
 
-    updateHealthBar(time: number, cursor?: { x: number; y: number }) {
+    updateHealthBar(
+        time: number,
+        cursor?: { x: number; y: number },
+        forceShow = false
+    ) {
         if (!this.hasHealth) {
             this.healthBar.visible = false;
             return;
         }
 
         const hovered =
-            cursor !== undefined &&
-            Math.hypot(
-                cursor.x - this.position.x,
-                cursor.y - this.position.y
-            ) <= Math.max(this.collisionRadius, TILE_SIZE / 2);
+            forceShow ||
+            (cursor !== undefined &&
+                Math.hypot(
+                    cursor.x - this.position.x,
+                    cursor.y - this.position.y
+                ) <= Math.max(this.collisionRadius, TILE_SIZE / 2));
         if (hovered && !this.hovered) this.showHealthBar(time);
         if (!hovered && this.hovered && time >= this.healthBarShownUntil) {
             // Hover-only: drop immediately. Hit hold still active: keep showing.
