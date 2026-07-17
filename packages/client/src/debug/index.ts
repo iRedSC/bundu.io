@@ -1,6 +1,6 @@
 /**
- * Client-only debug tooling (overlay grid, hitboxes, Debug tools panel,
- * visual-definition hot reload).
+ * Client-only debug tooling (hitboxes, Debug tools panel, visual-definition
+ * hot reload).
  *
  * Prod entry must not statically import this barrel — use a `__DEBUG__`-guarded
  * dynamic `import("./debug/tools")` / `import("./debug/config_hot_reload")`

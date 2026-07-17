@@ -6,8 +6,8 @@ import {
     createObjectDebug,
     debugContainer,
     drawAttackHitbox,
-    isDebugOverlayVisible,
-    setDebugOverlayVisible,
+    isDebugHitboxesVisible,
+    setDebugHitboxesVisible,
 } from "./overlay";
 
 const TOOLS_CSS = `
@@ -98,7 +98,7 @@ export function mountClientDebug(viewport: Container): ClientDebugHandle {
     panel.setAttribute("aria-label", "Debug tools");
     panel.innerHTML = `
         <h2 class="debug-tools-title">Debug tools</h2>
-        <button id="debug-toggle" class="debug-tool-btn" type="button">Debug: On</button>
+        <button id="debug-hitboxes" class="debug-tool-btn" type="button">Hitboxes: On</button>
         <button id="debug-place-wood-wall" class="debug-tool-btn" type="button" aria-pressed="false">
             Place wood wall: Off
         </button>
@@ -107,15 +107,20 @@ export function mountClientDebug(viewport: Container): ClientDebugHandle {
 
     let placeWoodWall = false;
 
-    const debugToggle = panel.querySelector<HTMLButtonElement>("#debug-toggle");
+    const hitboxesToggle = panel.querySelector<HTMLButtonElement>("#debug-hitboxes");
     const placeToggle = panel.querySelector<HTMLButtonElement>(
         "#debug-place-wood-wall"
     );
 
-    if (debugToggle) {
-        bindToggle(debugToggle, "Debug", isDebugOverlayVisible(), (visible) => {
-            setDebugOverlayVisible(visible);
-        });
+    if (hitboxesToggle) {
+        bindToggle(
+            hitboxesToggle,
+            "Hitboxes",
+            isDebugHitboxesVisible(),
+            (visible) => {
+                setDebugHitboxesVisible(visible);
+            }
+        );
     }
     if (placeToggle) {
         bindToggle(placeToggle, "Place wood wall", false, (active) => {
