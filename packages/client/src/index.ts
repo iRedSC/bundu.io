@@ -331,6 +331,7 @@ async function main() {
         isPlacementAllowed: () => world.isPlacementAllowed(),
     });
     input.onToggleLeaderboard = () => gui.leaderboard.toggle();
+    input.onShowWorldHover = (show) => world.setShowAllHover(show);
     world.onPlacementValidity = (allowed) => input.onPlacementValidity(allowed);
 
     gui.inventory.isLocked = () => {
