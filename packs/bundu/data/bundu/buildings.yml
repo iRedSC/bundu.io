@@ -109,3 +109,11 @@ point_generator:
     class: building
     health: 1000
     pointsPerSecond: 2
+    placement:
+        blocked:
+            - [0, 0]
+            - [1, 0]
+            - [0, 1]
+            - [1, 1]
+        ground:
+            - "#bundu:buildable_ground"

@@ -1,0 +1,13 @@
+result:
+    item: diamond_helmet
+    amount: 1
+duration: 40000
+score: 1250
+ingredients:
+    gold_helmet: 1
+    diamond: 80
+    gold: 60
+    stone: 40
+requirements:
+    - near_crafting_table
+    - near_anvil

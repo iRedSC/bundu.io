@@ -1,0 +1,15 @@
+result:
+    item: ruby_medallion
+    amount: 1
+duration: 25000
+score: 7000
+ingredients:
+    gold: 200
+    diamond: 20
+    fish_scale: 2
+    komodo_dragon_eye: 1
+requirements:
+    - near_fire
+    - near_anvil
+    - near_crafting_table
+    - in_water

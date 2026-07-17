@@ -1,0 +1,12 @@
+result:
+    item: gold_pickaxe
+    amount: 1
+duration: 12000
+score: 500
+ingredients:
+    stone_pickaxe: 1
+    gold: 20
+    stone: 30
+    wood: 50
+requirements:
+    - near_anvil

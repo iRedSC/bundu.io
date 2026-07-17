@@ -1,0 +1,10 @@
+result:
+    item: stone_hammer
+    amount: 1
+duration: 10000
+score: 500
+ingredients:
+    stone: 100
+    wood: 60
+requirements:
+    - near_crafting_table

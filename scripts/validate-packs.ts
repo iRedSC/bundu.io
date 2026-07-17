@@ -1,6 +1,10 @@
 import { loadConfigs } from "../packages/server/src/configs/loaders/load";
 import { packs } from "../packages/server/src/configs/packs";
-import { resourcePacks } from "../packages/server/src/configs/resource_packs";
+import {
+    gameRegistries,
+    registrySources,
+} from "../packages/server/src/configs/registries";
+import { ResourcePackService } from "../packages/server/src/configs/resource_packs";
 import {
     lookupContextVisual,
     lookupObjectDef,
@@ -10,6 +14,7 @@ import {
 } from "../packages/client/src/visual/defs";
 
 loadConfigs();
+const resourcePacks = new ResourcePackService();
 replaceVisualDefs(
     JSON.parse(resourcePacks.visualsJson) as Record<string, unknown>,
     resourcePacks.manifest.assets.map((asset) => asset.path)
@@ -70,8 +75,15 @@ for (const id of itemIds) {
     requireItemVisual(id);
 }
 
+const sources = registrySources();
+const registryCounts = Object.entries(gameRegistries())
+    .map(([name, registry]) => `${name}=${registry.size}`)
+    .join(", ");
+const recipeCount = sources.recipe.size;
+const lootTableCount = sources.loot_table.size;
+
 console.log(
     `Validated ${packs.packs.length} pack(s): ${packs.packs
         .map(({ manifest }) => `${manifest.id}@${manifest.version}`)
-        .join(", ")} (${resourceIds.length} resources, ${entityIds.length} entities, ${buildingIds.length} buildings, ${itemIds.length} items, ${resourcePacks.manifest.assets.length} assets, ${resourcePacks.manifest.fingerprint.slice(0, 12)})`
+        .join(", ")} (${registryCounts}, recipes=${recipeCount}, loot_tables=${lootTableCount}, ${resourcePacks.manifest.assets.length} assets, ${resourcePacks.manifest.fingerprint.slice(0, 12)})`
 );

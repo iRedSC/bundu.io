@@ -70,6 +70,20 @@ export function addItem(
     return remaining;
 }
 
+export function tryAddItems(
+    inv: Inventory,
+    items: Iterable<[number, number]>
+): boolean {
+    const snapshot = cloneSlots(inv.slots);
+    for (const [itemId, amount] of items) {
+        if (addItem(inv, itemId, amount) > 0) {
+            restoreSlots(inv, snapshot);
+            return false;
+        }
+    }
+    return true;
+}
+
 /** Total count of `itemId` across all slots. */
 export function countItem(inv: Inventory, itemId: number): number {
     let total = 0;

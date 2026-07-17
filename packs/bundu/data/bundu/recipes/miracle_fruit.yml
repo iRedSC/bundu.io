@@ -1,0 +1,11 @@
+result:
+    item: miracle_fruit
+    amount: 1
+duration: 7000
+score: 200
+ingredients:
+    blue_berry: 5
+    honey: 2
+    amethyst: 10
+    diamond: 15
+requirements: []

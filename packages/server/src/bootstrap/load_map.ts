@@ -1,5 +1,5 @@
 import { random } from "@bundu/shared";
-import { getNumericId } from "@bundu/shared/id_map";
+import type { RegistryId } from "@bundu/shared/registry";
 import {
     TILE_SIZE,
     WORLD_TILES,
@@ -19,18 +19,12 @@ import {
 import { GameEvent } from "../systems/event_map";
 import type { PlayerSystem } from "../systems/player";
 import { gameplayConfig } from "../configs/gameplay";
-
-function getRequiredNumericId(id: string) {
-    const numericId = getNumericId(id);
-    if (typeof numericId !== "number") {
-        throw new Error(`Missing numeric id for ${id}`);
-    }
-    return numericId;
-}
+import { gameRegistries } from "../configs/registries";
+import { GroundTypeConfigs } from "../configs/loaders/ground_types";
 
 function tryAddResource(
     world: World,
-    id: string,
+    id: RegistryId<"resource">,
     tx: number,
     ty: number,
     rot: TileRot = 0
@@ -42,7 +36,7 @@ function tryAddResource(
     world.addObject(
         new Resource(
             tileEntityPhysics(origin, rot),
-            { id: getRequiredNumericId(id), variant: "base" },
+            { id, variant: "base" },
             tile
         )
     );
@@ -52,23 +46,37 @@ function tryAddResource(
 /** Procedural test map + starter structure placement. */
 export function loadMap(world: World, playerSystem: PlayerSystem) {
     const worldgen = gameplayConfig().worldgen;
+    const registries = gameRegistries();
+    const groundType = registries.ground_type.resolve("grass", "bundu");
+    const ground = GroundTypeConfigs.get(groundType);
+    const barrier = registries.resource.resolve("stone_barrier", "bundu");
+    const resourceTypes = registries.resource.resolveSet(
+        worldgen.resources,
+        "bundu",
+        "gameplay.worldgen.resources"
+    );
+    const entityTypes = registries.entity_type.resolveSet(
+        worldgen.animals,
+        "bundu",
+        "gameplay.worldgen.animals"
+    );
     // Ground AABB in tile coordinates (client scales by TILE_SIZE).
     world.addObject(
         new Ground({
             collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
-            type: 1,
-            speedMultiplier: 1,
+            type: groundType,
+            speedMultiplier: ground.speed_multiplier,
             createPacket() {
-                return [1, 0, 0, WORLD_TILES, WORLD_TILES];
+                return [groundType, 0, 0, WORLD_TILES, WORLD_TILES];
             },
         })
     );
 
     for (let t = 0; t < WORLD_TILES; t++) {
-        tryAddResource(world, "stone_barrier", t, 0);
-        tryAddResource(world, "stone_barrier", t, WORLD_TILES - 1);
-        tryAddResource(world, "stone_barrier", 0, t);
-        tryAddResource(world, "stone_barrier", WORLD_TILES - 1, t);
+        tryAddResource(world, barrier, t, 0);
+        tryAddResource(world, barrier, t, WORLD_TILES - 1);
+        tryAddResource(world, barrier, 0, t);
+        tryAddResource(world, barrier, WORLD_TILES - 1, t);
     }
 
     let placed = 0;
@@ -80,7 +88,7 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
         attempts < maxAttempts
     ) {
         attempts++;
-        const id = random.choice(worldgen.resources);
+        const id = random.choice([...resourceTypes]);
         const tx = random.integer(
             worldgen.borderPaddingTiles,
             WORLD_TILES - 1 - worldgen.borderPaddingTiles
@@ -93,8 +101,7 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
         if (tryAddResource(world, id, tx, ty, rot)) placed++;
     }
 
-    for (const id of worldgen.animals) {
-        const typeId = getRequiredNumericId(id);
+    for (const typeId of entityTypes) {
         const animal = AnimalConfigs.get(typeId);
         let spawned = 0;
         let spawnAttempts = 0;
@@ -137,7 +144,7 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
 
     const starter = worldgen.starterStructure;
     playerSystem.trigger(GameEvent.PlaceStructure, {
-        structureId: getRequiredNumericId(starter.id),
+        structureId: registries.structure.resolve(starter.id, "bundu"),
         x: starter.x,
         y: starter.y,
         rotation: starter.rotation as TileRot,

@@ -1,3 +1,4 @@
+import type { RegistryId } from "@bundu/shared/registry";
 import { ConfigLoader } from "./loader.js";
 
 export type ResourceConfig = {
@@ -8,7 +9,8 @@ export type ResourceConfig = {
     multipliers: Record<string, number>;
     decay: number | null;
     regen_speed: number;
-    items: Record<number, number>;
+    quantity: number;
+    lootTable: RegistryId<"loot_table"> | null;
 };
 
 const fallback: ResourceConfig = {
@@ -19,7 +21,8 @@ const fallback: ResourceConfig = {
     multipliers: {},
     decay: null,
     regen_speed: 0,
-    items: {},
+    quantity: 0,
+    lootTable: null,
 };
 
-export const ResourceConfigs = new ConfigLoader<ResourceConfig>(fallback);
+export const ResourceConfigs = new ConfigLoader<"resource", ResourceConfig>("resource", fallback);

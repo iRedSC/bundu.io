@@ -6,7 +6,6 @@ import {
     footprintCenter,
     pointToTile,
     structureOriginAtPoint,
-    structurePlacementDef,
     tileCenterWorld,
     tilesOnLine,
     type TilePos,
@@ -25,6 +24,7 @@ import {
 } from "../game_objects/tile_entity.js";
 import { emitEquipment, emitInventory, clearMainHandIf, clearMissingEquipment } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
+import { BuildingConfigs } from "../configs/loaders/buildings.js";
 
 type PlacementResult = {
     allowed: boolean;
@@ -72,7 +72,7 @@ export class StructureSystem extends System<GameEventMap> {
         const data = player.get(PlayerData);
         const inv = player.get(Inventory);
         const selected = inv.slots[inv.selected];
-        const structureId = data.selectedStructure.id;
+        const { id: structureId, itemId } = data.selectedStructure;
         const placement = this.selectedPlacement(player);
 
         let allowed = placement?.allowed ?? false;
@@ -92,9 +92,10 @@ export class StructureSystem extends System<GameEventMap> {
             emitInventory(player, this.world.context.playerPacketManager);
         }
 
-        if (!inv.slots[inv.selected] || inv.slots[inv.selected]?.id !== structureId) {
+        if (!inv.slots[inv.selected] || inv.slots[inv.selected]?.id !== itemId) {
             data.selectedStructure.id = -1;
-            clearMainHandIf(player, structureId);
+            data.selectedStructure.itemId = -1;
+            clearMainHandIf(player, itemId);
             this.world.context.playerPacketManager.set(
                 player.id,
                 ServerPacket.SetSelectedStructure,
@@ -155,17 +156,17 @@ export class StructureSystem extends System<GameEventMap> {
         const physics = player.get(Physics);
         const inv = player.get(Inventory);
         const selected = inv.slots[inv.selected];
-        const { id, rotation, cursor } = data.selectedStructure;
+        const { id, itemId, rotation, cursor } = data.selectedStructure;
         const rot = normalizeRotation(rotation);
         if (
             id === -1 ||
-            selected?.id !== id ||
+            selected?.id !== itemId ||
             rot === undefined
         ) {
             return undefined;
         }
 
-        const def = structurePlacementDef(id);
+        const def = BuildingConfigs.get(id).placement;
         const reach = Math.max(0, player.get(Attributes).get("placement.reach"));
         const origin = structureOriginAtPoint(cursor, def.blocked, rot);
         const tile = makeTileEntity(origin, rot, def.blocked);
@@ -230,7 +231,7 @@ export class StructureSystem extends System<GameEventMap> {
         const rot = normalizeRotation(rotation);
         if (rot === undefined) return false;
         const origin = { x, y };
-        const def = structurePlacementDef(structureId);
+        const def = BuildingConfigs.get(structureId).placement;
         const tile = makeTileEntity(origin, rot, def.blocked);
         tile.ownerId = ownerId;
 

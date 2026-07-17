@@ -1,0 +1,11 @@
+result:
+    item: stone_wall
+    amount: 1
+duration: 2500
+score: 50
+ingredients:
+    wood_wall: 1
+    stone: 23
+    wood: 13
+requirements:
+    - near_crafting_table

@@ -1,8 +1,8 @@
-import { random } from "@bundu/shared";
 import { ResourceData, Type } from "../components/base.js";
-import { addItem, Inventory } from "../components/inventory.js";
+import { Inventory, tryAddItems } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { ItemConfigs } from "../configs/loaders/items.js";
+import { evaluateLootTable } from "../configs/loaders/loot_tables.js";
 import { ResourceConfigs } from "../configs/loaders/resources.js";
 import { type GameObject, System, type World } from "../engine";
 import { emitInventory } from "../network/inventory.js";
@@ -33,15 +33,14 @@ export class ResourceSystem extends System<GameEventMap> {
         }
 
         const regenInterval = config.regen_speed * 1000;
-        if (regenInterval <= 0 || time - data.lastRegen < regenInterval) return;
-
-        const depleted = Object.entries(config.items).filter(
-            ([itemId, maximum]) => (data.items[Number(itemId)] ?? 0) < maximum
-        );
-        if (depleted.length === 0) return;
-
-        const itemId = Number(random.choice(depleted)[0]);
-        data.items[itemId] = (data.items[itemId] ?? 0) + 1;
+        if (
+            regenInterval <= 0 ||
+            data.quantity >= data.maximumQuantity ||
+            time - data.lastRegen < regenInterval
+        ) {
+            return;
+        }
+        data.quantity++;
         data.lastRegen = time;
     }
 
@@ -68,34 +67,36 @@ export class ResourceSystem extends System<GameEventMap> {
             Math.floor(
                 config.level === -1
                     ? (multiplier ?? 1)
-                    : (toolLevel - config.level + 1) *
-                          (multiplier ?? 1)
+                    : (toolLevel - config.level + 1) * (multiplier ?? 1)
             )
         );
         if (amount === 0) return;
 
         const data = resource.get(ResourceData);
-        const available = Object.entries(data.items).filter(
-            ([, remaining]) => remaining > 0
-        );
-        if (available.length === 0) return;
-
-        const [itemKey, remaining] = random.choice(available);
-        const itemId = Number(itemKey);
-        const requested = Math.min(amount, remaining);
-        const gathered = requested - addItem(inventory, itemId, requested);
-        if (gathered === 0) return;
-
-        data.items[itemId] = remaining - gathered;
-        player.score += (config.score ?? 0) * gathered;
-        emitInventory(source, this.world.context.playerPacketManager);
-
-        if (
-            config.destroy_on_empty &&
-            Object.values(data.items).every((remaining) => remaining === 0)
-        ) {
-            this.remove(resource);
+        let processed = 0;
+        let inventoryChanged = false;
+        while (processed < amount && data.quantity > 0) {
+            const loot =
+                data.lootTableId === null
+                    ? new Map<number, number>()
+                    : evaluateLootTable(
+                          data.lootTableId,
+                          data.lootSeed,
+                          data.harvestHit
+                      );
+            if (loot.size > 0 && !tryAddItems(inventory, loot)) break;
+            if (loot.size > 0) inventoryChanged = true;
+            data.quantity--;
+            data.harvestHit++;
+            processed++;
         }
+        if (processed === 0) return;
+
+        player.score += (config.score ?? 0) * processed;
+        if (inventoryChanged) {
+            emitInventory(source, this.world.context.playerPacketManager);
+        }
+        if (config.destroy_on_empty && data.quantity === 0) this.remove(resource);
     };
 
     private remove(resource: GameObject) {

@@ -21,7 +21,11 @@ export class Resource extends GameObject {
         bindPhysicsScale(attributes.data, physics, scale, physics.collisionRadius);
         this.add(
             new ResourceData({
-                items: structuredClone(config.items),
+                quantity: config.quantity,
+                maximumQuantity: config.quantity,
+                lootTableId: config.lootTable,
+                lootSeed: this.id,
+                harvestHit: 0,
                 decayAt: config.decay,
                 lastRegen: 0,
             })

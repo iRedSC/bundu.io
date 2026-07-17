@@ -37,7 +37,7 @@ bear:
     corpse: bear_dead
     spawn_count: 4
     aggroAt:
-        - wood_wall
+        - "#bundu:walls"
 
 ram:
     health: 500
@@ -107,7 +107,7 @@ alligator:
     corpse: alligator_dead
     spawn_count: 3
     aggroAt:
-        - wood_wall
+        - "#bundu:walls"
 
 bee:
     health: 200

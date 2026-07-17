@@ -1,0 +1,6 @@
+type: fixed
+entries:
+    - item: meat
+      count: 3
+    - item: bear_fur
+      count: 1

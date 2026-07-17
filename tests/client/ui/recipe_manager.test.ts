@@ -8,12 +8,12 @@ describe("RecipeManager", () => {
     manager = new RecipeManager();
   });
 
-  test("returns craftable recipes in server-provided order", () => {
+  test("returns craftable recipe views in server order", () => {
     manager.updateRecipes({
       recipes: [
-        [20, [[1, 1]], []],
-        [10, [[1, 2], [2, 1]], []],
-        [30, [], []],
+        [20, 200, 3, [[1, 1]], []],
+        [10, 100, 2, [[1, 2], [2, 1]], []],
+        [30, 300, 1, [], []],
       ],
     });
 
@@ -25,15 +25,42 @@ describe("RecipeManager", () => {
         ]),
         [],
       ),
-    ).toEqual([20, 10, 30]);
+    ).toEqual([
+      { recipeId: 20, resultItemId: 200, resultAmount: 3 },
+      { recipeId: 10, resultItemId: 100, resultAmount: 2 },
+      { recipeId: 30, resultItemId: 300, resultAmount: 1 },
+    ]);
   });
 
-  test("requires every ingredient at its configured quantity", () => {
+  test("treats recipe identity independently from result item identity", () => {
     manager.updateRecipes({
       recipes: [
-        [10, [[1, 2], [2, 1]], []],
-        [20, [[1, 3]], []],
-        [30, [[3, 1]], []],
+        [41, 900, 1, [[1, 1]], []],
+        [42, 900, 4, [[2, 1]], []],
+      ],
+    });
+
+    expect([...manager.recipes.keys()]).toEqual([41, 42]);
+    expect(
+      manager.filter(
+        new Map([
+          [1, 1],
+          [2, 1],
+        ]),
+        [],
+      ),
+    ).toEqual([
+      { recipeId: 41, resultItemId: 900, resultAmount: 1 },
+      { recipeId: 42, resultItemId: 900, resultAmount: 4 },
+    ]);
+  });
+
+  test("requires every ingredient and accepts exact quantities", () => {
+    manager.updateRecipes({
+      recipes: [
+        [10, 110, 1, [[1, 2], [2, 1]], []],
+        [20, 120, 1, [[1, 3]], []],
+        [30, 130, 1, [[3, 1]], []],
       ],
     });
 
@@ -45,26 +72,41 @@ describe("RecipeManager", () => {
         ]),
         [],
       ),
-    ).toEqual([10]);
+    ).toEqual([{ recipeId: 10, resultItemId: 110, resultAmount: 1 }]);
   });
 
-  test("requires all recipe flags and permits unrelated inventory flags", () => {
+  test("requires all recipe flags and ignores unrelated flags and inventory", () => {
     manager.updateRecipes({
       recipes: [
-        [10, [], [1]],
-        [20, [], [1, 2]],
-        [30, [], []],
+        [10, 110, 1, [], [1]],
+        [20, 120, 1, [], [1, 2]],
+        [30, 130, 1, [], []],
       ],
     });
 
-    expect(manager.filter(new Map(), [1, 99])).toEqual([10, 30]);
-    expect(manager.filter(new Map(), [1, 2, 99])).toEqual([10, 20, 30]);
+    expect(manager.filter(new Map([[999, 50]]), [1, 99])).toEqual([
+      { recipeId: 10, resultItemId: 110, resultAmount: 1 },
+      { recipeId: 30, resultItemId: 130, resultAmount: 1 },
+    ]);
+    expect(manager.filter(new Map([[999, 50]]), [1, 2, 99])).toEqual([
+      { recipeId: 10, resultItemId: 110, resultAmount: 1 },
+      { recipeId: 20, resultItemId: 120, resultAmount: 1 },
+      { recipeId: 30, resultItemId: 130, resultAmount: 1 },
+    ]);
   });
 
-  test("a recipe update atomically replaces the previous list", () => {
-    manager.updateRecipes({ recipes: [[10, [[1, 1]], []]] });
-    manager.updateRecipes({ recipes: [[20, [[2, 1]], []]] });
+  test("replaces the previous recipe list and removes stale recipes", () => {
+    manager.updateRecipes({
+      recipes: [
+        [10, 110, 1, [[1, 1]], []],
+        [11, 111, 1, [], []],
+      ],
+    });
+    manager.updateRecipes({
+      recipes: [[20, 220, 5, [[2, 1]], []]],
+    });
 
+    expect([...manager.recipes.keys()]).toEqual([20]);
     expect(
       manager.filter(
         new Map([
@@ -73,18 +115,25 @@ describe("RecipeManager", () => {
         ]),
         [],
       ),
-    ).toEqual([20]);
+    ).toEqual([{ recipeId: 20, resultItemId: 220, resultAmount: 5 }]);
   });
 
-  test("copies recipe requirements instead of retaining packet arrays", () => {
-    const requirements: [number, number][] = [[1, 1]];
+  test("defensively copies ingredient and flag arrays", () => {
+    const ingredients: [number, number][] = [[1, 1]];
     const flags = [7];
-    manager.updateRecipes({ recipes: [[10, requirements, flags]] });
 
-    requirements[0] = [1, 99];
-    requirements.push([2, 1]);
+    manager.updateRecipes({
+      recipes: [[10, 110, 2, ingredients, flags]],
+    });
+
+    const firstIngredient = ingredients[0];
+    if (!firstIngredient) throw new Error("Expected test ingredient");
+    firstIngredient[1] = 99;
+    ingredients.push([2, 1]);
     flags.push(8);
 
-    expect(manager.filter(new Map([[1, 1]]), [7])).toEqual([10]);
+    expect(manager.filter(new Map([[1, 1]]), [7])).toEqual([
+      { recipeId: 10, resultItemId: 110, resultAmount: 2 },
+    ]);
   });
 });

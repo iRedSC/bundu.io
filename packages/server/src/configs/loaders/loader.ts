@@ -1,14 +1,22 @@
 import { mergeObjects } from "@bundu/shared";
-import { getStringId } from "@bundu/shared/id_map";
+import {
+    resourceLocation,
+    type RegistryId,
+    type RegistryName,
+} from "@bundu/shared/registry";
+import { gameRegistries } from "../registries.js";
 
 /**
  * Loads configs and allows for easy access of records within said config.
  */
-export class ConfigLoader<D extends object> {
+export class ConfigLoader<K extends RegistryName, D extends object> {
     entries: Map<string, D> = new Map();
     fallback: D;
 
-    constructor(fallback: D) {
+    constructor(
+        readonly registryName: K,
+        fallback: D
+    ) {
         this.fallback = fallback;
     }
 
@@ -31,9 +39,12 @@ export class ConfigLoader<D extends object> {
         }
     }
 
-    get(id?: string | number) {
-        if (typeof id === "number") id = getStringId(id);
+    get(id?: string | RegistryId<K>) {
         if (id === undefined) return this.fallback;
-        return this.entries.get(id) ?? this.fallback;
+        const location =
+            typeof id === "number"
+                ? gameRegistries()[this.registryName].location(id)
+                : resourceLocation(id, "bundu");
+        return this.entries.get(location) ?? this.fallback;
     }
 }

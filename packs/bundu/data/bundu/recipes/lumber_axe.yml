@@ -1,0 +1,16 @@
+result:
+    item: lumber_axe
+    amount: 1
+duration: 40000
+score: 3000
+ingredients:
+    diamond_pickaxe: 1
+    amethyst: 40
+    diamond: 40
+    gold: 60
+    stone: 100
+    wood: 200
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil

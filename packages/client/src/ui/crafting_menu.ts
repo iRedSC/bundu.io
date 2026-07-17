@@ -13,71 +13,65 @@ const CRAFTING_COLORS = {
     rightDown: 0x333333,
 } as const;
 
-export class RecipeManager {
-    recipes: Map<number, [Map<number, number>, number[]]>;
+export type RecipeView = {
+    recipeId: number;
+    resultItemId: number;
+    resultAmount: number;
+};
 
-    constructor() {
-        this.recipes = new Map();
-    }
+type Recipe = RecipeView & {
+    ingredients: Map<number, number>;
+    flags: number[];
+};
+
+export class RecipeManager {
+    recipes = new Map<number, Recipe>();
 
     updateRecipes({ recipes }: ServerPacket.RecipeList) {
         this.recipes.clear();
-        for (const [item, ingredients, flags] of recipes) {
-            const ingredientMap = new Map();
-            for (const ingredient of ingredients) {
-                ingredientMap.set(ingredient[0], ingredient[1]);
-            }
-
-            this.recipes.set(item, [ingredientMap, [...flags]]);
+        for (const [recipeId, resultItemId, resultAmount, ingredients, flags] of recipes) {
+            this.recipes.set(recipeId, {
+                recipeId,
+                resultItemId,
+                resultAmount,
+                ingredients: new Map(ingredients),
+                flags: [...flags],
+            });
         }
     }
 
-    filter(items: Map<number, number>, flags: number[]): number[] {
-        const craftable: number[] = [];
+    filter(items: Map<number, number>, flags: number[]): RecipeView[] {
+        const craftable: RecipeView[] = [];
         const availableFlags = new Set(flags);
-        nextRecipe: for (const [recipeId, recipe] of this.recipes.entries()) {
-            const ingredients = recipe[0];
-            const requiredFlags = recipe[1];
-
-            for (const flag of requiredFlags) {
+        nextRecipe: for (const recipe of this.recipes.values()) {
+            for (const flag of recipe.flags) {
                 if (!availableFlags.has(flag)) continue nextRecipe;
             }
-
-            for (const [id, recipeAmount] of ingredients.entries()) {
-                const itemsAmount = items.get(id);
-                if (!itemsAmount) {
-                    continue nextRecipe;
-                }
-                if (itemsAmount < recipeAmount) {
-                    continue nextRecipe;
-                }
+            for (const [id, recipeAmount] of recipe.ingredients) {
+                if ((items.get(id) ?? 0) < recipeAmount) continue nextRecipe;
             }
-            craftable.push(recipeId);
+            craftable.push({
+                recipeId: recipe.recipeId,
+                resultItemId: recipe.resultItemId,
+                resultAmount: recipe.resultAmount,
+            });
         }
         return craftable;
     }
 }
 
-type Item = number;
+type Callback = (recipeId: number, shift: boolean) => void;
 
-type Callback = (item: number, shift: boolean) => void;
 export class CraftingMenu {
-    buttons: ItemButton[];
-    items: Item[];
-    container: Container;
-    rows: number;
-    grid: Grid;
+    buttons: ItemButton[] = [];
+    items: RecipeView[] = [];
+    container = new Container();
+    rows = 0;
     private rightClickCB?: Callback;
     private leftClickCB?: Callback;
-    craftingItemId: number | null = null;
+    craftingRecipeId: number | null = null;
 
-    constructor(grid: Grid) {
-        this.grid = grid;
-        this.buttons = [];
-        this.items = [];
-        this.container = new Container();
-        this.rows = 0;
-    }
+    constructor(readonly grid: Grid) {}
 
     update() {
         if (this.buttons.length >= this.items.length) {
@@ -90,8 +84,6 @@ export class CraftingMenu {
             const add = this.items.length - this.buttons.length;
             for (let i = 0; i < add; i++) {
                 const button = new ItemButton();
-                button.rightclick = this.rightClickCB;
-                button.leftclick = this.leftClickCB;
                 this.container.addChild(button.button);
                 this.buttons.push(button);
             }
@@ -99,23 +91,29 @@ export class CraftingMenu {
         this.grid.arrange(this.buttons);
         this.resize();
         for (const [i, button] of this.buttons.entries()) {
-            button.item = this.items[i] ?? null;
+            const recipe = this.items[i];
+            button.item = recipe?.resultItemId ?? null;
+            button.rightclick = (_item, shift) => {
+                if (recipe) this.rightClickCB?.(recipe.recipeId, shift);
+            };
+            button.leftclick = (_item, shift) => {
+                if (recipe) this.leftClickCB?.(recipe.recipeId, shift);
+            };
         }
     }
 
     set rightclick(value: Callback) {
         this.rightClickCB = value;
-        for (const button of this.buttons) button.rightclick = value;
     }
 
     set leftclick(value: Callback) {
         this.leftClickCB = value;
-        for (const button of this.buttons) button.leftclick = value;
     }
 
     tick(now?: number) {
-        for (const button of this.buttons) {
-            const active = button.item === this.craftingItemId;
+        for (const [index, button] of this.buttons.entries()) {
+            const active =
+                this.items[index]?.recipeId === this.craftingRecipeId;
             tickItemButton(
                 button,
                 CRAFTING_COLORS,
@@ -123,7 +121,11 @@ export class CraftingMenu {
                 active ? 0.94 : 1,
                 now
             );
-            button.button.alpha = lerp(button.button.alpha, active ? 1 : this.craftingItemId === null ? 1 : 0.35, 0.2);
+            button.button.alpha = lerp(
+                button.button.alpha,
+                active ? 1 : this.craftingRecipeId === null ? 1 : 0.35,
+                0.2
+            );
             if (active) {
                 button.background.tint = colorLerp(
                     Number(button.background.tint),

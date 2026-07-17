@@ -1,0 +1,12 @@
+result:
+    item: amethyst_medallion
+    amount: 1
+duration: 17000
+score: 5000
+ingredients:
+    gold: 150
+    amethyst: 40
+requirements:
+    - near_fire
+    - near_anvil
+    - near_crafting_table

@@ -1,0 +1,8 @@
+result:
+    item: wood_sword
+    amount: 1
+duration: 6000
+score: 75
+ingredients:
+    wood: 20
+requirements: []

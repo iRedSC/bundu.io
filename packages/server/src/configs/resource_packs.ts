@@ -2,6 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { packs } from "./packs";
+import type { ClientRegistryProjection } from "@bundu/shared/registry";
+import { BuildingConfigs } from "./loaders/buildings";
+import { GroundTypeConfigs } from "./loaders/ground_types";
+import { gameRegistries, registryProjection } from "./registries";
 
 export type ResourceAsset = {
     path: string;
@@ -10,7 +14,7 @@ export type ResourceAsset = {
 };
 
 export type ResourcePackManifest = {
-    format: 1;
+    format: 2;
     fingerprint: string;
     packs: {
         id: string;
@@ -19,6 +23,7 @@ export type ResourcePackManifest = {
         hash: string;
     }[];
     visuals: { hash: string; url: string };
+    registries: { hash: string; url: string };
     assets: ResourceAsset[];
 };
 
@@ -69,6 +74,7 @@ function record(value: unknown, source: string): Record<string, unknown> {
 export class ResourcePackService {
     readonly manifest: ResourcePackManifest;
     readonly visualsJson: string;
+    readonly registriesJson: string;
     private readonly servedAssets = new Map<string, ServedAsset>();
 
     constructor() {
@@ -123,7 +129,25 @@ export class ResourcePackService {
         }
 
         this.visualsJson = JSON.stringify({ stack: visuals });
+        const registries = gameRegistries();
+        const projection: ClientRegistryProjection = {
+            ...registryProjection(),
+            structures: Object.fromEntries(
+                [...BuildingConfigs.entries].map(([location, config]) => [
+                    registries.structure.resolve(location),
+                    config.placement,
+                ])
+            ),
+            groundTypes: Object.fromEntries(
+                [...GroundTypeConfigs.entries].map(([location, config]) => [
+                    registries.ground_type.resolve(location),
+                    { color: config.color },
+                ])
+            ),
+        };
+        this.registriesJson = JSON.stringify(projection);
         const visualsHash = hash(this.visualsJson);
+        const registriesHash = hash(this.registriesJson);
         const assets = [...this.servedAssets.values()]
             .map(({ filename: _filename, ...asset }) => asset)
             .sort((left, right) => left.path.localeCompare(right.path));
@@ -134,14 +158,24 @@ export class ResourcePackService {
             hash: hashPackResourceInputs(pack.directory),
         }));
         const fingerprint = hash(
-            JSON.stringify({ format: 1, packs: packEntries, visualsHash, assets })
+            JSON.stringify({
+                format: 2,
+                packs: packEntries,
+                visualsHash,
+                registriesHash,
+                assets,
+            })
         );
 
         this.manifest = {
-            format: 1,
+            format: 2,
             fingerprint,
             packs: packEntries,
             visuals: { hash: visualsHash, url: "/packs/visuals.json" },
+            registries: {
+                hash: registriesHash,
+                url: "/packs/registries.json",
+            },
             assets,
         };
     }
@@ -151,4 +185,3 @@ export class ResourcePackService {
     }
 }
 
-export const resourcePacks = new ResourcePackService();

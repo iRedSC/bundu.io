@@ -78,12 +78,20 @@ export const GroundData = Component.register<GroundData>(() => ({
 }));
 
 export type ResourceData = {
-    items: Record<number, number>;
+    quantity: number;
+    maximumQuantity: number;
+    lootTableId: number | null;
+    lootSeed: number;
+    harvestHit: number;
     decayAt: number | null;
     lastRegen: number;
 };
 export const ResourceData = Component.register<ResourceData>(() => ({
-    items: {},
+    quantity: 0,
+    maximumQuantity: 0,
+    lootTableId: null,
+    lootSeed: 0,
+    harvestHit: 0,
     decayAt: null,
     lastRegen: 0,
 }));

@@ -1,4 +1,7 @@
-import { getStringId } from "@bundu/shared/id_map";
+import {
+    clientRegistries,
+    clientVisualId,
+} from "../../configs/registries";
 import { attackFacingRadians } from "@bundu/shared";
 import { TILE_SIZE } from "@bundu/shared/tiles";
 import { rotationLerp } from "@bundu/shared/transforms";
@@ -36,7 +39,9 @@ export class Animal extends GameObject {
         scale = 1
     ) {
         super(id, position, 0, collisionRadius, TILE_SIZE * (scale ?? 1), 250);
-        this.typeId = getStringId(typeId);
+        this.typeId = clientVisualId(
+            clientRegistries().entity_type.location(typeId)
+        );
         this.applyVisualDefinition(animalDef(this.typeId));
         this.container.zIndex = 5;
         this.lastTarget = { x: position.x, y: position.y };
