@@ -10,7 +10,7 @@ import {
 } from "./bootstrap/dev_checkpoint";
 
 const { world, playerSystem, renderDistanceSystem, receiver } = createWorld();
-const resourcePacks = new ResourcePackService();
+const resourcePacks = await ResourcePackService.create();
 const DEBUG = process.env.BUNDU_DEBUG === "1";
 if (
     !DEBUG ||
@@ -93,9 +93,10 @@ controller.http = (request, url) => {
     if (!asset || url.searchParams.get("hash") !== asset.hash) {
         return new Response("Not Found", { status: 404, headers: packHeaders });
     }
-    return new Response(Bun.file(asset.filename), {
+    return new Response(Buffer.from(asset.bytes), {
         headers: {
             ...packHeaders,
+            "Content-Type": "image/png",
             "Cache-Control": "public, max-age=31536000, immutable",
         },
     });

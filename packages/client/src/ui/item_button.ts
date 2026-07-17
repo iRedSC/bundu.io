@@ -121,13 +121,13 @@ export class ItemButton {
         this.button.eventMode = "static";
 
         // this.background = new PIXI.Graphics();
-        this.background = SpriteFactory.build("bundu/ui/item_button.svg");
+        this.background = SpriteFactory.build("bundu/ui/item_button.png");
         this.background.width = ITEM_BUTTON_SIZE;
         this.background.height = ITEM_BUTTON_SIZE;
         this.background.tint = 0x777777;
         this.background.anchor.set(0.5);
 
-        this.disableSprite = SpriteFactory.build("bundu/ui/item_button.svg");
+        this.disableSprite = SpriteFactory.build("bundu/ui/item_button.png");
 
         this.disableSprite.width = ITEM_BUTTON_SIZE;
         this.disableSprite.height = ITEM_BUTTON_SIZE;
@@ -137,7 +137,7 @@ export class ItemButton {
         this.disableSprite.visible = false;
         this.disableSprite.anchor.set(0.5);
 
-        this.itemSprite = SpriteFactory.build("bundu/misc/unknown_asset.svg");
+        this.itemSprite = SpriteFactory.build("bundu/misc/unknown_asset.png");
 
         this.button.addChild(this.itemSprite);
         this.button.addChild(this.background);
@@ -232,7 +232,7 @@ export class ItemButton {
         this.itemSprite = SpriteFactory.update(
             this.itemSprite,
             undefined,
-            texture ?? "bundu/misc/unknown_asset.svg"
+            texture ?? "bundu/misc/unknown_asset.png"
         );
         this.itemSprite.visible = true;
         this.itemSprite.width = percentOf(90, ITEM_BUTTON_SIZE);

@@ -114,12 +114,18 @@ function readVisualDefs(directory: string, root = directory): [string, unknown][
         });
 }
 
-function visualDefsJson(): Response {
+async function visualDefsJson(): Promise<Response> {
+    // Dynamic import keeps the slim frontend image free of @bundu/shared
+    // (this path only runs when BUNDU_DEBUG=1).
+    const { rewritePackTextureRefs } = await import(
+        "@bundu/shared/visual/texture_paths"
+    );
     const defs: Record<string, unknown> = {};
     for (const directory of visualDirs) {
         Object.assign(defs, Object.fromEntries(readVisualDefs(directory)));
     }
-    return Response.json(defs, {
+    // Match game-server sanitization: authored .svg texture keys become .png.
+    return Response.json(rewritePackTextureRefs(defs), {
         headers: { "Cache-Control": "no-store" },
     });
 }
