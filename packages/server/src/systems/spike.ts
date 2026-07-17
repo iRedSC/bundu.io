@@ -23,7 +23,7 @@ const attackHitbox = new Circle();
 
 /**
  * Contact DPS and on-hit reflect for spiked walls/doors.
- * Only damages living entities (players / animals).
+ * Players take contact DPS immediately; animals only after they attack first.
  */
 export class SpikeSystem extends System<GameEventMap> {
     constructor(world: World) {
@@ -58,6 +58,12 @@ export class SpikeSystem extends System<GameEventMap> {
         for (const target of nearby) {
             if (target.id === structure.id) continue;
             if (isStructureFriendlyTo(structure, target)) continue;
+            if (
+                AnimalData.get(target) &&
+                !spiked.hostileAnimalIds.has(target.id)
+            ) {
+                continue;
+            }
             if (!testCircleCircle(attackHitbox, target.get(Physics).collider)) {
                 continue;
             }
@@ -101,6 +107,9 @@ export class SpikeSystem extends System<GameEventMap> {
     private reflect(structure: GameObject, source: GameObject) {
         if (!Living.get(source)) return;
         if (isStructureFriendlyTo(structure, source)) return;
+        if (AnimalData.get(source)) {
+            structure.get(Spiked).hostileAnimalIds.add(source.id);
+        }
         const spike = spikeConfigFor(structure);
         const damage = spike?.on_hit_damage;
         if (!damage) return;

@@ -10,5 +10,5 @@ export const GroundTypeConfigs = new ConfigLoader<
     GroundTypeConfig
 >("ground_type", {
     speed_multiplier: 1,
-    color: "#347c2c",
+    color: "#2a462b",
 });
