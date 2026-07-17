@@ -1,7 +1,9 @@
 import { decode, encode } from "@msgpack/msgpack";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
 
-const timeoutMs = 10_000;
+/** Pack sanitization on cold start can take well over 10s in CI. */
+const connectTimeoutMs = 60_000;
+const roundTripTimeoutMs = 10_000;
 const port = 17_777;
 const externalUrl = process.env.WS_SMOKE_URL;
 const url = externalUrl ?? `ws://127.0.0.1:${port}`;
@@ -80,11 +82,11 @@ async function connect(deadline: number): Promise<WebSocket> {
 }
 
 try {
-    const socket = await connect(Date.now() + timeoutMs);
+    const socket = await connect(Date.now() + connectTimeoutMs);
     await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(
             () => reject(new Error(`WebSocket smoke test timed out: ${url}`)),
-            timeoutMs
+            roundTripTimeoutMs
         );
         socket.send(encode([ClientPacket.ChatMessage, "ci-smoke"]));
         socket.addEventListener("message", ({ data }) => {

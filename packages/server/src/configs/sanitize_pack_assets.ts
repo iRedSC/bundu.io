@@ -65,8 +65,9 @@ async function encodePng(input: Uint8Array, path: string): Promise<Uint8Array> {
     const meta = await image.metadata();
     const width = meta.width ?? 0;
     const height = meta.height ?? 0;
+    // Level 6 is sharp's default — level 9 made cold start miss CI smoke windows.
     const bytes = new Uint8Array(
-        await image.png({ compressionLevel: 9 }).toBuffer()
+        await image.png({ compressionLevel: 6 }).toBuffer()
     );
     assertWithinLimits(path, bytes, width, height);
     return bytes;
