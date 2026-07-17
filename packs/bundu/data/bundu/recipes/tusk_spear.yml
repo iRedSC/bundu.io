@@ -4,10 +4,10 @@ result:
 duration: 60000
 score: 4000
 ingredients:
-    diamond_spear: 1
+    silver_spear: 1
     elephant_tusk: 4
-    amethyst: 20
-    gold: 60
+    cobalt: 20
+    copper: 60
     wood: 140
 requirements:
     - near_crafting_table

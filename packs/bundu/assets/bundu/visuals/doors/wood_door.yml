@@ -3,4 +3,6 @@ extends: door
 defaultVariant: base
 variants:
   base:
-    main: bundu/structure/door/wood_door.svg
+    wall: bundu/structure/wall/wood_wall.png
+    main: bundu/structure/door/wood_door.png
+    spike: bundu/structure/spike/wood_spike.png

@@ -1,0 +1,8 @@
+id: silver_door
+extends: door
+defaultVariant: base
+variants:
+  base:
+    wall: bundu/structure/wall/silver_wall.png
+    main: bundu/structure/door/silver_door.png
+    spike: bundu/structure/spike/silver_spike.png

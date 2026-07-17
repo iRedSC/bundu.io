@@ -1,0 +1,16 @@
+result:
+    item: cobalt_hammer
+    amount: 1
+duration: 50000
+score: 2500
+ingredients:
+    silver_hammer: 1
+    cobalt: 120
+    silver: 100
+    copper: 100
+    stone: 80
+    wood: 80
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil

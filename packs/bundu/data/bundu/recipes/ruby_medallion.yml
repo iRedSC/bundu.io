@@ -4,8 +4,8 @@ result:
 duration: 25000
 score: 7000
 ingredients:
-    gold: 200
-    diamond: 20
+    copper: 200
+    silver: 20
     fish_scale: 2
     komodo_dragon_eye: 1
 requirements:

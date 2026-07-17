@@ -1,0 +1,11 @@
+result:
+    item: copper_spike
+    amount: 1
+duration: 8000
+score: 150
+ingredients:
+    stone_spike: 1
+    copper: 50
+    stone: 45
+requirements:
+    - near_anvil

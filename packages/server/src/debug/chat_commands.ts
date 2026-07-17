@@ -18,15 +18,26 @@ function resolveItemId(value?: string): number | undefined {
 }
 
 const kits: Record<string, Record<string, number>> = {
-    "gold": {
-        "gold_pickaxe": 1,
-        "gold_sword": 1,
-        "gold_helmet": 1
+    "copper": {
+        "copper_pickaxe": 1,
+        "copper_sword": 1,
+        "copper_helmet": 1
     },
-    "diamond": {
-        "diamond_pickaxe": 1,
-        "diamond_sword": 1,
-        "diamond_helmet": 1
+    "silver": {
+        "silver_pickaxe": 1,
+        "silver_sword": 1,
+        "silver_helmet": 1
+    },
+    "cobalt": {
+        "cobalt_pickaxe": 1,
+        "cobalt_sword": 1,
+        "cobalt_helmet": 1
+    },
+    "iridium": {
+        "iridium_sword": 1,
+        "iridium_wall": 10,
+        "iridium_door": 5,
+        "iridium_spike": 5
     }
 }
 

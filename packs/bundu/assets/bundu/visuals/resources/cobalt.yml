@@ -1,0 +1,10 @@
+id: cobalt
+extends: single_tile_node
+defaultVariant: base
+variants:
+    base:
+        main: bundu/item/material/cobalt.svg
+
+parts:
+    main:
+        scale: 2

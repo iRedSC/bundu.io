@@ -16,7 +16,7 @@ stone_helmet:
             op: add
             value: 3
 
-gold_helmet:
+copper_helmet:
     type: helmet
     level: 3
     attributes:
@@ -24,7 +24,7 @@ gold_helmet:
             op: add
             value: 5
 
-diamond_helmet:
+silver_helmet:
     type: helmet
     level: 4
     attributes:
@@ -32,7 +32,7 @@ diamond_helmet:
             op: add
             value: 6
 
-amethyst_helmet:
+cobalt_helmet:
     type: helmet
     level: 5
 

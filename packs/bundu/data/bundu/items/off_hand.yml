@@ -42,7 +42,7 @@ bananna:
             op: multiply
             value: .75
 
-amethyst_medallion:
+cobalt_medallion:
     type: book
     function: off_hand
     attributes:

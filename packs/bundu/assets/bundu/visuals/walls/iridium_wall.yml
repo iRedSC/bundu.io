@@ -1,0 +1,7 @@
+id: iridium_wall
+extends: wall
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/wall/iridium_wall.png
+    spike: bundu/structure/spike/iridium_spike.png

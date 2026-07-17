@@ -1,0 +1,12 @@
+result:
+    item: silver_wall
+    amount: 1
+duration: 5000
+score: 85
+ingredients:
+    copper_wall: 1
+    silver: 19
+    copper: 9
+requirements:
+    - near_crafting_table
+    - near_anvil

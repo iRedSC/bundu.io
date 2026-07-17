@@ -50,7 +50,7 @@ stone:
     quantity: 30
     loot_table: stone
 
-gold:
+copper:
     score: 10
     exclusive: true
     multipliers:
@@ -58,9 +58,9 @@ gold:
     level: 2
     regen_speed: 10
     quantity: 20
-    loot_table: gold
+    loot_table: copper
 
-diamond:
+silver:
     score: 20
     exclusive: true
     multipliers:
@@ -68,9 +68,9 @@ diamond:
     level: 3
     regen_speed: 14
     quantity: 20
-    loot_table: diamond
+    loot_table: silver
 
-amethyst:
+cobalt:
     score: 30
     exclusive: true
     multipliers:
@@ -78,7 +78,7 @@ amethyst:
     level: 4
     regen_speed: 17
     quantity: 20
-    loot_table: amethyst
+    loot_table: cobalt
 
 bear_dead:
     decay: 30
