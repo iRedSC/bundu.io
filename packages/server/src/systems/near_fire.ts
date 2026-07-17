@@ -1,8 +1,9 @@
-import { getNumericId } from "@bundu/shared/id_map.js";
+import type { RegistryId } from "@bundu/shared/registry";
 import { Attributes, type AttributesData } from "../components/attributes.js";
-import { Physics, TileEntity, Type } from "../components/base.js";
+import { Health, Physics, TileEntity, Type } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { gameplayConfig } from "../configs/gameplay.js";
+import { gameRegistries } from "../configs/registries.js";
 import { type GameObject, System, type World } from "../engine";
 import type { GameEventMap } from "./event_map.js";
 import { getSizedBounds } from "./position.js";
@@ -12,9 +13,12 @@ const SOURCE = "near_fire";
 /**
  * Grants temperature.warmth while a connected player stands near a fire structure.
  * Takes the strongest in-range fire; does not stack. TemperatureSystem integrates it.
+ *
+ * Fire ids are resolved via the structure registry. Candidates require Health so
+ * resource nodes (trees) cannot match via cross-registry Type.id collisions.
  */
 export class NearFireSystem extends System<GameEventMap> {
-    private warmthById: Map<number, number> | undefined;
+    private warmthById: Map<RegistryId<"structure">, number> | undefined;
 
     constructor(world: World) {
         super(world, [PlayerData, Attributes, Physics], 5);
@@ -43,8 +47,9 @@ export class NearFireSystem extends System<GameEventMap> {
         if (warmthById.size === 0) return 0;
 
         const origin = player.get(Physics).position;
+        // Buildings have Health; harvestable resources do not.
         const candidates = this.world.query(
-            [TileEntity, Physics, Type],
+            [TileEntity, Physics, Type, Health],
             this.world.context.quadtree.query(
                 getSizedBounds(origin, radius, radius)
             )
@@ -52,7 +57,9 @@ export class NearFireSystem extends System<GameEventMap> {
 
         let best = 0;
         for (const structure of candidates) {
-            const warmth = warmthById.get(structure.get(Type).id);
+            const warmth = warmthById.get(
+                structure.get(Type).id as RegistryId<"structure">
+            );
             if (warmth === undefined || warmth <= best) continue;
             const pos = structure.get(Physics).position;
             if (Math.hypot(pos.x - origin.x, pos.y - origin.y) > radius) {
@@ -65,17 +72,19 @@ export class NearFireSystem extends System<GameEventMap> {
 
     private resolveWarmthIds(
         warmthByStructure: Record<string, number>
-    ): Map<number, number> {
+    ): Map<RegistryId<"structure">, number> {
         if (this.warmthById) return this.warmthById;
-        const resolved = new Map<number, number>();
+        const structures = gameRegistries().structure;
+        const resolved = new Map<RegistryId<"structure">, number>();
         for (const [name, warmth] of Object.entries(warmthByStructure)) {
-            const id = getNumericId(name);
-            if (id === undefined) {
-                throw new Error(
-                    `gameplay.temperature.near_fire.warmth: unknown id "${name}"`
-                );
-            }
-            resolved.set(id, warmth);
+            resolved.set(
+                structures.resolve(
+                    name,
+                    "bundu",
+                    "gameplay.temperature.near_fire.warmth"
+                ),
+                warmth
+            );
         }
         this.warmthById = resolved;
         return resolved;
