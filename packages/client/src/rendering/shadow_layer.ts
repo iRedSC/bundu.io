@@ -2,7 +2,6 @@ import { BlurFilter, Container, Matrix, Point, Rectangle } from "pixi.js";
 import type { ContaineredSprite } from "../assets/sprite_factory";
 import {
     lightPushAt,
-    SHADOW_HEIGHT_UNIT,
     shadowStyle,
     type ShadowLight,
 } from "../visual/shadow";
@@ -11,7 +10,7 @@ type ShadowEntry = {
     shadow: ContaineredSprite;
     follow: Container;
     state: Container;
-    /** Authored height steps → extra screen-down offset. */
+    /** Authored height — scales the day-cycle + light offset vector. */
     height: number;
 };
 
@@ -137,9 +136,10 @@ export class ShadowLayer {
             const scale = Math.hypot(this.local.a, this.local.b);
             const at = this.casterWorldPos(follow);
             const push = lightPushAt(at.x, at.y, lights);
-            const heightY = height * SHADOW_HEIGHT_UNIT;
-            shadow.x += shadowStyle.offsetX * scale + push.x;
-            shadow.y += (shadowStyle.offsetY + heightY) * scale + push.y;
+            const ox = shadowStyle.offsetX * scale + push.x;
+            const oy = shadowStyle.offsetY * scale + push.y;
+            shadow.x += ox * height;
+            shadow.y += oy * height;
             shadow.alpha = shadowStyle.alpha * state.alpha * follow.alpha;
             shadow.visible =
                 state.visible && follow.visible && follow.renderable;

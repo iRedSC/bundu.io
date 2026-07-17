@@ -132,6 +132,3 @@ export function lightPushAt(
     const scale = strength * capped;
     return { x: pushX * scale, y: pushY * scale };
 }
-
-/** Local-unit Y bump per authored shadow height step. */
-export const SHADOW_HEIGHT_UNIT = 0.045;
