@@ -1,7 +1,6 @@
 import { file, serve } from "bun";
 import path from "node:path";
 import fs from "node:fs";
-import { rewritePackTextureRefs } from "@bundu/shared/visual/texture_paths";
 
 const PUBLIC_DIR = path.join(import.meta.dir, "public");
 const PACKS_ROOT = path.join(import.meta.dir, "packs");
@@ -115,7 +114,12 @@ function readVisualDefs(directory: string, root = directory): [string, unknown][
         });
 }
 
-function visualDefsJson(): Response {
+async function visualDefsJson(): Promise<Response> {
+    // Dynamic import keeps the slim frontend image free of @bundu/shared
+    // (this path only runs when BUNDU_DEBUG=1).
+    const { rewritePackTextureRefs } = await import(
+        "@bundu/shared/visual/texture_paths"
+    );
     const defs: Record<string, unknown> = {};
     for (const directory of visualDirs) {
         Object.assign(defs, Object.fromEntries(readVisualDefs(directory)));
