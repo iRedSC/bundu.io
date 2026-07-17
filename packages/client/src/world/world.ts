@@ -292,7 +292,6 @@ export class World {
             states ?? {}
         );
         this.registerStructure(structure);
-        structure.setLocalPlayerId(this.user);
         structure.trigger(ANIMATION.PLACE, AnimationManagers.World, true);
         this.particles.burst(
             structurePlace(
@@ -376,6 +375,7 @@ export class World {
     }
 
     private registerStructure(structure: Structure): void {
+        structure.setLocalPlayerId(this.user);
         structure.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(structure);
         this.renderer.add(structure.id, ...structure.containers);
