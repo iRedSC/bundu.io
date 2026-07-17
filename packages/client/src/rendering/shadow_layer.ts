@@ -1,4 +1,4 @@
-import { BlurFilter, Container, Matrix } from "pixi.js";
+import { BlurFilter, Container, Matrix, Rectangle } from "pixi.js";
 import type { ContaineredSprite } from "../assets/sprite_factory";
 import {
     lightPushAt,
@@ -21,11 +21,13 @@ export class ShadowLayer {
     private readonly entries = new Set<ShadowEntry>();
     private readonly local = new Matrix();
     private readonly invParent = new Matrix();
+    private readonly view = new Rectangle();
     private blur?: BlurFilter;
     private appliedSoften = -1;
     private lights: readonly ShadowLight[] = [];
 
     constructor() {
+        // Above ground (-10), under players/structures so only the offset rim shows.
         this.container.zIndex = 0;
         this.container.eventMode = "none";
         this.container.sortableChildren = false;
@@ -35,6 +37,15 @@ export class ShadowLayer {
     /** World-space lights (fires, etc.) refreshed each tick. */
     setLights(lights: readonly ShadowLight[]): void {
         this.lights = lights;
+    }
+
+    /** Limit blur to the visible world so the filter RT stays finite. */
+    setView(x: number, y: number, width: number, height: number): void {
+        this.view.x = x;
+        this.view.y = y;
+        this.view.width = width;
+        this.view.height = height;
+        this.container.filterArea = this.view;
     }
 
     attach(
@@ -105,6 +116,7 @@ export class ShadowLayer {
                 if (!shadow.destroyed) shadow.destroy({ children: true });
                 continue;
             }
+            // Match the part visual's world pose, then nudge in screen space.
             this.local.copyFrom(this.invParent).append(follow.worldTransform);
             shadow.setFromMatrix(this.local);
             const scale = Math.hypot(this.local.a, this.local.b);
@@ -112,7 +124,8 @@ export class ShadowLayer {
             shadow.x += shadowStyle.offsetX * scale + push.x;
             shadow.y += shadowStyle.offsetY * scale + push.y;
             shadow.alpha = shadowStyle.alpha * state.alpha * follow.alpha;
-            shadow.visible = state.visible && follow.visible && follow.renderable;
+            shadow.visible =
+                state.visible && follow.visible && follow.renderable;
         }
     }
 }
@@ -128,7 +141,12 @@ export function registerPartShadow(
     follow: Container,
     state: Container
 ): void {
-    active?.attach(shadow, follow, state);
+    if (!active) {
+        // Assemble ran before the world layer existed — drop the orphan.
+        shadow.destroy({ children: true });
+        return;
+    }
+    active.attach(shadow, follow, state);
 }
 
 export function unregisterPartShadow(shadow: ContaineredSprite): void {

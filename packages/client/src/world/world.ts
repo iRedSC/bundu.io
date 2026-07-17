@@ -188,6 +188,8 @@ export class World {
             });
         }
         this.shadows.setLights(lights);
+        const bounds = this.viewport.getVisibleBounds();
+        this.shadows.setView(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
     setCursorWorld(position: { x: number; y: number }) {
