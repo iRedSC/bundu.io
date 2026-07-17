@@ -13,7 +13,7 @@ import {
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { SkyUndoLayer } from "./sky_undo_layer";
-import { createGround } from "./ground";
+import { createGround, GROUND_Z_BASE } from "./ground";
 import {
     radians,
     structureOriginAtPoint,
@@ -121,6 +121,8 @@ export class World {
         key: string;
         gfx: Container;
     }[] = [];
+    /** Monotonic layer so newer patches always paint above older ones. */
+    private groundLayerSeq = 0;
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
 
@@ -150,6 +152,7 @@ export class World {
         for (const id of ids) this.removeClientObject(id);
         this.renderer.delete(GROUND_RENDER_ID);
         this.groundPatches.length = 0;
+        this.groundLayerSeq = 0;
         this.shadows.clear();
         this.particles.clear();
         this.clearPlacementGhost();
@@ -695,12 +698,14 @@ export class World {
 
     loadGround = (packet: ServerPacket.LoadGround) => {
         for (const [type, x, y, w, h] of packet.groundData) {
+            const zIndex = GROUND_Z_BASE + this.groundLayerSeq++;
             const gfx = createGround(
                 type,
                 x * TILE_SIZE,
                 y * TILE_SIZE,
                 w * TILE_SIZE,
-                h * TILE_SIZE
+                h * TILE_SIZE,
+                zIndex
             );
             this.groundPatches.push({
                 type,

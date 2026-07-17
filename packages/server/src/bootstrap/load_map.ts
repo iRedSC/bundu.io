@@ -47,7 +47,7 @@ function tryAddResource(
 export function loadMap(world: World, playerSystem: PlayerSystem) {
     const worldgen = gameplayConfig().worldgen;
     const registries = gameRegistries();
-    const groundType = registries.ground_type.resolve("grass", "bundu");
+    const groundType = registries.ground_type.resolve("ocean", "bundu");
     const ground = GroundTypeConfigs.get(groundType);
     const barrier = registries.resource.resolve("stone_barrier", "bundu");
     const resourceTypes = registries.resource.resolveSet(

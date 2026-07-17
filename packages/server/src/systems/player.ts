@@ -43,6 +43,7 @@ import {
     selectEquipment,
 } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
+import { topGroundAt } from "./ground_at.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
 import { clearEditorHistory } from "../admin/history.js";
@@ -360,18 +361,16 @@ export class PlayerSystem extends System<GameEventMap> {
         if (data.mainHand === book || data.offHand === book) add("holding_book");
 
         const tile = pointToTile(physics.position);
-        const inWater = this.world.query([GroundData]).some((ground) => {
-            const config = ground.get(GroundData);
-            const location = registries.ground_type.location(config.type);
-            return (
-                location.endsWith(":water") &&
-                tile.x >= config.collider.pos.x &&
-                tile.y >= config.collider.pos.y &&
-                tile.x < config.collider.pos.x + config.collider.w &&
-                tile.y < config.collider.pos.y + config.collider.h
-            );
-        });
-        if (inWater) add("in_water");
+        const top = topGroundAt(this.world, tile.x, tile.y);
+        if (top) {
+            const location = registries.ground_type.location(top.type);
+            if (
+                location.endsWith(":water") ||
+                location.endsWith(":ocean")
+            ) {
+                add("in_water");
+            }
+        }
         return required.every((flag) => available.has(flag));
     }
 
