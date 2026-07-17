@@ -1,15 +1,14 @@
 # Client-only gameplay (served with resource packs). Not read by the server sim.
 shadows:
     alpha: 0.25
-    offset: 0.1
     # Blur strength (0 = sharp silhouette).
     soften: 5
-    # Horizontal screen offset by day period (morning → night).
-    offset_x_by_period:
-        morning: 0.07
-        day: 0
-        evening: -0.07
-        night: 0
+    # Screen-space offset by day period (morning → night).
+    offset_by_period:
+        morning: { x: 0.07, y: 0.1 }
+        day: { x: 0, y: 0.08 }
+        evening: { x: -0.07, y: 0.1 }
+        night: { x: 0, y: 0 }
     # Local lights push shadows away; opposite vectors cancel when surrounded.
     lights:
         radius: 220

@@ -1,15 +1,16 @@
 /** Pack-authored client gameplay (`assets/<ns>/gameplay.yml`). */
+export type DayPeriodOffset = { x: number; y: number };
+
 export type ClientGameplayConfig = {
     shadows: {
         alpha: number;
-        offset: number;
         /** Blur strength (0 = sharp). Pixi BlurFilter strength. */
         soften: number;
-        offsetXByPeriod: {
-            morning: number;
-            day: number;
-            evening: number;
-            night: number;
+        offsetByPeriod: {
+            morning: DayPeriodOffset;
+            day: DayPeriodOffset;
+            evening: DayPeriodOffset;
+            night: DayPeriodOffset;
         };
         lights: {
             /** Max distance a light can push a shadow. */
@@ -40,6 +41,14 @@ function number(source: Record<string, unknown>, key: string, path: string): num
     return value;
 }
 
+function parsePeriodOffset(value: unknown, path: string): DayPeriodOffset {
+    const raw = record(value, path);
+    return {
+        x: number(raw, "x", path),
+        y: number(raw, "y", path),
+    };
+}
+
 function parseLights(
     value: Record<string, unknown>
 ): ClientGameplayConfig["shadows"]["lights"] {
@@ -67,7 +76,6 @@ function parseShadows(
 ): ClientGameplayConfig["shadows"] {
     const path = "client_gameplay.shadows";
     const alpha = number(value, "alpha", path);
-    const offset = number(value, "offset", path);
     const soften = number(value, "soften", path);
     if (alpha < 0 || alpha > 1) {
         throw new Error(`${path}.alpha: expected 0..1`);
@@ -76,40 +84,38 @@ function parseShadows(
         throw new Error(`${path}.soften: expected >= 0`);
     }
     const rawOffsets = record(
-        value.offset_x_by_period,
-        `${path}.offset_x_by_period`
+        value.offset_by_period,
+        `${path}.offset_by_period`
     );
     const unexpected = Object.keys(rawOffsets).filter(
         (key) => !DAY_PERIOD_NAMES.includes(key as DayPeriodName)
     );
     if (unexpected.length > 0) {
         throw new Error(
-            `${path}.offset_x_by_period: unknown period(s) ${unexpected
+            `${path}.offset_by_period: unknown period(s) ${unexpected
                 .map((key) => `"${key}"`)
                 .join(", ")}`
         );
     }
-    const offsetXByPeriod = {
-        morning: 0,
-        day: 0,
-        evening: 0,
-        night: 0,
+    const offsetByPeriod = {
+        morning: { x: 0, y: 0 },
+        day: { x: 0, y: 0 },
+        evening: { x: 0, y: 0 },
+        night: { x: 0, y: 0 },
     };
     for (const name of DAY_PERIOD_NAMES) {
         if (!(name in rawOffsets)) {
-            throw new Error(`${path}.offset_x_by_period.${name}: missing period`);
+            throw new Error(`${path}.offset_by_period.${name}: missing period`);
         }
-        offsetXByPeriod[name] = number(
-            rawOffsets,
-            name,
-            `${path}.offset_x_by_period`
+        offsetByPeriod[name] = parsePeriodOffset(
+            rawOffsets[name],
+            `${path}.offset_by_period.${name}`
         );
     }
     return {
         alpha,
-        offset,
         soften,
-        offsetXByPeriod,
+        offsetByPeriod,
         lights: parseLights(record(value.lights, `${path}.lights`)),
     };
 }

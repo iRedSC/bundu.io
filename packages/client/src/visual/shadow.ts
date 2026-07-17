@@ -1,4 +1,7 @@
-import type { ClientGameplayConfig } from "@bundu/shared/client_gameplay";
+import type {
+    ClientGameplayConfig,
+    DayPeriodOffset,
+} from "@bundu/shared/client_gameplay";
 import {
     parseClientGameplayConfig,
 } from "@bundu/shared/client_gameplay";
@@ -6,18 +9,22 @@ import {
 /** Global drop-shadow look — pack defaults applied via {@link applyClientGameplay}. */
 export type ShadowStyle = {
     alpha: number;
-    /** Screen-down offset in local units (× part sprite/tile scale). */
-    offset: number;
     /**
-     * Live screen-space horizontal offset (× part scale).
-     * Driven by time-of-day from {@link offsetXByPeriod}.
+     * Live screen-space offset (× part scale).
+     * Driven by time-of-day from {@link offsetByPeriod}.
      */
     offsetX: number;
+    offsetY: number;
     /**
-     * Horizontal screen offset per day period, matching sky order:
+     * Screen offset per day period, matching sky order:
      * morning, day, evening, night.
      */
-    offsetXByPeriod: [number, number, number, number];
+    offsetByPeriod: [
+        DayPeriodOffset,
+        DayPeriodOffset,
+        DayPeriodOffset,
+        DayPeriodOffset,
+    ];
     /** Blur strength (0 = sharp). Applied live to all shadows. */
     soften: number;
     lights: {
@@ -36,9 +43,14 @@ export type ShadowLight = {
 
 export const shadowStyle: ShadowStyle = {
     alpha: 0.28,
-    offset: 0.12,
     offsetX: 0.1,
-    offsetXByPeriod: [0.1, 0, -0.1, 0],
+    offsetY: 0.12,
+    offsetByPeriod: [
+        { x: 0.1, y: 0.12 },
+        { x: 0, y: 0.1 },
+        { x: -0.1, y: 0.12 },
+        { x: 0, y: 0.06 },
+    ],
     soften: 0,
     lights: {
         radius: 220,
@@ -49,10 +61,10 @@ export const shadowStyle: ShadowStyle = {
 
 export function setShadowStyle(patch: Partial<ShadowStyle>): void {
     if (patch.alpha !== undefined) shadowStyle.alpha = patch.alpha;
-    if (patch.offset !== undefined) shadowStyle.offset = patch.offset;
     if (patch.offsetX !== undefined) shadowStyle.offsetX = patch.offsetX;
-    if (patch.offsetXByPeriod !== undefined) {
-        shadowStyle.offsetXByPeriod = patch.offsetXByPeriod;
+    if (patch.offsetY !== undefined) shadowStyle.offsetY = patch.offsetY;
+    if (patch.offsetByPeriod !== undefined) {
+        shadowStyle.offsetByPeriod = patch.offsetByPeriod;
     }
     if (patch.soften !== undefined) shadowStyle.soften = patch.soften;
     if (patch.lights !== undefined) shadowStyle.lights = patch.lights;
@@ -60,16 +72,17 @@ export function setShadowStyle(patch: Partial<ShadowStyle>): void {
 
 function applyShadows(config: ClientGameplayConfig["shadows"]): void {
     shadowStyle.alpha = config.alpha;
-    shadowStyle.offset = config.offset;
     shadowStyle.soften = config.soften;
     shadowStyle.lights = config.lights;
-    shadowStyle.offsetXByPeriod = [
-        config.offsetXByPeriod.morning,
-        config.offsetXByPeriod.day,
-        config.offsetXByPeriod.evening,
-        config.offsetXByPeriod.night,
+    shadowStyle.offsetByPeriod = [
+        config.offsetByPeriod.morning,
+        config.offsetByPeriod.day,
+        config.offsetByPeriod.evening,
+        config.offsetByPeriod.night,
     ];
-    shadowStyle.offsetX = shadowStyle.offsetXByPeriod[0];
+    const initial = shadowStyle.offsetByPeriod[0];
+    shadowStyle.offsetX = initial?.x ?? 0;
+    shadowStyle.offsetY = initial?.y ?? 0;
 }
 
 /** Apply pack-authored client gameplay (`assets/<ns>/gameplay.yml`). */
@@ -79,10 +92,10 @@ export function applyClientGameplay(raw: unknown): ClientGameplayConfig {
     return config;
 }
 
-/** Period index → configured horizontal offset (clamped). */
-export function shadowOffsetXForPeriod(period: number): number {
-    const { offsetXByPeriod } = shadowStyle;
-    return offsetXByPeriod[period] ?? offsetXByPeriod[0] ?? 0;
+/** Period index → configured offset (clamped). */
+export function shadowOffsetForPeriod(period: number): DayPeriodOffset {
+    const { offsetByPeriod } = shadowStyle;
+    return offsetByPeriod[period] ?? offsetByPeriod[0] ?? { x: 0, y: 0 };
 }
 
 /**

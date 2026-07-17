@@ -110,7 +110,7 @@ export class ShadowLayer {
             const scale = Math.hypot(this.local.a, this.local.b);
             const push = lightPushAt(this.local.tx, this.local.ty, lights);
             shadow.x += shadowStyle.offsetX * scale + push.x;
-            shadow.y += shadowStyle.offset * scale + push.y;
+            shadow.y += shadowStyle.offsetY * scale + push.y;
             shadow.alpha = shadowStyle.alpha * state.alpha * follow.alpha;
             shadow.visible = state.visible && follow.visible && follow.renderable;
         }
