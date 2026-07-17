@@ -9,6 +9,7 @@ import { Serializer } from "@bundu/shared";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
 import { AnimationManagers } from "../animation/animations";
+import { downloadMapYaml } from "../admin/map_export";
 
 export const receiver = new ClientPacketReceiver(
     new Serializer<ServerPacketMap>(ServerSchema)
@@ -42,6 +43,13 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.SetStructureState, world.setStructureState);
     receiver.on(ServerPacket.SetTimeOfDay, ({ period }) => {
         world.sky.setTime(period, AnimationManagers.World);
+    });
+    receiver.on(ServerPacket.AdminMapYaml, ({ yaml, saved, path }) => {
+        if (saved) {
+            window.alert(`Map saved to server:\n${path || "(unknown path)"}`);
+            return;
+        }
+        downloadMapYaml(yaml);
     });
 }
 

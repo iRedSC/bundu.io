@@ -38,6 +38,7 @@ import {
     trySnapshot,
     undoStroke,
 } from "./history.js";
+import { exportMapYaml, saveMapYaml, wipeMap } from "./map_io.js";
 import { setAnimalsFrozen } from "./state.js";
 
 type GroundPacket = [
@@ -174,6 +175,42 @@ export class AdminEditorSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player || !canUseEditor(player)) return;
         redoStroke(playerId, this.historyHost());
+    };
+
+    adminSaveMap = (playerId: number, _packet: ClientPacket.AdminSaveMap) => {
+        const player = this.world.getObject(playerId);
+        if (!player || !canUseEditor(player)) return;
+        const { yaml, path } = saveMapYaml(this.world);
+        this.world.context.playerPacketManager.set(
+            playerId,
+            ServerPacket.AdminMapYaml,
+            { yaml, saved: true, path }
+        );
+    };
+
+    adminDownloadMap = (
+        playerId: number,
+        _packet: ClientPacket.AdminDownloadMap
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player || !canUseEditor(player)) return;
+        const yaml = exportMapYaml(this.world);
+        this.world.context.playerPacketManager.set(
+            playerId,
+            ServerPacket.AdminMapYaml,
+            { yaml, saved: false, path: "" }
+        );
+    };
+
+    adminWipeMap = (playerId: number, _packet: ClientPacket.AdminWipeMap) => {
+        const player = this.world.getObject(playerId);
+        if (!player || !canUseEditor(player)) return;
+        wipeMap(
+            this.world,
+            this.trigger,
+            (packet) => this.broadcastGround(packet),
+            (packet) => this.broadcastUnloadGround(packet)
+        );
     };
 
     adminPlace = (playerId: number, packet: ClientPacket.AdminPlace) => {

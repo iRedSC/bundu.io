@@ -32,4 +32,7 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.AdminStrokeEnd, admin.adminStrokeEnd);
     receiver.on(ClientPacket.AdminUndo, admin.adminUndo);
     receiver.on(ClientPacket.AdminRedo, admin.adminRedo);
+    receiver.on(ClientPacket.AdminSaveMap, admin.adminSaveMap);
+    receiver.on(ClientPacket.AdminDownloadMap, admin.adminDownloadMap);
+    receiver.on(ClientPacket.AdminWipeMap, admin.adminWipeMap);
 }

@@ -70,6 +70,9 @@ export function createToolbar(
         onToggleGrid: () => void;
         onToggleFreeze: () => void;
         onKillAll: () => void;
+        onSaveMap: () => void;
+        onDownloadMap: () => void;
+        onWipeMap: () => void;
     }
 ): ToolbarHandle {
     const container = new Container();
@@ -122,6 +125,21 @@ export function createToolbar(
             id: "kill",
             label: "Kill All",
             onClick: () => handlers.onKillAll(),
+        },
+        {
+            id: "save-map",
+            label: "Save Map",
+            onClick: () => handlers.onSaveMap(),
+        },
+        {
+            id: "download-map",
+            label: "Download",
+            onClick: () => handlers.onDownloadMap(),
+        },
+        {
+            id: "wipe-map",
+            label: "WIPE",
+            onClick: () => handlers.onWipeMap(),
         },
     ];
 

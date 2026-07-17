@@ -44,6 +44,8 @@ export const ServerPacket = {
     FreecamMode: 0x1c,
     /** Freecam editor: remove ground rects (undo / delete). */
     UnloadGround: 0x1d,
+    /** Freecam editor: map YAML for download or after server save. */
+    AdminMapYaml: 0x1e,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -160,6 +162,12 @@ export namespace ServerPacket {
             h: number,
         ][];
     };
+    export type AdminMapYaml = {
+        yaml: string;
+        /** True when the server also wrote the file to disk. */
+        saved: boolean;
+        path: string;
+    };
 }
 
 /** Admin editor place target (freecam palette). */
@@ -203,6 +211,12 @@ export const ClientPacket = {
     AdminUndo: 0x17,
     /** Freecam editor: redo last undone stroke. */
     AdminRedo: 0x18,
+    /** Freecam editor: write map YAML on the server and return it. */
+    AdminSaveMap: 0x19,
+    /** Freecam editor: return map YAML for client download (no disk write). */
+    AdminDownloadMap: 0x1a,
+    /** Freecam editor: wipe placeables; keeps a fresh base ground floor. */
+    AdminWipeMap: 0x1b,
 } as const;
 
 export namespace ClientPacket {
@@ -258,6 +272,9 @@ export namespace ClientPacket {
     export type AdminStrokeEnd = Record<string, never>;
     export type AdminUndo = Record<string, never>;
     export type AdminRedo = Record<string, never>;
+    export type AdminSaveMap = Record<string, never>;
+    export type AdminDownloadMap = Record<string, never>;
+    export type AdminWipeMap = Record<string, never>;
 }
 
 /** ID → payload map for server packets. */
@@ -287,6 +304,7 @@ export type ServerPacketMap = {
     [ServerPacket.SetTimeOfDay]: ServerPacket.SetTimeOfDay;
     [ServerPacket.FreecamMode]: ServerPacket.FreecamMode;
     [ServerPacket.UnloadGround]: ServerPacket.UnloadGround;
+    [ServerPacket.AdminMapYaml]: ServerPacket.AdminMapYaml;
 };
 
 /** ID → payload map for client packets. */
@@ -312,6 +330,9 @@ export type ClientPacketMap = {
     [ClientPacket.AdminStrokeEnd]: ClientPacket.AdminStrokeEnd;
     [ClientPacket.AdminUndo]: ClientPacket.AdminUndo;
     [ClientPacket.AdminRedo]: ClientPacket.AdminRedo;
+    [ClientPacket.AdminSaveMap]: ClientPacket.AdminSaveMap;
+    [ClientPacket.AdminDownloadMap]: ClientPacket.AdminDownloadMap;
+    [ClientPacket.AdminWipeMap]: ClientPacket.AdminWipeMap;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -364,6 +385,7 @@ export const ServerSchema: {
     [ServerPacket.SetTimeOfDay]: { fields: ["period"] },
     [ServerPacket.FreecamMode]: { fields: ["enabled"] },
     [ServerPacket.UnloadGround]: { fields: ["groundData"] },
+    [ServerPacket.AdminMapYaml]: { fields: ["yaml", "saved", "path"] },
 };
 
 export const ClientSchema: {
@@ -400,6 +422,9 @@ export const ClientSchema: {
     [ClientPacket.AdminStrokeEnd]: { fields: [] },
     [ClientPacket.AdminUndo]: { fields: [] },
     [ClientPacket.AdminRedo]: { fields: [] },
+    [ClientPacket.AdminSaveMap]: { fields: [] },
+    [ClientPacket.AdminDownloadMap]: { fields: [] },
+    [ClientPacket.AdminWipeMap]: { fields: [] },
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -545,5 +570,17 @@ export const ClientPacketGuards = {
     [ClientPacket.AdminRedo]: (
         value: unknown
     ): value is ClientPacket.AdminRedo =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.AdminSaveMap]: (
+        value: unknown
+    ): value is ClientPacket.AdminSaveMap =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.AdminDownloadMap]: (
+        value: unknown
+    ): value is ClientPacket.AdminDownloadMap =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.AdminWipeMap]: (
+        value: unknown
+    ): value is ClientPacket.AdminWipeMap =>
         isRecord(value) && Object.keys(value).length === 0,
 } satisfies PacketGuards<ClientPacketMap>;
