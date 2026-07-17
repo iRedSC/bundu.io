@@ -101,7 +101,7 @@ export class World {
         this.camera = new Camera(viewport);
         this.sky = new Sky();
         this.skyUndo = new SkyUndoLayer(pixiRenderer);
-        this.shadows = new ShadowLayer();
+        this.shadows = new ShadowLayer(this.viewport);
         setActiveShadowLayer(this.shadows);
         this.renderer = new LayeredRenderer(this.viewport);
         this.particles = new ParticleSystem(this.viewport);

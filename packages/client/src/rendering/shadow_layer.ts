@@ -1,4 +1,4 @@
-import { BlurFilter, Container, Matrix, Rectangle } from "pixi.js";
+import { BlurFilter, Container, Matrix, Point, Rectangle } from "pixi.js";
 import type { ContaineredSprite } from "../assets/sprite_factory";
 import {
     lightPushAt,
@@ -25,11 +25,16 @@ export class ShadowLayer {
     private readonly local = new Matrix();
     private readonly invParent = new Matrix();
     private readonly view = new Rectangle();
+    private readonly scratch = new Point();
     private blur?: BlurFilter;
     private appliedSoften = -1;
     private lights: readonly ShadowLight[] = [];
 
-    constructor() {
+    /**
+     * @param worldParent - Viewport (or equivalent) whose local space matches
+     *   `GameObject.position` / light positions.
+     */
+    constructor(private readonly worldParent: Container) {
         // Above ground (-10), under players/structures so only the offset rim shows.
         this.container.zIndex = 0;
         this.container.eventMode = "none";
@@ -109,6 +114,12 @@ export class ShadowLayer {
         }
     }
 
+    /** Caster position in the same space as {@link ShadowLight} / structure.position. */
+    private casterWorldPos(follow: Container): Point {
+        follow.getGlobalPosition(this.scratch);
+        return this.worldParent.toLocal(this.scratch, undefined, this.scratch);
+    }
+
     private sync(): void {
         this.syncBlur();
         this.invParent.copyFrom(this.container.worldTransform).invert();
@@ -124,7 +135,8 @@ export class ShadowLayer {
             this.local.copyFrom(this.invParent).append(follow.worldTransform);
             shadow.setFromMatrix(this.local);
             const scale = Math.hypot(this.local.a, this.local.b);
-            const push = lightPushAt(this.local.tx, this.local.ty, lights);
+            const at = this.casterWorldPos(follow);
+            const push = lightPushAt(at.x, at.y, lights);
             const heightY = height * SHADOW_HEIGHT_UNIT;
             shadow.x += shadowStyle.offsetX * scale + push.x;
             shadow.y += (shadowStyle.offsetY + heightY) * scale + push.y;
