@@ -18,6 +18,7 @@ import { Circle, Vector } from "sat";
 import { SERVER_TICK_MS } from "@bundu/shared/movement.js";
 import { Attributes } from "../components/attributes.js";
 import { gameplayConfig } from "../configs/gameplay.js";
+import { areAnimalsFrozen } from "../admin/state.js";
 
 type Tile = { x: number; y: number };
 const key = (tile: Tile) => `${tile.x},${tile.y}`;
@@ -166,6 +167,7 @@ export class AnimalSystem extends System<GameEventMap> {
     }
 
     override update(time: number, delta: number, animal: GameObject) {
+        if (areAnimalsFrozen()) return;
         const data = animal.get(AnimalData); const physics = animal.get(Physics);
         const config = AnimalConfigs.get(animal.get(Type).id);
         if (time >= data.nextThinkAt) {

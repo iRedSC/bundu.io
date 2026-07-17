@@ -26,6 +26,7 @@ import { AnimalSystem } from "../systems/animal";
 import { HungerSystem } from "../systems/hunger";
 import { NearFireSystem } from "../systems/near_fire";
 import { TemperatureSystem } from "../systems/temperature";
+import { AdminEditorSystem } from "../admin/editor";
 
 export type ServerWorld = {
     world: World;
@@ -40,15 +41,17 @@ export function createWorld(): ServerWorld {
     loadConfigs();
 
     const playerSystem = new PlayerSystem(world);
+    const adminEditor = new AdminEditorSystem(world);
     const renderDistanceSystem = new RenderDistanceSystem(world);
     playerSystem.setRenderDistanceSystem(renderDistanceSystem);
     const serializer = new Serializer<ClientPacketMap>(ClientSchema);
     const receiver = new ServerPacketReceiver(serializer, ClientPacketGuards);
-    setupPacketReceiving(receiver, playerSystem);
+    setupPacketReceiving(receiver, playerSystem, adminEditor);
 
     world
         .addSystem(new AttributesSystem(world))
         .addSystem(playerSystem)
+        .addSystem(adminEditor)
         .addSystem(new PositionSystem(world))
         .addSystem(new CollisionSystem(world))
         .addSystem(new HealthSystem(world))

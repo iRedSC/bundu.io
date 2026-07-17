@@ -1,17 +1,19 @@
 import { ClientPacket } from "@bundu/shared/packet_definitions";
 import type { ServerPacketReceiver } from "../engine";
+import type { AdminEditorSystem } from "../admin/editor";
 import type { PlayerSystem } from "../systems/player";
 
 export function setupPacketReceiving(
     receiver: ServerPacketReceiver,
-    system: PlayerSystem
+    system: PlayerSystem,
+    admin: AdminEditorSystem
 ) {
     receiver.on(ClientPacket.Attack, system.attack);
     receiver.on(ClientPacket.Block, system.block);
     receiver.on(ClientPacket.ChatMessage, system.chatMessage);
     receiver.on(ClientPacket.Movement, system.move);
     receiver.on(ClientPacket.Rotation, system.rotate);
-    receiver.on(ClientPacket.PlaceStructureAt, system.placeStructureAt);
+    receiver.on(ClientPacket.PlaceStructureAt, admin.placeStructureAt);
     receiver.on(ClientPacket.PlaceStructure, system.placeStructure);
     receiver.on(
         ClientPacket.SetStructurePlacement,
@@ -22,4 +24,12 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.CursorSlot, system.cursorSlot);
     receiver.on(ClientPacket.CraftItem, system.craftItem);
     receiver.on(ClientPacket.ViewBounds, system.viewBounds);
+    receiver.on(ClientPacket.AdminPlace, admin.adminPlace);
+    receiver.on(ClientPacket.AdminDeleteAt, admin.adminDeleteAt);
+    receiver.on(ClientPacket.AdminSetAnimalsFrozen, admin.adminSetAnimalsFrozen);
+    receiver.on(ClientPacket.AdminKillAnimals, admin.adminKillAnimals);
+    receiver.on(ClientPacket.AdminStrokeBegin, admin.adminStrokeBegin);
+    receiver.on(ClientPacket.AdminStrokeEnd, admin.adminStrokeEnd);
+    receiver.on(ClientPacket.AdminUndo, admin.adminUndo);
+    receiver.on(ClientPacket.AdminRedo, admin.adminRedo);
 }

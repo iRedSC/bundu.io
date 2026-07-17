@@ -45,6 +45,8 @@ import {
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
+import { clearEditorHistory } from "../admin/history.js";
+import { setAnimalsFrozen } from "../admin/state.js";
 import { PlaceMode } from "@bundu/shared/inventory";
 import {
     pointToTile,
@@ -616,23 +618,6 @@ export class PlayerSystem extends System<GameEventMap> {
         emitEquipment(player, worldPacketManager);
     };
 
-    placeStructureAt = (
-        playerId: number,
-        { structureId, x, y, rotation }: ClientPacket.PlaceStructureAt
-    ) => {
-        if (!SERVER_DEBUG) return;
-        const player = this.world.getObject(playerId);
-        if (player && PlayerData.get(player)?.crafting) return;
-        this.trigger(GameEvent.PlaceStructure, {
-            structureId,
-            x,
-            y,
-            rotation,
-            resultTo: player,
-            placedBy: player,
-        });
-    };
-
     placeStructure = (playerId: number, _packet: ClientPacket.PlaceStructure) => {
         const player = this.world.getObject(playerId);
         if (!player || PlayerData.get(player)?.crafting) return;
@@ -804,6 +789,8 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = PlayerData.get(player);
         if (!data || !this.renderDistanceSystem) return;
         if (data.freecam) {
+            setAnimalsFrozen(false);
+            clearEditorHistory(player.id);
             this.renderDistanceSystem.exitFreecam(player);
             return;
         }
