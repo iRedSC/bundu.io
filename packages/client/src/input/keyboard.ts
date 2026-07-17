@@ -15,10 +15,18 @@ export class KeyboardInputListener {
         right: false,
     };
 
+    /** Blocks browser focus-steal on Tab while playing. */
+    private readonly onTabKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== "Tab" || this.chatOpen) return;
+        event.preventDefault();
+    };
+
     onMoveInput: (direction: MoveAxes) => void = () => {};
     onSendChat: (message: string) => void = () => {};
     onRotateStructure: () => void = () => {};
     onToggleLeaderboard: () => void = () => {};
+    /** Hold Tab: reveal every structure health bar (world hover). */
+    onShowWorldHover: (show: boolean) => void = () => {};
 
     constructor() {
         this.keybinds = new Keystrokes({
@@ -29,11 +37,12 @@ export class KeyboardInputListener {
                 d: "right",
                 enter: "chat",
                 r: "placement_rotate",
-                tab: "leaderboard",
+                tab: "world_hover",
             },
         });
 
         this.chatOpen = false;
+        document.addEventListener("keydown", this.onTabKeyDown);
 
         const emitMove = () => {
             this.onMoveInput(axesFromPressedKeys(this.pressed));
@@ -117,9 +126,12 @@ export class KeyboardInputListener {
                 if (!this.chatOpen) this.onRotateStructure();
             },
         });
-        this.keybinds.bindKey("leaderboard", {
+        this.keybinds.bindKey("world_hover", {
             onPressed: () => {
-                if (!this.chatOpen) this.onToggleLeaderboard();
+                if (!this.chatOpen) this.onShowWorldHover(true);
+            },
+            onReleased: () => {
+                this.onShowWorldHover(false);
             },
         });
     }
@@ -135,6 +147,8 @@ export class KeyboardInputListener {
     }
 
     destroy(): void {
+        document.removeEventListener("keydown", this.onTabKeyDown);
+        this.onShowWorldHover(false);
         this.keybinds.unbindEnvironment();
     }
 }

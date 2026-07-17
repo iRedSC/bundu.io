@@ -84,6 +84,8 @@ export class World {
     private placementGhostType = 0;
     private placementGhostAllowed?: boolean;
     private cursorWorld?: { x: number; y: number };
+    /** Hold Tab: treat every structure as hovered for health bars. */
+    private showAllHover = false;
     private readonly pendingObjectStates = new Map<number, EntityStateSnapshot>();
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
@@ -112,6 +114,7 @@ export class World {
         this.particles.clear();
         this.clearPlacementGhost();
         this.cursorWorld = undefined;
+        this.showAllHover = false;
         this.pendingObjectStates.clear();
         this.user = undefined;
     }
@@ -139,7 +142,7 @@ export class World {
         updateOcclusion(localPlayer, this.objects.all());
         for (const object of this.objects.all()) {
             if (object instanceof Structure) {
-                object.updateHealthBar(now, this.cursorWorld);
+                object.updateHealthBar(now, this.cursorWorld, this.showAllHover);
             }
         }
         this.particles.update(deltaMS);
@@ -159,6 +162,10 @@ export class World {
 
     setCursorWorld(position: { x: number; y: number }) {
         this.cursorWorld = position;
+    }
+
+    setShowAllHover(show: boolean) {
+        this.showAllHover = show;
     }
 
     private attachLocalPlayer(player: GameObject) {
