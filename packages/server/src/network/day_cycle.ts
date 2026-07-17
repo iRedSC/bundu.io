@@ -6,16 +6,31 @@ import type { PlayerPacketManager } from "../engine/network/packets/manager";
 
 const AMBIENT_SOURCE = "day_cycle";
 
+export const TIME_OF_DAY_NAMES = [
+    "morning",
+    "day",
+    "evening",
+    "night",
+] as const;
+export type TimeOfDayName = (typeof TIME_OF_DAY_NAMES)[number];
+
+function isTimeOfDayName(value: string): value is TimeOfDayName {
+    return (TIME_OF_DAY_NAMES as readonly string[]).includes(value);
+}
+
 /** Authoritative day/night clock — Leaderboard-style broadcast to connected players. */
 export class DayCycle {
     private period = 0;
+    /** Shifts gameplay clock so `/settime` can jump periods without freezing the cycle. */
+    private offsetMs = 0;
     private recipients = new Set<number>();
 
     /** Resolve period index from gameplay clock. */
     periodAt(gameTime: number): number {
         const { periods, totalDurationMs } = gameplayConfig().dayCycle;
         let remaining =
-            ((gameTime % totalDurationMs) + totalDurationMs) % totalDurationMs;
+            (((gameTime + this.offsetMs) % totalDurationMs) + totalDurationMs) %
+            totalDurationMs;
         for (let i = 0; i < periods.length; i++) {
             const period = periods[i];
             if (!period) continue;
@@ -28,6 +43,43 @@ export class DayCycle {
     /** Snap internal period to gameTime without broadcasting. */
     syncClock(gameTime: number): void {
         this.period = this.periodAt(gameTime);
+    }
+
+    /**
+     * Jump to the start of a named period and sync all connected players.
+     * Cycle keeps advancing from there via {@link offsetMs}.
+     */
+    setPeriod(
+        name: string,
+        gameTime: number,
+        players: GameObject[],
+        packets: PlayerPacketManager
+    ): boolean {
+        if (!isTimeOfDayName(name)) return false;
+        const { periods, totalDurationMs } = gameplayConfig().dayCycle;
+        const index = periods.findIndex((period) => period.name === name);
+        if (index < 0) return false;
+
+        let startMs = 0;
+        for (let i = 0; i < index; i++) {
+            const period = periods[i];
+            if (period) startMs += period.durationMs;
+        }
+        const progress =
+            ((gameTime % totalDurationMs) + totalDurationMs) % totalDurationMs;
+        this.offsetMs = startMs - progress;
+        this.period = index;
+
+        const currentRecipients = new Set<number>();
+        for (const player of players) {
+            this.applyAmbient(player);
+            packets.set(player.id, ServerPacket.SetTimeOfDay, {
+                period: this.period,
+            });
+            currentRecipients.add(player.id);
+        }
+        this.recipients = currentRecipients;
+        return true;
     }
 
     /** Apply current period ambient warmth to one player. */

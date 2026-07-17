@@ -746,7 +746,20 @@ export class PlayerSystem extends System<GameEventMap> {
                 (target) => {
                     this.trigger(GameEvent.Kill, { object: target });
                 },
-                this.world.gameTime
+                this.world.gameTime,
+                (period) => {
+                    const { dayCycle, playerPacketManager, socketManager } =
+                        this.world.context;
+                    const players = this.world
+                        .query([PlayerData])
+                        .filter((target) => socketManager.getSocket(target.id));
+                    return dayCycle.setPeriod(
+                        period,
+                        this.world.gameTime,
+                        players,
+                        playerPacketManager
+                    );
+                }
             )
         ) {
             const { playerPacketManager, worldPacketManager } =
