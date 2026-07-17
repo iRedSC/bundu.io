@@ -1,0 +1,10 @@
+id: fire
+abstract: true
+extends: single_tile_node
+
+# Sky multiply sits at zIndex 200. Flame must be a promoted top-level part above it.
+parts:
+  main:
+    zIndex: 10
+  flame:
+    zIndex: 201

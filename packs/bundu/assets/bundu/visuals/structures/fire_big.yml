@@ -1,0 +1,7 @@
+id: fire_big
+extends: fire
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/crafting/fire_big.svg
+    flame: bundu/effect/fire_flame.svg

@@ -102,6 +102,9 @@ export function loadConfigs() {
 
     const gameplay = gameplayConfig();
     requireId(gameplay.rotting.claimWeapon, "gameplay.rotting.claim_weapon");
+    for (const id of Object.keys(gameplay.temperature.nearFire.warmthByStructure)) {
+        requireId(id, "gameplay.temperature.near_fire.warmth");
+    }
     for (const id of gameplay.worldgen.resources) {
         requireId(id, "gameplay.worldgen.resources");
     }

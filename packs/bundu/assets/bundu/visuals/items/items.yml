@@ -399,11 +399,11 @@ item/anvil:
 
 item/fire_small:
   extends: item/type/building
-  texture: bundu/structure/crafting/fire_big.svg
+  texture: bundu/structure/crafting/fire_small.svg
 
 item/fire_big:
   extends: item/type/building
-  texture: bundu/structure/crafting/fire_small.svg
+  texture: bundu/structure/crafting/fire_big.svg
 
 item/quick_wood_wall:
   extends: item/type/wall
