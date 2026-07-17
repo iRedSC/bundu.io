@@ -14,7 +14,7 @@ export function fireGlow(texture: Texture, x: number, y: number): ParticleBurst 
         spread: 0.7,
         speed: [12, 36],
         lifetime: [700, 1400],
-        size: [18, 42],
+        size: [40, 100],
         endSize: 4,
         gravity: -18,
         friction: 0.4,
