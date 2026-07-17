@@ -172,3 +172,10 @@ before opening the WebSocket, then include the negotiated fingerprint in the
 connection URL. The server rejects clients from older formats or a different
 registry mapping. Development checkpoints also store the registry hash and are
 ignored when their mapping is incompatible.
+
+The client build also embeds a sanitized copy of the bundu base pack under
+`/site/base-pack/`. When the game server's pack fingerprint matches that
+bundle, the client loads visuals, registries, and textures from the same
+origin instead of downloading them from the server. Overlay packs or a
+different bundu revision change the fingerprint and fall back to a full
+server sync.

@@ -1,4 +1,5 @@
 import { rm } from "node:fs/promises";
+import { spawn } from "bun";
 
 const GAME_WS_URL = process.env.GAME_WS_URL ?? "ws://localhost:7777";
 
@@ -18,6 +19,15 @@ await Bun.build({
         __DEBUG__: DEBUG ? "true" : "false",
     },
 });
+
+const bundle = spawn({
+    cmd: ["bun", "run", "./scripts/bundle-base-pack.ts", `${outdir}/base-pack`],
+    stdout: "inherit",
+    stderr: "inherit",
+});
+if ((await bundle.exited) !== 0) {
+    throw new Error("Failed to bundle base pack into client build");
+}
 
 if (!DEBUG) {
     console.log("[build] production client (debug tools stripped)");

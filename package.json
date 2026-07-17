@@ -17,6 +17,7 @@
         "server": "bun run packages/server/src/index.ts",
         "build": "bun run ./build.ts",
         "build:debug": "BUNDU_DEBUG=1 bun run ./build.ts",
+        "bundle:base-pack": "bun ./scripts/bundle-base-pack.ts",
         "check-prod-debug": "bun run ./scripts/check-prod-debug.ts",
         "serve-frontend": "bun static-server.ts --hot",
         "serve-frontend:prod": "bun static-server.ts",

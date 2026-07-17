@@ -28,6 +28,9 @@ type Manifest = {
     assets: ManifestAsset[];
 };
 
+/** Same-origin sanitized bundu pack emitted by `scripts/bundle-base-pack.ts`. */
+const BUNDLED_BASE_PACK_ROOT = "/site/base-pack/";
+
 let objectUrls: string[] = [];
 
 function record(value: unknown, path: string): Record<string, unknown> {
@@ -107,7 +110,6 @@ async function sha256(data: ArrayBuffer): Promise<string> {
 }
 
 async function verified(url: URL, expectedHash: string, size?: number) {
-    url.searchParams.set("hash", expectedHash);
     const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`Failed to download ${url.pathname} (${response.status})`);
@@ -144,6 +146,19 @@ function assetUrl(base: URL, path: string): URL {
     return packUrl(base, `/packs/assets/${encoded}`);
 }
 
+function bundledRootUrl(): URL {
+    return new URL(BUNDLED_BASE_PACK_ROOT, window.location.origin);
+}
+
+function bundledUrl(path: string): URL {
+    return new URL(path.replace(/^\//, ""), bundledRootUrl());
+}
+
+function bundledAssetUrl(path: string): URL {
+    const encoded = path.split("/").map(encodeURIComponent).join("/");
+    return bundledUrl(`assets/${encoded}`);
+}
+
 function revokeObjectUrls() {
     for (const url of objectUrls) URL.revokeObjectURL(url);
     objectUrls = [];
@@ -160,19 +175,30 @@ async function fetchManifest(websocketUrl: string): Promise<Manifest> {
     return parseManifest(await response.json());
 }
 
-export async function getResourcePackFingerprint(
-    websocketUrl: string
-): Promise<string> {
-    return (await fetchManifest(websocketUrl)).fingerprint;
+async function fetchBundledBaseManifest(): Promise<Manifest | undefined> {
+    try {
+        const response = await fetch(bundledUrl("manifest.json"));
+        if (!response.ok) return undefined;
+        return parseManifest(await response.json());
+    } catch {
+        return undefined;
+    }
 }
 
-export async function loadResourcePacks(
-    websocketUrl: string
+async function materializePack(
+    manifest: Manifest,
+    resolveVisuals: URL,
+    resolveRegistries: URL,
+    resolveAsset: (path: string) => URL,
+    /** Game-server assets are content-addressed with ?hash=; bundled files are not. */
+    contentAddressed: boolean
 ): Promise<LoadedResourcePacks> {
-    const base = httpBase(websocketUrl);
-    const manifest = await fetchManifest(websocketUrl);
-    const visualUrl = packUrl(base, manifest.visuals.url);
-    const registryUrl = packUrl(base, manifest.registries.url);
+    const visualUrl = new URL(resolveVisuals);
+    const registryUrl = new URL(resolveRegistries);
+    if (contentAddressed) {
+        visualUrl.searchParams.set("hash", manifest.visuals.hash);
+        registryUrl.searchParams.set("hash", manifest.registries.hash);
+    }
     const [visualData, registryData] = await Promise.all([
         verified(visualUrl, manifest.visuals.hash),
         verified(registryUrl, manifest.registries.hash),
@@ -188,7 +214,11 @@ export async function loadResourcePacks(
     revokeObjectUrls();
     const assets = await Promise.all(
         manifest.assets.map(async (asset) => {
-            const data = await verified(assetUrl(base, asset.path), asset.hash, asset.size);
+            const url = resolveAsset(asset.path);
+            if (contentAddressed) {
+                url.searchParams.set("hash", asset.hash);
+            }
+            const data = await verified(url, asset.hash, asset.size);
             // Server sanitization re-encodes every pack texture as PNG.
             const src = URL.createObjectURL(
                 new Blob([new Uint8Array(data)], { type: "image/png" })
@@ -204,4 +234,36 @@ export async function loadResourcePacks(
         registries,
         assets,
     };
+}
+
+export async function getResourcePackFingerprint(
+    websocketUrl: string
+): Promise<string> {
+    return (await fetchManifest(websocketUrl)).fingerprint;
+}
+
+export async function loadResourcePacks(
+    websocketUrl: string
+): Promise<LoadedResourcePacks> {
+    const base = httpBase(websocketUrl);
+    const manifest = await fetchManifest(websocketUrl);
+    const bundled = await fetchBundledBaseManifest();
+    if (bundled && bundled.fingerprint === manifest.fingerprint) {
+        console.debug("Using client-bundled base pack", manifest.fingerprint.slice(0, 12));
+        return materializePack(
+            bundled,
+            bundledUrl(bundled.visuals.url),
+            bundledUrl(bundled.registries.url),
+            bundledAssetUrl,
+            false
+        );
+    }
+
+    return materializePack(
+        manifest,
+        packUrl(base, manifest.visuals.url),
+        packUrl(base, manifest.registries.url),
+        (path) => assetUrl(base, path),
+        true
+    );
 }
