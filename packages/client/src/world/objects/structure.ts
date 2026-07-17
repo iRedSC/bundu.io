@@ -61,6 +61,8 @@ export class Structure extends GameObject {
     private hasHealth = false;
     /** Top-level part roots promoted for world zIndex sorting via LayeredRenderer. */
     private worldLayers: Container[] = [];
+    /** Authored sky-hole radius scales (0.5 × spriteScale × structure scale). */
+    private skyHoleRadiusScales: number[] = [];
     /** World-space overlays synced like healthBar (placement invalid mark). */
     private syncedOverlays: Container[] = [];
     private visuals: ContaineredSprite[] = [];
@@ -156,6 +158,16 @@ export class Structure extends GameObject {
             visual.alpha = alpha;
             visual.sprite.tint = tint;
         }
+    }
+
+    /** Soft discs this structure punches from the sky multiply overlay. */
+    skyHoles(): { x: number; y: number; radius: number }[] {
+        const scale = Math.abs(this.container.scale.x);
+        return this.skyHoleRadiusScales.map((radiusScale) => ({
+            x: this.position.x,
+            y: this.position.y,
+            radius: 0.5 * radiusScale * scale,
+        }));
     }
 
     setHealth(health: number, maxHealth: number, time?: number) {
@@ -299,11 +311,19 @@ export class Structure extends GameObject {
         parts: Map<string, PartNode>
     ): void {
         this.worldLayers = [];
+        this.skyHoleRadiusScales = [];
         for (const part of def.parts) {
             if (part.parent) continue;
             const node = parts.get(part.name);
             if (!node) continue;
             node.root.removeFromParent();
+            if (part.skyUndo) {
+                // Radius only — soft discs are baked into the sky mask.
+                this.skyHoleRadiusScales.push(part.spriteScale ?? 1);
+                node.root.destroy({ children: true });
+                parts.delete(part.name);
+                continue;
+            }
             node.root.zIndex = part.zIndex ?? DEFAULT_STRUCTURE_Z;
             this.worldLayers.push(node.root);
         }
@@ -363,6 +383,7 @@ export class Structure extends GameObject {
         this.animationManager.remove(this);
         // Abandon old world layers; LayeredRenderer.replace destroys orphans.
         this.worldLayers = [];
+        this.skyHoleRadiusScales = [];
         this.visuals = [];
         for (const child of this.container.removeChildren()) {
             child.destroy({ children: true });

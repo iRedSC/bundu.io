@@ -7,6 +7,7 @@ import { hit, hitRotation } from "./animations/hit";
 import { hurt } from "./animations/hurt";
 import { lunge } from "./animations/lunge";
 import { place } from "./animations/place";
+import { fireGlowAnim } from "./animations/fire_glow";
 import { rotting } from "./animations/rotting";
 import { spikeAttack } from "./animations/spike_attack";
 import { treeSway } from "./animations/tree_sway";
@@ -55,6 +56,8 @@ export function createPreset(
             return eat(nodes, ctx);
         case "rotting":
             return rotting(nodes, ctx);
+        case "fire_glow":
+            return fireGlowAnim(nodes, ctx);
         default:
             throw new Error(`Unknown anim preset: ${def satisfies never}`);
     }

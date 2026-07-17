@@ -182,6 +182,13 @@ export function loadConfigs() {
         "bundu",
         "gameplay.rotting.claim_weapon"
     );
+    for (const id of Object.keys(gameplay.temperature.nearFire.warmthByStructure)) {
+        registries.structure.resolve(
+            id,
+            "bundu",
+            "gameplay.temperature.near_fire.warmth"
+        );
+    }
     registries.resource.resolveSet(
         gameplay.worldgen.resources,
         "bundu",

@@ -1,4 +1,5 @@
 import { Application, type Renderer } from "pixi.js";
+import "pixi.js/advanced-blend-modes";
 import {
     receiver,
     setupGUIPacketReceiving,
@@ -225,6 +226,8 @@ async function main() {
         backgroundColor: 0x0d5b73,
         antialias: false,
         autoDensity: true,
+        // Required for advanced blend modes (e.g. fire sky_undo `divide`).
+        useBackBuffer: true,
     });
     document.oncontextmenu = () => false;
 
@@ -242,7 +245,7 @@ async function main() {
         await initDevtools({ app });
     }
 
-    const world = new World(viewport);
+    const world = new World(viewport, app.renderer);
     setupPacketReceiving(receiver, world);
 
     if (__DEBUG__) {

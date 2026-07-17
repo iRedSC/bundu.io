@@ -52,6 +52,12 @@ function assembleSprites(
         visual.anchor.set(anchor.x, anchor.y);
         visual.scale.set(part.spriteScale ?? 1);
         if (!sprite) visual.renderable = false;
+        if (part.blendMode !== undefined) {
+            // Set on root (inheritance) and the sprite — advanced blends need the renderable.
+            nodeRoot.blendMode = part.blendMode;
+            visual.blendMode = part.blendMode;
+            visual.sprite.blendMode = part.blendMode;
+        }
 
         let attach: PartNode["attach"];
         if (part.attach) {

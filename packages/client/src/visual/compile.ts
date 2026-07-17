@@ -4,6 +4,7 @@ import type {
     AnimPreset,
     ObjectDef,
     OcclusionDef,
+    PartBlendMode,
     PartDef,
     PartOverride,
     SlotDef,
@@ -33,8 +34,17 @@ const ANIM_PRESETS = new Set<AnimPreset>([
     "block",
     "eat",
     "rotting",
+    "fire_glow",
 ]);
 const VISUAL_FILTERS = new Set(["grayscale"]);
+const PART_BLEND_MODES = new Set<PartBlendMode>([
+    "normal",
+    "add",
+    "multiply",
+    "screen",
+    "divide",
+    "erase",
+]);
 
 function record(value: unknown, path: string): RawDef {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -72,6 +82,20 @@ function optionalNumber(value: unknown, path: string): number | undefined {
 
 function optionalBoolean(value: unknown, path: string): boolean | undefined {
     return value === undefined ? undefined : boolean(value, path);
+}
+
+function optionalBlendMode(
+    value: unknown,
+    path: string
+): PartBlendMode | undefined {
+    if (value === undefined) return undefined;
+    const mode = string(value, path);
+    if (!PART_BLEND_MODES.has(mode as PartBlendMode)) {
+        throw new Error(
+            `${path}: unknown blendMode "${mode}" (expected ${[...PART_BLEND_MODES].join(", ")})`
+        );
+    }
+    return mode as PartBlendMode;
 }
 
 function point(value: unknown, path: string): { x: number; y: number } | undefined {
@@ -183,6 +207,8 @@ function compilePart(name: string, value: unknown, path: string): PartDef {
         attachAnchor: point(raw.attachAnchor, `${path}.attachAnchor`),
         alpha: optionalNumber(raw.alpha, `${path}.alpha`),
         visible: optionalBoolean(raw.visible, `${path}.visible`),
+        blendMode: optionalBlendMode(raw.blendMode, `${path}.blendMode`),
+        skyUndo: optionalBoolean(raw.skyUndo, `${path}.skyUndo`),
     };
 }
 

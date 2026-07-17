@@ -2,7 +2,6 @@ import {
     Particle,
     ParticleContainer,
     type Container,
-    type Texture,
 } from "pixi.js";
 import type { NumberRange, ParticleBurst } from "./types";
 
@@ -12,6 +11,7 @@ type ActiveParticle = {
     velocityX: number;
     velocityY: number;
     gravity: number;
+    gravityX: number;
     friction: number;
     motionEndAt: number;
     spin: number;
@@ -30,13 +30,13 @@ const random = (range: NumberRange): number => {
 };
 
 export class ParticleSystem {
-    private readonly containers = new Map<Texture, ParticleContainer>();
+    private readonly containers = new Map<string, ParticleContainer>();
     private readonly active: ActiveParticle[] = [];
 
     constructor(private readonly parent: Container) {}
 
     burst(options: ParticleBurst): void {
-        const container = this.getContainer(options.texture);
+        const container = this.getContainer(options);
         const spread = options.spread ?? 0;
 
         for (let i = 0; i < options.count; i++) {
@@ -53,6 +53,7 @@ export class ParticleSystem {
                 rotation: Math.random() * Math.PI * 2,
                 scaleX: scale,
                 scaleY: scale,
+                tint: options.tint ?? 0xffffff,
             });
 
             container.addParticle(view);
@@ -62,6 +63,7 @@ export class ParticleSystem {
                 velocityX: Math.cos(direction) * speed,
                 velocityY: Math.sin(direction) * speed,
                 gravity: options.gravity ?? 0,
+                gravityX: options.gravityX ?? 0,
                 friction: options.friction ?? 0,
                 motionEndAt: options.motionEndAt ?? 1,
                 spin: random(options.spin ?? 0),
@@ -94,6 +96,7 @@ export class ParticleSystem {
 
             const progress = particle.age / particle.lifetime;
             if (progress < particle.motionEndAt) {
+                particle.velocityX += particle.gravityX * deltaSeconds;
                 particle.velocityY += particle.gravity * deltaSeconds;
                 const friction = Math.exp(-particle.friction * deltaSeconds);
                 particle.velocityX *= friction;
@@ -143,12 +146,15 @@ export class ParticleSystem {
         this.containers.clear();
     }
 
-    private getContainer(texture: Texture): ParticleContainer {
-        const existing = this.containers.get(texture);
+    private getContainer(options: ParticleBurst): ParticleContainer {
+        const blendMode = options.blendMode ?? "normal";
+        const zIndex = options.zIndex ?? 20;
+        const key = `${options.texture.uid}:${blendMode}:${zIndex}`;
+        const existing = this.containers.get(key);
         if (existing) return existing;
 
         const container = new ParticleContainer({
-            texture,
+            texture: options.texture,
             dynamicProperties: {
                 position: true,
                 rotation: true,
@@ -156,9 +162,10 @@ export class ParticleSystem {
                 color: true,
             },
         });
-        container.zIndex = 20;
+        container.zIndex = zIndex;
+        container.blendMode = blendMode;
         this.parent.addChild(container);
-        this.containers.set(texture, container);
+        this.containers.set(key, container);
         return container;
     }
 }

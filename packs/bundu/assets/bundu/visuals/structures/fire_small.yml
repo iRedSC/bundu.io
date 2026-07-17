@@ -1,0 +1,6 @@
+id: fire_small
+extends: fire
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/crafting/fire_small.svg
