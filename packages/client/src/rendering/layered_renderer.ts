@@ -18,6 +18,15 @@ export class LayeredRenderer {
         this.byObject.delete(id);
     }
 
+    /** Destroy one tracked display object without clearing the rest of the id. */
+    remove(id: number, container: Container): void {
+        const containers = this.byObject.get(id);
+        if (!containers?.has(container)) return;
+        containers.delete(container);
+        container.destroy({ children: true });
+        if (containers.size === 0) this.byObject.delete(id);
+    }
+
     add(id: number, ...containers: Container[]): void {
         let set = this.byObject.get(id);
         if (!set) {

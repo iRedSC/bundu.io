@@ -29,6 +29,7 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.SetRotation, world.rotateObject);
     receiver.on(ServerPacket.DeleteObjects, world.deleteObjects);
     receiver.on(ServerPacket.LoadGround, world.loadGround);
+    receiver.on(ServerPacket.UnloadGround, world.unloadGround);
     receiver.on(ServerPacket.ClientConnectionInfo, world.clientConnectionInfo);
     receiver.on(ServerPacket.UpdateEquipment, world.updateEquipment);
     receiver.on(ServerPacket.ChatMessage, world.chatMessage);

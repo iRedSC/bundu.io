@@ -2,7 +2,9 @@ import {
     FOOTPRINT_CIRCLE_RADIUS,
     TILE_SIZE,
     WORLD_BOUNDS,
+    WORLD_TILES,
     deciToWorld,
+    worldToTile,
 } from "@bundu/shared/tiles";
 import {
     FREECAM_MAX_VIEW_EXTENT,
@@ -19,7 +21,7 @@ import {
 } from "@bundu/shared";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
-import { Point, Text, type Renderer } from "pixi.js";
+import { Point, Text, type Container, type Renderer } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
@@ -76,8 +78,14 @@ type LoadGroundItem = Extract<
 type LoadAnimal = Extract<ServerPacket.LoadObject, { type: typeof GameObjectData.AnimalType }>;
 
 const PLACEMENT_GHOST_RENDER_ID = -11;
+const GROUND_RENDER_ID = -10;
 const PLACEMENT_GHOST_TINT = 0xff5555;
 const PLACEMENT_GHOST_NORMAL_TINT = 0xffffff;
+
+/** Freecam delete-mode hover outline (world pixels). */
+export type EditorDeleteHover =
+    | { kind: "circle"; x: number; y: number; radius: number }
+    | { kind: "rect"; x: number; y: number; w: number; h: number };
 
 function deciPoint(x: number, y: number): Point {
     return new Point(deciToWorld(x), deciToWorld(y));
@@ -103,6 +111,16 @@ export class World {
     /** Hold Tab: treat every structure as hovered for health bars. */
     private showAllHover = false;
     private readonly pendingObjectStates = new Map<number, EntityStateSnapshot>();
+    /** Client ground patches keyed for UnloadGround matching (LIFO on dupes). */
+    private readonly groundPatches: {
+        type: number;
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        key: string;
+        gfx: Container;
+    }[] = [];
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
 
@@ -130,7 +148,8 @@ export class World {
 
         const ids = Array.from(this.objects.all(), (object) => object.id);
         for (const id of ids) this.removeClientObject(id);
-        this.renderer.delete(-10);
+        this.renderer.delete(GROUND_RENDER_ID);
+        this.groundPatches.length = 0;
         this.shadows.clear();
         this.particles.clear();
         this.clearPlacementGhost();
@@ -676,18 +695,101 @@ export class World {
 
     loadGround = (packet: ServerPacket.LoadGround) => {
         for (const [type, x, y, w, h] of packet.groundData) {
-            this.renderer.add(
-                -10,
-                createGround(
-                    type,
-                    x * TILE_SIZE,
-                    y * TILE_SIZE,
-                    w * TILE_SIZE,
-                    h * TILE_SIZE
-                )
+            const gfx = createGround(
+                type,
+                x * TILE_SIZE,
+                y * TILE_SIZE,
+                w * TILE_SIZE,
+                h * TILE_SIZE
             );
+            this.groundPatches.push({
+                type,
+                x,
+                y,
+                w,
+                h,
+                key: `${type},${x},${y},${w},${h}`,
+                gfx,
+            });
+            this.renderer.add(GROUND_RENDER_ID, gfx);
         }
     };
+
+    unloadGround = (packet: ServerPacket.UnloadGround) => {
+        for (const [type, x, y, w, h] of packet.groundData) {
+            const key = `${type},${x},${y},${w},${h}`;
+            for (let i = this.groundPatches.length - 1; i >= 0; i--) {
+                const patch = this.groundPatches[i];
+                if (!patch || patch.key !== key) continue;
+                this.groundPatches.splice(i, 1);
+                this.renderer.remove(GROUND_RENDER_ID, patch.gfx);
+                break;
+            }
+        }
+    };
+
+    /**
+     * What AdminDeleteAt would hit under a tile — for delete-mode hover outline.
+     * Priority matches server: solid → animal → topmost editable ground.
+     * Solids use origin-tile match (not full collision radius) so large visuals
+     * don't steal hover from ground patches on neighboring tiles.
+     */
+    pickEditorDeleteHover(tx: number, ty: number): EditorDeleteHover | null {
+        for (const object of this.objects.all()) {
+            if (!(object instanceof Structure)) continue;
+            if (
+                worldToTile(object.position.x) !== tx ||
+                worldToTile(object.position.y) !== ty
+            ) {
+                continue;
+            }
+            return {
+                kind: "circle",
+                x: object.position.x,
+                y: object.position.y,
+                radius: Math.max(object.collisionRadius, TILE_SIZE / 2),
+            };
+        }
+
+        for (const object of this.objects.all()) {
+            if (!(object instanceof Animal)) continue;
+            if (
+                worldToTile(object.position.x) !== tx ||
+                worldToTile(object.position.y) !== ty
+            ) {
+                continue;
+            }
+            return {
+                kind: "circle",
+                x: object.position.x,
+                y: object.position.y,
+                radius: Math.max(object.collisionRadius, TILE_SIZE / 2),
+            };
+        }
+
+        for (let i = this.groundPatches.length - 1; i >= 0; i--) {
+            const patch = this.groundPatches[i];
+            if (!patch) continue;
+            if (patch.w >= WORLD_TILES && patch.h >= WORLD_TILES) continue;
+            if (
+                tx < patch.x ||
+                ty < patch.y ||
+                tx >= patch.x + patch.w ||
+                ty >= patch.y + patch.h
+            ) {
+                continue;
+            }
+            return {
+                kind: "rect",
+                x: patch.x * TILE_SIZE,
+                y: patch.y * TILE_SIZE,
+                w: patch.w * TILE_SIZE,
+                h: patch.h * TILE_SIZE,
+            };
+        }
+
+        return null;
+    }
 
     chatMessage = ({ id, message }: ServerPacket.ChatMessage) => {
         const player = this.objects.get(id);

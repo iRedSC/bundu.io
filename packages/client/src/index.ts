@@ -9,6 +9,7 @@ import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
 import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
+import { createAdminEditor } from "./admin/editor";
 import { initAssets } from "./assets/load";
 import {
     getResourcePackFingerprint,
@@ -247,9 +248,6 @@ async function main() {
 
     const world = new World(viewport, app.renderer);
     setupPacketReceiving(receiver, world);
-    receiver.on(ServerPacket.FreecamMode, ({ enabled }) => {
-        world.setFreecamMode(enabled);
-    });
 
     if (__DEBUG__) {
         const { startConfigHotReload } = await import(
@@ -270,7 +268,7 @@ async function main() {
         getUsername: () => nameInput.value.trim(),
         resetLocalState: () => {
             clientTime.resetServerSync();
-            world.setFreecamMode(false);
+            setFreecamUi(false);
             world.clear();
             gui.health.update(0);
             gui.hunger.update(0);
@@ -305,6 +303,24 @@ async function main() {
             setMenuVisible(true);
             nameInput.focus();
         },
+    });
+
+    const editor = createAdminEditor(
+        session.sendPacket,
+        (screenX, screenY) => viewport.toLocal({ x: screenX, y: screenY }),
+        world,
+        viewport
+    );
+    app.stage.addChild(editor.container);
+
+    const setFreecamUi = (enabled: boolean) => {
+        world.setFreecamMode(enabled);
+        gui.container.visible = !enabled;
+        editor.setActive(enabled);
+    };
+
+    receiver.on(ServerPacket.FreecamMode, ({ enabled }) => {
+        setFreecamUi(enabled);
     });
 
     world.onViewBounds = (bounds) => {
@@ -396,6 +412,7 @@ async function main() {
         world.tick(Math.min(ticker.deltaMS, 50), now);
         AnimationManagers.UI.update(now);
         gui.tick(now);
+        editor.tick(now);
         const local = world.objects.get(world.user ?? -1);
         gui.craftingMenu.craftingRecipeId =
             local instanceof Player ? local.craftingRecipeId : null;
@@ -409,6 +426,7 @@ async function main() {
         nameInput.removeEventListener("keydown", handleNameKey);
         input.destroy();
         world.destroy();
+        editor.destroy();
         gui.destroy();
         destroyViewport(viewport);
         document.oncontextmenu = null;
