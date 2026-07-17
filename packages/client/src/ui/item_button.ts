@@ -22,9 +22,20 @@ export type ItemButtonColors = {
     rightDown: number;
 };
 
+/** Structural surface shared by inventory ItemButton and admin palette slots. */
+export type ItemButtonLike = {
+    background: { rotation: number; position: { y: number }; tint: number };
+    itemDisplay: { position: { y: number } };
+    button: { scale: { x: number; set: (value: number) => void } };
+    item: number | null;
+    hovering: boolean;
+    down: boolean;
+    rightDown: boolean;
+};
+
 /** Tween hover/press/idle scale+tint+wobble from interaction state. */
 export function tickItemButton(
-    button: ItemButton,
+    button: ItemButtonLike,
     colors: ItemButtonColors,
     restY = 0,
     restScale = 1,

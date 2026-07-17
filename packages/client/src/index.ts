@@ -35,10 +35,6 @@ const GAME_WS_URL =
 const PACK_SYNC_ATTEMPTS = 5;
 const PACK_SYNC_RETRY_MS = 1000;
 
-type ClientDebugHandle = {
-    getPlaceStructureId(): number | null;
-};
-
 const app = new Application<Renderer<HTMLCanvasElement>>();
 globalThis.__PIXI_APP__ = app;
 
@@ -236,12 +232,9 @@ async function main() {
     app.stage.addChild(viewport);
 
     // Debug tools / overlay — omitted entirely from prod bundles.
-    let debug: ClientDebugHandle = {
-        getPlaceStructureId: () => null,
-    };
     if (__DEBUG__) {
         const { mountClientDebug } = await import("./debug/tools");
-        debug = mountClientDebug(viewport);
+        mountClientDebug(viewport);
         const { initDevtools } = await import("@pixi/devtools");
         await initDevtools({ app });
     }
@@ -349,7 +342,6 @@ async function main() {
             viewport.toLocal({ x: screenX, y: screenY }),
         setCursorWorld: (position) => world.setCursorWorld(position),
         isInGame: () => session.isInGame(),
-        getPlaceStructureId: () => debug.getPlaceStructureId(),
         isOverInventory: () => gui.inventory.isInteracting,
         isPlacementAllowed: () => world.isPlacementAllowed(),
         isFreecam: () => world.camera.isFreecam(),

@@ -22,13 +22,10 @@ import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { gameRegistries } from "../configs/registries.js";
 import type { GameObject, World } from "../engine";
 import { System } from "../engine";
+import { tryAddResource } from "../game_objects/add_resource.js";
 import { Ground } from "../game_objects/ground.js";
-import { Resource } from "../game_objects/resource.js";
-import {
-    makeTileEntity,
-    tileEntityPhysics,
-} from "../game_objects/tile_entity.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
+import { topGroundAt } from "../systems/ground_at.js";
 import { canUseEditor } from "./auth.js";
 import {
     beginStroke,
@@ -76,27 +73,6 @@ function clampGroundRect(
     return { x: x0, y: y0, w: nw, h: nh };
 }
 
-function tryAddResource(
-    world: World,
-    id: RegistryId<"resource">,
-    tx: number,
-    ty: number,
-    rot: TileRot,
-    variant: string
-): GameObject | null {
-    const origin = { x: tx, y: ty };
-    const tile = makeTileEntity(origin, rot);
-    if (!world.context.occupancy.canPlace(tile.occupied)) return null;
-
-    const object = new Resource(
-        tileEntityPhysics(origin, rot),
-        { id, variant },
-        tile
-    );
-    world.addObject(object);
-    return object;
-}
-
 function resolveVariantName(variantId: number): string {
     try {
         return getVariantName(variantId) ?? "base";
@@ -137,22 +113,6 @@ export class AdminEditorSystem extends System<GameEventMap> {
         };
     }
 
-    placeStructureAt = (
-        playerId: number,
-        { structureId, x, y, rotation }: ClientPacket.PlaceStructureAt
-    ) => {
-        const player = this.world.getObject(playerId);
-        if (!player || !canUseEditor(player)) return;
-        this.trigger(GameEvent.PlaceStructure, {
-            structureId,
-            x,
-            y,
-            rotation,
-            resultTo: player,
-            placedBy: player,
-        });
-    };
-
     adminStrokeBegin = (playerId: number, _packet: ClientPacket.AdminStrokeBegin) => {
         const player = this.world.getObject(playerId);
         if (!player || !canUseEditor(player)) return;
@@ -180,11 +140,11 @@ export class AdminEditorSystem extends System<GameEventMap> {
     adminSaveMap = (playerId: number, _packet: ClientPacket.AdminSaveMap) => {
         const player = this.world.getObject(playerId);
         if (!player || !canUseEditor(player)) return;
-        const { yaml, path } = saveMapYaml(this.world);
+        const { yaml } = saveMapYaml(this.world);
         this.world.context.playerPacketManager.set(
             playerId,
             ServerPacket.AdminMapYaml,
-            { yaml, saved: true, path }
+            { yaml, saved: true, path: "" }
         );
     };
 
@@ -300,8 +260,10 @@ export class AdminEditorSystem extends System<GameEventMap> {
             return;
         }
 
-        const ground = this.topGroundAt(x, y);
-        if (!ground) return;
+        const top = topGroundAt(this.world, x, y, { editableOnly: true });
+        if (!top) return;
+        const ground = this.world.getObject(top.objectId);
+        if (!ground?.active) return;
         const snapshot = trySnapshot(ground);
         const data = ground.get(GroundData);
         const packet: GroundPacket = [
@@ -324,7 +286,7 @@ export class AdminEditorSystem extends System<GameEventMap> {
     ) => {
         const player = this.world.getObject(playerId);
         if (!player || !canUseEditor(player)) return;
-        setAnimalsFrozen(frozen);
+        setAnimalsFrozen(playerId, frozen);
     };
 
     adminKillAnimals = (playerId: number, _packet: ClientPacket.AdminKillAnimals) => {
@@ -406,23 +368,6 @@ export class AdminEditorSystem extends System<GameEventMap> {
         this.world.addObject(object);
         this.broadcastGround(packet);
         return object;
-    }
-
-    /** Topmost editable ground covering a tile (skips the world base floor). */
-    private topGroundAt(tx: number, ty: number): GameObject | undefined {
-        const grounds = this.world.query([GroundData]);
-        for (let i = grounds.length - 1; i >= 0; i--) {
-            const ground = grounds[i];
-            if (!ground?.active) continue;
-            const data = ground.get(GroundData);
-            const { pos, w, h } = data.collider;
-            if (w >= WORLD_TILES && h >= WORLD_TILES) continue;
-            if (tx < pos.x || ty < pos.y || tx >= pos.x + w || ty >= pos.y + h) {
-                continue;
-            }
-            return ground;
-        }
-        return undefined;
     }
 
     private broadcastGround(packet: GroundPacket) {

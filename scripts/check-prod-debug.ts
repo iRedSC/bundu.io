@@ -6,7 +6,6 @@ import { Glob } from "bun";
 
 const markers = [
     // Debug tools panel
-    "Place wood wall",
     "debug-tools",
     "mountClientDebug",
     "data-bundu-debug",

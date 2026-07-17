@@ -36,7 +36,8 @@ export type RegistryProjection<K extends RegistryName = RegistryName> = {
 };
 
 export type RegistrySetProjection = {
-    format: 1;
+    /** 2: tags are `{ id, values, category }` objects (was format-1 tuples). */
+    format: 2;
     registries: {
         [K in RegistryName]: RegistryProjection<K>;
     };
@@ -308,7 +309,7 @@ export function registrySetProjection(
     registries: { [K in RegistryName]: Registry<K> }
 ): RegistrySetProjection {
     return {
-        format: 1,
+        format: 2,
         registries: Object.fromEntries(
             REGISTRY_NAMES.map((name) => [name, registries[name].toProjection()])
         ) as RegistrySetProjection["registries"],
@@ -318,7 +319,7 @@ export function registrySetProjection(
 export function hydrateRegistrySet(projection: RegistrySetProjection): {
     [K in RegistryName]: Registry<K>;
 } {
-    if (projection.format !== 1) {
+    if (projection.format !== 2) {
         throw new Error(`Unsupported registry projection format ${projection.format}`);
     }
     return Object.fromEntries(

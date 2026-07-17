@@ -27,8 +27,8 @@ export class Camera {
             minScale: options.minZoom ?? PLAY_MIN_ZOOM,
             maxScale: options.maxZoom ?? PLAY_MAX_ZOOM,
         });
-        // No `center` — zoom toward the pointer (not a fixed world point).
-        viewport.wheel({ percent: 0.1 });
+        // Play mode zooms toward screen center while the camera follows the player.
+        viewport.wheel({ percent: 0.1, center: viewport.center });
     }
 
     follow(target: BasicPoint | null) {
@@ -58,7 +58,10 @@ export class Camera {
                 maxScale: PLAY_MAX_ZOOM,
             });
             this.viewport.plugins.remove("wheel");
-            this.viewport.wheel({ percent: 0.1 });
+            this.viewport.wheel({
+                percent: 0.1,
+                center: this.viewport.center,
+            });
             if (this.viewport.scale.x < PLAY_MIN_ZOOM) {
                 // Keep current view center while restoring play zoom.
                 this.viewport.setZoom(PLAY_MIN_ZOOM, true);

@@ -184,13 +184,7 @@ class PaletteSlot {
     }
 
     tick(now?: number) {
-        tickItemButton(
-            this as never,
-            SLOT_COLORS,
-            0,
-            this.selected ? 0.92 : 1,
-            now
-        );
+        tickItemButton(this, SLOT_COLORS, 0, this.selected ? 0.92 : 1, now);
     }
 
     destroy() {
@@ -270,7 +264,6 @@ export function createPalette(
 
     const slots: PaletteSlot[] = [];
     let entries: PaletteEntry[] = [];
-    let layoutWidth = ITEM_BUTTON_SIZE + EDGE_PAD * 2;
 
     const categoryTabs: { id: EditorCategory; chip: TabChip }[] = [];
     let tagChips: { tag: string | null; chip: TabChip }[] = [];
@@ -360,7 +353,9 @@ export function createPalette(
                 if (!entry) return;
                 state.selected = entry;
                 for (const other of slots) {
-                    other.selected = other.entry?.id === entry.id;
+                    other.selected =
+                        other.entry?.id === entry.id &&
+                        other.entry.kind === entry.kind;
                 }
                 onChange();
             };
@@ -373,13 +368,13 @@ export function createPalette(
         rebuildTagRow();
         entries = listEntries(state.category, state.tagFilter);
 
-        const categoryWidth = layoutChipRow(
+        layoutChipRow(
             categoryTabs.map(({ id, chip }) => ({
                 chip,
                 active: id === state.category,
             }))
         );
-        const tagWidth = layoutChipRow(
+        layoutChipRow(
             tagChips.map(({ tag, chip }) => ({
                 chip,
                 active: tag === state.tagFilter,
@@ -387,15 +382,16 @@ export function createPalette(
         );
 
         const rows = rowsPerColumn();
-        const cols = Math.max(1, Math.ceil(Math.max(entries.length, 1) / rows));
         ensureSlots(entries.length);
 
-        if (
-            state.selected &&
-            !entries.some((entry) => entry.id === state.selected?.id)
-        ) {
-            state.selected = entries[0] ?? null;
-        } else if (!state.selected) {
+        const selectedStillVisible =
+            state.selected !== null &&
+            entries.some(
+                (entry) =>
+                    entry.id === state.selected?.id &&
+                    entry.kind === state.selected.kind
+            );
+        if (!selectedStillVisible) {
             state.selected = entries[0] ?? null;
         }
 
@@ -417,15 +413,11 @@ export function createPalette(
             const row = i % rows;
             slot.button.visible = true;
             slot.setEntry(entry);
-            slot.selected = entry.id === state.selected?.id;
+            slot.selected =
+                entry.id === state.selected?.id &&
+                entry.kind === state.selected.kind;
             slot.button.position.set(col * SLOT_STRIDE, row * SLOT_STRIDE);
         }
-
-        layoutWidth = Math.max(
-            categoryWidth + EDGE_PAD * 2,
-            tagWidth + EDGE_PAD * 2,
-            EDGE_PAD * 2 + cols * SLOT_STRIDE - SLOT_GAP
-        );
     }
 
     function resize() {
@@ -446,8 +438,14 @@ export function createPalette(
                 if (slot.button.visible) slot.tick(now);
             }
         },
-        containsPoint(screenX: number, _screenY: number) {
-            return screenX >= 0 && screenX <= layoutWidth;
+        containsPoint(screenX: number, screenY: number) {
+            const bounds = container.getBounds();
+            return (
+                screenX >= bounds.x - 8 &&
+                screenX <= bounds.x + bounds.width + 8 &&
+                screenY >= bounds.y - 8 &&
+                screenY <= bounds.y + bounds.height + 8
+            );
         },
         destroy() {
             window.removeEventListener("resize", resize);

@@ -59,7 +59,6 @@ export class AdminInput {
     private readonly onPointerMove: (event: PointerEvent) => void;
     private readonly onPointerCancel: (event: PointerEvent) => void;
     private readonly onKeyDown: (event: KeyboardEvent) => void;
-    private readonly onWheel: (event: WheelEvent) => void;
 
     private painting = false;
     private strokeOpen = false;
@@ -76,14 +75,12 @@ export class AdminInput {
         this.onPointerMove = (event) => this.handlePointerMove(event);
         this.onPointerCancel = () => this.cancelStroke();
         this.onKeyDown = (event) => this.handleKeyDown(event);
-        this.onWheel = (event) => this.handleWheel(event);
 
         document.addEventListener("pointerdown", this.onPointerDown);
         document.addEventListener("pointerup", this.onPointerUp);
         document.addEventListener("pointermove", this.onPointerMove);
         document.addEventListener("pointercancel", this.onPointerCancel);
         document.addEventListener("keydown", this.onKeyDown);
-        document.addEventListener("wheel", this.onWheel, { passive: true });
     }
 
     destroy() {
@@ -92,7 +89,6 @@ export class AdminInput {
         document.removeEventListener("pointermove", this.onPointerMove);
         document.removeEventListener("pointercancel", this.onPointerCancel);
         document.removeEventListener("keydown", this.onKeyDown);
-        document.removeEventListener("wheel", this.onWheel);
         this.cancelStroke();
         this.facade.ghost.clear();
     }
@@ -191,15 +187,6 @@ export class AdminInput {
 
         if (event.key !== "r" && event.key !== "R") return;
         event.preventDefault();
-        const state = this.facade.getState();
-        state.rotation = cycleRotation(state.rotation);
-        this.syncGhost();
-    }
-
-    private handleWheel(event: WheelEvent) {
-        if (!this.facade.isActive()) return;
-        if (this.facade.isOverUi(event.clientX, event.clientY)) return;
-        if (event.deltaY === 0) return;
         const state = this.facade.getState();
         state.rotation = cycleRotation(state.rotation);
         this.syncGhost();

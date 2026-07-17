@@ -625,6 +625,10 @@ export class World {
     }
 
     private updatePlacementGhost() {
+        if (this.camera.isFreecam()) {
+            this.clearPlacementGhost();
+            return;
+        }
         const player = this.objects.get(this.user ?? -1);
         const placement =
             player instanceof Player ? player.getStructureGhost() : null;

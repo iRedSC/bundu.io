@@ -22,10 +22,8 @@ import { Structure } from "../game_objects/structure.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
 import { clearEditorHistory } from "./history.js";
 
-const defaultFilename = path.resolve(
-    import.meta.dir,
-    "../../../../.cache/editor-map.yml"
-);
+const cacheRoot = path.resolve(import.meta.dir, "../../../../.cache");
+const defaultFilename = path.join(cacheRoot, "editor-map.yml");
 
 type GroundPacket = [
     type: number,
@@ -40,8 +38,23 @@ type Trigger = <T extends keyof GameEventMap>(
     data: GameEventMap[T]
 ) => void;
 
+/**
+ * Resolve the editor map write path.
+ * Confined under `.cache/` — rejects `..` / absolute escapes.
+ */
 export function editorMapPath(): string {
-    return process.env.BUNDU_EDITOR_MAP ?? defaultFilename;
+    const raw = process.env.BUNDU_EDITOR_MAP;
+    if (!raw) return defaultFilename;
+    const resolved = path.resolve(cacheRoot, raw);
+    if (
+        resolved !== cacheRoot &&
+        !resolved.startsWith(cacheRoot + path.sep)
+    ) {
+        throw new Error(
+            `BUNDU_EDITOR_MAP must resolve under .cache/ (got ${raw})`
+        );
+    }
+    return resolved;
 }
 
 function shortLocation(location: string): string {
@@ -75,7 +88,14 @@ function yamlFields(
 export function exportMapYaml(world: World): string {
     const registries = gameRegistries();
     let baseGround = "ocean";
-    const groundItems: string[] = [];
+    const groundRows: {
+        id: number;
+        type: string;
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+    }[] = [];
     const resourceItems: string[] = [];
     const structureItems: string[] = [];
 
@@ -91,22 +111,27 @@ export function exportMapYaml(world: World): string {
             baseGround = type;
             continue;
         }
-        groundItems.push(
-            [
-                "  -",
-                ...yamlFields(
-                    [
-                        ["type", type],
-                        ["x", x],
-                        ["y", y],
-                        ["w", w],
-                        ["h", h],
-                    ],
-                    "    "
-                ),
-            ].join("\n")
-        );
+        groundRows.push({ id: object.id, type, x, y, w, h });
     }
+
+    // Stack order = entity id ascending (higher id paints on top).
+    groundRows.sort((a, b) => a.id - b.id);
+    const groundItems = groundRows.map((row) =>
+        [
+            "  -",
+            ...yamlFields(
+                [
+                    ["id", row.id],
+                    ["type", row.type],
+                    ["x", row.x],
+                    ["y", row.y],
+                    ["w", row.w],
+                    ["h", row.h],
+                ],
+                "    "
+            ),
+        ].join("\n")
+    );
 
     for (const object of world.query([ResourceData, Type, TileEntity])) {
         if (!object.active || !(object instanceof Resource)) continue;
@@ -169,6 +194,7 @@ export function saveMapYaml(world: World): { yaml: string; path: string } {
     const temporary = `${target}.tmp`;
     fs.writeFileSync(temporary, yaml);
     fs.renameSync(temporary, target);
+    console.info(`[admin] map saved to ${target}`);
     return { yaml, path: target };
 }
 

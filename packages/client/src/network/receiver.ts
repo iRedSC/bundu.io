@@ -44,9 +44,9 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.SetTimeOfDay, ({ period }) => {
         world.sky.setTime(period, AnimationManagers.World);
     });
-    receiver.on(ServerPacket.AdminMapYaml, ({ yaml, saved, path }) => {
+    receiver.on(ServerPacket.AdminMapYaml, ({ yaml, saved }) => {
         if (saved) {
-            window.alert(`Map saved to server:\n${path || "(unknown path)"}`);
+            window.alert("Map saved on server.");
             return;
         }
         downloadMapYaml(yaml);

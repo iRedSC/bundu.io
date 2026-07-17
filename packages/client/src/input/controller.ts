@@ -23,8 +23,6 @@ export type InputPlayerFacade = {
     screenToWorld(screenX: number, screenY: number): { x: number; y: number };
     setCursorWorld(position: { x: number; y: number }): void;
     isInGame(): boolean;
-    /** When set, left-click places this structure id at the cursor tile. */
-    getPlaceStructureId(): number | null;
     /** True when pointer is over inventory UI (skip attack/block). */
     isOverInventory(): boolean;
     /** Last ghost validation from the server (`undefined` = not yet known). */
@@ -189,18 +187,6 @@ export class InputController {
         }
         if (event.button !== 0) return;
 
-        const placeId = this.facade.getPlaceStructureId();
-        if (placeId !== null) {
-            const world = this.facade.screenToWorld(event.clientX, event.clientY);
-            this.sendPacket(ClientPacket.PlaceStructureAt, {
-                structureId: placeId,
-                x: worldToTile(world.x),
-                y: worldToTile(world.y),
-                rotation: this.placementRotation,
-            });
-            return;
-        }
-
         const player = this.facade.getLocalPlayer();
         if (player?.getStructureGhost()) {
             this.syncCursorFromScreen(event.clientX, event.clientY);
@@ -215,16 +201,14 @@ export class InputController {
 
     private handlePointerUp(event: PointerEvent) {
         if (!this.facade.isInGame()) return;
+        if (this.facade.isFreecam()) return;
         if (this.facade.getLocalPlayer()?.isCrafting) return;
         if (event.button === 2) {
             this.sendPacket(ClientPacket.Block, { stop: true });
         }
         if (event.button === 0) {
             this.stopPlacing();
-            if (
-                this.facade.getPlaceStructureId() === null &&
-                !this.facade.getLocalPlayer()?.getStructureGhost()
-            ) {
+            if (!this.facade.getLocalPlayer()?.getStructureGhost()) {
                 this.sendPacket(ClientPacket.Attack, { stop: true });
             }
         }

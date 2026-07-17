@@ -47,7 +47,7 @@ import { topGroundAt } from "./ground_at.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
 import { clearEditorHistory } from "../admin/history.js";
-import { setAnimalsFrozen } from "../admin/state.js";
+import { clearAnimalsFrozenFor } from "../admin/state.js";
 import { PlaceMode } from "@bundu/shared/inventory";
 import {
     pointToTile,
@@ -149,6 +149,8 @@ export class PlayerSystem extends System<GameEventMap> {
         const attributes = Attributes.get(player);
         if (attributes) clearEphemeralPlayerAttributeSources(attributes);
         clearEphemeralPlayerIntent(data);
+        clearAnimalsFrozenFor(player.id);
+        clearEditorHistory(player.id);
     }
 
     /**
@@ -186,6 +188,8 @@ export class PlayerSystem extends System<GameEventMap> {
         this.clearEating(target);
         const data = PlayerData.get(target);
         if (data) data.sessionId = undefined;
+        clearAnimalsFrozenFor(target.id);
+        clearEditorHistory(target.id);
         target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
         const { socketManager } = this.world.context;
@@ -788,7 +792,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = PlayerData.get(player);
         if (!data || !this.renderDistanceSystem) return;
         if (data.freecam) {
-            setAnimalsFrozen(false);
+            clearAnimalsFrozenFor(player.id);
             clearEditorHistory(player.id);
             this.renderDistanceSystem.exitFreecam(player);
             return;
