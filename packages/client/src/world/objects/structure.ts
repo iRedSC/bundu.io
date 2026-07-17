@@ -41,9 +41,12 @@ const HEALTH_BAR_DISPLAY_MS = 2_500;
 const HEALTH_BAR_ENEMY = 0xd94b4b;
 /** Matches local HUD health tint. */
 const HEALTH_BAR_FRIENDLY = 0x88fa57;
-/** Plus mark under friendly bars (colorblind cue). */
-const FRIENDLY_MARK_Y = HEALTH_BAR_Y + HEALTH_BAR_HEIGHT + 6;
-const FRIENDLY_MARK_ARM = 3;
+/** Person mark under friendly bars (colorblind ownership cue). */
+const FRIENDLY_PERSON_TOP = HEALTH_BAR_Y + HEALTH_BAR_HEIGHT + 4;
+const FRIENDLY_PERSON_HEAD_R = 2.75;
+const FRIENDLY_PERSON_BODY_W = 8;
+const FRIENDLY_PERSON_BODY_H = 6.5;
+const FRIENDLY_PERSON_GAP = 1;
 /** World zIndex when a top-level part omits `zIndex`. */
 const DEFAULT_STRUCTURE_Z = 10;
 
@@ -249,12 +252,26 @@ export class Structure extends GameObject {
                 .fill(fill);
         }
         if (this.friendly && this.hasHealth) {
-            // Horizontal + vertical arms of a small plus under the bar.
+            const headY = FRIENDLY_PERSON_TOP + FRIENDLY_PERSON_HEAD_R;
+            const bodyY =
+                FRIENDLY_PERSON_TOP +
+                FRIENDLY_PERSON_HEAD_R * 2 +
+                FRIENDLY_PERSON_GAP;
             this.healthBar
-                .rect(-FRIENDLY_MARK_ARM, FRIENDLY_MARK_Y - 1, FRIENDLY_MARK_ARM * 2, 2)
+                .circle(0, headY, FRIENDLY_PERSON_HEAD_R)
                 .fill(HEALTH_BAR_FRIENDLY);
+            // Shoulders-wide torso that tapers slightly (simple “person” glyph).
             this.healthBar
-                .rect(-1, FRIENDLY_MARK_Y - FRIENDLY_MARK_ARM, 2, FRIENDLY_MARK_ARM * 2)
+                .poly([
+                    -FRIENDLY_PERSON_BODY_W / 2,
+                    bodyY,
+                    FRIENDLY_PERSON_BODY_W / 2,
+                    bodyY,
+                    FRIENDLY_PERSON_BODY_W / 2 - 1.5,
+                    bodyY + FRIENDLY_PERSON_BODY_H,
+                    -FRIENDLY_PERSON_BODY_W / 2 + 1.5,
+                    bodyY + FRIENDLY_PERSON_BODY_H,
+                ])
                 .fill(HEALTH_BAR_FRIENDLY);
         }
     }
