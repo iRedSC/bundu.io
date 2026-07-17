@@ -14,6 +14,7 @@ import type {
     TileGeometry,
     TreeSwayData,
     BobData,
+    HitData,
     ContextualVisualDef,
     VisualContext,
     VisualDef,
@@ -276,7 +277,7 @@ function compileAnimations(value: unknown, path: string, parts: Set<string>): Re
             preset: preset as AnimPreset,
             parts: targets,
             autoplay: optionalBoolean(raw.autoplay, `${path}.${name}.autoplay`),
-            data: raw.data === undefined ? undefined : record(raw.data, `${path}.${name}.data`) as TreeSwayData | BobData,
+            data: raw.data === undefined ? undefined : record(raw.data, `${path}.${name}.data`) as TreeSwayData | BobData | HitData,
         } as AnimDef;
     }
     return result;

@@ -30,6 +30,8 @@ import type {
 import { EMPTY_ANIM_CONTEXT } from "../../visual/types";
 import type { AnimationManager } from "../../animation/runtime";
 import type { ParticleBurst } from "../../rendering/particles/types";
+import { ANIMATION } from "../../animation/animations";
+import { hitRotation } from "../../visual/animations/hit";
 
 const HEALTH_BAR_WIDTH = 48;
 const HEALTH_BAR_HEIGHT = 5;
@@ -144,6 +146,17 @@ export class Structure extends GameObject {
             y: this.position.y,
             radius: this.collisionRadius,
         });
+    }
+
+    /** Play hit wiggle scaled by strength (kick + knockback already clamped). */
+    playHit(angle: number, kickDegrees: number, knockback: number): void {
+        const animation = hitRotation(this, {
+            angle,
+            kickDegrees,
+            knockback,
+            onApply: () => this.syncWorldLayers(),
+        });
+        this.animationManager.set(this, ANIMATION.HIT, animation.run(), true);
     }
 
     /** Attach a world-space overlay that follows this structure (placement X). */

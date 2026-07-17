@@ -12,6 +12,7 @@ import { Animal } from "./objects/animal";
 import type ObjectContainer from "./object_container";
 import type { ParticleSystem } from "../rendering/particles/particle_system";
 import { structureHit } from "../visual/particles/structure_hit";
+import { hitFxFromStrength } from "../visual/animations/hit";
 import { Structure } from "./objects/structure";
 
 /** Combat visual FX packet handlers — attack, block, hurt. */
@@ -51,16 +52,20 @@ export class CombatFx {
         object.setEating(duration);
     };
 
-    hurt = ({ id, angle }: ServerPacket.HitEvent) => {
+    hurt = ({ id, angle, strength }: ServerPacket.HitEvent) => {
         const object = this.objects.get(id);
         if (!object) return;
-        object.trigger(
-            object instanceof Structure ? ANIMATION.HIT : ANIMATION.HURT,
-            AnimationManagers.World,
-            true
-        );
-        if (!(object instanceof Structure)) return;
 
+        if (!(object instanceof Structure)) {
+            object.trigger(ANIMATION.HURT, AnimationManagers.World, true);
+            return;
+        }
+
+        const fx = hitFxFromStrength(strength);
+        object.playHit(angle, fx.kickDegrees, fx.knockback);
+        if (fx.particles <= 0) return;
+
+        // Impact on the rim facing the attacker (opposite attack direction).
         const hitX = object.position.x - Math.cos(angle) * object.collisionRadius;
         const hitY = object.position.y - Math.sin(angle) * object.collisionRadius;
         this.particles.burst(
@@ -68,7 +73,8 @@ export class CombatFx {
                 object.sprite.sprite.texture,
                 hitX,
                 hitY,
-                angle + radians(180)
+                angle + radians(180),
+                fx.particles
             )
         );
     };

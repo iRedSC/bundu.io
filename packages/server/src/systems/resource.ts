@@ -47,13 +47,23 @@ export class ResourceSystem extends System<GameEventMap> {
         data.lastRegen = time;
     }
 
-    private gather = ({ object: resource, source }: GameEvent.Hurt) => {
-        if (!source) return;
+    private gather = ({ object: resource, source, hit }: GameEvent.Hurt) => {
+        const report = (strength: number) => {
+            if (hit) hit.strength = Math.min(10, Math.max(0, strength));
+        };
+
+        if (!source) {
+            report(0);
+            return;
+        }
 
         const player = PlayerData.get(source);
         const inventory = Inventory.get(source);
         const type = Type.get(resource);
-        if (!player || !inventory || !type) return;
+        if (!player || !inventory || !type) {
+            report(0);
+            return;
+        }
 
         const config = ResourceConfigs.get(type.id);
         const tool =
@@ -63,7 +73,10 @@ export class ResourceSystem extends System<GameEventMap> {
         const toolType = tool?.type ?? UNARMED_HARVEST.type;
         const toolLevel = tool?.level ?? UNARMED_HARVEST.level;
         const multiplier = config.multipliers[toolType];
-        if (config.exclusive && multiplier === undefined) return;
+        if (config.exclusive && multiplier === undefined) {
+            report(0);
+            return;
+        }
 
         const amount = Math.max(
             0,
@@ -73,7 +86,10 @@ export class ResourceSystem extends System<GameEventMap> {
                     : (toolLevel - config.level + 1) * (multiplier ?? 1)
             )
         );
-        if (amount === 0) return;
+        if (amount === 0) {
+            report(0);
+            return;
+        }
 
         const data = resource.get(ResourceData);
         let processed = 0;
@@ -95,12 +111,16 @@ export class ResourceSystem extends System<GameEventMap> {
             data.harvestHit++;
             processed++;
         }
-        if (processed === 0) return;
+        if (processed === 0) {
+            report(0);
+            return;
+        }
 
         player.score += (config.score ?? 0) * processed;
         if (inventoryChanged) {
             emitInventory(source, this.world.context.playerPacketManager);
         }
+        report(processed);
         if (config.destroy_on_empty && data.quantity === 0) this.remove(resource);
     };
 

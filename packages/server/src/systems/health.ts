@@ -1,5 +1,5 @@
 import { Attributes } from "../components/attributes.js";
-import { Health, Rotting, Spiked } from "../components/base.js";
+import { Health, Rotting, Spiked, TileEntity } from "../components/base.js";
 import { type GameObject, System, type World } from "../engine";
 import { emitVitals } from "../network/vitals.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
@@ -32,7 +32,7 @@ export class HealthSystem extends System<GameEventMap> {
         emitVitals(object, this.world.context.playerPacketManager);
     }
 
-    hurt({ object: target, source, damage }: GameEvent.Hurt) {
+    hurt({ object: target, source, damage, hit }: GameEvent.Hurt) {
         const health = target.get(Health);
         const attributes = target.get(Attributes);
         const defense = attributes?.get("health.defense") ?? 0;
@@ -44,7 +44,16 @@ export class HealthSystem extends System<GameEventMap> {
         if (Spiked.get(target)) {
             damage *= gameplayConfig().spikes.damageMultiplierToSpike;
         }
-        health.value -= Math.round(Math.max(0, damage - defense));
+        const applied = Math.round(Math.max(0, damage - defense));
+        health.value -= applied;
+
+        // Structures: strength = % of max health dealt this hit, clamped 0–10.
+        if (hit && TileEntity.get(target)) {
+            const percent =
+                health.max > 0 ? (applied / health.max) * 100 : 0;
+            hit.strength = Math.min(10, Math.max(0, percent));
+        }
+
         if (health.value <= 0) {
             this.trigger(GameEvent.Kill, { object: target, source });
         }
