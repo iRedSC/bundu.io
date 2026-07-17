@@ -23,7 +23,7 @@ const kits: Record<string, Record<string, number>> = {
 }
 
 /**
- * Debug/cheat slash commands (`/attribute`, `/stat`, `/kill`, `/godmode`, `/give`).
+ * Debug/cheat slash commands (`/attribute`, `/stat`, `/kill`, `/godmode`, `/give`, `/settime`).
  * Only invoked after a player unlocks cheats with the configured phrase.
  * Returns true when the message was treated as a command (handled or rejected).
  */
@@ -31,7 +31,8 @@ export function tryHandleDebugChatCommand(
     player: GameObject,
     message: string,
     onKill: (player: GameObject) => void,
-    now?: number
+    now?: number,
+    onSetTime?: (period: string) => boolean
 ): boolean {
     if (!message.startsWith("/")) return false;
 
@@ -90,6 +91,12 @@ export function tryHandleDebugChatCommand(
                 const numericId = getNumericId(itemId);
                 if (numericId !== undefined) addItem(inv, numericId, count);
             }
+            break;
+        }
+        case "settime": {
+            const period = command[1];
+            if (!period || !onSetTime) return true;
+            onSetTime(period);
             break;
         }
     }
