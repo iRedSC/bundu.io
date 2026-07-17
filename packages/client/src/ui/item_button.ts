@@ -2,7 +2,10 @@ import { Container } from "pixi.js";
 import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { percentOf } from "@bundu/shared/math";
-import { getStringId } from "@bundu/shared/id_map";
+import {
+    clientRegistries,
+    clientVisualId,
+} from "../configs/registries";
 import { lookupContextVisual } from "../visual/defs";
 import {
     colorLerp,
@@ -208,7 +211,10 @@ export class ItemButton {
     }
 
     set item(item: number | null) {
-        const name = getStringId(item);
+        const name =
+            item === null
+                ? ""
+                : clientVisualId(clientRegistries().item.location(item));
         if (!name) {
             this._item = null;
             this.itemSprite = SpriteFactory.update(

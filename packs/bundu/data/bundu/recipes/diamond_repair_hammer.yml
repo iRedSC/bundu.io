@@ -1,0 +1,13 @@
+result:
+    item: diamond_repair_hammer
+    amount: 1
+duration: 15000
+score: 1000
+ingredients:
+    repair_hammer: 1
+    stone: 100
+    diamond: 40
+requirements:
+    - near_crafting_table
+    - near_anvil
+    - near_fire

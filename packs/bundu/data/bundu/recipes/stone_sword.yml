@@ -1,0 +1,11 @@
+result:
+    item: stone_sword
+    amount: 1
+duration: 12000
+score: 250
+ingredients:
+    wood_sword: 1
+    stone: 30
+    wood: 40
+requirements:
+    - near_crafting_table

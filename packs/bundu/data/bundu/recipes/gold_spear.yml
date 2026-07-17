@@ -1,0 +1,12 @@
+result:
+    item: gold_spear
+    amount: 1
+duration: 20000
+score: 750
+ingredients:
+    stone_spear: 1
+    gold: 30
+    stone: 40
+    wood: 100
+requirements:
+    - near_anvil

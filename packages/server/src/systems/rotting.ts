@@ -1,4 +1,3 @@
-import { getNumericId } from "@bundu/shared/id_map.js";
 import { Health, Rotting, TileEntity } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { type GameObject, System, type World } from "../engine";
@@ -6,6 +5,7 @@ import { Structure } from "../game_objects/structure.js";
 import { syncStructureStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { gameplayConfig } from "../configs/gameplay.js";
+import { gameRegistries } from "../configs/registries.js";
 
 /** Marks a dead player's structures as claimable and decays them over time. */
 export class RottingSystem extends System<GameEventMap> {
@@ -41,7 +41,10 @@ export class RottingSystem extends System<GameEventMap> {
         weapon,
     }: GameEvent.Hurt): void => {
         if (!source || !object.active) return;
-        const claimWeapon = getNumericId(gameplayConfig().rotting.claimWeapon);
+        const claimWeapon = gameRegistries().item.resolve(
+            gameplayConfig().rotting.claimWeapon,
+            "bundu"
+        );
         if (weapon !== claimWeapon || !Rotting.get(object)) return;
 
         const tile = TileEntity.get(object);

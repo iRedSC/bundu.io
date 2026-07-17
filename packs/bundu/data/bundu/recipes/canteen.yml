@@ -1,0 +1,11 @@
+result:
+    item: canteen
+    amount: 1
+duration: 3000
+score: 400
+ingredients:
+    fish_scale: 4
+    cloth: 2
+    bottle_water: 4
+requirements:
+    - near_crafting_table

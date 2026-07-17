@@ -10,7 +10,6 @@ import { createGround } from "./ground";
 import {
     radians,
     structureOriginAtPoint,
-    structurePlacementDef,
     tileCenterWorld,
 } from "@bundu/shared";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
@@ -26,7 +25,11 @@ import { GameObjectData } from "@bundu/shared/object_types";
 import type { EntityStateSnapshot } from "@bundu/shared/object_types";
 import { Structure } from "./objects/structure";
 import { GroundItem } from "./objects/ground_item";
-import { getStringId } from "@bundu/shared/id_map";
+import {
+    clientRegistries,
+    clientStructurePlacement,
+    clientVisualId,
+} from "../configs/registries";
 import { getVariantName } from "@bundu/shared/variant_map";
 import {
     SpriteFactory,
@@ -226,7 +229,7 @@ export class World {
 
         const structure = new Structure(
             packet.id,
-            getStringId(nodeType),
+            clientVisualId(clientRegistries().resource.location(nodeType)),
             deciPoint(packet.x, packet.y),
             packet.rotation,
             typeof collisionRadius === "number"
@@ -252,7 +255,7 @@ export class World {
 
         const structure = new Structure(
             packet.id,
-            getStringId(nodeType),
+            clientVisualId(clientRegistries().structure.location(nodeType)),
             deciPoint(packet.x, packet.y),
             packet.rotation,
             FOOTPRINT_CIRCLE_RADIUS,
@@ -452,7 +455,9 @@ export class World {
             this.clearPlacementGhost();
             this.placementGhost = new Structure(
                 PLACEMENT_GHOST_RENDER_ID,
-                getStringId(placement.id),
+                clientVisualId(
+                    clientRegistries().structure.location(placement.id)
+                ),
                 new Point(),
                 placement.rotation * 90,
                 FOOTPRINT_CIRCLE_RADIUS,
@@ -480,7 +485,7 @@ export class World {
             );
         }
 
-        const def = structurePlacementDef(placement.id);
+        const def = clientStructurePlacement(placement.id);
         const origin = structureOriginAtPoint(
             placement.cursor,
             def.blocked,
@@ -531,14 +536,14 @@ export class World {
     };
 
     craftEvent = (
-        { id, duration, itemId }: ServerPacket.CraftEvent,
+        { id, duration, recipeId }: ServerPacket.CraftEvent,
         serverTimestamp: number
     ) => {
         const player = this.objects.get(id);
         if (!(player instanceof Player)) return;
         player.setCraftProgress(
             duration,
-            itemId,
+            recipeId,
             clientTime.fromServer(serverTimestamp)
         );
         if (duration > 0) this.objects.updating.add(player);

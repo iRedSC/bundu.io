@@ -1,0 +1,6 @@
+type: fixed
+entries:
+    - item: meat
+      count: 8
+    - item: elephant_tusk
+      count: 1

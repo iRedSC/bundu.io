@@ -1,5 +1,5 @@
 import type { Container } from "pixi.js";
-import { getNumericId } from "@bundu/shared/id_map";
+import { clientRegistries } from "../configs/registries";
 import { registerAttackHitboxDrawer } from "./attack_hitbox";
 import { registerObjectDebugFactory } from "./object_debug";
 import {
@@ -9,8 +9,6 @@ import {
     isDebugOverlayVisible,
     setDebugOverlayVisible,
 } from "./overlay";
-
-const WOOD_WALL_ID = getNumericId("wood_wall") ?? 58;
 
 const TOOLS_CSS = `
 .debug-tools {
@@ -84,6 +82,7 @@ function bindToggle(
  * Only imported when `__DEBUG__` is true (see client entry).
  */
 export function mountClientDebug(viewport: Container): ClientDebugHandle {
+    const woodWallId = clientRegistries().structure.resolve("wood_wall", "bundu");
     registerObjectDebugFactory(createObjectDebug);
     registerAttackHitboxDrawer(drawAttackHitbox);
     viewport.addChild(debugContainer);
@@ -125,6 +124,6 @@ export function mountClientDebug(viewport: Container): ClientDebugHandle {
     }
 
     return {
-        getPlaceStructureId: () => (placeWoodWall ? WOOD_WALL_ID : null),
+        getPlaceStructureId: () => (placeWoodWall ? woodWallId : null),
     };
 }

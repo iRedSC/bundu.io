@@ -1,73 +1,99 @@
 wood_wall:
     type: building
+    places: wood_wall
 
 stone_wall:
     type: building
+    places: stone_wall
 
 gold_wall:
     type: building
+    places: gold_wall
 
 diamond_wall:
     type: building
+    places: diamond_wall
 
 amethyst_wall:
     type: building
+    places: amethyst_wall
 
 red_wall:
     type: building
+    places: red_wall
 
 wood_door:
     type: building
+    places: wood_door
 
 stone_door:
     type: building
+    places: stone_door
 
 gold_door:
     type: building
+    places: gold_door
 
 diamond_door:
     type: building
+    places: diamond_door
 
 amethyst_door:
     type: building
+    places: amethyst_door
 
 wood_spike:
     type: building
+    places: wood_spike
 stone_spike:
     type: building
+    places: stone_spike
 
 gold_spike:
     type: building
+    places: gold_spike
 
 diamond_spike:
     type: building
+    places: diamond_spike
 
 amethyst_spike:
     type: building
+    places: amethyst_spike
 
 workbench:
     type: building
+    places: workbench
 anvil:
     type: building
+    places: anvil
 
 fire_small:
     type: building
+    places: fire_small
 
 fire_big:
     type: building
+    places: fire_big
 
 fire_pit:
     type: building
+    places: fire_pit
 
 quick_wood_wall:
     type: building
+    places: quick_wood_wall
 quick_stone_wall:
     type: building
+    places: quick_stone_wall
 quick_stone_spike:
     type: building
+    places: quick_stone_spike
 
 quick_diamond_spike:
     type: building
+    places: quick_diamond_spike
 
 point_generator:
     type: building
+    places: point_generator

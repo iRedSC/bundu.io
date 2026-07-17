@@ -1,0 +1,13 @@
+result:
+    item: gold_hammer
+    amount: 1
+duration: 18000
+score: 1000
+ingredients:
+    stone_hammer: 1
+    gold: 100
+    stone: 80
+    wood: 60
+requirements:
+    - near_anvil
+    - near_crafting_table

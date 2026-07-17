@@ -60,6 +60,7 @@ export function createPlayer(
             moveDir: [0, 0],
             selectedStructure: {
                 id: -1,
+                itemId: -1,
                 rotation: 0,
                 cursor: { x: tx, y: ty },
             },

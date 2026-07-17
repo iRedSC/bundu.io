@@ -1,0 +1,13 @@
+result:
+    item: red_wall
+    amount: 1
+duration: 7000
+score: 120
+ingredients:
+    amethyst_wall: 1
+    red: 17
+    amethyst: 7
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil

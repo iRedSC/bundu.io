@@ -7,7 +7,13 @@ import { attackFacingRadians } from "@bundu/shared/attack_box";
 import { decodeMoveDirection } from "@bundu/shared/movement";
 import { SESSION_ENDED_CLOSE } from "@bundu/shared/session";
 import { type ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { GroundData, Health, Physics } from "../components/base.js";
+import {
+    GroundData,
+    Health,
+    Physics,
+    TileEntity,
+    Type,
+} from "../components/base.js";
 import {
     Inventory,
     canConsumeAndAdd,
@@ -40,11 +46,18 @@ import { GameEvent, type GameEventMap } from "./event_map.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
 import { PlaceMode } from "@bundu/shared/inventory";
-import { pointToTile, WORLD_BOUNDS, worldToDeci } from "@bundu/shared/tiles";
+import {
+    pointToTile,
+    TILE_SIZE,
+    WORLD_BOUNDS,
+    worldToDeci,
+} from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { GroundItem } from "../game_objects/ground_item.js";
 import { Circle, Vector } from "sat";
 import { gameplayConfig } from "../configs/gameplay.js";
+import { flagMap } from "@bundu/shared/flag_map";
+import { gameRegistries } from "../configs/registries.js";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
@@ -165,10 +178,16 @@ export class PlayerSystem extends System<GameEventMap> {
         socket?.close(SESSION_ENDED_CLOSE, "session ended");
     }
 
-    private emitCraftEvent(player: GameObject, duration: number, itemId = -1) {
+    private emitCraftEvent(
+        player: GameObject,
+        duration: number,
+        recipeId = -1,
+        itemId = -1
+    ) {
         this.world.context.worldPacketManager.emit(ServerPacket.CraftEvent, {
             id: player.id,
             duration,
+            recipeId,
             itemId,
         });
     }
@@ -281,22 +300,84 @@ export class PlayerSystem extends System<GameEventMap> {
         });
     }
 
+    private hasCraftingRequirements(
+        player: GameObject,
+        required: readonly number[]
+    ): boolean {
+        if (required.length === 0) return true;
+        const available = new Set<number>();
+        const registries = gameRegistries();
+        const physics = player.get(Physics);
+        const data = player.get(PlayerData);
+        const near = new Set([
+            registries.structure.resolve("workbench", "bundu"),
+            registries.structure.resolve("anvil", "bundu"),
+            registries.structure.resolve("fire_small", "bundu"),
+            registries.structure.resolve("fire_big", "bundu"),
+            registries.structure.resolve("fire_pit", "bundu"),
+        ]);
+        const nearby = this.world.query([TileEntity, Physics, Type]).filter((object) => {
+            const type = object.get(Type).id;
+            return (
+                near.has(type) &&
+                Math.hypot(
+                    physics.position.x - object.get(Physics).position.x,
+                    physics.position.y - object.get(Physics).position.y
+                ) <= TILE_SIZE * 2
+            );
+        });
+        const nearbyTypes = new Set(nearby.map((object) => object.get(Type).id));
+        const add = (name: string) => {
+            const id = flagMap.get(name);
+            if (id !== undefined) available.add(id);
+        };
+        if (nearbyTypes.has(registries.structure.resolve("workbench", "bundu"))) {
+            add("near_crafting_table");
+        }
+        if (nearbyTypes.has(registries.structure.resolve("anvil", "bundu"))) {
+            add("near_anvil");
+        }
+        const fire = ["fire_small", "fire_big", "fire_pit"].some((name) =>
+            nearbyTypes.has(registries.structure.resolve(name, "bundu"))
+        );
+        if (fire) add("near_fire");
+        const book = registries.item.resolve("book", "bundu");
+        if (data.mainHand === book || data.offHand === book) add("holding_book");
+
+        const tile = pointToTile(physics.position);
+        const inWater = this.world.query([GroundData]).some((ground) => {
+            const config = ground.get(GroundData);
+            const location = registries.ground_type.location(config.type);
+            return (
+                location.endsWith(":water") &&
+                tile.x >= config.collider.pos.x &&
+                tile.y >= config.collider.pos.y &&
+                tile.x < config.collider.pos.x + config.collider.w &&
+                tile.y < config.collider.pos.y + config.collider.h
+            );
+        });
+        if (inWater) add("in_water");
+        return required.every((flag) => available.has(flag));
+    }
+
     private finishCraft(player: GameObject) {
         const data = PlayerData.get(player);
         const crafting = data?.crafting;
         if (!data || !crafting) return;
 
-        const recipe = craftingList.get(crafting.itemId);
+        const recipe = craftingList.get(crafting.recipeId);
         const inv = Inventory.get(player);
         data.crafting = undefined;
         this.emitCraftEvent(player, 0);
 
-        if (!recipe || !inv) return;
+        if (!recipe || !inv || !this.hasCraftingRequirements(player, recipe.flags)) {
+            return;
+        }
         if (
             !tryConsumeAndAdd(
                 inv,
                 recipe.ingredients,
-                recipe.id,
+                recipe.resultItemId,
                 recipe.amount
             )
         ) {
@@ -313,23 +394,24 @@ export class PlayerSystem extends System<GameEventMap> {
         emitEquipment(player, worldPacketManager);
     }
 
-    craftItem = (playerId: number, { itemId }: ClientPacket.CraftItem) => {
+    craftItem = (playerId: number, { recipeId }: ClientPacket.CraftItem) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
         if (!data || data.crafting) return;
         this.clearEating(player);
 
-        const recipe = craftingList.get(itemId);
+        const recipe = craftingList.get(recipeId);
         if (!recipe) return;
 
         const inv = Inventory.get(player);
         if (
             !inv ||
+            !this.hasCraftingRequirements(player, recipe.flags) ||
             !canConsumeAndAdd(
                 inv,
                 recipe.ingredients,
-                recipe.id,
+                recipe.resultItemId,
                 recipe.amount
             )
         ) {
@@ -348,10 +430,15 @@ export class PlayerSystem extends System<GameEventMap> {
         }
 
         data.crafting = {
-            itemId,
+            recipeId,
             endsAt: this.world.gameTime + recipe.duration,
         };
-        this.emitCraftEvent(player, recipe.duration, recipe.id);
+        this.emitCraftEvent(
+            player,
+            recipe.duration,
+            recipe.id,
+            recipe.resultItemId
+        );
     };
 
     move = (playerId: number, packet: ClientPacket.Movement) => {
@@ -594,12 +681,19 @@ export class PlayerSystem extends System<GameEventMap> {
     private syncSelectedStructure(player: GameObject) {
         const data = player.get(PlayerData);
         const inv = player.get(Inventory);
-        const id = inv.slots[inv.selected]?.id;
-        const heldBuilding =
-            id !== undefined &&
-            ItemConfigs.get(id).function === "building" &&
-            data.mainHand === id;
-        const structureId = heldBuilding ? id : -1;
+        const itemId = inv.slots[inv.selected]?.id;
+        const item = itemId === undefined ? undefined : ItemConfigs.get(itemId);
+        let structureId = -1;
+        let selectedItemId = -1;
+        if (
+            itemId !== undefined &&
+            item?.function === "building" &&
+            item.places !== null &&
+            data.mainHand === itemId
+        ) {
+            structureId = item.places;
+            selectedItemId = itemId;
+        }
 
         if (
             structureId === -1 &&
@@ -608,9 +702,15 @@ export class PlayerSystem extends System<GameEventMap> {
         ) {
             clearMainHandIf(player, data.mainHand);
         }
-        if (data.selectedStructure.id === structureId) return;
+        if (
+            data.selectedStructure.id === structureId &&
+            data.selectedStructure.itemId === selectedItemId
+        ) {
+            return;
+        }
 
         data.selectedStructure.id = structureId;
+        data.selectedStructure.itemId = selectedItemId;
         if (structureId !== -1) {
             data.selectedStructure.cursor = pointToTile(player.get(Physics).position);
         } else {

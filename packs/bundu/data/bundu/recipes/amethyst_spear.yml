@@ -1,0 +1,15 @@
+result:
+    item: amethyst_spear
+    amount: 1
+duration: 40000
+score: 2000
+ingredients:
+    diamond_spear: 1
+    amethyst: 40
+    diamond: 50
+    gold: 60
+    stone: 140
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil

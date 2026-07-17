@@ -1,0 +1,8 @@
+result:
+    item: wood_spike
+    amount: 1
+duration: 6000
+score: 100
+ingredients:
+    wood: 70
+requirements: []

@@ -1,47 +1,11 @@
-import { getStringId } from "./id_map";
 import {
-    SINGLE_TILE,
     TILE_SIZE,
     rotateOffset,
     type TilePos,
     type TileRot,
 } from "./tiles";
 
-export type StructurePlacementDef = {
-    blocked: readonly TilePos[];
-    /** Ground type ids that may support every occupied cell. */
-    ground: readonly number[];
-};
-
 export const DEFAULT_PLACEMENT_REACH = TILE_SIZE * 2;
-
-const DEFAULT_STRUCTURE: StructurePlacementDef = {
-    blocked: SINGLE_TILE,
-    ground: [1],
-};
-
-/** Structure-specific geometry lives here; unspecified placeables are one tile. */
-export const STRUCTURE_PLACEMENT_DEFS: Readonly<
-    Partial<Record<string, StructurePlacementDef>>
-> = {
-    point_generator: {
-        blocked: [
-            { x: 0, y: 0 },
-            { x: 1, y: 0 },
-            { x: 0, y: 1 },
-            { x: 1, y: 1 },
-        ],
-        ground: [1],
-    },
-};
-
-export function structurePlacementDef(
-    structure: string | number
-): StructurePlacementDef {
-    const name =
-        typeof structure === "number" ? getStringId(structure) : structure;
-    return STRUCTURE_PLACEMENT_DEFS[name] ?? DEFAULT_STRUCTURE;
-}
 
 export function footprintCenter(
     blocked: readonly TilePos[],

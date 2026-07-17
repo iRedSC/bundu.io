@@ -1,0 +1,9 @@
+result:
+    item: meat_cooked
+    amount: 1
+duration: 2000
+score: 35
+ingredients:
+    meat: 1
+requirements:
+    - near_fire

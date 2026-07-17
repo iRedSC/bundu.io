@@ -3,15 +3,21 @@ import { createWorld } from "./bootstrap/create_world";
 import { loadMap } from "./bootstrap/load_map";
 import { createPlayer } from "./bootstrap/create_player";
 import { startTicker } from "./bootstrap/start_ticker";
-import { resourcePacks } from "./configs/resource_packs";
+import { ResourcePackService } from "./configs/resource_packs";
 import {
     restoreDevCheckpoint,
     saveDevCheckpoint,
 } from "./bootstrap/dev_checkpoint";
 
 const { world, playerSystem, renderDistanceSystem, receiver } = createWorld();
+const resourcePacks = new ResourcePackService();
 const DEBUG = process.env.BUNDU_DEBUG === "1";
-if (!DEBUG || !restoreDevCheckpoint(world)) loadMap(world, playerSystem);
+if (
+    !DEBUG ||
+    !restoreDevCheckpoint(world, resourcePacks.manifest.registries.hash)
+) {
+    loadMap(world, playerSystem);
+}
 
 const { socketManager } = world.context;
 
@@ -64,6 +70,21 @@ controller.http = (request, url) => {
             },
         });
     }
+    if (packPath === "/packs/registries.json") {
+        if (
+            url.searchParams.get("hash") !==
+            resourcePacks.manifest.registries.hash
+        ) {
+            return new Response("Not Found", { status: 404, headers: packHeaders });
+        }
+        return new Response(resourcePacks.registriesJson, {
+            headers: {
+                ...packHeaders,
+                "Content-Type": "application/json",
+                "Cache-Control": "public, max-age=31536000, immutable",
+            },
+        });
+    }
     const prefix = "/packs/assets/";
     if (!packPath.startsWith(prefix)) {
         return new Response("Not Found", { status: 404, headers: packHeaders });
@@ -104,7 +125,10 @@ if (DEBUG) {
         if (checkpointing) return;
         checkpointing = true;
         try {
-            saveDevCheckpoint(world);
+            saveDevCheckpoint(
+                world,
+                resourcePacks.manifest.registries.hash
+            );
             process.exit(0);
         } catch (error) {
             console.error("[dev] checkpoint failed", error);

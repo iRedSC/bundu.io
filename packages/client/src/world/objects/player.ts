@@ -4,7 +4,10 @@ import {
     type TilePos,
     type TileRot,
 } from "@bundu/shared";
-import { getStringId } from "@bundu/shared/id_map";
+import {
+    clientRegistries,
+    clientVisualId,
+} from "../../configs/registries";
 import { type Container, Graphics, type Point, Text } from "pixi.js";
 import GameObject from "../game_object";
 import type { AnimationManager } from "../../animation/runtime";
@@ -58,7 +61,7 @@ export class Player extends GameObject implements AnimContext {
 
     private craftDuration = 0;
     private craftEndsAt = 0;
-    craftingItemId: number | null = null;
+    craftingRecipeId: number | null = null;
     private chatTimeout?: ReturnType<typeof setTimeout>;
     private selectedStructureId = 0;
     private structureRotation: TileRot = 0;
@@ -152,18 +155,18 @@ export class Player extends GameObject implements AnimContext {
     }
 
     /** `duration > 0` starts the overhead channel; `0` clears it. */
-    setCraftProgress(duration: number, itemId: number, startedAt: number) {
+    setCraftProgress(duration: number, recipeId: number, startedAt: number) {
         if (duration <= 0) {
             this.craftDuration = 0;
             this.craftEndsAt = 0;
-            this.craftingItemId = null;
+            this.craftingRecipeId = null;
             this.craftBar.clear();
             this.craftBar.visible = false;
             return;
         }
         this.craftDuration = duration;
         this.craftEndsAt = startedAt + duration;
-        this.craftingItemId = itemId;
+        this.craftingRecipeId = recipeId;
         this.craftBar.visible = true;
         this.redrawCraftBar(startedAt);
     }
@@ -189,9 +192,14 @@ export class Player extends GameObject implements AnimContext {
 
     setEquipment(equipment?: Equipment) {
         if (!equipment) return;
-        this.mainhand = getStringId(equipment.mainhand);
-        this.offhand = getStringId(equipment.offhand);
-        this.helmet = getStringId(equipment.helmet);
+        const items = clientRegistries().item;
+        const visual = (id?: number | null) =>
+            typeof id === "number" && id >= 0
+                ? clientVisualId(items.location(id))
+                : "";
+        this.mainhand = visual(equipment.mainhand);
+        this.offhand = visual(equipment.offhand);
+        this.helmet = visual(equipment.helmet);
         this.backpack = equipment.backpack ?? undefined;
         this.updateEquipment();
     }

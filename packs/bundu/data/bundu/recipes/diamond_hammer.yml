@@ -1,0 +1,13 @@
+result:
+    item: diamond_hammer
+    amount: 1
+duration: 30000
+score: 1500
+ingredients:
+    gold_hammer: 1
+    diamond: 120
+    gold: 100
+    stone: 80
+requirements:
+    - near_crafting_table
+    - near_anvil

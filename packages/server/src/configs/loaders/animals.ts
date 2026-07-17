@@ -1,3 +1,4 @@
+import type { RegistryId } from "@bundu/shared/registry";
 import { ConfigLoader } from "./loader.js";
 
 export type AnimalBehavior = "hostile" | "neutral" | "passive" | "scared";
@@ -48,12 +49,12 @@ export type AnimalConfig = {
      * Structure type ids the animal will chase/attack when no player target
      * is available. YAML lists string ids; loader resolves to numeric ids.
      */
-    aggroAt: number[];
-    corpse: string;
+    aggroAt: RegistryId<"structure">[];
+    corpse: RegistryId<"resource">;
     spawn_count: number;
 };
 
-export const AnimalConfigs = new ConfigLoader<AnimalConfig>({
+export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("entity_type", {
     score: 0,
     behavior: "passive",
     health: 100,
@@ -70,6 +71,6 @@ export const AnimalConfigs = new ConfigLoader<AnimalConfig>({
     aggroSwitch: "never",
     aggroLevel: "high",
     aggroAt: [],
-    corpse: "deer_dead",
+    corpse: 0 as RegistryId<"resource">,
     spawn_count: 0,
 });

@@ -1,0 +1,9 @@
+result:
+    item: fire_big
+    amount: 1
+duration: 6000
+score: 150
+ingredients:
+    wood: 35
+    stone: 15
+requirements: []

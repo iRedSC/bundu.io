@@ -1,0 +1,13 @@
+result:
+    item: diamond_sword
+    amount: 1
+duration: 25000
+score: 1250
+ingredients:
+    gold_sword: 1
+    diamond: 50
+    gold: 70
+    stone: 90
+requirements:
+    - near_crafting_table
+    - near_anvil

@@ -1,0 +1,12 @@
+result:
+    item: scuba
+    amount: 1
+duration: 20000
+score: 2500
+ingredients:
+    fish_scale: 15
+    diamond: 50
+    stone: 75
+requirements:
+    - near_crafting_table
+    - near_anvil

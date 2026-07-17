@@ -1,0 +1,6 @@
+type: fixed
+entries:
+    - item: meat
+      count: 4
+    - item: deer_hide
+      count: 2

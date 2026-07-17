@@ -3,7 +3,6 @@ import {
     round,
     degrees,
     structureOriginAtPoint,
-    structurePlacementDef,
     type MoveAxes,
 } from "@bundu/shared";
 import { radians } from "@bundu/shared/transforms";
@@ -13,6 +12,7 @@ import type { Socket } from "../network/socket";
 import type { Player } from "../world/objects/player";
 import { KeyboardInputListener } from "./keyboard";
 import { MouseInputListener } from "./mouse";
+import { clientStructurePlacement } from "../configs/registries";
 
 export type SendPacket = Socket["sendPacket"];
 
@@ -258,7 +258,7 @@ export class InputController {
     }
 
     private currentOrigin(structureId: number): TilePos {
-        const def = structurePlacementDef(structureId);
+        const def = clientStructurePlacement(structureId);
         return structureOriginAtPoint(
             this.placementCursor,
             def.blocked,

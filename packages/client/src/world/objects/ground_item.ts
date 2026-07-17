@@ -1,4 +1,7 @@
-import { getStringId } from "@bundu/shared/id_map";
+import {
+    clientRegistries,
+    clientVisualId,
+} from "../../configs/registries";
 import { lerp, radians } from "@bundu/shared/transforms";
 import type { Container, Point } from "pixi.js";
 import { SpriteFactory } from "@client/assets/sprite_factory";
@@ -33,7 +36,7 @@ export class GroundItem extends GameObject {
 
     constructor(id: number, itemId: number, position: Point, rotation: number) {
         super(id, position, radians(rotation), 12, 1);
-        const name = getStringId(itemId);
+        const name = clientVisualId(clientRegistries().item.location(itemId));
         const texture = lookupContextVisual(name)?.contexts.world?.texture;
         const sprite = SpriteFactory.build(texture ?? "bundu/misc/unknown_asset.svg");
         sprite.width = ITEM_SIZE;

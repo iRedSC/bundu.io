@@ -19,6 +19,7 @@ import { Player } from "./world/objects/player";
 import { GameSession } from "./session/game_session";
 import { clientTime } from "./globals";
 import { replaceVisualDefs } from "./visual/defs";
+import { replaceClientRegistries } from "./configs/registries";
 
 declare const __DEBUG__: boolean;
 
@@ -108,6 +109,7 @@ async function synchronizeResourcePacks() {
         return;
     }
     const resourcePacks = await loadResourcePacks(GAME_WS_URL);
+    replaceClientRegistries(resourcePacks.registries);
     await initAssets(resourcePacks.assets);
     replaceVisualDefs(
         resourcePacks.visualDefs,
@@ -349,10 +351,10 @@ async function main() {
             y: object.position.y + Math.sin(object.rotation) * 80,
         });
     };
-    gui.craftingMenu.leftclick = (itemId) => {
+    gui.craftingMenu.leftclick = (recipeId) => {
         const local = world.objects.get(world.user ?? -1);
         if (local instanceof Player && local.isCrafting) return;
-        session.sendPacket(ClientPacket.CraftItem, { itemId });
+        session.sendPacket(ClientPacket.CraftItem, { recipeId });
     };
 
     app.canvas.oncontextmenu = () => {};
@@ -383,8 +385,8 @@ async function main() {
         AnimationManagers.UI.update(now);
         gui.tick(now);
         const local = world.objects.get(world.user ?? -1);
-        gui.craftingMenu.craftingItemId =
-            local instanceof Player ? local.craftingItemId : null;
+        gui.craftingMenu.craftingRecipeId =
+            local instanceof Player ? local.craftingRecipeId : null;
     };
     app.ticker.add(tick);
 

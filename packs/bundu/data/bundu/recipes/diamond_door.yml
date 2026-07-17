@@ -1,0 +1,12 @@
+result:
+    item: diamond_door
+    amount: 1
+duration: 6000
+score: 100
+ingredients:
+    gold_door: 1
+    diamond: 24
+    gold: 14
+requirements:
+    - near_crafting_table
+    - near_anvil

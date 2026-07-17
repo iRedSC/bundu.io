@@ -13,6 +13,17 @@ export type Pack = {
     manifest: PackManifest;
 };
 
+export type SourcedRecord = {
+    namespace: string;
+    source: string;
+    value: unknown;
+};
+
+export type SourcedTag = SourcedRecord & {
+    replace: boolean;
+    values: string[];
+};
+
 function object(value: unknown, source: string): Record<string, unknown> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
         throw new Error(`${source}: expected an object`);
@@ -41,6 +52,27 @@ function manifest(directory: string): PackManifest {
         version: raw.version,
         depends: raw.depends as string[],
     };
+}
+
+function files(directory: string): string[] {
+    if (!fs.existsSync(directory)) return [];
+    return fs
+        .readdirSync(directory, { withFileTypes: true })
+        .flatMap((entry) => {
+            const filename = path.join(directory, entry.name);
+            return entry.isDirectory() ? files(filename) : [filename];
+        })
+        .sort((left, right) => left.localeCompare(right));
+}
+
+function dataNamespaces(pack: Pack): string[] {
+    const dataRoot = path.join(pack.directory, "data");
+    if (!fs.existsSync(dataRoot)) return [];
+    return fs
+        .readdirSync(dataRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .sort((left, right) => left.localeCompare(right));
 }
 
 function orderPacks(packs: ReadonlyMap<string, Pack>): Pack[] {
@@ -116,6 +148,96 @@ export class PackStack {
             found = true;
         }
         if (!found) throw new Error(`Missing data resource ${namespace}:${resource}`);
+        return merged;
+    }
+
+    registryRecords(resource: string): Map<string, SourcedRecord> {
+        const merged = new Map<string, SourcedRecord>();
+        for (const pack of this.packs) {
+            for (const namespace of dataNamespaces(pack)) {
+                const filename = path.join(
+                    pack.directory,
+                    "data",
+                    namespace,
+                    `${resource}.yml`
+                );
+                if (!fs.existsSync(filename)) continue;
+                const records = object(
+                    Bun.YAML.parse(fs.readFileSync(filename, "utf8")),
+                    filename
+                );
+                for (const [id, value] of Object.entries(records)) {
+                    merged.set(`${namespace}:${id}`, {
+                        namespace,
+                        source: `${filename}.${id}`,
+                        value,
+                    });
+                }
+            }
+        }
+        return merged;
+    }
+
+    registryDefinitions(resource: string): Map<string, SourcedRecord> {
+        const merged = new Map<string, SourcedRecord>();
+        for (const pack of this.packs) {
+            for (const namespace of dataNamespaces(pack)) {
+                const root = path.join(pack.directory, "data", namespace, resource);
+                for (const filename of files(root).filter((entry) => /\.ya?ml$/i.test(entry))) {
+                    const relative = path
+                        .relative(root, filename)
+                        .replaceAll("\\", "/")
+                        .replace(/\.ya?ml$/i, "");
+                    merged.set(`${namespace}:${relative}`, {
+                        namespace,
+                        source: filename,
+                        value: Bun.YAML.parse(fs.readFileSync(filename, "utf8")),
+                    });
+                }
+            }
+        }
+        return merged;
+    }
+
+    registryTags(registry: string): Map<string, SourcedTag[]> {
+        const merged = new Map<string, SourcedTag[]>();
+        for (const pack of this.packs) {
+            for (const namespace of dataNamespaces(pack)) {
+                const root = path.join(
+                    pack.directory,
+                    "data",
+                    namespace,
+                    "tags",
+                    registry
+                );
+                for (const filename of files(root).filter((entry) => /\.ya?ml$/i.test(entry))) {
+                    const relative = path
+                        .relative(root, filename)
+                        .replaceAll("\\", "/")
+                        .replace(/\.ya?ml$/i, "");
+                    const raw = object(
+                        Bun.YAML.parse(fs.readFileSync(filename, "utf8")),
+                        filename
+                    );
+                    if (!Array.isArray(raw.values) || raw.values.some((value) => typeof value !== "string")) {
+                        throw new Error(`${filename}.values: expected a string array`);
+                    }
+                    if (raw.replace !== undefined && typeof raw.replace !== "boolean") {
+                        throw new Error(`${filename}.replace: expected a boolean`);
+                    }
+                    const id = `#${namespace}:${relative}`;
+                    const sources = merged.get(id) ?? [];
+                    sources.push({
+                        namespace,
+                        source: filename,
+                        replace: raw.replace === true,
+                        values: raw.values as string[],
+                        value: raw,
+                    });
+                    merged.set(id, sources);
+                }
+            }
+        }
         return merged;
     }
 }

@@ -1,0 +1,10 @@
+result:
+    item: fire_pit
+    amount: 1
+duration: 8000
+score: 200
+ingredients:
+    wood: 50
+    stone: 50
+requirements:
+    - near_crafting_table

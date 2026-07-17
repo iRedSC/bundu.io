@@ -1,0 +1,10 @@
+result:
+    item: bandage
+    amount: 1
+duration: 2000
+score: 75
+ingredients:
+    cloth: 1
+    honey: 1
+requirements:
+    - near_crafting_table

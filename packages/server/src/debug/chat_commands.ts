@@ -6,8 +6,16 @@ import {
 import { addItem, Inventory } from "../components/inventory.js";
 import { StatList, type StatType, Stats } from "../components/stats.js";
 import type { GameObject } from "../engine";
-import { getNumericId } from "@bundu/shared/id_map.js";
+import { gameRegistries } from "../configs/registries.js";
 
+function resolveItemId(value?: string): number | undefined {
+    if (!value) return undefined;
+    try {
+        return gameRegistries().item.resolve(value, "bundu");
+    } catch {
+        return undefined;
+    }
+}
 
 const kits: Record<string, Record<string, number>> = {
     "gold": {
@@ -72,11 +80,11 @@ export function tryHandleDebugChatCommand(
             break;
         }
         case "give": {
-            const itemId = getNumericId(command[1]);
+            const numericId = resolveItemId(command[1]);
             const count = Number(command[2] ?? 1);
             const inv = Inventory.get(player);
-            if (itemId === undefined || !inv || !(count > 0)) return true;
-            addItem(inv, itemId, count);
+            if (numericId === undefined || !inv || !(count > 0)) return true;
+            addItem(inv, numericId, count);
             break;
         }
         case "kit": {
@@ -87,7 +95,7 @@ export function tryHandleDebugChatCommand(
             const inv = Inventory.get(player);
             if (!inv) return true;
             for (const [itemId, count] of Object.entries(kit)) {
-                const numericId = getNumericId(itemId);
+                const numericId = resolveItemId(itemId);
                 if (numericId !== undefined) addItem(inv, numericId, count);
             }
             break;

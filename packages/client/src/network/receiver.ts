@@ -4,6 +4,7 @@ import {
     type ServerPacketMap,
 } from "@bundu/shared/packet_definitions";
 import { ClientPacketReceiver } from "./client_receiver";
+import { flagMap } from "@bundu/shared/flag_map";
 import { Serializer } from "@bundu/shared";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
@@ -54,7 +55,10 @@ export function setupGUIPacketReceiving(
     );
     receiver.on(ServerPacket.UpdateInventory, (packet) => {
         ui.inventory.update(packet);
-        ui.craftingMenu.items = ui.recipeManager.filter(ui.inventory.items, []);
+        ui.craftingMenu.items = ui.recipeManager.filter(
+            ui.inventory.items,
+            [...flagMap.values()]
+        );
         ui.craftingMenu.update();
     });
     receiver.on(

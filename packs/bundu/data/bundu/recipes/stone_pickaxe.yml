@@ -1,0 +1,11 @@
+result:
+    item: stone_pickaxe
+    amount: 1
+duration: 8000
+score: 150
+ingredients:
+    wood_pickaxe: 1
+    stone: 20
+    wood: 30
+requirements:
+    - near_crafting_table

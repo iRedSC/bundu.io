@@ -1,0 +1,11 @@
+result:
+    item: stone_helmet
+    amount: 1
+duration: 20000
+score: 200
+ingredients:
+    wood_helmet: 1
+    stone: 80
+    wood: 60
+requirements:
+    - near_crafting_table

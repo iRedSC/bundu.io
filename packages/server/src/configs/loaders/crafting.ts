@@ -1,77 +1,125 @@
-import { getNumericId } from "@bundu/shared/id_map";
+import type { RegistryId } from "@bundu/shared/registry";
 import { flagMap } from "@bundu/shared/flag_map";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
+import type { SourcedRecord } from "../packs.js";
+import { gameRegistries } from "../registries.js";
 
 export type CraftingRecipeData = {
+    result: { item: string; amount?: number };
     duration: number;
     score?: number;
-    amount?: number;
     ingredients: Record<string, number>;
-    flags: string[];
+    requirements?: string[];
 };
 
-export class CraftingRecipe {
-    id: number;
-    duration: number;
-    score: number;
-    amount: number;
-    ingredients: Map<number, number>;
-    flags: number[];
-
-    constructor(id: number, data: Partial<CraftingRecipeData>) {
-        this.id = id;
-        this.duration = data.duration || 0;
-        this.score = data.score || 0;
-        this.amount = data.amount || 1;
-
-        this.ingredients = new Map();
-        if (data.ingredients) {
-            for (const [k, v] of Object.entries(data.ingredients)) {
-                const id = getNumericId(k);
-                if (id === undefined) {
-                    throw new Error(`recipes.${this.id}.ingredients: unknown item "${k}"`);
-                }
-                this.ingredients.set(id, v);
-            }
-        }
-        this.flags = [];
-        for (const flag of data.flags || []) {
-            const flagId = flagMap.get(flag);
-            if (flagId === undefined) {
-                throw new Error(`recipes.${this.id}.flags: unknown flag "${flag}"`);
-            }
-            this.flags.push(flagId);
-        }
+function object(value: unknown, source: string): Record<string, unknown> {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(`${source}: expected an object`);
     }
+    return value as Record<string, unknown>;
+}
+
+function nonNegative(value: unknown, source: string, fallback = 0): number {
+    if (value === undefined) return fallback;
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+        throw new Error(`${source}: expected a non-negative number`);
+    }
+    return value;
+}
+
+function positiveInteger(value: unknown, source: string, fallback?: number): number {
+    if (value === undefined && fallback !== undefined) return fallback;
+    if (!Number.isSafeInteger(value) || (value as number) <= 0) {
+        throw new Error(`${source}: expected a positive integer`);
+    }
+    return value as number;
+}
+
+export class CraftingRecipe {
+    constructor(
+        readonly id: RegistryId<"recipe">,
+        readonly resultItemId: RegistryId<"item">,
+        readonly duration: number,
+        readonly score: number,
+        readonly amount: number,
+        readonly ingredients: ReadonlyMap<RegistryId<"item">, number>,
+        readonly flags: readonly number[]
+    ) {}
 
     pack(): ServerPacket.RecipeList["recipes"][number] {
-        return [this.id, Array.from(this.ingredients.entries()), this.flags];
+        return [
+            this.id,
+            this.resultItemId,
+            this.amount,
+            Array.from(this.ingredients.entries()),
+            [...this.flags],
+        ];
     }
 }
 
-export const craftingList: Map<number, CraftingRecipe> = new Map();
+export const craftingList = new Map<RegistryId<"recipe">, CraftingRecipe>();
 
 export function loadCraftingConfigs(
-    records: Record<string, unknown>
+    sources: ReadonlyMap<string, SourcedRecord>
 ): void {
+    const registries = gameRegistries();
     craftingList.clear();
-    for (const [id, value] of Object.entries(records)) {
-        const numericId = getNumericId(id);
-        if (numericId === undefined) throw new Error(`No ID matching: ${id}`);
+    for (const [location, source] of sources) {
+        const data = object(source.value, source.source);
+        const result = object(data.result, `${source.source}.result`);
+        if (typeof result.item !== "string") {
+            throw new Error(`${source.source}.result.item: expected a string`);
+        }
+        const resultItemId = registries.item.resolve(
+            result.item,
+            source.namespace,
+            `${source.source}.result.item`
+        );
+        const ingredients = new Map<RegistryId<"item">, number>();
+        for (const [item, amount] of Object.entries(
+            object(data.ingredients ?? {}, `${source.source}.ingredients`)
+        )) {
+            ingredients.set(
+                registries.item.resolve(
+                    item,
+                    source.namespace,
+                    `${source.source}.ingredients.${item}`
+                ),
+                positiveInteger(amount, `${source.source}.ingredients.${item}`)
+            );
+        }
+        if (
+            data.requirements !== undefined &&
+            (!Array.isArray(data.requirements) ||
+                data.requirements.some((flag) => typeof flag !== "string"))
+        ) {
+            throw new Error(`${source.source}.requirements: expected a string array`);
+        }
+        const flags = (data.requirements as string[] | undefined)?.map((flag) => {
+            const id = flagMap.get(flag);
+            if (id === undefined) {
+                throw new Error(
+                    `${source.source}.requirements: unknown requirement "${flag}"`
+                );
+            }
+            return id;
+        }) ?? [];
+        const id = registries.recipe.id(location as `${string}:${string}`, source.source);
         craftingList.set(
-            numericId,
+            id,
             new CraftingRecipe(
-                numericId,
-                value as Partial<CraftingRecipeData>
+                id,
+                resultItemId,
+                nonNegative(data.duration, `${source.source}.duration`),
+                nonNegative(data.score, `${source.source}.score`),
+                positiveInteger(result.amount, `${source.source}.result.amount`, 1),
+                ingredients,
+                flags
             )
         );
     }
 }
 
 export function packCraftingList() {
-    const packet: ServerPacket.RecipeList["recipes"] = [];
-    for (const recipe of craftingList.values()) {
-        packet.push(recipe.pack());
-    }
-    return packet;
+    return [...craftingList.values()].map((recipe) => recipe.pack());
 }

@@ -1,3 +1,4 @@
+import type { ClientRegistryProjection } from "@bundu/shared/registry";
 import type { VisualDefs } from "../visual/defs";
 
 export type ResourceAssetSource = {
@@ -9,6 +10,7 @@ export type LoadedResourcePacks = {
     fingerprint: string;
     assets: ResourceAssetSource[];
     visualDefs: VisualDefs;
+    registries: ClientRegistryProjection;
 };
 
 type ManifestAsset = {
@@ -18,9 +20,10 @@ type ManifestAsset = {
 };
 
 type Manifest = {
-    format: 1;
+    format: 2;
     fingerprint: string;
     visuals: { hash: string; url: string };
+    registries: { hash: string; url: string };
     assets: ManifestAsset[];
 };
 
@@ -42,10 +45,11 @@ function string(value: unknown, path: string): string {
 
 function parseManifest(value: unknown): Manifest {
     const raw = record(value, "pack manifest");
-    if (raw.format !== 1) {
+    if (raw.format !== 2) {
         throw new Error(`Unsupported resource pack format ${String(raw.format)}`);
     }
     const visuals = record(raw.visuals, "pack manifest.visuals");
+    const registries = record(raw.registries, "pack manifest.registries");
     if (!Array.isArray(raw.assets)) {
         throw new Error("pack manifest.assets: expected an array");
     }
@@ -65,11 +69,15 @@ function parseManifest(value: unknown): Manifest {
         };
     });
     return {
-        format: 1,
+        format: 2,
         fingerprint: string(raw.fingerprint, "pack manifest.fingerprint"),
         visuals: {
             hash: string(visuals.hash, "pack manifest.visuals.hash"),
             url: string(visuals.url, "pack manifest.visuals.url"),
+        },
+        registries: {
+            hash: string(registries.hash, "pack manifest.registries.hash"),
+            url: string(registries.url, "pack manifest.registries.url"),
         },
         assets,
     };
@@ -159,9 +167,20 @@ export async function loadResourcePacks(
     const base = httpBase(websocketUrl);
     const manifest = await fetchManifest(websocketUrl);
     const visualUrl = packUrl(base, manifest.visuals.url);
-    const visualData = await verified(visualUrl, manifest.visuals.hash);
+    const registryUrl = packUrl(base, manifest.registries.url);
+    const [visualData, registryData] = await Promise.all([
+        verified(visualUrl, manifest.visuals.hash),
+        verified(registryUrl, manifest.registries.hash),
+    ]);
     const visualRaw: unknown = JSON.parse(new TextDecoder().decode(visualData));
+    const registryRaw: unknown = JSON.parse(
+        new TextDecoder().decode(registryData)
+    );
     const visualDefs = record(visualRaw, "visual definitions") as VisualDefs;
+    const registries = record(
+        registryRaw,
+        "registry projection"
+    ) as ClientRegistryProjection;
 
     revokeObjectUrls();
     const assets = await Promise.all(
@@ -178,6 +197,7 @@ export async function loadResourcePacks(
     return {
         fingerprint: manifest.fingerprint,
         visualDefs,
+        registries,
         assets,
     };
 }

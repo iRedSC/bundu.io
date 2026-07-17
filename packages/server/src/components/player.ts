@@ -2,7 +2,7 @@ import { Component } from "../engine";
 import type { AttributesData } from "./attributes";
 
 export type CraftingState = {
-    itemId: number;
+    recipeId: number;
     endsAt: number;
 };
 
@@ -23,6 +23,7 @@ export type PlayerData = {
     playerSkin: string;
     selectedStructure: {
         id: number;
+        itemId: number;
         rotation: number;
         cursor: { x: number; y: number };
     };
@@ -47,6 +48,7 @@ export const PlayerData = Component.register<PlayerData>(() => ({
     moveDir: [0, 0],
     selectedStructure: {
         id: -1,
+        itemId: -1,
         rotation: 0,
         cursor: { x: 0, y: 0 },
     },

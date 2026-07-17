@@ -15,7 +15,6 @@ import { System, type GameObject, type World } from "../engine/index.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { getSizedBounds, tilesOverlappingCircle } from "./position.js";
 import { Circle, Vector } from "sat";
-import { getNumericId } from "@bundu/shared/id_map.js";
 import { SERVER_TICK_MS } from "@bundu/shared/movement.js";
 import { Attributes } from "../components/attributes.js";
 import { gameplayConfig } from "../configs/gameplay.js";
@@ -502,11 +501,10 @@ export class AnimalSystem extends System<GameEventMap> {
         const config = AnimalConfigs.get(object.get(Type).id);
         const player = source && PlayerData.get(source);
         if (player) player.score += config.score;
-        const corpseId = getNumericId(config.corpse);
+        const corpseId = config.corpse;
         const scale = object.get(Attributes).get("physics.scale");
         object.active = false;
         this.trigger(GameEvent.DeleteObject, { object });
-        if (typeof corpseId !== "number") return;
         const position = new Vector(physics.position.x, physics.position.y);
         const baseRadius = TILE_SIZE / 2;
         // Living animals render in movement-facing space (0° = east); physics.rotation

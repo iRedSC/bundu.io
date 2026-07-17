@@ -41,7 +41,7 @@ const defaultFilename = path.resolve(
 );
 
 /** Bumped when durable payloads change (AnimalData, full attributes). */
-const FORMAT = 2;
+const FORMAT = 3;
 
 type PhysicsSnapshot = {
     x: number;
@@ -116,6 +116,7 @@ type ObjectSnapshot =
 
 type DevCheckpoint = {
     format: typeof FORMAT;
+    registryHash: string;
     gameTime: number;
     objects: ObjectSnapshot[];
 };
@@ -467,10 +468,11 @@ function restoreObject(world: World, snapshot: ObjectSnapshot): void {
     }
 }
 
-export function saveDevCheckpoint(world: World): void {
+export function saveDevCheckpoint(world: World, registryHash: string): void {
     const target = filename();
     const checkpoint: DevCheckpoint = {
         format: FORMAT,
+        registryHash,
         gameTime: world.gameTime,
         // Alive objects only (soft-disconnected players stay active).
         objects: [...world.objects.values()]
@@ -490,17 +492,27 @@ export function saveDevCheckpoint(world: World): void {
     );
 }
 
-export function restoreDevCheckpoint(world: World): boolean {
+export function restoreDevCheckpoint(
+    world: World,
+    registryHash: string
+): boolean {
     const target = filename();
     const restoring = `${target}.restoring`;
     fs.rmSync(restoring, { force: true });
     if (!fs.existsSync(target)) return false;
     fs.renameSync(target, restoring);
     const raw = JSON.parse(fs.readFileSync(restoring, "utf8")) as DevCheckpoint;
-    if (raw.format !== FORMAT || !Array.isArray(raw.objects)) {
-        throw new Error(
-            `${target}: unsupported dev checkpoint (want format ${FORMAT})`
+    if (
+        raw.format !== FORMAT ||
+        raw.registryHash !== registryHash ||
+        !Array.isArray(raw.objects)
+    ) {
+        fs.rmSync(restoring);
+        console.warn(
+            `[dev] ignored incompatible checkpoint ` +
+                `(format ${String(raw.format)}, registry ${String(raw.registryHash)})`
         );
+        return false;
     }
     world.gameTime = raw.gameTime;
     for (const snapshot of raw.objects) restoreObject(world, snapshot);
