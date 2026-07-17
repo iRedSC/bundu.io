@@ -1,6 +1,7 @@
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
 import type { CompiledVisualDefs } from "@bundu/shared/visual/compile";
 import type { CompiledVisualsPayload, VisualDef } from "@bundu/shared/visual/types";
+import { applyClientGameplay } from "../visual/shadow";
 
 export type ResourceAssetSource = {
     path: string;
@@ -25,6 +26,7 @@ type Manifest = {
     fingerprint: string;
     visuals: { hash: string; url: string };
     registries: { hash: string; url: string };
+    gameplay: { hash: string; url: string };
     assets: ManifestAsset[];
 };
 
@@ -54,6 +56,7 @@ function parseManifest(value: unknown): Manifest {
     }
     const visuals = record(raw.visuals, "pack manifest.visuals");
     const registries = record(raw.registries, "pack manifest.registries");
+    const gameplay = record(raw.gameplay, "pack manifest.gameplay");
     if (!Array.isArray(raw.assets)) {
         throw new Error("pack manifest.assets: expected an array");
     }
@@ -82,6 +85,10 @@ function parseManifest(value: unknown): Manifest {
         registries: {
             hash: string(registries.hash, "pack manifest.registries.hash"),
             url: string(registries.url, "pack manifest.registries.url"),
+        },
+        gameplay: {
+            hash: string(gameplay.hash, "pack manifest.gameplay.hash"),
+            url: string(gameplay.url, "pack manifest.gameplay.url"),
         },
         assets,
     };
@@ -191,19 +198,23 @@ async function materializePack(
     manifest: Manifest,
     resolveVisuals: URL,
     resolveRegistries: URL,
+    resolveGameplay: URL,
     resolveAsset: (path: string) => URL,
     /** Game-server assets are content-addressed with ?hash=; bundled files are not. */
     contentAddressed: boolean
 ): Promise<LoadedResourcePacks> {
     const visualUrl = new URL(resolveVisuals);
     const registryUrl = new URL(resolveRegistries);
+    const gameplayUrl = new URL(resolveGameplay);
     if (contentAddressed) {
         visualUrl.searchParams.set("hash", manifest.visuals.hash);
         registryUrl.searchParams.set("hash", manifest.registries.hash);
+        gameplayUrl.searchParams.set("hash", manifest.gameplay.hash);
     }
-    const [visualData, registryData] = await Promise.all([
+    const [visualData, registryData, gameplayData] = await Promise.all([
         verified(visualUrl, manifest.visuals.hash),
         verified(registryUrl, manifest.registries.hash),
+        verified(gameplayUrl, manifest.gameplay.hash),
     ]);
     const visualDefs = parseCompiledVisuals(
         JSON.parse(new TextDecoder().decode(visualData))
@@ -212,6 +223,7 @@ async function materializePack(
         JSON.parse(new TextDecoder().decode(registryData)),
         "registry projection"
     ) as ClientRegistryProjection;
+    applyClientGameplay(JSON.parse(new TextDecoder().decode(gameplayData)));
 
     revokeObjectUrls();
     const assets = await Promise.all(
@@ -262,6 +274,7 @@ export async function loadResourcePacks(
                 manifest,
                 bundledUrl(bundled.visuals.url),
                 bundledUrl(bundled.registries.url),
+                bundledUrl(bundled.gameplay.url),
                 bundledAssetUrl,
                 false
             );
@@ -277,6 +290,7 @@ export async function loadResourcePacks(
         manifest,
         packUrl(base, manifest.visuals.url),
         packUrl(base, manifest.registries.url),
+        packUrl(base, manifest.gameplay.url),
         (path) => assetUrl(base, path),
         true
     );

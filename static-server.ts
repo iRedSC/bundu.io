@@ -12,13 +12,16 @@ type PackNamespaceRoots = {
     /** Texture roots by namespace; later packs override earlier ones. */
     textureRoots: ReadonlyMap<string, string[]>;
     visualDirs: readonly string[];
+    /** Client gameplay.yml paths; later packs override earlier ones. */
+    gameplayFiles: readonly string[];
 };
 
 function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
     const textureRoots = new Map<string, string[]>();
     const visualDirs: string[] = [];
+    const gameplayFiles: string[] = [];
     if (!fs.existsSync(packsRoot)) {
-        return { textureRoots, visualDirs };
+        return { textureRoots, visualDirs, gameplayFiles };
     }
 
     const packDirs = fs
@@ -38,18 +41,21 @@ function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
         for (const namespace of namespaces) {
             const textures = path.join(assetsRoot, namespace, "textures");
             const visuals = path.join(assetsRoot, namespace, "visuals");
+            const gameplay = path.join(assetsRoot, namespace, "gameplay.yml");
             if (fs.existsSync(textures)) {
                 const roots = textureRoots.get(namespace) ?? [];
                 roots.push(textures);
                 textureRoots.set(namespace, roots);
             }
             if (fs.existsSync(visuals)) visualDirs.push(visuals);
+            if (fs.existsSync(gameplay)) gameplayFiles.push(gameplay);
         }
     }
-    return { textureRoots, visualDirs };
+    return { textureRoots, visualDirs, gameplayFiles };
 }
 
-const { textureRoots, visualDirs } = discoverPackAssetRoots(PACKS_ROOT);
+const { textureRoots, visualDirs, gameplayFiles } =
+    discoverPackAssetRoots(PACKS_ROOT);
 
 type SseClient = {
     write: (chunk: string) => void;
@@ -130,6 +136,20 @@ async function visualDefsJson(): Promise<Response> {
     });
 }
 
+/** Later pack files override earlier ones (same as resource pack merge). */
+function clientGameplayJson(): Response {
+    if (gameplayFiles.length === 0) {
+        return new Response("Missing client gameplay.yml", { status: 404 });
+    }
+    const filepath = gameplayFiles[gameplayFiles.length - 1];
+    if (!filepath) {
+        return new Response("Missing client gameplay.yml", { status: 404 });
+    }
+    return Response.json(Bun.YAML.parse(fs.readFileSync(filepath, "utf8")), {
+        headers: { "Cache-Control": "no-store" },
+    });
+}
+
 function resolveTexture(namespace: string, relative: string): string | undefined {
     const roots = textureRoots.get(namespace);
     if (!roots) return undefined;
@@ -162,6 +182,9 @@ if (DEV_CONFIG_RELOAD) {
             }, 100);
         });
     for (const directory of visualDirs) watchYaml(directory);
+    for (const filepath of gameplayFiles) {
+        watchYaml(path.dirname(filepath));
+    }
 
     // Keep SSE connections alive past Bun's default idle timeout.
     setInterval(() => {
@@ -195,6 +218,14 @@ serve({
                 } catch (err) {
                     console.error("[static] failed to load visual defs", err);
                     return new Response("Definition error", { status: 500 });
+                }
+            }
+            if (url.pathname === "/__dev/client-gameplay") {
+                try {
+                    return clientGameplayJson();
+                } catch (err) {
+                    console.error("[static] failed to load client gameplay", err);
+                    return new Response("Gameplay error", { status: 500 });
                 }
             }
         }

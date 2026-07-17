@@ -4,3 +4,6 @@ defaultVariant: base
 variants:
   base:
     main: bundu/decoration/savannah/savannah_tree1.svg
+parts:
+  main:
+    shadow: 2

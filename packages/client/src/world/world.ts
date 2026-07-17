@@ -37,6 +37,11 @@ import {
     type ContaineredSprite,
 } from "../assets/sprite_factory";
 import { ParticleSystem } from "@client/rendering/particles/particle_system";
+import {
+    setActiveShadowLayer,
+    ShadowLayer,
+} from "@client/rendering/shadow_layer";
+import { shadowStyle, type ShadowLight } from "../visual/shadow";
 import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
 import { clientTime } from "@client/globals";
@@ -78,6 +83,7 @@ export class World {
     renderer: LayeredRenderer;
     sky: Sky;
     skyUndo: SkyUndoLayer;
+    shadows: ShadowLayer;
     particles: ParticleSystem;
     private placementGhost?: Structure;
     private placementInvalidOverlay?: ContaineredSprite;
@@ -95,11 +101,14 @@ export class World {
         this.camera = new Camera(viewport);
         this.sky = new Sky();
         this.skyUndo = new SkyUndoLayer(pixiRenderer);
+        this.shadows = new ShadowLayer(this.viewport);
+        setActiveShadowLayer(this.shadows);
         this.renderer = new LayeredRenderer(this.viewport);
         this.particles = new ParticleSystem(this.viewport);
         this.objects = new ObjectContainer();
         this.combatFx = new CombatFx(this.objects, this.particles);
 
+        this.viewport.addChild(this.shadows.container);
         this.viewport.addChild(this.sky);
         this.viewport.addChild(this.skyUndo.sprite);
         this.viewport.sortChildren();
@@ -111,6 +120,7 @@ export class World {
         const ids = Array.from(this.objects.all(), (object) => object.id);
         for (const id of ids) this.removeClientObject(id);
         this.renderer.delete(-10);
+        this.shadows.clear();
         this.particles.clear();
         this.clearPlacementGhost();
         this.cursorWorld = undefined;
@@ -122,6 +132,8 @@ export class World {
     destroy(): void {
         this.clear();
         this.particles.destroy();
+        setActiveShadowLayer(undefined);
+        this.shadows.destroy();
         this.skyUndo.sprite.removeFromParent();
         this.skyUndo.destroy();
         this.sky.removeFromParent();
@@ -137,6 +149,7 @@ export class World {
             }
         }
         this.syncSkyUndo();
+        this.syncShadowLights();
         const localPlayer =
             this.user !== undefined ? this.objects.get(this.user) : undefined;
         updateOcclusion(localPlayer, this.objects.all());
@@ -158,6 +171,25 @@ export class World {
             }
         }
         this.skyUndo.sync(discs, this.sky.tint);
+    }
+
+    /** Feed configured light structures into the batched shadow layer. */
+    private syncShadowLights(): void {
+        const { sources } = shadowStyle.lights;
+        const lights: ShadowLight[] = [];
+        for (const object of this.objects.all()) {
+            if (!(object instanceof Structure)) continue;
+            const intensity = sources[object.type];
+            if (intensity === undefined) continue;
+            lights.push({
+                x: object.position.x,
+                y: object.position.y,
+                intensity,
+            });
+        }
+        this.shadows.setLights(lights);
+        const bounds = this.viewport.getVisibleBounds();
+        this.shadows.setView(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
     setCursorWorld(position: { x: number; y: number }) {

@@ -8,6 +8,7 @@ import {
 } from "../constants";
 import { colorLerp } from "@bundu/shared/transforms";
 import { Animation, type AnimationManager } from "../animation/runtime";
+import { shadowOffsetForPeriod, shadowStyle } from "../visual/shadow";
 
 const PERIOD_COLORS = [
     MORNING_COLOR,
@@ -30,6 +31,9 @@ export class Sky extends Graphics {
         this.zIndex = 200;
         this.blendMode = "multiply";
         this.tint = PERIOD_COLORS[0];
+        const initial = shadowOffsetForPeriod(0);
+        shadowStyle.offsetX = initial.x;
+        shadowStyle.offsetY = initial.y;
     }
 
     setTime(period: number, manager: AnimationManager) {
@@ -47,13 +51,21 @@ function skyTransition(target: Sky) {
         if (active.isFirstKeyframe) {
             active.goto(0, 1000);
         }
+        const t = active.t;
         target.tint = colorLerp(
             PERIOD_COLORS[target.currentCycle] ?? DAY_COLOR,
             PERIOD_COLORS[target.nextCycle] ?? DAY_COLOR,
-            active.t
+            t
         );
+        const from = shadowOffsetForPeriod(target.currentCycle);
+        const to = shadowOffsetForPeriod(target.nextCycle);
+        shadowStyle.offsetX = from.x + (to.x - from.x) * t;
+        shadowStyle.offsetY = from.y + (to.y - from.y) * t;
         if (active.keyframeEnded) {
             target.currentCycle = target.nextCycle;
+            const settled = shadowOffsetForPeriod(target.currentCycle);
+            shadowStyle.offsetX = settled.x;
+            shadowStyle.offsetY = settled.y;
             active.expired = true;
         }
     };

@@ -11,6 +11,7 @@ parts:
     spillover: 25
   main:
     zIndex: 10
+    shadow: 1
 
 animations:
   attack:

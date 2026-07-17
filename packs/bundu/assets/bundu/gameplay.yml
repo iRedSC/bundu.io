@@ -1,0 +1,20 @@
+# Client-only gameplay (served with resource packs). Not read by the server sim.
+shadows:
+    alpha: 0.25
+    # Blur strength (0 = sharp silhouette).
+    soften: 5
+    # Screen-space offset by day period (morning → night).
+    offset_by_period:
+        morning: { x: 0.07, y: 0.1 }
+        day: { x: 0, y: 0.08 }
+        evening: { x: -0.07, y: 0.1 }
+        night: { x: 0, y: 0 }
+    # Local lights push shadows away; opposite vectors cancel when surrounded.
+    lights:
+        radius: 220
+        # Max world-pixel push for a unit-weight direction.
+        strength: 14
+        sources:
+            fire_small: 0.8
+            fire_big: 1
+            fire_pit: 1.2

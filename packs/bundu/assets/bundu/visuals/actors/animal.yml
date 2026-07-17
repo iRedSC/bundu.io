@@ -2,20 +2,21 @@ id: animal
 abstract: true
 
 parts:
-  body:
-    # Relative to TILE_SIZE visual root (scale 1 = 1 tile)
-    spriteScale: 0.7
-    rotation: -90
+    body:
+        # Relative to TILE_SIZE visual root (scale 1 = 1 tile)
+        spriteScale: 0.7
+        rotation: -90
+        shadow: 1
 
 animations:
-  idle:
-    preset: bob
-    parts: [body]
-    autoplay: true
-    data: { amplitude: 0.015 }
-  hurt:
-    preset: hurt
-    parts: [body]
-  attack:
-    preset: lunge
-    parts: [body]
+    idle:
+        preset: bob
+        parts: [body]
+        autoplay: true
+        data: { amplitude: 0.015 }
+    hurt:
+        preset: hurt
+        parts: [body]
+    attack:
+        preset: lunge
+        parts: [body]

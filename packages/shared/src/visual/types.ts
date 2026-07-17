@@ -47,6 +47,12 @@ export type PartDef = PartPose & {
      * Radius = 0.5 × spriteScale × structure world scale (no visible sprite).
      */
     skyUndo?: boolean;
+    /**
+     * Drop-shadow height (positive number). Multiplies the day-cycle + light
+     * offset vector (taller = longer cast in the same direction).
+     * Omit / 0 = no shadow. Legacy `true` compiles as 1.
+     */
+    shadow?: number;
 };
 
 export type VisualContent =

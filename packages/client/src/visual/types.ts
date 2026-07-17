@@ -36,6 +36,8 @@ export type PartNode = {
     /** Transient motion + authored pivot (presets rotate/translate around this). */
     animation: Container;
     visual: ContaineredSprite;
+    /** Solid black under-sprite when PartDef.shadow is set. */
+    shadow?: ContaineredSprite;
     attach?: Container;
     attachAnchor?: { x: number; y: number };
 };

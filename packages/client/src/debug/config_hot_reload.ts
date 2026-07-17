@@ -6,6 +6,7 @@ import {
     replaceVisualDefs,
     type VisualDefs,
 } from "../visual/defs";
+import { applyClientGameplay } from "../visual/shadow";
 
 function reapplyVisualDefs(world: World) {
     for (const object of world.objects.all()) {
@@ -22,7 +23,7 @@ function reapplyVisualDefs(world: World) {
 }
 
 /**
- * Watches visual-definition YAML and atomically replaces the live registry.
+ * Watches pack YAML (visuals + client gameplay) and hot-applies.
  * Debug builds only — must not ship in prod (see check-prod-debug).
  */
 export function startConfigHotReload(world: World): () => void {
@@ -40,12 +41,13 @@ export function startConfigHotReload(world: World): () => void {
             do {
                 pending = false;
                 const timestamp = Date.now();
-                const defsRes = await fetch(
-                    `/__dev/visual-defs?t=${timestamp}`
-                );
+                const [defsRes, gameplayRes] = await Promise.all([
+                    fetch(`/__dev/visual-defs?t=${timestamp}`),
+                    fetch(`/__dev/client-gameplay?t=${timestamp}`),
+                ]);
                 if (!defsRes.ok) {
                     console.warn(
-                        "[config-hot-reload] fetch failed:",
+                        "[config-hot-reload] visual-defs fetch failed:",
                         defsRes.status
                     );
                     continue;
@@ -57,6 +59,15 @@ export function startConfigHotReload(world: World): () => void {
                     "[config-hot-reload] visual definitions applied",
                     `(${Object.keys(defs).length} files)`
                 );
+                if (gameplayRes.ok) {
+                    applyClientGameplay(await gameplayRes.json());
+                    console.info("[config-hot-reload] client gameplay applied");
+                } else {
+                    console.warn(
+                        "[config-hot-reload] client-gameplay fetch failed:",
+                        gameplayRes.status
+                    );
+                }
             } while (pending);
         } catch (err) {
             console.warn("[config-hot-reload] reload failed", err);

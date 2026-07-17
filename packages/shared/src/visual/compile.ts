@@ -85,6 +85,16 @@ function optionalBoolean(value: unknown, path: string): boolean | undefined {
     return value === undefined ? undefined : boolean(value, path);
 }
 
+/** Positive shadow length multiplier; omit/0 = none. Accepts legacy `true` as 1. */
+function optionalShadowHeight(value: unknown, path: string): number | undefined {
+    if (value === undefined || value === false || value === 0) return undefined;
+    if (value === true) return 1;
+    if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+        throw new Error(`${path}: expected a positive number (shadow height)`);
+    }
+    return value;
+}
+
 function optionalBlendMode(
     value: unknown,
     path: string
@@ -210,6 +220,7 @@ function compilePart(name: string, value: unknown, path: string): PartDef {
         visible: optionalBoolean(raw.visible, `${path}.visible`),
         blendMode: optionalBlendMode(raw.blendMode, `${path}.blendMode`),
         skyUndo: optionalBoolean(raw.skyUndo, `${path}.skyUndo`),
+        shadow: optionalShadowHeight(raw.shadow, `${path}.shadow`),
     };
 }
 
