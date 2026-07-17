@@ -4,6 +4,7 @@ export type {
     AnimPreset,
     ObjectDef,
     OcclusionDef,
+    PartBlendMode,
     PartDef,
     PartNode,
     PartPose,
