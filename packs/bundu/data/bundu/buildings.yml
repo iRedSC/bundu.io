@@ -6,19 +6,19 @@ stone_wall:
     class: wall
     health: 3500
 
-gold_wall:
+copper_wall:
     class: wall
     health: 4500
 
-diamond_wall:
+silver_wall:
     class: wall
     health: 6000
 
-amethyst_wall:
+cobalt_wall:
     class: wall
     health: 7500
 
-red_wall:
+iridium_wall:
     class: wall
     health: 9000
 
@@ -30,17 +30,21 @@ stone_door:
     class: door
     health: 3500
 
-gold_door:
+copper_door:
     class: door
     health: 4500
 
-diamond_door:
+silver_door:
     class: door
     health: 6000
 
-amethyst_door:
+cobalt_door:
     class: door
     health: 7500
+
+iridium_door:
+    class: door
+    health: 9000
 
 wood_spike:
     class: spike
@@ -52,20 +56,25 @@ stone_spike:
     damage: 30
     on_hit_damage: 10
 
-gold_spike:
+copper_spike:
     class: spike
     damage: 40
     on_hit_damage: 15
 
-diamond_spike:
+silver_spike:
     class: spike
     damage: 50
     on_hit_damage: 20
 
-amethyst_spike:
+cobalt_spike:
     class: spike
     damage: 60
     on_hit_damage: 30
+
+iridium_spike:
+    class: spike
+    damage: 70
+    on_hit_damage: 40
 
 workbench:
     class: building
@@ -100,7 +109,7 @@ quick_stone_spike:
     health: 50
     damage: 30
 
-quick_diamond_spike:
+quick_silver_spike:
     class: spike
     health: 100
     damage: 50

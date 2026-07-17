@@ -207,7 +207,7 @@
         },
         {
             "class": "resource",
-            "id": "gold",
+            "id": "copper",
             "x": 5041,
             "y": 14446,
             "size": 35,
@@ -3190,7 +3190,7 @@
         },
         {
             "class": "resource",
-            "id": "gold",
+            "id": "copper",
             "x": 3807,
             "y": 13636,
             "size": 27,
@@ -3333,7 +3333,7 @@
         },
         {
             "class": "resource",
-            "id": "gold",
+            "id": "copper",
             "x": 3676,
             "y": 14099,
             "size": 34,
@@ -3766,7 +3766,7 @@
         },
         {
             "class": "resource",
-            "id": "gold",
+            "id": "copper",
             "x": 7519,
             "y": 9890,
             "size": 33,
@@ -3774,7 +3774,7 @@
         },
         {
             "class": "resource",
-            "id": "gold",
+            "id": "copper",
             "x": 7940,
             "y": 9713,
             "size": 33,
@@ -3782,7 +3782,7 @@
         },
         {
             "class": "resource",
-            "id": "gold",
+            "id": "copper",
             "x": 7984,
             "y": 9664,
             "size": 33,

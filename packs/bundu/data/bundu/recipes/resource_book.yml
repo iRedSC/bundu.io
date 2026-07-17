@@ -5,9 +5,9 @@ duration: 40000
 score: 4000
 ingredients:
     book: 1
-    amethyst: 80
-    diamond: 100
-    gold: 120
+    cobalt: 80
+    silver: 100
+    copper: 120
     stone: 140
     wood: 200
 requirements:

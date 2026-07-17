@@ -1,0 +1,13 @@
+result:
+    item: silver_spear
+    amount: 1
+duration: 25000
+score: 1250
+ingredients:
+    copper_spear: 1
+    silver: 40
+    copper: 50
+    wood: 120
+requirements:
+    - near_crafting_table
+    - near_anvil

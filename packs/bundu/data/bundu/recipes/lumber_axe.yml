@@ -4,10 +4,10 @@ result:
 duration: 40000
 score: 3000
 ingredients:
-    diamond_pickaxe: 1
-    amethyst: 40
-    diamond: 40
-    gold: 60
+    silver_pickaxe: 1
+    cobalt: 40
+    silver: 40
+    copper: 60
     stone: 100
     wood: 200
 requirements:

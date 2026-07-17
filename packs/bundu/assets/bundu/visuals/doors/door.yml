@@ -2,6 +2,24 @@ id: door
 abstract: true
 extends: single_tile_node
 
+# Layer order: spike (optional) → wall base → door leaf (`main`).
+parts:
+  spike:
+    zIndex: 9
+    visible: false
+  wall:
+    zIndex: 10
+  main:
+    zIndex: 11
+
+animations:
+  hit:
+    parts: [wall, main]
+  place:
+    parts: [wall, main]
+  rotting:
+    parts: [wall, main, spike]
+
 states:
   open:
     default: false
@@ -12,3 +30,18 @@ states:
             zIndex: 0
             alpha: 0.6
             scale: 0.9
+  spiked:
+    default: false
+    values:
+      "true":
+        parts:
+          spike:
+            visible: true
+  rotting:
+    values:
+      "true":
+        parts:
+          wall:
+            saturation: 0
+          spike:
+            saturation: 0

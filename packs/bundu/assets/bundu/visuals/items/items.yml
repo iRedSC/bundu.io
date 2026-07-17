@@ -5,6 +5,7 @@ item/type/none:
   texture: bundu/misc/unknown_asset.svg
   contexts:
     icon: {}
+    inventory: {}
     hand: {}
     body: {}
     world: {}
@@ -115,17 +116,17 @@ item/stone_pickaxe:
   extends: item/type/pickaxe
   texture: bundu/item/tool/stone_pickaxe.svg
 
-item/gold_pickaxe:
+item/copper_pickaxe:
   extends: item/type/pickaxe
-  texture: bundu/item/tool/gold_pickaxe.svg
+  texture: bundu/item/tool/copper_pickaxe.svg
 
-item/diamond_pickaxe:
+item/silver_pickaxe:
   extends: item/type/pickaxe
-  texture: bundu/item/tool/diamond_pickaxe.svg
+  texture: bundu/item/tool/silver_pickaxe.svg
 
-item/amethyst_pickaxe:
+item/cobalt_pickaxe:
   extends: item/type/pickaxe
-  texture: bundu/item/tool/amethyst_pickaxe_2.svg
+  texture: bundu/item/tool/cobalt_pickaxe_2.svg
 
 item/lumber_axe:
   extends: item/type/pickaxe
@@ -151,49 +152,53 @@ item/stone_sword:
   extends: item/type/sword
   texture: bundu/item/tool/stone_sword.svg
 
-item/gold_sword:
+item/copper_sword:
   extends: item/type/sword
-  texture: bundu/item/tool/gold_sword.svg
+  texture: bundu/item/tool/copper_sword.svg
 
-item/diamond_sword:
+item/silver_sword:
   extends: item/type/sword
-  texture: bundu/item/tool/diamond_sword.svg
+  texture: bundu/item/tool/silver_sword.svg
 
-item/amethyst_sword:
+item/cobalt_sword:
   extends: item/type/sword
-  texture: bundu/item/tool/amethyst_sword.svg
+  texture: bundu/item/tool/cobalt_sword.svg
+
+item/iridium_sword:
+  extends: item/type/sword
+  texture: bundu/item/tool/iridium_sword.svg
 
 item/stone_hammer:
   extends: item/type/hammer
   texture: bundu/item/tool/stone_hammer.svg
 
-item/gold_hammer:
+item/copper_hammer:
   extends: item/type/hammer
-  texture: bundu/item/tool/gold_hammer.svg
+  texture: bundu/item/tool/copper_hammer.svg
 
-item/diamond_hammer:
+item/silver_hammer:
   extends: item/type/hammer
-  texture: bundu/item/tool/diamond_hammer.svg
+  texture: bundu/item/tool/silver_hammer.svg
 
-item/amethyst_hammer:
+item/cobalt_hammer:
   extends: item/type/hammer
-  texture: bundu/item/tool/amethyst_hammer.svg
+  texture: bundu/item/tool/cobalt_hammer.svg
 
 item/stone_spear:
   extends: item/type/spear
   texture: bundu/item/tool/stone_spear.svg
 
-item/gold_spear:
+item/copper_spear:
   extends: item/type/spear
-  texture: bundu/item/tool/gold_spear.svg
+  texture: bundu/item/tool/copper_spear.svg
 
-item/diamond_spear:
+item/silver_spear:
   extends: item/type/spear
-  texture: bundu/item/tool/diamond_spear.svg
+  texture: bundu/item/tool/silver_spear.svg
 
-item/amethyst_spear:
+item/cobalt_spear:
   extends: item/type/spear
-  texture: bundu/item/tool/amethyst_spear.svg
+  texture: bundu/item/tool/cobalt_spear.svg
 
 item/tusk_spear:
   extends: item/type/spear
@@ -207,17 +212,17 @@ item/stone_helmet:
   extends: item/type/helmet
   texture: bundu/item/equipment/stone_helmet.svg
 
-item/gold_helmet:
+item/copper_helmet:
   extends: item/type/helmet
-  texture: bundu/item/equipment/gold_helmet.svg
+  texture: bundu/item/equipment/copper_helmet.svg
 
-item/diamond_helmet:
+item/silver_helmet:
   extends: item/type/helmet
-  texture: bundu/item/equipment/diamond_helmet.svg
+  texture: bundu/item/equipment/silver_helmet.svg
 
-item/amethyst_helmet:
+item/cobalt_helmet:
   extends: item/type/helmet
-  texture: bundu/item/equipment/amethyst_helmet.svg
+  texture: bundu/item/equipment/cobalt_helmet.svg
 
 item/earmuffs:
   extends: item/type/hat
@@ -287,31 +292,31 @@ item/stone:
   contexts:
     world: { scale: 1.7 }
 
-item/gold:
+item/copper:
   extends: item/type/none
-  texture: bundu/item/material/gold.svg
+  texture: bundu/item/material/copper.svg
   contexts:
     world: { scale: 1.7 }
 
-item/diamond:
+item/silver:
   extends: item/type/none
-  texture: bundu/item/material/diamond.svg
+  texture: bundu/item/material/silver.svg
   contexts:
     world: { scale: 1.7 }
 
-item/amethyst:
+item/cobalt:
   extends: item/type/none
-  texture: bundu/item/material/amethyst.svg
+  texture: bundu/item/material/cobalt.svg
   contexts:
     world: { scale: 2 }
 
-item/red:
+item/iridium:
   extends: item/type/none
   texture: bundu/misc/unknown_asset.svg
 
 item/friendly_wall:
   extends: item/type/none
-  texture: bundu/structure/wall/friendly_wall.svg
+  texture: bundu/misc/unknown_asset.svg
 
 item/wood_wall:
   extends: item/type/wall
@@ -321,69 +326,77 @@ item/stone_wall:
   extends: item/type/wall
   texture: bundu/structure/wall/stone_wall.png
 
-item/gold_wall:
+item/copper_wall:
   extends: item/type/wall
-  texture: bundu/structure/wall/gold_wall.png
+  texture: bundu/structure/wall/copper_wall.png
 
-item/diamond_wall:
+item/silver_wall:
   extends: item/type/wall
-  texture: bundu/structure/wall/diamond_wall.png
+  texture: bundu/structure/wall/silver_wall.png
 
-item/amethyst_wall:
+item/cobalt_wall:
   extends: item/type/wall
-  texture: bundu/structure/wall/amethyst_wall.png
+  texture: bundu/structure/wall/cobalt_wall.png
 
-item/red_wall:
+item/iridium_wall:
   extends: item/type/wall
-  texture: bundu/structure/wall/red_wall.png
+  texture: bundu/structure/wall/iridium_wall.png
 
 item/wood_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/wood_spike.svg
+  texture: bundu/item/structure/spike/wood_spike.png
 
 item/stone_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/stone_spike.svg
+  texture: bundu/item/structure/spike/stone_spike.png
 
-item/gold_spike:
+item/copper_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/gold_spike.svg
+  texture: bundu/item/structure/spike/copper_spike.png
 
-item/diamond_spike:
+item/silver_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/diamond_spike.svg
+  texture: bundu/item/structure/spike/silver_spike.png
 
-item/amethyst_spike:
+item/cobalt_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/amethyst_spike.svg
+  texture: bundu/item/structure/spike/cobalt_spike.png
+
+item/iridium_spike:
+  extends: item/type/spike
+  texture: bundu/item/structure/spike/iridium_spike.png
 
 item/friendly_door:
   extends: item/type/none
-  texture: bundu/structure/door/friendly_door.svg
+  texture: bundu/misc/unknown_asset.svg
 
 item/door_open:
   extends: item/type/none
-  texture: bundu/structure/door/door_open.svg
+  texture: bundu/misc/unknown_asset.svg
 
 item/wood_door:
   extends: item/type/door
-  texture: bundu/structure/door/wood_door.svg
+  texture: bundu/structure/door/wood_door.png
 
 item/stone_door:
   extends: item/type/door
-  texture: bundu/structure/door/stone_door.svg
+  texture: bundu/structure/door/stone_door.png
 
-item/gold_door:
+item/copper_door:
   extends: item/type/door
-  texture: bundu/structure/door/gold_door.svg
+  texture: bundu/structure/door/copper_door.png
 
-item/diamond_door:
+item/silver_door:
   extends: item/type/door
-  texture: bundu/structure/door/diamond_door.svg
+  texture: bundu/structure/door/silver_door.png
 
-item/amethyst_door:
+item/cobalt_door:
   extends: item/type/door
-  texture: bundu/structure/door/amethyst_door.svg
+  texture: bundu/structure/door/cobalt_door.png
+
+item/iridium_door:
+  extends: item/type/door
+  texture: bundu/structure/door/iridium_door.png
 
 item/workbench:
   extends: item/type/building
@@ -407,19 +420,19 @@ item/fire_big:
 
 item/quick_wood_wall:
   extends: item/type/wall
-  texture: bundu/structure/wall/quick_wood_wall.svg
+  texture: bundu/structure/wall/wood_wall.png
 
 item/quick_stone_wall:
   extends: item/type/wall
-  texture: bundu/structure/wall/quick_stone_wall.svg
+  texture: bundu/structure/wall/stone_wall.png
 
 item/quick_stone_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/quick_stone_spike.svg
+  texture: bundu/item/structure/spike/stone_spike.png
 
-item/quick_diamond_spike:
+item/quick_silver_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/quick_diamond_spike.svg
+  texture: bundu/item/structure/spike/silver_spike.png
 
 item/forest_tree:
   extends: item/type/none
@@ -697,7 +710,7 @@ item/fish_scale:
   extends: item/type/none
   texture: bundu/misc/unknown_asset.svg
 
-item/diamond_repair_hammer:
+item/silver_repair_hammer:
   extends: item/type/none
   texture: bundu/misc/unknown_asset.svg
 
@@ -713,7 +726,7 @@ item/bird_foot:
   extends: item/type/none
   texture: bundu/misc/unknown_asset.svg
 
-item/amethyst_medallion:
+item/cobalt_medallion:
   extends: item/type/none
   texture: bundu/misc/unknown_asset.svg
 

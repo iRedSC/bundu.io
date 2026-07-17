@@ -7,7 +7,7 @@ ingredients:
     alligator_skin: 6
     fish_scale: 6
     komodo_dragon_eye: 2
-    gold_helmet: 1
+    copper_helmet: 1
 requirements:
     - near_crafting_table
     - in_water

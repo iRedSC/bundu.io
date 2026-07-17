@@ -226,7 +226,9 @@ export class ItemButton {
             return;
         }
         this._item = item;
-        const texture = lookupContextVisual(name)?.contexts.icon?.texture;
+        const contexts = lookupContextVisual(name)?.contexts;
+        const texture =
+            contexts?.inventory?.texture ?? contexts?.icon?.texture;
         this.itemSprite = SpriteFactory.update(
             this.itemSprite,
             undefined,

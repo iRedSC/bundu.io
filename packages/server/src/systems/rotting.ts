@@ -34,7 +34,7 @@ export class RottingSystem extends System<GameEventMap> {
         }
     };
 
-    /** Diamond-sword hits on rotting structures transfer ownership (after Hurt). */
+    /** Silver-sword hits on rotting structures transfer ownership (after Hurt). */
     private claim = ({
         object,
         source,

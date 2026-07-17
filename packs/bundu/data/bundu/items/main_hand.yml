@@ -22,7 +22,7 @@ stone_sword:
             op: add
             value: 3
 
-gold_sword:
+copper_sword:
     type: sword
     level: 3
     attributes:
@@ -33,7 +33,7 @@ gold_sword:
             op: add
             value: 3
 
-diamond_sword:
+silver_sword:
     type: sword
     level: 4
     attributes:
@@ -44,7 +44,7 @@ diamond_sword:
             op: add
             value: 4
 
-amethyst_sword:
+cobalt_sword:
     type: sword
     level: 5
     attributes:
@@ -54,6 +54,17 @@ amethyst_sword:
         health.defense.blocking:
             op: add
             value: 5
+
+iridium_sword:
+    type: sword
+    level: 6
+    attributes:
+        attack.damage:
+            op: add
+            value: 25
+        health.defense.blocking:
+            op: add
+            value: 6
 
 wood_pickaxe:
     type: pickaxe
@@ -71,7 +82,7 @@ stone_pickaxe:
             op: add
             value: 3
 
-gold_pickaxe:
+copper_pickaxe:
     type: pickaxe
     level: 3
     attributes:
@@ -79,14 +90,14 @@ gold_pickaxe:
             op: add
             value: 4
 
-diamond_pickaxe:
+silver_pickaxe:
     type: pickaxe
     level: 4
     attributes:
         attack.damage:
             op: add
             value: 5
-amethyst_pickaxe:
+cobalt_pickaxe:
     type: pickaxe
     level: 5
     attributes:
@@ -125,7 +136,7 @@ repair_hammer:
             op: add
             value: -50
 
-diamond_repair_hammer:
+silver_repair_hammer:
     type: wrench
     attributes:
         attack.damage:
@@ -146,7 +157,7 @@ stone_spear:
             op: add
             value: 1
 
-gold_spear:
+copper_spear:
     type: spear
     level: 3
     attributes:
@@ -157,7 +168,7 @@ gold_spear:
             op: add
             value: 1
 
-diamond_spear:
+silver_spear:
     type: spear
     level: 4
     attributes:
@@ -168,7 +179,7 @@ diamond_spear:
             op: add
             value: 2
 
-amethyst_spear:
+cobalt_spear:
     type: spear
     level: 5
     attributes:
@@ -201,7 +212,7 @@ stone_hammer:
             op: add
             value: 30
 
-gold_hammer:
+copper_hammer:
     type: hammer
     level: 3
     attributes:
@@ -212,7 +223,7 @@ gold_hammer:
             op: add
             value: 40
 
-diamond_hammer:
+silver_hammer:
     type: hammer
     level: 4
     attributes:
@@ -223,7 +234,7 @@ diamond_hammer:
             op: add
             value: 50
 
-amethyst_hammer:
+cobalt_hammer:
     type: hammer
     level: 5
     attributes:

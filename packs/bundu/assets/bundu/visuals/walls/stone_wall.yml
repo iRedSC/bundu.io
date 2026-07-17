@@ -1,0 +1,7 @@
+id: stone_wall
+extends: wall
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/wall/stone_wall.png
+    spike: bundu/structure/spike/stone_spike.png

@@ -21,7 +21,7 @@ health:
 
 rotting:
   damage_per_second: 3
-  claim_weapon: diamond_sword
+  claim_weapon: silver_sword
 
 items:
   pickup_radius: 55
@@ -68,7 +68,7 @@ worldgen:
   resource_count: 450
   border_padding_tiles: 3
   placement_attempt_multiplier: 8
-  resources: [forest_tree, stone, gold, diamond, amethyst]
+  resources: [forest_tree, stone, copper, silver, cobalt]
   animals: [bear, deer, ram, elephant, komodo_dragon, alligator, bee]
   starter_structure:
     id: wood_wall

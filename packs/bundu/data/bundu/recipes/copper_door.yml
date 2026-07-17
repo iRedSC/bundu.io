@@ -1,0 +1,11 @@
+result:
+    item: copper_door
+    amount: 1
+duration: 4500
+score: 75
+ingredients:
+    stone_door: 1
+    copper: 26
+    stone: 16
+requirements:
+    - near_anvil

@@ -6,21 +6,21 @@ stone_wall:
     type: building
     places: stone_wall
 
-gold_wall:
+copper_wall:
     type: building
-    places: gold_wall
+    places: copper_wall
 
-diamond_wall:
+silver_wall:
     type: building
-    places: diamond_wall
+    places: silver_wall
 
-amethyst_wall:
+cobalt_wall:
     type: building
-    places: amethyst_wall
+    places: cobalt_wall
 
-red_wall:
+iridium_wall:
     type: building
-    places: red_wall
+    places: iridium_wall
 
 wood_door:
     type: building
@@ -30,17 +30,21 @@ stone_door:
     type: building
     places: stone_door
 
-gold_door:
+copper_door:
     type: building
-    places: gold_door
+    places: copper_door
 
-diamond_door:
+silver_door:
     type: building
-    places: diamond_door
+    places: silver_door
 
-amethyst_door:
+cobalt_door:
     type: building
-    places: amethyst_door
+    places: cobalt_door
+
+iridium_door:
+    type: building
+    places: iridium_door
 
 wood_spike:
     type: building
@@ -49,17 +53,21 @@ stone_spike:
     type: building
     places: stone_spike
 
-gold_spike:
+copper_spike:
     type: building
-    places: gold_spike
+    places: copper_spike
 
-diamond_spike:
+silver_spike:
     type: building
-    places: diamond_spike
+    places: silver_spike
 
-amethyst_spike:
+cobalt_spike:
     type: building
-    places: amethyst_spike
+    places: cobalt_spike
+
+iridium_spike:
+    type: building
+    places: iridium_spike
 
 workbench:
     type: building
@@ -90,9 +98,9 @@ quick_stone_spike:
     type: building
     places: quick_stone_spike
 
-quick_diamond_spike:
+quick_silver_spike:
     type: building
-    places: quick_diamond_spike
+    places: quick_silver_spike
 
 point_generator:
     type: building
