@@ -117,23 +117,14 @@ export function lookupContextVisual(id: string): ContextualVisualDef | undefined
     return contextVisualDefs.get(id) ?? contextVisualDefs.get(`item/${id}`);
 }
 
-/** Compile the complete registry before publishing any hot-reloaded definitions. */
-export function replaceVisualDefs(
-    raw: VisualDefs,
-    assetPaths?: Iterable<string>
+function publishVisualDefs(
+    next: CompiledVisualDefs,
+    nextAssets: ReadonlySet<string>
 ) {
-    const nextAssets = assetPaths ? new Set(assetPaths) : assets;
-    const next = compileRegistry(raw, nextAssets);
     const nextPlayer = objectDef(next, "player");
     const nextStructure = objectDef(next, "structure");
-    const nextSingleTileNode = tileDef(
-        next,
-        "single_tile_node"
-    );
-    const nextPointGenerator = tileDef(
-        next,
-        "point_generator"
-    );
+    const nextSingleTileNode = tileDef(next, "single_tile_node");
+    const nextPointGenerator = tileDef(next, "point_generator");
     const nextTree = tileDef(next, "forest_tree");
 
     assets = nextAssets;
@@ -145,4 +136,23 @@ export function replaceVisualDefs(
     treeDef = nextTree;
     tileEntityDefs = concreteTileDefs(next);
     contextVisualDefs = contextualDefs(next);
+}
+
+/** Publish server-compiled visual definitions from the pack sync payload. */
+export function replaceCompiledVisualDefs(
+    defs: CompiledVisualDefs,
+    assetPaths?: Iterable<string>
+) {
+    const nextAssets = assetPaths ? new Set(assetPaths) : assets;
+    validateTextures(defs, nextAssets);
+    publishVisualDefs(defs, nextAssets);
+}
+
+/** Compile the complete registry before publishing any hot-reloaded definitions. */
+export function replaceVisualDefs(
+    raw: VisualDefs,
+    assetPaths?: Iterable<string>
+) {
+    const nextAssets = assetPaths ? new Set(assetPaths) : assets;
+    publishVisualDefs(compileRegistry(raw, nextAssets), nextAssets);
 }

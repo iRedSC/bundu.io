@@ -4,22 +4,6 @@ import type { ResourceAssetSource } from "./resource_packs";
 const loadedAssets = new Map<string, Texture>();
 let unknownAsset: Texture;
 
-function parserFor(path: string): "svg" | "texture" {
-    const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
-    if (ext === "svg") return "svg";
-    if (
-        ext === "png" ||
-        ext === "jpg" ||
-        ext === "jpeg" ||
-        ext === "webp" ||
-        ext === "avif" ||
-        ext === "gif"
-    ) {
-        return "texture";
-    }
-    throw new Error(`Unsupported pack texture type: ${path}`);
-}
-
 export async function initAssets(
     sources: readonly ResourceAssetSource[]
 ): Promise<void> {
@@ -27,7 +11,8 @@ export async function initAssets(
         sources.map(({ path, src }) => ({
             alias: path,
             src,
-            parser: parserFor(path),
+            // Pack sync only delivers server-sanitized rasters (PNG).
+            parser: "texture" as const,
         }))
     );
 
@@ -40,7 +25,7 @@ export async function initAssets(
         loadedAssets.set(path, texture);
     }
 
-    const fallback = loadedAssets.get("bundu/misc/unknown_asset.svg");
+    const fallback = loadedAssets.get("bundu/misc/unknown_asset.png");
     if (!fallback) throw new Error("Missing unknown_asset");
     unknownAsset = fallback;
     console.debug("Assets loaded");

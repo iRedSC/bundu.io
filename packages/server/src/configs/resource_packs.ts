@@ -3,9 +3,19 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { packs } from "./packs";
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
+import {
+    compileVisualDefs,
+    type CompiledVisualDefs,
+} from "@bundu/shared/visual/compile";
+import type { CompiledVisualsPayload } from "@bundu/shared/visual/types";
+import { rewritePackTextureRefs } from "@bundu/shared/visual/texture_paths";
 import { BuildingConfigs } from "./loaders/buildings";
 import { GroundTypeConfigs } from "./loaders/ground_types";
 import { gameRegistries, registryProjection } from "./registries";
+import {
+    assertPackAssetBudget,
+    sanitizePackTexture,
+} from "./sanitize_pack_assets";
 
 export type ResourceAsset = {
     path: string;
@@ -27,7 +37,7 @@ export type ResourcePackManifest = {
     assets: ResourceAsset[];
 };
 
-type ServedAsset = ResourceAsset & { filename: string };
+type ServedAsset = ResourceAsset & { bytes: Uint8Array };
 
 function hash(data: string | Uint8Array): string {
     return createHash("sha256").update(data).digest("hex");
@@ -71,14 +81,61 @@ function record(value: unknown, source: string): Record<string, unknown> {
     return value as Record<string, unknown>;
 }
 
+function validateCompiledTextures(
+    defs: CompiledVisualDefs,
+    availableAssets: ReadonlySet<string>
+): void {
+    const validate = (texture: string, source: string) => {
+        if (!availableAssets.has(texture)) {
+            throw new Error(`${source}: missing texture "${texture}"`);
+        }
+    };
+    for (const def of defs.values()) {
+        if ("contexts" in def) {
+            for (const [name, context] of Object.entries(def.contexts)) {
+                if (context.texture) {
+                    validate(context.texture, `${def.id}.contexts.${name}`);
+                }
+            }
+            continue;
+        }
+        for (const part of def.parts) {
+            if (part.sprite) validate(part.sprite, `${def.id}.parts.${part.name}`);
+        }
+        for (const [variant, parts] of Object.entries(def.variants ?? {})) {
+            for (const [part, texture] of Object.entries(parts)) {
+                validate(texture, `${def.id}.variants.${variant}.${part}`);
+            }
+        }
+    }
+}
+
 export class ResourcePackService {
     readonly manifest: ResourcePackManifest;
     readonly visualsJson: string;
     readonly registriesJson: string;
+    readonly compiledVisuals: CompiledVisualDefs;
     private readonly servedAssets = new Map<string, ServedAsset>();
 
-    constructor() {
+    private constructor(
+        manifest: ResourcePackManifest,
+        visualsJson: string,
+        registriesJson: string,
+        compiledVisuals: CompiledVisualDefs,
+        servedAssets: Map<string, ServedAsset>
+    ) {
+        this.manifest = manifest;
+        this.visualsJson = visualsJson;
+        this.registriesJson = registriesJson;
+        this.compiledVisuals = compiledVisuals;
+        this.servedAssets = servedAssets;
+    }
+
+    /** Load, sanitize, and compile pack assets for hostile client delivery. */
+    static async create(): Promise<ResourcePackService> {
         const visuals: Record<string, unknown> = {};
+        const pendingTextures: { logicalPath: string; bytes: Uint8Array }[] =
+            [];
 
         for (const pack of packs.packs) {
             const assetsRoot = path.join(pack.directory, "assets");
@@ -97,12 +154,9 @@ export class ResourcePackService {
                         .relative(texturesRoot, filename)
                         .replaceAll("\\", "/");
                     const logicalPath = `${namespace}/${relative}`;
-                    const content = fs.readFileSync(filename);
-                    this.servedAssets.set(logicalPath, {
-                        path: logicalPath,
-                        hash: hash(content),
-                        size: content.length,
-                        filename,
+                    pendingTextures.push({
+                        logicalPath,
+                        bytes: fs.readFileSync(filename),
                     });
                 }
 
@@ -110,9 +164,11 @@ export class ResourcePackService {
                 for (const filename of files(visualsRoot).filter((name) =>
                     /\.ya?ml$/i.test(name)
                 )) {
-                    const document = record(
-                        Bun.YAML.parse(fs.readFileSync(filename, "utf8")),
-                        filename
+                    const document = rewritePackTextureRefs(
+                        record(
+                            Bun.YAML.parse(fs.readFileSync(filename, "utf8")),
+                            filename
+                        )
                     );
                     if ("id" in document) {
                         if (typeof document.id !== "string" || !document.id) {
@@ -128,7 +184,36 @@ export class ResourcePackService {
             }
         }
 
-        this.visualsJson = JSON.stringify({ stack: visuals });
+        const sanitized = await Promise.all(
+            pendingTextures.map(({ logicalPath, bytes }) =>
+                sanitizePackTexture(logicalPath, bytes)
+            )
+        );
+        assertPackAssetBudget(sanitized);
+
+        const servedAssets = new Map<string, ServedAsset>();
+        for (const asset of sanitized) {
+            const contentHash = hash(asset.bytes);
+            servedAssets.set(asset.path, {
+                path: asset.path,
+                hash: contentHash,
+                size: asset.bytes.byteLength,
+                bytes: asset.bytes,
+            });
+        }
+
+        // Aggregate under one source key so per-id YAML maps compile as definitions
+        // (same shape the client historically received as `{ stack }`).
+        const compiledVisuals = compileVisualDefs({ stack: visuals });
+        validateCompiledTextures(
+            compiledVisuals,
+            new Set(servedAssets.keys())
+        );
+        const payload: CompiledVisualsPayload = {
+            format: 1,
+            defs: Object.fromEntries(compiledVisuals),
+        };
+        const visualsJson = JSON.stringify(payload);
         const registries = gameRegistries();
         const projection: ClientRegistryProjection = {
             ...registryProjection(),
@@ -145,11 +230,11 @@ export class ResourcePackService {
                 ])
             ),
         };
-        this.registriesJson = JSON.stringify(projection);
-        const visualsHash = hash(this.visualsJson);
-        const registriesHash = hash(this.registriesJson);
-        const assets = [...this.servedAssets.values()]
-            .map(({ filename: _filename, ...asset }) => asset)
+        const registriesJson = JSON.stringify(projection);
+        const visualsHash = hash(visualsJson);
+        const registriesHash = hash(registriesJson);
+        const assets = [...servedAssets.values()]
+            .map(({ bytes: _bytes, ...asset }) => asset)
             .sort((left, right) => left.path.localeCompare(right.path));
         const packEntries = packs.packs.map((pack) => ({
             id: pack.manifest.id,
@@ -167,21 +252,26 @@ export class ResourcePackService {
             })
         );
 
-        this.manifest = {
-            format: 2,
-            fingerprint,
-            packs: packEntries,
-            visuals: { hash: visualsHash, url: "/packs/visuals.json" },
-            registries: {
-                hash: registriesHash,
-                url: "/packs/registries.json",
+        return new ResourcePackService(
+            {
+                format: 2,
+                fingerprint,
+                packs: packEntries,
+                visuals: { hash: visualsHash, url: "/packs/visuals.json" },
+                registries: {
+                    hash: registriesHash,
+                    url: "/packs/registries.json",
+                },
+                assets,
             },
-            assets,
-        };
+            visualsJson,
+            registriesJson,
+            compiledVisuals,
+            servedAssets
+        );
     }
 
     asset(logicalPath: string): ServedAsset | undefined {
         return this.servedAssets.get(logicalPath);
     }
 }
-

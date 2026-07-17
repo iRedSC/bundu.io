@@ -38,7 +38,7 @@ export class GroundItem extends GameObject {
         super(id, position, radians(rotation), 12, 1);
         const name = clientVisualId(clientRegistries().item.location(itemId));
         const texture = lookupContextVisual(name)?.contexts.world?.texture;
-        const sprite = SpriteFactory.build(texture ?? "bundu/misc/unknown_asset.svg");
+        const sprite = SpriteFactory.build(texture ?? "bundu/misc/unknown_asset.png");
         sprite.width = ITEM_SIZE;
         sprite.height = ITEM_SIZE;
         sprite.anchor.set(0.5);

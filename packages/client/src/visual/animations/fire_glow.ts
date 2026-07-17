@@ -5,8 +5,8 @@ import { fireSmoke } from "../particles/fire_smoke";
 import type { AnimContext, PartNode } from "../types";
 
 const LOOP = 400;
-const GLOW = "bundu/effect/fire_glow_soft.svg";
-const SMOKE = "bundu/effect/fire_smoke_soft.svg";
+const GLOW = "bundu/effect/fire_glow_soft.png";
+const SMOKE = "bundu/effect/fire_smoke_soft.png";
 
 /** Continuous ember glow + slow rising smoke while the fire is placed. */
 export function fireGlowAnim(_nodes: PartNode[], ctx: AnimContext) {

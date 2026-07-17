@@ -19,7 +19,7 @@ import { InputController } from "./input/controller";
 import { Player } from "./world/objects/player";
 import { GameSession } from "./session/game_session";
 import { clientTime } from "./globals";
-import { replaceVisualDefs } from "./visual/defs";
+import { replaceCompiledVisualDefs } from "./visual/defs";
 import { replaceClientRegistries } from "./configs/registries";
 
 declare const __DEBUG__: boolean;
@@ -112,7 +112,7 @@ async function synchronizeResourcePacks() {
     const resourcePacks = await loadResourcePacks(GAME_WS_URL);
     replaceClientRegistries(resourcePacks.registries);
     await initAssets(resourcePacks.assets);
-    replaceVisualDefs(
+    replaceCompiledVisualDefs(
         resourcePacks.visualDefs,
         resourcePacks.assets.map((asset) => asset.path)
     );

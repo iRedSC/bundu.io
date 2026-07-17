@@ -1,5 +1,6 @@
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
-import type { VisualDefs } from "../visual/defs";
+import type { CompiledVisualDefs } from "@bundu/shared/visual/compile";
+import type { CompiledVisualsPayload, VisualDef } from "@bundu/shared/visual/types";
 
 export type ResourceAssetSource = {
     path: string;
@@ -9,7 +10,7 @@ export type ResourceAssetSource = {
 export type LoadedResourcePacks = {
     fingerprint: string;
     assets: ResourceAssetSource[];
-    visualDefs: VisualDefs;
+    visualDefs: CompiledVisualDefs;
     registries: ClientRegistryProjection;
 };
 
@@ -83,6 +84,21 @@ function parseManifest(value: unknown): Manifest {
     };
 }
 
+function parseCompiledVisuals(value: unknown): CompiledVisualDefs {
+    const raw = record(value, "visual definitions");
+    if (raw.format !== 1) {
+        throw new Error(
+            `Unsupported compiled visuals format ${String(raw.format)}`
+        );
+    }
+    const defs = record(raw.defs, "visual definitions.defs") as Record<
+        string,
+        VisualDef
+    >;
+    const payload = { format: 1 as const, defs } satisfies CompiledVisualsPayload;
+    return new Map(Object.entries(payload.defs));
+}
+
 async function sha256(data: ArrayBuffer): Promise<string> {
     const digest = await crypto.subtle.digest("SHA-256", data);
     return [...new Uint8Array(digest)]
@@ -128,17 +144,6 @@ function assetUrl(base: URL, path: string): URL {
     return packUrl(base, `/packs/assets/${encoded}`);
 }
 
-function mimeFor(path: string): string {
-    const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
-    if (ext === "svg") return "image/svg+xml";
-    if (ext === "png") return "image/png";
-    if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
-    if (ext === "webp") return "image/webp";
-    if (ext === "avif") return "image/avif";
-    if (ext === "gif") return "image/gif";
-    return "application/octet-stream";
-}
-
 function revokeObjectUrls() {
     for (const url of objectUrls) URL.revokeObjectURL(url);
     objectUrls = [];
@@ -172,13 +177,11 @@ export async function loadResourcePacks(
         verified(visualUrl, manifest.visuals.hash),
         verified(registryUrl, manifest.registries.hash),
     ]);
-    const visualRaw: unknown = JSON.parse(new TextDecoder().decode(visualData));
-    const registryRaw: unknown = JSON.parse(
-        new TextDecoder().decode(registryData)
+    const visualDefs = parseCompiledVisuals(
+        JSON.parse(new TextDecoder().decode(visualData))
     );
-    const visualDefs = record(visualRaw, "visual definitions") as VisualDefs;
     const registries = record(
-        registryRaw,
+        JSON.parse(new TextDecoder().decode(registryData)),
         "registry projection"
     ) as ClientRegistryProjection;
 
@@ -186,8 +189,9 @@ export async function loadResourcePacks(
     const assets = await Promise.all(
         manifest.assets.map(async (asset) => {
             const data = await verified(assetUrl(base, asset.path), asset.hash, asset.size);
+            // Server sanitization re-encodes every pack texture as PNG.
             const src = URL.createObjectURL(
-                new Blob([new Uint8Array(data)], { type: mimeFor(asset.path) })
+                new Blob([new Uint8Array(data)], { type: "image/png" })
             );
             objectUrls.push(src);
             return { path: asset.path, src };

@@ -156,8 +156,18 @@ Visual definitions overlay by visual ID in pack order.
 
 ## Client synchronization
 
-The game server exposes protocol-v2 metadata at `/packs/manifest.json`. Clients
-SHA-256-check the effective registry projection, visual definitions, and assets
+The game server exposes protocol-v2 metadata at `/packs/manifest.json`. Before
+serving packs, the server sanitizes client-facing assets:
+
+- Textures are re-encoded to PNG (SVGs are rasterized, or the pack is rejected)
+- Hard caps apply to file size, dimensions, count, and total bytes
+- Visual definitions are compiled server-side; clients receive only the compiled
+  payload (`visuals.json` format 1)
+- Raw pack `data/` YAML is never sent. Clients get a curated `registries.json`
+  projection (IDs, tags, placement, ground colors) plus authoritative world
+  updates over the WebSocket
+
+Clients SHA-256-check the registry projection, compiled visuals, and assets
 before opening the WebSocket, then include the negotiated fingerprint in the
 connection URL. The server rejects clients from older formats or a different
 registry mapping. Development checkpoints also store the registry hash and are

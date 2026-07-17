@@ -8,15 +8,15 @@ import { ResourcePackService } from "../packages/server/src/configs/resource_pac
 import {
     lookupContextVisual,
     lookupObjectDef,
-    replaceVisualDefs,
+    replaceCompiledVisualDefs,
     tileEntityDefs,
     visualDefs,
 } from "../packages/client/src/visual/defs";
 
 loadConfigs();
-const resourcePacks = new ResourcePackService();
-replaceVisualDefs(
-    JSON.parse(resourcePacks.visualsJson) as Record<string, unknown>,
+const resourcePacks = await ResourcePackService.create();
+replaceCompiledVisualDefs(
+    resourcePacks.compiledVisuals,
     resourcePacks.manifest.assets.map((asset) => asset.path)
 );
 

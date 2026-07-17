@@ -1,6 +1,7 @@
 import { file, serve } from "bun";
 import path from "node:path";
 import fs from "node:fs";
+import { rewritePackTextureRefs } from "@bundu/shared/visual/texture_paths";
 
 const PUBLIC_DIR = path.join(import.meta.dir, "public");
 const PACKS_ROOT = path.join(import.meta.dir, "packs");
@@ -119,7 +120,8 @@ function visualDefsJson(): Response {
     for (const directory of visualDirs) {
         Object.assign(defs, Object.fromEntries(readVisualDefs(directory)));
     }
-    return Response.json(defs, {
+    // Match game-server sanitization: authored .svg texture keys become .png.
+    return Response.json(rewritePackTextureRefs(defs), {
         headers: { "Cache-Control": "no-store" },
     });
 }
