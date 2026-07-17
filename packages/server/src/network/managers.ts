@@ -13,6 +13,7 @@ import {
 import { Quadtree } from "../engine/quadtree.js";
 import { OccupancyGrid } from "../engine/occupancy.js";
 import { VisibleObjects } from "../components/visible_objects";
+import { DayCycle } from "./day_cycle.js";
 
 export type { ServerContext };
 
@@ -39,5 +40,6 @@ export function createServerContext(): ServerContext {
         worldPacketManager,
         playerPacketManager,
         socketManager: new SocketManager(),
+        dayCycle: new DayCycle(),
     };
 }

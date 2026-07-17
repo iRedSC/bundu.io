@@ -149,7 +149,8 @@ export class PlayerSystem extends System<GameEventMap> {
             const data = ground.get(GroundData);
             return data.createPacket();
         });
-        const { playerPacketManager, worldPacketManager } = this.world.context;
+        const { playerPacketManager, worldPacketManager, dayCycle } =
+            this.world.context;
         playerPacketManager.set(player.id, ServerPacket.ClientConnectionInfo, {
             playerId: player.id,
         });
@@ -159,6 +160,9 @@ export class PlayerSystem extends System<GameEventMap> {
         playerPacketManager.set(player.id, ServerPacket.RecipeList, {
             recipes: packCraftingList(),
         });
+        dayCycle.syncClock(this.world.gameTime);
+        dayCycle.applyAmbient(player);
+        dayCycle.syncPlayer(player.id, playerPacketManager);
         emitVitals(player, playerPacketManager);
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
@@ -742,7 +746,20 @@ export class PlayerSystem extends System<GameEventMap> {
                 (target) => {
                     this.trigger(GameEvent.Kill, { object: target });
                 },
-                this.world.gameTime
+                this.world.gameTime,
+                (period) => {
+                    const { dayCycle, playerPacketManager, socketManager } =
+                        this.world.context;
+                    const players = this.world
+                        .query([PlayerData])
+                        .filter((target) => socketManager.getSocket(target.id));
+                    return dayCycle.setPeriod(
+                        period,
+                        this.world.gameTime,
+                        players,
+                        playerPacketManager
+                    );
+                }
             )
         ) {
             const { playerPacketManager, worldPacketManager } =
