@@ -24,6 +24,7 @@ import { DoorSystem } from "../systems/door";
 import { RottingSystem } from "../systems/rotting";
 import { AnimalSystem } from "../systems/animal";
 import { HungerSystem } from "../systems/hunger";
+import { NearFireSystem } from "../systems/near_fire";
 import { TemperatureSystem } from "../systems/temperature";
 
 export type ServerWorld = {
@@ -51,6 +52,7 @@ export function createWorld(): ServerWorld {
         .addSystem(new CollisionSystem(world))
         .addSystem(new HealthSystem(world))
         .addSystem(new HungerSystem(world))
+        .addSystem(new NearFireSystem(world))
         .addSystem(new TemperatureSystem(world))
         .addSystem(new AttackSystem(world))
         .addSystem(new SpikeSystem(world))
