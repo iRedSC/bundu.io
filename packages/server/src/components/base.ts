@@ -100,6 +100,15 @@ export const ResourceData = Component.register<ResourceData>(() => ({
 export type Rotting = Record<string, never>;
 export const Rotting = Component.register<Rotting>(() => ({}));
 
+/** Wall/door that has had a matching-tier spike attached. */
+export type Spiked = {
+    /** Per-target contact attack cooldowns (target id → next allowed gameTime). */
+    nextHitAt: Map<number, number>;
+};
+export const Spiked = Component.register<Spiked>(() => ({
+    nextHitAt: new Map(),
+}));
+
 export type GroundItemData = {
     itemId: number;
     amount: number;
@@ -124,6 +133,10 @@ export const Health = Component.register<Health>(() => ({
     value: 100,
     lastRegen: 0,
 }));
+
+/** Marker for creatures spikes (and similar) may damage. Players + animals. */
+export type Living = Record<string, never>;
+export const Living = Component.register<Living>(() => ({}));
 
 export type AnimalData = {
     /** Stable config/type id. */

@@ -159,10 +159,18 @@ export function assembleTileEntity(
         if (!node) continue;
         node.state.x += offsetX / TILE_SIZE;
         node.state.y += offsetY / TILE_SIZE;
+        const partSpillover = part.spillover ?? spillover;
+        if (partSpillover < 0) {
+            throw new Error(
+                `TileEntityDef "${def.id}": part "${part.name}" spillover must be non-negative`
+            );
+        }
+        // Default: tile spillover (shared canvas). Override per-part so e.g. spikes
+        // can overhang without stretching the wall/door body.
         const scale = part.spriteScale ?? 1;
         node.visual.scale.set(
-            (width / TILE_SIZE) * scale,
-            (height / TILE_SIZE) * scale
+            ((contentWidth + partSpillover * 2) / TILE_SIZE) * scale,
+            ((contentHeight + partSpillover * 2) / TILE_SIZE) * scale
         );
     }
 

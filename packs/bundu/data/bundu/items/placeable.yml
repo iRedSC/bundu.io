@@ -94,6 +94,9 @@ quick_wood_wall:
 quick_stone_wall:
     type: building
     places: quick_stone_wall
+quick_silver_wall:
+    type: building
+    places: quick_silver_wall
 quick_stone_spike:
     type: building
     places: quick_stone_spike

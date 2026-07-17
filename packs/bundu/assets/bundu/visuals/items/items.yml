@@ -426,6 +426,10 @@ item/quick_stone_wall:
   extends: item/type/wall
   texture: bundu/structure/wall/stone_wall.png
 
+item/quick_silver_wall:
+  extends: item/type/wall
+  texture: bundu/structure/wall/silver_wall.png
+
 item/quick_stone_spike:
   extends: item/type/spike
   texture: bundu/item/structure/spike/stone_spike.png

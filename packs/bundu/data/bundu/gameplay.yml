@@ -19,6 +19,12 @@ health:
   regen_interval_ms: 5000
   rotting_damage_multiplier: 2
 
+spikes:
+  attack_interval_ms: 1000
+  animal_damage_multiplier: 0.125
+  # >1 = spiked walls/doors take more damage (easier to break)
+  damage_multiplier_to_spike: 1.5
+
 rotting:
   damage_per_second: 3
   claim_weapon: silver_sword

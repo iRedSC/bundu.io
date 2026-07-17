@@ -5,6 +5,7 @@ import {
     Health,
     Physics,
     Rotting,
+    Spiked,
     TileEntity,
     Type,
 } from "../components/base.js";
@@ -53,11 +54,12 @@ export class Structure extends GameObject {
 
     /**
      * Project sim components into the client entity-state snapshot.
-     * Always includes `rotting` so clears coalesce via SetStructureState.
+     * Always includes `rotting` / `spiked` so clears coalesce via SetStructureState.
      */
     getStateSnapshot(): EntityStateSnapshot {
         const states: EntityStateSnapshot = {
             rotting: Rotting.get(this) !== undefined,
+            spiked: Spiked.get(this) !== undefined,
         };
         const door = Door.get(this);
         if (door) states.open = door.open;

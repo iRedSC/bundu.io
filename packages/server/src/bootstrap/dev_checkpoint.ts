@@ -12,6 +12,7 @@ import {
     Physics,
     ResourceData,
     Rotting,
+    Spiked,
     TileEntity,
     Type,
     type AnimalData as AnimalState,
@@ -40,8 +41,8 @@ const defaultFilename = path.resolve(
     "../../../../.cache/dev-world.json"
 );
 
-/** Bumped when durable payloads change (AnimalData, full attributes). */
-const FORMAT = 3;
+/** Bumped when durable payloads change (AnimalData, full attributes, spiked). */
+const FORMAT = 4;
 
 type PhysicsSnapshot = {
     x: number;
@@ -93,6 +94,7 @@ type ObjectSnapshot =
           health: HealthState;
           door?: Door;
           rotting: boolean;
+          spiked: boolean;
       } & BaseSnapshot)
     | ({ kind: "ground_item"; item: GroundItemData } & BaseSnapshot)
     | ({
@@ -398,6 +400,7 @@ const structureHandler: KindHandler<"structure"> = {
             health: structuredClone(object.get(Health)),
             door: structuredClone(Door.get(object)),
             rotting: Rotting.get(object) !== undefined,
+            spiked: Spiked.get(object) !== undefined,
         };
     },
     restore(world, snapshot) {
@@ -409,6 +412,7 @@ const structureHandler: KindHandler<"structure"> = {
         restoreObjectId(object, snapshot.id);
         if (snapshot.door) Object.assign(object.get(Door), snapshot.door);
         if (snapshot.rotting) object.add(new Rotting());
+        if (snapshot.spiked) object.add(new Spiked());
         addWithHealth(world, object, snapshot.health);
         // PositionSystem.enter always occupies; open doors must release.
         if (snapshot.door?.open) {

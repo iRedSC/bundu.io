@@ -81,7 +81,7 @@ export namespace GameEvent {
     export type ValidateSelectedStructure = { object: GameObject };
 
     export const ToggleDoor = 27;
-    export type ToggleDoor = { object: GameObject };
+    export type ToggleDoor = { object: GameObject; source?: GameObject };
 }
 
 export type GameEventMap = {

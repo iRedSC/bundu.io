@@ -7,8 +7,15 @@ parts:
   spike:
     zIndex: 9
     visible: false
+    # Spike textures overhang the tile; wall body stays 1×1.
+    spillover: 25
   main:
     zIndex: 10
+
+animations:
+  attack:
+    preset: spike_attack
+    parts: spike
 
 states:
   spiked:

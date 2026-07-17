@@ -308,6 +308,10 @@ item:
         name: Quick Stone Wall
         desc: A quickly built wall made of stone.
 
+    quick_silver_wall:
+        name: Quick Silver Wall
+        desc: A quickly built wall made of silver.
+
     quick_stone_spike:
         name: Quick Stone Spike
         desc: A quickly constructed spike made of stone.
