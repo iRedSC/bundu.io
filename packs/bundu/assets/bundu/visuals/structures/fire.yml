@@ -2,9 +2,19 @@ id: fire
 abstract: true
 extends: single_tile_node
 
-# Sky multiply sits at zIndex 200. Flame must be a promoted top-level part above it.
+# skyUndo authors soft undo radius for the shared sky-undo bake.
+# Soft fire glow is particles.
 parts:
   main:
     zIndex: 10
-  flame:
-    zIndex: 201
+    spriteScale: 1.5
+  sky_undo:
+    spriteScale: 14
+    visible: false
+    skyUndo: true
+
+animations:
+  fire_glow:
+    preset: fire_glow
+    parts: main
+    autoplay: true

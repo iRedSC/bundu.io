@@ -20,4 +20,7 @@ export type ParticleBurst = {
     spin?: NumberRange;
     spinFriction?: number;
     spinEndAt?: number;
+    tint?: number;
+    blendMode?: "normal" | "add" | "screen";
+    zIndex?: number;
 };

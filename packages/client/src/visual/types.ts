@@ -13,6 +13,15 @@ export type PartPose = {
     pivot?: { x: number; y: number };
 };
 
+/** Pixi blend modes allowed on visual parts (subset of BLEND_MODES). */
+export type PartBlendMode =
+    | "normal"
+    | "add"
+    | "multiply"
+    | "screen"
+    | "divide"
+    | "erase";
+
 export type PartDef = PartPose & {
     name: string;
     /** Texture key; empty string = blank placeholder. */
@@ -36,6 +45,13 @@ export type PartDef = PartPose & {
     alpha?: number;
     /** When false, visual starts hidden. */
     visible?: boolean;
+    /** Compositing mode for this part's promoted root (e.g. divide vs sky multiply). */
+    blendMode?: PartBlendMode;
+    /**
+     * Soft disc radius for the shared sky-undo bake (one divide pass).
+     * Radius = 0.5 × spriteScale × structure world scale (no visible sprite).
+     */
+    skyUndo?: boolean;
 };
 
 export type VisualContent =
@@ -71,7 +87,8 @@ export type AnimPreset =
     | "spike_attack"
     | "block"
     | "eat"
-    | "rotting";
+    | "rotting"
+    | "fire_glow";
 
 export type TreeSwayData = {
     distance?: number;
@@ -101,6 +118,7 @@ type AnimData = {
     block: undefined;
     eat: undefined;
     rotting: undefined;
+    fire_glow: undefined;
 };
 
 type AnimDefBase = {

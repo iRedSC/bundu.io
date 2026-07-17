@@ -2,7 +2,6 @@ import {
     Particle,
     ParticleContainer,
     type Container,
-    type Texture,
 } from "pixi.js";
 import type { NumberRange, ParticleBurst } from "./types";
 
@@ -30,13 +29,13 @@ const random = (range: NumberRange): number => {
 };
 
 export class ParticleSystem {
-    private readonly containers = new Map<Texture, ParticleContainer>();
+    private readonly containers = new Map<string, ParticleContainer>();
     private readonly active: ActiveParticle[] = [];
 
     constructor(private readonly parent: Container) {}
 
     burst(options: ParticleBurst): void {
-        const container = this.getContainer(options.texture);
+        const container = this.getContainer(options);
         const spread = options.spread ?? 0;
 
         for (let i = 0; i < options.count; i++) {
@@ -53,6 +52,7 @@ export class ParticleSystem {
                 rotation: Math.random() * Math.PI * 2,
                 scaleX: scale,
                 scaleY: scale,
+                tint: options.tint ?? 0xffffff,
             });
 
             container.addParticle(view);
@@ -143,12 +143,15 @@ export class ParticleSystem {
         this.containers.clear();
     }
 
-    private getContainer(texture: Texture): ParticleContainer {
-        const existing = this.containers.get(texture);
+    private getContainer(options: ParticleBurst): ParticleContainer {
+        const blendMode = options.blendMode ?? "normal";
+        const zIndex = options.zIndex ?? 20;
+        const key = `${options.texture.uid}:${blendMode}:${zIndex}`;
+        const existing = this.containers.get(key);
         if (existing) return existing;
 
         const container = new ParticleContainer({
-            texture,
+            texture: options.texture,
             dynamicProperties: {
                 position: true,
                 rotation: true,
@@ -156,9 +159,10 @@ export class ParticleSystem {
                 color: true,
             },
         });
-        container.zIndex = 20;
+        container.zIndex = zIndex;
+        container.blendMode = blendMode;
         this.parent.addChild(container);
-        this.containers.set(texture, container);
+        this.containers.set(key, container);
         return container;
     }
 }

@@ -6,6 +6,7 @@ import {
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
+import { SkyUndoLayer } from "./sky_undo_layer";
 import { createGround } from "./ground";
 import {
     radians,
@@ -14,7 +15,7 @@ import {
 } from "@bundu/shared";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
-import { Point, Text } from "pixi.js";
+import { Point, Text, type Renderer } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
@@ -76,6 +77,7 @@ export class World {
     combatFx: CombatFx;
     renderer: LayeredRenderer;
     sky: Sky;
+    skyUndo: SkyUndoLayer;
     particles: ParticleSystem;
     private placementGhost?: Structure;
     private placementInvalidOverlay?: ContaineredSprite;
@@ -86,16 +88,18 @@ export class World {
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
 
-    constructor(viewport: Viewport) {
+    constructor(viewport: Viewport, pixiRenderer: Renderer) {
         this.viewport = viewport;
         this.camera = new Camera(viewport);
         this.sky = new Sky();
+        this.skyUndo = new SkyUndoLayer(pixiRenderer);
         this.renderer = new LayeredRenderer(this.viewport);
         this.particles = new ParticleSystem(this.viewport);
         this.objects = new ObjectContainer();
         this.combatFx = new CombatFx(this.objects, this.particles);
 
         this.viewport.addChild(this.sky);
+        this.viewport.addChild(this.skyUndo.sprite);
         this.viewport.sortChildren();
     }
 
@@ -115,6 +119,8 @@ export class World {
     destroy(): void {
         this.clear();
         this.particles.destroy();
+        this.skyUndo.sprite.removeFromParent();
+        this.skyUndo.destroy();
         this.sky.removeFromParent();
         this.sky.destroy();
     }
@@ -127,6 +133,7 @@ export class World {
                 object.tickVisual(now);
             }
         }
+        this.syncSkyUndo();
         const localPlayer =
             this.user !== undefined ? this.objects.get(this.user) : undefined;
         updateOcclusion(localPlayer, this.objects.all());
@@ -138,6 +145,16 @@ export class World {
         this.particles.update(deltaMS);
         this.updatePlacementGhost();
         this.camera.update();
+    }
+
+    private syncSkyUndo(): void {
+        const discs = [];
+        for (const object of this.objects.all()) {
+            if (object instanceof Structure) {
+                discs.push(...object.skyHoles());
+            }
+        }
+        this.skyUndo.sync(discs, this.sky.tint);
     }
 
     setCursorWorld(position: { x: number; y: number }) {
@@ -239,9 +256,7 @@ export class World {
             typeof scale === "number" ? TILE_SIZE * scale : TILE_SIZE,
             getVariantName(variantId)
         );
-        structure.enableParticles((burst) => this.particles.burst(burst));
-        this.objects.add(structure);
-        this.renderer.add(structure.id, ...structure.containers);
+        this.registerStructure(structure);
     };
 
     newStructure = (packet: LoadStructure) => {
@@ -266,9 +281,7 @@ export class World {
             maxHealth,
             states ?? {}
         );
-        structure.enableParticles((burst) => this.particles.burst(burst));
-        this.objects.add(structure);
-        this.renderer.add(structure.id, ...structure.containers);
+        this.registerStructure(structure);
         structure.trigger(ANIMATION.PLACE, AnimationManagers.World, true);
         this.particles.burst(
             structurePlace(
@@ -348,6 +361,12 @@ export class World {
             object.dispose();
         }
         this.renderer.delete(id);
+    }
+
+    private registerStructure(structure: Structure): void {
+        structure.enableParticles((burst) => this.particles.burst(burst));
+        this.objects.add(structure);
+        this.renderer.add(structure.id, ...structure.containers);
     }
 
     updateEquipment = (packet: ServerPacket.UpdateEquipment) => {
