@@ -19,12 +19,20 @@ export type RegistryEntryRef = ResourceLocation | TagLocation;
 export type RegistryTagSource = {
     replace?: boolean;
     values: readonly string[];
+    /** When true, this tag appears as an editor palette tab. */
+    category?: boolean;
+};
+
+export type RegistryTagProjection = {
+    id: TagLocation;
+    values: readonly RegistryEntryRef[];
+    category: boolean;
 };
 
 export type RegistryProjection<K extends RegistryName = RegistryName> = {
     name: K;
     entries: readonly (readonly [ResourceLocation, RegistryId<K>])[];
-    tags: readonly (readonly [TagLocation, readonly RegistryEntryRef[]])[];
+    tags: readonly RegistryTagProjection[];
 };
 
 export type RegistrySetProjection = {
@@ -100,6 +108,7 @@ export class Registry<K extends RegistryName> {
     private readonly ids = new Map<ResourceLocation, RegistryId<K>>();
     private readonly locations = new Map<RegistryId<K>, ResourceLocation>();
     private readonly tags = new Map<TagLocation, readonly RegistryEntryRef[]>();
+    private readonly tagCategories = new Set<TagLocation>();
 
     constructor(name: K, entries: Iterable<string>) {
         this.name = name;
@@ -134,17 +143,18 @@ export class Registry<K extends RegistryName> {
             registry.locations.set(id, location);
             seenIds.add(rawId);
         }
-        for (const [rawTag, rawValues] of projection.tags ?? []) {
-            const tag = tagLocation(rawTag);
+        for (const entry of projection.tags ?? []) {
+            const tag = tagLocation(entry.id);
             if (registry.tags.has(tag)) {
                 throw new Error(`${projection.name}: duplicate tag "${tag}"`);
             }
             registry.tags.set(
                 tag,
-                rawValues.map((value, index) =>
+                entry.values.map((value, index) =>
                     registryReference(value, undefined, `${tag}.values[${index}]`)
                 )
             );
+            if (entry.category) registry.tagCategories.add(tag);
         }
         registry.validateTags();
         return registry;
@@ -178,21 +188,54 @@ export class Registry<K extends RegistryName> {
         return this.ids.entries();
     }
 
-    defineTag(tag: string, values: readonly string[], defaultNamespace?: string): void {
+    /** Tag location → member refs (for editor filters, tooling). */
+    tagEntries(): IterableIterator<[TagLocation, readonly RegistryEntryRef[]]> {
+        return this.tags.entries();
+    }
+
+    /** Tags flagged `category: true` for editor palette tabs. */
+    categoryTagEntries(): IterableIterator<
+        [TagLocation, readonly RegistryEntryRef[]]
+    > {
+        return (function* (tags, categories) {
+            for (const [tag, values] of tags) {
+                if (categories.has(tag)) yield [tag, values];
+            }
+        })(this.tags, this.tagCategories);
+    }
+
+    isCategoryTag(tag: TagLocation): boolean {
+        return this.tagCategories.has(tag);
+    }
+
+    defineTag(
+        tag: string,
+        values: readonly string[],
+        defaultNamespace?: string,
+        category = false
+    ): void {
         const location = tagLocation(tag);
         const parsed = values.map((value, index) =>
             registryReference(value, defaultNamespace, `${location}.values[${index}]`)
         );
         this.tags.set(location, parsed);
+        if (category) this.tagCategories.add(location);
+        else this.tagCategories.delete(location);
     }
 
-    appendTag(tag: string, values: readonly string[], defaultNamespace?: string): void {
+    appendTag(
+        tag: string,
+        values: readonly string[],
+        defaultNamespace?: string,
+        category = false
+    ): void {
         const location = tagLocation(tag);
         const previous = this.tags.get(location) ?? [];
         const parsed = values.map((value, index) =>
             registryReference(value, defaultNamespace, `${location}.values[${index}]`)
         );
         this.tags.set(location, [...previous, ...parsed]);
+        if (category) this.tagCategories.add(location);
     }
 
     resolve(reference: string, defaultNamespace?: string, source: string = this.name): RegistryId<K> {
@@ -252,7 +295,11 @@ export class Registry<K extends RegistryName> {
         return {
             name: this.name,
             entries: [...this.ids.entries()],
-            tags: [...this.tags.entries()],
+            tags: [...this.tags.entries()].map(([id, values]) => ({
+                id,
+                values,
+                category: this.tagCategories.has(id),
+            })),
         };
     }
 }

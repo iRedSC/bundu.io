@@ -4,7 +4,7 @@ import type {
 } from "./object_types";
 import { PlaceMode } from "./inventory";
 import type { PacketGuards } from "./network/serializer";
-import { WORLD_BOUNDS } from "./tiles";
+import { WORLD_BOUNDS, WORLD_TILES } from "./tiles";
 
 /**
  * Max ViewBounds edge length. Freecam min zoom (~0.05) on a large display can
@@ -42,6 +42,8 @@ export const ServerPacket = {
     SetTimeOfDay: 0x1b,
     /** Freecam spectate/edit mode toggled by `/freecam`. */
     FreecamMode: 0x1c,
+    /** Freecam editor: remove ground rects (undo / delete). */
+    UnloadGround: 0x1d,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -149,7 +151,25 @@ export namespace ServerPacket {
     /** Period index into the server day cycle (0=morning … 3=night). */
     export type SetTimeOfDay = { period: number };
     export type FreecamMode = { enabled: boolean };
+    export type UnloadGround = {
+        groundData: [
+            type: number,
+            x: number,
+            y: number,
+            w: number,
+            h: number,
+        ][];
+    };
 }
+
+/** Admin editor place target (freecam palette). */
+export const AdminPlaceKind = {
+    Resource: 0,
+    Structure: 1,
+    Ground: 2,
+} as const;
+export type AdminPlaceKind =
+    (typeof AdminPlaceKind)[keyof typeof AdminPlaceKind];
 
 /** Client → server packet IDs. */
 export const ClientPacket = {
@@ -167,6 +187,22 @@ export const ClientPacket = {
     SetStructurePlacement: 0x0f,
     /** Freecam screenspace world AABB + overview (no dynamic movers). */
     ViewBounds: 0x10,
+    /** Freecam editor: place resource / structure / ground at a tile. */
+    AdminPlace: 0x11,
+    /** Freecam editor: delete solid or animal at a tile. */
+    AdminDeleteAt: 0x12,
+    /** Freecam editor: pause/resume animal AI ticking. */
+    AdminSetAnimalsFrozen: 0x13,
+    /** Freecam editor: kill every animal. */
+    AdminKillAnimals: 0x14,
+    /** Freecam editor: start a place/delete stroke (undo unit). */
+    AdminStrokeBegin: 0x15,
+    /** Freecam editor: end the current stroke. */
+    AdminStrokeEnd: 0x16,
+    /** Freecam editor: undo last stroke. */
+    AdminUndo: 0x17,
+    /** Freecam editor: redo last undone stroke. */
+    AdminRedo: 0x18,
 } as const;
 
 export namespace ClientPacket {
@@ -203,6 +239,25 @@ export namespace ClientPacket {
         maxY: number;
         overview: boolean;
     };
+    export type AdminPlace = {
+        kind: AdminPlaceKind;
+        typeId: number;
+        x: number;
+        y: number;
+        rotation: number;
+        /** Variant wire id (`variant_map`); ignored for ground. */
+        variant: number;
+        /** Ground rect size in tiles (normalized); ignored for non-ground (use 1). */
+        w: number;
+        h: number;
+    };
+    export type AdminDeleteAt = { x: number; y: number };
+    export type AdminSetAnimalsFrozen = { frozen: boolean };
+    export type AdminKillAnimals = Record<string, never>;
+    export type AdminStrokeBegin = Record<string, never>;
+    export type AdminStrokeEnd = Record<string, never>;
+    export type AdminUndo = Record<string, never>;
+    export type AdminRedo = Record<string, never>;
 }
 
 /** ID → payload map for server packets. */
@@ -231,6 +286,7 @@ export type ServerPacketMap = {
     [ServerPacket.EatEvent]: ServerPacket.EatEvent;
     [ServerPacket.SetTimeOfDay]: ServerPacket.SetTimeOfDay;
     [ServerPacket.FreecamMode]: ServerPacket.FreecamMode;
+    [ServerPacket.UnloadGround]: ServerPacket.UnloadGround;
 };
 
 /** ID → payload map for client packets. */
@@ -248,6 +304,14 @@ export type ClientPacketMap = {
     [ClientPacket.PlaceStructure]: ClientPacket.PlaceStructure;
     [ClientPacket.SetStructurePlacement]: ClientPacket.SetStructurePlacement;
     [ClientPacket.ViewBounds]: ClientPacket.ViewBounds;
+    [ClientPacket.AdminPlace]: ClientPacket.AdminPlace;
+    [ClientPacket.AdminDeleteAt]: ClientPacket.AdminDeleteAt;
+    [ClientPacket.AdminSetAnimalsFrozen]: ClientPacket.AdminSetAnimalsFrozen;
+    [ClientPacket.AdminKillAnimals]: ClientPacket.AdminKillAnimals;
+    [ClientPacket.AdminStrokeBegin]: ClientPacket.AdminStrokeBegin;
+    [ClientPacket.AdminStrokeEnd]: ClientPacket.AdminStrokeEnd;
+    [ClientPacket.AdminUndo]: ClientPacket.AdminUndo;
+    [ClientPacket.AdminRedo]: ClientPacket.AdminRedo;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -299,6 +363,7 @@ export const ServerSchema: {
     [ServerPacket.EatEvent]: { fields: ["id", "duration"] },
     [ServerPacket.SetTimeOfDay]: { fields: ["period"] },
     [ServerPacket.FreecamMode]: { fields: ["enabled"] },
+    [ServerPacket.UnloadGround]: { fields: ["groundData"] },
 };
 
 export const ClientSchema: {
@@ -325,6 +390,16 @@ export const ClientSchema: {
     [ClientPacket.ViewBounds]: {
         fields: ["minX", "minY", "maxX", "maxY", "overview"],
     },
+    [ClientPacket.AdminPlace]: {
+        fields: ["kind", "typeId", "x", "y", "rotation", "variant", "w", "h"],
+    },
+    [ClientPacket.AdminDeleteAt]: { fields: ["x", "y"] },
+    [ClientPacket.AdminSetAnimalsFrozen]: { fields: ["frozen"] },
+    [ClientPacket.AdminKillAnimals]: { fields: [] },
+    [ClientPacket.AdminStrokeBegin]: { fields: [] },
+    [ClientPacket.AdminStrokeEnd]: { fields: [] },
+    [ClientPacket.AdminUndo]: { fields: [] },
+    [ClientPacket.AdminRedo]: { fields: [] },
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -419,4 +494,56 @@ export const ClientPacketGuards = {
         value.maxY >= value.minY &&
         value.maxX - value.minX <= FREECAM_MAX_VIEW_EXTENT &&
         value.maxY - value.minY <= FREECAM_MAX_VIEW_EXTENT,
+    [ClientPacket.AdminPlace]: (
+        value: unknown
+    ): value is ClientPacket.AdminPlace =>
+        isRecord(value) &&
+        (value.kind === AdminPlaceKind.Resource ||
+            value.kind === AdminPlaceKind.Structure ||
+            value.kind === AdminPlaceKind.Ground) &&
+        isSafeInteger(value.typeId) &&
+        value.typeId >= 0 &&
+        hasSafeInteger(value, "x") &&
+        hasSafeInteger(value, "y") &&
+        isSafeInteger(value.rotation) &&
+        value.rotation >= 0 &&
+        value.rotation <= 3 &&
+        isSafeInteger(value.variant) &&
+        value.variant >= 0 &&
+        isSafeInteger(value.w) &&
+        value.w >= 1 &&
+        value.w <= WORLD_TILES &&
+        isSafeInteger(value.h) &&
+        value.h >= 1 &&
+        value.h <= WORLD_TILES,
+    [ClientPacket.AdminDeleteAt]: (
+        value: unknown
+    ): value is ClientPacket.AdminDeleteAt =>
+        isRecord(value) &&
+        hasSafeInteger(value, "x") &&
+        hasSafeInteger(value, "y"),
+    [ClientPacket.AdminSetAnimalsFrozen]: (
+        value: unknown
+    ): value is ClientPacket.AdminSetAnimalsFrozen =>
+        isRecord(value) && isBoolean(value.frozen),
+    [ClientPacket.AdminKillAnimals]: (
+        value: unknown
+    ): value is ClientPacket.AdminKillAnimals =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.AdminStrokeBegin]: (
+        value: unknown
+    ): value is ClientPacket.AdminStrokeBegin =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.AdminStrokeEnd]: (
+        value: unknown
+    ): value is ClientPacket.AdminStrokeEnd =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.AdminUndo]: (
+        value: unknown
+    ): value is ClientPacket.AdminUndo =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.AdminRedo]: (
+        value: unknown
+    ): value is ClientPacket.AdminRedo =>
+        isRecord(value) && Object.keys(value).length === 0,
 } satisfies PacketGuards<ClientPacketMap>;
