@@ -1,6 +1,7 @@
 import {
     attackBoxPoints,
     attackFacingRadians,
+    lookToward,
     moveInDirection,
     radians,
     type BasicPoint,
@@ -109,20 +110,33 @@ export class AttackSystem extends System<GameEventMap> {
         const hits = testForIntersection(hitRange, nearby);
         hits.delete(source.id);
         for (const object of hits.values()) {
-            this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
-                id: object.id,
-                angle: facing,
-            });
+            const targetPhysics = Physics.get(object);
+            // Attack direction from the hit origin into the target (not attacker facing).
+            const angle = targetPhysics
+                ? lookToward(origin, targetPhysics.position)
+                : facing;
             // Intact doors toggle; rotting doors take damage / claim via Hurt.
             if (Door.get(object) && !Rotting.get(object)) {
+                this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
+                    id: object.id,
+                    angle,
+                    strength: 1,
+                });
                 this.trigger(GameEvent.ToggleDoor, { object, source });
                 continue;
             }
+            const hit = { strength: 0 };
             this.trigger(GameEvent.Hurt, {
                 object,
                 source,
                 damage,
                 weapon,
+                hit,
+            });
+            this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
+                id: object.id,
+                angle,
+                strength: hit.strength,
             });
         }
     }

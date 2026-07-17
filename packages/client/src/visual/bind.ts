@@ -5,7 +5,7 @@ import {
     type AnimContext,
     type ObjectDef,
     type PartNode,
-    type Rotatable,
+    type HitTarget,
 } from "./types";
 
 /** Bind ObjectDef animations to part nodes. Returns id → Animation map. */
@@ -13,7 +13,7 @@ export function bindAnimations(
     def: ObjectDef,
     parts: Map<string, PartNode>,
     ctx: AnimContext = EMPTY_ANIM_CONTEXT,
-    rotationTarget?: Rotatable
+    rotationTarget?: HitTarget
 ): { animations: Map<string, Animation>; autoplay: string[] } {
     const animations = new Map<string, Animation>();
     const autoplay: string[] = [];

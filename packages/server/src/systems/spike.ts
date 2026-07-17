@@ -74,6 +74,7 @@ export class SpikeSystem extends System<GameEventMap> {
             this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
                 id: target.id,
                 angle: 0,
+                strength: 0,
             });
         }
 
@@ -117,6 +118,7 @@ export class SpikeSystem extends System<GameEventMap> {
         this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
             id: source.id,
             angle: 0,
+            strength: 0,
         });
     }
 }

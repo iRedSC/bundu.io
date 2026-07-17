@@ -5,14 +5,15 @@ export function structureHit(
     texture: Texture,
     x: number,
     y: number,
-    direction: number
+    direction: number,
+    count = 3
 ): ParticleBurst {
     return {
         texture,
         x,
         y,
         direction,
-        count: 3,
+        count,
         spread: Math.PI / 2,
         speed: [300, 600],
         lifetime: [2000, 3000],

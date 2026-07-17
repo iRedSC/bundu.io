@@ -1,7 +1,7 @@
 import type { Container, Texture } from "pixi.js";
 import type { ContaineredSprite } from "../assets/sprite_factory";
 import type { ParticleBurst } from "../rendering/particles/types";
-import type { RotationStates } from "../world/states";
+import type { RotationStates, PositionStates } from "../world/states";
 
 /** Pose on a part's root container (degrees for rotation). */
 export type PartPose = {
@@ -90,6 +90,13 @@ export type AnimPreset =
     | "rotting"
     | "fire_glow";
 
+export type HitData = {
+    /** Peak rotation kick in degrees. Default 14. */
+    kick?: number;
+    /** Animation duration in milliseconds. Default 450. */
+    duration?: number;
+};
+
 export type TreeSwayData = {
     distance?: number;
     /** Maximum tilt in degrees. */
@@ -107,7 +114,7 @@ export type BobData = {
 
 type AnimData = {
     hurt: undefined;
-    hit: undefined;
+    hit: HitData;
     place: undefined;
     wave: undefined;
     tree_sway: TreeSwayData;
@@ -229,7 +236,13 @@ export type AnimContext = {
 };
 
 /** GameObject-rotated hit target (structure hurt punch). */
-export type Rotatable = { rotationStates: RotationStates, rotation: number };
+export type Rotatable = { rotationStates: RotationStates; rotation: number };
+
+/** Structure hit target with position for knockback. */
+export type HitTarget = Rotatable & {
+    position: { x: number; y: number; set(x: number, y: number): void };
+    positionStates: PositionStates;
+};
 
 export const EMPTY_ANIM_CONTEXT: AnimContext = {
     blocking: false,

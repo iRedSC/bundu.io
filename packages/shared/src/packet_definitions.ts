@@ -101,7 +101,8 @@ export namespace ServerPacket {
         width: number;
     };
     export type BlockEvent = { id: number; stop: boolean };
-    export type HitEvent = { id: number; angle: number };
+    /** `strength` 0–10 scales client hit FX (wiggle / knockback / particles). */
+    export type HitEvent = { id: number; angle: number; strength: number };
     export type CraftEvent = {
         id: number;
         duration: number;
@@ -261,7 +262,7 @@ export const ServerSchema: {
         fields: ["id", "start", "length", "width"],
     },
     [ServerPacket.BlockEvent]: { fields: ["id", "stop"] },
-    [ServerPacket.HitEvent]: { fields: ["id", "angle"] },
+    [ServerPacket.HitEvent]: { fields: ["id", "angle", "strength"] },
     [ServerPacket.CraftEvent]: {
         fields: ["id", "duration", "recipeId", "itemId"],
     },
