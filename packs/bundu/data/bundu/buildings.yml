@@ -150,6 +150,12 @@ quick_stone_wall:
     tier: 2
     health: 300
 
+quick_silver_wall:
+    class: wall
+    material: quick_silver
+    tier: 3
+    health: 500
+
 quick_stone_spike:
     class: spike
     material: quick_stone
