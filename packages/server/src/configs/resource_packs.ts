@@ -237,6 +237,8 @@ export class ResourcePackService {
             compiledVisuals,
             new Set(servedAssets.keys())
         );
+        assertPackAssetBudget([...servedAssets.values()]);
+
         const payload: CompiledVisualsPayload = {
             format: 1,
             defs: Object.fromEntries(compiledVisuals),

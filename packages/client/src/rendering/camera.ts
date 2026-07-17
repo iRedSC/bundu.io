@@ -6,11 +6,17 @@ export type CameraOptions = {
     maxZoom?: number;
 };
 
+const PLAY_MIN_ZOOM = 0.75;
+const PLAY_MAX_ZOOM = 2.5;
+const FREECAM_MIN_ZOOM = 0.05;
+const FREECAM_MAX_ZOOM = 2.5;
+
 /**
  * Thin follow camera on top of pixi-viewport: track a target and clamped wheel zoom.
  */
 export class Camera {
     private viewport: Viewport;
+    private freecam = false;
 
     target: BasicPoint | null = null;
 
@@ -18,14 +24,65 @@ export class Camera {
         this.viewport = viewport;
 
         viewport.clampZoom({
-            minScale: options.minZoom ?? 0.75,
-            maxScale: options.maxZoom ?? 2.5,
+            minScale: options.minZoom ?? PLAY_MIN_ZOOM,
+            maxScale: options.maxZoom ?? PLAY_MAX_ZOOM,
         });
-        viewport.wheel({ center: viewport.center });
+        // No `center` — zoom toward the pointer (not a fixed world point).
+        viewport.wheel({ percent: 0.1 });
     }
 
     follow(target: BasicPoint | null) {
         this.target = target;
+    }
+
+    setFreecam(enabled: boolean): void {
+        if (this.freecam === enabled) return;
+        this.freecam = enabled;
+        if (enabled) {
+            this.target = null;
+            this.viewport.clampZoom({
+                minScale: FREECAM_MIN_ZOOM,
+                maxScale: FREECAM_MAX_ZOOM,
+            });
+            // Re-bind wheel without a fixed center so zoom stays under the cursor.
+            this.viewport.plugins.remove("wheel");
+            this.viewport.wheel({ percent: 0.1 });
+            this.viewport.drag({
+                pressDrag: true,
+                mouseButtons: "middle",
+            });
+        } else {
+            this.viewport.plugins.remove("drag");
+            this.viewport.clampZoom({
+                minScale: PLAY_MIN_ZOOM,
+                maxScale: PLAY_MAX_ZOOM,
+            });
+            this.viewport.plugins.remove("wheel");
+            this.viewport.wheel({ percent: 0.1 });
+            if (this.viewport.scale.x < PLAY_MIN_ZOOM) {
+                // Keep current view center while restoring play zoom.
+                this.viewport.setZoom(PLAY_MIN_ZOOM, true);
+            }
+        }
+    }
+
+    isFreecam(): boolean {
+        return this.freecam;
+    }
+
+    /** World-space AABB of the current screen. */
+    worldBounds(): { minX: number; minY: number; maxX: number; maxY: number } {
+        const topLeft = this.viewport.toWorld(0, 0);
+        const bottomRight = this.viewport.toWorld(
+            this.viewport.screenWidth,
+            this.viewport.screenHeight
+        );
+        return {
+            minX: Math.min(topLeft.x, bottomRight.x),
+            minY: Math.min(topLeft.y, bottomRight.y),
+            maxX: Math.max(topLeft.x, bottomRight.x),
+            maxY: Math.max(topLeft.y, bottomRight.y),
+        };
     }
 
     update() {

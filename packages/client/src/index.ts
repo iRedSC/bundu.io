@@ -5,7 +5,7 @@ import {
     setupGUIPacketReceiving,
     setupPacketReceiving,
 } from "./network/receiver";
-import { ClientPacket } from "@bundu/shared/packet_definitions";
+import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
 import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
@@ -247,6 +247,9 @@ async function main() {
 
     const world = new World(viewport, app.renderer);
     setupPacketReceiving(receiver, world);
+    receiver.on(ServerPacket.FreecamMode, ({ enabled }) => {
+        world.setFreecamMode(enabled);
+    });
 
     if (__DEBUG__) {
         const { startConfigHotReload } = await import(
@@ -267,6 +270,7 @@ async function main() {
         getUsername: () => nameInput.value.trim(),
         resetLocalState: () => {
             clientTime.resetServerSync();
+            world.setFreecamMode(false);
             world.clear();
             gui.health.update(0);
             gui.hunger.update(0);
@@ -303,6 +307,9 @@ async function main() {
         },
     });
 
+    world.onViewBounds = (bounds) => {
+        session.sendPacket(ClientPacket.ViewBounds, bounds);
+    };
     packRetryButton.addEventListener("click", () => {
         void session.connect();
     });
@@ -329,6 +336,7 @@ async function main() {
         getPlaceStructureId: () => debug.getPlaceStructureId(),
         isOverInventory: () => gui.inventory.isInteracting,
         isPlacementAllowed: () => world.isPlacementAllowed(),
+        isFreecam: () => world.camera.isFreecam(),
     });
     input.onToggleLeaderboard = () => gui.leaderboard.toggle();
     input.onShowWorldHover = (show) => world.setShowAllHover(show);

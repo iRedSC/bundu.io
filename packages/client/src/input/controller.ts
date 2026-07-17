@@ -29,6 +29,8 @@ export type InputPlayerFacade = {
     isOverInventory(): boolean;
     /** Last ghost validation from the server (`undefined` = not yet known). */
     isPlacementAllowed(): boolean | undefined;
+    /** Freecam mode — suppress body input packets. */
+    isFreecam(): boolean;
 };
 
 /**
@@ -121,6 +123,7 @@ export class InputController {
     }
 
     private handleMouseMove(mousePos: [number, number]) {
+        if (this.facade.isFreecam()) return;
         const player = this.facade.getLocalPlayer();
         if (!player) return;
 
@@ -157,6 +160,12 @@ export class InputController {
     private handleMoveInput(move: MoveAxes) {
         const chat = document.querySelector<HTMLInputElement>("#chat-input");
         if (chat === document.activeElement) return;
+        if (this.facade.isFreecam()) {
+            this.sendPacket(ClientPacket.Movement, {
+                direction: encodeMoveDirection(0, 0),
+            });
+            return;
+        }
 
         this.sendPacket(ClientPacket.Movement, {
             direction: encodeMoveDirection(move[0], move[1]),
@@ -171,6 +180,7 @@ export class InputController {
 
     private handlePointerDown(event: PointerEvent) {
         if (!this.facade.isInGame()) return;
+        if (this.facade.isFreecam()) return;
         if (this.facade.isOverInventory()) return;
         if (this.facade.getLocalPlayer()?.isCrafting) return;
         if (event.button === 2) {

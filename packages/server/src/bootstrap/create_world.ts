@@ -41,6 +41,7 @@ export function createWorld(): ServerWorld {
 
     const playerSystem = new PlayerSystem(world);
     const renderDistanceSystem = new RenderDistanceSystem(world);
+    playerSystem.setRenderDistanceSystem(renderDistanceSystem);
     const serializer = new Serializer<ClientPacketMap>(ClientSchema);
     const receiver = new ServerPacketReceiver(serializer, ClientPacketGuards);
     setupPacketReceiving(receiver, playerSystem);

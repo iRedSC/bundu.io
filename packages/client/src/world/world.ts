@@ -1,9 +1,13 @@
 import {
     FOOTPRINT_CIRCLE_RADIUS,
     TILE_SIZE,
+    WORLD_BOUNDS,
     deciToWorld,
 } from "@bundu/shared/tiles";
-import type { ServerPacket } from "@bundu/shared/packet_definitions";
+import {
+    FREECAM_MAX_VIEW_EXTENT,
+    type ServerPacket,
+} from "@bundu/shared/packet_definitions";
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { SkyUndoLayer } from "./sky_undo_layer";
@@ -46,6 +50,12 @@ import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
 import { clientTime } from "@client/globals";
 import { structurePlace } from "../visual/particles/structure_place";
+
+/**
+ * Unload movers only when freecam can see most of the map.
+ * (~80% of world half-extent — far beyond play render distance.)
+ */
+const FREECAM_OVERVIEW_HALF = WORLD_BOUNDS * 0.4;
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -115,6 +125,7 @@ export class World {
     }
 
     clear() {
+        this.camera.setFreecam(false);
         this.camera.follow(null);
 
         const ids = Array.from(this.objects.all(), (object) => object.id);
@@ -161,6 +172,16 @@ export class World {
         this.particles.update(deltaMS);
         this.updatePlacementGhost();
         this.camera.update();
+        if (this.camera.isFreecam()) {
+            if (this.onViewBounds) {
+                const bounds = this.currentViewBounds();
+                const key = `${bounds.minX | 0},${bounds.minY | 0},${bounds.maxX | 0},${bounds.maxY | 0},${bounds.overview ? 1 : 0}`;
+                if (key !== this.lastViewBoundsKey) {
+                    this.lastViewBoundsKey = key;
+                    this.onViewBounds(bounds);
+                }
+            }
+        }
     }
 
     private syncSkyUndo(): void {
@@ -202,9 +223,78 @@ export class World {
 
     private attachLocalPlayer(player: GameObject) {
         console.info(`Found user (id ${player.id}), loading..`);
-        this.camera.follow(player.container);
+        if (!this.camera.isFreecam()) {
+            this.camera.follow(player.container);
+        }
         this.refreshStructureOwnership();
     }
+
+    /**
+     * Enter/exit freecam spectate mode: detach camera, hide the local avatar.
+     */
+    setFreecamMode(enabled: boolean): void {
+        this.camera.setFreecam(enabled);
+        const local =
+            this.user !== undefined ? this.objects.get(this.user) : undefined;
+        if (local) {
+            local.container.visible = !enabled;
+            if (local instanceof Player) {
+                local.name.visible = !enabled;
+                local.chatMessage.visible = !enabled && local.chatMessage.visible;
+                local.craftBar.visible = !enabled && local.craftBar.visible;
+            }
+            if (!enabled) {
+                this.camera.follow(local.container);
+            }
+        }
+        this.lastViewBoundsKey = "";
+    }
+
+    /** World AABB for freecam AOI; overview when larger than play render distance. */
+    currentViewBounds(): {
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+        overview: boolean;
+    } {
+        const bounds = this.camera.worldBounds();
+        let { minX, minY, maxX, maxY } = bounds;
+        const width = maxX - minX;
+        const height = maxY - minY;
+        // Clamp to wire limit (keeps packets valid at extreme freecam zoom).
+        if (width > FREECAM_MAX_VIEW_EXTENT) {
+            const cx = (minX + maxX) / 2;
+            const half = FREECAM_MAX_VIEW_EXTENT / 2;
+            minX = cx - half;
+            maxX = cx + half;
+        }
+        if (height > FREECAM_MAX_VIEW_EXTENT) {
+            const cy = (minY + maxY) / 2;
+            const half = FREECAM_MAX_VIEW_EXTENT / 2;
+            minY = cy - half;
+            maxY = cy + half;
+        }
+        const halfX = (maxX - minX) / 2;
+        const halfY = (maxY - minY) / 2;
+        return {
+            minX,
+            minY,
+            maxX,
+            maxY,
+            overview: halfX > FREECAM_OVERVIEW_HALF || halfY > FREECAM_OVERVIEW_HALF,
+        };
+    }
+
+    private lastViewBoundsKey = "";
+    /** Optional sink for throttled ViewBounds while freecam is on. */
+    onViewBounds?: (bounds: {
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+        overview: boolean;
+    }) => void;
 
     /** Tint owned structure health bars once the local player id is known. */
     private refreshStructureOwnership() {

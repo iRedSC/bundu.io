@@ -21,4 +21,5 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.MoveSlot, system.moveSlot);
     receiver.on(ClientPacket.CursorSlot, system.cursorSlot);
     receiver.on(ClientPacket.CraftItem, system.craftItem);
+    receiver.on(ClientPacket.ViewBounds, system.viewBounds);
 }

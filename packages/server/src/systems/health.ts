@@ -1,5 +1,6 @@
 import { Attributes } from "../components/attributes.js";
 import { Health, Rotting, Spiked, TileEntity } from "../components/base.js";
+import { PlayerData } from "../components/player.js";
 import { type GameObject, System, type World } from "../engine";
 import { emitVitals } from "../network/vitals.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
@@ -18,6 +19,7 @@ export class HealthSystem extends System<GameEventMap> {
     }
 
     override update(time: number, _delta: number, object: GameObject) {
+        if (PlayerData.get(object)?.freecam) return;
         const health = object.get(Health);
         const attributes = object.get(Attributes);
         if (!attributes) return;

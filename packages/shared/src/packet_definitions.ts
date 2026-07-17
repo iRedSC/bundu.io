@@ -4,6 +4,13 @@ import type {
 } from "./object_types";
 import { PlaceMode } from "./inventory";
 import type { PacketGuards } from "./network/serializer";
+import { WORLD_BOUNDS } from "./tiles";
+
+/**
+ * Max ViewBounds edge length. Freecam min zoom (~0.05) on a large display can
+ * exceed 2× world size; keep headroom without accepting unbounded spam.
+ */
+export const FREECAM_MAX_VIEW_EXTENT = WORLD_BOUNDS * 5;
 
 /** Server → client packet IDs. */
 export const ServerPacket = {
@@ -33,6 +40,8 @@ export const ServerPacket = {
     EatEvent: 0x1a,
     /** Authoritative day/night period index (morning/day/evening/night). */
     SetTimeOfDay: 0x1b,
+    /** Freecam spectate/edit mode toggled by `/freecam`. */
+    FreecamMode: 0x1c,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -139,6 +148,7 @@ export namespace ServerPacket {
     export type EatEvent = { id: number; duration: number };
     /** Period index into the server day cycle (0=morning … 3=night). */
     export type SetTimeOfDay = { period: number };
+    export type FreecamMode = { enabled: boolean };
 }
 
 /** Client → server packet IDs. */
@@ -155,6 +165,8 @@ export const ClientPacket = {
     PlaceStructureAt: 0x0d,
     PlaceStructure: 0x0e,
     SetStructurePlacement: 0x0f,
+    /** Freecam screenspace world AABB + overview (no dynamic movers). */
+    ViewBounds: 0x10,
 } as const;
 
 export namespace ClientPacket {
@@ -184,6 +196,13 @@ export namespace ClientPacket {
         x: number;
         y: number;
     };
+    export type ViewBounds = {
+        minX: number;
+        minY: number;
+        maxX: number;
+        maxY: number;
+        overview: boolean;
+    };
 }
 
 /** ID → payload map for server packets. */
@@ -211,6 +230,7 @@ export type ServerPacketMap = {
     [ServerPacket.SetStructureState]: ServerPacket.SetStructureState;
     [ServerPacket.EatEvent]: ServerPacket.EatEvent;
     [ServerPacket.SetTimeOfDay]: ServerPacket.SetTimeOfDay;
+    [ServerPacket.FreecamMode]: ServerPacket.FreecamMode;
 };
 
 /** ID → payload map for client packets. */
@@ -227,6 +247,7 @@ export type ClientPacketMap = {
     [ClientPacket.PlaceStructureAt]: ClientPacket.PlaceStructureAt;
     [ClientPacket.PlaceStructure]: ClientPacket.PlaceStructure;
     [ClientPacket.SetStructurePlacement]: ClientPacket.SetStructurePlacement;
+    [ClientPacket.ViewBounds]: ClientPacket.ViewBounds;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -277,6 +298,7 @@ export const ServerSchema: {
     [ServerPacket.SetStructureState]: { fields: ["id", "states"] },
     [ServerPacket.EatEvent]: { fields: ["id", "duration"] },
     [ServerPacket.SetTimeOfDay]: { fields: ["period"] },
+    [ServerPacket.FreecamMode]: { fields: ["enabled"] },
 };
 
 export const ClientSchema: {
@@ -299,6 +321,9 @@ export const ClientSchema: {
     [ClientPacket.PlaceStructure]: { fields: [] },
     [ClientPacket.SetStructurePlacement]: {
         fields: ["rotation", "x", "y"],
+    },
+    [ClientPacket.ViewBounds]: {
+        fields: ["minX", "minY", "maxX", "maxY", "overview"],
     },
 };
 
@@ -381,4 +406,17 @@ export const ClientPacketGuards = {
         value.rotation <= 3 &&
         hasSafeInteger(value, "x") &&
         hasSafeInteger(value, "y"),
+    [ClientPacket.ViewBounds]: (
+        value: unknown
+    ): value is ClientPacket.ViewBounds =>
+        isRecord(value) &&
+        isFiniteNumber(value.minX) &&
+        isFiniteNumber(value.minY) &&
+        isFiniteNumber(value.maxX) &&
+        isFiniteNumber(value.maxY) &&
+        isBoolean(value.overview) &&
+        value.maxX >= value.minX &&
+        value.maxY >= value.minY &&
+        value.maxX - value.minX <= FREECAM_MAX_VIEW_EXTENT &&
+        value.maxY - value.minY <= FREECAM_MAX_VIEW_EXTENT,
 } satisfies PacketGuards<ClientPacketMap>;

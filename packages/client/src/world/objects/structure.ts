@@ -341,6 +341,7 @@ export class Structure extends GameObject {
             ...structureDef,
             id: this.type,
         };
+
         const { parts } = tileEntity
             ? assembleTileEntity(tileEntity, this.container, variant)
             : assemble(def, this.container, variant);

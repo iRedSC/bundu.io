@@ -1,4 +1,4 @@
-import { Physics } from "../components/base.js";
+import { Physics, AnimalData } from "../components/base.js";
 import {
     System,
     type GameObject,
@@ -10,8 +10,9 @@ import { VisibleObjects } from "../components/visible_objects.js";
 import { Range } from "@bundu/shared";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { gameplayConfig } from "../configs/gameplay.js";
+import { PlayerData } from "../components/player.js";
 
-function getRenderBounds(physics: Physics): Range {
+function getBodyRenderBounds(physics: Physics): Range {
     const distance = gameplayConfig().renderDistance;
     return new Range(
         {
@@ -25,12 +26,37 @@ function getRenderBounds(physics: Physics): Range {
     );
 }
 
+function getViewerBounds(viewer: GameObject): Range | undefined {
+    const data = PlayerData.get(viewer);
+    if (data?.freecam && data.freecamView) {
+        const view = data.freecamView;
+        return new Range(
+            { x: view.minX, y: view.minY },
+            { x: view.maxX, y: view.maxY }
+        );
+    }
+    const physics = Physics.get(viewer);
+    if (!physics) return undefined;
+    return getBodyRenderBounds(physics);
+}
+
+function isMover(object: GameObject): boolean {
+    return PlayerData.get(object) !== undefined || AnimalData.get(object) !== undefined;
+}
+
+function isHiddenFromPeers(object: GameObject): boolean {
+    return PlayerData.get(object)?.freecam === true;
+}
+
 function loadObjectsIntoView(
     viewer: GameObject,
     objects: GameObject[],
     playerPacketManager: ServerContext["playerPacketManager"]
 ) {
     for (const object of objects) {
+        // Freecam players stay hidden from everyone else, but each viewer
+        // must still receive their own LoadObject to attach the local avatar.
+        if (object !== viewer && isHiddenFromPeers(object)) continue;
         const packet = object.getNewObjectPacket();
         if (!packet) continue;
         playerPacketManager.add(viewer.id, ServerPacket.LoadObject, packet);
@@ -42,6 +68,7 @@ function deleteObjectsFromView(
     objects: GameObject[],
     playerPacketManager: ServerContext["playerPacketManager"]
 ) {
+    if (objects.length === 0) return;
     playerPacketManager.add(viewer.id, ServerPacket.DeleteObjects, {
         objects: objects.map((o) => o.id),
     });
@@ -60,19 +87,138 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         this.update(this.world.gameTime, 0, object);
     }
 
+    /** Ensure the viewer has received LoadObject for themselves. */
+    ensureSelfVisible(player: GameObject): void {
+        const visible = VisibleObjects.get(player);
+        if (!visible) return;
+        if (!visible.visible.has(player)) {
+            loadObjectsIntoView(
+                player,
+                [player],
+                this.world.context.playerPacketManager
+            );
+        }
+        const others = [...visible.visible].filter(
+            (object) => object !== player
+        );
+        if (others.length > 0) {
+            deleteObjectsFromView(
+                player,
+                others,
+                this.world.context.playerPacketManager
+            );
+        }
+        visible.visible = new Set([player]);
+    }
+
+    /** Soft-despawn: hide from peers, clear AOI, wait for client ViewBounds. */
+    enterFreecam(player: GameObject): void {
+        const data = PlayerData.get(player);
+        if (!data) return;
+        data.freecam = true;
+        data.freecamView = undefined;
+        this.world.context.quadtree.delete(player.id);
+        this.removeFromPeerViews(player);
+        this.ensureSelfVisible(player);
+        this.world.context.playerPacketManager.set(
+            player.id,
+            ServerPacket.FreecamMode,
+            { enabled: true }
+        );
+    }
+
+    exitFreecam(player: GameObject): void {
+        const data = PlayerData.get(player);
+        if (!data) return;
+        data.freecam = false;
+        data.freecamView = undefined;
+        const physics = Physics.get(player);
+        if (physics) {
+            this.world.context.quadtree.insert(player.id, physics.position);
+        }
+        this.world.context.playerPacketManager.set(
+            player.id,
+            ServerPacket.FreecamMode,
+            { enabled: false }
+        );
+        this.loadView(player);
+        // Re-announce to peers whose AOI contains the body.
+        if (physics) {
+            this.newObject({ object: player });
+        }
+    }
+
+    setViewBounds(
+        player: GameObject,
+        bounds: {
+            minX: number;
+            minY: number;
+            maxX: number;
+            maxY: number;
+            overview: boolean;
+        }
+    ): void {
+        const data = PlayerData.get(player);
+        if (!data?.freecam) return;
+        data.freecamView = bounds;
+        this.update(this.world.gameTime, 0, player);
+    }
+
+    private removeFromPeerViews(player: GameObject): void {
+        const { playerPacketManager } = this.world.context;
+        for (const viewer of this.world.query([VisibleObjects])) {
+            if (viewer === player) continue;
+            const visible = viewer.get(VisibleObjects);
+            if (!visible.visible.delete(player)) continue;
+            deleteObjectsFromView(viewer, [player], playerPacketManager);
+        }
+    }
+
     override update(_time: number, _delta: number, object: GameObject): void {
-        const physics = object.get(Physics);
         const visibleObjects = object.get(VisibleObjects);
         const { playerPacketManager, quadtree } = this.world.context;
+        const data = PlayerData.get(object);
 
-        const renderBounds = getRenderBounds(physics);
+        // Freecam with no client bounds yet — keep only self loaded.
+        if (data?.freecam && !data.freecamView) {
+            const keepSelf = new Set([object]);
+            const oldObjects = visibleObjects.visible.difference(keepSelf);
+            if (oldObjects.size > 0) {
+                deleteObjectsFromView(
+                    object,
+                    Array.from(oldObjects),
+                    playerPacketManager
+                );
+            }
+            if (!visibleObjects.visible.has(object)) {
+                loadObjectsIntoView(object, [object], playerPacketManager);
+            }
+            visibleObjects.visible = keepSelf;
+            return;
+        }
 
-        const objectsInRenderDistance = this.world.query(
+        const renderBounds = getViewerBounds(object);
+        if (!renderBounds) return;
+
+        let objectsInRenderDistance = this.world.query(
             [Physics],
             quadtree.query(renderBounds.normalized)
         );
 
-        const currentVisibleObjects = new Set(objectsInRenderDistance);
+        if (data?.freecam && data.freecamView?.overview) {
+            objectsInRenderDistance = objectsInRenderDistance.filter(
+                (candidate) => !isMover(candidate) || candidate === object
+            );
+        }
+
+        // Always include self (not in quadtree while freecam). Hide other freecam peers.
+        const filtered = objectsInRenderDistance.filter(
+            (candidate) =>
+                candidate === object || !isHiddenFromPeers(candidate)
+        );
+        if (!filtered.includes(object)) filtered.push(object);
+
+        const currentVisibleObjects = new Set(filtered);
         const oldObjects = visibleObjects.visible.difference(
             currentVisibleObjects
         );
@@ -98,6 +244,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
     }
 
     newObject({ object }: GameEvent.NewObject) {
+        if (isHiddenFromPeers(object)) return;
         const objPhys = object.get(Physics);
         if (!objPhys) return;
         const { playerPacketManager } = this.world.context;
@@ -106,10 +253,19 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         ]);
         for (const obj of objectsWithVisibleObjectsComponent) {
             const visibleObjects = obj.get(VisibleObjects);
-            const physics = obj.get(Physics);
-            if (!visibleObjects || !physics) continue;
+            if (!visibleObjects) continue;
 
-            const bounds = getRenderBounds(physics);
+            const bounds = getViewerBounds(obj);
+            if (!bounds) continue;
+
+            const viewerData = PlayerData.get(obj);
+            if (
+                viewerData?.freecam &&
+                viewerData.freecamView?.overview &&
+                isMover(object)
+            ) {
+                continue;
+            }
 
             if (bounds.contains(objPhys.position)) {
                 visibleObjects.visible.add(object);
