@@ -11,12 +11,7 @@ import {
 } from "@bundu/shared/tiles";
 import { getVariantName } from "@bundu/shared/variant_map";
 import { Box, Vector } from "sat";
-import {
-    AnimalData,
-    GroundData,
-    Physics,
-    Spiked,
-} from "../components/base.js";
+import { AnimalData, Physics, Spiked } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { gameRegistries } from "../configs/registries.js";
@@ -26,6 +21,7 @@ import { tryAddResource } from "../game_objects/add_resource.js";
 import { Ground } from "../game_objects/ground.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
 import { topGroundAt } from "../systems/ground_at.js";
+import { groundWire } from "../systems/ground_wire.js";
 import { canUseEditor } from "./auth.js";
 import {
     beginStroke,
@@ -37,14 +33,6 @@ import {
 } from "./history.js";
 import { exportMapYaml, saveMapYaml, wipeMap } from "./map_io.js";
 import { setAnimalsFrozen } from "./state.js";
-
-type GroundPacket = [
-    type: number,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-];
 
 function inWorldTiles(x: number, y: number): boolean {
     return x >= 0 && y >= 0 && x < WORLD_TILES && y < WORLD_TILES;
@@ -70,6 +58,8 @@ function clampGroundRect(
     const nw = x1 - x0 + 1;
     const nh = y1 - y0 + 1;
     if (nw < 1 || nh < 1) return null;
+    // Full-world rects are the reserved base floor — overlays only.
+    if (nw >= WORLD_TILES && nh >= WORLD_TILES) return null;
     return { x: x0, y: y0, w: nw, h: nh };
 }
 
@@ -106,9 +96,9 @@ export class AdminEditorSystem extends System<GameEventMap> {
         return {
             world: this.world,
             trigger: this.trigger,
-            broadcastGround: (packet: GroundPacket) =>
+            broadcastGround: (packet: ServerPacket.GroundWire) =>
                 this.broadcastGround(packet),
-            broadcastUnloadGround: (packet: GroundPacket) =>
+            broadcastUnloadGround: (packet: ServerPacket.GroundWire) =>
                 this.broadcastUnloadGround(packet),
         };
     }
@@ -256,7 +246,9 @@ export class AdminEditorSystem extends System<GameEventMap> {
             if (!animal.active) continue;
             const pos = animal.get(Physics).position;
             if (worldToTile(pos.x) !== x || worldToTile(pos.y) !== y) continue;
-            this.trigger(GameEvent.Kill, { object: animal, source: player });
+            // DeleteObject — not Kill — so editor removal skips corpses / score.
+            animal.active = false;
+            this.trigger(GameEvent.DeleteObject, { object: animal });
             return;
         }
 
@@ -265,14 +257,7 @@ export class AdminEditorSystem extends System<GameEventMap> {
         const ground = this.world.getObject(top.objectId);
         if (!ground?.active) return;
         const snapshot = trySnapshot(ground);
-        const data = ground.get(GroundData);
-        const packet: GroundPacket = [
-            data.type,
-            Math.round(data.collider.pos.x),
-            Math.round(data.collider.pos.y),
-            Math.round(data.collider.w),
-            Math.round(data.collider.h),
-        ];
+        const packet = groundWire(ground);
         this.world.removeObject(ground);
         this.broadcastUnloadGround(packet);
         if (snapshot) {
@@ -294,7 +279,9 @@ export class AdminEditorSystem extends System<GameEventMap> {
         if (!player || !canUseEditor(player)) return;
         for (const animal of this.world.query([AnimalData])) {
             if (!animal.active) continue;
-            this.trigger(GameEvent.Kill, { object: animal, source: player });
+            // Same as wipe / click-delete: remove without corpses or score.
+            animal.active = false;
+            this.trigger(GameEvent.DeleteObject, { object: animal });
         }
     };
 
@@ -356,31 +343,36 @@ export class AdminEditorSystem extends System<GameEventMap> {
         th: number
     ): GameObject {
         const config = GroundTypeConfigs.get(typeId);
-        const packet: GroundPacket = [typeId, tx, ty, tw, th];
         const object = new Ground({
             collider: new Box(new Vector(tx, ty), tw, th),
             type: typeId,
             speedMultiplier: config.speed_multiplier,
             createPacket() {
-                return packet;
+                return [
+                    this.type,
+                    this.collider.pos.x,
+                    this.collider.pos.y,
+                    this.collider.w,
+                    this.collider.h,
+                ];
             },
         });
         this.world.addObject(object);
-        this.broadcastGround(packet);
+        this.broadcastGround(groundWire(object));
         return object;
     }
 
-    private broadcastGround(packet: GroundPacket) {
+    private broadcastGround(packet: ServerPacket.GroundWire) {
         this.broadcastGroundPacket(ServerPacket.LoadGround, packet);
     }
 
-    private broadcastUnloadGround(packet: GroundPacket) {
+    private broadcastUnloadGround(packet: ServerPacket.GroundWire) {
         this.broadcastGroundPacket(ServerPacket.UnloadGround, packet);
     }
 
     private broadcastGroundPacket(
         id: typeof ServerPacket.LoadGround | typeof ServerPacket.UnloadGround,
-        packet: GroundPacket
+        packet: ServerPacket.GroundWire
     ) {
         const { playerPacketManager, socketManager } = this.world.context;
         for (const viewer of this.world.query([PlayerData])) {

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { WORLD_TILES } from "@bundu/shared/tiles";
 import { Box, Vector } from "sat";
 import {
@@ -20,18 +21,11 @@ import { Ground } from "../game_objects/ground.js";
 import { Resource } from "../game_objects/resource.js";
 import { Structure } from "../game_objects/structure.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
+import { groundWire } from "../systems/ground_wire.js";
 import { clearEditorHistory } from "./history.js";
 
 const cacheRoot = path.resolve(import.meta.dir, "../../../../.cache");
 const defaultFilename = path.join(cacheRoot, "editor-map.yml");
-
-type GroundPacket = [
-    type: number,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-];
 
 type Trigger = <T extends keyof GameEventMap>(
     event: T,
@@ -205,19 +199,12 @@ export function saveMapYaml(world: World): { yaml: string; path: string } {
 export function wipeMap(
     world: World,
     trigger: Trigger,
-    broadcastGround: (packet: GroundPacket) => void,
-    broadcastUnloadGround: (packet: GroundPacket) => void
+    broadcastGround: (packet: ServerPacket.GroundWire) => void,
+    broadcastUnloadGround: (packet: ServerPacket.GroundWire) => void
 ): void {
     for (const object of [...world.query([GroundData])]) {
         if (!object.active) continue;
-        const data = object.get(GroundData);
-        const packet: GroundPacket = [
-            data.type,
-            Math.round(data.collider.pos.x),
-            Math.round(data.collider.pos.y),
-            Math.round(data.collider.w),
-            Math.round(data.collider.h),
-        ];
+        const packet = groundWire(object);
         world.removeObject(object);
         broadcastUnloadGround(packet);
     }
@@ -246,20 +233,24 @@ export function wipeMap(
     const registries = gameRegistries();
     const oceanId = registries.ground_type.resolve("ocean", "bundu");
     const config = GroundTypeConfigs.get(oceanId);
-    const packet: GroundPacket = [oceanId, 0, 0, WORLD_TILES, WORLD_TILES];
-    world.addObject(
-        new Ground({
-            collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
-            type: oceanId,
-            speedMultiplier: config.speed_multiplier,
-            createPacket() {
-                return packet;
-            },
-        })
-    );
-    broadcastGround(packet);
+    const object = new Ground({
+        collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
+        type: oceanId,
+        speedMultiplier: config.speed_multiplier,
+        createPacket() {
+            return [
+                this.type,
+                this.collider.pos.x,
+                this.collider.pos.y,
+                this.collider.w,
+                this.collider.h,
+            ];
+        },
+    });
+    world.addObject(object);
+    broadcastGround(groundWire(object));
 
-    for (const object of world.objects.values()) {
-        clearEditorHistory(object.id);
+    for (const entry of world.objects.values()) {
+        clearEditorHistory(entry.id);
     }
 }

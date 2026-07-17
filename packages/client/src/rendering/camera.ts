@@ -1,5 +1,6 @@
 import type { BasicPoint } from "@bundu/shared";
 import type { Viewport } from "pixi-viewport";
+import type { Point } from "pixi.js";
 
 export type CameraOptions = {
     minZoom?: number;
@@ -12,23 +13,41 @@ const FREECAM_MIN_ZOOM = 0.05;
 const FREECAM_MAX_ZOOM = 2.5;
 
 /**
+ * Live play-mode zoom pivot. pixi-viewport stores `center` by reference and
+ * `viewport.center` returns a fresh Point each read — a snapshot would freeze.
+ * Runtime only reads `.x`/`.y`; typed as Point for the wheel plugin.
+ */
+function liveViewportCenter(viewport: Viewport): Point {
+    return {
+        get x() {
+            return viewport.center.x;
+        },
+        get y() {
+            return viewport.center.y;
+        },
+    } as Point;
+}
+
+/**
  * Thin follow camera on top of pixi-viewport: track a target and clamped wheel zoom.
  */
 export class Camera {
     private viewport: Viewport;
     private freecam = false;
+    private readonly playZoomCenter: Point;
 
     target: BasicPoint | null = null;
 
     constructor(viewport: Viewport, options: CameraOptions = {}) {
         this.viewport = viewport;
+        this.playZoomCenter = liveViewportCenter(viewport);
 
         viewport.clampZoom({
             minScale: options.minZoom ?? PLAY_MIN_ZOOM,
             maxScale: options.maxZoom ?? PLAY_MAX_ZOOM,
         });
         // Play mode zooms toward screen center while the camera follows the player.
-        viewport.wheel({ percent: 0.1, center: viewport.center });
+        viewport.wheel({ percent: 0.1, center: this.playZoomCenter });
     }
 
     follow(target: BasicPoint | null) {
@@ -60,7 +79,7 @@ export class Camera {
             this.viewport.plugins.remove("wheel");
             this.viewport.wheel({
                 percent: 0.1,
-                center: this.viewport.center,
+                center: this.playZoomCenter,
             });
             if (this.viewport.scale.x < PLAY_MIN_ZOOM) {
                 // Keep current view center while restoring play zoom.

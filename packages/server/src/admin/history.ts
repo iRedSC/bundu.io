@@ -1,3 +1,4 @@
+import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Spiked } from "../components/base.js";
 import type { GameObject, World } from "../engine";
 import {
@@ -7,6 +8,7 @@ import {
 } from "../bootstrap/dev_checkpoint.js";
 import { syncStructureStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
+import { groundWire } from "../systems/ground_wire.js";
 
 const MAX_STROKES = 64;
 
@@ -30,12 +32,8 @@ type HistoryHost = {
         event: T,
         data: GameEventMap[T]
     ) => void;
-    broadcastGround: (
-        packet: [type: number, x: number, y: number, w: number, h: number]
-    ) => void;
-    broadcastUnloadGround: (
-        packet: [type: number, x: number, y: number, w: number, h: number]
-    ) => void;
+    broadcastGround: (packet: ServerPacket.GroundWire) => void;
+    broadcastUnloadGround: (packet: ServerPacket.GroundWire) => void;
 };
 
 const byPlayer = new Map<number, PlayerHistory>();
@@ -154,16 +152,9 @@ function removeBySnapshot(snapshot: ObjectSnapshot, host: HistoryHost): void {
     if (!object) return;
     if (snapshot.kind === "ground") {
         const wasActive = object.active;
+        const packet = wasActive ? groundWire(object) : null;
         host.world.removeObject(object);
-        if (wasActive) {
-            host.broadcastUnloadGround([
-                snapshot.groundType,
-                snapshot.x,
-                snapshot.y,
-                snapshot.width,
-                snapshot.height,
-            ]);
-        }
+        if (packet) host.broadcastUnloadGround(packet);
         return;
     }
     if (object.active) {
@@ -179,13 +170,8 @@ function restoreWithSync(snapshot: ObjectSnapshot, host: HistoryHost): void {
     if (existing) host.world.removeObject(existing);
     restoreObject(host.world, snapshot);
     if (snapshot.kind === "ground") {
-        host.broadcastGround([
-            snapshot.groundType,
-            snapshot.x,
-            snapshot.y,
-            snapshot.width,
-            snapshot.height,
-        ]);
+        const restored = host.world.getObject(snapshot.id);
+        if (restored?.active) host.broadcastGround(groundWire(restored));
     }
 }
 

@@ -79,6 +79,10 @@ export class InputController {
      * walking (camera move) still places under the mouse without wiggling.
      */
     update() {
+        if (this.facade.isFreecam()) {
+            this.stopPlacing();
+            return;
+        }
         if (!this.placing) return;
         if (!this.facade.isInGame()) {
             this.stopPlacing();
@@ -104,12 +108,17 @@ export class InputController {
 
     /** Ghost became valid while held — place immediately at the current cursor. */
     onPlacementValidity(allowed: boolean) {
+        if (this.facade.isFreecam()) return;
         if (!this.placing || !allowed) return;
         const player = this.facade.getLocalPlayer();
         if (player?.getStructureGhost()) this.tryPlaceAtCursor(player);
     }
 
     private handlePointerMove(event: PointerEvent) {
+        if (this.facade.isFreecam()) {
+            this.stopPlacing();
+            return;
+        }
         if (!this.placing || (event.buttons & 1) === 0) return;
         this.syncCursorFromScreen(event.clientX, event.clientY);
         const player = this.facade.getLocalPlayer();
@@ -201,7 +210,10 @@ export class InputController {
 
     private handlePointerUp(event: PointerEvent) {
         if (!this.facade.isInGame()) return;
-        if (this.facade.isFreecam()) return;
+        if (this.facade.isFreecam()) {
+            this.stopPlacing();
+            return;
+        }
         if (this.facade.getLocalPlayer()?.isCrafting) return;
         if (event.button === 2) {
             this.sendPacket(ClientPacket.Block, { stop: true });

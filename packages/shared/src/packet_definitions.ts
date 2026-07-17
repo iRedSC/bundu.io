@@ -80,14 +80,20 @@ export namespace ServerPacket {
     };
     export type DeleteObjects = { objects: number[] };
     export type ChatMessage = { id: number; message: string };
+    /**
+     * Ground rect wire tuple. `id` is the entity id — stack order is ascending id
+     * (higher id paints on top), matching map YAML and server `topGroundAt`.
+     */
+    export type GroundWire = [
+        id: number,
+        type: number,
+        x: number,
+        y: number,
+        w: number,
+        h: number,
+    ];
     export type LoadGround = {
-        groundData: [
-            type: number,
-            x: number,
-            y: number,
-            w: number,
-            h: number,
-        ][];
+        groundData: GroundWire[];
     };
     export type ClientConnectionInfo = {
         playerId: number;
@@ -154,13 +160,7 @@ export namespace ServerPacket {
     export type SetTimeOfDay = { period: number };
     export type FreecamMode = { enabled: boolean };
     export type UnloadGround = {
-        groundData: [
-            type: number,
-            x: number,
-            y: number,
-            w: number,
-            h: number,
-        ][];
+        groundData: GroundWire[];
     };
     export type AdminMapYaml = {
         yaml: string;
@@ -190,7 +190,7 @@ export const ClientPacket = {
     ChatMessage: 0x08,
     CursorSlot: 0x09,
     Block: 0x0c,
-    PlaceStructureAt: 0x0d,
+    /** 0x0d reserved — was PlaceStructureAt (debug); use AdminPlace in freecam. */
     PlaceStructure: 0x0e,
     SetStructurePlacement: 0x0f,
     /** Freecam screenspace world AABB + overview (no dynamic movers). */
@@ -234,12 +234,6 @@ export namespace ClientPacket {
      */
     export type CursorSlot = { slot: number; mode: number };
     export type Block = { stop: boolean };
-    export type PlaceStructureAt = {
-        structureId: number;
-        x: number;
-        y: number;
-        rotation: number;
-    };
     export type PlaceStructure = Record<string, never>;
     export type SetStructurePlacement = {
         rotation: number;
@@ -318,7 +312,6 @@ export type ClientPacketMap = {
     [ClientPacket.ChatMessage]: ClientPacket.ChatMessage;
     [ClientPacket.CursorSlot]: ClientPacket.CursorSlot;
     [ClientPacket.Block]: ClientPacket.Block;
-    [ClientPacket.PlaceStructureAt]: ClientPacket.PlaceStructureAt;
     [ClientPacket.PlaceStructure]: ClientPacket.PlaceStructure;
     [ClientPacket.SetStructurePlacement]: ClientPacket.SetStructurePlacement;
     [ClientPacket.ViewBounds]: ClientPacket.ViewBounds;
@@ -402,9 +395,6 @@ export const ClientSchema: {
     [ClientPacket.ChatMessage]: { fields: ["message"] },
     [ClientPacket.CursorSlot]: { fields: ["slot", "mode"] },
     [ClientPacket.Block]: { fields: ["stop"] },
-    [ClientPacket.PlaceStructureAt]: {
-        fields: ["structureId", "x", "y", "rotation"],
-    },
     [ClientPacket.PlaceStructure]: { fields: [] },
     [ClientPacket.SetStructurePlacement]: {
         fields: ["rotation", "x", "y"],
@@ -482,17 +472,6 @@ export const ClientPacketGuards = {
             value.mode === PlaceMode.One),
     [ClientPacket.Block]: (value: unknown): value is ClientPacket.Block =>
         isRecord(value) && isBoolean(value.stop),
-    [ClientPacket.PlaceStructureAt]: (
-        value: unknown
-    ): value is ClientPacket.PlaceStructureAt =>
-        isRecord(value) &&
-        isSafeInteger(value.structureId) &&
-        value.structureId > 0 &&
-        hasSafeInteger(value, "x") &&
-        hasSafeInteger(value, "y") &&
-        isSafeInteger(value.rotation) &&
-        value.rotation >= 0 &&
-        value.rotation <= 3,
     [ClientPacket.PlaceStructure]: (
         value: unknown
     ): value is ClientPacket.PlaceStructure =>
@@ -527,9 +506,13 @@ export const ClientPacketGuards = {
             value.kind === AdminPlaceKind.Structure ||
             value.kind === AdminPlaceKind.Ground) &&
         isSafeInteger(value.typeId) &&
-        value.typeId >= 0 &&
-        hasSafeInteger(value, "x") &&
-        hasSafeInteger(value, "y") &&
+        value.typeId > 0 &&
+        isSafeInteger(value.x) &&
+        value.x >= 0 &&
+        value.x < WORLD_TILES &&
+        isSafeInteger(value.y) &&
+        value.y >= 0 &&
+        value.y < WORLD_TILES &&
         isSafeInteger(value.rotation) &&
         value.rotation >= 0 &&
         value.rotation <= 3 &&
@@ -540,13 +523,21 @@ export const ClientPacketGuards = {
         value.w <= WORLD_TILES &&
         isSafeInteger(value.h) &&
         value.h >= 1 &&
-        value.h <= WORLD_TILES,
+        value.h <= WORLD_TILES &&
+        // Full-world rects are the reserved base floor — place overlays only.
+        !(value.kind === AdminPlaceKind.Ground &&
+            value.w >= WORLD_TILES &&
+            value.h >= WORLD_TILES),
     [ClientPacket.AdminDeleteAt]: (
         value: unknown
     ): value is ClientPacket.AdminDeleteAt =>
         isRecord(value) &&
-        hasSafeInteger(value, "x") &&
-        hasSafeInteger(value, "y"),
+        isSafeInteger(value.x) &&
+        value.x >= 0 &&
+        value.x < WORLD_TILES &&
+        isSafeInteger(value.y) &&
+        value.y >= 0 &&
+        value.y < WORLD_TILES,
     [ClientPacket.AdminSetAnimalsFrozen]: (
         value: unknown
     ): value is ClientPacket.AdminSetAnimalsFrozen =>

@@ -161,6 +161,7 @@ class PaletteSlot {
         this.entry = entry;
         this.clearIcon?.();
         this.clearIcon = undefined;
+        this.itemDisplay.removeChildren();
 
         if (!entry) {
             this.itemDisplay.visible = false;

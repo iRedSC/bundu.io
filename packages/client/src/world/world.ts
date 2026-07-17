@@ -111,18 +111,19 @@ export class World {
     /** Hold Tab: treat every structure as hovered for health bars. */
     private showAllHover = false;
     private readonly pendingObjectStates = new Map<number, EntityStateSnapshot>();
-    /** Client ground patches keyed for UnloadGround matching (LIFO on dupes). */
+    /**
+     * Client ground patches. Stack order / unload / delete-hover use entity `id`
+     * (higher id on top) — same contract as server `topGroundAt` and map YAML.
+     */
     private readonly groundPatches: {
+        id: number;
         type: number;
         x: number;
         y: number;
         w: number;
         h: number;
-        key: string;
         gfx: Container;
     }[] = [];
-    /** Monotonic layer so newer patches always paint above older ones. */
-    private groundLayerSeq = 0;
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
 
@@ -152,7 +153,6 @@ export class World {
         for (const id of ids) this.removeClientObject(id);
         this.renderer.delete(GROUND_RENDER_ID);
         this.groundPatches.length = 0;
-        this.groundLayerSeq = 0;
         this.shadows.clear();
         this.particles.clear();
         this.clearPlacementGhost();
@@ -701,35 +701,33 @@ export class World {
     }
 
     loadGround = (packet: ServerPacket.LoadGround) => {
-        for (const [type, x, y, w, h] of packet.groundData) {
-            const zIndex = GROUND_Z_BASE + this.groundLayerSeq++;
+        for (const [id, type, x, y, w, h] of packet.groundData) {
+            // Resync / undo restore: replace any prior gfx for this entity id.
+            for (let i = this.groundPatches.length - 1; i >= 0; i--) {
+                const existing = this.groundPatches[i];
+                if (!existing || existing.id !== id) continue;
+                this.groundPatches.splice(i, 1);
+                this.renderer.remove(GROUND_RENDER_ID, existing.gfx);
+                break;
+            }
             const gfx = createGround(
                 type,
                 x * TILE_SIZE,
                 y * TILE_SIZE,
                 w * TILE_SIZE,
                 h * TILE_SIZE,
-                zIndex
+                GROUND_Z_BASE + id
             );
-            this.groundPatches.push({
-                type,
-                x,
-                y,
-                w,
-                h,
-                key: `${type},${x},${y},${w},${h}`,
-                gfx,
-            });
+            this.groundPatches.push({ id, type, x, y, w, h, gfx });
             this.renderer.add(GROUND_RENDER_ID, gfx);
         }
     };
 
     unloadGround = (packet: ServerPacket.UnloadGround) => {
-        for (const [type, x, y, w, h] of packet.groundData) {
-            const key = `${type},${x},${y},${w},${h}`;
+        for (const [id] of packet.groundData) {
             for (let i = this.groundPatches.length - 1; i >= 0; i--) {
                 const patch = this.groundPatches[i];
-                if (!patch || patch.key !== key) continue;
+                if (!patch || patch.id !== id) continue;
                 this.groundPatches.splice(i, 1);
                 this.renderer.remove(GROUND_RENDER_ID, patch.gfx);
                 break;
@@ -776,9 +774,8 @@ export class World {
             };
         }
 
-        for (let i = this.groundPatches.length - 1; i >= 0; i--) {
-            const patch = this.groundPatches[i];
-            if (!patch) continue;
+        let top: (typeof this.groundPatches)[number] | undefined;
+        for (const patch of this.groundPatches) {
             if (patch.w >= WORLD_TILES && patch.h >= WORLD_TILES) continue;
             if (
                 tx < patch.x ||
@@ -788,16 +785,16 @@ export class World {
             ) {
                 continue;
             }
-            return {
-                kind: "rect",
-                x: patch.x * TILE_SIZE,
-                y: patch.y * TILE_SIZE,
-                w: patch.w * TILE_SIZE,
-                h: patch.h * TILE_SIZE,
-            };
+            if (!top || patch.id > top.id) top = patch;
         }
-
-        return null;
+        if (!top) return null;
+        return {
+            kind: "rect",
+            x: top.x * TILE_SIZE,
+            y: top.y * TILE_SIZE,
+            w: top.w * TILE_SIZE,
+            h: top.h * TILE_SIZE,
+        };
     }
 
     chatMessage = ({ id, message }: ServerPacket.ChatMessage) => {

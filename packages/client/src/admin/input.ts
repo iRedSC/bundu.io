@@ -206,15 +206,22 @@ export class AdminInput {
         const tx = clampTile(worldToTile(world.x));
         const ty = clampTile(worldToTile(world.y));
 
-        if (
-            state.tool === "place" &&
-            state.selected?.kind === AdminPlaceKind.Ground
-        ) {
+        if (state.tool === "place") {
+            if (!state.selected) return;
+            if (state.selected.kind === AdminPlaceKind.Ground) {
+                this.painting = true;
+                this.lastTileKey = "";
+                this.groundDrag = { x0: tx, y0: ty, x1: tx, y1: ty };
+                this.beginStroke();
+                this.syncGhost();
+                return;
+            }
             this.painting = true;
+            this.groundDrag = null;
             this.lastTileKey = "";
-            this.groundDrag = { x0: tx, y0: ty, x1: tx, y1: ty };
             this.beginStroke();
             this.syncGhost();
+            this.applyAtScreen(event.clientX, event.clientY, true);
             return;
         }
 
@@ -282,6 +289,8 @@ export class AdminInput {
         const state = this.facade.getState();
         const selected = state.selected;
         if (!selected || selected.kind !== AdminPlaceKind.Ground) return;
+        // Full-world rects are the reserved base floor (wipe restores ocean).
+        if (rect.w >= WORLD_TILES && rect.h >= WORLD_TILES) return;
         this.sendPacket(ClientPacket.AdminPlace, {
             kind: AdminPlaceKind.Ground,
             typeId: selected.id,

@@ -145,6 +145,17 @@ export class Registry<K extends RegistryName> {
             seenIds.add(rawId);
         }
         for (const entry of projection.tags ?? []) {
+            if (
+                typeof entry !== "object" ||
+                entry === null ||
+                typeof entry.id !== "string" ||
+                !Array.isArray(entry.values) ||
+                typeof entry.category !== "boolean"
+            ) {
+                throw new Error(
+                    `${projection.name}: tag entries must be { id, values, category } objects`
+                );
+            }
             const tag = tagLocation(entry.id);
             if (registry.tags.has(tag)) {
                 throw new Error(`${projection.name}: duplicate tag "${tag}"`);

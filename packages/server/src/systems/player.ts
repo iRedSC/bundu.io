@@ -44,6 +44,7 @@ import {
 } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { topGroundAt } from "./ground_at.js";
+import { groundWire } from "./ground_wire.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
 import { clearEditorHistory } from "../admin/history.js";
@@ -158,11 +159,9 @@ export class PlayerSystem extends System<GameEventMap> {
      * System `enter` stays free of client delivery (indexing only).
      */
     syncSession(player: GameObject) {
-        const groundObjects = this.world.query([GroundData]);
-        const packets = groundObjects.map((ground) => {
-            const data = ground.get(GroundData);
-            return data.createPacket();
-        });
+        const packets = [...this.world.query([GroundData])]
+            .sort((a, b) => a.id - b.id)
+            .map((ground) => groundWire(ground));
         const { playerPacketManager, worldPacketManager, dayCycle } =
             this.world.context;
         playerPacketManager.set(player.id, ServerPacket.ClientConnectionInfo, {
