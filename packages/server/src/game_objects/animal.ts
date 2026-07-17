@@ -1,5 +1,5 @@
 import { GameObject } from "../engine/game_object.js";
-import { AnimalData, Health, Physics, CalculateCollisions, Type } from "../components/base.js";
+import { AnimalData, Health, Living, Physics, CalculateCollisions, Type } from "../components/base.js";
 import { Attributes } from "../components/attributes.js";
 import { bindPhysicsScale } from "../components/physics_scale.js";
 import { AnimalConfigs } from "../configs/loaders/animals.js";
@@ -24,6 +24,7 @@ export class Animal extends GameObject {
         this.add(new Type(type))
             .add(new Physics(physics))
             .add(new Health(health))
+            .add(new Living())
             .add(new CalculateCollisions())
             .add(attributes)
             .add(new AnimalData({

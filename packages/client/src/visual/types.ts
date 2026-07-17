@@ -22,6 +22,11 @@ export type PartDef = PartPose & {
     anchor?: { x: number; y: number };
     /** ContaineredSprite.scale on the visual (not SpriteFactory normalize). */
     spriteScale?: number;
+    /**
+     * Extra pixels beyond the tile footprint this part's texture covers
+     * (tile entities only). Does not expand other parts' canvas.
+     */
+    spillover?: number;
     /** Create a hidden attach child for equipment / overlays. */
     attach?: boolean;
     /** Draw attach above the visual (helmet); default is under (items under hands). */
@@ -63,6 +68,7 @@ export type AnimPreset =
     | "bob"
     | "lunge"
     | "attack"
+    | "spike_attack"
     | "block"
     | "eat"
     | "rotting";
@@ -91,6 +97,7 @@ type AnimData = {
     bob: BobData;
     lunge: undefined;
     attack: undefined;
+    spike_attack: undefined;
     block: undefined;
     eat: undefined;
     rotting: undefined;

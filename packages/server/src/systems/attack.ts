@@ -115,7 +115,7 @@ export class AttackSystem extends System<GameEventMap> {
             });
             // Intact doors toggle; rotting doors take damage / claim via Hurt.
             if (Door.get(object) && !Rotting.get(object)) {
-                this.trigger(GameEvent.ToggleDoor, { object });
+                this.trigger(GameEvent.ToggleDoor, { object, source });
                 continue;
             }
             this.trigger(GameEvent.Hurt, {

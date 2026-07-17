@@ -15,6 +15,7 @@ import { Serializer } from "@bundu/shared";
 import { AttackSystem } from "../systems/attack";
 import { RenderDistanceSystem } from "../systems/render_distance";
 import { StructureSystem } from "../systems/structure";
+import { SpikeSystem } from "../systems/spike";
 import { AttributesSystem } from "../systems/attributes";
 import { ResourceSystem } from "../systems/resource";
 import { GroundItemSystem } from "../systems/ground_item";
@@ -50,6 +51,7 @@ export function createWorld(): ServerWorld {
         .addSystem(new HealthSystem(world))
         .addSystem(new HungerSystem(world))
         .addSystem(new AttackSystem(world))
+        .addSystem(new SpikeSystem(world))
         .addSystem(new RottingSystem(world))
         .addSystem(new DoorSystem(world))
         .addSystem(new ResourceSystem(world))

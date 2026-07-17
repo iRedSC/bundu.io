@@ -26,6 +26,11 @@ export type GameplayConfig = {
         attackingMultiplier: number;
     };
     health: { regenIntervalMs: number; rottingDamageMultiplier: number };
+    spikes: {
+        attackIntervalMs: number;
+        animalDamageMultiplier: number;
+        damageMultiplierToSpike: number;
+    };
     rotting: { damagePerSecond: number; claimWeapon: string };
     items: {
         pickupRadius: number;
@@ -117,6 +122,7 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
     const animal = record(root.animal_ai, "gameplay.animal_ai");
     const hunger = record(root.hunger, "gameplay.hunger");
     const health = record(root.health, "gameplay.health");
+    const spikes = record(root.spikes, "gameplay.spikes");
     const rotting = record(root.rotting, "gameplay.rotting");
     const items = record(root.items, "gameplay.items");
     const player = record(root.player, "gameplay.player");
@@ -152,6 +158,19 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
         health: {
             regenIntervalMs: number(health, "regen_interval_ms", "gameplay.health"),
             rottingDamageMultiplier: number(health, "rotting_damage_multiplier", "gameplay.health"),
+        },
+        spikes: {
+            attackIntervalMs: number(spikes, "attack_interval_ms", "gameplay.spikes"),
+            animalDamageMultiplier: number(
+                spikes,
+                "animal_damage_multiplier",
+                "gameplay.spikes"
+            ),
+            damageMultiplierToSpike: number(
+                spikes,
+                "damage_multiplier_to_spike",
+                "gameplay.spikes"
+            ),
         },
         rotting: {
             damagePerSecond: number(rotting, "damage_per_second", "gameplay.rotting"),

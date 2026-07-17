@@ -87,12 +87,10 @@ export class VisualStateController {
             for (const [partName, patch] of Object.entries(
                 override.parts ?? {}
             )) {
-                const current = overrides.get(partName);
-                overrides.set(partName, {
-                    ...current,
-                    ...patch,
-                    filters: mergeFilters(current?.filters, patch.filters),
-                });
+                overrides.set(
+                    partName,
+                    mergePartOverride(overrides.get(partName), patch)
+                );
             }
             for (const animation of override.animations ?? []) {
                 desiredAnimations.add(animation);
@@ -180,6 +178,26 @@ export class VisualStateController {
             this.activeAnimations.add(name);
         }
     }
+}
+
+function mergePartOverride(
+    current: PartOverride | undefined,
+    patch: PartOverride
+): PartOverride {
+    const merged: PartOverride = { ...current };
+    for (const [key, value] of Object.entries(patch) as [
+        keyof PartOverride,
+        PartOverride[keyof PartOverride],
+    ][]) {
+        // Compiled overrides include absent fields as undefined; spreading those
+        // would wipe values from earlier states (e.g. spiked after open).
+        if (key === "filters") continue;
+        if (value !== undefined) {
+            Object.assign(merged, { [key]: value });
+        }
+    }
+    merged.filters = mergeFilters(current?.filters, patch.filters);
+    return merged;
 }
 
 function mergeFilters(

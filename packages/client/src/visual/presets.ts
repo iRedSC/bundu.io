@@ -8,6 +8,7 @@ import { hurt } from "./animations/hurt";
 import { lunge } from "./animations/lunge";
 import { place } from "./animations/place";
 import { rotting } from "./animations/rotting";
+import { spikeAttack } from "./animations/spike_attack";
 import { treeSway } from "./animations/tree_sway";
 import { wave } from "./animations/wave";
 import type { AnimContext, AnimDef, PartNode, Rotatable } from "./types";
@@ -43,6 +44,11 @@ export function createPreset(
             return lunge(nodes);
         case "attack":
             return attack(nodes, ctx);
+        case "spike_attack": {
+            const node = nodes[0];
+            if (!node) throw new Error("spike_attack preset needs one part");
+            return spikeAttack(node);
+        }
         case "block":
             return block(nodes, ctx);
         case "eat":

@@ -1,5 +1,5 @@
 import { Attributes } from "../components/attributes.js";
-import { Health, Rotting } from "../components/base.js";
+import { Health, Rotting, Spiked } from "../components/base.js";
 import { type GameObject, System, type World } from "../engine";
 import { emitVitals } from "../network/vitals.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
@@ -40,6 +40,9 @@ export class HealthSystem extends System<GameEventMap> {
         damage = damage ?? 0;
         if (source && Rotting.get(target)) {
             damage *= gameplayConfig().health.rottingDamageMultiplier;
+        }
+        if (Spiked.get(target)) {
+            damage *= gameplayConfig().spikes.damageMultiplierToSpike;
         }
         health.value -= Math.round(Math.max(0, damage - defense));
         if (health.value <= 0) {

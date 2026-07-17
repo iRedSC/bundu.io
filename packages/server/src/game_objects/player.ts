@@ -5,6 +5,7 @@ import {
 import {
     CalculateCollisions,
     Health,
+    Living,
     Physics,
 } from "../components/base.js";
 import { bindPhysicsScale } from "../components/physics_scale.js";
@@ -57,6 +58,7 @@ export class Player extends GameObject {
 
         this.add(new Physics(physics))
             .add(health)
+            .add(new Living())
             .add(new PlayerData(playerData))
             .add(new CalculateCollisions())
             .add(

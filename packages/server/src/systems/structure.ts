@@ -12,7 +12,14 @@ import {
     type TileRot,
 } from "@bundu/shared";
 import { Circle, testCircleCircle, Vector } from "sat";
-import { GroundData, Health, Physics, TileEntity } from "../components/base.js";
+import {
+    GroundData,
+    Health,
+    Physics,
+    Spiked,
+    TileEntity,
+    Type,
+} from "../components/base.js";
 import { Inventory } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { Attributes } from "../components/attributes.js";
@@ -22,9 +29,19 @@ import {
     makeTileEntity,
     tileEntityPhysics,
 } from "../game_objects/tile_entity.js";
-import { emitEquipment, emitInventory, clearMainHandIf, clearMissingEquipment } from "../network/inventory.js";
+import {
+    emitEquipment,
+    emitInventory,
+    clearMainHandIf,
+    clearMissingEquipment,
+} from "../network/inventory.js";
+import { syncStructureStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-import { BuildingConfigs } from "../configs/loaders/buildings.js";
+import {
+    BuildingConfigs,
+    structureUpgradeGroup,
+    type BuildingConfig,
+} from "../configs/loaders/buildings.js";
 
 type PlacementResult = {
     allowed: boolean;
@@ -158,15 +175,12 @@ export class StructureSystem extends System<GameEventMap> {
         const selected = inv.slots[inv.selected];
         const { id, itemId, rotation, cursor } = data.selectedStructure;
         const rot = normalizeRotation(rotation);
-        if (
-            id === -1 ||
-            selected?.id !== itemId ||
-            rot === undefined
-        ) {
+        if (id === -1 || selected?.id !== itemId || rot === undefined) {
             return undefined;
         }
 
-        const def = BuildingConfigs.get(id).placement;
+        const config = BuildingConfigs.get(id);
+        const def = config.placement;
         const reach = Math.max(0, player.get(Attributes).get("placement.reach"));
         const origin = structureOriginAtPoint(cursor, def.blocked, rot);
         const tile = makeTileEntity(origin, rot, def.blocked);
@@ -184,11 +198,14 @@ export class StructureSystem extends System<GameEventMap> {
         return {
             origin,
             rotation: rot,
-            allowed: inReach && lineClear && this.canPlace(tile.occupied, def.ground),
+            allowed:
+                inReach &&
+                lineClear &&
+                this.canPlaceIntent(config, tile.occupied, player.id),
         };
     }
 
-    /** @returns true if the structure was added to the world. */
+    /** @returns true if the structure was added / attached / upgraded. */
     placeStructure({
         structureId,
         x,
@@ -231,11 +248,28 @@ export class StructureSystem extends System<GameEventMap> {
         const rot = normalizeRotation(rotation);
         if (rot === undefined) return false;
         const origin = { x, y };
-        const def = BuildingConfigs.get(structureId).placement;
+        const config = BuildingConfigs.get(structureId);
+        const def = config.placement;
         const tile = makeTileEntity(origin, rot, def.blocked);
-        tile.ownerId = ownerId;
 
-        if (!this.canPlace(tile.occupied, def.ground)) return false;
+        if (config.class === "spike") {
+            return this.tryAttachSpike(config, tile.occupied, ownerId);
+        }
+
+        if (config.class === "wall" || config.class === "door") {
+            const occupant = this.uniformOccupant(tile.occupied);
+            if (occupant) {
+                return this.tryUpgradeStructure(
+                    structureId,
+                    config,
+                    occupant,
+                    ownerId
+                );
+            }
+        }
+
+        tile.ownerId = ownerId;
+        if (!this.canPlaceEmpty(tile.occupied, def.ground)) return false;
 
         this.world.addObject(
             new Structure(
@@ -247,15 +281,140 @@ export class StructureSystem extends System<GameEventMap> {
         return true;
     }
 
-    private canPlace(
+    private canPlaceIntent(
+        config: BuildingConfig,
+        occupied: readonly TilePos[],
+        placerId: number
+    ): boolean {
+        if (config.class === "spike") {
+            return this.canAttachSpike(config, occupied, placerId);
+        }
+        if (config.class === "wall" || config.class === "door") {
+            const occupant = this.uniformOccupant(occupied);
+            if (occupant) {
+                return this.canUpgradeStructure(config, occupant, placerId);
+            }
+        }
+        return this.canPlaceEmpty(occupied, config.placement.ground);
+    }
+
+    private tryAttachSpike(
+        spike: BuildingConfig,
+        occupied: readonly TilePos[],
+        placerId?: number
+    ): boolean {
+        if (placerId === undefined) return false;
+        const target = this.attachTarget(spike, occupied, placerId);
+        if (!target) return false;
+        target.add(new Spiked());
+        syncStructureStates(this.world, target);
+        return true;
+    }
+
+    private canAttachSpike(
+        spike: BuildingConfig,
+        occupied: readonly TilePos[],
+        placerId: number
+    ): boolean {
+        return this.attachTarget(spike, occupied, placerId) !== undefined;
+    }
+
+    private attachTarget(
+        spike: BuildingConfig,
+        occupied: readonly TilePos[],
+        placerId: number
+    ): GameObject | undefined {
+        if (!spike.material || !this.inWorld(occupied)) return undefined;
+        const target = this.uniformOccupant(occupied);
+        if (!target) return undefined;
+        const tile = TileEntity.get(target);
+        if (!tile || tile.ownerId !== placerId) return undefined;
+        if (Spiked.get(target)) return undefined;
+        const existing = BuildingConfigs.get(Type.get(target)?.id);
+        if (
+            (existing.class !== "wall" && existing.class !== "door") ||
+            existing.material !== spike.material
+        ) {
+            return undefined;
+        }
+        return target;
+    }
+
+    private tryUpgradeStructure(
+        structureId: number,
+        next: BuildingConfig,
+        occupant: GameObject,
+        placerId?: number
+    ): boolean {
+        if (placerId === undefined) return false;
+        if (!this.canUpgradeStructure(next, occupant, placerId)) return false;
+
+        const oldTile = occupant.get(TileEntity);
+        const origin = { ...oldTile.origin };
+        const rot = oldTile.rot;
+
+        this.trigger(GameEvent.DeleteObject, { object: occupant });
+        this.world.removeObject(occupant);
+
+        const tile = makeTileEntity(origin, rot, next.placement.blocked);
+        tile.ownerId = placerId;
+        this.world.addObject(
+            new Structure(
+                tileEntityPhysics(origin, rot),
+                { id: structureId },
+                tile
+            )
+        );
+        return true;
+    }
+
+    private canUpgradeStructure(
+        next: BuildingConfig,
+        occupant: GameObject,
+        placerId: number
+    ): boolean {
+        const tile = TileEntity.get(occupant);
+        if (!tile || tile.ownerId !== placerId) return false;
+        const current = BuildingConfigs.get(Type.get(occupant)?.id);
+        if (current.class !== next.class) return false;
+        if (
+            next.tier === undefined ||
+            current.tier === undefined ||
+            next.tier <= current.tier
+        ) {
+            return false;
+        }
+        return (
+            structureUpgradeGroup(current.material) ===
+                structureUpgradeGroup(next.material) &&
+            structureUpgradeGroup(next.material) !== ""
+        );
+    }
+
+    /** Single shared occupant covering every footprint tile. */
+    private uniformOccupant(
+        occupied: readonly TilePos[]
+    ): GameObject | undefined {
+        if (occupied.length === 0 || !this.inWorld(occupied)) return undefined;
+        let found: GameObject | undefined;
+        for (const { x, y } of occupied) {
+            const id = this.world.context.occupancy.get(x, y);
+            if (id === undefined) return undefined;
+            const object = this.world.getObject(id);
+            if (!object) return undefined;
+            if (!found) found = object;
+            else if (found.id !== object.id) return undefined;
+        }
+        return found;
+    }
+
+    private canPlaceEmpty(
         occupied: readonly TilePos[],
         allowedGround: readonly number[]
     ): boolean {
         if (
             occupied.length === 0 ||
-            occupied.some(
-                ({ x, y }) => x < 0 || y < 0 || x >= WORLD_TILES || y >= WORLD_TILES
-            ) ||
+            !this.inWorld(occupied) ||
             !this.world.context.occupancy.canPlace(occupied) ||
             !this.hasGround(occupied, allowedGround)
         ) {
@@ -277,6 +436,12 @@ export class StructureSystem extends System<GameEventMap> {
             }
         }
         return true;
+    }
+
+    private inWorld(occupied: readonly TilePos[]): boolean {
+        return !occupied.some(
+            ({ x, y }) => x < 0 || y < 0 || x >= WORLD_TILES || y >= WORLD_TILES
+        );
     }
 
     /**
