@@ -5,6 +5,7 @@ item/type/none:
   texture: bundu/misc/unknown_asset.svg
   contexts:
     icon: {}
+    inventory: {}
     hand: {}
     body: {}
     world: {}
@@ -343,27 +344,27 @@ item/iridium_wall:
 
 item/wood_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/wood_spike.png
+  texture: bundu/item/structure/spike/wood_spike.png
 
 item/stone_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/stone_spike.png
+  texture: bundu/item/structure/spike/stone_spike.png
 
 item/copper_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/copper_spike.png
+  texture: bundu/item/structure/spike/copper_spike.png
 
 item/silver_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/silver_spike.png
+  texture: bundu/item/structure/spike/silver_spike.png
 
 item/cobalt_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/cobalt_spike.png
+  texture: bundu/item/structure/spike/cobalt_spike.png
 
 item/iridium_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/iridium_spike.png
+  texture: bundu/item/structure/spike/iridium_spike.png
 
 item/friendly_door:
   extends: item/type/none
@@ -427,11 +428,11 @@ item/quick_stone_wall:
 
 item/quick_stone_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/stone_spike.png
+  texture: bundu/item/structure/spike/stone_spike.png
 
 item/quick_silver_spike:
   extends: item/type/spike
-  texture: bundu/structure/spike/silver_spike.png
+  texture: bundu/item/structure/spike/silver_spike.png
 
 item/forest_tree:
   extends: item/type/none
