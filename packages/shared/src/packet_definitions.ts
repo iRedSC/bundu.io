@@ -129,7 +129,7 @@ export namespace ServerPacket {
         states: EntityStateSnapshot;
     };
     export type EatEvent = { id: number; duration: number };
-    /** Period index into the server day cycle (0=morning … 3=night). */
+    /** Period index into the server day cycle (0=morning ... 3=night). */
     export type SetTimeOfDay = { period: number };
 }
 
