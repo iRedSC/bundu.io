@@ -41,6 +41,9 @@ export class ResourceSystem extends System<GameEventMap> {
             return;
         }
         data.quantity++;
+        // Fixed loot indexes by harvestHit; regenerating stock must rewind the
+        // cursor so restored capacity can drop again (mirrors old per-item stock).
+        if (data.harvestHit > 0) data.harvestHit--;
         data.lastRegen = time;
     }
 
@@ -84,8 +87,10 @@ export class ResourceSystem extends System<GameEventMap> {
                           data.lootSeed,
                           data.harvestHit
                       );
-            if (loot.size > 0 && !tryAddItems(inventory, loot)) break;
-            if (loot.size > 0) inventoryChanged = true;
+            // Empty fixed-loot miss (hit past table size) must not drain stock.
+            if (loot.size === 0) break;
+            if (!tryAddItems(inventory, loot)) break;
+            inventoryChanged = true;
             data.quantity--;
             data.harvestHit++;
             processed++;
