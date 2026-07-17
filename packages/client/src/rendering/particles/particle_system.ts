@@ -11,6 +11,7 @@ type ActiveParticle = {
     velocityX: number;
     velocityY: number;
     gravity: number;
+    gravityX: number;
     friction: number;
     motionEndAt: number;
     spin: number;
@@ -62,6 +63,7 @@ export class ParticleSystem {
                 velocityX: Math.cos(direction) * speed,
                 velocityY: Math.sin(direction) * speed,
                 gravity: options.gravity ?? 0,
+                gravityX: options.gravityX ?? 0,
                 friction: options.friction ?? 0,
                 motionEndAt: options.motionEndAt ?? 1,
                 spin: random(options.spin ?? 0),
@@ -94,6 +96,7 @@ export class ParticleSystem {
 
             const progress = particle.age / particle.lifetime;
             if (progress < particle.motionEndAt) {
+                particle.velocityX += particle.gravityX * deltaSeconds;
                 particle.velocityY += particle.gravity * deltaSeconds;
                 const friction = Math.exp(-particle.friction * deltaSeconds);
                 particle.velocityX *= friction;

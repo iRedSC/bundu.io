@@ -14,7 +14,10 @@ export type ParticleBurst = {
     size: NumberRange;
     endSize?: number;
     sizeEndAt?: number;
+    /** Vertical acceleration (positive = down). */
     gravity?: number;
+    /** Horizontal acceleration (positive = right). */
+    gravityX?: number;
     friction?: number;
     motionEndAt?: number;
     spin?: NumberRange;
