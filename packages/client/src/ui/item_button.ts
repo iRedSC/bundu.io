@@ -6,7 +6,7 @@ import {
     clientRegistries,
     clientVisualId,
 } from "../configs/registries";
-import { lookupContextVisual } from "../visual/defs";
+import { mountSlotIcon } from "../visual/slot_icon";
 import {
     colorLerp,
     lerp,
@@ -40,8 +40,8 @@ export function tickItemButton(
         restY,
         0.2
     );
-    button.itemSprite.position.y = lerp(
-        button.itemSprite.position.y,
+    button.itemDisplay.position.y = lerp(
+        button.itemDisplay.position.y,
         restY,
         0.2
     );
@@ -104,23 +104,29 @@ export class ItemButton {
     background: ContaineredSprite;
 
     disableSprite: ContaineredSprite;
-    itemSprite: ContaineredSprite;
+    /** Icon content root (texture sprite or assembled `visual:` def). */
+    itemDisplay: Container;
 
     hovering: boolean = false;
     down: boolean = false;
     rightDown: boolean = false;
     private _item: number | null = null;
     private _touchDown: boolean = false;
+    private clearIcon: (() => void) | undefined;
 
     rightclick?: (item: number, shift: boolean) => void;
     leftclick?: (item: number, shift: boolean) => void;
+
+    /** @deprecated Prefer `itemDisplay` — kept for callers that still expect a sprite. */
+    get itemSprite(): Container {
+        return this.itemDisplay;
+    }
 
     constructor() {
         this.button = new Container();
         this.button.sortableChildren = true;
         this.button.eventMode = "static";
 
-        // this.background = new PIXI.Graphics();
         this.background = SpriteFactory.build("bundu/ui/item_button.png");
         this.background.width = ITEM_BUTTON_SIZE;
         this.background.height = ITEM_BUTTON_SIZE;
@@ -137,9 +143,10 @@ export class ItemButton {
         this.disableSprite.visible = false;
         this.disableSprite.anchor.set(0.5);
 
-        this.itemSprite = SpriteFactory.build("bundu/misc/unknown_asset.png");
+        this.itemDisplay = new Container();
+        this.itemDisplay.zIndex = 1;
 
-        this.button.addChild(this.itemSprite);
+        this.button.addChild(this.itemDisplay);
         this.button.addChild(this.background);
         this.button.addChild(this.disableSprite);
         this.button.sortChildren();
@@ -211,34 +218,23 @@ export class ItemButton {
     }
 
     set item(item: number | null) {
-        const name =
-            item === null
-                ? ""
-                : clientVisualId(clientRegistries().item.location(item));
-        if (!name) {
+        this.clearIcon?.();
+        this.clearIcon = undefined;
+
+        if (item === null) {
             this._item = null;
-            this.itemSprite = SpriteFactory.update(
-                this.itemSprite,
-                undefined,
-                ""
-            );
-            this.itemSprite.visible = false;
+            this.itemDisplay.visible = false;
             return;
         }
+
+        const name = clientVisualId(clientRegistries().item.location(item));
         this._item = item;
-        const contexts = lookupContextVisual(name)?.contexts;
-        const texture =
-            contexts?.inventory?.texture ?? contexts?.icon?.texture;
-        this.itemSprite = SpriteFactory.update(
-            this.itemSprite,
-            undefined,
-            texture ?? "bundu/misc/unknown_asset.png"
+        this.itemDisplay.visible = true;
+        this.clearIcon = mountSlotIcon(
+            name,
+            this.itemDisplay,
+            percentOf(90, ITEM_BUTTON_SIZE)
         );
-        this.itemSprite.visible = true;
-        this.itemSprite.width = percentOf(90, ITEM_BUTTON_SIZE);
-        this.itemSprite.height = percentOf(90, ITEM_BUTTON_SIZE);
-        this.itemSprite.zIndex = 1;
-        this.itemSprite.anchor.set(0.5);
     }
 
     get item() {
@@ -250,7 +246,7 @@ export class ItemButton {
     }
 
     destroy(): void {
-        // Remove all event listeners
+        this.clearIcon?.();
         this.button.removeAllListeners();
         this.button.onpointerenter = null;
         this.button.onpointerleave = null;
@@ -260,12 +256,9 @@ export class ItemButton {
         this.button.ontouchstart = null;
         this.button.ontouchendoutside = null;
 
-        // Destroy contained sprites
         this.background.destroy();
         this.disableSprite.destroy();
-        this.itemSprite.destroy();
-
-        // Destroy container
+        this.itemDisplay.destroy({ children: true });
         this.button.destroy({ children: false });
     }
 }

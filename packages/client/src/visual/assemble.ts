@@ -34,19 +34,27 @@ function buildShadow(
 export function assemble(
     def: ObjectDef,
     root: Container,
-    variant?: string
+    variant?: string,
+    options?: AssembleOptions
 ): AssembledObject {
     const selectedVariant = variant ?? def.defaultVariant;
     const sprites =
         selectedVariant == null ? undefined : def.variants?.[selectedVariant];
-    return assembleSprites(def, root, sprites);
+    return assembleSprites(def, root, sprites, options);
 }
+
+export type AssembleOptions = {
+    /** When false, skip ShadowLayer registration (UI icons). Default true. */
+    shadows?: boolean;
+};
 
 function assembleSprites(
     def: ObjectDef,
     root: Container,
-    sprites?: Record<string, string>
+    sprites?: Record<string, string>,
+    options?: AssembleOptions
 ): AssembledObject {
+    const shadows = options?.shadows !== false;
     const parts = new Map<string, PartNode>();
     for (const part of def.parts) {
         const nodeRoot = new Container();
@@ -82,7 +90,9 @@ function assembleSprites(
         }
 
         const shadow =
-            part.shadow && sprite ? buildShadow(sprite, part, anchor) : undefined;
+            shadows && part.shadow && sprite
+                ? buildShadow(sprite, part, anchor)
+                : undefined;
 
         nodeRoot.addChild(state);
         state.addChild(animation);
@@ -133,7 +143,8 @@ function assembleSprites(
 export function assembleTileEntity(
     def: TileEntityDef,
     root: Container,
-    variant?: string
+    variant?: string,
+    options?: AssembleOptions
 ): AssembledObject {
     const { width, height } = def.tile.size;
     const { origin, spillover } = def.tile;
@@ -173,7 +184,7 @@ export function assembleTileEntity(
         throw new Error(`TileEntityDef "${def.id}": origin is outside its tile grid`);
     }
 
-    const assembled = assembleSprites(def, root, sprites);
+    const assembled = assembleSprites(def, root, sprites, options);
     const offsetX =
         width / 2 - (spillover + origin.x * TILE_SIZE + TILE_SIZE / 2);
     const offsetY =

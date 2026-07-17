@@ -31,6 +31,7 @@ export {
 } from "./assemble";
 export { bindAnimations } from "./bind";
 export { mountVisualContext, type MountedVisual } from "./context";
+export { mountSlotIcon } from "./slot_icon";
 export { createPreset } from "./presets";
 export { EntityStateStore, VisualStateController } from "./state";
 export {
