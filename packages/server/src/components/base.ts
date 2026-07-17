@@ -104,9 +104,12 @@ export const Rotting = Component.register<Rotting>(() => ({}));
 export type Spiked = {
     /** Per-target contact attack cooldowns (target id → next allowed gameTime). */
     nextHitAt: Map<number, number>;
+    /** Animals that attacked this spike; contact DPS only hits these. */
+    hostileAnimalIds: Set<number>;
 };
 export const Spiked = Component.register<Spiked>(() => ({
     nextHitAt: new Map(),
+    hostileAnimalIds: new Set(),
 }));
 
 export type GroundItemData = {
