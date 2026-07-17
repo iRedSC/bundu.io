@@ -7,6 +7,7 @@ import { ClientPacketReceiver } from "./client_receiver";
 import { Serializer } from "@bundu/shared";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
+import { AnimationManagers } from "../animation/animations";
 
 export const receiver = new ClientPacketReceiver(
     new Serializer<ServerPacketMap>(ServerSchema)
@@ -37,6 +38,9 @@ export function setupPacketReceiving(
     );
     receiver.on(ServerPacket.UpdateObjectHealth, world.updateObjectHealth);
     receiver.on(ServerPacket.SetStructureState, world.setStructureState);
+    receiver.on(ServerPacket.SetTimeOfDay, ({ period }) => {
+        world.sky.setTime(period, AnimationManagers.World);
+    });
 }
 
 export function setupGUIPacketReceiving(

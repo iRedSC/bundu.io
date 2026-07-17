@@ -18,6 +18,21 @@ hunger:
 temperature:
   tick_period_ms: 60000
 
+day_cycle:
+  periods:
+    morning:
+      duration_ms: 180000
+      ambient_warmth: -5
+    day:
+      duration_ms: 420000
+      ambient_warmth: 0
+    evening:
+      duration_ms: 180000
+      ambient_warmth: -10
+    night:
+      duration_ms: 420000
+      ambient_warmth: -20
+
 health:
   regen_interval_ms: 5000
   rotting_damage_multiplier: 2
@@ -54,7 +69,7 @@ player:
     movement.speed: 16
     placement.reach: 200
     temperature.max: 200
-    temperature.warmth: -10
+    temperature.warmth: 0
     water.depletion_amount: 5
     water.max: 100
   initial_health: 200

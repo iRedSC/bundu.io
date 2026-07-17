@@ -28,6 +28,14 @@ export type GameplayConfig = {
     temperature: {
         tickPeriodMs: number;
     };
+    dayCycle: {
+        periods: {
+            name: "morning" | "day" | "evening" | "night";
+            durationMs: number;
+            ambientWarmth: number;
+        }[];
+        totalDurationMs: number;
+    };
     health: { regenIntervalMs: number; rottingDamageMultiplier: number };
     rotting: { damagePerSecond: number; claimWeapon: string };
     items: {
@@ -115,11 +123,51 @@ function attributes(
     return values;
 }
 
+const DAY_PERIOD_NAMES = ["morning", "day", "evening", "night"] as const;
+type DayPeriodName = (typeof DAY_PERIOD_NAMES)[number];
+
+/** Named morning/day/evening/night entries, ordered to match client sky tints. */
+function parseDayCycle(
+    value: Record<string, unknown>
+): GameplayConfig["dayCycle"] {
+    const path = "gameplay.day_cycle";
+    const rawPeriods = record(value.periods, `${path}.periods`);
+    const unexpected = Object.keys(rawPeriods).filter(
+        (key) => !DAY_PERIOD_NAMES.includes(key as DayPeriodName)
+    );
+    if (unexpected.length > 0) {
+        throw new Error(
+            `${path}.periods: unknown period(s) ${unexpected.map((key) => `"${key}"`).join(", ")}`
+        );
+    }
+    const periods = DAY_PERIOD_NAMES.map((name) => {
+        const periodPath = `${path}.periods.${name}`;
+        if (!(name in rawPeriods)) {
+            throw new Error(`${periodPath}: missing period`);
+        }
+        const period = record(rawPeriods[name], periodPath);
+        const durationMs = number(period, "duration_ms", periodPath);
+        if (durationMs <= 0) {
+            throw new Error(`${periodPath}.duration_ms: must be > 0`);
+        }
+        return {
+            name,
+            durationMs,
+            ambientWarmth: number(period, "ambient_warmth", periodPath),
+        };
+    });
+    return {
+        periods,
+        totalDurationMs: periods.reduce((sum, period) => sum + period.durationMs, 0),
+    };
+}
+
 export function parseGameplayConfig(value: unknown): GameplayConfig {
     const root = record(value, "gameplay");
     const animal = record(root.animal_ai, "gameplay.animal_ai");
     const hunger = record(root.hunger, "gameplay.hunger");
     const temperature = record(root.temperature, "gameplay.temperature");
+    const dayCycle = record(root.day_cycle, "gameplay.day_cycle");
     const health = record(root.health, "gameplay.health");
     const rotting = record(root.rotting, "gameplay.rotting");
     const items = record(root.items, "gameplay.items");
@@ -160,6 +208,7 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
                 "gameplay.temperature"
             ),
         },
+        dayCycle: parseDayCycle(dayCycle),
         health: {
             regenIntervalMs: number(health, "regen_interval_ms", "gameplay.health"),
             rottingDamageMultiplier: number(health, "rotting_damage_multiplier", "gameplay.health"),

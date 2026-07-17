@@ -9,7 +9,7 @@ type TickReceiver = {
 };
 
 export async function startTicker(world: World, receiver: TickReceiver) {
-    const { playerPacketManager, socketManager, worldPacketManager } =
+    const { playerPacketManager, socketManager, worldPacketManager, dayCycle } =
         world.context;
     const leaderboard = new Leaderboard();
 
@@ -25,6 +25,7 @@ export async function startTicker(world: World, receiver: TickReceiver) {
         const connectedPlayers = players.filter((player) =>
             socketManager.getSocket(player.id)
         );
+        dayCycle.update(world.gameTime, connectedPlayers, playerPacketManager);
         leaderboard.update(connectedPlayers, playerPacketManager);
         playerPacketManager.process(
             connectedPlayers,

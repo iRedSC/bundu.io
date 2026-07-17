@@ -31,6 +31,8 @@ export const ServerPacket = {
     SetStructureState: 0x19,
     /** `duration > 0` starts eating; `duration === 0` cancels or completes it. */
     EatEvent: 0x1a,
+    /** Authoritative day/night period index (morning/day/evening/night). */
+    SetTimeOfDay: 0x1b,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -127,6 +129,8 @@ export namespace ServerPacket {
         states: EntityStateSnapshot;
     };
     export type EatEvent = { id: number; duration: number };
+    /** Period index into the server day cycle (0=morning … 3=night). */
+    export type SetTimeOfDay = { period: number };
 }
 
 /** Client → server packet IDs. */
@@ -198,6 +202,7 @@ export type ServerPacketMap = {
     [ServerPacket.Leaderboard]: ServerPacket.Leaderboard;
     [ServerPacket.SetStructureState]: ServerPacket.SetStructureState;
     [ServerPacket.EatEvent]: ServerPacket.EatEvent;
+    [ServerPacket.SetTimeOfDay]: ServerPacket.SetTimeOfDay;
 };
 
 /** ID → payload map for client packets. */
@@ -261,6 +266,7 @@ export const ServerSchema: {
     [ServerPacket.Leaderboard]: { fields: ["entries"] },
     [ServerPacket.SetStructureState]: { fields: ["id", "states"] },
     [ServerPacket.EatEvent]: { fields: ["id", "duration"] },
+    [ServerPacket.SetTimeOfDay]: { fields: ["period"] },
 };
 
 export const ClientSchema: {
