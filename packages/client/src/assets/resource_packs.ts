@@ -177,7 +177,9 @@ async function fetchManifest(websocketUrl: string): Promise<Manifest> {
 
 async function fetchBundledBaseManifest(): Promise<Manifest | undefined> {
     try {
-        const response = await fetch(bundledUrl("manifest.json"));
+        const response = await fetch(bundledUrl("manifest.json"), {
+            cache: "no-store",
+        });
         if (!response.ok) return undefined;
         return parseManifest(await response.json());
     } catch {
@@ -249,14 +251,26 @@ export async function loadResourcePacks(
     const manifest = await fetchManifest(websocketUrl);
     const bundled = await fetchBundledBaseManifest();
     if (bundled && bundled.fingerprint === manifest.fingerprint) {
-        console.debug("Using client-bundled base pack", manifest.fingerprint.slice(0, 12));
-        return materializePack(
-            bundled,
-            bundledUrl(bundled.visuals.url),
-            bundledUrl(bundled.registries.url),
-            bundledAssetUrl,
-            false
-        );
+        try {
+            console.debug(
+                "Using client-bundled base pack",
+                manifest.fingerprint.slice(0, 12)
+            );
+            // Use server-advertised hashes; only the fetch URLs are same-origin.
+            // On stale CDN/browser cache, fall through to the content-addressed server.
+            return await materializePack(
+                manifest,
+                bundledUrl(bundled.visuals.url),
+                bundledUrl(bundled.registries.url),
+                bundledAssetUrl,
+                false
+            );
+        } catch (error) {
+            console.warn(
+                "Bundled base pack failed verification; falling back to server",
+                error
+            );
+        }
     }
 
     return materializePack(

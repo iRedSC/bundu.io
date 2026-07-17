@@ -193,6 +193,11 @@ export class ResourcePackService {
 
         const servedAssets = new Map<string, ServedAsset>();
         for (const asset of sanitized) {
+            if (servedAssets.has(asset.path)) {
+                throw new Error(
+                    `Duplicate sanitized texture path "${asset.path}" (same stem as another pack texture)`
+                );
+            }
             const contentHash = hash(asset.bytes);
             servedAssets.set(asset.path, {
                 path: asset.path,
