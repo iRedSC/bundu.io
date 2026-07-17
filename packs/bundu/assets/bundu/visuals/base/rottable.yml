@@ -3,7 +3,7 @@ abstract: true
 
 parts:
   main:
-    shadow: true
+    shadow: 1
 
 animations:
   hit:

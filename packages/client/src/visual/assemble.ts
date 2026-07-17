@@ -91,7 +91,9 @@ function assembleSprites(
         if (attach && !part.attachAbove) animation.addChild(attach);
         animation.addChild(visual);
         if (attach && part.attachAbove) animation.addChild(attach);
-        if (shadow) registerPartShadow(shadow, visual, state);
+        if (shadow && part.shadow) {
+            registerPartShadow(shadow, visual, state, part.shadow);
+        }
 
         const parent = part.parent ? parts.get(part.parent)?.animation : root;
         if (!parent) {

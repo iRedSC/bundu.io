@@ -6,4 +6,4 @@ variants:
     main: bundu/decoration/forest/pine_tree_snow.svg
 parts:
   main:
-    shadow: true
+    shadow: 2

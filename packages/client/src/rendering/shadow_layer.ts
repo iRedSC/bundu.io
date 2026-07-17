@@ -2,6 +2,7 @@ import { BlurFilter, Container, Matrix, Rectangle } from "pixi.js";
 import type { ContaineredSprite } from "../assets/sprite_factory";
 import {
     lightPushAt,
+    SHADOW_HEIGHT_UNIT,
     shadowStyle,
     type ShadowLight,
 } from "../visual/shadow";
@@ -10,6 +11,8 @@ type ShadowEntry = {
     shadow: ContaineredSprite;
     follow: Container;
     state: Container;
+    /** Authored height steps → extra screen-down offset. */
+    height: number;
 };
 
 /**
@@ -51,9 +54,10 @@ export class ShadowLayer {
     attach(
         shadow: ContaineredSprite,
         follow: Container,
-        state: Container
+        state: Container,
+        height: number
     ): void {
-        this.entries.add({ shadow, follow, state });
+        this.entries.add({ shadow, follow, state, height });
         this.container.addChild(shadow);
     }
 
@@ -110,7 +114,7 @@ export class ShadowLayer {
         this.invParent.copyFrom(this.container.worldTransform).invert();
         const lights = this.lights;
         for (const entry of this.entries) {
-            const { shadow, follow, state } = entry;
+            const { shadow, follow, state, height } = entry;
             if (follow.destroyed || shadow.destroyed || state.destroyed) {
                 this.entries.delete(entry);
                 if (!shadow.destroyed) shadow.destroy({ children: true });
@@ -121,8 +125,9 @@ export class ShadowLayer {
             shadow.setFromMatrix(this.local);
             const scale = Math.hypot(this.local.a, this.local.b);
             const push = lightPushAt(this.local.tx, this.local.ty, lights);
+            const heightY = height * SHADOW_HEIGHT_UNIT;
             shadow.x += shadowStyle.offsetX * scale + push.x;
-            shadow.y += shadowStyle.offsetY * scale + push.y;
+            shadow.y += (shadowStyle.offsetY + heightY) * scale + push.y;
             shadow.alpha = shadowStyle.alpha * state.alpha * follow.alpha;
             shadow.visible =
                 state.visible && follow.visible && follow.renderable;
@@ -139,14 +144,15 @@ export function setActiveShadowLayer(layer: ShadowLayer | undefined): void {
 export function registerPartShadow(
     shadow: ContaineredSprite,
     follow: Container,
-    state: Container
+    state: Container,
+    height: number
 ): void {
     if (!active) {
         // Assemble ran before the world layer existed — drop the orphan.
         shadow.destroy({ children: true });
         return;
     }
-    active.attach(shadow, follow, state);
+    active.attach(shadow, follow, state, height);
 }
 
 export function unregisterPartShadow(shadow: ContaineredSprite): void {

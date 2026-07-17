@@ -19,16 +19,16 @@ alphaFadeMs: 200
 parts:
     layer0:
       zIndex: 11
-      shadow: true
+      shadow: 2
     layer1:
       zIndex: 10
-      shadow: true
+      shadow: 2
     layer2:
       zIndex: 12
-      shadow: true
+      shadow: 3
     layer3:
       zIndex: 13
-      shadow: true
+      shadow: 3
 
 variants:
     base:

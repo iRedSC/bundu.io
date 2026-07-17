@@ -7,4 +7,4 @@ variants:
 parts:
   main:
     spriteScale: 1.6
-    shadow: true
+    shadow: 2

@@ -11,10 +11,10 @@ parts:
         spillover: 25
     wall:
         zIndex: 10
-        shadow: true
+        shadow: 1
     main:
         zIndex: 11
-        shadow: true
+        shadow: 1
 
 animations:
     hit:

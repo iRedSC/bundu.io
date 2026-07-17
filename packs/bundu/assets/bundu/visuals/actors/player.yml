@@ -1,28 +1,30 @@
 id: player
 parts:
-  leftHand:
-    sprite: bundu/entity/player/hand.svg
-    scale: 0.7
-    pivot: { x: 1, y: 0 }
-    spriteScale: 0.5
-    attach: true
-    zIndex: 0
+    leftHand:
+        sprite: bundu/entity/player/hand.svg
+        scale: 0.7
+        pivot: { x: 1, y: 0 }
+        spriteScale: 0.5
+        attach: true
+        zIndex: 0
+        shadow: 1
 
-  rightHand:
-    sprite: bundu/entity/player/hand.svg
-    scale: 0.7
-    pivot: { x: -1, y: 0 }
-    spriteScale: 0.5
-    attach: true
-    attachAnchor: { x: 1, y: 0.5 }
-    zIndex: 1
+    rightHand:
+        sprite: bundu/entity/player/hand.svg
+        scale: 0.7
+        pivot: { x: -1, y: 0 }
+        spriteScale: 0.5
+        attach: true
+        attachAnchor: { x: 1, y: 0.5 }
+        zIndex: 1
+        shadow: 1
 
-  body:
-    sprite: bundu/entity/player/player.svg
-    attach: true
-    attachAbove: true
-    zIndex: 2
-    shadow: true
+    body:
+        sprite: bundu/entity/player/player.svg
+        attach: true
+        attachAbove: true
+        zIndex: 2
+        shadow: 1
 
 # Example:
 # variants:
@@ -32,28 +34,28 @@ parts:
 variants: {}
 
 slots:
-  mainhand: { part: leftHand, context: hand, scale: 2.5 }
-  offhand:
-    part: rightHand
-    context: hand
-    mirrorX: true
-    scale: 1.8
-  helmet: { part: body, context: body }
-  
+    mainhand: { part: leftHand, context: hand, scale: 2.5 }
+    offhand:
+        part: rightHand
+        context: hand
+        mirrorX: true
+        scale: 1.8
+    helmet: { part: body, context: body }
+
 animations:
-  wave:
-    preset: wave
-    parts: [leftHand, rightHand, body]
-    autoplay: true
-  hurt:
-    preset: hurt
-    parts: [leftHand, rightHand, body]
-  attack:
-    preset: attack
-    parts: [leftHand, rightHand, body]
-  block:
-    preset: block
-    parts: [leftHand, rightHand, body]
-  eat:
-    preset: eat
-    parts: [leftHand, rightHand, body]
+    wave:
+        preset: wave
+        parts: [leftHand, rightHand, body]
+        autoplay: true
+    hurt:
+        preset: hurt
+        parts: [leftHand, rightHand, body]
+    attack:
+        preset: attack
+        parts: [leftHand, rightHand, body]
+    block:
+        preset: block
+        parts: [leftHand, rightHand, body]
+    eat:
+        preset: eat
+        parts: [leftHand, rightHand, body]
