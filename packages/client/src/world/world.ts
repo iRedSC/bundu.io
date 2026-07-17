@@ -41,6 +41,7 @@ import {
     setActiveShadowLayer,
     ShadowLayer,
 } from "@client/rendering/shadow_layer";
+import { shadowStyle, type ShadowLight } from "../visual/shadow";
 import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
 import { clientTime } from "@client/globals";
@@ -148,6 +149,7 @@ export class World {
             }
         }
         this.syncSkyUndo();
+        this.syncShadowLights();
         const localPlayer =
             this.user !== undefined ? this.objects.get(this.user) : undefined;
         updateOcclusion(localPlayer, this.objects.all());
@@ -169,6 +171,23 @@ export class World {
             }
         }
         this.skyUndo.sync(discs, this.sky.tint);
+    }
+
+    /** Feed configured light structures into the batched shadow layer. */
+    private syncShadowLights(): void {
+        const { sources } = shadowStyle.lights;
+        const lights: ShadowLight[] = [];
+        for (const object of this.objects.all()) {
+            if (!(object instanceof Structure)) continue;
+            const intensity = sources[object.type];
+            if (intensity === undefined) continue;
+            lights.push({
+                x: object.position.x,
+                y: object.position.y,
+                intensity,
+            });
+        }
+        this.shadows.setLights(lights);
     }
 
     setCursorWorld(position: { x: number; y: number }) {

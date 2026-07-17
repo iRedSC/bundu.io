@@ -11,6 +11,14 @@ export type ClientGameplayConfig = {
             evening: number;
             night: number;
         };
+        lights: {
+            /** Max distance a light can push a shadow. */
+            radius: number;
+            /** Max world-pixel push for a unit-weight direction. */
+            strength: number;
+            /** Structure visual id → relative intensity. */
+            sources: Readonly<Record<string, number>>;
+        };
     };
 };
 
@@ -30,6 +38,28 @@ function number(source: Record<string, unknown>, key: string, path: string): num
         throw new Error(`${path}.${key}: expected a finite number`);
     }
     return value;
+}
+
+function parseLights(
+    value: Record<string, unknown>
+): ClientGameplayConfig["shadows"]["lights"] {
+    const path = "client_gameplay.shadows.lights";
+    const radius = number(value, "radius", path);
+    const strength = number(value, "strength", path);
+    if (radius <= 0) throw new Error(`${path}.radius: must be > 0`);
+    if (strength < 0) throw new Error(`${path}.strength: expected >= 0`);
+    const rawSources = record(value.sources, `${path}.sources`);
+    const sources: Record<string, number> = {};
+    for (const [id, raw] of Object.entries(rawSources)) {
+        if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0) {
+            throw new Error(`${path}.sources.${id}: expected a positive number`);
+        }
+        sources[id] = raw;
+    }
+    if (Object.keys(sources).length === 0) {
+        throw new Error(`${path}.sources: expected at least one structure`);
+    }
+    return { radius, strength, sources };
 }
 
 function parseShadows(
@@ -75,7 +105,13 @@ function parseShadows(
             `${path}.offset_x_by_period`
         );
     }
-    return { alpha, offset, soften, offsetXByPeriod };
+    return {
+        alpha,
+        offset,
+        soften,
+        offsetXByPeriod,
+        lights: parseLights(record(value.lights, `${path}.lights`)),
+    };
 }
 
 export function parseClientGameplayConfig(value: unknown): ClientGameplayConfig {

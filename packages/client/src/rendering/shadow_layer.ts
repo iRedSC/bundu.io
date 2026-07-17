@@ -1,6 +1,10 @@
 import { BlurFilter, Container, Matrix } from "pixi.js";
 import type { ContaineredSprite } from "../assets/sprite_factory";
-import { shadowStyle } from "../visual/shadow";
+import {
+    lightPushAt,
+    shadowStyle,
+    type ShadowLight,
+} from "../visual/shadow";
 
 type ShadowEntry = {
     shadow: ContaineredSprite;
@@ -19,12 +23,18 @@ export class ShadowLayer {
     private readonly invParent = new Matrix();
     private blur?: BlurFilter;
     private appliedSoften = -1;
+    private lights: readonly ShadowLight[] = [];
 
     constructor() {
         this.container.zIndex = 0;
         this.container.eventMode = "none";
         this.container.sortableChildren = false;
         this.container.onRender = () => this.sync();
+    }
+
+    /** World-space lights (fires, etc.) refreshed each tick. */
+    setLights(lights: readonly ShadowLight[]): void {
+        this.lights = lights;
     }
 
     attach(
@@ -56,6 +66,7 @@ export class ShadowLayer {
             }
         }
         this.container.removeChildren();
+        this.lights = [];
     }
 
     destroy(): void {
@@ -86,6 +97,7 @@ export class ShadowLayer {
     private sync(): void {
         this.syncBlur();
         this.invParent.copyFrom(this.container.worldTransform).invert();
+        const lights = this.lights;
         for (const entry of this.entries) {
             const { shadow, follow, state } = entry;
             if (follow.destroyed || shadow.destroyed || state.destroyed) {
@@ -96,8 +108,9 @@ export class ShadowLayer {
             this.local.copyFrom(this.invParent).append(follow.worldTransform);
             shadow.setFromMatrix(this.local);
             const scale = Math.hypot(this.local.a, this.local.b);
-            shadow.x += shadowStyle.offsetX * scale;
-            shadow.y += shadowStyle.offset * scale;
+            const push = lightPushAt(this.local.tx, this.local.ty, lights);
+            shadow.x += shadowStyle.offsetX * scale + push.x;
+            shadow.y += shadowStyle.offset * scale + push.y;
             shadow.alpha = shadowStyle.alpha * state.alpha * follow.alpha;
             shadow.visible = state.visible && follow.visible && follow.renderable;
         }

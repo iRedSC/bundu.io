@@ -10,3 +10,12 @@ shadows:
         day: 0
         evening: -0.07
         night: 0
+    # Local lights push shadows away; opposite vectors cancel when surrounded.
+    lights:
+        radius: 220
+        # Max world-pixel push for a unit-weight direction.
+        strength: 14
+        sources:
+            fire_small: 0.8
+            fire_big: 1
+            fire_pit: 1.2
