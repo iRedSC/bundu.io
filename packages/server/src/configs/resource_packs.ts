@@ -3,6 +3,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { packs } from "./packs";
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
+import { parseClientGameplayConfig } from "@bundu/shared/client_gameplay";
 import {
     compileVisualDefs,
     type CompiledVisualDefs,
@@ -34,6 +35,7 @@ export type ResourcePackManifest = {
     }[];
     visuals: { hash: string; url: string };
     registries: { hash: string; url: string };
+    gameplay: { hash: string; url: string };
     assets: ResourceAsset[];
 };
 
@@ -114,6 +116,7 @@ export class ResourcePackService {
     readonly manifest: ResourcePackManifest;
     readonly visualsJson: string;
     readonly registriesJson: string;
+    readonly gameplayJson: string;
     readonly compiledVisuals: CompiledVisualDefs;
     private readonly servedAssets = new Map<string, ServedAsset>();
 
@@ -121,12 +124,14 @@ export class ResourcePackService {
         manifest: ResourcePackManifest,
         visualsJson: string,
         registriesJson: string,
+        gameplayJson: string,
         compiledVisuals: CompiledVisualDefs,
         servedAssets: Map<string, ServedAsset>
     ) {
         this.manifest = manifest;
         this.visualsJson = visualsJson;
         this.registriesJson = registriesJson;
+        this.gameplayJson = gameplayJson;
         this.compiledVisuals = compiledVisuals;
         this.servedAssets = servedAssets;
     }
@@ -136,6 +141,7 @@ export class ResourcePackService {
         const visuals: Record<string, unknown> = {};
         const pendingTextures: { logicalPath: string; bytes: Uint8Array }[] =
             [];
+        let clientGameplayRaw: unknown;
 
         for (const pack of packs.packs) {
             const assetsRoot = path.join(pack.directory, "assets");
@@ -147,6 +153,14 @@ export class ResourcePackService {
                 if (!namespaceEntry.isDirectory()) continue;
                 const namespace = namespaceEntry.name;
                 const namespaceRoot = path.join(assetsRoot, namespace);
+
+                const gameplayFile = path.join(namespaceRoot, "gameplay.yml");
+                if (fs.existsSync(gameplayFile)) {
+                    // Later packs replace the complete client gameplay document.
+                    clientGameplayRaw = Bun.YAML.parse(
+                        fs.readFileSync(gameplayFile, "utf8")
+                    );
+                }
 
                 const texturesRoot = path.join(namespaceRoot, "textures");
                 for (const filename of files(texturesRoot)) {
@@ -183,6 +197,15 @@ export class ResourcePackService {
                 }
             }
         }
+
+        if (clientGameplayRaw === undefined) {
+            throw new Error(
+                "Resource packs: missing assets/<namespace>/gameplay.yml"
+            );
+        }
+        // Validate at pack build time; client re-parses the snake_case document.
+        parseClientGameplayConfig(clientGameplayRaw);
+        const gameplayJson = JSON.stringify(clientGameplayRaw);
 
         const sanitized = await Promise.all(
             pendingTextures.map(({ logicalPath, bytes }) =>
@@ -238,6 +261,7 @@ export class ResourcePackService {
         const registriesJson = JSON.stringify(projection);
         const visualsHash = hash(visualsJson);
         const registriesHash = hash(registriesJson);
+        const gameplayHash = hash(gameplayJson);
         const assets = [...servedAssets.values()]
             .map(({ bytes: _bytes, ...asset }) => asset)
             .sort((left, right) => left.path.localeCompare(right.path));
@@ -253,6 +277,7 @@ export class ResourcePackService {
                 packs: packEntries,
                 visualsHash,
                 registriesHash,
+                gameplayHash,
                 assets,
             })
         );
@@ -267,10 +292,12 @@ export class ResourcePackService {
                     hash: registriesHash,
                     url: "/packs/registries.json",
                 },
+                gameplay: { hash: gameplayHash, url: "/packs/gameplay.json" },
                 assets,
             },
             visualsJson,
             registriesJson,
+            gameplayJson,
             compiledVisuals,
             servedAssets
         );

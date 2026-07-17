@@ -47,8 +47,10 @@ fs.mkdirSync(outdir, { recursive: true });
 
 const visualsPath = path.join(outdir, "visuals.json");
 const registriesPath = path.join(outdir, "registries.json");
+const gameplayPath = path.join(outdir, "gameplay.json");
 fs.writeFileSync(visualsPath, resourcePacks.visualsJson);
 fs.writeFileSync(registriesPath, resourcePacks.registriesJson);
+fs.writeFileSync(gameplayPath, resourcePacks.gameplayJson);
 
 const assetsRoot = path.join(outdir, "assets");
 for (const entry of resourcePacks.manifest.assets) {
@@ -72,6 +74,10 @@ const bundledManifest = {
     registries: {
         hash: resourcePacks.manifest.registries.hash,
         url: "registries.json",
+    },
+    gameplay: {
+        hash: resourcePacks.manifest.gameplay.hash,
+        url: "gameplay.json",
     },
     assets: resourcePacks.manifest.assets,
 };

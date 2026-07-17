@@ -148,11 +148,17 @@ Asset files use namespaced logical paths:
 assets/bundu/textures/structure/wall/wood_wall.png
 assets/bundu/visuals/items/items.yml
 assets/bundu/lang/en.yml
+assets/bundu/gameplay.yml
 ```
 
 Definitions refer to textures as `bundu/structure/wall/wood_wall.png`. A later
 pack can replace an asset by providing the same namespace and relative path.
 Visual definitions overlay by visual ID in pack order.
+
+`assets/<namespace>/gameplay.yml` is client-only (shadows, etc.). It is served
+with resource packs and is not read by the server simulation. `data/.../gameplay.yml`
+remains the authoritative server sim config. Later packs replace the complete
+client gameplay document.
 
 ## Client synchronization
 

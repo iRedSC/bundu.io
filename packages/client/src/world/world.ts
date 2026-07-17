@@ -37,6 +37,10 @@ import {
     type ContaineredSprite,
 } from "../assets/sprite_factory";
 import { ParticleSystem } from "@client/rendering/particles/particle_system";
+import {
+    setActiveShadowLayer,
+    ShadowLayer,
+} from "@client/rendering/shadow_layer";
 import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
 import { clientTime } from "@client/globals";
@@ -78,6 +82,7 @@ export class World {
     renderer: LayeredRenderer;
     sky: Sky;
     skyUndo: SkyUndoLayer;
+    shadows: ShadowLayer;
     particles: ParticleSystem;
     private placementGhost?: Structure;
     private placementInvalidOverlay?: ContaineredSprite;
@@ -95,11 +100,14 @@ export class World {
         this.camera = new Camera(viewport);
         this.sky = new Sky();
         this.skyUndo = new SkyUndoLayer(pixiRenderer);
+        this.shadows = new ShadowLayer();
+        setActiveShadowLayer(this.shadows);
         this.renderer = new LayeredRenderer(this.viewport);
         this.particles = new ParticleSystem(this.viewport);
         this.objects = new ObjectContainer();
         this.combatFx = new CombatFx(this.objects, this.particles);
 
+        this.viewport.addChild(this.shadows.container);
         this.viewport.addChild(this.sky);
         this.viewport.addChild(this.skyUndo.sprite);
         this.viewport.sortChildren();
@@ -111,6 +119,7 @@ export class World {
         const ids = Array.from(this.objects.all(), (object) => object.id);
         for (const id of ids) this.removeClientObject(id);
         this.renderer.delete(-10);
+        this.shadows.clear();
         this.particles.clear();
         this.clearPlacementGhost();
         this.cursorWorld = undefined;
@@ -122,6 +131,8 @@ export class World {
     destroy(): void {
         this.clear();
         this.particles.destroy();
+        setActiveShadowLayer(undefined);
+        this.shadows.destroy();
         this.skyUndo.sprite.removeFromParent();
         this.skyUndo.destroy();
         this.sky.removeFromParent();

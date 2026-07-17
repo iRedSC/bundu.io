@@ -1,9 +1,11 @@
 import { Container } from "pixi.js";
 import { radians } from "@bundu/shared/transforms";
 import { TILE_SIZE } from "@bundu/shared/tiles";
-import { SpriteFactory } from "../assets/sprite_factory";
+import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory";
+import { registerPartShadow } from "../rendering/shadow_layer";
 import type {
     ObjectDef,
+    PartDef,
     PartNode,
     SlotDef,
     TileEntityDef,
@@ -13,6 +15,20 @@ export type AssembledObject = {
     parts: Map<string, PartNode>;
     slots: Map<string, { node: PartNode; def: SlotDef }>;
 };
+
+/** Same silhouette as the part, solid black — posed by {@link ShadowLayer}. */
+function buildShadow(
+    texture: string,
+    part: PartDef,
+    anchor: { x: number; y: number }
+): ContaineredSprite {
+    const shadow = SpriteFactory.build(texture);
+    shadow.anchor.set(anchor.x, anchor.y);
+    shadow.scale.set(part.spriteScale ?? 1);
+    shadow.sprite.tint = 0x000000;
+    shadow.eventMode = "none";
+    return shadow;
+}
 
 /** Build part graph under `root` from an ObjectDef. */
 export function assemble(
@@ -65,17 +81,17 @@ function assembleSprites(
             attach.visible = false;
         }
 
+        const shadow =
+            part.shadow && sprite ? buildShadow(sprite, part, anchor) : undefined;
+
         nodeRoot.addChild(state);
         state.addChild(animation);
 
-        // Default: attach under visual (item under hand). attachAbove: helmet on body.
-        if (part.attachAbove) {
-            animation.addChild(visual);
-            if (attach) animation.addChild(attach);
-        } else {
-            if (attach) animation.addChild(attach);
-            animation.addChild(visual);
-        }
+        // Default attach under visual; attachAbove on top. Shadows live on ShadowLayer.
+        if (attach && !part.attachAbove) animation.addChild(attach);
+        animation.addChild(visual);
+        if (attach && part.attachAbove) animation.addChild(attach);
+        if (shadow) registerPartShadow(shadow, visual, state);
 
         const parent = part.parent ? parts.get(part.parent)?.animation : root;
         if (!parent) {
@@ -91,6 +107,7 @@ function assembleSprites(
             state,
             animation,
             visual,
+            shadow,
             attach,
             attachAnchor: part.attachAnchor,
         });
@@ -174,10 +191,10 @@ export function assembleTileEntity(
         // Default: tile spillover (shared canvas). Override per-part so e.g. spikes
         // can overhang without stretching the wall/door body.
         const scale = part.spriteScale ?? 1;
-        node.visual.scale.set(
-            ((contentWidth + partSpillover * 2) / TILE_SIZE) * scale,
-            ((contentHeight + partSpillover * 2) / TILE_SIZE) * scale
-        );
+        const sx = ((contentWidth + partSpillover * 2) / TILE_SIZE) * scale;
+        const sy = ((contentHeight + partSpillover * 2) / TILE_SIZE) * scale;
+        node.visual.scale.set(sx, sy);
+        // Shadow scale follows the visual via ShadowLayer matrix sync.
     }
 
     return assembled;

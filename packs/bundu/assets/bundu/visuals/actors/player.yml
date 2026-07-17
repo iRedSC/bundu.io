@@ -22,6 +22,7 @@ parts:
     attach: true
     attachAbove: true
     zIndex: 2
+    shadow: true
 
 # Example:
 # variants:
