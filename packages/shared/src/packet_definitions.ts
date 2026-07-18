@@ -220,7 +220,7 @@ export const ClientPacket = {
     ViewBounds: 0x10,
     /** Freecam editor: place resource / structure / ground at a tile. */
     AdminPlace: 0x11,
-    /** Freecam editor: delete solid or animal at a tile. */
+    /** Freecam editor: delete the active-tab kind under a world point. */
     AdminDeleteAt: 0x12,
     /** Freecam editor: pause/resume animal AI ticking. */
     AdminSetAnimalsFrozen: 0x13,
@@ -292,8 +292,11 @@ export namespace ClientPacket {
         /** Decoration size multiplier (base × scale). Ignored otherwise (use 1). */
         scale: number;
     };
-    /** World-space click for freecam delete (tile derived server-side). */
-    export type AdminDeleteAt = { x: number; y: number };
+    /**
+     * World-space click for freecam delete (tile derived server-side).
+     * `kind` scopes the hit to the active palette tab.
+     */
+    export type AdminDeleteAt = { x: number; y: number; kind: AdminPlaceKind };
     export type AdminSetAnimalsFrozen = { frozen: boolean };
     export type AdminKillAnimals = Record<string, never>;
     export type AdminStrokeBegin = Record<string, never>;
@@ -453,7 +456,7 @@ export const ClientSchema: {
             "scale",
         ],
     },
-    [ClientPacket.AdminDeleteAt]: { fields: ["x", "y"] },
+    [ClientPacket.AdminDeleteAt]: { fields: ["x", "y", "kind"] },
     [ClientPacket.AdminSetAnimalsFrozen]: { fields: ["frozen"] },
     [ClientPacket.AdminKillAnimals]: { fields: [] },
     [ClientPacket.AdminStrokeBegin]: { fields: [] },
@@ -617,7 +620,11 @@ export const ClientPacketGuards = {
         value.x <= WORLD_BOUNDS &&
         isFiniteNumber(value.y) &&
         value.y >= 0 &&
-        value.y <= WORLD_BOUNDS,
+        value.y <= WORLD_BOUNDS &&
+        (value.kind === AdminPlaceKind.Resource ||
+            value.kind === AdminPlaceKind.Structure ||
+            value.kind === AdminPlaceKind.Ground ||
+            value.kind === AdminPlaceKind.Decoration),
     [ClientPacket.AdminSetAnimalsFrozen]: (
         value: unknown
     ): value is ClientPacket.AdminSetAnimalsFrozen =>

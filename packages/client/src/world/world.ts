@@ -7,6 +7,7 @@ import {
     worldToTile,
 } from "@bundu/shared/tiles";
 import {
+    AdminPlaceKind,
     FREECAM_MAX_VIEW_EXTENT,
     type ServerPacket,
 } from "@bundu/shared/packet_definitions";
@@ -423,6 +424,7 @@ export class World {
             typeof scale === "number" ? TILE_SIZE * scale : TILE_SIZE,
             getVariantName(variantId)
         );
+        structure.placeKind = AdminPlaceKind.Resource;
         this.registerStructure(structure);
     };
 
@@ -770,92 +772,88 @@ export class World {
 
     /**
      * What AdminDeleteAt would hit under a world point — for delete-mode hover.
-     * Priority matches server: solid → animal → decoration → topmost editable ground.
+     * Scoped to `kind` (active palette tab), matching server.
      */
-    pickEditorDeleteHover(worldX: number, worldY: number): EditorDeleteHover | null {
+    pickEditorDeleteHover(
+        worldX: number,
+        worldY: number,
+        kind: AdminPlaceKind
+    ): EditorDeleteHover | null {
         const tx = worldToTile(worldX);
         const ty = worldToTile(worldY);
 
-        for (const object of this.objects.all()) {
-            if (!(object instanceof Structure)) continue;
-            if (
-                worldToTile(object.position.x) !== tx ||
-                worldToTile(object.position.y) !== ty
-            ) {
-                continue;
+        switch (kind) {
+            case AdminPlaceKind.Resource:
+            case AdminPlaceKind.Structure: {
+                for (const object of this.objects.all()) {
+                    if (!(object instanceof Structure)) continue;
+                    if (object.placeKind !== kind) continue;
+                    if (
+                        worldToTile(object.position.x) !== tx ||
+                        worldToTile(object.position.y) !== ty
+                    ) {
+                        continue;
+                    }
+                    return {
+                        kind: "circle",
+                        x: object.position.x,
+                        y: object.position.y,
+                        radius: Math.max(object.collisionRadius, TILE_SIZE / 2),
+                    };
+                }
+                return null;
             }
-            return {
-                kind: "circle",
-                x: object.position.x,
-                y: object.position.y,
-                radius: Math.max(object.collisionRadius, TILE_SIZE / 2),
-            };
-        }
-
-        for (const object of this.objects.all()) {
-            if (!(object instanceof Animal)) continue;
-            if (
-                worldToTile(object.position.x) !== tx ||
-                worldToTile(object.position.y) !== ty
-            ) {
-                continue;
+            case AdminPlaceKind.Decoration: {
+                let topDecoration: DecorationSprite | undefined;
+                let topZ = -Infinity;
+                for (const entry of this.decorations) {
+                    const config = clientDecoration(entry.type);
+                    const radius = (config.size * entry.scale) / 2;
+                    const dx = entry.x - worldX;
+                    const dy = entry.y - worldY;
+                    if (dx * dx + dy * dy > radius * radius) continue;
+                    if (
+                        config.z > topZ ||
+                        (config.z === topZ &&
+                            (!topDecoration || entry.id > topDecoration.id))
+                    ) {
+                        topDecoration = entry;
+                        topZ = config.z;
+                    }
+                }
+                if (!topDecoration) return null;
+                const config = clientDecoration(topDecoration.type);
+                return {
+                    kind: "circle",
+                    x: topDecoration.x,
+                    y: topDecoration.y,
+                    radius: (config.size * topDecoration.scale) / 2,
+                };
             }
-            return {
-                kind: "circle",
-                x: object.position.x,
-                y: object.position.y,
-                radius: Math.max(object.collisionRadius, TILE_SIZE / 2),
-            };
-        }
-
-        let topDecoration: DecorationSprite | undefined;
-        let topZ = -Infinity;
-        for (const entry of this.decorations) {
-            const config = clientDecoration(entry.type);
-            const radius = (config.size * entry.scale) / 2;
-            const dx = entry.x - worldX;
-            const dy = entry.y - worldY;
-            if (dx * dx + dy * dy > radius * radius) continue;
-            if (
-                config.z > topZ ||
-                (config.z === topZ &&
-                    (!topDecoration || entry.id > topDecoration.id))
-            ) {
-                topDecoration = entry;
-                topZ = config.z;
+            case AdminPlaceKind.Ground: {
+                let top: (typeof this.groundPatches)[number] | undefined;
+                for (const patch of this.groundPatches) {
+                    if (patch.w >= WORLD_TILES && patch.h >= WORLD_TILES) continue;
+                    if (
+                        tx < patch.x ||
+                        ty < patch.y ||
+                        tx >= patch.x + patch.w ||
+                        ty >= patch.y + patch.h
+                    ) {
+                        continue;
+                    }
+                    if (!top || patch.id > top.id) top = patch;
+                }
+                if (!top) return null;
+                return {
+                    kind: "rect",
+                    x: top.x * TILE_SIZE,
+                    y: top.y * TILE_SIZE,
+                    w: top.w * TILE_SIZE,
+                    h: top.h * TILE_SIZE,
+                };
             }
         }
-        if (topDecoration) {
-            const config = clientDecoration(topDecoration.type);
-            return {
-                kind: "circle",
-                x: topDecoration.x,
-                y: topDecoration.y,
-                radius: (config.size * topDecoration.scale) / 2,
-            };
-        }
-
-        let top: (typeof this.groundPatches)[number] | undefined;
-        for (const patch of this.groundPatches) {
-            if (patch.w >= WORLD_TILES && patch.h >= WORLD_TILES) continue;
-            if (
-                tx < patch.x ||
-                ty < patch.y ||
-                tx >= patch.x + patch.w ||
-                ty >= patch.y + patch.h
-            ) {
-                continue;
-            }
-            if (!top || patch.id > top.id) top = patch;
-        }
-        if (!top) return null;
-        return {
-            kind: "rect",
-            x: top.x * TILE_SIZE,
-            y: top.y * TILE_SIZE,
-            w: top.w * TILE_SIZE,
-            h: top.h * TILE_SIZE,
-        };
     }
 
     chatMessage = ({ id, message }: ServerPacket.ChatMessage) => {

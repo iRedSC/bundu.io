@@ -1,5 +1,6 @@
 import { Graphics, type Container, type Point as PixiPoint } from "pixi.js";
 import { radians } from "@bundu/shared";
+import { AdminPlaceKind } from "@bundu/shared/packet_definitions";
 import { TILE_SIZE } from "@bundu/shared/tiles";
 import type {
     EntityStateSnapshot,
@@ -59,6 +60,10 @@ function ownerIdFromStates(states: EntityStateSnapshot): number {
 export class Structure extends GameObject {
     private _sprite?: ContaineredSprite;
     readonly type: string;
+    /** Resource vs structure — used by freecam delete hover filtering. */
+    placeKind:
+        | typeof AdminPlaceKind.Resource
+        | typeof AdminPlaceKind.Structure = AdminPlaceKind.Structure;
     private readonly animationManager: AnimationManager;
     private readonly states: EntityStateStore;
     private readonly animContext: AnimContext = { ...EMPTY_ANIM_CONTEXT };
