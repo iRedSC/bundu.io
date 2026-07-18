@@ -3,8 +3,8 @@ extends: single_tile_node
 defaultVariant: base
 variants:
     base:
-        main: bundu/item/material/silver.svg
+        main: bundu/resource/silver_ore.png
 
 parts:
     main:
-        scale: 1.4
+        spillover: 50

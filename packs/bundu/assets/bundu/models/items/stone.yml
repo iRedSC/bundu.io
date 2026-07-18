@@ -1,6 +1,6 @@
 id: item/stone
 extends: item/type/none
-texture: bundu/item/material/stone.svg
+texture: bundu/resource/stone_ore.png
 displays:
     world:
         scale: 1.7

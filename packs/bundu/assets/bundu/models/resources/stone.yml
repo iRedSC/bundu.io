@@ -4,8 +4,8 @@ defaultVariant: base
 
 variants:
     base:
-        main: bundu/item/material/stone.svg
+        main: bundu/resource/stone_ore.png
 
 parts:
     main:
-        scale: 1.4
+        spillover: 50
