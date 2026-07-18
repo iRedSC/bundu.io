@@ -65,6 +65,7 @@ import { gameplayConfig } from "../configs/gameplay.js";
 import { flagMap } from "@bundu/shared/flag_map";
 import { gameRegistries } from "../configs/registries.js";
 import type { RenderDistanceSystem } from "./render_distance.js";
+import { getAnonProxyId } from "./anon_occlusion.js";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
@@ -787,6 +788,13 @@ export class PlayerSystem extends System<GameEventMap> {
             id: player.id,
             message,
         });
+        const proxyId = getAnonProxyId(player.id);
+        if (proxyId !== undefined) {
+            this.world.context.worldPacketManager.emit(ServerPacket.ChatMessage, {
+                id: proxyId,
+                message,
+            });
+        }
     };
 
     viewBounds = (playerId: number, packet: ClientPacket.ViewBounds) => {

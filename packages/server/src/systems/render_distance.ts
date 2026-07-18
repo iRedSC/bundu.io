@@ -11,6 +11,8 @@ import { Range } from "@bundu/shared";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { PlayerData } from "../components/player.js";
+import { AnonProxy } from "../components/anon_proxy.js";
+import { isVisibleToViewer } from "./anon_occlusion.js";
 
 function getBodyRenderBounds(physics: Physics): Range {
     const distance = gameplayConfig().renderDistance;
@@ -41,22 +43,21 @@ function getViewerBounds(viewer: GameObject): Range | undefined {
 }
 
 function isMover(object: GameObject): boolean {
-    return PlayerData.get(object) !== undefined || AnimalData.get(object) !== undefined;
-}
-
-function isHiddenFromPeers(object: GameObject): boolean {
-    return PlayerData.get(object)?.freecam === true;
+    return (
+        PlayerData.get(object) !== undefined ||
+        AnimalData.get(object) !== undefined ||
+        AnonProxy.get(object) !== undefined
+    );
 }
 
 function loadObjectsIntoView(
     viewer: GameObject,
     objects: GameObject[],
-    playerPacketManager: ServerContext["playerPacketManager"]
+    playerPacketManager: ServerContext["playerPacketManager"],
+    world: World
 ) {
     for (const object of objects) {
-        // Freecam players stay hidden from everyone else, but each viewer
-        // must still receive their own LoadObject to attach the local avatar.
-        if (object !== viewer && isHiddenFromPeers(object)) continue;
+        if (!isVisibleToViewer(viewer, object, world)) continue;
         const packet = object.getNewObjectPacket();
         if (!packet) continue;
         playerPacketManager.add(viewer.id, ServerPacket.LoadObject, packet);
@@ -95,7 +96,8 @@ export class RenderDistanceSystem extends System<GameEventMap> {
             loadObjectsIntoView(
                 player,
                 [player],
-                this.world.context.playerPacketManager
+                this.world.context.playerPacketManager,
+                this.world
             );
         }
         const others = [...visible.visible].filter(
@@ -191,7 +193,12 @@ export class RenderDistanceSystem extends System<GameEventMap> {
                 );
             }
             if (!visibleObjects.visible.has(object)) {
-                loadObjectsIntoView(object, [object], playerPacketManager);
+                loadObjectsIntoView(
+                    object,
+                    [object],
+                    playerPacketManager,
+                    this.world
+                );
             }
             visibleObjects.visible = keepSelf;
             return;
@@ -211,10 +218,8 @@ export class RenderDistanceSystem extends System<GameEventMap> {
             );
         }
 
-        // Always include self (not in quadtree while freecam). Hide other freecam peers.
-        const filtered = objectsInRenderDistance.filter(
-            (candidate) =>
-                candidate === object || !isHiddenFromPeers(candidate)
+        const filtered = objectsInRenderDistance.filter((candidate) =>
+            isVisibleToViewer(object, candidate, this.world)
         );
         if (!filtered.includes(object)) filtered.push(object);
 
@@ -239,12 +244,12 @@ export class RenderDistanceSystem extends System<GameEventMap> {
             loadObjectsIntoView(
                 object,
                 Array.from(newVisibleObjects),
-                playerPacketManager
+                playerPacketManager,
+                this.world
             );
     }
 
     newObject({ object }: GameEvent.NewObject) {
-        if (isHiddenFromPeers(object)) return;
         const objPhys = object.get(Physics);
         if (!objPhys) return;
         const { playerPacketManager } = this.world.context;
@@ -267,9 +272,16 @@ export class RenderDistanceSystem extends System<GameEventMap> {
                 continue;
             }
 
+            if (!isVisibleToViewer(obj, object, this.world)) continue;
+
             if (bounds.contains(objPhys.position)) {
                 visibleObjects.visible.add(object);
-                loadObjectsIntoView(obj, [object], playerPacketManager);
+                loadObjectsIntoView(
+                    obj,
+                    [object],
+                    playerPacketManager,
+                    this.world
+                );
             }
         }
     }

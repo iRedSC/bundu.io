@@ -2,6 +2,7 @@ import type { OccupancyLayer } from "@bundu/shared/occupancy_layer";
 import type { RegistryId } from "@bundu/shared/registry";
 import type { TilePos } from "@bundu/shared/tiles";
 import { ConfigLoader } from "./loader.js";
+import type { OcclusionHide } from "./occlusion_hide.js";
 import type { PlacementAllowDeny } from "./placement_allow.js";
 
 export type BuildingClass =
@@ -31,6 +32,8 @@ export type BuildingConfig = PlacementAllowDeny & {
      * Defaults by class: walls/doors/buildings solid; floors/roofs not.
      */
     solid: boolean;
+    /** Hide identity from outsiders while under this building (typically roofs). */
+    occlusionHide?: OcclusionHide;
     placement: {
         blocked: readonly TilePos[];
         ground: readonly RegistryId<"ground_type">[];

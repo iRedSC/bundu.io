@@ -26,7 +26,7 @@ export async function startTicker(world: World, receiver: TickReceiver) {
             socketManager.getSocket(player.id)
         );
         dayCycle.update(world.gameTime, connectedPlayers, playerPacketManager);
-        leaderboard.update(connectedPlayers, playerPacketManager);
+        leaderboard.update(connectedPlayers, playerPacketManager, world);
         playerPacketManager.process(
             connectedPlayers,
             socketManager,

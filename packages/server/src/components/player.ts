@@ -50,6 +50,11 @@ export type PlayerData = {
         maxY: number;
         overview: boolean;
     };
+    /**
+     * Roof connectivity group the player currently occupies, if any.
+     * Same non-undefined group → peers see the real player under occlusion.
+     */
+    underRoofGroupId?: number;
 };
 export const PlayerData = Component.register<PlayerData>(() => ({
     name: "unnamed",
