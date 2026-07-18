@@ -16,7 +16,15 @@ export function replaceClientRegistries(
     projection: ClientRegistryProjection
 ): void {
     current = hydrateRegistrySet(projection);
-    metadata = projection;
+    metadata = {
+        ...projection,
+        flags: projection.flags ?? {},
+    };
+}
+
+/** Dynamic flag name → id from the pack registry projection. */
+export function clientFlags(): Record<string, number> {
+    return metadata?.flags ?? {};
 }
 
 export function clientRegistries(): {

@@ -1,2 +1,7 @@
 speed_multiplier: 0.65
 color: "#1a5f8a"
+whenOccupied:
+    occupationType: center
+    "*":
+        flags:
+            - in_water

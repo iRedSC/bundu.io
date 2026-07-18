@@ -10,6 +10,7 @@ import {
 } from "../components/base.js";
 import { bindPhysicsScale } from "../components/physics_scale.js";
 import { emptySlots, Inventory } from "../components/inventory.js";
+import { Flags } from "../components/flags.js";
 import { PlayerData } from "../components/player.js";
 import { Stats } from "../components/stats.js";
 import { GameObject } from "../engine";
@@ -65,6 +66,7 @@ export class Player extends GameObject {
                 new Inventory({ slots: emptySlots(), selected: 0, cursor: null })
             )
             .add(attributes)
+            .add(new Flags())
             .add(stats)
             .add(new VisibleObjects());
     }

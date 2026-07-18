@@ -1,4 +1,5 @@
 import type { RegistryId } from "@bundu/shared/registry";
+import { flagRegistry } from "../flag_registry.js";
 import type { GameRegistries } from "../registries.js";
 import { type Hide, orHide, parseHide } from "./hide.js";
 
@@ -14,6 +15,8 @@ export type EffectPayload = {
     hide?: Hide;
     /** Known keys apply at runtime; unknown keys are kept for forward-compat. */
     attributes: Record<string, EffectAttribute>;
+    /** Resolved flag ids granted while this context applies. */
+    flags: number[];
 };
 
 /** One target selector entry after load (`*` or resolved entity types). */
@@ -91,19 +94,38 @@ function parseAttributes(
     return result;
 }
 
+function parseFlags(raw: unknown, path: string): number[] {
+    if (raw === undefined) return [];
+    if (!Array.isArray(raw) || raw.some((entry) => typeof entry !== "string")) {
+        throw new Error(`${path}: expected string[]`);
+    }
+    const registry = flagRegistry();
+    const ids: number[] = [];
+    const seen = new Set<number>();
+    for (const [index, name] of (raw as string[]).entries()) {
+        const id = registry.register(name, `${path}[${index}]`);
+        if (!seen.has(id)) {
+            seen.add(id);
+            ids.push(id);
+        }
+    }
+    return ids;
+}
+
 function parsePayload(raw: unknown, path: string): EffectPayload {
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
         throw new Error(`${path}: expected object`);
     }
     const obj = raw as Record<string, unknown>;
     for (const key of Object.keys(obj)) {
-        if (key !== "hide" && key !== "attributes") {
+        if (key !== "hide" && key !== "attributes" && key !== "flags") {
             throw new Error(`${path}.${key}: unknown key`);
         }
     }
     return {
         hide: parseHide(obj.hide, `${path}.hide`),
         attributes: parseAttributes(obj.attributes, `${path}.attributes`),
+        flags: parseFlags(obj.flags, `${path}.flags`),
     };
 }
 
@@ -219,12 +241,21 @@ export function parseEffectContext(
 }
 
 function mergePayload(base: EffectPayload, override: EffectPayload): EffectPayload {
+    const flags = [...base.flags];
+    const seen = new Set(flags);
+    for (const id of override.flags) {
+        if (!seen.has(id)) {
+            seen.add(id);
+            flags.push(id);
+        }
+    }
     return {
         hide: override.hide ?? base.hide,
         attributes: {
             ...base.attributes,
             ...override.attributes,
         },
+        flags,
     };
 }
 
@@ -321,16 +352,27 @@ export function matchingPayloads(
 export function mergeMatchingPayloads(payloads: readonly EffectPayload[]): EffectPayload {
     let hide: Hide | undefined;
     let attributes: Record<string, EffectAttribute> = {};
+    const flags: number[] = [];
+    const seen = new Set<number>();
     for (const payload of payloads) {
         hide = orHide(hide, payload.hide);
         attributes = { ...attributes, ...payload.attributes };
+        for (const id of payload.flags) {
+            if (!seen.has(id)) {
+                seen.add(id);
+                flags.push(id);
+            }
+        }
     }
-    return { hide, attributes };
+    return { hide, attributes, flags };
 }
 
 export function contextHasEffects(context: EffectContext | undefined): boolean {
     if (!context) return false;
     return context.targets.some(
-        (t) => t.effects.hide || Object.keys(t.effects.attributes).length > 0
+        (t) =>
+            t.effects.hide ||
+            Object.keys(t.effects.attributes).length > 0 ||
+            t.effects.flags.length > 0
     );
 }

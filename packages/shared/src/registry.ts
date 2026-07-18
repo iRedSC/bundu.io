@@ -55,6 +55,8 @@ export type ClientRegistryProjection = RegistrySetProjection & {
     groundTypes: Record<number, { color: string }>;
     /** Base world size + z-layer for decoration instances (`size * scale` at runtime). */
     decorations: Record<number, { size: number; z: number }>;
+    /** Dynamic crafting/effect flag name → numeric id (assigned at pack load). */
+    flags: Record<string, number>;
 };
 
 const NAMESPACE = /^[a-z0-9_.-]+$/;

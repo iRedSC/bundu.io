@@ -50,6 +50,8 @@ export const ServerPacket = {
     LoadDecorations: 0x1f,
     /** Freecam editor: remove decorations (undo / delete). */
     UnloadDecorations: 0x20,
+    /** Owning client's effective sourced flags (crafting + gameplay). */
+    UpdateFlags: 0x21,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -189,6 +191,10 @@ export namespace ServerPacket {
     };
     export type UnloadDecorations = {
         decorations: DecorationWire[];
+    };
+    /** Effective flag ids currently granted to the receiving player. */
+    export type UpdateFlags = {
+        flags: number[];
     };
 }
 
@@ -338,6 +344,7 @@ export type ServerPacketMap = {
     [ServerPacket.AdminMapYaml]: ServerPacket.AdminMapYaml;
     [ServerPacket.LoadDecorations]: ServerPacket.LoadDecorations;
     [ServerPacket.UnloadDecorations]: ServerPacket.UnloadDecorations;
+    [ServerPacket.UpdateFlags]: ServerPacket.UpdateFlags;
 };
 
 /** ID → payload map for client packets. */
@@ -420,6 +427,7 @@ export const ServerSchema: {
     [ServerPacket.AdminMapYaml]: { fields: ["yaml", "saved", "path"] },
     [ServerPacket.LoadDecorations]: { fields: ["decorations"] },
     [ServerPacket.UnloadDecorations]: { fields: ["decorations"] },
+    [ServerPacket.UpdateFlags]: { fields: ["flags"] },
 };
 
 export const ClientSchema: {

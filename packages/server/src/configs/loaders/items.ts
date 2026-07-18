@@ -7,7 +7,6 @@ export type ItemConfig = ContextBundle & {
     function: string | null;
     level: number;
     stats: Record<string, number>;
-    flags: string[];
     unequip_delay: number;
     can_saturate: boolean;
     eat_duration_ms: number;
@@ -19,7 +18,6 @@ const fallback: ItemConfig = {
     function: null,
     level: 0,
     stats: {},
-    flags: [],
     unequip_delay: 0,
     can_saturate: false,
     eat_duration_ms: 1000,

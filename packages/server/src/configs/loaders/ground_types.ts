@@ -1,6 +1,7 @@
 import { ConfigLoader } from "./loader.js";
+import type { ContextBundle } from "./effect_context.js";
 
-export type GroundTypeConfig = {
+export type GroundTypeConfig = ContextBundle & {
     speed_multiplier: number;
     color: string;
 };

@@ -1,6 +1,7 @@
 import { worldToTile } from "@bundu/shared/tiles";
 import { Attributes } from "../components/attributes.js";
 import { Physics, ResourceData, TileEntity, Type } from "../components/base.js";
+import { Flags } from "../components/flags.js";
 import { PlayerData } from "../components/player.js";
 import { BuildingConfigs } from "../configs/loaders/buildings.js";
 import type {
@@ -10,20 +11,24 @@ import type {
 import { contextHasEffects } from "../configs/loaders/effect_context.js";
 import type { Hide } from "../configs/loaders/hide.js";
 import { orHide } from "../configs/loaders/hide.js";
+import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { ResourceConfigs } from "../configs/loaders/resources.js";
 import { System, type GameObject, type World } from "../engine";
+import { syncFlags } from "../network/flags.js";
 import type { GameEventMap } from "./event_map.js";
 import {
-    applyContextAttributes,
-    applyMaxAttributes,
-    clearAttributes,
+    applyContextEffects,
+    applyMaxEffects,
+    clearContextSource,
     payloadForSubject,
+    payloadIsEmpty,
 } from "./effect_apply.js";
 import { subjectMatchesTarget } from "./effect_targets.js";
+import { topGroundAt } from "./ground_at.js";
 import { getSizedBounds } from "./position.js";
 
 type Applied = {
-    attrSources: Set<string>;
+    sources: Set<string>;
 };
 
 const appliedBySubject = new Map<number, Applied>();
@@ -45,7 +50,7 @@ function maxProximityDistance(): number {
 function getApplied(id: number): Applied {
     let entry = appliedBySubject.get(id);
     if (!entry) {
-        entry = { attrSources: new Set() };
+        entry = { sources: new Set() };
         appliedBySubject.set(id, entry);
     }
     return entry;
@@ -81,12 +86,10 @@ function occupiedMatch(
         const dx = physics.position.x - sourcePhys.position.x;
         const dy = physics.position.y - sourcePhys.position.y;
         const range =
-            physics.collisionRadius +
-            (sourcePhys.collisionRadius ?? 0);
+            physics.collisionRadius + (sourcePhys.collisionRadius ?? 0);
         return dx * dx + dy * dy <= range * range;
     }
 
-    // center: subject's tile is in the footprint
     const tx = worldToTile(physics.position.x);
     const ty = worldToTile(physics.position.y);
     return tile.occupied.some((cell) => cell.x === tx && cell.y === ty);
@@ -107,46 +110,46 @@ function nearbyMatch(
 }
 
 /**
- * Applies whenOccupied / whenNearby attribute effects.
+ * Applies whenOccupied / whenNearby attribute + flag effects.
  * Hide is read on demand via {@link resolveSpatialHide}.
  */
 export class EffectContextSystem extends System<GameEventMap> {
     constructor(world: World) {
-        super(world, [PlayerData, Attributes, Physics], 5);
+        super(world, [PlayerData, Attributes, Physics, Flags], 5);
     }
 
     override update(_time: number, _delta: number, subject: GameObject): void {
         if (PlayerData.get(subject)?.freecam) {
             this.clearAll(subject);
+            syncFlags(subject, this.world.context.playerPacketManager);
             return;
         }
         this.syncSpatial(subject);
+        syncFlags(subject, this.world.context.playerPacketManager);
     }
 
     override exit(subject: GameObject): void {
         this.clearAll(subject);
+        syncFlags(subject, this.world.context.playerPacketManager, true);
     }
 
     private clearAll(subject: GameObject): void {
         const applied = appliedBySubject.get(subject.id);
         if (!applied) return;
-        const attributes = Attributes.get(subject);
-        for (const sourceId of applied.attrSources) {
-            clearAttributes(attributes, sourceId);
+        for (const sourceId of applied.sources) {
+            clearContextSource(subject, sourceId);
         }
-        applied.attrSources.clear();
+        applied.sources.clear();
         appliedBySubject.delete(subject.id);
     }
 
     private syncSpatial(subject: GameObject): void {
         const desired = new Set<string>();
         const maxContribs: EffectPayload[] = [];
-        let maxContext: EffectContext | undefined;
 
         const physics = Physics.get(subject);
         if (!physics) return;
 
-        // Occupied: footprint layers under the subject
         const tx = worldToTile(physics.position.x);
         const ty = worldToTile(physics.position.y);
         for (const layer of ["floor", "structure", "roof"] as const) {
@@ -156,6 +159,8 @@ export class EffectContextSystem extends System<GameEventMap> {
             if (!source) continue;
             this.considerOccupied(subject, source, desired);
         }
+
+        this.considerGroundOccupied(subject, tx, ty, desired);
 
         const range = maxProximityDistance();
         const candidates =
@@ -177,20 +182,14 @@ export class EffectContextSystem extends System<GameEventMap> {
             const payload = payloadForSubject(context, (t) =>
                 subjectMatchesTarget(subject, t)
             );
-            if (
-                !payload.hide &&
-                Object.keys(payload.attributes).length === 0
-            ) {
-                continue;
-            }
+            if (payloadIsEmpty(payload)) continue;
 
             if (context.stack === "max") {
-                maxContext = context;
                 maxContribs.push(payload);
                 continue;
             }
 
-            const sourceId = applyContextAttributes(
+            const sourceId = applyContextEffects(
                 subject,
                 "whenNearby",
                 context,
@@ -200,25 +199,24 @@ export class EffectContextSystem extends System<GameEventMap> {
             if (sourceId) desired.add(sourceId);
         }
 
-        if (maxContext && maxContribs.length > 0) {
-            const sourceId = applyMaxAttributes(
+        if (maxContribs.length > 0) {
+            const sourceId = applyMaxEffects(
                 subject,
                 "whenNearby",
                 maxContribs
             );
             if (sourceId) desired.add(sourceId);
         } else {
-            // Ensure max slot cleared when no contributors
-            clearAttributes(Attributes.get(subject), "whenNearby");
+            clearContextSource(subject, "whenNearby");
         }
 
         const applied = getApplied(subject.id);
-        for (const sourceId of applied.attrSources) {
+        for (const sourceId of applied.sources) {
             if (!desired.has(sourceId)) {
-                clearAttributes(Attributes.get(subject), sourceId);
+                clearContextSource(subject, sourceId);
             }
         }
-        applied.attrSources = desired;
+        applied.sources = desired;
     }
 
     private considerOccupied(
@@ -235,14 +233,15 @@ export class EffectContextSystem extends System<GameEventMap> {
             subjectMatchesTarget(subject, t)
         );
         if (context.stack === "max") {
-            // Rare for occupied; treat like a single max slot per source.
-            const sourceId = applyMaxAttributes(subject, `whenOccupied:${source.id}`, [
-                payload,
-            ]);
+            const sourceId = applyMaxEffects(
+                subject,
+                `whenOccupied:${source.id}`,
+                [payload]
+            );
             if (sourceId) desired.add(sourceId);
             return;
         }
-        const sourceId = applyContextAttributes(
+        const sourceId = applyContextEffects(
             subject,
             "whenOccupied",
             context,
@@ -251,9 +250,42 @@ export class EffectContextSystem extends System<GameEventMap> {
         );
         if (sourceId) desired.add(sourceId);
     }
+
+    private considerGroundOccupied(
+        subject: GameObject,
+        tx: number,
+        ty: number,
+        desired: Set<string>
+    ): void {
+        const top = topGroundAt(this.world, tx, ty);
+        if (!top) return;
+        const context = GroundTypeConfigs.get(top.type).whenOccupied;
+        if (!context || !contextHasEffects(context)) return;
+
+        // Ground occupation is always "center" (standing on the tile).
+        const payload = payloadForSubject(context, (t) =>
+            subjectMatchesTarget(subject, t)
+        );
+        if (payloadIsEmpty(payload)) return;
+
+        const sourceKey = `whenOccupied:ground:${top.type}`;
+        if (context.stack === "max") {
+            const sourceId = applyMaxEffects(subject, sourceKey, [payload]);
+            if (sourceId) desired.add(sourceId);
+            return;
+        }
+        // Force replace-style source id keyed by ground type (not entity).
+        const sourceId = applyContextEffects(
+            subject,
+            sourceKey,
+            { ...context, stack: "replace" },
+            payload
+        );
+        if (sourceId) desired.add(sourceId);
+    }
 }
 
-/** OR-merged hide from occupied + nearby tile entities for a subject. */
+/** OR-merged hide from occupied + nearby tile entities + ground for a subject. */
 export function resolveSpatialHide(
     subject: GameObject,
     world: World
@@ -277,6 +309,17 @@ export function resolveSpatialHide(
             subjectMatchesTarget(subject, t)
         );
         hide = orHide(hide, payload.hide);
+    }
+
+    const top = topGroundAt(world, tx, ty);
+    if (top) {
+        const context = GroundTypeConfigs.get(top.type).whenOccupied;
+        if (context) {
+            const payload = payloadForSubject(context, (t) =>
+                subjectMatchesTarget(subject, t)
+            );
+            hide = orHide(hide, payload.hide);
+        }
     }
 
     const range = maxProximityDistance();

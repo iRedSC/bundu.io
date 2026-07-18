@@ -19,6 +19,7 @@ import {
 } from "./effect_context.js";
 import { packs } from "../packs.js";
 import { gameplayConfig, setGameplayConfig } from "../gameplay.js";
+import { resetFlagRegistry } from "../flag_registry.js";
 import { loadCraftingConfigs } from "./crafting.js";
 import { loadLootTables } from "./loot_tables.js";
 import {
@@ -72,12 +73,23 @@ function mergeRawContext(
         }
         const baseAttrs = asObject(baseTarget.attributes) ?? {};
         const overAttrs = asObject(overTarget.attributes) ?? {};
+        const baseFlags = Array.isArray(baseTarget.flags)
+            ? (baseTarget.flags as string[])
+            : [];
+        const overFlags = Array.isArray(overTarget.flags)
+            ? (overTarget.flags as string[])
+            : [];
+        const flags = [...baseFlags];
+        for (const flag of overFlags) {
+            if (!flags.includes(flag)) flags.push(flag);
+        }
         result[key] = {
             hide:
                 overTarget.hide !== undefined
                     ? overTarget.hide
                     : baseTarget.hide,
             attributes: { ...baseAttrs, ...overAttrs },
+            ...(flags.length > 0 ? { flags } : {}),
         };
     }
     return result;
@@ -231,6 +243,7 @@ function parsePlacementAllowDeny(
 
 /** Load configs that the server actually uses. */
 export function loadConfigs() {
+    resetFlagRegistry();
     const registries = loadRegistries();
     const sources = registrySources();
     setGameplayConfig(packs.document("bundu", "gameplay"));
@@ -316,7 +329,20 @@ export function loadConfigs() {
         }
     );
     GroundTypeConfigs.parse(
-        groundTypeConfig as Record<string, Partial<GroundTypeConfig>>
+        groundTypeConfig as Record<string, Partial<GroundTypeConfig>>,
+        (id, record, fallback) => {
+            const raw = record as Record<string, unknown>;
+            assignContexts(
+                record as Record<string, unknown>,
+                raw,
+                undefined,
+                id,
+                registries,
+                id,
+                ["whenOccupied"]
+            );
+            return mergeObjects(record, undefined, fallback);
+        }
     );
     DecorationConfigs.parse(
         decorationConfig as Record<string, Partial<DecorationConfig>>,
@@ -435,7 +461,6 @@ export function loadConfigs() {
         const typeRecord = typeRaw as Partial<ItemConfig>;
 
         record.stats = mergeObjects(typeRecord.stats, record.stats, {});
-        record.flags = [...(typeRecord.flags ?? []), ...(record.flags ?? [])];
         if (raw.places) {
             record.places = resolve(
                 registries,
