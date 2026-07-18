@@ -1,0 +1,4 @@
+id: decoration/mango_tree1
+parts:
+  main:
+    sprite: bundu/decoration/forest/mango_tree1.svg

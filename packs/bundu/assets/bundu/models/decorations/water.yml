@@ -1,0 +1,4 @@
+id: decoration/water
+parts:
+  main:
+    sprite: bundu/decoration/water/water.svg

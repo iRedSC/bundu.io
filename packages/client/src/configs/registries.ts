@@ -38,6 +38,12 @@ export function clientGroundType(groundTypeId: number) {
     return ground;
 }
 
+export function clientDecoration(decorationTypeId: number) {
+    const decoration = metadata?.decorations[decorationTypeId];
+    if (!decoration) throw new Error(`Unknown decoration ${decorationTypeId}`);
+    return decoration;
+}
+
 export function clientModelId(location: string): string {
     return location.startsWith("bundu:") ? location.slice("bundu:".length) : location;
 }

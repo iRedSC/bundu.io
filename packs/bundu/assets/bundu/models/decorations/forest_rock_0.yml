@@ -1,0 +1,4 @@
+id: decoration/forest_rock_0
+parts:
+  main:
+    sprite: bundu/decoration/forest/forest_rock_0.svg

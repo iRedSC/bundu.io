@@ -1,6 +1,10 @@
 import { AdminPlaceKind } from "@bundu/shared/packet_definitions";
 
-export type EditorCategory = "resources" | "ground" | "structures";
+export type EditorCategory =
+    | "resources"
+    | "ground"
+    | "structures"
+    | "decorations";
 export type EditorTool = "place" | "delete";
 
 export type PaletteEntry = {
@@ -20,8 +24,12 @@ export type EditorState = {
     randomRotation: boolean;
     animalsFrozen: boolean;
     showGrid: boolean;
-    /** Tile rotation 0–3. */
+    /** Tile rotation 0–3 (resources / structures). */
     rotation: TileRot;
+    /** Continuous degrees for decorations. */
+    decorationRotation: number;
+    /** Free-float size multiplier for decorations. */
+    decorationScale: number;
 };
 
 export type TileRot = 0 | 1 | 2 | 3;
@@ -38,6 +46,8 @@ export function createEditorState(): EditorState {
         animalsFrozen: false,
         showGrid: true,
         rotation: 0,
+        decorationRotation: 0,
+        decorationScale: 1,
     };
 }
 
@@ -49,6 +59,8 @@ export function categoryToKind(category: EditorCategory): AdminPlaceKind {
             return AdminPlaceKind.Ground;
         case "structures":
             return AdminPlaceKind.Structure;
+        case "decorations":
+            return AdminPlaceKind.Decoration;
     }
 }
 

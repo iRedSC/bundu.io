@@ -2,7 +2,7 @@ import {
     AdminPlaceKind,
     ClientPacket,
 } from "@bundu/shared/packet_definitions";
-import { WORLD_TILES, worldToTile, type TileRot } from "@bundu/shared/tiles";
+import { WORLD_BOUNDS, WORLD_TILES, worldToTile, type TileRot } from "@bundu/shared/tiles";
 import {
     getVariantId,
     listVariantNames,
@@ -22,13 +22,22 @@ export type AdminInputFacade = {
     screenToWorld: (screenX: number, screenY: number) => { x: number; y: number };
     getState: () => EditorState;
     ghost: AdminGhost;
-    pickDeleteHover: (tx: number, ty: number) => EditorDeleteHover | null;
+    pickDeleteHover: (worldX: number, worldY: number) => EditorDeleteHover | null;
 };
 
 type GroundDrag = { x0: number; y0: number; x1: number; y1: number };
 
+const DECOR_ROTATE_DEG_PER_WHEEL = 8;
+const DECOR_SCALE_PER_PX = 0.01;
+const DECOR_SCALE_MIN = 0.05;
+const DECOR_SCALE_MAX = 20;
+
 function clampTile(v: number): number {
     return Math.max(0, Math.min(WORLD_TILES - 1, v));
+}
+
+function clampWorld(v: number): number {
+    return Math.max(0, Math.min(WORLD_BOUNDS, v));
 }
 
 function normalizeRect(drag: GroundDrag): {
@@ -52,6 +61,7 @@ function normalizeRect(drag: GroundDrag): {
 /**
  * Freecam editor pointer tools — place/delete with optional drag-spam.
  * Ground place uses a click-drag AABB instead of per-tile spam.
+ * Decorations: free world place; Shift+wheel rotate; right-drag scale.
  */
 export class AdminInput {
     private readonly onPointerDown: (event: PointerEvent) => void;
@@ -59,11 +69,15 @@ export class AdminInput {
     private readonly onPointerMove: (event: PointerEvent) => void;
     private readonly onPointerCancel: (event: PointerEvent) => void;
     private readonly onKeyDown: (event: KeyboardEvent) => void;
+    private readonly onWheel: (event: WheelEvent) => void;
+    private readonly onContextMenu: (event: Event) => void;
 
     private painting = false;
     private strokeOpen = false;
     private groundDrag: GroundDrag | null = null;
+    private scaleDrag: { startY: number; startScale: number } | null = null;
     private lastTileKey = "";
+    private lastWorldKey = "";
     private lastScreen = { x: 0, y: 0 };
 
     constructor(
@@ -75,12 +89,22 @@ export class AdminInput {
         this.onPointerMove = (event) => this.handlePointerMove(event);
         this.onPointerCancel = () => this.cancelStroke();
         this.onKeyDown = (event) => this.handleKeyDown(event);
+        this.onWheel = (event) => this.handleWheel(event);
+        this.onContextMenu = (event) => {
+            if (!this.facade.isActive()) return;
+            event.preventDefault();
+        };
 
         document.addEventListener("pointerdown", this.onPointerDown);
         document.addEventListener("pointerup", this.onPointerUp);
         document.addEventListener("pointermove", this.onPointerMove);
         document.addEventListener("pointercancel", this.onPointerCancel);
         document.addEventListener("keydown", this.onKeyDown);
+        document.addEventListener("wheel", this.onWheel, {
+            passive: false,
+            capture: true,
+        });
+        document.addEventListener("contextmenu", this.onContextMenu);
     }
 
     destroy() {
@@ -89,6 +113,8 @@ export class AdminInput {
         document.removeEventListener("pointermove", this.onPointerMove);
         document.removeEventListener("pointercancel", this.onPointerCancel);
         document.removeEventListener("keydown", this.onKeyDown);
+        document.removeEventListener("wheel", this.onWheel, { capture: true });
+        document.removeEventListener("contextmenu", this.onContextMenu);
         this.cancelStroke();
         this.facade.ghost.clear();
     }
@@ -97,7 +123,9 @@ export class AdminInput {
     cancelStroke(): void {
         this.painting = false;
         this.groundDrag = null;
+        this.scaleDrag = null;
         this.lastTileKey = "";
+        this.lastWorldKey = "";
         this.endStroke();
     }
 
@@ -122,6 +150,8 @@ export class AdminInput {
             tool: state.tool,
             selected: state.selected,
             rotation: state.rotation,
+            decorationRotation: state.decorationRotation,
+            decorationScale: state.decorationScale,
             worldX: world.x,
             worldY: world.y,
             groundRect: this.groundDrag
@@ -132,7 +162,7 @@ export class AdminInput {
                   : undefined,
             deleteHover:
                 state.tool === "delete"
-                    ? this.facade.pickDeleteHover(tx, ty)
+                    ? this.facade.pickDeleteHover(world.x, world.y)
                     : null,
         });
     }
@@ -157,6 +187,26 @@ export class AdminInput {
         this.lastTileKey = "";
         this.placeGroundRect(rect);
         this.endStroke();
+        this.syncGhost();
+    }
+
+    private handleWheel(event: WheelEvent) {
+        if (!this.facade.isActive()) return;
+        if (!event.shiftKey) return;
+        const state = this.facade.getState();
+        if (state.selected?.kind !== AdminPlaceKind.Decoration) return;
+        if (this.facade.isOverUi(event.clientX, event.clientY)) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        const delta =
+            event.deltaY === 0
+                ? 0
+                : event.deltaY > 0
+                  ? -DECOR_ROTATE_DEG_PER_WHEEL
+                  : DECOR_ROTATE_DEG_PER_WHEEL;
+        state.decorationRotation =
+            ((state.decorationRotation + delta) % 360 + 360) % 360;
         this.syncGhost();
     }
 
@@ -186,16 +236,31 @@ export class AdminInput {
         }
 
         if (event.key !== "r" && event.key !== "R") return;
-        event.preventDefault();
         const state = this.facade.getState();
+        // R stays snappy tile rotate for resources/structures — not decorations.
+        if (state.selected?.kind === AdminPlaceKind.Decoration) return;
+        event.preventDefault();
         state.rotation = cycleRotation(state.rotation);
         this.syncGhost();
     }
 
     private handlePointerDown(event: PointerEvent) {
         if (!this.facade.isActive()) return;
-        if (event.button !== 0) return;
         this.lastScreen = { x: event.clientX, y: event.clientY };
+
+        // Right-button drag scales decorations.
+        if (event.button === 2) {
+            if (this.facade.isOverUi(event.clientX, event.clientY)) return;
+            const state = this.facade.getState();
+            if (state.selected?.kind !== AdminPlaceKind.Decoration) return;
+            this.scaleDrag = {
+                startY: event.clientY,
+                startScale: state.decorationScale,
+            };
+            return;
+        }
+
+        if (event.button !== 0) return;
         if (this.facade.isOverUi(event.clientX, event.clientY)) {
             this.facade.ghost.clear();
             return;
@@ -219,6 +284,7 @@ export class AdminInput {
             this.painting = true;
             this.groundDrag = null;
             this.lastTileKey = "";
+            this.lastWorldKey = "";
             this.beginStroke();
             this.syncGhost();
             this.applyAtScreen(event.clientX, event.clientY, true);
@@ -228,12 +294,17 @@ export class AdminInput {
         this.painting = true;
         this.groundDrag = null;
         this.lastTileKey = "";
+        this.lastWorldKey = "";
         this.beginStroke();
         this.syncGhost();
         this.applyAtScreen(event.clientX, event.clientY, true);
     }
 
     private handlePointerUp(event: PointerEvent) {
+        if (event.button === 2) {
+            this.scaleDrag = null;
+            return;
+        }
         if (event.button !== 0) return;
         if (this.groundDrag) {
             this.finishGroundDrag();
@@ -241,6 +312,7 @@ export class AdminInput {
         }
         this.painting = false;
         this.lastTileKey = "";
+        this.lastWorldKey = "";
         this.endStroke();
     }
 
@@ -249,10 +321,26 @@ export class AdminInput {
         if (!this.facade.isActive()) {
             this.painting = false;
             this.groundDrag = null;
+            this.scaleDrag = null;
             this.endStroke();
             this.facade.ghost.clear();
             return;
         }
+
+        if (this.scaleDrag) {
+            const state = this.facade.getState();
+            const deltaY = this.scaleDrag.startY - event.clientY;
+            state.decorationScale = Math.min(
+                DECOR_SCALE_MAX,
+                Math.max(
+                    DECOR_SCALE_MIN,
+                    this.scaleDrag.startScale + deltaY * DECOR_SCALE_PER_PX
+                )
+            );
+            this.syncGhost();
+            return;
+        }
+
         if (this.facade.isOverUi(event.clientX, event.clientY)) {
             // Keep an in-progress ground drag alive; only hide the ghost over UI.
             if (!this.groundDrag) this.facade.ghost.clear();
@@ -280,6 +368,11 @@ export class AdminInput {
         return random.integer(0, 3) as TileRot;
     }
 
+    private decorationRotation(state: EditorState): number {
+        if (!state.randomRotation) return state.decorationRotation;
+        return random.integer(0, 359);
+    }
+
     private placeGroundRect(rect: {
         x: number;
         y: number;
@@ -300,12 +393,48 @@ export class AdminInput {
             variant: 0,
             w: rect.w,
             h: rect.h,
+            scale: 1,
         });
     }
 
     private applyAtScreen(screenX: number, screenY: number, isClick: boolean) {
         const state = this.facade.getState();
         const world = this.facade.screenToWorld(screenX, screenY);
+
+        if (state.tool === "delete") {
+            const key = `${Math.round(world.x)},${Math.round(world.y)}`;
+            if (!isClick && key === this.lastWorldKey) return;
+            if (!state.drag && !isClick) return;
+            this.lastWorldKey = key;
+            this.sendPacket(ClientPacket.AdminDeleteAt, {
+                x: clampWorld(world.x),
+                y: clampWorld(world.y),
+            });
+            return;
+        }
+
+        const selected = state.selected;
+        if (!selected || selected.kind === AdminPlaceKind.Ground) return;
+
+        if (selected.kind === AdminPlaceKind.Decoration) {
+            const key = `${Math.round(world.x)},${Math.round(world.y)}`;
+            if (!isClick && key === this.lastWorldKey) return;
+            if (!state.drag && !isClick) return;
+            this.lastWorldKey = key;
+            this.sendPacket(ClientPacket.AdminPlace, {
+                kind: AdminPlaceKind.Decoration,
+                typeId: selected.id,
+                x: clampWorld(world.x),
+                y: clampWorld(world.y),
+                rotation: this.decorationRotation(state),
+                variant: 0,
+                w: 1,
+                h: 1,
+                scale: state.decorationScale,
+            });
+            return;
+        }
+
         const x = clampTile(worldToTile(world.x));
         const y = clampTile(worldToTile(world.y));
         const key = `${x},${y}`;
@@ -313,14 +442,6 @@ export class AdminInput {
         if (!isClick && key === this.lastTileKey) return;
         if (!state.drag && !isClick) return;
         this.lastTileKey = key;
-
-        if (state.tool === "delete") {
-            this.sendPacket(ClientPacket.AdminDeleteAt, { x, y });
-            return;
-        }
-
-        const selected = state.selected;
-        if (!selected || selected.kind === AdminPlaceKind.Ground) return;
 
         const variantName = state.randomVariant
             ? random.choice([...listVariantNames()])
@@ -341,6 +462,7 @@ export class AdminInput {
             variant,
             w: 1,
             h: 1,
+            scale: 1,
         });
     }
 }

@@ -1,0 +1,4 @@
+id: decoration/water_slant4
+parts:
+  main:
+    sprite: bundu/decoration/water/water_slant4.svg

@@ -7,6 +7,7 @@ import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory"
 import { tickItemButton, type ItemButtonColors } from "../ui/item_button";
 import { clientRegistries, clientGroundType, clientModelId } from "../configs/registries";
 import { mountSlotIcon } from "../models/mount";
+import { decorationModelId } from "../world/decoration";
 import {
     categoryToKind,
     type EditorCategory,
@@ -28,6 +29,7 @@ const TAB_LABELS: { id: EditorCategory; label: string }[] = [
     { id: "resources", label: "Resources" },
     { id: "ground", label: "Ground" },
     { id: "structures", label: "Structures" },
+    { id: "decorations", label: "Decorations" },
 ];
 
 const SLOT_GAP = 8;
@@ -45,6 +47,8 @@ function categoryRegistry(category: EditorCategory): Registry<RegistryName> {
             return registries.ground_type;
         case "structures":
             return registries.structure;
+        case "decorations":
+            return registries.decoration;
     }
 }
 
@@ -72,10 +76,14 @@ function listEntries(
 
     if (tagFilter) {
         for (const id of registry.resolveSet([tagFilter], undefined, "editor.tag")) {
+            const location = registry.location(id);
             entries.push({
                 id,
                 kind,
-                location: clientModelId(registry.location(id)),
+                location:
+                    category === "decorations"
+                        ? decorationModelId(location)
+                        : clientModelId(location),
             });
         }
     } else {
@@ -83,7 +91,10 @@ function listEntries(
             entries.push({
                 id,
                 kind,
-                location: clientModelId(location),
+                location:
+                    category === "decorations"
+                        ? decorationModelId(location)
+                        : clientModelId(location),
             });
         }
     }

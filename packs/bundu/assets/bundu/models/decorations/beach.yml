@@ -1,0 +1,4 @@
+id: decoration/beach
+parts:
+  main:
+    sprite: bundu/decoration/beach/beach.svg

@@ -46,6 +46,10 @@ export const ServerPacket = {
     UnloadGround: 0x1d,
     /** Freecam editor: map YAML for download or after server save. */
     AdminMapYaml: 0x1e,
+    /** Static decoration sprites (join sync + live editor edits). */
+    LoadDecorations: 0x1f,
+    /** Freecam editor: remove decorations (undo / delete). */
+    UnloadDecorations: 0x20,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -168,6 +172,24 @@ export namespace ServerPacket {
         saved: boolean;
         path: string;
     };
+    /**
+     * Decoration wire tuple. World units for x/y; rotation in degrees;
+     * scale multiplies the registry base size.
+     */
+    export type DecorationWire = [
+        id: number,
+        type: number,
+        x: number,
+        y: number,
+        rotation: number,
+        scale: number,
+    ];
+    export type LoadDecorations = {
+        decorations: DecorationWire[];
+    };
+    export type UnloadDecorations = {
+        decorations: DecorationWire[];
+    };
 }
 
 /** Admin editor place target (freecam palette). */
@@ -175,6 +197,7 @@ export const AdminPlaceKind = {
     Resource: 0,
     Structure: 1,
     Ground: 2,
+    Decoration: 3,
 } as const;
 export type AdminPlaceKind =
     (typeof AdminPlaceKind)[keyof typeof AdminPlaceKind];
@@ -250,15 +273,26 @@ export namespace ClientPacket {
     export type AdminPlace = {
         kind: AdminPlaceKind;
         typeId: number;
+        /**
+         * Tile indices for resource/structure/ground.
+         * World units for decorations (free placement).
+         */
         x: number;
         y: number;
+        /**
+         * Tile quarter-turns 0–3 for resource/structure.
+         * Continuous degrees for decorations.
+         */
         rotation: number;
-        /** Variant wire id (`variant_map`); ignored for ground. */
+        /** Variant wire id (`variant_map`); ignored for ground/decoration. */
         variant: number;
         /** Ground rect size in tiles (normalized); ignored for non-ground (use 1). */
         w: number;
         h: number;
+        /** Decoration size multiplier (base × scale). Ignored otherwise (use 1). */
+        scale: number;
     };
+    /** World-space click for freecam delete (tile derived server-side). */
     export type AdminDeleteAt = { x: number; y: number };
     export type AdminSetAnimalsFrozen = { frozen: boolean };
     export type AdminKillAnimals = Record<string, never>;
@@ -299,6 +333,8 @@ export type ServerPacketMap = {
     [ServerPacket.FreecamMode]: ServerPacket.FreecamMode;
     [ServerPacket.UnloadGround]: ServerPacket.UnloadGround;
     [ServerPacket.AdminMapYaml]: ServerPacket.AdminMapYaml;
+    [ServerPacket.LoadDecorations]: ServerPacket.LoadDecorations;
+    [ServerPacket.UnloadDecorations]: ServerPacket.UnloadDecorations;
 };
 
 /** ID → payload map for client packets. */
@@ -379,6 +415,8 @@ export const ServerSchema: {
     [ServerPacket.FreecamMode]: { fields: ["enabled"] },
     [ServerPacket.UnloadGround]: { fields: ["groundData"] },
     [ServerPacket.AdminMapYaml]: { fields: ["yaml", "saved", "path"] },
+    [ServerPacket.LoadDecorations]: { fields: ["decorations"] },
+    [ServerPacket.UnloadDecorations]: { fields: ["decorations"] },
 };
 
 export const ClientSchema: {
@@ -403,7 +441,17 @@ export const ClientSchema: {
         fields: ["minX", "minY", "maxX", "maxY", "overview"],
     },
     [ClientPacket.AdminPlace]: {
-        fields: ["kind", "typeId", "x", "y", "rotation", "variant", "w", "h"],
+        fields: [
+            "kind",
+            "typeId",
+            "x",
+            "y",
+            "rotation",
+            "variant",
+            "w",
+            "h",
+            "scale",
+        ],
     },
     [ClientPacket.AdminDeleteAt]: { fields: ["x", "y"] },
     [ClientPacket.AdminSetAnimalsFrozen]: { fields: ["frozen"] },
@@ -500,44 +548,76 @@ export const ClientPacketGuards = {
         value.maxY - value.minY <= FREECAM_MAX_VIEW_EXTENT,
     [ClientPacket.AdminPlace]: (
         value: unknown
-    ): value is ClientPacket.AdminPlace =>
-        isRecord(value) &&
-        (value.kind === AdminPlaceKind.Resource ||
-            value.kind === AdminPlaceKind.Structure ||
-            value.kind === AdminPlaceKind.Ground) &&
-        isSafeInteger(value.typeId) &&
-        value.typeId > 0 &&
-        isSafeInteger(value.x) &&
-        value.x >= 0 &&
-        value.x < WORLD_TILES &&
-        isSafeInteger(value.y) &&
-        value.y >= 0 &&
-        value.y < WORLD_TILES &&
-        isSafeInteger(value.rotation) &&
-        value.rotation >= 0 &&
-        value.rotation <= 3 &&
-        isSafeInteger(value.variant) &&
-        value.variant >= 0 &&
-        isSafeInteger(value.w) &&
-        value.w >= 1 &&
-        value.w <= WORLD_TILES &&
-        isSafeInteger(value.h) &&
-        value.h >= 1 &&
-        value.h <= WORLD_TILES &&
-        // Full-world rects are the reserved base floor — place overlays only.
-        !(value.kind === AdminPlaceKind.Ground &&
-            value.w >= WORLD_TILES &&
-            value.h >= WORLD_TILES),
+    ): value is ClientPacket.AdminPlace => {
+        if (!isRecord(value)) return false;
+        if (
+            value.kind !== AdminPlaceKind.Resource &&
+            value.kind !== AdminPlaceKind.Structure &&
+            value.kind !== AdminPlaceKind.Ground &&
+            value.kind !== AdminPlaceKind.Decoration
+        ) {
+            return false;
+        }
+        if (!isSafeInteger(value.typeId) || value.typeId <= 0) return false;
+        if (!isFiniteNumber(value.scale) || value.scale <= 0 || value.scale > 100) {
+            return false;
+        }
+
+        if (value.kind === AdminPlaceKind.Decoration) {
+            return (
+                isFiniteNumber(value.x) &&
+                value.x >= 0 &&
+                value.x <= WORLD_BOUNDS &&
+                isFiniteNumber(value.y) &&
+                value.y >= 0 &&
+                value.y <= WORLD_BOUNDS &&
+                isFiniteNumber(value.rotation) &&
+                Math.abs(value.rotation) <= 3600 &&
+                isSafeInteger(value.variant) &&
+                value.variant >= 0 &&
+                isSafeInteger(value.w) &&
+                value.w === 1 &&
+                isSafeInteger(value.h) &&
+                value.h === 1
+            );
+        }
+
+        return (
+            isSafeInteger(value.x) &&
+            value.x >= 0 &&
+            value.x < WORLD_TILES &&
+            isSafeInteger(value.y) &&
+            value.y >= 0 &&
+            value.y < WORLD_TILES &&
+            isSafeInteger(value.rotation) &&
+            value.rotation >= 0 &&
+            value.rotation <= 3 &&
+            isSafeInteger(value.variant) &&
+            value.variant >= 0 &&
+            isSafeInteger(value.w) &&
+            value.w >= 1 &&
+            value.w <= WORLD_TILES &&
+            isSafeInteger(value.h) &&
+            value.h >= 1 &&
+            value.h <= WORLD_TILES &&
+            // Full-world rects are the reserved base floor — place overlays only.
+            !(
+                value.kind === AdminPlaceKind.Ground &&
+                value.w >= WORLD_TILES &&
+                value.h >= WORLD_TILES
+            )
+        );
+    },
     [ClientPacket.AdminDeleteAt]: (
         value: unknown
     ): value is ClientPacket.AdminDeleteAt =>
         isRecord(value) &&
-        isSafeInteger(value.x) &&
+        isFiniteNumber(value.x) &&
         value.x >= 0 &&
-        value.x < WORLD_TILES &&
-        isSafeInteger(value.y) &&
+        value.x <= WORLD_BOUNDS &&
+        isFiniteNumber(value.y) &&
         value.y >= 0 &&
-        value.y < WORLD_TILES,
+        value.y <= WORLD_BOUNDS,
     [ClientPacket.AdminSetAnimalsFrozen]: (
         value: unknown
     ): value is ClientPacket.AdminSetAnimalsFrozen =>

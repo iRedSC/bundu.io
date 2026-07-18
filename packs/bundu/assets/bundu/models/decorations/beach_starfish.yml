@@ -1,0 +1,4 @@
+id: decoration/beach_starfish
+parts:
+  main:
+    sprite: bundu/decoration/beach/beach_starfish.svg

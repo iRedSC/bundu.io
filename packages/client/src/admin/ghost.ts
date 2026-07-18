@@ -1,4 +1,4 @@
-import { Graphics, Point } from "pixi.js";
+import { type Container, Graphics, Point } from "pixi.js";
 import { AdminPlaceKind } from "@bundu/shared/packet_definitions";
 import {
     FOOTPRINT_CIRCLE_RADIUS,
@@ -9,9 +9,12 @@ import {
 } from "@bundu/shared/tiles";
 import { radians } from "@bundu/shared/transforms";
 import { AnimationManagers } from "../animation/animations";
-import { clientGroundType } from "../configs/registries";
+import {
+    clientGroundType,
+} from "../configs/registries";
 import type { LayeredRenderer } from "../rendering/layered_renderer";
 import type { EditorDeleteHover } from "../world/world";
+import { createDecoration } from "../world/decoration";
 import { Structure } from "../world/objects/structure";
 import type { EditorTool, PaletteEntry } from "./state";
 
@@ -28,6 +31,8 @@ export type AdminGhostCursor = {
     tool: EditorTool;
     selected: PaletteEntry | null;
     rotation: TileRot;
+    decorationRotation: number;
+    decorationScale: number;
     worldX: number;
     worldY: number;
     /** Ground place drag rect in tiles (normalized). */
@@ -40,6 +45,7 @@ export type AdminGhostCursor = {
  */
 export class AdminGhost {
     private structure?: Structure;
+    private decoration?: Container;
     private ground?: Graphics;
     private groundSize = { w: 1, h: 1 };
     private deleteOutline?: Graphics;
@@ -66,6 +72,7 @@ export class AdminGhost {
 
         if (selected.kind === AdminPlaceKind.Ground) {
             this.clearStructure();
+            this.clearDecoration();
             const rect = cursor.groundRect ?? { x: tx, y: ty, w: 1, h: 1 };
             const identity = `${selected.kind}:${selected.id}:${rect.w}x${rect.h}`;
             if (
@@ -85,7 +92,35 @@ export class AdminGhost {
             return;
         }
 
+        if (selected.kind === AdminPlaceKind.Decoration) {
+            this.clearStructure();
+            this.clearGround();
+            const identity = `${selected.kind}:${selected.id}:${cursor.decorationScale}`;
+            if (!this.decoration || this.identity !== identity) {
+                this.clearDecoration();
+                const sprite = createDecoration(
+                    ADMIN_GHOST_ID,
+                    selected.id,
+                    cursor.worldX,
+                    cursor.worldY,
+                    cursor.decorationRotation,
+                    cursor.decorationScale
+                );
+                sprite.container.alpha = GHOST_ALPHA;
+                sprite.container.zIndex = OVERLAY_Z;
+                this.decoration = sprite.container;
+                this.renderer.add(ADMIN_GHOST_ID, sprite.container);
+                this.identity = identity;
+            }
+            if (this.decoration) {
+                this.decoration.position.set(cursor.worldX, cursor.worldY);
+                this.decoration.rotation = radians(cursor.decorationRotation);
+            }
+            return;
+        }
+
         this.clearGround();
+        this.clearDecoration();
         const identity = `${selected.kind}:${selected.id}:${selected.location}:${cursor.rotation}`;
         if (!this.structure || this.identity !== identity) {
             this.clearStructure();
@@ -118,6 +153,7 @@ export class AdminGhost {
     private clearPlace(): void {
         this.clearStructure();
         this.clearGround();
+        this.clearDecoration();
         this.identity = "";
     }
 
@@ -177,6 +213,12 @@ export class AdminGhost {
         this.structure.dispose();
         this.renderer.delete(ADMIN_GHOST_ID);
         this.structure = undefined;
+    }
+
+    private clearDecoration(): void {
+        if (!this.decoration) return;
+        this.renderer.delete(ADMIN_GHOST_ID);
+        this.decoration = undefined;
     }
 
     private clearGround(): void {

@@ -5,6 +5,7 @@ import { type ItemConfig, ItemConfigs } from "./items.js";
 import { type BuildingConfig, BuildingConfigs } from "./buildings.js";
 import { type AnimalConfig, AnimalConfigs } from "./animals.js";
 import { type GroundTypeConfig, GroundTypeConfigs } from "./ground_types.js";
+import { type DecorationConfig, DecorationConfigs } from "./decorations.js";
 import { packs } from "../packs.js";
 import { gameplayConfig, setGameplayConfig } from "../gameplay.js";
 import { loadCraftingConfigs } from "./crafting.js";
@@ -52,6 +53,7 @@ export function loadConfigs() {
         Partial<ItemConfig>
     >;
     const groundTypeConfig = records(sources.ground_type);
+    const decorationConfig = records(sources.decoration);
     const itemTypes = packs.records("bundu", "item_types") as Partial<
         Record<string, Partial<ItemConfig>>
     >;
@@ -96,6 +98,24 @@ export function loadConfigs() {
     );
     GroundTypeConfigs.parse(
         groundTypeConfig as Record<string, Partial<GroundTypeConfig>>
+    );
+    DecorationConfigs.parse(
+        decorationConfig as Record<string, Partial<DecorationConfig>>,
+        (id, record, fallback) => {
+            if (
+                record.size !== undefined &&
+                (!Number.isFinite(record.size) || record.size <= 0)
+            ) {
+                throw new Error(`${id}.size: expected a positive number`);
+            }
+            if (
+                record.z !== undefined &&
+                (!Number.isFinite(record.z) || !Number.isSafeInteger(record.z))
+            ) {
+                throw new Error(`${id}.z: expected a safe integer`);
+            }
+            return mergeObjects(record, undefined, fallback);
+        }
     );
     AnimalConfigs.parse(
         animalConfig as Record<string, Partial<AnimalConfig>>,
