@@ -80,6 +80,19 @@ wrong-registry use, and cycles fail pack validation. Singular references such
 as `corpse` reject tags, while set-valued fields such as entity `aggroAt` and
 structure placement `ground` accept entries and tags.
 
+## Entities
+
+Entity definitions live under `data/<namespace>/entities/<id>.yml`. Behavior
+values: `hostile` attacks on sight, `neutral` retaliates, `passive` flees when
+hit, `scared` flees on sight. Useful fields:
+
+- `scale` — size in tiles (`1` → diameter = 1 tile; default `1`)
+- `hasHome` — idle roam alternates homeward + wander sessions when true
+- `attack_reach` — seed for `attack.reach`; effective reach adds collision radius
+- `aggroSwitch` — `never` | `onHit` | `random` retargeting when others interact
+- `aggroLevel` — `high` | `medium` | `low` lock-on strength
+- `aggroAt` — structures (entries or tags) to attack when no player target exists
+
 ## Recipes
 
 Recipes have identities independent from their result items:
