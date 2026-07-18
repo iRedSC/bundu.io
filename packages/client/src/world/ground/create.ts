@@ -1,5 +1,7 @@
-import { Graphics } from "pixi.js";
-import { clientGroundType } from "../configs/registries";
+import { Rectangle } from "pixi.js";
+import { clientGroundType } from "../../configs/registries";
+import { groundModel } from "./models";
+import type { GroundVisual } from "./types";
 
 /**
  * Floor for ground zIndex — stays below entities (0+) and admin grid (-1).
@@ -8,6 +10,7 @@ import { clientGroundType } from "../configs/registries";
  */
 export const GROUND_Z_BASE = -1_000_000_000;
 
+/** Build a ground visual from the type's ground model. */
 export function createGround(
     type: number,
     x: number,
@@ -15,9 +18,7 @@ export function createGround(
     w: number,
     h: number,
     zIndex = GROUND_Z_BASE
-) {
-    const ground = new Graphics();
-    ground.zIndex = zIndex;
-    ground.rect(x, y, w, h).fill(clientGroundType(type).color);
-    return ground;
+): GroundVisual {
+    const model = groundModel(clientGroundType(type).model);
+    return model.create(new Rectangle(x, y, w, h), zIndex);
 }

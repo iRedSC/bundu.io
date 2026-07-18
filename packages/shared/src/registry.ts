@@ -52,7 +52,8 @@ export type ClientRegistryProjection = RegistrySetProjection & {
             ground: readonly number[];
         }
     >;
-    groundTypes: Record<number, { color: string }>;
+    /** `model` is a client ground-visual id (not an entity ModelDef). */
+    groundTypes: Record<number, { model: string }>;
     /** Base world size + z-layer for decoration instances (`size * scale` at runtime). */
     decorations: Record<number, { size: number; z: number }>;
     /** Dynamic crafting/effect flag name → numeric id (assigned at pack load). */

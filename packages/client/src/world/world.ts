@@ -14,7 +14,14 @@ import {
 import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { SkyUndoLayer } from "./sky_undo_layer";
-import { createGround, GROUND_Z_BASE } from "./ground";
+import {
+    collectShoreSamples,
+    createGround,
+    GROUND_Z_BASE,
+    isOceanGroundModel,
+    type GroundVisual,
+    type ShoreSample,
+} from "./ground";
 import { createDecoration, type DecorationSprite } from "./decoration";
 import {
     radians,
@@ -23,7 +30,7 @@ import {
 } from "@bundu/shared";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
-import { Point, Text, type Container, type Renderer } from "pixi.js";
+import { Point, Text, type Renderer } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
@@ -36,6 +43,7 @@ import { Structure } from "./objects/structure";
 import { GroundItem } from "./objects/ground_item";
 import {
     clientDecoration,
+    clientGroundType,
     clientRegistries,
     clientStructurePlacement,
     clientModelId,
@@ -46,6 +54,7 @@ import {
     type ContaineredSprite,
 } from "../assets/sprite_factory";
 import { ParticleSystem } from "@client/rendering/particles/particle_system";
+import type { ParticleBurst } from "../rendering/particles/types";
 import {
     setActiveShadowLayer,
     ShadowLayer,
@@ -126,8 +135,9 @@ export class World {
         y: number;
         w: number;
         h: number;
-        gfx: Container;
+        visual: GroundVisual;
     }[] = [];
+    private shoreSamples: ShoreSample[] = [];
     private readonly decorations: DecorationSprite[] = [];
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
@@ -158,6 +168,7 @@ export class World {
         for (const id of ids) this.removeClientObject(id);
         this.renderer.delete(GROUND_RENDER_ID);
         this.groundPatches.length = 0;
+        this.shoreSamples = [];
         this.renderer.delete(DECORATION_RENDER_ID);
         this.decorations.length = 0;
         this.shadows.clear();
@@ -199,6 +210,7 @@ export class World {
             }
         }
         this.particles.update(deltaMS);
+        this.updateGroundVisuals(deltaMS, now);
         this.updatePlacementGhost();
         this.camera.update();
         if (this.camera.isFreecam()) {
@@ -715,10 +727,10 @@ export class World {
                 const existing = this.groundPatches[i];
                 if (!existing || existing.id !== id) continue;
                 this.groundPatches.splice(i, 1);
-                this.renderer.remove(GROUND_RENDER_ID, existing.gfx);
+                this.renderer.remove(GROUND_RENDER_ID, existing.visual.container);
                 break;
             }
-            const gfx = createGround(
+            const visual = createGround(
                 type,
                 x * TILE_SIZE,
                 y * TILE_SIZE,
@@ -726,9 +738,10 @@ export class World {
                 h * TILE_SIZE,
                 GROUND_Z_BASE + id
             );
-            this.groundPatches.push({ id, type, x, y, w, h, gfx });
-            this.renderer.add(GROUND_RENDER_ID, gfx);
+            this.groundPatches.push({ id, type, x, y, w, h, visual });
+            this.renderer.add(GROUND_RENDER_ID, visual.container);
         }
+        this.rebuildShoreSamples();
     };
 
     unloadGround = (packet: ServerPacket.UnloadGround) => {
@@ -737,11 +750,56 @@ export class World {
                 const patch = this.groundPatches[i];
                 if (!patch || patch.id !== id) continue;
                 this.groundPatches.splice(i, 1);
-                this.renderer.remove(GROUND_RENDER_ID, patch.gfx);
+                this.renderer.remove(GROUND_RENDER_ID, patch.visual.container);
                 break;
             }
         }
+        this.rebuildShoreSamples();
     };
+
+    private rebuildShoreSamples(): void {
+        this.shoreSamples = collectShoreSamples(this.groundPatches, (type) =>
+            isOceanGroundModel(clientGroundType(type).model)
+        );
+    }
+
+    private updateGroundVisuals(deltaMS: number, now: number): void {
+        const bounds = this.viewport.getVisibleBounds();
+        const ctx = {
+            deltaMS,
+            now,
+            view: {
+                minX: bounds.x,
+                minY: bounds.y,
+                maxX: bounds.x + bounds.width,
+                maxY: bounds.y + bounds.height,
+            },
+            emitParticles: (burst: ParticleBurst) => this.particles.burst(burst),
+            shore: this.shoreSamples,
+            isOceanAt: (worldX: number, worldY: number) => {
+                const tx = Math.floor(worldX / TILE_SIZE);
+                const ty = Math.floor(worldY / TILE_SIZE);
+                let top: (typeof this.groundPatches)[number] | undefined;
+                for (const patch of this.groundPatches) {
+                    if (
+                        tx < patch.x ||
+                        ty < patch.y ||
+                        tx >= patch.x + patch.w ||
+                        ty >= patch.y + patch.h
+                    ) {
+                        continue;
+                    }
+                    if (!top || patch.id > top.id) top = patch;
+                }
+                return top
+                    ? isOceanGroundModel(clientGroundType(top.type).model)
+                    : false;
+            },
+        };
+        for (const patch of this.groundPatches) {
+            patch.visual.update?.(ctx);
+        }
+    }
 
     loadDecorations = (packet: ServerPacket.LoadDecorations) => {
         for (const [id, type, x, y, rotation, scale] of packet.decorations) {

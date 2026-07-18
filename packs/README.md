@@ -213,7 +213,7 @@ serving packs, the server sanitizes client-facing assets:
 - Model definitions are compiled server-side; clients receive only the compiled
   payload (`models.json` format 2)
 - Raw pack `data/` YAML is never sent. Clients get a curated `registries.json`
-  projection (IDs, tags, placement, ground colors) plus authoritative world
+  projection (IDs, tags, placement, ground models) plus authoritative world
   updates over the WebSocket
 
 Clients SHA-256-check the registry projection, compiled models, and assets

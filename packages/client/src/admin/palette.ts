@@ -8,6 +8,7 @@ import { tickItemButton, type ItemButtonColors } from "../ui/item_button";
 import { clientRegistries, clientGroundType, clientModelId } from "../configs/registries";
 import { mountSlotIcon } from "../models/mount";
 import { decorationModelId } from "../world/decoration";
+import { groundModel } from "../world/ground";
 import {
     categoryToKind,
     type EditorCategory,
@@ -183,7 +184,10 @@ class PaletteSlot {
         const size = percentOf(90, ITEM_BUTTON_SIZE);
 
         if (entry.kind === AdminPlaceKind.Ground) {
-            const hex = clientGroundType(entry.id).color.replace("#", "");
+            const hex = groundModel(clientGroundType(entry.id).model).color.replace(
+                "#",
+                ""
+            );
             const color = Number.parseInt(hex, 16);
             const g = new Graphics();
             const swatch = percentOf(70, ITEM_BUTTON_SIZE);

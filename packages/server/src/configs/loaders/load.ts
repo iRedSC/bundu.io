@@ -354,6 +354,12 @@ export function loadConfigs() {
         groundTypeConfig as Record<string, Partial<GroundTypeConfig>>,
         (id, record, fallback) => {
             const raw = record as Record<string, unknown>;
+            if (
+                record.model !== undefined &&
+                (typeof record.model !== "string" || !record.model.trim())
+            ) {
+                throw new Error(`${id}.model: expected a non-empty string`);
+            }
             assignContexts(
                 record as Record<string, unknown>,
                 raw,
