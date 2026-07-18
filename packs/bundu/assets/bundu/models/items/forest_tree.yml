@@ -1,0 +1,7 @@
+id: item/forest_tree
+extends: item/type/none
+displays:
+    icon:
+        model: forest_tree
+    inventory:
+        model: forest_tree

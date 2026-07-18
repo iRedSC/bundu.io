@@ -1,14 +1,13 @@
 import {
     clientRegistries,
-    clientVisualId,
+    clientModelId,
 } from "../../configs/registries";
 import { lerp, radians } from "@bundu/shared/transforms";
 import type { Container, Point } from "pixi.js";
-import { SpriteFactory } from "@client/assets/sprite_factory";
 import { AnimationManagers } from "../../animation/animations";
 import { Animation } from "../../animation/runtime";
 import GameObject from "../game_object";
-import { lookupContextVisual } from "../../visual/defs";
+import { mountModel } from "../../models/mount";
 
 const ITEM_SIZE = 54;
 const POP_LERP = 0.16;
@@ -36,16 +35,16 @@ export class GroundItem extends GameObject {
 
     constructor(id: number, itemId: number, position: Point, rotation: number) {
         super(id, position, radians(rotation), 12, 1);
-        const name = clientVisualId(clientRegistries().item.location(itemId));
-        const texture = lookupContextVisual(name)?.contexts.world?.texture;
-        const sprite = SpriteFactory.build(texture ?? "bundu/misc/unknown_asset.png");
-        sprite.width = ITEM_SIZE;
-        sprite.height = ITEM_SIZE;
-        sprite.anchor.set(0.5);
-        this.container.addChild(sprite);
+        const name = clientModelId(clientRegistries().item.location(itemId));
+        const mounted = mountModel(name, "world", this.container, {
+            maxSize: ITEM_SIZE,
+            shadows: false,
+            anchor: { x: 0.5, y: 0.5 },
+        });
+        const wiggleTarget = mounted?.sprites[0] ?? this.container;
         this.container.zIndex = 2;
 
-        this.animations.set(WIGGLE, itemWiggle(sprite));
+        this.animations.set(WIGGLE, itemWiggle(wiggleTarget));
         this.trigger(WIGGLE, AnimationManagers.World);
     }
 

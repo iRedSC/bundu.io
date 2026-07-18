@@ -38,6 +38,6 @@ export function clientGroundType(groundTypeId: number) {
     return ground;
 }
 
-export function clientVisualId(location: string): string {
+export function clientModelId(location: string): string {
     return location.startsWith("bundu:") ? location.slice("bundu:".length) : location;
 }

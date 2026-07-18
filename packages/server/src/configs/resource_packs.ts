@@ -5,11 +5,11 @@ import { packs } from "./packs";
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
 import { parseClientGameplayConfig } from "@bundu/shared/client_gameplay";
 import {
-    compileVisualDefs,
-    type CompiledVisualDefs,
-} from "@bundu/shared/visual/compile";
-import type { CompiledVisualsPayload } from "@bundu/shared/visual/types";
-import { rewritePackTextureRefs } from "@bundu/shared/visual/texture_paths";
+    compileModelDefs,
+    type CompiledModelDefs,
+} from "@bundu/shared/models/compile";
+import type { CompiledModelsPayload } from "@bundu/shared/models/types";
+import { rewritePackTextureRefs } from "@bundu/shared/models/texture_paths";
 import { BuildingConfigs } from "./loaders/buildings";
 import { GroundTypeConfigs } from "./loaders/ground_types";
 import { gameRegistries, registryProjection } from "./registries";
@@ -33,7 +33,7 @@ export type ResourcePackManifest = {
         format: number;
         hash: string;
     }[];
-    visuals: { hash: string; url: string };
+    models: { hash: string; url: string };
     registries: { hash: string; url: string };
     gameplay: { hash: string; url: string };
     assets: ResourceAsset[];
@@ -56,7 +56,7 @@ function files(directory: string): string[] {
         .sort((left, right) => left.localeCompare(right));
 }
 
-/** Hash pack.yml + assets/ only — data/ edits must not force visual renegotiation. */
+/** Hash pack.yml + assets/ only — data/ edits must not force model renegotiation. */
 function hashPackResourceInputs(packDirectory: string): string {
     const digest = createHash("sha256");
     const packYml = path.join(packDirectory, "pack.yml");
@@ -84,7 +84,7 @@ function record(value: unknown, source: string): Record<string, unknown> {
 }
 
 function validateCompiledTextures(
-    defs: CompiledVisualDefs,
+    defs: CompiledModelDefs,
     availableAssets: ReadonlySet<string>
 ): void {
     const validate = (texture: string, source: string) => {
@@ -93,13 +93,11 @@ function validateCompiledTextures(
         }
     };
     for (const def of defs.values()) {
-        if ("contexts" in def) {
-            for (const [name, context] of Object.entries(def.contexts)) {
-                if (context.texture) {
-                    validate(context.texture, `${def.id}.contexts.${name}`);
-                }
+        if (def.texture) validate(def.texture, `${def.id}.texture`);
+        for (const [name, display] of Object.entries(def.displays)) {
+            if (display.texture) {
+                validate(display.texture, `${def.id}.displays.${name}`);
             }
-            continue;
         }
         for (const part of def.parts) {
             if (part.sprite) validate(part.sprite, `${def.id}.parts.${part.name}`);
@@ -114,31 +112,31 @@ function validateCompiledTextures(
 
 export class ResourcePackService {
     readonly manifest: ResourcePackManifest;
-    readonly visualsJson: string;
+    readonly modelsJson: string;
     readonly registriesJson: string;
     readonly gameplayJson: string;
-    readonly compiledVisuals: CompiledVisualDefs;
+    readonly compiledModels: CompiledModelDefs;
     private readonly servedAssets = new Map<string, ServedAsset>();
 
     private constructor(
         manifest: ResourcePackManifest,
-        visualsJson: string,
+        modelsJson: string,
         registriesJson: string,
         gameplayJson: string,
-        compiledVisuals: CompiledVisualDefs,
+        compiledModels: CompiledModelDefs,
         servedAssets: Map<string, ServedAsset>
     ) {
         this.manifest = manifest;
-        this.visualsJson = visualsJson;
+        this.modelsJson = modelsJson;
         this.registriesJson = registriesJson;
         this.gameplayJson = gameplayJson;
-        this.compiledVisuals = compiledVisuals;
+        this.compiledModels = compiledModels;
         this.servedAssets = servedAssets;
     }
 
     /** Load, sanitize, and compile pack assets for hostile client delivery. */
     static async create(): Promise<ResourcePackService> {
-        const visuals: Record<string, unknown> = {};
+        const models: Record<string, unknown> = {};
         const pendingTextures: { logicalPath: string; bytes: Uint8Array }[] =
             [];
         let clientGameplayRaw: unknown;
@@ -174,8 +172,8 @@ export class ResourcePackService {
                     });
                 }
 
-                const visualsRoot = path.join(namespaceRoot, "visuals");
-                for (const filename of files(visualsRoot).filter((name) =>
+                const modelsRoot = path.join(namespaceRoot, "models");
+                for (const filename of files(modelsRoot).filter((name) =>
                     /\.ya?ml$/i.test(name)
                 )) {
                     const document = rewritePackTextureRefs(
@@ -190,9 +188,9 @@ export class ResourcePackService {
                                 `${filename}.id: expected a non-empty string`
                             );
                         }
-                        visuals[document.id] = document;
+                        models[document.id] = document;
                     } else {
-                        Object.assign(visuals, document);
+                        Object.assign(models, document);
                     }
                 }
             }
@@ -232,18 +230,18 @@ export class ResourcePackService {
 
         // Aggregate under one source key so per-id YAML maps compile as definitions
         // (same shape the client historically received as `{ stack }`).
-        const compiledVisuals = compileVisualDefs({ stack: visuals });
+        const compiledModels = compileModelDefs({ stack: models });
         validateCompiledTextures(
-            compiledVisuals,
+            compiledModels,
             new Set(servedAssets.keys())
         );
         assertPackAssetBudget([...servedAssets.values()]);
 
-        const payload: CompiledVisualsPayload = {
-            format: 1,
-            defs: Object.fromEntries(compiledVisuals),
+        const payload: CompiledModelsPayload = {
+            format: 2,
+            defs: Object.fromEntries(compiledModels),
         };
-        const visualsJson = JSON.stringify(payload);
+        const modelsJson = JSON.stringify(payload);
         const registries = gameRegistries();
         const projection: ClientRegistryProjection = {
             ...registryProjection(),
@@ -261,7 +259,7 @@ export class ResourcePackService {
             ),
         };
         const registriesJson = JSON.stringify(projection);
-        const visualsHash = hash(visualsJson);
+        const modelsHash = hash(modelsJson);
         const registriesHash = hash(registriesJson);
         const gameplayHash = hash(gameplayJson);
         const assets = [...servedAssets.values()]
@@ -277,7 +275,7 @@ export class ResourcePackService {
             JSON.stringify({
                 format: 2,
                 packs: packEntries,
-                visualsHash,
+                modelsHash,
                 registriesHash,
                 gameplayHash,
                 assets,
@@ -289,7 +287,7 @@ export class ResourcePackService {
                 format: 2,
                 fingerprint,
                 packs: packEntries,
-                visuals: { hash: visualsHash, url: "/packs/visuals.json" },
+                models: { hash: modelsHash, url: "/packs/models.json" },
                 registries: {
                     hash: registriesHash,
                     url: "/packs/registries.json",
@@ -297,10 +295,10 @@ export class ResourcePackService {
                 gameplay: { hash: gameplayHash, url: "/packs/gameplay.json" },
                 assets,
             },
-            visualsJson,
+            modelsJson,
             registriesJson,
             gameplayJson,
-            compiledVisuals,
+            compiledModels,
             servedAssets
         );
     }

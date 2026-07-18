@@ -73,11 +73,11 @@ controller.http = (request, url) => {
             headers: { ...packHeaders, "Cache-Control": "no-store" },
         });
     }
-    if (packPath === "/packs/visuals.json") {
-        if (url.searchParams.get("hash") !== resourcePacks.manifest.visuals.hash) {
+    if (packPath === "/packs/models.json") {
+        if (url.searchParams.get("hash") !== resourcePacks.manifest.models.hash) {
             return new Response("Not Found", { status: 404, headers: packHeaders });
         }
-        return new Response(resourcePacks.visualsJson, {
+        return new Response(resourcePacks.modelsJson, {
             headers: {
                 ...packHeaders,
                 "Content-Type": "application/json",

@@ -1,6 +1,6 @@
 /**
  * Emit the sanitized bundu-only pack stack into the client build output so
- * base-pack servers can skip re-downloading textures/visuals/registries.
+ * base-pack servers can skip re-downloading textures/models/registries.
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -45,10 +45,10 @@ const resourcePacks = await ResourcePackService.create();
 fs.rmSync(outdir, { recursive: true, force: true });
 fs.mkdirSync(outdir, { recursive: true });
 
-const visualsPath = path.join(outdir, "visuals.json");
+const modelsPath = path.join(outdir, "models.json");
 const registriesPath = path.join(outdir, "registries.json");
 const gameplayPath = path.join(outdir, "gameplay.json");
-fs.writeFileSync(visualsPath, resourcePacks.visualsJson);
+fs.writeFileSync(modelsPath, resourcePacks.modelsJson);
 fs.writeFileSync(registriesPath, resourcePacks.registriesJson);
 fs.writeFileSync(gameplayPath, resourcePacks.gameplayJson);
 
@@ -67,9 +67,9 @@ const bundledManifest = {
     format: 2 as const,
     fingerprint: resourcePacks.manifest.fingerprint,
     packs: resourcePacks.manifest.packs,
-    visuals: {
-        hash: resourcePacks.manifest.visuals.hash,
-        url: "visuals.json",
+    models: {
+        hash: resourcePacks.manifest.models.hash,
+        url: "models.json",
     },
     registries: {
         hash: resourcePacks.manifest.registries.hash,

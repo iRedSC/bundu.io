@@ -1,7 +1,0 @@
-id: item/forest_tree
-extends: item/type/none
-contexts:
-    icon:
-        visual: forest_tree
-    inventory:
-        visual: forest_tree

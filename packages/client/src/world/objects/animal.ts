@@ -1,16 +1,16 @@
 import {
     clientRegistries,
-    clientVisualId,
+    clientModelId,
 } from "../../configs/registries";
 import { attackFacingRadians } from "@bundu/shared";
 import { TILE_SIZE } from "@bundu/shared/tiles";
 import { rotationLerp } from "@bundu/shared/transforms";
 import type { Point } from "pixi.js";
 import { AnimationManagers } from "../../animation/animations";
-import { assemble } from "../../visual/assemble";
-import { bindAnimations } from "../../visual/bind";
-import { animalDef } from "../../visual/defs";
-import type { ObjectDef } from "../../visual/types";
+import { assemble } from "../../models/assemble";
+import { bindAnimations } from "../../models/bind";
+import { animalDef } from "../../models/defs";
+import type { ObjectDef } from "../../models/types";
 import GameObject from "../game_object";
 import type { PositionState } from "../states";
 import { clientTime } from "@client/globals";
@@ -39,15 +39,15 @@ export class Animal extends GameObject {
         scale = 1
     ) {
         super(id, position, 0, collisionRadius, TILE_SIZE * (scale ?? 1), 250);
-        this.typeId = clientVisualId(
+        this.typeId = clientModelId(
             clientRegistries().entity_type.location(typeId)
         );
-        this.applyVisualDefinition(animalDef(this.typeId));
+        this.applyModelDefinition(animalDef(this.typeId));
         this.container.zIndex = 5;
         this.lastTarget = { x: position.x, y: position.y };
     }
 
-    private applyVisualDefinition(def: ObjectDef) {
+    private applyModelDefinition(def: ObjectDef) {
         const assembled = assemble(def, this.container);
         const { animations, autoplay } = bindAnimations(def, assembled.parts);
         for (const [animId, animation] of animations) {
@@ -58,13 +58,13 @@ export class Animal extends GameObject {
         }
     }
 
-    reloadVisualDefinition() {
+    reloadModelDefinition() {
         AnimationManagers.World.remove(this);
         for (const child of this.container.removeChildren()) {
             child.destroy({ children: true });
         }
         this.animations.clear();
-        this.applyVisualDefinition(animalDef(this.typeId));
+        this.applyModelDefinition(animalDef(this.typeId));
     }
 
     /** Turn toward a world-space direction (radians, 0 = east) — lerps in update. */

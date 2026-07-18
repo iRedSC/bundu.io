@@ -4,7 +4,7 @@ import {
     lightPushAt,
     shadowStyle,
     type ShadowLight,
-} from "../visual/shadow";
+} from "../models/shadow";
 
 type ShadowEntry = {
     shadow: ContaineredSprite;

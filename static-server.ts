@@ -5,23 +5,23 @@ import fs from "node:fs";
 const PUBLIC_DIR = path.join(import.meta.dir, "public");
 const PACKS_ROOT = path.join(import.meta.dir, "packs");
 const PORT = Number(process.env.PORT ?? 3000);
-/** Dev-only visual-definition hot reload. Never enabled in CI/prod images. */
+/** Dev-only model-definition hot reload. Never enabled in CI/prod images. */
 const DEV_CONFIG_RELOAD = process.env.BUNDU_DEBUG === "1";
 
 type PackNamespaceRoots = {
     /** Texture roots by namespace; later packs override earlier ones. */
     textureRoots: ReadonlyMap<string, string[]>;
-    visualDirs: readonly string[];
+    modelDirs: readonly string[];
     /** Client gameplay.yml paths; later packs override earlier ones. */
     gameplayFiles: readonly string[];
 };
 
 function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
     const textureRoots = new Map<string, string[]>();
-    const visualDirs: string[] = [];
+    const modelDirs: string[] = [];
     const gameplayFiles: string[] = [];
     if (!fs.existsSync(packsRoot)) {
-        return { textureRoots, visualDirs, gameplayFiles };
+        return { textureRoots, modelDirs, gameplayFiles };
     }
 
     const packDirs = fs
@@ -40,21 +40,21 @@ function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
             .sort((left, right) => left.localeCompare(right));
         for (const namespace of namespaces) {
             const textures = path.join(assetsRoot, namespace, "textures");
-            const visuals = path.join(assetsRoot, namespace, "visuals");
+            const models = path.join(assetsRoot, namespace, "models");
             const gameplay = path.join(assetsRoot, namespace, "gameplay.yml");
             if (fs.existsSync(textures)) {
                 const roots = textureRoots.get(namespace) ?? [];
                 roots.push(textures);
                 textureRoots.set(namespace, roots);
             }
-            if (fs.existsSync(visuals)) visualDirs.push(visuals);
+            if (fs.existsSync(models)) modelDirs.push(models);
             if (fs.existsSync(gameplay)) gameplayFiles.push(gameplay);
         }
     }
-    return { textureRoots, visualDirs, gameplayFiles };
+    return { textureRoots, modelDirs, gameplayFiles };
 }
 
-const { textureRoots, visualDirs, gameplayFiles } =
+const { textureRoots, modelDirs, gameplayFiles } =
     discoverPackAssetRoots(PACKS_ROOT);
 
 type SseClient = {
@@ -105,13 +105,13 @@ function configReloadSse(): Response {
     });
 }
 
-function readVisualDefs(directory: string, root = directory): [string, unknown][] {
+function readModelDefs(directory: string, root = directory): [string, unknown][] {
     return fs
         .readdirSync(directory, { withFileTypes: true })
         .sort((left, right) => left.name.localeCompare(right.name))
         .flatMap((entry) => {
             const filepath = path.join(directory, entry.name);
-            if (entry.isDirectory()) return readVisualDefs(filepath, root);
+            if (entry.isDirectory()) return readModelDefs(filepath, root);
             if (!/\.ya?ml$/i.test(entry.name)) return [];
 
             const relative = path.relative(root, filepath).replace(/\\/g, "/");
@@ -120,15 +120,15 @@ function readVisualDefs(directory: string, root = directory): [string, unknown][
         });
 }
 
-async function visualDefsJson(): Promise<Response> {
+async function modelDefsJson(): Promise<Response> {
     // Dynamic import keeps the slim frontend image free of @bundu/shared
     // (this path only runs when BUNDU_DEBUG=1).
     const { rewritePackTextureRefs } = await import(
-        "@bundu/shared/visual/texture_paths"
+        "@bundu/shared/models/texture_paths"
     );
     const defs: Record<string, unknown> = {};
-    for (const directory of visualDirs) {
-        Object.assign(defs, Object.fromEntries(readVisualDefs(directory)));
+    for (const directory of modelDirs) {
+        Object.assign(defs, Object.fromEntries(readModelDefs(directory)));
     }
     // Match game-server sanitization: authored .svg texture keys become .png.
     return Response.json(rewritePackTextureRefs(defs), {
@@ -181,7 +181,7 @@ if (DEV_CONFIG_RELOAD) {
                 notifyConfigReload();
             }, 100);
         });
-    for (const directory of visualDirs) watchYaml(directory);
+    for (const directory of modelDirs) watchYaml(directory);
     for (const filepath of gameplayFiles) {
         watchYaml(path.dirname(filepath));
     }
@@ -212,11 +212,11 @@ serve({
             if (url.pathname === "/__dev/config-reload") {
                 return configReloadSse();
             }
-            if (url.pathname === "/__dev/visual-defs") {
+            if (url.pathname === "/__dev/model-defs") {
                 try {
-                    return visualDefsJson();
+                    return modelDefsJson();
                 } catch (err) {
-                    console.error("[static] failed to load visual defs", err);
+                    console.error("[static] failed to load model defs", err);
                     return new Response("Definition error", { status: 500 });
                 }
             }
@@ -263,6 +263,6 @@ serve({
 console.log(`Client running at http://localhost:${PORT}/site/`);
 if (DEV_CONFIG_RELOAD) {
     console.log(
-        `[static] visual definition hot-reload enabled (${visualDirs.length} pack namespace(s))`
+        `[static] model definition hot-reload enabled (${modelDirs.length} pack namespace(s))`
     );
 }

@@ -1,6 +1,0 @@
-id: item/bear_dead
-extends: item/type/none
-texture: bundu/entity/animal/bear/bear_dead.svg
-contexts:
-    world:
-        scale: 1

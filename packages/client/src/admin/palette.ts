@@ -5,8 +5,8 @@ import { percentOf } from "@bundu/shared/math";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory";
 import { tickItemButton, type ItemButtonColors } from "../ui/item_button";
-import { clientRegistries, clientGroundType, clientVisualId } from "../configs/registries";
-import { mountSlotIcon } from "../visual/slot_icon";
+import { clientRegistries, clientGroundType, clientModelId } from "../configs/registries";
+import { mountSlotIcon } from "../models/mount";
 import {
     categoryToKind,
     type EditorCategory,
@@ -75,7 +75,7 @@ function listEntries(
             entries.push({
                 id,
                 kind,
-                location: clientVisualId(registry.location(id)),
+                location: clientModelId(registry.location(id)),
             });
         }
     } else {
@@ -83,7 +83,7 @@ function listEntries(
             entries.push({
                 id,
                 kind,
-                location: clientVisualId(location),
+                location: clientModelId(location),
             });
         }
     }
