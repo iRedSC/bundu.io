@@ -60,6 +60,12 @@ export function createAdminEditor(
             state.drag = !state.drag;
             refreshToolbar();
         },
+        onToggleGroundBrush: () => {
+            state.groundBrush =
+                state.groundBrush === "rect" ? "tile" : "rect";
+            input?.cancelStroke();
+            refreshToolbar();
+        },
         onToggleRandomVariant: () => {
             state.randomVariant = !state.randomVariant;
             refreshToolbar();
@@ -114,8 +120,8 @@ export function createAdminEditor(
         screenToWorld,
         getState: () => state,
         ghost,
-        pickDeleteHover: (worldX, worldY) =>
-            world.pickEditorDeleteHover(worldX, worldY),
+        pickDeleteHover: (worldX, worldY, kind) =>
+            world.pickEditorDeleteHover(worldX, worldY, kind),
     });
 
     return {

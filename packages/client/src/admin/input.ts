@@ -12,6 +12,7 @@ import type { SendPacket } from "../input/controller";
 import type { EditorDeleteHover } from "../world/world";
 import type { AdminGhost } from "./ghost";
 import {
+    categoryToKind,
     cycleRotation,
     type EditorState,
 } from "./state";
@@ -22,7 +23,11 @@ export type AdminInputFacade = {
     screenToWorld: (screenX: number, screenY: number) => { x: number; y: number };
     getState: () => EditorState;
     ghost: AdminGhost;
-    pickDeleteHover: (worldX: number, worldY: number) => EditorDeleteHover | null;
+    pickDeleteHover: (
+        worldX: number,
+        worldY: number,
+        kind: AdminPlaceKind
+    ) => EditorDeleteHover | null;
 };
 
 type GroundDrag = { x0: number; y0: number; x1: number; y1: number };
@@ -60,7 +65,7 @@ function normalizeRect(drag: GroundDrag): {
 
 /**
  * Freecam editor pointer tools — place/delete with optional drag-spam.
- * Ground place uses a click-drag AABB instead of per-tile spam.
+ * Ground place: click-drag AABB (`rect` brush) or 1×1 paint (`tile` brush).
  * Decorations: free world place; Shift+wheel rotate; right-drag scale.
  */
 export class AdminInput {
@@ -162,7 +167,11 @@ export class AdminInput {
                   : undefined,
             deleteHover:
                 state.tool === "delete"
-                    ? this.facade.pickDeleteHover(world.x, world.y)
+                    ? this.facade.pickDeleteHover(
+                          world.x,
+                          world.y,
+                          categoryToKind(state.category)
+                      )
                     : null,
         });
     }
@@ -273,7 +282,10 @@ export class AdminInput {
 
         if (state.tool === "place") {
             if (!state.selected) return;
-            if (state.selected.kind === AdminPlaceKind.Ground) {
+            if (
+                state.selected.kind === AdminPlaceKind.Ground &&
+                state.groundBrush === "rect"
+            ) {
                 this.painting = true;
                 this.lastTileKey = "";
                 this.groundDrag = { x0: tx, y0: ty, x1: tx, y1: ty };
@@ -409,12 +421,13 @@ export class AdminInput {
             this.sendPacket(ClientPacket.AdminDeleteAt, {
                 x: clampWorld(world.x),
                 y: clampWorld(world.y),
+                kind: categoryToKind(state.category),
             });
             return;
         }
 
         const selected = state.selected;
-        if (!selected || selected.kind === AdminPlaceKind.Ground) return;
+        if (!selected) return;
 
         if (selected.kind === AdminPlaceKind.Decoration) {
             const key = `${Math.round(world.x)},${Math.round(world.y)}`;
@@ -432,6 +445,18 @@ export class AdminInput {
                 h: 1,
                 scale: state.decorationScale,
             });
+            return;
+        }
+
+        if (selected.kind === AdminPlaceKind.Ground) {
+            if (state.groundBrush !== "tile") return;
+            const x = clampTile(worldToTile(world.x));
+            const y = clampTile(worldToTile(world.y));
+            const key = `${x},${y}`;
+            if (!isClick && key === this.lastTileKey) return;
+            if (!state.drag && !isClick) return;
+            this.lastTileKey = key;
+            this.placeGroundRect({ x, y, w: 1, h: 1 });
             return;
         }
 
