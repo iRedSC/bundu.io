@@ -6,7 +6,7 @@ import {
     clientRegistries,
     clientModelId,
 } from "../configs/registries";
-import { mountSlotIcon } from "../models/slot_icon";
+import { mountSlotIcon } from "../models/mount";
 import {
     colorLerp,
     lerp,

@@ -64,7 +64,7 @@ export type Rotatable = { rotationStates: RotationStates; rotation: number };
 
 /** Structure hit target with position for knockback. */
 export type HitTarget = Rotatable & {
-    position: { x: number; y: number; set(x: number; y: number): void };
+    position: { x: number; y: number; set(x: number, y: number): void };
     positionStates: PositionStates;
 };
 

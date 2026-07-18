@@ -39,12 +39,12 @@ function applyPose(container: Container, display: ModelDisplay): void {
     if (display.zIndex !== undefined) container.zIndex = display.zIndex;
 }
 
-/** Multiply scale/rotation onto a container already sized (inventory fit). */
+/**
+ * Pose overlay after fit-to-size (inventory / ground icons).
+ * Scale is ignored — maxSize already chose the on-screen size; world display
+ * scales (e.g. tree 1.6) must not inflate fitted icons.
+ */
 function applyDisplayOverlay(container: Container, display: ModelDisplay): void {
-    if (display.scale !== undefined) {
-        container.scale.x *= display.scale;
-        container.scale.y *= display.scale;
-    }
     if (display.rotation !== undefined) {
         container.rotation = radians(display.rotation);
     }

@@ -6,7 +6,7 @@ import { ITEM_BUTTON_SIZE } from "../constants";
 import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory";
 import { tickItemButton, type ItemButtonColors } from "../ui/item_button";
 import { clientRegistries, clientGroundType, clientModelId } from "../configs/registries";
-import { mountSlotIcon } from "../models/slot_icon";
+import { mountSlotIcon } from "../models/mount";
 import {
     categoryToKind,
     type EditorCategory,
