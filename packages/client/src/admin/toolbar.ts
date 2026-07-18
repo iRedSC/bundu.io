@@ -65,6 +65,7 @@ export function createToolbar(
     handlers: {
         onTool: (tool: EditorTool) => void;
         onToggleDrag: () => void;
+        onToggleGroundBrush: () => void;
         onToggleRandomVariant: () => void;
         onToggleRandomRotation: () => void;
         onToggleGrid: () => void;
@@ -96,6 +97,12 @@ export function createToolbar(
             label: "Drag",
             getActive: () => state.drag,
             onClick: () => handlers.onToggleDrag(),
+        },
+        {
+            id: "ground-1x1",
+            label: "1×1",
+            getActive: () => state.groundBrush === "tile",
+            onClick: () => handlers.onToggleGroundBrush(),
         },
         {
             id: "variant",

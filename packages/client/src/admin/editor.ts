@@ -60,6 +60,12 @@ export function createAdminEditor(
             state.drag = !state.drag;
             refreshToolbar();
         },
+        onToggleGroundBrush: () => {
+            state.groundBrush =
+                state.groundBrush === "rect" ? "tile" : "rect";
+            input?.cancelStroke();
+            refreshToolbar();
+        },
         onToggleRandomVariant: () => {
             state.randomVariant = !state.randomVariant;
             refreshToolbar();

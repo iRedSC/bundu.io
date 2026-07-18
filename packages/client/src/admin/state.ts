@@ -6,6 +6,8 @@ export type EditorCategory =
     | "structures"
     | "decorations";
 export type EditorTool = "place" | "delete";
+/** Ground place brush: drag AABB, or paint one tile at a time. */
+export type GroundBrush = "rect" | "tile";
 
 export type PaletteEntry = {
     id: number;
@@ -20,6 +22,11 @@ export type EditorState = {
     selected: PaletteEntry | null;
     tool: EditorTool;
     drag: boolean;
+    /**
+     * How ground is stamped while placing.
+     * `rect` = click-drag AABB; `tile` = 1×1 paint (irregular shapes).
+     */
+    groundBrush: GroundBrush;
     randomVariant: boolean;
     randomRotation: boolean;
     animalsFrozen: boolean;
@@ -41,6 +48,7 @@ export function createEditorState(): EditorState {
         selected: null,
         tool: "place",
         drag: true,
+        groundBrush: "rect",
         randomVariant: false,
         randomRotation: false,
         animalsFrozen: false,
