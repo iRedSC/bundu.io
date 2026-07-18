@@ -1,22 +1,28 @@
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
-import {
-    AttributeList,
-    Attributes,
-    type AttributeType,
-} from "../components/attributes.js";
+import { Attributes } from "../components/attributes.js";
 import { Inventory, toPacketCursor, toPacketItems } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
-import { ItemConfigs, type ItemAttribute } from "../configs/loaders/items.js";
+import {
+    equipContextName,
+    ItemConfigs,
+} from "../configs/loaders/items.js";
 import type { GameObject, ServerContext } from "../engine";
-
-const KNOWN_ATTRIBUTES = new Set<string>(AttributeList);
+import {
+    applyContextAttributes,
+    clearAttributes,
+    payloadForSubject,
+} from "../systems/effect_apply.js";
+import { subjectMatchesTarget } from "../systems/effect_targets.js";
 
 type EquipSlot = "mainHand" | "offHand" | "helmet";
 
-const SLOT_ATTR_ID: Record<EquipSlot, string> = {
-    mainHand: "main_hand",
-    offHand: "off_hand",
-    helmet: "helmet",
+const SLOT_CONTEXT: Record<
+    EquipSlot,
+    "whenMainHand" | "whenOffHand" | "whenHelmet"
+> = {
+    mainHand: "whenMainHand",
+    offHand: "whenOffHand",
+    helmet: "whenHelmet",
 };
 
 /** Sync hotbar to the owning client. */
@@ -54,24 +60,9 @@ function inventoryHasItem(inv: Inventory, itemId: number): boolean {
     return inv.slots.some((stack) => stack?.id === itemId);
 }
 
-function applySlotAttributes(
-    target: GameObject,
-    slotId: string,
-    attrs: Record<string, ItemAttribute>
-) {
-    const attributes = Attributes.get(target);
-    if (!attributes) return;
-
-    attributes.clear(slotId);
-    for (const [type, attr] of Object.entries(attrs)) {
-        if (!KNOWN_ATTRIBUTES.has(type)) continue;
-        attributes.set(type as AttributeType, slotId, attr.op, attr.value);
-    }
-}
-
 function clearSlot(target: GameObject, data: PlayerData, slot: EquipSlot) {
     data[slot] = undefined;
-    Attributes.get(target)?.clear(SLOT_ATTR_ID[slot]);
+    clearAttributes(Attributes.get(target), SLOT_CONTEXT[slot]);
 }
 
 /** Clear mainhand when it holds `itemId` (e.g. structure stack depleted). */
@@ -85,25 +76,37 @@ function setSlot(
     target: GameObject,
     data: PlayerData,
     slot: EquipSlot,
-    itemId: number,
-    attrs: Record<string, ItemAttribute>
+    itemId: number
 ) {
     data[slot] = itemId;
-    applySlotAttributes(target, SLOT_ATTR_ID[slot], attrs);
+    const config = ItemConfigs.get(itemId);
+    const contextName = SLOT_CONTEXT[slot];
+    const context = config[contextName];
+    if (!context) {
+        clearAttributes(Attributes.get(target), contextName);
+        return;
+    }
+    const payload = payloadForSubject(context, (t) =>
+        subjectMatchesTarget(target, t)
+    );
+    if (Object.keys(payload.attributes).length === 0) {
+        clearAttributes(Attributes.get(target), contextName);
+        return;
+    }
+    applyContextAttributes(target, contextName, context, payload);
 }
 
 function toggleSlot(
     target: GameObject,
     data: PlayerData,
     slot: EquipSlot,
-    itemId: number,
-    attrs: Record<string, ItemAttribute>
+    itemId: number
 ) {
     if (data[slot] === itemId) {
         clearSlot(target, data, slot);
         return;
     }
-    setSlot(target, data, slot, itemId, attrs);
+    setSlot(target, data, slot, itemId);
 }
 
 /**
@@ -121,17 +124,17 @@ export function selectEquipment(target: GameObject, itemId: number | undefined) 
 
     switch (config.function) {
         case "wear":
-            toggleSlot(target, data, "helmet", itemId, config.attributes);
+            toggleSlot(target, data, "helmet", itemId);
             break;
         case "main_hand":
-            toggleSlot(target, data, "mainHand", itemId, config.attributes);
+            toggleSlot(target, data, "mainHand", itemId);
             break;
         case "off_hand":
-            toggleSlot(target, data, "offHand", itemId, config.attributes);
+            toggleSlot(target, data, "offHand", itemId);
             break;
         case "building":
             // Structures occupy mainhand only; offhand stays put.
-            toggleSlot(target, data, "mainHand", itemId, config.attributes);
+            toggleSlot(target, data, "mainHand", itemId);
             break;
         default:
             break;
@@ -154,3 +157,26 @@ export function clearMissingEquipment(target: GameObject) {
         clearSlot(target, data, "helmet");
     }
 }
+
+/** Re-resolve equip context effects (e.g. after target-filter changes). */
+export function refreshEquipmentEffects(target: GameObject): void {
+    const data = PlayerData.get(target);
+    if (!data) return;
+    if (data.mainHand !== undefined) {
+        setSlot(target, data, "mainHand", data.mainHand);
+    } else {
+        clearAttributes(Attributes.get(target), "whenMainHand");
+    }
+    if (data.offHand !== undefined) {
+        setSlot(target, data, "offHand", data.offHand);
+    } else {
+        clearAttributes(Attributes.get(target), "whenOffHand");
+    }
+    if (data.helmet !== undefined) {
+        setSlot(target, data, "helmet", data.helmet);
+    } else {
+        clearAttributes(Attributes.get(target), "whenHelmet");
+    }
+}
+
+export { equipContextName };

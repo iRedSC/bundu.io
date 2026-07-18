@@ -1,6 +1,6 @@
 import { Component } from "../engine";
 
-/** Lightweight stand-in for a player scrubbed by occlusionHide. */
+/** Lightweight stand-in for a player scrubbed by hide contexts. */
 export type AnonProxy = {
     sourceId: number;
     name: string;

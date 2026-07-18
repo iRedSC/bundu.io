@@ -1,5 +1,5 @@
-/** Identity fields outsiders may not observe under a roof / ninja gear. */
-export type OcclusionHide = {
+/** Identity fields outsiders may not observe (roof, gear, etc.). */
+export type Hide = {
     full?: boolean;
     name?: boolean;
     skin?: boolean;
@@ -19,20 +19,17 @@ const KEYS = [
     "offHand",
     "backpack",
     "leaderboard",
-] as const satisfies readonly (keyof OcclusionHide)[];
+] as const satisfies readonly (keyof Hide)[];
 
 const KEY_SET = new Set<string>(KEYS);
 
-/** Parse optional YAML `occlusionHide`; omit / empty → undefined. */
-export function parseOcclusionHide(
-    raw: unknown,
-    path: string
-): OcclusionHide | undefined {
+/** Parse optional YAML `hide`; omit / empty → undefined. */
+export function parseHide(raw: unknown, path: string): Hide | undefined {
     if (raw === undefined) return undefined;
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
         throw new Error(`${path}: expected object`);
     }
-    const result: OcclusionHide = {};
+    const result: Hide = {};
     let any = false;
     for (const [key, value] of Object.entries(raw)) {
         if (!KEY_SET.has(key)) {
@@ -42,7 +39,7 @@ export function parseOcclusionHide(
             throw new Error(`${path}.${key}: expected boolean`);
         }
         if (value) {
-            result[key as keyof OcclusionHide] = true;
+            result[key as keyof Hide] = true;
             any = true;
         }
     }
@@ -50,13 +47,10 @@ export function parseOcclusionHide(
 }
 
 /** OR-merge hide flags from multiple sources. */
-export function orOcclusionHide(
-    a: OcclusionHide | undefined,
-    b: OcclusionHide | undefined
-): OcclusionHide | undefined {
+export function orHide(a: Hide | undefined, b: Hide | undefined): Hide | undefined {
     if (!a) return b;
     if (!b) return a;
-    const result: OcclusionHide = {};
+    const result: Hide = {};
     let any = false;
     for (const key of KEYS) {
         if (a[key] || b[key]) {
@@ -68,7 +62,7 @@ export function orOcclusionHide(
 }
 
 /** Any scrub (non-full) that warrants an anon proxy. */
-export function hasIdentityHide(hide: OcclusionHide): boolean {
+export function hasIdentityHide(hide: Hide): boolean {
     return !!(
         hide.name ||
         hide.skin ||
@@ -80,6 +74,6 @@ export function hasIdentityHide(hide: OcclusionHide): boolean {
 }
 
 /** True when outsiders should see a proxy instead of the real player. */
-export function shouldAnonymize(hide: OcclusionHide | undefined): boolean {
+export function shouldAnonymize(hide: Hide | undefined): boolean {
     return !!hide && !hide.full && hasIdentityHide(hide);
 }

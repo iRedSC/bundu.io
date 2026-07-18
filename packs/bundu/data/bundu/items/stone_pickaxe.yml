@@ -1,6 +1,8 @@
 type: pickaxe
 level: 2
-attributes:
-    attack.damage:
-        op: add
-        value: 3
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 3

@@ -1,5 +1,7 @@
 type: axe
-attributes:
-    attack.damage:
-        op: add
-        value: 7
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 7

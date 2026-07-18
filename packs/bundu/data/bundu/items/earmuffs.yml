@@ -1,5 +1,7 @@
 type: hat
-attributes:
-    temperature.warmth:
-        op: add
-        value: 7
+whenHelmet:
+    "*":
+        attributes:
+            temperature.warmth:
+                op: add
+                value: 7

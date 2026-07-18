@@ -1,6 +1,8 @@
 type: book
 function: off_hand
-attributes:
-    health.defense:
-        op: add
-        value: 2
+whenOffHand:
+    "*":
+        attributes:
+            health.defense:
+                op: add
+                value: 2

@@ -1,6 +1,8 @@
 type: book
 function: off_hand
-attributes:
-    hunger.depletion_amount:
-        op: multiply
-        value: 0.75
+whenOffHand:
+    "*":
+        attributes:
+            hunger.depletion_amount:
+                op: multiply
+                value: 0.75
