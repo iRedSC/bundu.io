@@ -114,8 +114,8 @@ export function createAdminEditor(
         screenToWorld,
         getState: () => state,
         ghost,
-        pickDeleteHover: (worldX, worldY) =>
-            world.pickEditorDeleteHover(worldX, worldY),
+        pickDeleteHover: (worldX, worldY, kind) =>
+            world.pickEditorDeleteHover(worldX, worldY, kind),
     });
 
     return {

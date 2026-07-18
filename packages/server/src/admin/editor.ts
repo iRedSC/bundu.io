@@ -15,7 +15,6 @@ import { Box, Vector } from "sat";
 import {
     AnimalData,
     DecorationData,
-    Physics,
     Spiked,
 } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
@@ -27,6 +26,8 @@ import { System } from "../engine";
 import { tryAddResource } from "../game_objects/add_resource.js";
 import { Decoration } from "../game_objects/decoration.js";
 import { Ground } from "../game_objects/ground.js";
+import { Resource } from "../game_objects/resource.js";
+import { Structure } from "../game_objects/structure.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
 import { topGroundAt } from "../systems/ground_at.js";
 import { groundWire } from "../systems/ground_wire.js";
@@ -283,7 +284,7 @@ export class AdminEditorSystem extends System<GameEventMap> {
 
     adminDeleteAt = (
         playerId: number,
-        { x, y }: ClientPacket.AdminDeleteAt
+        { x, y, kind }: ClientPacket.AdminDeleteAt
     ) => {
         const player = this.world.getObject(playerId);
         if (!player || !canUseEditor(player)) return;
@@ -294,52 +295,55 @@ export class AdminEditorSystem extends System<GameEventMap> {
         const tx = Math.min(worldToTile(x), WORLD_TILES - 1);
         const ty = Math.min(worldToTile(y), WORLD_TILES - 1);
 
-        const occupantId = this.world.context.occupancy.get(tx, ty);
-        if (occupantId !== undefined) {
-            const object = this.world.getObject(occupantId);
-            if (object?.active) {
+        // Scoped to the active palette tab so overlays don't block ground, etc.
+        switch (kind) {
+            case AdminPlaceKind.Resource:
+            case AdminPlaceKind.Structure: {
+                const occupantId = this.world.context.occupancy.get(tx, ty);
+                if (occupantId === undefined) return;
+                const object = this.world.getObject(occupantId);
+                if (!object?.active) return;
+                const matches =
+                    kind === AdminPlaceKind.Resource
+                        ? object instanceof Resource
+                        : object instanceof Structure;
+                if (!matches) return;
                 const snapshot = trySnapshot(object);
                 object.active = false;
                 this.trigger(GameEvent.DeleteObject, { object });
                 if (snapshot) {
                     recordMutation(playerId, { kind: "remove", snapshot });
                 }
+                return;
             }
-            return;
-        }
-
-        for (const animal of this.world.query([AnimalData, Physics])) {
-            if (!animal.active) continue;
-            const pos = animal.get(Physics).position;
-            if (worldToTile(pos.x) !== tx || worldToTile(pos.y) !== ty) continue;
-            // DeleteObject — not Kill — so editor removal skips corpses / score.
-            animal.active = false;
-            this.trigger(GameEvent.DeleteObject, { object: animal });
-            return;
-        }
-
-        const decoration = topDecorationAt(this.world, x, y);
-        if (decoration) {
-            const snapshot = trySnapshot(decoration);
-            const packet = decorationWire(decoration);
-            this.world.removeObject(decoration);
-            this.broadcastUnloadDecoration(packet);
-            if (snapshot) {
-                recordMutation(playerId, { kind: "remove", snapshot });
+            case AdminPlaceKind.Decoration: {
+                const decoration = topDecorationAt(this.world, x, y);
+                if (!decoration) return;
+                const snapshot = trySnapshot(decoration);
+                const packet = decorationWire(decoration);
+                this.world.removeObject(decoration);
+                this.broadcastUnloadDecoration(packet);
+                if (snapshot) {
+                    recordMutation(playerId, { kind: "remove", snapshot });
+                }
+                return;
             }
-            return;
-        }
-
-        const top = topGroundAt(this.world, tx, ty, { editableOnly: true });
-        if (!top) return;
-        const ground = this.world.getObject(top.objectId);
-        if (!ground?.active) return;
-        const snapshot = trySnapshot(ground);
-        const packet = groundWire(ground);
-        this.world.removeObject(ground);
-        this.broadcastUnloadGround(packet);
-        if (snapshot) {
-            recordMutation(playerId, { kind: "remove", snapshot });
+            case AdminPlaceKind.Ground: {
+                const top = topGroundAt(this.world, tx, ty, {
+                    editableOnly: true,
+                });
+                if (!top) return;
+                const ground = this.world.getObject(top.objectId);
+                if (!ground?.active) return;
+                const snapshot = trySnapshot(ground);
+                const packet = groundWire(ground);
+                this.world.removeObject(ground);
+                this.broadcastUnloadGround(packet);
+                if (snapshot) {
+                    recordMutation(playerId, { kind: "remove", snapshot });
+                }
+                return;
+            }
         }
     };
 

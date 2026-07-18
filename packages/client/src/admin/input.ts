@@ -12,6 +12,7 @@ import type { SendPacket } from "../input/controller";
 import type { EditorDeleteHover } from "../world/world";
 import type { AdminGhost } from "./ghost";
 import {
+    categoryToKind,
     cycleRotation,
     type EditorState,
 } from "./state";
@@ -22,7 +23,11 @@ export type AdminInputFacade = {
     screenToWorld: (screenX: number, screenY: number) => { x: number; y: number };
     getState: () => EditorState;
     ghost: AdminGhost;
-    pickDeleteHover: (worldX: number, worldY: number) => EditorDeleteHover | null;
+    pickDeleteHover: (
+        worldX: number,
+        worldY: number,
+        kind: AdminPlaceKind
+    ) => EditorDeleteHover | null;
 };
 
 type GroundDrag = { x0: number; y0: number; x1: number; y1: number };
@@ -162,7 +167,11 @@ export class AdminInput {
                   : undefined,
             deleteHover:
                 state.tool === "delete"
-                    ? this.facade.pickDeleteHover(world.x, world.y)
+                    ? this.facade.pickDeleteHover(
+                          world.x,
+                          world.y,
+                          categoryToKind(state.category)
+                      )
                     : null,
         });
     }
@@ -409,6 +418,7 @@ export class AdminInput {
             this.sendPacket(ClientPacket.AdminDeleteAt, {
                 x: clampWorld(world.x),
                 y: clampWorld(world.y),
+                kind: categoryToKind(state.category),
             });
             return;
         }
