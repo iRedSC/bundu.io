@@ -1,7 +1,8 @@
 import type { RegistryId } from "@bundu/shared/registry";
 import { ConfigLoader } from "./loader.js";
+import type { PlacementAllowDeny } from "./placement_allow.js";
 
-export type ResourceConfig = {
+export type ResourceConfig = PlacementAllowDeny & {
     destroy_on_empty: boolean;
     score: number | null;
     level: number;
@@ -11,6 +12,8 @@ export type ResourceConfig = {
     regen_speed: number;
     quantity: number;
     lootTable: RegistryId<"loot_table"> | null;
+    /** Resources occupy the structure layer; default solid. */
+    solid: boolean;
 };
 
 const fallback: ResourceConfig = {
@@ -23,6 +26,10 @@ const fallback: ResourceConfig = {
     regen_speed: 0,
     quantity: 0,
     lootTable: null,
+    solid: true,
 };
 
-export const ResourceConfigs = new ConfigLoader<"resource", ResourceConfig>("resource", fallback);
+export const ResourceConfigs = new ConfigLoader<"resource", ResourceConfig>(
+    "resource",
+    fallback
+);

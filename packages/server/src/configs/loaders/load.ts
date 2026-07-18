@@ -2,7 +2,12 @@ import { mergeObjects } from "@bundu/shared";
 import type { RegistryId, RegistryName } from "@bundu/shared/registry";
 import { type ResourceConfig, ResourceConfigs } from "./resources.js";
 import { type ItemConfig, ItemConfigs } from "./items.js";
-import { type BuildingConfig, BuildingConfigs } from "./buildings.js";
+import {
+    type BuildingClass,
+    type BuildingConfig,
+    BuildingConfigs,
+    defaultSolidForClass,
+} from "./buildings.js";
 import { type AnimalConfig, AnimalConfigs } from "./animals.js";
 import { type GroundTypeConfig, GroundTypeConfigs } from "./ground_types.js";
 import { type DecorationConfig, DecorationConfigs } from "./decorations.js";
@@ -39,6 +44,108 @@ function resolve<K extends RegistryName>(
     return registries[registry].resolve(value, namespace(owner), path);
 }
 
+/** `undefined` = field omitted (allow all). Present array (incl. empty) is kept. */
+function optionalResolveSet<K extends RegistryName>(
+    registries: GameRegistries,
+    registry: K,
+    value: unknown,
+    owner: string,
+    path: string
+): readonly RegistryId<K>[] | undefined {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+        throw new Error(`${path}: expected string[]`);
+    }
+    return registries[registry].resolveSet(
+        value,
+        namespace(owner),
+        path
+    );
+}
+
+const BUILDING_CLASSES = new Set<BuildingClass>([
+    "building",
+    "door",
+    "spike",
+    "wall",
+    "floor",
+    "roof",
+]);
+
+function parsePlacementAllowDeny(
+    registries: GameRegistries,
+    owner: string,
+    raw: Record<string, unknown>
+): {
+    allowedStructures?: readonly RegistryId<"structure">[];
+    deniedStructures?: readonly RegistryId<"structure">[];
+    allowedRoofs?: readonly RegistryId<"structure">[];
+    deniedRoofs?: readonly RegistryId<"structure">[];
+    allowedFloors?: readonly RegistryId<"structure">[];
+    deniedFloors?: readonly RegistryId<"structure">[];
+    allowedResources?: readonly RegistryId<"resource">[];
+    deniedResources?: readonly RegistryId<"resource">[];
+} {
+    return {
+        allowedStructures: optionalResolveSet(
+            registries,
+            "structure",
+            raw.allowedStructures,
+            owner,
+            `${owner}.allowedStructures`
+        ),
+        deniedStructures: optionalResolveSet(
+            registries,
+            "structure",
+            raw.deniedStructures,
+            owner,
+            `${owner}.deniedStructures`
+        ),
+        allowedRoofs: optionalResolveSet(
+            registries,
+            "structure",
+            raw.allowedRoofs,
+            owner,
+            `${owner}.allowedRoofs`
+        ),
+        deniedRoofs: optionalResolveSet(
+            registries,
+            "structure",
+            raw.deniedRoofs,
+            owner,
+            `${owner}.deniedRoofs`
+        ),
+        allowedFloors: optionalResolveSet(
+            registries,
+            "structure",
+            raw.allowedFloors,
+            owner,
+            `${owner}.allowedFloors`
+        ),
+        deniedFloors: optionalResolveSet(
+            registries,
+            "structure",
+            raw.deniedFloors,
+            owner,
+            `${owner}.deniedFloors`
+        ),
+        allowedResources: optionalResolveSet(
+            registries,
+            "resource",
+            raw.allowedResources,
+            owner,
+            `${owner}.allowedResources`
+        ),
+        deniedResources: optionalResolveSet(
+            registries,
+            "resource",
+            raw.deniedResources,
+            owner,
+            `${owner}.deniedResources`
+        ),
+    };
+}
+
 /** Load configs that the server actually uses. */
 export function loadConfigs() {
     const registries = loadRegistries();
@@ -68,7 +175,27 @@ export function loadConfigs() {
                     blocked?: unknown;
                     ground?: string[];
                 };
-            };
+                solid?: unknown;
+                class?: unknown;
+            } & Record<string, unknown>;
+            const buildingClass = raw.class ?? fallback.class;
+            if (
+                typeof buildingClass !== "string" ||
+                !BUILDING_CLASSES.has(buildingClass as BuildingClass)
+            ) {
+                throw new Error(
+                    `${id}.class: expected one of ${[...BUILDING_CLASSES].join(", ")}`
+                );
+            }
+            record.class = buildingClass as BuildingClass;
+            if (raw.solid !== undefined && typeof raw.solid !== "boolean") {
+                throw new Error(`${id}.solid: expected boolean`);
+            }
+            record.solid =
+                typeof raw.solid === "boolean"
+                    ? raw.solid
+                    : defaultSolidForClass(record.class);
+            Object.assign(record, parsePlacementAllowDeny(registries, id, raw));
             const blocked = raw.placement?.blocked ?? [[0, 0]];
             if (
                 !Array.isArray(blocked) ||
@@ -147,13 +274,24 @@ export function loadConfigs() {
         (resource, record, fallback) => {
             const raw = record as Partial<ResourceConfig> & {
                 loot_table?: string;
-            };
+                solid?: unknown;
+            } & Record<string, unknown>;
             if (
                 record.quantity !== undefined &&
                 (!Number.isSafeInteger(record.quantity) || record.quantity < 0)
             ) {
                 throw new Error(`${resource}.quantity: expected a non-negative integer`);
             }
+            if (raw.solid !== undefined && typeof raw.solid !== "boolean") {
+                throw new Error(`${resource}.solid: expected boolean`);
+            }
+            if (typeof raw.solid === "boolean") {
+                record.solid = raw.solid;
+            }
+            Object.assign(
+                record,
+                parsePlacementAllowDeny(registries, resource, raw)
+            );
             if (raw.loot_table) {
                 record.lootTable = resolve(
                     registries,

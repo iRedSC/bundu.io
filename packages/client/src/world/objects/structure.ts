@@ -446,6 +446,12 @@ export class Structure extends GameObject {
         this.sprite.renderable = true;
     }
 
+    /** Server roof connectivity group; used to fade whole roofs together. */
+    get roofGroupId(): number | undefined {
+        const value = this.states.get("roofGroupId");
+        return typeof value === "number" ? value : undefined;
+    }
+
     setState(name: string, value: EntityStateValue) {
         this.states.set(name, value);
         if (name === "ownerId" && typeof value === "number") {

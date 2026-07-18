@@ -15,6 +15,15 @@ import { GameObjectData } from "@bundu/shared/object_types.js";
 import { deciPacketPos } from "./tile_entity.js";
 import { getVariantId } from "@bundu/shared/variant_map.js";
 
+let roofGroupLookup: ((entityId: number) => number | undefined) | undefined;
+
+/** Wired by RoofSystem so Structure snapshots can include group ids. */
+export function setRoofGroupLookup(
+    lookup: ((entityId: number) => number | undefined) | undefined
+): void {
+    roofGroupLookup = lookup;
+}
+
 /**
  * A placed structure / static prop with config-defined durability.
  */
@@ -23,6 +32,12 @@ export class Structure extends GameObject {
         super();
         const config = BuildingConfigs.get(type.id);
         const maxHealth = config.health;
+        tile.layer =
+            config.class === "floor"
+                ? "floor"
+                : config.class === "roof"
+                  ? "roof"
+                  : "structure";
         this.add(new Physics(physics))
             .add(new Type(type))
             .add(new TileEntity(tile))
@@ -65,6 +80,8 @@ export class Structure extends GameObject {
         };
         const door = Door.get(this);
         if (door) states.open = door.open;
+        const groupId = roofGroupLookup?.(this.id);
+        if (groupId !== undefined) states.roofGroupId = groupId;
         return states;
     }
 }

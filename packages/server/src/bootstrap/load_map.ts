@@ -97,7 +97,8 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
             if (
                 world.context.occupancy.get(
                     worldToTile(position.x),
-                    worldToTile(position.y)
+                    worldToTile(position.y),
+                    "structure"
                 ) !== undefined
             ) {
                 continue;

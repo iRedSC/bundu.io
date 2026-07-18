@@ -3,6 +3,7 @@ import {
     tileCenterWorld,
 } from "@bundu/shared/tiles";
 import { AnimalData, CalculateCollisions, Physics, TileEntity } from "../components/base.js";
+import { isSolidTileEntity } from "../configs/loaders/placement_rules.js";
 import { System, type GameObject, type World } from "../engine";
 import { getSizedBounds, tilesOverlappingCircle } from "./position.js";
 import { Circle, Response, testCircleCircle, Vector } from "sat";
@@ -41,18 +42,27 @@ export class CollisionSystem extends System<GameEventMap> {
 
         for (let tx = bounds.minX; tx <= bounds.maxX; tx++) {
             for (let ty = bounds.minY; ty <= bounds.maxY; ty++) {
-                const entityId = occupancy.get(tx, ty);
-                if (entityId === undefined || entityId === target.id) continue;
+                for (const entityId of occupancy.occupants(tx, ty)) {
+                    if (entityId === target.id) continue;
 
-                const other = this.world.getObject(entityId);
-                if (!other || !TileEntity.get(other)) continue;
+                    const other = this.world.getObject(entityId);
+                    if (
+                        !other ||
+                        !TileEntity.get(other) ||
+                        !isSolidTileEntity(other)
+                    ) {
+                        continue;
+                    }
 
-                center.x = tileCenterWorld(tx);
-                center.y = tileCenterWorld(ty);
-                response.clear();
-                if (testCircleCircle(physics.collider, tileCircle, response)) {
-                    hit = true;
-                    physics.position.sub(response.overlapV);
+                    center.x = tileCenterWorld(tx);
+                    center.y = tileCenterWorld(ty);
+                    response.clear();
+                    if (
+                        testCircleCircle(physics.collider, tileCircle, response)
+                    ) {
+                        hit = true;
+                        physics.position.sub(response.overlapV);
+                    }
                 }
             }
         }

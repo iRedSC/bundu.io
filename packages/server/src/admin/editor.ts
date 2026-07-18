@@ -3,6 +3,7 @@ import {
     ServerPacket,
     type ClientPacket,
 } from "@bundu/shared/packet_definitions";
+import { OCCUPANCY_LAYERS_TOP_DOWN } from "@bundu/shared/occupancy_layer";
 import type { RegistryId } from "@bundu/shared/registry";
 import {
     WORLD_BOUNDS,
@@ -18,6 +19,10 @@ import {
     Spiked,
 } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
+import {
+    BuildingConfigs,
+    occupancyLayerForClass,
+} from "../configs/loaders/buildings.js";
 import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { DecorationConfigs } from "../configs/loaders/decorations.js";
 import { gameRegistries } from "../configs/registries.js";
@@ -299,20 +304,28 @@ export class AdminEditorSystem extends System<GameEventMap> {
         switch (kind) {
             case AdminPlaceKind.Resource:
             case AdminPlaceKind.Structure: {
-                const occupantId = this.world.context.occupancy.get(tx, ty);
-                if (occupantId === undefined) return;
-                const object = this.world.getObject(occupantId);
-                if (!object?.active) return;
-                const matches =
-                    kind === AdminPlaceKind.Resource
-                        ? object instanceof Resource
-                        : object instanceof Structure;
-                if (!matches) return;
-                const snapshot = trySnapshot(object);
-                object.active = false;
-                this.trigger(GameEvent.DeleteObject, { object });
-                if (snapshot) {
-                    recordMutation(playerId, { kind: "remove", snapshot });
+                // Peel top → bottom so roofs don't block walls/floors on Structures.
+                for (const layer of OCCUPANCY_LAYERS_TOP_DOWN) {
+                    const occupantId = this.world.context.occupancy.get(
+                        tx,
+                        ty,
+                        layer
+                    );
+                    if (occupantId === undefined) continue;
+                    const object = this.world.getObject(occupantId);
+                    if (!object?.active) continue;
+                    const matches =
+                        kind === AdminPlaceKind.Resource
+                            ? object instanceof Resource
+                            : object instanceof Structure;
+                    if (!matches) continue;
+                    const snapshot = trySnapshot(object);
+                    object.active = false;
+                    this.trigger(GameEvent.DeleteObject, { object });
+                    if (snapshot) {
+                        recordMutation(playerId, { kind: "remove", snapshot });
+                    }
+                    return;
                 }
                 return;
             }
@@ -373,7 +386,14 @@ export class AdminEditorSystem extends System<GameEventMap> {
         packet: ClientPacket.AdminPlace,
         rot: TileRot
     ): void {
-        const beforeId = this.world.context.occupancy.get(packet.x, packet.y);
+        const layer = occupancyLayerForClass(
+            BuildingConfigs.get(packet.typeId).class
+        );
+        const beforeId = this.world.context.occupancy.get(
+            packet.x,
+            packet.y,
+            layer
+        );
         const beforeObject =
             beforeId !== undefined ? this.world.getObject(beforeId) : undefined;
         const beforeSnapshot =
@@ -391,7 +411,11 @@ export class AdminEditorSystem extends System<GameEventMap> {
             placedBy: player,
         });
 
-        const afterId = this.world.context.occupancy.get(packet.x, packet.y);
+        const afterId = this.world.context.occupancy.get(
+            packet.x,
+            packet.y,
+            layer
+        );
         const afterObject =
             afterId !== undefined ? this.world.getObject(afterId) : undefined;
         if (!afterObject?.active) return;

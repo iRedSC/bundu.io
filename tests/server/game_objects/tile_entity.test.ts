@@ -26,6 +26,7 @@ describe("makeTileEntity", () => {
       rot: 0,
       blocked: [{ x: 0, y: 0 }],
       occupied: [{ x: 4, y: 6 }],
+      layer: "structure",
     });
   });
 
@@ -70,6 +71,7 @@ describe("makeTileEntity", () => {
         { x: 1, y: 2 },
         { x: 2, y: 2 },
       ],
+      layer: "structure",
     });
   });
 });

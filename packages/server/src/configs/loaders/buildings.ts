@@ -1,9 +1,19 @@
+import type { OccupancyLayer } from "@bundu/shared/occupancy_layer";
 import type { RegistryId } from "@bundu/shared/registry";
 import type { TilePos } from "@bundu/shared/tiles";
 import { ConfigLoader } from "./loader.js";
+import type { PlacementAllowDeny } from "./placement_allow.js";
 
-export type BuildingConfig = {
-    class: "building" | "door" | "spike" | "wall";
+export type BuildingClass =
+    | "building"
+    | "door"
+    | "spike"
+    | "wall"
+    | "floor"
+    | "roof";
+
+export type BuildingConfig = PlacementAllowDeny & {
+    class: BuildingClass;
     health: number;
     pointsPerSecond: number;
     /** Shared key for spike↔wall/door matching. */
@@ -16,21 +26,30 @@ export type BuildingConfig = {
     on_hit_damage?: number;
     /** Extra world-unit radius added to the structure collider for contact attacks. */
     attack_range?: number;
+    /**
+     * When true, footprint tiles block movers/pathing.
+     * Defaults by class: walls/doors/buildings solid; floors/roofs not.
+     */
+    solid: boolean;
     placement: {
         blocked: readonly TilePos[];
         ground: readonly RegistryId<"ground_type">[];
     };
 };
 
-export const BuildingConfigs = new ConfigLoader<"structure", BuildingConfig>("structure", {
-    class: "building",
-    health: 50,
-    pointsPerSecond: 0,
-    placement: {
-        blocked: [{ x: 0, y: 0 }],
-        ground: [],
-    },
-});
+export const BuildingConfigs = new ConfigLoader<"structure", BuildingConfig>(
+    "structure",
+    {
+        class: "building",
+        health: 50,
+        pointsPerSecond: 0,
+        solid: true,
+        placement: {
+            blocked: [{ x: 0, y: 0 }],
+            ground: [],
+        },
+    }
+);
 
 /** Spike building config for a wall/door material, if one exists. */
 export function spikeConfigForMaterial(
@@ -46,6 +65,18 @@ export function spikeConfigForMaterial(
 
 /** Quick vs standard upgrade chains must not mix. */
 export function structureUpgradeGroup(material: string | undefined): string {
-    if (!material) return "";
+    if (material === undefined) return "";
     return material.startsWith("quick_") ? "quick" : "standard";
+}
+
+export function defaultSolidForClass(buildingClass: BuildingClass): boolean {
+    return buildingClass !== "floor" && buildingClass !== "roof";
+}
+
+export function occupancyLayerForClass(
+    buildingClass: BuildingClass
+): OccupancyLayer {
+    if (buildingClass === "floor") return "floor";
+    if (buildingClass === "roof") return "roof";
+    return "structure";
 }

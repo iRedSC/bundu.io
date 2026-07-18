@@ -39,9 +39,14 @@ import { syncStructureStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import {
     BuildingConfigs,
+    occupancyLayerForClass,
     structureUpgradeGroup,
     type BuildingConfig,
 } from "../configs/loaders/buildings.js";
+import {
+    isSolidTileEntity,
+    stackAllowedForBuilding,
+} from "../configs/loaders/placement_rules.js";
 
 type PlacementResult = {
     allowed: boolean;
@@ -183,7 +188,12 @@ export class StructureSystem extends System<GameEventMap> {
         const def = config.placement;
         const reach = Math.max(0, player.get(Attributes).get("placement.reach"));
         const origin = structureOriginAtPoint(cursor, def.blocked, rot);
-        const tile = makeTileEntity(origin, rot, def.blocked);
+        const tile = makeTileEntity(
+            origin,
+            rot,
+            def.blocked,
+            occupancyLayerForClass(config.class)
+        );
         const center = footprintCenter(def.blocked, rot);
         const inReach =
             Math.hypot(
@@ -201,7 +211,7 @@ export class StructureSystem extends System<GameEventMap> {
             allowed:
                 inReach &&
                 lineClear &&
-                this.canPlaceIntent(config, tile.occupied, player.id),
+                this.canPlaceIntent(config, tile.occupied, player.id, id),
         };
     }
 
@@ -250,7 +260,12 @@ export class StructureSystem extends System<GameEventMap> {
         const origin = { x, y };
         const config = BuildingConfigs.get(structureId);
         const def = config.placement;
-        const tile = makeTileEntity(origin, rot, def.blocked);
+        const tile = makeTileEntity(
+            origin,
+            rot,
+            def.blocked,
+            occupancyLayerForClass(config.class)
+        );
 
         if (config.class === "spike") {
             return this.tryAttachSpike(config, tile.occupied, ownerId);
@@ -269,7 +284,9 @@ export class StructureSystem extends System<GameEventMap> {
         }
 
         tile.ownerId = ownerId;
-        if (!this.canPlaceEmpty(tile.occupied, def.ground)) return false;
+        if (!this.canPlaceEmpty(structureId, config, tile.occupied)) {
+            return false;
+        }
 
         this.world.addObject(
             new Structure(
@@ -284,7 +301,8 @@ export class StructureSystem extends System<GameEventMap> {
     private canPlaceIntent(
         config: BuildingConfig,
         occupied: readonly TilePos[],
-        placerId: number
+        placerId: number,
+        structureId: number
     ): boolean {
         if (config.class === "spike") {
             return this.canAttachSpike(config, occupied, placerId);
@@ -295,7 +313,7 @@ export class StructureSystem extends System<GameEventMap> {
                 return this.canUpgradeStructure(config, occupant, placerId);
             }
         }
-        return this.canPlaceEmpty(occupied, config.placement.ground);
+        return this.canPlaceEmpty(structureId, config, occupied);
     }
 
     private tryAttachSpike(
@@ -356,7 +374,12 @@ export class StructureSystem extends System<GameEventMap> {
         this.trigger(GameEvent.DeleteObject, { object: occupant });
         this.world.removeObject(occupant);
 
-        const tile = makeTileEntity(origin, rot, next.placement.blocked);
+        const tile = makeTileEntity(
+            origin,
+            rot,
+            next.placement.blocked,
+            occupancyLayerForClass(next.class)
+        );
         tile.ownerId = placerId;
         this.world.addObject(
             new Structure(
@@ -391,14 +414,14 @@ export class StructureSystem extends System<GameEventMap> {
         );
     }
 
-    /** Single shared occupant covering every footprint tile. */
+    /** Single shared structure-layer occupant covering every footprint tile. */
     private uniformOccupant(
         occupied: readonly TilePos[]
     ): GameObject | undefined {
         if (occupied.length === 0 || !this.inWorld(occupied)) return undefined;
         let found: GameObject | undefined;
         for (const { x, y } of occupied) {
-            const id = this.world.context.occupancy.get(x, y);
+            const id = this.world.context.occupancy.get(x, y, "structure");
             if (id === undefined) return undefined;
             const object = this.world.getObject(id);
             if (!object) return undefined;
@@ -409,17 +432,28 @@ export class StructureSystem extends System<GameEventMap> {
     }
 
     private canPlaceEmpty(
-        occupied: readonly TilePos[],
-        allowedGround: readonly number[]
+        structureId: number,
+        config: BuildingConfig,
+        occupied: readonly TilePos[]
     ): boolean {
+        const layer = occupancyLayerForClass(config.class);
         if (
             occupied.length === 0 ||
             !this.inWorld(occupied) ||
-            !this.world.context.occupancy.canPlace(occupied) ||
-            !this.hasGround(occupied, allowedGround)
+            !this.world.context.occupancy.canPlace(occupied, layer) ||
+            !this.hasGround(occupied, config.placement.ground) ||
+            !stackAllowedForBuilding(
+                this.world,
+                occupied,
+                config,
+                structureId
+            )
         ) {
             return false;
         }
+
+        // Non-solid layers (floors/roofs) may share a tile with movers.
+        if (!config.solid) return true;
 
         const circle = new Circle(new Vector(), FOOTPRINT_CIRCLE_RADIUS);
         const dynamic = this.world
@@ -485,11 +519,15 @@ export class StructureSystem extends System<GameEventMap> {
             // via the segment test above if they're dynamic.
             if (tile.x === fromTile.x && tile.y === fromTile.y) continue;
 
-            const occupantId = this.world.context.occupancy.get(tile.x, tile.y);
-            if (occupantId === undefined) continue;
-            const occupant = this.world.getObject(occupantId);
-            const entity = occupant ? TileEntity.get(occupant) : undefined;
-            if (entity && entity.ownerId !== placerId) return false;
+            for (const occupantId of this.world.context.occupancy.occupants(
+                tile.x,
+                tile.y
+            )) {
+                const occupant = this.world.getObject(occupantId);
+                if (!occupant || !isSolidTileEntity(occupant)) continue;
+                const entity = TileEntity.get(occupant);
+                if (entity && entity.ownerId !== placerId) return false;
+            }
         }
         return true;
     }
