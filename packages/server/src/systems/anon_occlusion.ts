@@ -83,6 +83,17 @@ export function isVisibleToViewer(
 ): boolean {
     if (viewer === candidate) return true;
 
+    const viewerData = PlayerData.get(viewer);
+    // Overview freecam omits other movers — keep in sync with RenderDistanceSystem.
+    if (
+        viewerData?.freecam &&
+        viewerData.freecamView?.overview &&
+        (PlayerData.get(candidate) !== undefined ||
+            AnonProxy.get(candidate) !== undefined)
+    ) {
+        return false;
+    }
+
     const candidateData = PlayerData.get(candidate);
     if (candidateData?.freecam) return false;
 
