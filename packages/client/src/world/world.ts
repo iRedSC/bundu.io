@@ -14,6 +14,7 @@ import { Player } from "./objects/player";
 import { Sky } from "./sky";
 import { SkyUndoLayer } from "./sky_undo_layer";
 import { createGround, GROUND_Z_BASE } from "./ground";
+import { createDecoration, type DecorationSprite } from "./decoration";
 import {
     radians,
     structureOriginAtPoint,
@@ -33,6 +34,7 @@ import type { EntityStateSnapshot } from "@bundu/shared/object_types";
 import { Structure } from "./objects/structure";
 import { GroundItem } from "./objects/ground_item";
 import {
+    clientDecoration,
     clientRegistries,
     clientStructurePlacement,
     clientModelId,
@@ -79,6 +81,7 @@ type LoadAnimal = Extract<ServerPacket.LoadObject, { type: typeof GameObjectData
 
 const PLACEMENT_GHOST_RENDER_ID = -11;
 const GROUND_RENDER_ID = -10;
+const DECORATION_RENDER_ID = -9;
 const PLACEMENT_GHOST_TINT = 0xff5555;
 const PLACEMENT_GHOST_NORMAL_TINT = 0xffffff;
 
@@ -124,6 +127,7 @@ export class World {
         h: number;
         gfx: Container;
     }[] = [];
+    private readonly decorations: DecorationSprite[] = [];
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
 
@@ -153,6 +157,8 @@ export class World {
         for (const id of ids) this.removeClientObject(id);
         this.renderer.delete(GROUND_RENDER_ID);
         this.groundPatches.length = 0;
+        this.renderer.delete(DECORATION_RENDER_ID);
+        this.decorations.length = 0;
         this.shadows.clear();
         this.particles.clear();
         this.clearPlacementGhost();
@@ -735,13 +741,41 @@ export class World {
         }
     };
 
+    loadDecorations = (packet: ServerPacket.LoadDecorations) => {
+        for (const [id, type, x, y, rotation, scale] of packet.decorations) {
+            for (let i = this.decorations.length - 1; i >= 0; i--) {
+                const existing = this.decorations[i];
+                if (!existing || existing.id !== id) continue;
+                this.decorations.splice(i, 1);
+                this.renderer.remove(DECORATION_RENDER_ID, existing.container);
+                break;
+            }
+            const sprite = createDecoration(id, type, x, y, rotation, scale);
+            this.decorations.push(sprite);
+            this.renderer.add(DECORATION_RENDER_ID, sprite.container);
+        }
+    };
+
+    unloadDecorations = (packet: ServerPacket.UnloadDecorations) => {
+        for (const [id] of packet.decorations) {
+            for (let i = this.decorations.length - 1; i >= 0; i--) {
+                const entry = this.decorations[i];
+                if (!entry || entry.id !== id) continue;
+                this.decorations.splice(i, 1);
+                this.renderer.remove(DECORATION_RENDER_ID, entry.container);
+                break;
+            }
+        }
+    };
+
     /**
-     * What AdminDeleteAt would hit under a tile — for delete-mode hover outline.
-     * Priority matches server: solid → animal → topmost editable ground.
-     * Solids use origin-tile match (not full collision radius) so large visuals
-     * don't steal hover from ground patches on neighboring tiles.
+     * What AdminDeleteAt would hit under a world point — for delete-mode hover.
+     * Priority matches server: solid → animal → decoration → topmost editable ground.
      */
-    pickEditorDeleteHover(tx: number, ty: number): EditorDeleteHover | null {
+    pickEditorDeleteHover(worldX: number, worldY: number): EditorDeleteHover | null {
+        const tx = worldToTile(worldX);
+        const ty = worldToTile(worldY);
+
         for (const object of this.objects.all()) {
             if (!(object instanceof Structure)) continue;
             if (
@@ -771,6 +805,33 @@ export class World {
                 x: object.position.x,
                 y: object.position.y,
                 radius: Math.max(object.collisionRadius, TILE_SIZE / 2),
+            };
+        }
+
+        let topDecoration: DecorationSprite | undefined;
+        let topZ = -Infinity;
+        for (const entry of this.decorations) {
+            const config = clientDecoration(entry.type);
+            const radius = (config.size * entry.scale) / 2;
+            const dx = entry.x - worldX;
+            const dy = entry.y - worldY;
+            if (dx * dx + dy * dy > radius * radius) continue;
+            if (
+                config.z > topZ ||
+                (config.z === topZ &&
+                    (!topDecoration || entry.id > topDecoration.id))
+            ) {
+                topDecoration = entry;
+                topZ = config.z;
+            }
+        }
+        if (topDecoration) {
+            const config = clientDecoration(topDecoration.type);
+            return {
+                kind: "circle",
+                x: topDecoration.x,
+                y: topDecoration.y,
+                radius: (config.size * topDecoration.scale) / 2,
             };
         }
 

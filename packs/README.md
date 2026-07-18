@@ -24,6 +24,7 @@ loads these registries independently:
 - `resource`
 - `entity_type`
 - `ground_type`
+- `decoration`
 - `recipe`
 - `loot_table`
 
@@ -35,6 +36,7 @@ data/bundu/resources/pine_tree.yml        -> bundu:pine_tree
 data/bundu/buildings/wood_wall.yml        -> bundu:wood_wall
 data/bundu/items/wood_sword.yml           -> bundu:wood_sword
 data/bundu/ground_types/grass.yml         -> bundu:grass
+data/bundu/decorations/beach.yml          -> bundu:beach
 data/bundu/recipes/wood_wall.yml          -> bundu:wood_wall
 data/bundu/loot_tables/bear_dead.yml      -> bundu:bear_dead
 ```
@@ -167,17 +169,27 @@ Asset files use namespaced logical paths:
 assets/bundu/textures/structure/wall/wood_wall.png
 assets/bundu/models/items/wood_sword.yml
 assets/bundu/models/items/type/sword.yml
+assets/bundu/models/decorations/beach.yml
 assets/bundu/lang/en.yml
 assets/bundu/gameplay.yml
 ```
 
 Model YAML files use an explicit `id` field (filename is for organization).
-Item models use `item/<item_id>` ids, with shared abstracts under `item/type/...`:
+Item models use `item/<item_id>` ids, with shared abstracts under `item/type/...`.
+Decoration models use `decoration/<id>` so they never collide with resource/structure
+ids that share a bare name (for example `pine_tree`):
 
 ```yaml
 id: item/wood_sword
 extends: item/type/sword
 texture: bundu/item/tool/wood_sword.svg
+```
+
+```yaml
+id: decoration/beach
+parts:
+  main:
+    sprite: bundu/decoration/beach/beach.svg
 ```
 
 Definitions refer to textures as `bundu/structure/wall/wood_wall.png`. A later

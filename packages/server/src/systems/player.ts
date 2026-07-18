@@ -8,6 +8,7 @@ import { decodeMoveDirection } from "@bundu/shared/movement";
 import { SESSION_ENDED_CLOSE } from "@bundu/shared/session";
 import { type ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import {
+    DecorationData,
     GroundData,
     Health,
     Physics,
@@ -45,6 +46,7 @@ import {
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { topGroundAt } from "./ground_at.js";
 import { groundWire } from "./ground_wire.js";
+import { decorationWire } from "./decoration_wire.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
 import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
 import { clearEditorHistory } from "../admin/history.js";
@@ -162,6 +164,9 @@ export class PlayerSystem extends System<GameEventMap> {
         const packets = [...this.world.query([GroundData])]
             .sort((a, b) => a.id - b.id)
             .map((ground) => groundWire(ground));
+        const decorations = [...this.world.query([DecorationData])]
+            .sort((a, b) => a.id - b.id)
+            .map((decoration) => decorationWire(decoration));
         const { playerPacketManager, worldPacketManager, dayCycle } =
             this.world.context;
         playerPacketManager.set(player.id, ServerPacket.ClientConnectionInfo, {
@@ -169,6 +174,9 @@ export class PlayerSystem extends System<GameEventMap> {
         });
         playerPacketManager.set(player.id, ServerPacket.LoadGround, {
             groundData: packets,
+        });
+        playerPacketManager.set(player.id, ServerPacket.LoadDecorations, {
+            decorations,
         });
         playerPacketManager.set(player.id, ServerPacket.RecipeList, {
             recipes: packCraftingList(),

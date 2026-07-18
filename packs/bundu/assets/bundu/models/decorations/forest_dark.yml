@@ -1,0 +1,4 @@
+id: decoration/forest_dark
+parts:
+  main:
+    sprite: bundu/decoration/forest/forest_dark.svg

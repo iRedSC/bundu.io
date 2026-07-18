@@ -52,11 +52,19 @@ function requireItemModel(id: string): void {
     );
 }
 
+function requireDecorationModel(id: string): void {
+    if (lookupObjectDef(`decoration/${id}`)) return;
+    throw new Error(
+        `Decoration "${id}" needs a concrete assembled model (decoration/${id})`
+    );
+}
+
 const sources = registrySources();
 const resourceIds = [...sources.resource.keys()].map(bareId);
 const entityIds = [...sources.entity_type.keys()].map(bareId);
 const buildingIds = [...sources.structure.keys()].map(bareId);
 const itemIds = [...sources.item.keys()].map(bareId);
+const decorationIds = [...sources.decoration.keys()].map(bareId);
 
 for (const id of [...resourceIds, "stone_barrier"]) {
     requireConcreteAssembledModel(id, "Resource");
@@ -69,6 +77,9 @@ for (const id of buildingIds) {
 }
 for (const id of itemIds) {
     requireItemModel(id);
+}
+for (const id of decorationIds) {
+    requireDecorationModel(id);
 }
 
 const registryCounts = Object.entries(gameRegistries())

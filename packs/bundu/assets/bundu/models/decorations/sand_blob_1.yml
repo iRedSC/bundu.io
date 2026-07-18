@@ -1,0 +1,4 @@
+id: decoration/sand_blob_1
+parts:
+  main:
+    sprite: bundu/decoration/beach/sand_blob_1.svg

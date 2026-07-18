@@ -5,6 +5,7 @@ import type { GameObject, World } from "../engine";
 import { restoreObjectId } from "../engine";
 import {
     AnimalData,
+    DecorationData,
     Door,
     GroundData,
     GroundItemData,
@@ -28,6 +29,7 @@ import {
     type PlayerData as PlayerState,
 } from "../components/player";
 import { Stats, type StatsData } from "../components/stats";
+import { Decoration } from "../game_objects/decoration";
 import { Ground } from "../game_objects/ground";
 import { GroundItem } from "../game_objects/ground_item";
 import { Resource } from "../game_objects/resource";
@@ -61,6 +63,7 @@ type AttributesSnapshot = {
 
 type CheckpointKind =
     | "ground"
+    | "decoration"
     | "resource"
     | "structure"
     | "ground_item"
@@ -76,6 +79,14 @@ export type ObjectSnapshot =
           height: number;
           groundType: number;
           speedMultiplier: number;
+      } & Pick<BaseSnapshot, "id">)
+    | ({
+          kind: "decoration";
+          type: number;
+          x: number;
+          y: number;
+          rotation: number;
+          scale: number;
       } & Pick<BaseSnapshot, "id">)
     | ({
           kind: "resource";
@@ -255,6 +266,34 @@ const groundHandler: KindHandler<"ground"> = {
     },
 };
 
+const decorationHandler: KindHandler<"decoration"> = {
+    kind: "decoration",
+    match: (object) => object instanceof Decoration,
+    snapshot(object) {
+        const data = object.get(DecorationData);
+        return {
+            kind: "decoration",
+            id: object.id,
+            type: data.type,
+            x: data.x,
+            y: data.y,
+            rotation: data.rotation,
+            scale: data.scale,
+        };
+    },
+    restore(world, snapshot) {
+        const object = new Decoration({
+            type: snapshot.type,
+            x: snapshot.x,
+            y: snapshot.y,
+            rotation: snapshot.rotation,
+            scale: snapshot.scale,
+        });
+        restoreObjectId(object, snapshot.id);
+        world.addObject(object);
+    },
+};
+
 const playerHandler: KindHandler<"player"> = {
     kind: "player",
     match: (object) => object instanceof Player,
@@ -424,6 +463,7 @@ const structureHandler: KindHandler<"structure"> = {
 /** Exhaustive: missing kind → compile error. */
 const HANDLERS: { [K in CheckpointKind]: KindHandler<K> } = {
     ground: groundHandler,
+    decoration: decorationHandler,
     player: playerHandler,
     animal: animalHandler,
     ground_item: groundItemHandler,
@@ -447,6 +487,9 @@ export function restoreObject(world: World, snapshot: ObjectSnapshot): void {
     switch (snapshot.kind) {
         case "ground":
             HANDLERS.ground.restore(world, snapshot);
+            return;
+        case "decoration":
+            HANDLERS.decoration.restore(world, snapshot);
             return;
         case "player":
             HANDLERS.player.restore(world, snapshot);

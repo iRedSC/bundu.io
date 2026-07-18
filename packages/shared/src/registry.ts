@@ -4,6 +4,7 @@ export const REGISTRY_NAMES = [
     "resource",
     "entity_type",
     "ground_type",
+    "decoration",
     "recipe",
     "loot_table",
 ] as const;
@@ -52,6 +53,8 @@ export type ClientRegistryProjection = RegistrySetProjection & {
         }
     >;
     groundTypes: Record<number, { color: string }>;
+    /** Base world size + z-layer for decoration instances (`size * scale` at runtime). */
+    decorations: Record<number, { size: number; z: number }>;
 };
 
 const NAMESPACE = /^[a-z0-9_.-]+$/;

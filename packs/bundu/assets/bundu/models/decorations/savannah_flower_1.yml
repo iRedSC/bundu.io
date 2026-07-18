@@ -1,0 +1,4 @@
+id: decoration/savannah_flower_1
+parts:
+  main:
+    sprite: bundu/decoration/savannah/savannah_flower_1.svg

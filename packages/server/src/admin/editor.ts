@@ -5,23 +5,32 @@ import {
 } from "@bundu/shared/packet_definitions";
 import type { RegistryId } from "@bundu/shared/registry";
 import {
+    WORLD_BOUNDS,
     WORLD_TILES,
     worldToTile,
     type TileRot,
 } from "@bundu/shared/tiles";
 import { getVariantName } from "@bundu/shared/variant_map";
 import { Box, Vector } from "sat";
-import { AnimalData, Physics, Spiked } from "../components/base.js";
+import {
+    AnimalData,
+    DecorationData,
+    Physics,
+    Spiked,
+} from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
+import { DecorationConfigs } from "../configs/loaders/decorations.js";
 import { gameRegistries } from "../configs/registries.js";
 import type { GameObject, World } from "../engine";
 import { System } from "../engine";
 import { tryAddResource } from "../game_objects/add_resource.js";
+import { Decoration } from "../game_objects/decoration.js";
 import { Ground } from "../game_objects/ground.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
 import { topGroundAt } from "../systems/ground_at.js";
 import { groundWire } from "../systems/ground_wire.js";
+import { decorationWire } from "../systems/decoration_wire.js";
 import { canUseEditor } from "./auth.js";
 import {
     beginStroke,
@@ -72,7 +81,7 @@ function resolveVariantName(variantId: number): string {
 }
 
 function registryHas(
-    name: "resource" | "structure" | "ground_type",
+    name: "resource" | "structure" | "ground_type" | "decoration",
     typeId: number
 ): boolean {
     try {
@@ -81,6 +90,36 @@ function registryHas(
     } catch {
         return false;
     }
+}
+
+function inWorld(x: number, y: number): boolean {
+    return x >= 0 && y >= 0 && x <= WORLD_BOUNDS && y <= WORLD_BOUNDS;
+}
+
+/** Nearest decoration whose painted radius contains the world point. */
+function topDecorationAt(
+    world: World,
+    x: number,
+    y: number
+): GameObject | null {
+    let best: GameObject | null = null;
+    let bestZ = -Infinity;
+    let bestId = -1;
+    for (const object of world.query([DecorationData])) {
+        if (!object.active) continue;
+        const data = object.get(DecorationData);
+        const config = DecorationConfigs.get(data.type);
+        const radius = (config.size * data.scale) / 2;
+        const dx = data.x - x;
+        const dy = data.y - y;
+        if (dx * dx + dy * dy > radius * radius) continue;
+        if (config.z > bestZ || (config.z === bestZ && object.id > bestId)) {
+            best = object;
+            bestZ = config.z;
+            bestId = object.id;
+        }
+    }
+    return best;
 }
 
 /**
@@ -100,6 +139,10 @@ export class AdminEditorSystem extends System<GameEventMap> {
                 this.broadcastGround(packet),
             broadcastUnloadGround: (packet: ServerPacket.GroundWire) =>
                 this.broadcastUnloadGround(packet),
+            broadcastDecoration: (packet: ServerPacket.DecorationWire) =>
+                this.broadcastDecoration(packet),
+            broadcastUnloadDecoration: (packet: ServerPacket.DecorationWire) =>
+                this.broadcastUnloadDecoration(packet),
         };
     }
 
@@ -159,7 +202,9 @@ export class AdminEditorSystem extends System<GameEventMap> {
             this.world,
             this.trigger,
             (packet) => this.broadcastGround(packet),
-            (packet) => this.broadcastUnloadGround(packet)
+            (packet) => this.broadcastUnloadGround(packet),
+            (packet) => this.broadcastDecoration(packet),
+            (packet) => this.broadcastUnloadDecoration(packet)
         );
     };
 
@@ -217,6 +262,22 @@ export class AdminEditorSystem extends System<GameEventMap> {
                 }
                 return;
             }
+            case AdminPlaceKind.Decoration: {
+                if (!inWorld(packet.x, packet.y)) return;
+                if (!registryHas("decoration", packet.typeId)) return;
+                const created = this.placeDecoration(
+                    packet.typeId,
+                    packet.x,
+                    packet.y,
+                    packet.rotation,
+                    packet.scale
+                );
+                const snapshot = trySnapshot(created);
+                if (snapshot) {
+                    recordMutation(playerId, { kind: "add", snapshot });
+                }
+                return;
+            }
         }
     };
 
@@ -226,9 +287,14 @@ export class AdminEditorSystem extends System<GameEventMap> {
     ) => {
         const player = this.world.getObject(playerId);
         if (!player || !canUseEditor(player)) return;
-        if (!inWorldTiles(x, y)) return;
+        if (!inWorld(x, y)) return;
 
-        const occupantId = this.world.context.occupancy.get(x, y);
+        // Inclusive world bounds can land on WORLD_TILES after floor-division;
+        // clamp so edge clicks still hit tile occupants / ground.
+        const tx = Math.min(worldToTile(x), WORLD_TILES - 1);
+        const ty = Math.min(worldToTile(y), WORLD_TILES - 1);
+
+        const occupantId = this.world.context.occupancy.get(tx, ty);
         if (occupantId !== undefined) {
             const object = this.world.getObject(occupantId);
             if (object?.active) {
@@ -245,14 +311,26 @@ export class AdminEditorSystem extends System<GameEventMap> {
         for (const animal of this.world.query([AnimalData, Physics])) {
             if (!animal.active) continue;
             const pos = animal.get(Physics).position;
-            if (worldToTile(pos.x) !== x || worldToTile(pos.y) !== y) continue;
+            if (worldToTile(pos.x) !== tx || worldToTile(pos.y) !== ty) continue;
             // DeleteObject — not Kill — so editor removal skips corpses / score.
             animal.active = false;
             this.trigger(GameEvent.DeleteObject, { object: animal });
             return;
         }
 
-        const top = topGroundAt(this.world, x, y, { editableOnly: true });
+        const decoration = topDecorationAt(this.world, x, y);
+        if (decoration) {
+            const snapshot = trySnapshot(decoration);
+            const packet = decorationWire(decoration);
+            this.world.removeObject(decoration);
+            this.broadcastUnloadDecoration(packet);
+            if (snapshot) {
+                recordMutation(playerId, { kind: "remove", snapshot });
+            }
+            return;
+        }
+
+        const top = topGroundAt(this.world, tx, ty, { editableOnly: true });
         if (!top) return;
         const ground = this.world.getObject(top.objectId);
         if (!ground?.active) return;
@@ -362,6 +440,25 @@ export class AdminEditorSystem extends System<GameEventMap> {
         return object;
     }
 
+    private placeDecoration(
+        typeId: number,
+        x: number,
+        y: number,
+        rotation: number,
+        scale: number
+    ): GameObject {
+        const object = new Decoration({
+            type: typeId,
+            x,
+            y,
+            rotation,
+            scale,
+        });
+        this.world.addObject(object);
+        this.broadcastDecoration(decorationWire(object));
+        return object;
+    }
+
     private broadcastGround(packet: ServerPacket.GroundWire) {
         this.broadcastGroundPacket(ServerPacket.LoadGround, packet);
     }
@@ -379,6 +476,29 @@ export class AdminEditorSystem extends System<GameEventMap> {
             if (!socketManager.getSocket(viewer.id)) continue;
             playerPacketManager.add(viewer.id, id, {
                 groundData: [packet],
+            });
+        }
+    }
+
+    private broadcastDecoration(packet: ServerPacket.DecorationWire) {
+        this.broadcastDecorationPacket(ServerPacket.LoadDecorations, packet);
+    }
+
+    private broadcastUnloadDecoration(packet: ServerPacket.DecorationWire) {
+        this.broadcastDecorationPacket(ServerPacket.UnloadDecorations, packet);
+    }
+
+    private broadcastDecorationPacket(
+        id:
+            | typeof ServerPacket.LoadDecorations
+            | typeof ServerPacket.UnloadDecorations,
+        packet: ServerPacket.DecorationWire
+    ) {
+        const { playerPacketManager, socketManager } = this.world.context;
+        for (const viewer of this.world.query([PlayerData])) {
+            if (!socketManager.getSocket(viewer.id)) continue;
+            playerPacketManager.add(viewer.id, id, {
+                decorations: [packet],
             });
         }
     }

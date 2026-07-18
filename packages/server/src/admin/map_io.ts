@@ -5,6 +5,7 @@ import { WORLD_TILES } from "@bundu/shared/tiles";
 import { Box, Vector } from "sat";
 import {
     AnimalData,
+    DecorationData,
     Door,
     GroundData,
     GroundItemData,
@@ -17,11 +18,13 @@ import {
 import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { gameRegistries } from "../configs/registries.js";
 import type { World } from "../engine";
+import { Decoration } from "../game_objects/decoration.js";
 import { Ground } from "../game_objects/ground.js";
 import { Resource } from "../game_objects/resource.js";
 import { Structure } from "../game_objects/structure.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
 import { groundWire } from "../systems/ground_wire.js";
+import { decorationWire } from "../systems/decoration_wire.js";
 import { clearEditorHistory } from "./history.js";
 
 const cacheRoot = path.resolve(import.meta.dir, "../../../../.cache");
@@ -92,6 +95,7 @@ export function exportMapYaml(world: World): string {
     }[] = [];
     const resourceItems: string[] = [];
     const structureItems: string[] = [];
+    const decorationItems: string[] = [];
 
     for (const object of world.query([GroundData])) {
         if (!object.active) continue;
@@ -168,6 +172,22 @@ export function exportMapYaml(world: World): string {
         );
     }
 
+    for (const object of world.query([DecorationData])) {
+        if (!object.active || !(object instanceof Decoration)) continue;
+        const data = object.get(DecorationData);
+        const id = shortLocation(registries.decoration.location(data.type));
+        const fields: [string, string | number | boolean][] = [
+            ["id", id],
+            ["x", roundNice(data.x)],
+            ["y", roundNice(data.y)],
+            ["rot", roundNice(data.rotation)],
+            ["scale", roundNice(data.scale)],
+        ];
+        decorationItems.push(
+            ["  -", ...yamlFields(fields, "    ")].join("\n")
+        );
+    }
+
     return [
         "format: 1",
         `base_ground: ${yamlScalar(baseGround)}`,
@@ -177,8 +197,14 @@ export function exportMapYaml(world: World): string {
         resourceItems.length > 0 ? resourceItems.join("\n") : "  []",
         "structures:",
         structureItems.length > 0 ? structureItems.join("\n") : "  []",
+        "decorations:",
+        decorationItems.length > 0 ? decorationItems.join("\n") : "  []",
         "",
     ].join("\n");
+}
+
+function roundNice(value: number): number {
+    return Math.round(value * 1000) / 1000;
 }
 
 export function saveMapYaml(world: World): { yaml: string; path: string } {
@@ -200,13 +226,22 @@ export function wipeMap(
     world: World,
     trigger: Trigger,
     broadcastGround: (packet: ServerPacket.GroundWire) => void,
-    broadcastUnloadGround: (packet: ServerPacket.GroundWire) => void
+    broadcastUnloadGround: (packet: ServerPacket.GroundWire) => void,
+    _broadcastDecoration: (packet: ServerPacket.DecorationWire) => void,
+    broadcastUnloadDecoration: (packet: ServerPacket.DecorationWire) => void
 ): void {
     for (const object of [...world.query([GroundData])]) {
         if (!object.active) continue;
         const packet = groundWire(object);
         world.removeObject(object);
         broadcastUnloadGround(packet);
+    }
+
+    for (const object of [...world.query([DecorationData])]) {
+        if (!object.active) continue;
+        const packet = decorationWire(object);
+        world.removeObject(object);
+        broadcastUnloadDecoration(packet);
     }
 
     const toRemove = [

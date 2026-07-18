@@ -1,0 +1,4 @@
+id: decoration/pond_savannah
+parts:
+  main:
+    sprite: bundu/decoration/water/pond_savannah.svg

@@ -1,0 +1,4 @@
+id: decoration/pond_winter
+parts:
+  main:
+    sprite: bundu/decoration/water/pond_winter.svg

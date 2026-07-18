@@ -9,6 +9,7 @@ import {
 import { syncStructureStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
 import { groundWire } from "../systems/ground_wire.js";
+import { decorationWire } from "../systems/decoration_wire.js";
 
 const MAX_STROKES = 64;
 
@@ -34,6 +35,8 @@ type HistoryHost = {
     ) => void;
     broadcastGround: (packet: ServerPacket.GroundWire) => void;
     broadcastUnloadGround: (packet: ServerPacket.GroundWire) => void;
+    broadcastDecoration: (packet: ServerPacket.DecorationWire) => void;
+    broadcastUnloadDecoration: (packet: ServerPacket.DecorationWire) => void;
 };
 
 const byPlayer = new Map<number, PlayerHistory>();
@@ -157,6 +160,13 @@ function removeBySnapshot(snapshot: ObjectSnapshot, host: HistoryHost): void {
         if (packet) host.broadcastUnloadGround(packet);
         return;
     }
+    if (snapshot.kind === "decoration") {
+        const wasActive = object.active;
+        const packet = wasActive ? decorationWire(object) : null;
+        host.world.removeObject(object);
+        if (packet) host.broadcastUnloadDecoration(packet);
+        return;
+    }
     if (object.active) {
         object.active = false;
         host.trigger(GameEvent.DeleteObject, { object });
@@ -172,6 +182,13 @@ function restoreWithSync(snapshot: ObjectSnapshot, host: HistoryHost): void {
     if (snapshot.kind === "ground") {
         const restored = host.world.getObject(snapshot.id);
         if (restored?.active) host.broadcastGround(groundWire(restored));
+        return;
+    }
+    if (snapshot.kind === "decoration") {
+        const restored = host.world.getObject(snapshot.id);
+        if (restored?.active) {
+            host.broadcastDecoration(decorationWire(restored));
+        }
     }
 }
 

@@ -12,6 +12,7 @@ import type { CompiledModelsPayload } from "@bundu/shared/models/types";
 import { rewritePackTextureRefs } from "@bundu/shared/models/texture_paths";
 import { BuildingConfigs } from "./loaders/buildings";
 import { GroundTypeConfigs } from "./loaders/ground_types";
+import { DecorationConfigs } from "./loaders/decorations";
 import { gameRegistries, registryProjection } from "./registries";
 import {
     assertPackAssetBudget,
@@ -255,6 +256,12 @@ export class ResourcePackService {
                 [...GroundTypeConfigs.entries].map(([location, config]) => [
                     registries.ground_type.resolve(location),
                     { color: config.color },
+                ])
+            ),
+            decorations: Object.fromEntries(
+                [...DecorationConfigs.entries].map(([location, config]) => [
+                    registries.decoration.resolve(location),
+                    { size: config.size, z: config.z },
                 ])
             ),
         };

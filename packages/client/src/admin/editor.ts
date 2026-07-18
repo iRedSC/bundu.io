@@ -90,9 +90,9 @@ export function createAdminEditor(
             sendPacket(ClientPacket.AdminDownloadMap, {});
         },
         onWipeMap: () => {
-            if (
+                if (
                 !window.confirm(
-                    "Wipe the entire map?\n\nThis removes all ground overlays, resources, structures, animals, and items, then restores an ocean base. It cannot be undone."
+                    "Wipe the entire map?\n\nThis removes all ground overlays, decorations, resources, structures, animals, and items, then restores an ocean base. It cannot be undone."
                 )
             ) {
                 return;
@@ -114,7 +114,8 @@ export function createAdminEditor(
         screenToWorld,
         getState: () => state,
         ghost,
-        pickDeleteHover: (tx, ty) => world.pickEditorDeleteHover(tx, ty),
+        pickDeleteHover: (worldX, worldY) =>
+            world.pickEditorDeleteHover(worldX, worldY),
     });
 
     return {

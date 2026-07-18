@@ -1,0 +1,4 @@
+id: decoration/savannah_blob_2
+parts:
+  main:
+    sprite: bundu/decoration/savannah/savannah_blob_2.svg

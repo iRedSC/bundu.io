@@ -77,6 +77,24 @@ export const GroundData = Component.register<GroundData>(() => ({
     },
 }));
 
+/** Cosmetic free-placed sprite; not in render-distance / physics. */
+export type DecorationData = {
+    type: number;
+    x: number;
+    y: number;
+    /** Degrees. */
+    rotation: number;
+    /** Multiplier on registry base size. */
+    scale: number;
+};
+export const DecorationData = Component.register<DecorationData>(() => ({
+    type: 1,
+    x: 0,
+    y: 0,
+    rotation: 0,
+    scale: 1,
+}));
+
 export type ResourceData = {
     quantity: number;
     maximumQuantity: number;

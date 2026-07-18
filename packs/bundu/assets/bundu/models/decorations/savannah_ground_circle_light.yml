@@ -1,0 +1,4 @@
+id: decoration/savannah_ground_circle_light
+parts:
+  main:
+    sprite: bundu/decoration/savannah/savannah_ground_circle_light.svg

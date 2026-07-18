@@ -45,6 +45,7 @@ export function loadRegistries(): GameRegistries {
         resource: definitionsOrRecords("resources"),
         entity_type: definitionsOrRecords("entities"),
         ground_type: definitionsOrRecords("ground_types"),
+        decoration: definitionsOrRecords("decorations"),
         recipe: definitionsOrRecords("recipes"),
         loot_table: definitionsOrRecords("loot_tables"),
     };
