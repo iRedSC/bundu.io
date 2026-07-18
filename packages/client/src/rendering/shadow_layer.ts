@@ -26,7 +26,8 @@ export class ShadowLayer {
     private readonly view = new Rectangle();
     private readonly scratch = new Point();
     private blur?: BlurFilter;
-    private appliedSoften = -1;
+    /** Last applied screen-space blur (soften × zoom). */
+    private appliedStrength = -1;
     private lights: readonly ShadowLight[] = [];
 
     /**
@@ -99,15 +100,21 @@ export class ShadowLayer {
         const soften = shadowStyle.soften;
         if (soften <= 0) {
             if (this.container.filters) this.container.filters = null;
-            this.appliedSoften = 0;
+            this.appliedStrength = 0;
             return;
         }
+        // BlurFilter is screen-space; scale by zoom so soften stays world-consistent.
+        const zoom = Math.hypot(
+            this.worldParent.worldTransform.a,
+            this.worldParent.worldTransform.b
+        );
+        const strength = soften * zoom;
         if (!this.blur) {
-            this.blur = new BlurFilter({ strength: soften, quality: 2 });
-        } else if (this.appliedSoften !== soften) {
-            this.blur.strength = soften;
+            this.blur = new BlurFilter({ strength, quality: 2 });
+        } else if (this.appliedStrength !== strength) {
+            this.blur.strength = strength;
         }
-        this.appliedSoften = soften;
+        this.appliedStrength = strength;
         if (this.container.filters?.[0] !== this.blur) {
             this.container.filters = [this.blur];
         }
