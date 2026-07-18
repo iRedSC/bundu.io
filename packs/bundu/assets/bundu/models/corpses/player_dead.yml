@@ -1,5 +1,24 @@
 id: player_dead
 extends: corpse
 parts:
-  body:
-    sprite: bundu/entity/player/player_dead.svg
+    leftHand:
+        parent: body
+        sprite: bundu/entity/player/player_hand.svg
+        x: 0.25
+        y: 0.4
+        zIndex: 0
+        shadow: 1
+
+    rightHand:
+        parent: body
+        sprite: bundu/entity/player/player_hand.svg
+        x: -0.25
+        y: 0.4
+        zIndex: 1
+        shadow: 1
+
+    body:
+        sprite: bundu/entity/player/player_dead.svg
+        spillover: 50
+        zIndex: 2
+        shadow: 1

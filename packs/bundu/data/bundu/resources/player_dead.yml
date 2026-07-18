@@ -1,1 +1,4 @@
+decay: 60
 destroy_on_empty: true
+multipliers:
+    knife: 2

@@ -107,6 +107,8 @@ export type ResourceData = {
     harvestHit: number;
     decayAt: number | null;
     lastRegen: number;
+    /** Runtime stacks (e.g. player corpse inventory); bypasses loot tables. */
+    lootStacks: { id: number; count: number }[] | null;
 };
 export const ResourceData = Component.register<ResourceData>(() => ({
     quantity: 0,
@@ -116,6 +118,7 @@ export const ResourceData = Component.register<ResourceData>(() => ({
     harvestHit: 0,
     decayAt: null,
     lastRegen: 0,
+    lootStacks: null,
 }));
 
 /** A structure whose owner died and can be claimed or will decay. */
