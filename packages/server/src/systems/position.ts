@@ -42,7 +42,8 @@ export class PositionSystem extends System<GameEventMap> {
         if (tile) {
             const ok = this.world.context.occupancy.occupy(
                 object.id,
-                tile.occupied
+                tile.occupied,
+                tile.layer
             );
             if (!ok) {
                 // Placement should have validated; drop if racing a free tile.

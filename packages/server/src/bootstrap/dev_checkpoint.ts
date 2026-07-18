@@ -54,7 +54,8 @@ type PhysicsSnapshot = {
     speed: number;
 };
 
-type TileSnapshot = Omit<TileEntityData, "occupied">;
+/** Layer is derived from building/resource type on restore. */
+type TileSnapshot = Omit<TileEntityData, "occupied" | "layer">;
 type BaseSnapshot = { id: number; physics: PhysicsSnapshot };
 type AttributesSnapshot = {
     types: AttributesData["types"];

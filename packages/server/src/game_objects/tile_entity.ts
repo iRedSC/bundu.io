@@ -1,3 +1,4 @@
+import type { OccupancyLayer } from "@bundu/shared/occupancy_layer";
 import {
     FOOTPRINT_CIRCLE_RADIUS,
     SINGLE_TILE,
@@ -29,13 +30,15 @@ export function tileEntityPhysics(origin: TilePos, rot: TileRot): Physics {
 export function makeTileEntity(
     origin: TilePos,
     rot: TileRot = 0,
-    blocked: readonly TilePos[] = SINGLE_TILE
+    blocked: readonly TilePos[] = SINGLE_TILE,
+    layer: OccupancyLayer = "structure"
 ): TileEntity {
     return {
         origin: { ...origin },
         rot,
         blocked: blocked.map((c) => ({ ...c })),
         occupied: worldFootprint(origin, blocked, rot),
+        layer,
     };
 }
 

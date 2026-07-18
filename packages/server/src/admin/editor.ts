@@ -19,6 +19,10 @@ import {
     Spiked,
 } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
+import {
+    BuildingConfigs,
+    occupancyLayerForClass,
+} from "../configs/loaders/buildings.js";
 import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { DecorationConfigs } from "../configs/loaders/decorations.js";
 import { gameRegistries } from "../configs/registries.js";
@@ -294,7 +298,7 @@ export class AdminEditorSystem extends System<GameEventMap> {
         const tx = Math.min(worldToTile(x), WORLD_TILES - 1);
         const ty = Math.min(worldToTile(y), WORLD_TILES - 1);
 
-        const occupantId = this.world.context.occupancy.get(tx, ty);
+        const occupantId = this.world.context.occupancy.top(tx, ty);
         if (occupantId !== undefined) {
             const object = this.world.getObject(occupantId);
             if (object?.active) {
@@ -369,7 +373,14 @@ export class AdminEditorSystem extends System<GameEventMap> {
         packet: ClientPacket.AdminPlace,
         rot: TileRot
     ): void {
-        const beforeId = this.world.context.occupancy.get(packet.x, packet.y);
+        const layer = occupancyLayerForClass(
+            BuildingConfigs.get(packet.typeId).class
+        );
+        const beforeId = this.world.context.occupancy.get(
+            packet.x,
+            packet.y,
+            layer
+        );
         const beforeObject =
             beforeId !== undefined ? this.world.getObject(beforeId) : undefined;
         const beforeSnapshot =
@@ -387,7 +398,11 @@ export class AdminEditorSystem extends System<GameEventMap> {
             placedBy: player,
         });
 
-        const afterId = this.world.context.occupancy.get(packet.x, packet.y);
+        const afterId = this.world.context.occupancy.get(
+            packet.x,
+            packet.y,
+            layer
+        );
         const afterObject =
             afterId !== undefined ? this.world.getObject(afterId) : undefined;
         if (!afterObject?.active) return;

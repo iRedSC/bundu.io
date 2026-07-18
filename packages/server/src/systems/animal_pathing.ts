@@ -5,9 +5,25 @@ import {
     TILE_SIZE,
     FOOTPRINT_CIRCLE_RADIUS,
 } from "@bundu/shared/tiles.js";
+import { TileEntity } from "../components/base.js";
+import { isSolidTileEntity } from "../configs/loaders/placement_rules.js";
 import type { World } from "../engine/index.js";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { tilesOverlappingCircle } from "./position.js";
+
+function solidOccupantAt(
+    world: World,
+    x: number,
+    y: number
+): number | undefined {
+    for (const id of world.context.occupancy.occupants(x, y)) {
+        const object = world.getObject(id);
+        if (object && TileEntity.get(object) && isSolidTileEntity(object)) {
+            return id;
+        }
+    }
+    return undefined;
+}
 
 export type Tile = { x: number; y: number };
 export type WorldPoint = { x: number; y: number };
@@ -28,7 +44,7 @@ export function footprintOverlaps(
     );
     for (let tx = bounds.minX; tx <= bounds.maxX; tx++) {
         for (let ty = bounds.minY; ty <= bounds.maxY; ty++) {
-            if (world.context.occupancy.get(tx, ty) === undefined) continue;
+            if (solidOccupantAt(world, tx, ty) === undefined) continue;
             const cx = tileCenterWorld(tx);
             const cy = tileCenterWorld(ty);
             if (Math.hypot(x - cx, y - cy) < radius + FOOTPRINT_CIRCLE_RADIUS) {
@@ -201,10 +217,10 @@ export function firstBlocker(
             y += stepY;
         }
         if (x === to.x && y === to.y) break;
-        const id = world.context.occupancy.get(x, y);
+        const id = solidOccupantAt(world, x, y);
         if (id !== undefined) return { id, tile: { x, y } };
     }
-    const endId = world.context.occupancy.get(to.x, to.y);
+    const endId = solidOccupantAt(world, to.x, to.y);
     return endId === undefined
         ? undefined
         : { id: endId, tile: { x: to.x, y: to.y } };

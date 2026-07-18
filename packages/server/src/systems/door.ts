@@ -16,7 +16,14 @@ export class DoorSystem extends System<GameEventMap> {
         const tile = object.get(TileEntity);
 
         if (door.open) {
-            if (this.isBlocked(object) || !this.world.context.occupancy.occupy(object.id, tile.occupied)) {
+            if (
+                this.isBlocked(object) ||
+                !this.world.context.occupancy.occupy(
+                    object.id,
+                    tile.occupied,
+                    tile.layer
+                )
+            ) {
                 return;
             }
         } else {

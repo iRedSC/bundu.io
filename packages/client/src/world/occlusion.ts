@@ -11,6 +11,9 @@ export function updateOcclusion(
     const px = player?.position.x;
     const py = player?.position.y;
 
+    const underRoofGroups = new Set<number>();
+    const roofs: Structure[] = [];
+
     for (const object of objects) {
         if (!(object instanceof Structure)) continue;
         const occlusion = tileEntityDefs.get(object.type)?.occlusion;
@@ -21,6 +24,24 @@ export function updateOcclusion(
             py !== undefined &&
             Math.hypot(px - object.position.x, py - object.position.y) <=
                 occlusion.radius * TILE_SIZE;
+
+        const roofGroupId = object.roofGroupId;
+        if (roofGroupId !== undefined) {
+            roofs.push(object);
+            if (under) underRoofGroups.add(roofGroupId);
+            continue;
+        }
+
         object.setState(occlusion.state, under);
+    }
+
+    for (const roof of roofs) {
+        const occlusion = tileEntityDefs.get(roof.type)?.occlusion;
+        if (!occlusion) continue;
+        const groupId = roof.roofGroupId;
+        roof.setState(
+            occlusion.state,
+            groupId !== undefined && underRoofGroups.has(groupId)
+        );
     }
 }

@@ -1,4 +1,5 @@
 import { Box, Circle, Vector } from "sat";
+import type { OccupancyLayer } from "@bundu/shared/occupancy_layer";
 import { Component } from "../engine";
 import type { TilePos, TileRot } from "@bundu/shared/tiles";
 
@@ -31,12 +32,15 @@ export type TileEntity = {
     blocked: TilePos[];
     /** Cached world tiles currently claimed in the occupancy grid. */
     occupied: TilePos[];
+    /** Occupancy stack slot; set from building/resource config on spawn. */
+    layer: OccupancyLayer;
 };
 export const TileEntity = Component.register<TileEntity>(() => ({
     origin: { x: 0, y: 0 },
     rot: 0,
     blocked: [{ x: 0, y: 0 }],
     occupied: [],
+    layer: "structure",
 }));
 
 export type CalculateCollisions = Record<string, never>;

@@ -21,6 +21,7 @@ import { ResourceSystem } from "../systems/resource";
 import { GroundItemSystem } from "../systems/ground_item";
 import { PointGeneratorSystem } from "../systems/point_generator";
 import { DoorSystem } from "../systems/door";
+import { RoofSystem } from "../systems/roof";
 import { RottingSystem } from "../systems/rotting";
 import { AnimalSystem } from "../systems/animal";
 import { HungerSystem } from "../systems/hunger";
@@ -62,6 +63,7 @@ export function createWorld(): ServerWorld {
         .addSystem(new SpikeSystem(world))
         .addSystem(new RottingSystem(world))
         .addSystem(new DoorSystem(world))
+        .addSystem(new RoofSystem(world))
         .addSystem(new ResourceSystem(world))
         .addSystem(new AnimalSystem(world))
         .addSystem(new GroundItemSystem(world))

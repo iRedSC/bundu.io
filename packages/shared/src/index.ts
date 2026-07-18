@@ -10,6 +10,7 @@ export * from "./object_utils";
 export * from "./random";
 export * from "./types";
 export * from "./tiles";
+export * from "./occupancy_layer";
 export * from "./structure_placement";
 export * from "./transforms";
 export * from "./attack_box";

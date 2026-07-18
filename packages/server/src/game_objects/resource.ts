@@ -33,7 +33,10 @@ export class Resource extends GameObject {
             .add(new Physics(physics))
             .add(new Type(type))
             .add(attributes);
-        if (tile) this.add(new TileEntity(tile));
+        if (tile) {
+            tile.layer = "structure";
+            this.add(new TileEntity(tile));
+        }
     }
 
     public override getNewObjectPacket(): ServerPacket.LoadObject | undefined {
