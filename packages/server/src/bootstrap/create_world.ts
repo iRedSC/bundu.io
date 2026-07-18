@@ -22,6 +22,7 @@ import { GroundItemSystem } from "../systems/ground_item";
 import { PointGeneratorSystem } from "../systems/point_generator";
 import { DoorSystem } from "../systems/door";
 import { RoofSystem } from "../systems/roof";
+import { AnonOcclusionSystem } from "../systems/anon_occlusion";
 import { RottingSystem } from "../systems/rotting";
 import { AnimalSystem } from "../systems/animal";
 import { HungerSystem } from "../systems/hunger";
@@ -49,6 +50,9 @@ export function createWorld(): ServerWorld {
     const receiver = new ServerPacketReceiver(serializer, ClientPacketGuards);
     setupPacketReceiving(receiver, playerSystem, adminEditor);
 
+    const roofSystem = new RoofSystem(world);
+    const anonOcclusionSystem = new AnonOcclusionSystem(world, roofSystem);
+
     world
         .addSystem(new AttributesSystem(world))
         .addSystem(playerSystem)
@@ -63,12 +67,13 @@ export function createWorld(): ServerWorld {
         .addSystem(new SpikeSystem(world))
         .addSystem(new RottingSystem(world))
         .addSystem(new DoorSystem(world))
-        .addSystem(new RoofSystem(world))
+        .addSystem(roofSystem)
         .addSystem(new ResourceSystem(world))
         .addSystem(new AnimalSystem(world))
         .addSystem(new GroundItemSystem(world))
         .addSystem(new StructureSystem(world))
         .addSystem(new PointGeneratorSystem(world))
+        .addSystem(anonOcclusionSystem)
         .addSystem(renderDistanceSystem);
 
     return { world, playerSystem, renderDistanceSystem, receiver };

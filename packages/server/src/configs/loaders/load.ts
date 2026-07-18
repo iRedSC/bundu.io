@@ -11,6 +11,7 @@ import {
 import { type AnimalConfig, AnimalConfigs } from "./animals.js";
 import { type GroundTypeConfig, GroundTypeConfigs } from "./ground_types.js";
 import { type DecorationConfig, DecorationConfigs } from "./decorations.js";
+import { parseOcclusionHide } from "./occlusion_hide.js";
 import { packs } from "../packs.js";
 import { gameplayConfig, setGameplayConfig } from "../gameplay.js";
 import { loadCraftingConfigs } from "./crafting.js";
@@ -195,6 +196,10 @@ export function loadConfigs() {
                 typeof raw.solid === "boolean"
                     ? raw.solid
                     : defaultSolidForClass(record.class);
+            record.occlusionHide = parseOcclusionHide(
+                raw.occlusionHide,
+                `${id}.occlusionHide`
+            );
             Object.assign(record, parsePlacementAllowDeny(registries, id, raw));
             const blocked = raw.placement?.blocked ?? [[0, 0]];
             if (
@@ -310,7 +315,10 @@ export function loadConfigs() {
         record: Partial<ItemConfig>,
         fallback: ItemConfig
     ): ItemConfig => {
-        const raw = record as Partial<ItemConfig> & { places?: string };
+        const raw = record as Partial<ItemConfig> & {
+            places?: string;
+            occlusionHide?: unknown;
+        };
         const typeRecord = itemTypes[record.type ?? "none"] ?? fallback;
 
         record.attributes = mergeObjects(
@@ -329,6 +337,11 @@ export function loadConfigs() {
                 `${id}.places`
             );
         }
+        record.occlusionHide = parseOcclusionHide(
+            raw.occlusionHide ??
+                (typeRecord as Partial<ItemConfig>).occlusionHide,
+            `${id}.occlusionHide`
+        );
         return mergeObjects(typeRecord, record, fallback);
     };
 

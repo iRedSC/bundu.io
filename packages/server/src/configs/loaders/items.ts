@@ -1,5 +1,6 @@
 import type { RegistryId } from "@bundu/shared/registry";
 import { ConfigLoader } from "./loader.js";
+import type { OcclusionHide } from "./occlusion_hide.js";
 
 export type ItemAttribute = {
     op: "add" | "multiply";
@@ -17,6 +18,8 @@ export type ItemConfig = {
     can_saturate: boolean;
     eat_duration_ms: number;
     places: RegistryId<"structure"> | null;
+    /** Hide identity from outsiders while this item is equipped (e.g. ninja hood). */
+    occlusionHide?: OcclusionHide;
 };
 
 const fallback: ItemConfig = {
