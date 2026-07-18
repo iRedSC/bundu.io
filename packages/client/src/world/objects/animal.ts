@@ -38,7 +38,9 @@ export class Animal extends GameObject {
         collisionRadius: number,
         scale = 1
     ) {
-        super(id, position, 0, collisionRadius, TILE_SIZE * (scale ?? 1), 250);
+        // Match server animal cadence (4 TPS). No coast — idle gaps used to
+        // overshoot then rubber-band when the next wander packet arrived.
+        super(id, position, 0, collisionRadius, TILE_SIZE * (scale ?? 1), 250, 0);
         this.typeId = clientModelId(
             clientRegistries().entity_type.location(typeId)
         );

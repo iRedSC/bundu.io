@@ -19,6 +19,8 @@ export type GameplayConfig = {
         wanderVarianceMs: number;
         fleeMs: number;
         clearanceStepTiles: number;
+        /** Drop destination after this long with negligible movement. */
+        stuckTimeoutMs: number;
     };
     hunger: {
         drainPeriodMs: number;
@@ -219,6 +221,7 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
             wanderVarianceMs: number(animal, "wander_variance_ms", "gameplay.animal_ai"),
             fleeMs: number(animal, "flee_ms", "gameplay.animal_ai"),
             clearanceStepTiles: number(animal, "clearance_step_tiles", "gameplay.animal_ai"),
+            stuckTimeoutMs: number(animal, "stuck_timeout_ms", "gameplay.animal_ai"),
         },
         hunger: {
             drainPeriodMs: number(hunger, "drain_period_ms", "gameplay.hunger"),

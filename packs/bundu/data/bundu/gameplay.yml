@@ -9,6 +9,8 @@ animal_ai:
   wander_variance_ms: 2500
   flee_ms: 1500
   clearance_step_tiles: 0.25
+  # Abandon a destination after this long with almost no net movement.
+  stuck_timeout_ms: 750
 
 hunger:
   drain_period_ms: 60000

@@ -29,14 +29,18 @@ export class PositionStates {
     private current: PositionState = { x: 0, y: 0 };
     private startedAt = 0;
     private hasSegment = false;
+    private readonly maxExtrapolate: number;
 
     callback?: () => void;
 
     constructor(
         callback?: () => void,
-        private readonly interpolationMS = INTERP_MS
+        private readonly interpolationMS = INTERP_MS,
+        /** How far past the target we may coast (fraction of the interval). */
+        maxExtrapolate: number = EXTRAP
     ) {
         this.callback = callback;
+        this.maxExtrapolate = maxExtrapolate;
     }
 
     get position(): PositionState {
@@ -48,7 +52,7 @@ export class PositionStates {
 
         const t = Math.min(
             (now - this.startedAt) / this.interpolationMS,
-            1 + EXTRAP
+            1 + this.maxExtrapolate
         );
         this.current = {
             x: mix(this.from.x, this.to.x, t),
@@ -86,7 +90,7 @@ export class PositionStates {
         if (!this.hasSegment) return true;
         return (
             now - this.startedAt >=
-            this.interpolationMS * (1 + EXTRAP)
+            this.interpolationMS * (1 + this.maxExtrapolate)
         );
     }
 }

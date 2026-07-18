@@ -38,6 +38,7 @@ export class Animal extends GameObject {
                 nextAttackAt: 0,
                 nextAggroCheckAt: 0,
                 lostAggroUntil: 0,
+                stuckSince: 0,
             }));
     }
 

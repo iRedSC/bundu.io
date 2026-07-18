@@ -1,11 +1,5 @@
 import { attackFacingRadians, degrees, moveToward, radians } from "@bundu/shared";
-import {
-    worldToTile,
-    tileCenterWorld,
-    WORLD_TILES,
-    TILE_SIZE,
-    FOOTPRINT_CIRCLE_RADIUS,
-} from "@bundu/shared/tiles.js";
+import { tileCenterWorld, TILE_SIZE } from "@bundu/shared/tiles.js";
 import { random } from "@bundu/shared/random.js";
 import { AnimalData, Health, Physics, TileEntity, Type } from "../components/base.js";
 import { AnimalConfigs } from "../configs/loaders/animals.js";
@@ -13,152 +7,45 @@ import { PlayerData } from "../components/player.js";
 import { Resource } from "../game_objects/resource.js";
 import { System, type GameObject, type World } from "../engine/index.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-import { getSizedBounds, tilesOverlappingCircle } from "./position.js";
+import { getSizedBounds } from "./position.js";
 import { Circle, Vector } from "sat";
 import { SERVER_TICK_MS } from "@bundu/shared/movement.js";
 import { Attributes } from "../components/attributes.js";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { areAnimalsFrozen } from "../admin/state.js";
+import {
+    firstBlocker,
+    footprintOverlaps,
+    hasClearance,
+    pathTo,
+    tileAt,
+    tileCenters,
+    type Tile,
+    type WorldPoint,
+} from "./animal_pathing.js";
 
-type Tile = { x: number; y: number };
-const key = (tile: Tile) => `${tile.x},${tile.y}`;
-const distance = (a: Tile, b: Tile) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-
-/** True if a circle overlaps any occupied tile footprint circle (matches CollisionSystem). */
-function footprintOverlaps(
-    world: World,
-    x: number,
-    y: number,
-    radius: number
-): boolean {
-    const bounds = tilesOverlappingCircle({ x, y }, radius + FOOTPRINT_CIRCLE_RADIUS);
-    for (let tx = bounds.minX; tx <= bounds.maxX; tx++) {
-        for (let ty = bounds.minY; ty <= bounds.maxY; ty++) {
-            if (world.context.occupancy.get(tx, ty) === undefined) continue;
-            const cx = tileCenterWorld(tx);
-            const cy = tileCenterWorld(ty);
-            if (Math.hypot(x - cx, y - cy) < radius + FOOTPRINT_CIRCLE_RADIUS) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-function tileBlockedFor(world: World, tile: Tile, radius: number): boolean {
-    return footprintOverlaps(
-        world,
-        tileCenterWorld(tile.x),
-        tileCenterWorld(tile.y),
-        radius
-    );
-}
-
-/** Sampled clearance along a world-space segment (thick agent, not a grid point). */
-function hasClearance(
-    world: World,
-    fromX: number,
-    fromY: number,
-    toX: number,
-    toY: number,
-    radius: number
-): boolean {
-    const dist = Math.hypot(toX - fromX, toY - fromY);
-    if (dist < 1e-6) return !footprintOverlaps(world, fromX, fromY, radius);
-    const steps = Math.max(
-        1,
-        Math.ceil(
-            dist /
-                (TILE_SIZE * gameplayConfig().animalAi.clearanceStepTiles)
-        )
-    );
-    for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        if (
-            footprintOverlaps(
-                world,
-                fromX + (toX - fromX) * t,
-                fromY + (toY - fromY) * t,
-                radius
-            )
-        ) {
-            return false;
-        }
-    }
-    return true;
-}
-
-function pathTo(world: World, start: Tile, goal: Tile, radius: number): Tile[] {
-    // Goal may sit inside a structure (chase target); allow standing on start/goal tiles.
-    const open = [start];
-    const previous = new Map<string, Tile>();
-    const cost = new Map([[key(start), 0]]);
-    const closed = new Set<string>();
-    while (open.length && closed.size < gameplayConfig().animalAi.pathLimit) {
-        open.sort((a, b) => (cost.get(key(a)) ?? 0) + distance(a, goal) - ((cost.get(key(b)) ?? 0) + distance(b, goal)));
-        const current = open.shift();
-        if (!current) break;
-        if (current.x === goal.x && current.y === goal.y) {
-            const path: Tile[] = [];
-            for (let at: Tile | undefined = current; at && key(at) !== key(start); at = previous.get(key(at))) path.unshift(at);
-            return path;
-        }
-        closed.add(key(current));
-        for (const next of [{ x: current.x + 1, y: current.y }, { x: current.x - 1, y: current.y }, { x: current.x, y: current.y + 1 }, { x: current.x, y: current.y - 1 }]) {
-            if (next.x < 1 || next.y < 1 || next.x >= WORLD_TILES - 1 || next.y >= WORLD_TILES - 1) continue;
-            if (closed.has(key(next))) continue;
-            if (
-                key(next) !== key(goal) &&
-                tileBlockedFor(world, next, radius)
-            ) {
-                continue;
-            }
-            const nextCost = (cost.get(key(current)) ?? 0) + 1;
-            if (nextCost >= (cost.get(key(next)) ?? Infinity)) continue;
-            previous.set(key(next), current); cost.set(key(next), nextCost);
-            if (!open.some((tile) => key(tile) === key(next))) open.push(next);
-        }
-    }
-    return [];
-}
-
-/** First occupied tile on the grid line from → to (exclusive of start). */
-function firstBlocker(
-    world: World,
-    from: Tile,
-    to: Tile
-): { id: number; tile: Tile } | undefined {
-    let x = from.x;
-    let y = from.y;
-    const stepX = Math.sign(to.x - x);
-    const stepY = Math.sign(to.y - y);
-    const dx = Math.abs(to.x - x);
-    const dy = Math.abs(to.y - y);
-    let error = dx - dy;
-
-    while (x !== to.x || y !== to.y) {
-        const twiceError = error * 2;
-        if (twiceError > -dy) {
-            error -= dy;
-            x += stepX;
-        }
-        if (twiceError < dx) {
-            error += dx;
-            y += stepY;
-        }
-        if (x === to.x && y === to.y) break;
-        const id = world.context.occupancy.get(x, y);
-        if (id !== undefined) return { id, tile: { x, y } };
-    }
-    const endId = world.context.occupancy.get(to.x, to.y);
-    return endId === undefined ? undefined : { id: endId, tile: { x: to.x, y: to.y } };
-}
+/** Min travel before we treat an update as progress (world units). */
+const PROGRESS_EPSILON = 1;
+/** How far the chase destination may drift before we drop the cached path. */
+const REPATH_TARGET_TILES = 1;
+/** Attempts to sample a walkable wander point. */
+const WANDER_SAMPLES = 8;
 
 function playerDistance(animal: Physics, player: GameObject) {
     const pos = player.get(Physics).position;
     return Math.hypot(pos.x - animal.position.x, pos.y - animal.position.y);
 }
 
+function clearNav(data: AnimalData) {
+    data.destination = undefined;
+    data.path = [];
+    data.stuckSince = 0;
+}
+
+/**
+ * Animal AI: think + move at 4 TPS (step size scaled by delta).
+ * Pathing / stuck handling keep animals from wedging on footprints.
+ */
 export class AnimalSystem extends System<GameEventMap> {
     constructor(world: World) {
         super(world, [AnimalData, Physics, Health], 4);
@@ -168,62 +55,35 @@ export class AnimalSystem extends System<GameEventMap> {
 
     override update(time: number, delta: number, animal: GameObject) {
         if (areAnimalsFrozen()) return;
-        const data = animal.get(AnimalData); const physics = animal.get(Physics);
+
+        const data = animal.get(AnimalData);
+        const physics = animal.get(Physics);
         const config = AnimalConfigs.get(animal.get(Type).id);
+
         if (time >= data.nextThinkAt) {
             data.nextThinkAt = time + gameplayConfig().animalAi.thinkIntervalMs;
             this.think(time, animal);
         }
+
         const target = data.destination;
         if (!target) return;
-        if (data.path.length === 0) {
-            const radius = physics.collisionRadius;
-            const start = {
-                x: worldToTile(physics.position.x),
-                y: worldToTile(physics.position.y),
-            };
-            const goal = {
-                x: worldToTile(target.x),
-                y: worldToTile(target.y),
-            };
-            if (
-                !hasClearance(
-                    this.world,
-                    physics.position.x,
-                    physics.position.y,
-                    target.x,
-                    target.y,
-                    radius
-                )
-            ) {
-                data.path = pathTo(this.world, start, goal, radius).map((tile) => ({
-                    x: tileCenterWorld(tile.x),
-                    y: tileCenterWorld(tile.y),
-                }));
-                // Fully blocked while chasing — smash destructible obstacles in the way.
-                // Wander: abandon the destination so think() can pick a new roam target.
-                if (data.path.length === 0) {
-                    if (data.state === "chase" && config.attack_damage > 0) {
-                        const blocker = firstBlocker(this.world, start, goal);
-                        if (
-                            blocker &&
-                            this.attackObstacle(time, animal, blocker)
-                        ) {
-                            return;
-                        }
-                    }
-                    if (data.state === "wander") {
-                        data.destination = undefined;
-                        return;
-                    }
-                }
-            }
-        }
-        const waypoint = data.path[0] ?? target;
-        const dx = waypoint.x - physics.position.x; const dy = waypoint.y - physics.position.y;
+
+        if (this.ensurePath(time, animal, target) === "blocked") return;
+
+        // ensurePath / attackObstacle may retarget (e.g. smash approach).
+        const seek = data.destination;
+        if (!seek) return;
+
+        const beforeX = physics.position.x;
+        const beforeY = physics.position.y;
+        const waypoint = data.path[0] ?? seek;
+        const dx = waypoint.x - beforeX;
+        const dy = waypoint.y - beforeY;
         const length = Math.hypot(dx, dy);
+
         // Attack boxes use the player convention: 0° points up.
         physics.rotation = degrees(Math.atan2(dy, dx) - Math.PI / 2);
+
         const speed =
             data.state === "chase" || data.state === "flee"
                 ? config.activeSpeed
@@ -235,11 +95,113 @@ export class AnimalSystem extends System<GameEventMap> {
             { x: dx, y: dy },
             Math.min(moveDistance, length)
         );
-        this.trigger(GameEvent.Move, { object: animal, x: -step.x, y: -step.y });
+        this.trigger(GameEvent.Move, {
+            object: animal,
+            x: -step.x,
+            y: -step.y,
+        });
+
+        this.trackProgress(time, data, physics, beforeX, beforeY);
+
         if (!reachesWaypoint) return;
 
         data.path.shift();
-        if (data.path.length === 0) data.destination = undefined;
+        if (data.path.length === 0) clearNav(data);
+    }
+
+    /**
+     * Build or validate a path to `target`. Returns `blocked` when the animal
+     * should not try to step this frame (attacking / gave up).
+     */
+    private ensurePath(
+        time: number,
+        animal: GameObject,
+        target: WorldPoint
+    ): "ok" | "blocked" {
+        const data = animal.get(AnimalData);
+        const physics = animal.get(Physics);
+        const radius = physics.collisionRadius;
+        const config = AnimalConfigs.get(animal.get(Type).id);
+
+        // Drop a cached path if the next waypoint is no longer walkable.
+        const nextWaypoint = data.path[0];
+        if (
+            nextWaypoint &&
+            !hasClearance(
+                this.world,
+                physics.position.x,
+                physics.position.y,
+                nextWaypoint.x,
+                nextWaypoint.y,
+                radius
+            )
+        ) {
+            data.path = [];
+        }
+
+        if (data.path.length > 0) return "ok";
+
+        if (
+            hasClearance(
+                this.world,
+                physics.position.x,
+                physics.position.y,
+                target.x,
+                target.y,
+                radius
+            )
+        ) {
+            return "ok";
+        }
+
+        const start = tileAt(physics.position);
+        const goal = tileAt(target);
+        data.path = tileCenters(pathTo(this.world, start, goal, radius));
+
+        if (data.path.length > 0) return "ok";
+
+        // Fully blocked while chasing — smash destructible obstacles.
+        if (data.state === "chase" && config.attack_damage > 0) {
+            const blocker = firstBlocker(this.world, start, goal);
+            if (blocker) {
+                if (this.attackObstacle(time, animal, blocker)) {
+                    return "blocked";
+                }
+                // Approaching a smashable structure — keep that destination.
+                if (data.destination) return "ok";
+            }
+        }
+
+        // Cannot reach (resources, tight gaps, path limit). Abandon this
+        // destination so think can retarget — do not walk into the wall.
+        clearNav(data);
+        return "blocked";
+    }
+
+    private trackProgress(
+        time: number,
+        data: AnimalData,
+        physics: Physics,
+        beforeX: number,
+        beforeY: number
+    ) {
+        const moved = Math.hypot(
+            physics.position.x - beforeX,
+            physics.position.y - beforeY
+        );
+        if (moved >= PROGRESS_EPSILON) {
+            data.stuckSince = 0;
+            return;
+        }
+        if (data.stuckSince === 0) data.stuckSince = time;
+        if (
+            time - data.stuckSince <
+            gameplayConfig().animalAi.stuckTimeoutMs
+        ) {
+            return;
+        }
+        // Wedged against a footprint / peer — drop nav and let think replan.
+        clearNav(data);
     }
 
     /**
@@ -254,11 +216,10 @@ export class AnimalSystem extends System<GameEventMap> {
         const obstacle = this.world.getObject(blocker.id);
         // Resources/harvest nodes ignore animal Hurt — only smash Health-bearing structures.
         if (!obstacle || !Health.get(obstacle)) {
-            const data = animal.get(AnimalData);
-            data.destination = undefined;
-            data.path = [];
+            clearNav(animal.get(AnimalData));
             return false;
         }
+
         const data = animal.get(AnimalData);
         const physics = animal.get(Physics);
         const config = AnimalConfigs.get(animal.get(Type).id);
@@ -269,13 +230,15 @@ export class AnimalSystem extends System<GameEventMap> {
         physics.rotation = degrees(Math.atan2(dy, dx) - Math.PI / 2);
         const reach = animal.get(Attributes).get("attack.reach");
         const d = Math.hypot(dx, dy);
+
         if (d > reach) {
             data.destination = { x: targetX, y: targetY };
             data.path = [];
+            data.stuckSince = 0;
             return false;
         }
-        data.destination = undefined;
-        data.path = [];
+
+        clearNav(data);
         if (time >= data.nextAttackAt) {
             data.nextAttackAt = time + config.attack_interval_ms;
             this.trigger(GameEvent.Attack, {
@@ -353,7 +316,11 @@ export class AnimalSystem extends System<GameEventMap> {
         if (config.aggroAt.length > 0 && config.attack_damage > 0) {
             const structure =
                 retainedStructure ??
-                this.nearestAggroStructure(animal, config.aggroAt, config.detectionRange);
+                this.nearestAggroStructure(
+                    animal,
+                    config.aggroAt,
+                    config.detectionRange
+                );
             if (structure) return this.chase(time, animal, structure);
         }
 
@@ -422,8 +389,7 @@ export class AnimalSystem extends System<GameEventMap> {
         ) {
             data.targetId = undefined;
             data.lostAggroUntil = time + gameplayConfig().animalAi.aggroLostMs;
-            data.destination = undefined;
-            data.path = [];
+            clearNav(data);
             data.state = "idle";
         }
     }
@@ -441,46 +407,136 @@ export class AnimalSystem extends System<GameEventMap> {
         data.stateUntil =
             time + ai.wanderMinMs + random.integer(0, ai.wanderVarianceMs);
         data.path = [];
+        data.stuckSince = 0;
 
         if (!config.hasHome) {
-            data.destination = {
-                x: physics.position.x + random.integer(-config.wander_distance, config.wander_distance),
-                y: physics.position.y + random.integer(-config.wander_distance, config.wander_distance),
-            };
+            data.destination = this.pickWanderPoint(
+                physics,
+                physics.position.x,
+                physics.position.y,
+                config.wander_distance
+            );
             return;
         }
 
         // Alternate homeward and wander sessions so returns aren't a bee-line.
         if (data.roamPhase === "home") {
-            data.destination = { x: data.home.x, y: data.home.y };
+            data.destination = this.pickWanderPoint(
+                physics,
+                data.home.x,
+                data.home.y,
+                TILE_SIZE
+            ) ?? { x: data.home.x, y: data.home.y };
             data.roamPhase = "wander";
         } else {
-            data.destination = {
-                x: data.home.x + random.integer(-config.wander_distance, config.wander_distance),
-                y: data.home.y + random.integer(-config.wander_distance, config.wander_distance),
-            };
+            data.destination = this.pickWanderPoint(
+                physics,
+                data.home.x,
+                data.home.y,
+                config.wander_distance
+            );
             data.roamPhase = "home";
         }
     }
 
+    /** Prefer open ground so wander doesn't aim into resource clumps. */
+    private pickWanderPoint(
+        physics: Physics,
+        originX: number,
+        originY: number,
+        range: number
+    ): WorldPoint | undefined {
+        const radius = physics.collisionRadius;
+        for (let i = 0; i < WANDER_SAMPLES; i++) {
+            const point = {
+                x: originX + random.integer(-range, range),
+                y: originY + random.integer(-range, range),
+            };
+            if (footprintOverlaps(this.world, point.x, point.y, radius)) {
+                continue;
+            }
+            return point;
+        }
+        return undefined;
+    }
+
     private chase(time: number, animal: GameObject, target: GameObject) {
-        const data = animal.get(AnimalData); const physics = animal.get(Physics); const other = target.get(Physics); const config = AnimalConfigs.get(animal.get(Type).id);
-        data.state = "chase"; data.targetId = target.id;
-        const d = Math.hypot(other.position.x - physics.position.x, other.position.y - physics.position.y);
+        const data = animal.get(AnimalData);
+        const physics = animal.get(Physics);
+        const other = target.get(Physics);
+        const config = AnimalConfigs.get(animal.get(Type).id);
+
+        data.state = "chase";
+        data.targetId = target.id;
+
+        const d = Math.hypot(
+            other.position.x - physics.position.x,
+            other.position.y - physics.position.y
+        );
         const reach = animal.get(Attributes).get("attack.reach");
         if (d <= reach) {
-            data.destination = undefined; data.path = [];
-            if (time >= data.nextAttackAt) { data.nextAttackAt = time + config.attack_interval_ms; this.trigger(GameEvent.Attack, { object: animal, damage: config.attack_damage, hitbox: { start: 0, length: reach, width: physics.collisionRadius * 2 } }); }
+            clearNav(data);
+            if (time >= data.nextAttackAt) {
+                data.nextAttackAt = time + config.attack_interval_ms;
+                this.trigger(GameEvent.Attack, {
+                    object: animal,
+                    damage: config.attack_damage,
+                    hitbox: {
+                        start: 0,
+                        length: reach,
+                        width: physics.collisionRadius * 2,
+                    },
+                });
+            }
             return;
         }
-        data.destination = { x: other.position.x, y: other.position.y }; data.path = [];
+
+        const next = { x: other.position.x, y: other.position.y };
+        const destMoved =
+            !data.destination ||
+            Math.hypot(
+                next.x - data.destination.x,
+                next.y - data.destination.y
+            ) >
+                TILE_SIZE * REPATH_TARGET_TILES;
+        data.destination = next;
+        // Keep the cached path while the target hasn't moved far — clearing
+        // every think forced constant repath / bee-line thrash.
+        if (destMoved) {
+            data.path = [];
+            data.stuckSince = 0;
+        }
     }
 
     private flee(animal: GameObject, threat: GameObject, time: number) {
-        const data = animal.get(AnimalData); const physics = animal.get(Physics); const other = threat.get(Physics); const config = AnimalConfigs.get(animal.get(Type).id);
-        const angle = Math.atan2(physics.position.y - other.position.y, physics.position.x - other.position.x);
-        data.state = "flee"; data.stateUntil = time + gameplayConfig().animalAi.fleeMs; data.targetId = undefined; data.path = [];
-        data.destination = { x: physics.position.x + Math.cos(angle) * config.wander_distance, y: physics.position.y + Math.sin(angle) * config.wander_distance };
+        const data = animal.get(AnimalData);
+        const physics = animal.get(Physics);
+        const other = threat.get(Physics);
+        const config = AnimalConfigs.get(animal.get(Type).id);
+
+        // Keep the current flee leg until it expires — re-rolling every think
+        // made scared animals dash in a new direction forever at active speed.
+        if (
+            data.state === "flee" &&
+            data.stateUntil > time &&
+            data.destination
+        ) {
+            return;
+        }
+
+        const angle = Math.atan2(
+            physics.position.y - other.position.y,
+            physics.position.x - other.position.x
+        );
+        data.state = "flee";
+        data.stateUntil = time + gameplayConfig().animalAi.fleeMs;
+        data.targetId = undefined;
+        data.path = [];
+        data.stuckSince = 0;
+        data.destination = {
+            x: physics.position.x + Math.cos(angle) * config.wander_distance,
+            y: physics.position.y + Math.sin(angle) * config.wander_distance,
+        };
     }
 
     private hurt = ({ object, source }: GameEvent.Hurt) => {
@@ -517,7 +573,9 @@ export class AnimalSystem extends System<GameEventMap> {
                     position,
                     collider: new Circle(position, baseRadius),
                     collisionRadius: baseRadius,
-                    rotation: degrees(attackFacingRadians(radians(physics.rotation))),
+                    rotation: degrees(
+                        attackFacingRadians(radians(physics.rotation))
+                    ),
                     speed: 0,
                 },
                 { id: corpseId, variant: "base" },
