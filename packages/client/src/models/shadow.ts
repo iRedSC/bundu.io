@@ -25,7 +25,10 @@ export type ShadowStyle = {
         DayPeriodOffset,
         DayPeriodOffset,
     ];
-    /** Blur strength (0 = sharp). Applied live to all shadows. */
+    /**
+     * World-space blur (0 = sharp). Scaled by camera zoom so softness
+     * stays consistent relative to sprites.
+     */
     soften: number;
     lights: {
         radius: number;
