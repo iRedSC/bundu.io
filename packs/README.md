@@ -36,6 +36,8 @@ data/bundu/resources/pine_tree.yml        -> bundu:pine_tree
 data/bundu/buildings/wood_wall.yml        -> bundu:wood_wall
 data/bundu/items/wood_sword.yml           -> bundu:wood_sword
 data/bundu/ground_types/grass.yml         -> bundu:grass
+# ground_type fields: speed_multiplier, model (client ground-visual id)
+# plus optional whenOccupied effect contexts. Colors live on client models.
 data/bundu/decorations/beach.yml          -> bundu:beach
 data/bundu/recipes/wood_wall.yml          -> bundu:wood_wall
 data/bundu/loot_tables/bear_dead.yml      -> bundu:bear_dead
