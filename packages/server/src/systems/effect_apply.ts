@@ -16,8 +16,6 @@ import {
     mergeMatchingPayloads,
     matchingPayloads,
 } from "../configs/loaders/effect_context.js";
-import type { Hide } from "../configs/loaders/hide.js";
-import { orHide } from "../configs/loaders/hide.js";
 import type { GameObject } from "../engine";
 
 const KNOWN = new Set<string>(AttributeList);
@@ -38,19 +36,19 @@ export function effectSourceId(
     return contextName;
 }
 
-/** @deprecated use effectSourceId */
-export const attributeSourceId = effectSourceId;
-
 export function applyAttributes(
     attributes: AttributesData,
     sourceId: string,
     attrs: Record<string, EffectAttribute>
 ): void {
-    attributes.clear(sourceId);
+    const next: Partial<
+        Record<AttributeType, { operation: "add" | "multiply"; value: number }>
+    > = {};
     for (const [type, attr] of Object.entries(attrs)) {
         if (!KNOWN.has(type) || !attr) continue;
-        attributes.set(type as AttributeType, sourceId, attr.op, attr.value);
+        next[type as AttributeType] = { operation: attr.op, value: attr.value };
     }
+    attributes.replace(sourceId, next);
 }
 
 export function clearAttributes(
@@ -80,14 +78,6 @@ export function payloadForSubject(
     subjectMatches: (target: TargetEffect) => boolean
 ): EffectPayload {
     return mergeMatchingPayloads(matchingPayloads(context, subjectMatches));
-}
-
-export function collectHide(payloads: readonly EffectPayload[]): Hide | undefined {
-    let hide: Hide | undefined;
-    for (const payload of payloads) {
-        hide = orHide(hide, payload.hide);
-    }
-    return hide;
 }
 
 export function payloadIsEmpty(payload: EffectPayload): boolean {
@@ -133,23 +123,6 @@ export function applyContextEffects(
     return sourceId;
 }
 
-/** @deprecated use applyContextEffects */
-export function applyContextAttributes(
-    target: GameObject,
-    contextName: string,
-    context: EffectContext,
-    payload: EffectPayload,
-    sourceObjectId?: number
-): string | undefined {
-    return applyContextEffects(
-        target,
-        contextName,
-        context,
-        payload,
-        sourceObjectId
-    );
-}
-
 /**
  * Apply max-stack attributes + union flags under one context source id.
  */
@@ -191,15 +164,6 @@ export function applyMaxEffects(
         return undefined;
     }
     return contextName;
-}
-
-/** @deprecated use applyMaxEffects */
-export function applyMaxAttributes(
-    target: GameObject,
-    contextName: string,
-    contributions: readonly EffectPayload[]
-): string | undefined {
-    return applyMaxEffects(target, contextName, contributions);
 }
 
 export function clearContextSource(

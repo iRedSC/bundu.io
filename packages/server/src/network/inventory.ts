@@ -1,11 +1,7 @@
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { Attributes } from "../components/attributes.js";
 import { Inventory, toPacketCursor, toPacketItems } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
-import {
-    equipContextName,
-    ItemConfigs,
-} from "../configs/loaders/items.js";
+import { ItemConfigs } from "../configs/loaders/items.js";
 import type { GameObject, ServerContext } from "../engine";
 import {
     applyContextEffects,
@@ -179,5 +175,3 @@ export function clearMissingEquipment(
         clearSlot(target, data, "helmet", playerPacketManager);
     }
 }
-
-export { equipContextName };

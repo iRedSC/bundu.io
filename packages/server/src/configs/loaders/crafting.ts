@@ -98,7 +98,7 @@ export function loadCraftingConfigs(
         }
         const recipeFlags =
             (data.requirements as string[] | undefined)?.map((flag, index) =>
-                flags.register(flag, `${source.source}.requirements[${index}]`)
+                flags.resolve(flag, `${source.source}.requirements[${index}]`)
             ) ?? [];
         const id = registries.recipe.id(location as `${string}:${string}`, source.source);
         craftingList.set(

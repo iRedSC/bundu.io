@@ -104,6 +104,29 @@ function assignContexts(
     ownerId: string,
     allowed: readonly ContextName[]
 ): void {
+    const allowedSet = new Set<string>(allowed);
+    for (const key of Object.keys(raw)) {
+        if (
+            (EQUIP_CONTEXTS as readonly string[]).includes(key) ||
+            (SPATIAL_CONTEXTS as readonly string[]).includes(key)
+        ) {
+            if (!allowedSet.has(key)) {
+                throw new Error(`${path}.${key}: not allowed here`);
+            }
+        }
+    }
+    if (typeRaw) {
+        for (const key of Object.keys(typeRaw)) {
+            if (
+                (EQUIP_CONTEXTS as readonly string[]).includes(key) ||
+                (SPATIAL_CONTEXTS as readonly string[]).includes(key)
+            ) {
+                if (!allowedSet.has(key)) {
+                    throw new Error(`${path}.${key}: not allowed here`);
+                }
+            }
+        }
+    }
     for (const name of allowed) {
         const merged = mergeRawContext(typeRaw?.[name], raw[name]);
         if (merged === undefined) continue;
@@ -261,7 +284,6 @@ export function loadConfigs() {
         Record<string, Partial<ItemConfig>>
     >;
 
-    loadCraftingConfigs(sources.recipe);
     loadLootTables(sources.loot_table);
     BuildingConfigs.parse(
         buildingConfig as Record<string, Partial<BuildingConfig>>,
@@ -488,6 +510,9 @@ export function loadConfigs() {
     };
 
     ItemConfigs.parse(itemConfigData, typesCallback);
+
+    // Recipes resolve flags after contexts register them.
+    loadCraftingConfigs(sources.recipe);
 
     const gameplay = gameplayConfig();
     registries.item.resolve(

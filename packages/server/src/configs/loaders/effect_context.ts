@@ -166,6 +166,12 @@ export function parseEffectContext(
         }
         stack = obj.stack as StackMode;
     }
+    if (
+        stack === "stack" &&
+        (EQUIP_CONTEXTS as readonly string[]).includes(name)
+    ) {
+        throw new Error(`${path}.stack: equip contexts cannot use stack mode`);
+    }
 
     let proximityDistance: number | undefined;
     if (obj.proximityDistance !== undefined) {
@@ -238,107 +244,6 @@ export function parseEffectContext(
         occupationType,
         targets,
     };
-}
-
-function mergePayload(base: EffectPayload, override: EffectPayload): EffectPayload {
-    const flags = [...base.flags];
-    const seen = new Set(flags);
-    for (const id of override.flags) {
-        if (!seen.has(id)) {
-            seen.add(id);
-            flags.push(id);
-        }
-    }
-    return {
-        hide: override.hide ?? base.hide,
-        attributes: {
-            ...base.attributes,
-            ...override.attributes,
-        },
-        flags,
-    };
-}
-
-/** Merge type → instance contexts (instance wins on reserved fields; targets by selector key). */
-export function mergeEffectContext(
-    base: EffectContext | undefined,
-    override: EffectContext | undefined
-): EffectContext | undefined {
-    if (!base) return override;
-    if (!override) return base;
-
-    // Rebuild via selector identity: all → "*", else sorted type ids joined.
-    const map = new Map<string, TargetEffect>();
-    const keyOf = (t: TargetEffect) =>
-        t.all ? "*" : [...t.types].sort((a, b) => a - b).join(",");
-
-    for (const t of base.targets) map.set(keyOf(t), t);
-    for (const t of override.targets) {
-        const key = keyOf(t);
-        const prev = map.get(key);
-        map.set(
-            key,
-            prev
-                ? {
-                      all: t.all,
-                      types: t.types,
-                      effects: mergePayload(prev.effects, t.effects),
-                  }
-                : t
-        );
-    }
-
-    return {
-        stack: override.stack,
-        proximityDistance: override.proximityDistance ?? base.proximityDistance,
-        occupationType: override.occupationType ?? base.occupationType,
-        targets: [...map.values()],
-    };
-}
-
-export function mergeContextBundle(
-    base: ContextBundle,
-    override: ContextBundle
-): ContextBundle {
-    return {
-        whenMainHand: mergeEffectContext(base.whenMainHand, override.whenMainHand),
-        whenOffHand: mergeEffectContext(base.whenOffHand, override.whenOffHand),
-        whenHelmet: mergeEffectContext(base.whenHelmet, override.whenHelmet),
-        whenOccupied: mergeEffectContext(base.whenOccupied, override.whenOccupied),
-        whenNearby: mergeEffectContext(base.whenNearby, override.whenNearby),
-    };
-}
-
-export function parseContextBundle(
-    raw: Record<string, unknown>,
-    path: string,
-    registries: GameRegistries,
-    ownerId: string,
-    allowed: readonly ContextName[]
-): ContextBundle {
-    const allowedSet = new Set<string>(allowed);
-    const result: ContextBundle = {};
-    for (const name of allowed) {
-        if (raw[name] === undefined) continue;
-        result[name] = parseEffectContext(
-            raw[name],
-            `${path}.${name}`,
-            name,
-            registries,
-            ownerId
-        );
-    }
-    for (const key of Object.keys(raw)) {
-        if (
-            (EQUIP_CONTEXTS as readonly string[]).includes(key) ||
-            (SPATIAL_CONTEXTS as readonly string[]).includes(key)
-        ) {
-            if (!allowedSet.has(key)) {
-                throw new Error(`${path}.${key}: not allowed here`);
-            }
-        }
-    }
-    return result;
 }
 
 /** Collect payloads from every matching target entry (all matches apply). */

@@ -1,6 +1,6 @@
 import type { RegistryId } from "@bundu/shared/registry";
 import { ConfigLoader } from "./loader.js";
-import type { ContextBundle, EffectContext } from "./effect_context.js";
+import type { ContextBundle } from "./effect_context.js";
 
 export type ItemConfig = ContextBundle & {
     type: string | null;
@@ -25,26 +25,3 @@ const fallback: ItemConfig = {
 };
 
 export const ItemConfigs = new ConfigLoader<"item", ItemConfig>("item", fallback);
-
-/** Equip slot context for an item function. */
-export function equipContextName(
-    fn: string | null
-): "whenMainHand" | "whenOffHand" | "whenHelmet" | undefined {
-    switch (fn) {
-        case "main_hand":
-        case "building":
-            return "whenMainHand";
-        case "off_hand":
-            return "whenOffHand";
-        case "wear":
-            return "whenHelmet";
-        default:
-            return undefined;
-    }
-}
-
-export function itemEquipContext(config: ItemConfig): EffectContext | undefined {
-    const name = equipContextName(config.function);
-    if (!name) return undefined;
-    return config[name];
-}

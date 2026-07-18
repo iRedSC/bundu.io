@@ -14,7 +14,7 @@ import { orHide } from "../configs/loaders/hide.js";
 import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { ResourceConfigs } from "../configs/loaders/resources.js";
 import { System, type GameObject, type World } from "../engine";
-import { syncFlags } from "../network/flags.js";
+import { syncFlags, clearFlagSync } from "../network/flags.js";
 import type { GameEventMap } from "./event_map.js";
 import {
     applyContextEffects,
@@ -33,8 +33,11 @@ type Applied = {
 
 const appliedBySubject = new Map<number, Applied>();
 
+let cachedMaxProximity: number | undefined;
+
 /** Largest authored whenNearby distance (decitiles / world units). */
 function maxProximityDistance(): number {
+    if (cachedMaxProximity !== undefined) return cachedMaxProximity;
     let max = 0;
     for (const config of BuildingConfigs.entries.values()) {
         const d = config.whenNearby?.proximityDistance;
@@ -44,6 +47,7 @@ function maxProximityDistance(): number {
         const d = config.whenNearby?.proximityDistance;
         if (d !== undefined && d > max) max = d;
     }
+    cachedMaxProximity = max;
     return max;
 }
 
@@ -131,6 +135,7 @@ export class EffectContextSystem extends System<GameEventMap> {
     override exit(subject: GameObject): void {
         this.clearAll(subject);
         syncFlags(subject, this.world.context.playerPacketManager, true);
+        clearFlagSync(subject.id);
     }
 
     private clearAll(subject: GameObject): void {

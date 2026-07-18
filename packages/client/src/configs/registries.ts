@@ -22,11 +22,6 @@ export function replaceClientRegistries(
     };
 }
 
-/** Dynamic flag name → id from the pack registry projection. */
-export function clientFlags(): Record<string, number> {
-    return metadata?.flags ?? {};
-}
-
 export function clientRegistries(): {
     [K in RegistryName]: Registry<K>;
 } {

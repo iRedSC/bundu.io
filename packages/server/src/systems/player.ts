@@ -178,9 +178,9 @@ export class PlayerSystem extends System<GameEventMap> {
         dayCycle.applyAmbient(player);
         dayCycle.syncPlayer(player.id, playerPacketManager);
         emitVitals(player, playerPacketManager);
+        syncFlags(player, playerPacketManager, true);
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
-        syncFlags(player, playerPacketManager, true);
     }
 
     kill({ object: target }: GameEvent.Kill) {

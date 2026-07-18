@@ -3,6 +3,7 @@ import { PlayerData } from "../components/player.js";
 import type { TargetEffect } from "../configs/loaders/effect_context.js";
 import { gameRegistries } from "../configs/registries.js";
 import type { GameObject } from "../engine";
+import type { RegistryId } from "@bundu/shared/registry";
 
 let playerTypeId: number | undefined;
 
@@ -39,7 +40,7 @@ export function subjectMatchesTarget(
     const ids = subjectTypeIds(subject);
     if (ids.length === 0) return false;
     for (const id of ids) {
-        if (target.types.has(id as never)) return true;
+        if (target.types.has(id as RegistryId<"entity_type">)) return true;
     }
     return false;
 }
