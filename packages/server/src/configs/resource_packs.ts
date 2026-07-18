@@ -11,6 +11,7 @@ import {
 import type { CompiledModelsPayload } from "@bundu/shared/models/types";
 import { rewritePackTextureRefs } from "@bundu/shared/models/texture_paths";
 import { BuildingConfigs } from "./loaders/buildings";
+import { flagRegistry } from "./flag_registry";
 import { GroundTypeConfigs } from "./loaders/ground_types";
 import { DecorationConfigs } from "./loaders/decorations";
 import { gameRegistries, registryProjection } from "./registries";
@@ -264,6 +265,7 @@ export class ResourcePackService {
                     { size: config.size, z: config.z },
                 ])
             ),
+            flags: flagRegistry().toProjection(),
         };
         const registriesJson = JSON.stringify(projection);
         const modelsHash = hash(modelsJson);

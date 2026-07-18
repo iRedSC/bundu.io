@@ -9,3 +9,5 @@ whenNearby:
             temperature.warmth:
                 op: add
                 value: 25
+        flags:
+            - near_fire

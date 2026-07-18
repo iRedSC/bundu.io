@@ -16,7 +16,10 @@ export function replaceClientRegistries(
     projection: ClientRegistryProjection
 ): void {
     current = hydrateRegistrySet(projection);
-    metadata = projection;
+    metadata = {
+        ...projection,
+        flags: projection.flags ?? {},
+    };
 }
 
 export function clientRegistries(): {

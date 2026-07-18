@@ -117,7 +117,11 @@ export class StructureSystem extends System<GameEventMap> {
         if (!inv.slots[inv.selected] || inv.slots[inv.selected]?.id !== itemId) {
             data.selectedStructure.id = -1;
             data.selectedStructure.itemId = -1;
-            clearMainHandIf(player, itemId);
+            clearMainHandIf(
+                player,
+                itemId,
+                this.world.context.playerPacketManager
+            );
             this.world.context.playerPacketManager.set(
                 player.id,
                 ServerPacket.SetSelectedStructure,
@@ -125,7 +129,10 @@ export class StructureSystem extends System<GameEventMap> {
             );
         }
 
-        clearMissingEquipment(player);
+        clearMissingEquipment(
+            player,
+            this.world.context.playerPacketManager
+        );
         emitEquipment(player, this.world.context.worldPacketManager);
 
         // Always notify after a place attempt — validate may have already sent the

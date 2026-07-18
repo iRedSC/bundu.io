@@ -1,7 +1,7 @@
 import type { RegistryId } from "@bundu/shared/registry";
-import { flagMap } from "@bundu/shared/flag_map";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import type { SourcedRecord } from "../packs.js";
+import { flagRegistry } from "../flag_registry.js";
 import { gameRegistries } from "../registries.js";
 
 export type CraftingRecipeData = {
@@ -63,6 +63,7 @@ export function loadCraftingConfigs(
     sources: ReadonlyMap<string, SourcedRecord>
 ): void {
     const registries = gameRegistries();
+    const flags = flagRegistry();
     craftingList.clear();
     for (const [location, source] of sources) {
         const data = object(source.value, source.source);
@@ -95,15 +96,10 @@ export function loadCraftingConfigs(
         ) {
             throw new Error(`${source.source}.requirements: expected a string array`);
         }
-        const flags = (data.requirements as string[] | undefined)?.map((flag) => {
-            const id = flagMap.get(flag);
-            if (id === undefined) {
-                throw new Error(
-                    `${source.source}.requirements: unknown requirement "${flag}"`
-                );
-            }
-            return id;
-        }) ?? [];
+        const recipeFlags =
+            (data.requirements as string[] | undefined)?.map((flag, index) =>
+                flags.resolve(flag, `${source.source}.requirements[${index}]`)
+            ) ?? [];
         const id = registries.recipe.id(location as `${string}:${string}`, source.source);
         craftingList.set(
             id,
@@ -114,7 +110,7 @@ export function loadCraftingConfigs(
                 nonNegative(data.score, `${source.source}.score`),
                 positiveInteger(result.amount, `${source.source}.result.amount`, 1),
                 ingredients,
-                flags
+                recipeFlags
             )
         );
     }

@@ -1,9 +1,9 @@
 type: helmet
-flags:
-    - scuba
 whenHelmet:
     "*":
         attributes:
             health.defense:
                 op: add
                 value: 5
+        flags:
+            - scuba

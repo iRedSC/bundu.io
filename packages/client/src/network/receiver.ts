@@ -4,7 +4,6 @@ import {
     type ServerPacketMap,
 } from "@bundu/shared/packet_definitions";
 import { ClientPacketReceiver } from "./client_receiver";
-import { flagMap } from "@bundu/shared/flag_map";
 import { Serializer } from "@bundu/shared";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
@@ -14,6 +13,17 @@ import { downloadMapYaml } from "../admin/map_export";
 export const receiver = new ClientPacketReceiver(
     new Serializer<ServerPacketMap>(ServerSchema)
 );
+
+/** Effective sourced flags for the local player (crafting + gameplay). */
+let playerFlags: number[] = [];
+
+function refreshCraftingMenu(ui: UI): void {
+    ui.craftingMenu.items = ui.recipeManager.filter(
+        ui.inventory.items,
+        playerFlags
+    );
+    ui.craftingMenu.update();
+}
 
 export function setupPacketReceiving(
     receiver: ClientPacketReceiver,
@@ -70,11 +80,11 @@ export function setupGUIPacketReceiving(
     );
     receiver.on(ServerPacket.UpdateInventory, (packet) => {
         ui.inventory.update(packet);
-        ui.craftingMenu.items = ui.recipeManager.filter(
-            ui.inventory.items,
-            [...flagMap.values()]
-        );
-        ui.craftingMenu.update();
+        refreshCraftingMenu(ui);
+    });
+    receiver.on(ServerPacket.UpdateFlags, ({ flags }) => {
+        playerFlags = [...flags];
+        refreshCraftingMenu(ui);
     });
     receiver.on(
         ServerPacket.Leaderboard,

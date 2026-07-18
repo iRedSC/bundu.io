@@ -12,9 +12,8 @@ import {
     GroundData,
     Health,
     Physics,
-    TileEntity,
-    Type,
 } from "../components/base.js";
+import { Flags } from "../components/flags.js";
 import {
     Inventory,
     canConsumeAndAdd,
@@ -44,7 +43,6 @@ import {
     selectEquipment,
 } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
-import { topGroundAt } from "./ground_at.js";
 import { groundWire } from "./ground_wire.js";
 import { decorationWire } from "./decoration_wire.js";
 import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
@@ -52,18 +50,12 @@ import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
 import { clearEditorHistory } from "../admin/history.js";
 import { clearAnimalsFrozenFor } from "../admin/state.js";
 import { PlaceMode } from "@bundu/shared/inventory";
-import {
-    pointToTile,
-    TILE_SIZE,
-    WORLD_BOUNDS,
-    worldToDeci,
-} from "@bundu/shared/tiles";
+import { pointToTile, WORLD_BOUNDS, worldToDeci } from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { GroundItem } from "../game_objects/ground_item.js";
 import { Circle, Vector } from "sat";
 import { gameplayConfig } from "../configs/gameplay.js";
-import { flagMap } from "@bundu/shared/flag_map";
-import { gameRegistries } from "../configs/registries.js";
+import { syncFlags } from "../network/flags.js";
 import type { RenderDistanceSystem } from "./render_distance.js";
 import { getAnonProxyId } from "./anon_occlusion.js";
 
@@ -186,6 +178,7 @@ export class PlayerSystem extends System<GameEventMap> {
         dayCycle.applyAmbient(player);
         dayCycle.syncPlayer(player.id, playerPacketManager);
         emitVitals(player, playerPacketManager);
+        syncFlags(player, playerPacketManager, true);
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
     }
@@ -282,7 +275,7 @@ export class PlayerSystem extends System<GameEventMap> {
         }
 
         this.clearEating(player);
-        clearMissingEquipment(player);
+        clearMissingEquipment(player, this.world.context.playerPacketManager);
         const { playerPacketManager, worldPacketManager } = this.world.context;
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
@@ -333,57 +326,9 @@ export class PlayerSystem extends System<GameEventMap> {
         required: readonly number[]
     ): boolean {
         if (required.length === 0) return true;
-        const available = new Set<number>();
-        const registries = gameRegistries();
-        const physics = player.get(Physics);
-        const data = player.get(PlayerData);
-        const near = new Set([
-            registries.structure.resolve("workbench", "bundu"),
-            registries.structure.resolve("anvil", "bundu"),
-            registries.structure.resolve("fire_small", "bundu"),
-            registries.structure.resolve("fire_big", "bundu"),
-            registries.structure.resolve("fire_pit", "bundu"),
-        ]);
-        const nearby = this.world.query([TileEntity, Physics, Type]).filter((object) => {
-            const type = object.get(Type).id;
-            return (
-                near.has(type) &&
-                Math.hypot(
-                    physics.position.x - object.get(Physics).position.x,
-                    physics.position.y - object.get(Physics).position.y
-                ) <= TILE_SIZE * 2
-            );
-        });
-        const nearbyTypes = new Set(nearby.map((object) => object.get(Type).id));
-        const add = (name: string) => {
-            const id = flagMap.get(name);
-            if (id !== undefined) available.add(id);
-        };
-        if (nearbyTypes.has(registries.structure.resolve("workbench", "bundu"))) {
-            add("near_crafting_table");
-        }
-        if (nearbyTypes.has(registries.structure.resolve("anvil", "bundu"))) {
-            add("near_anvil");
-        }
-        const fire = ["fire_small", "fire_big", "fire_pit"].some((name) =>
-            nearbyTypes.has(registries.structure.resolve(name, "bundu"))
-        );
-        if (fire) add("near_fire");
-        const book = registries.item.resolve("book", "bundu");
-        if (data.mainHand === book || data.offHand === book) add("holding_book");
-
-        const tile = pointToTile(physics.position);
-        const top = topGroundAt(this.world, tile.x, tile.y);
-        if (top) {
-            const location = registries.ground_type.location(top.type);
-            if (
-                location.endsWith(":water") ||
-                location.endsWith(":ocean")
-            ) {
-                add("in_water");
-            }
-        }
-        return required.every((flag) => available.has(flag));
+        const flags = Flags.get(player);
+        if (!flags) return false;
+        return required.every((flag) => flags.has(flag));
     }
 
     private finishCraft(player: GameObject) {
@@ -412,7 +357,7 @@ export class PlayerSystem extends System<GameEventMap> {
 
         data.score += recipe.score;
 
-        clearMissingEquipment(player);
+        clearMissingEquipment(player, this.world.context.playerPacketManager);
         this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
@@ -559,7 +504,11 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!inv || slot < 0 || slot >= inv.slots.length) return;
 
         inv.selected = slot;
-        selectEquipment(player, inv.slots[slot]?.id);
+        selectEquipment(
+            player,
+            inv.slots[slot]?.id,
+            this.world.context.playerPacketManager
+        );
         this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         emitEquipment(player, this.world.context.worldPacketManager);
@@ -580,7 +529,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!applyMoveSlot(inv, from, to)) return;
         if (dropped) this.dropItem(player, dropped.id, dropped.count);
 
-        clearMissingEquipment(player);
+        clearMissingEquipment(player, this.world.context.playerPacketManager);
         this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
@@ -621,7 +570,7 @@ export class PlayerSystem extends System<GameEventMap> {
             this.dropItem(player, itemId, amount);
         }
 
-        clearMissingEquipment(player);
+        clearMissingEquipment(player, this.world.context.playerPacketManager);
         this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
@@ -716,7 +665,11 @@ export class PlayerSystem extends System<GameEventMap> {
             data.mainHand !== undefined &&
             ItemConfigs.get(data.mainHand).function === "building"
         ) {
-            clearMainHandIf(player, data.mainHand);
+            clearMainHandIf(
+                player,
+                data.mainHand,
+                this.world.context.playerPacketManager
+            );
         }
         if (
             data.selectedStructure.id === structureId &&
@@ -778,7 +731,7 @@ export class PlayerSystem extends System<GameEventMap> {
             const { playerPacketManager, worldPacketManager } =
                 this.world.context;
             emitInventory(player, playerPacketManager);
-            clearMissingEquipment(player);
+            clearMissingEquipment(player, this.world.context.playerPacketManager);
             this.syncSelectedStructure(player);
             this.clearStaleBlocking(player);
             emitEquipment(player, worldPacketManager);

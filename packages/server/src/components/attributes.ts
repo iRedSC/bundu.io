@@ -76,15 +76,42 @@ export class AttributesData {
     clear(id: string, type?: AttributeType): void {
         if (type) {
             const modType = this.types[type];
-            if (modType) delete modType[id];
+            if (!modType || !(id in modType)) return;
+            delete modType[id];
             this.notify(type);
             return;
         }
         for (const name of Object.keys(this.types) as AttributeType[]) {
             const record = this.types[name];
-            if (!record) continue;
+            if (!record || !(id in record)) continue;
             delete record[id];
             this.notify(name);
+        }
+    }
+
+    /**
+     * Replace every modifier for `id` with `attrs`.
+     * Skips notifies when the resulting modifiers are unchanged.
+     */
+    replace(
+        id: string,
+        attrs: Partial<
+            Record<AttributeType, { operation: "add" | "multiply"; value: number }>
+        >
+    ): void {
+        const keep = new Set(Object.keys(attrs) as AttributeType[]);
+        for (const name of Object.keys(this.types) as AttributeType[]) {
+            if (keep.has(name)) continue;
+            const record = this.types[name];
+            if (!record || !(id in record)) continue;
+            delete record[id];
+            this.notify(name);
+        }
+        for (const [type, attr] of Object.entries(attrs) as [
+            AttributeType,
+            { operation: "add" | "multiply"; value: number },
+        ][]) {
+            this.set(type, id, attr.operation, attr.value);
         }
     }
 
@@ -166,10 +193,19 @@ export class AttributesData {
     ) {
         this.types[type] ??= {};
         const modifiers = this.types[type];
-        const modifier: AttributeModifier = { operation, value };
-        if (duration !== undefined) {
-            modifier.expires = (now ?? this.now) + duration;
+        const expires =
+            duration !== undefined ? (now ?? this.now) + duration : undefined;
+        const existing = modifiers[id];
+        if (
+            existing &&
+            existing.operation === operation &&
+            existing.value === value &&
+            existing.expires === expires
+        ) {
+            return this;
         }
+        const modifier: AttributeModifier = { operation, value };
+        if (expires !== undefined) modifier.expires = expires;
         modifiers[id] = modifier;
 
         this.notify(type);

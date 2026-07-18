@@ -4,6 +4,7 @@ import {
     type AttributeType,
     type AttributesData,
 } from "../components/attributes.js";
+import { Flags, type FlagsData } from "../components/flags.js";
 import type {
     EffectAttribute,
     EffectContext,
@@ -15,14 +16,12 @@ import {
     mergeMatchingPayloads,
     matchingPayloads,
 } from "../configs/loaders/effect_context.js";
-import type { Hide } from "../configs/loaders/hide.js";
-import { orHide } from "../configs/loaders/hide.js";
 import type { GameObject } from "../engine";
 
 const KNOWN = new Set<string>(AttributeList);
 
-/** Deterministic attribute source id for a context contribution. */
-export function attributeSourceId(
+/** Deterministic source id for a context contribution. */
+export function effectSourceId(
     contextName: string,
     stack: StackMode,
     sourceObjectId: number | undefined
@@ -42,11 +41,14 @@ export function applyAttributes(
     sourceId: string,
     attrs: Record<string, EffectAttribute>
 ): void {
-    attributes.clear(sourceId);
+    const next: Partial<
+        Record<AttributeType, { operation: "add" | "multiply"; value: number }>
+    > = {};
     for (const [type, attr] of Object.entries(attrs)) {
         if (!KNOWN.has(type) || !attr) continue;
-        attributes.set(type as AttributeType, sourceId, attr.op, attr.value);
+        next[type as AttributeType] = { operation: attr.op, value: attr.value };
     }
+    attributes.replace(sourceId, next);
 }
 
 export function clearAttributes(
@@ -56,6 +58,21 @@ export function clearAttributes(
     attributes?.clear(sourceId);
 }
 
+export function applyFlags(
+    flags: FlagsData,
+    sourceId: string,
+    flagIds: readonly number[]
+): boolean {
+    return flags.setSource(sourceId, flagIds);
+}
+
+export function clearFlags(
+    flags: FlagsData | undefined,
+    sourceId: string
+): boolean {
+    return flags?.clear(sourceId) ?? false;
+}
+
 export function payloadForSubject(
     context: EffectContext,
     subjectMatches: (target: TargetEffect) => boolean
@@ -63,48 +80,59 @@ export function payloadForSubject(
     return mergeMatchingPayloads(matchingPayloads(context, subjectMatches));
 }
 
-export function collectHide(payloads: readonly EffectPayload[]): Hide | undefined {
-    let hide: Hide | undefined;
-    for (const payload of payloads) {
-        hide = orHide(hide, payload.hide);
-    }
-    return hide;
+export function payloadIsEmpty(payload: EffectPayload): boolean {
+    return (
+        !payload.hide &&
+        Object.keys(payload.attributes).length === 0 &&
+        payload.flags.length === 0
+    );
 }
 
-/** Apply replace/stack attribute payload from one source object. */
-export function applyContextAttributes(
+/**
+ * Apply replace/stack attrs + flags from one source object.
+ * Returns the source id if anything was applied (or cleared into place).
+ */
+export function applyContextEffects(
     target: GameObject,
     contextName: string,
     context: EffectContext,
     payload: EffectPayload,
     sourceObjectId?: number
 ): string | undefined {
-    if (Object.keys(payload.attributes).length === 0) return undefined;
     if (context.stack === "max") {
         // Max is aggregated by the spatial system; not applied per-source here.
         return undefined;
     }
-    const attributes = Attributes.get(target);
-    if (!attributes) return undefined;
-    const sourceId = attributeSourceId(
+    const sourceId = effectSourceId(
         contextName,
         context.stack,
         sourceObjectId
     );
-    applyAttributes(attributes, sourceId, payload.attributes);
+    const attributes = Attributes.get(target);
+    if (attributes) {
+        if (Object.keys(payload.attributes).length === 0) {
+            clearAttributes(attributes, sourceId);
+        } else {
+            applyAttributes(attributes, sourceId, payload.attributes);
+        }
+    }
+    const flags = Flags.get(target);
+    if (flags) {
+        applyFlags(flags, sourceId, payload.flags);
+    }
     return sourceId;
 }
 
 /**
- * Apply max-stack attributes: for each attr type, keep the contributor with the
- * highest value (same op required; mixed ops → last wins by value compare).
+ * Apply max-stack attributes + union flags under one context source id.
  */
-export function applyMaxAttributes(
+export function applyMaxEffects(
     target: GameObject,
     contextName: string,
     contributions: readonly EffectPayload[]
 ): string | undefined {
     const merged: Record<string, EffectAttribute> = {};
+    const flagSet = new Set<number>();
     for (const payload of contributions) {
         for (const [type, attr] of Object.entries(payload.attributes)) {
             if (!attr) continue;
@@ -113,13 +141,35 @@ export function applyMaxAttributes(
                 merged[type] = attr;
             }
         }
+        for (const id of payload.flags) flagSet.add(id);
     }
+
+    const attributes = Attributes.get(target);
+    const flags = Flags.get(target);
+    const flagIds = [...flagSet];
+
     if (Object.keys(merged).length === 0) {
-        clearAttributes(Attributes.get(target), contextName);
+        clearAttributes(attributes, contextName);
+    } else if (attributes) {
+        applyAttributes(attributes, contextName, merged);
+    }
+
+    if (flagIds.length === 0) {
+        clearFlags(flags, contextName);
+    } else if (flags) {
+        applyFlags(flags, contextName, flagIds);
+    }
+
+    if (Object.keys(merged).length === 0 && flagIds.length === 0) {
         return undefined;
     }
-    const attributes = Attributes.get(target);
-    if (!attributes) return undefined;
-    applyAttributes(attributes, contextName, merged);
     return contextName;
+}
+
+export function clearContextSource(
+    target: GameObject,
+    sourceId: string
+): void {
+    clearAttributes(Attributes.get(target), sourceId);
+    clearFlags(Flags.get(target), sourceId);
 }
