@@ -104,8 +104,11 @@ describe("delete connectivity ladder", () => {
     expect(haloConnectsStumps(index, deleted, members, stumps)).toBe(false);
     const parts = splitComponentsAfterDelete(index, members, stumps);
     expect(parts).toBeDefined();
-    expect(parts!.length).toBe(2);
-    const sorted = parts!.map((part) => part.sort()).sort((a, b) => a[0]! - b[0]!);
+    if (!parts) return;
+    expect(parts.length).toBe(2);
+    const sorted = parts
+      .map((part) => [...part].sort((a, b) => a - b))
+      .sort((a, b) => (a[0] ?? 0) - (b[0] ?? 0));
     expect(sorted).toEqual([[1], [3]]);
   });
 });
