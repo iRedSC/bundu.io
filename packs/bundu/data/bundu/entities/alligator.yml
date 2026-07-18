@@ -1,0 +1,15 @@
+health: 700
+score: 1500
+behavior: hostile
+detectionRange: 300
+loseSightRange: 450
+passiveSpeed: 8
+activeSpeed: 11
+attack_damage: 45
+scale: 0.8
+aggroSwitch: onHit
+aggroLevel: high
+corpse: alligator_dead
+spawn_count: 3
+aggroAt:
+    - "#bundu:walls"

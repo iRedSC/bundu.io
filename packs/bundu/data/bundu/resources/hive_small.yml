@@ -1,0 +1,4 @@
+destroy_on_empty: true
+score: 20
+quantity: 4
+loot_table: hive_small

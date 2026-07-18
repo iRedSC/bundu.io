@@ -1,0 +1,8 @@
+score: 8
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 1
+regen_speed: 8
+quantity: 30
+loot_table: stone

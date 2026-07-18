@@ -1,0 +1,3 @@
+id: item/bird_skull
+extends: item/type/book
+texture: bundu/item/material/bird_skull.svg

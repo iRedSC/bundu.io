@@ -1,0 +1,3 @@
+id: item/red_berry
+extends: item/type/food
+texture: bundu/item/food/red_berry.svg

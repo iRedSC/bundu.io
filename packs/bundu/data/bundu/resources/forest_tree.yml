@@ -1,0 +1,8 @@
+score: 5
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 0
+regen_speed: 5
+quantity: 40
+loot_table: forest_tree

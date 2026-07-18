@@ -1,0 +1,3 @@
+id: item/queen_bee
+extends: item/type/none
+texture: bundu/entity/animal/queen_bee/queen_bee.svg

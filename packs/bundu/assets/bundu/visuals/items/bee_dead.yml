@@ -1,0 +1,6 @@
+id: item/bee_dead
+extends: item/type/none
+texture: bundu/entity/animal/bee/bee_dead.svg
+contexts:
+    world:
+        scale: 1

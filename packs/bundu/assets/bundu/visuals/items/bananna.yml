@@ -1,0 +1,3 @@
+id: item/bananna
+extends: item/type/none
+texture: bundu/misc/unknown_asset.svg

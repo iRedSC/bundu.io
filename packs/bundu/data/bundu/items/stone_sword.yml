@@ -1,0 +1,9 @@
+type: sword
+level: 2
+attributes:
+    attack.damage:
+        op: add
+        value: 15
+    health.defense.blocking:
+        op: add
+        value: 3

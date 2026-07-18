@@ -1,0 +1,6 @@
+class: spike
+material: cobalt
+tier: 5
+damage: 60
+on_hit_damage: 30
+attack_range: 25

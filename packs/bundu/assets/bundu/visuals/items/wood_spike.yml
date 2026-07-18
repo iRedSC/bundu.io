@@ -1,0 +1,3 @@
+id: item/wood_spike
+extends: item/type/spike
+texture: bundu/item/structure/spike/wood_spike.png

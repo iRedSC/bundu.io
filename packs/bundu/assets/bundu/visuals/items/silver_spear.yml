@@ -1,0 +1,3 @@
+id: item/silver_spear
+extends: item/type/spear
+texture: bundu/item/tool/silver_spear.svg

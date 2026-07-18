@@ -1,0 +1,6 @@
+type: pickaxe
+level: 4
+attributes:
+    attack.damage:
+        op: add
+        value: 5

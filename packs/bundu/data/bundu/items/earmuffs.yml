@@ -1,0 +1,5 @@
+type: hat
+attributes:
+    temperature.warmth:
+        op: add
+        value: 7

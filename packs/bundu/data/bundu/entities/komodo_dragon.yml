@@ -1,0 +1,13 @@
+health: 800
+score: 2000
+behavior: hostile
+detectionRange: 300
+loseSightRange: 700
+passiveSpeed: 9
+activeSpeed: 11
+attack_damage: 65
+scale: 0.8
+aggroSwitch: random
+aggroLevel: low
+corpse: komodo_dragon_dead
+spawn_count: 3

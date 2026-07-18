@@ -1,0 +1,6 @@
+decay: 30
+destroy_on_empty: true
+multipliers:
+    knife: 2
+quantity: 2
+loot_table: queen_bee_dead

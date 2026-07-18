@@ -1,0 +1,6 @@
+id: item/stone
+extends: item/type/none
+texture: bundu/item/material/stone.svg
+contexts:
+    world:
+        scale: 1.7

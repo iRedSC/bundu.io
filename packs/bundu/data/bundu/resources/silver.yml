@@ -1,0 +1,8 @@
+score: 20
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 3
+regen_speed: 14
+quantity: 20
+loot_table: silver

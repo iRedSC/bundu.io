@@ -1,0 +1,3 @@
+id: item/shovel
+extends: item/type/pickaxe
+texture: bundu/item/tool/shovel.svg

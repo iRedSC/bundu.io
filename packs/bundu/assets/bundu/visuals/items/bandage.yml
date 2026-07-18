@@ -1,0 +1,3 @@
+id: item/bandage
+extends: item/type/food
+texture: bundu/item/food/bandage.svg

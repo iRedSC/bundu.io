@@ -1,0 +1,8 @@
+score: 5
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 0
+regen_speed: 7
+quantity: 80
+loot_table: savanah_tree

@@ -1,0 +1,9 @@
+type: spear
+level: 5
+attributes:
+    attack.damage:
+        op: add
+        value: 18
+    health.defense.blocking:
+        op: add
+        value: 5

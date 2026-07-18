@@ -1,0 +1,5 @@
+type: food
+can_saturate: true
+stats:
+    hunger: 35
+    health: -10

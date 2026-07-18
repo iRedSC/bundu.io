@@ -1,0 +1,5 @@
+type: shovel
+attributes:
+    attack.damage:
+        op: add
+        value: 3

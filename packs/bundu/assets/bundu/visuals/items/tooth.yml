@@ -1,0 +1,3 @@
+id: item/tooth
+extends: item/type/none
+texture: bundu/item/material/tooth.svg

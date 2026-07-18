@@ -1,0 +1,3 @@
+id: item/raindeer_dead
+extends: item/type/none
+texture: bundu/entity/animal/reindeer/reindeer_dead.svg

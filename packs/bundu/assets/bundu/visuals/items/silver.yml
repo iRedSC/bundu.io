@@ -1,0 +1,6 @@
+id: item/silver
+extends: item/type/none
+texture: bundu/item/material/silver.svg
+contexts:
+    world:
+        scale: 1.7

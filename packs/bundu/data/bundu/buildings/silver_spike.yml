@@ -1,0 +1,6 @@
+class: spike
+material: silver
+tier: 4
+damage: 50
+on_hit_damage: 20
+attack_range: 25

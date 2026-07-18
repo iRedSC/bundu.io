@@ -20,6 +20,11 @@ replaceCompiledVisualDefs(
     resourcePacks.manifest.assets.map((asset) => asset.path)
 );
 
+function bareId(id: string): string {
+    const index = id.indexOf(":");
+    return index === -1 ? id : id.slice(index + 1);
+}
+
 function requireConcreteObjectVisual(id: string, kind: string): void {
     const def = visualDefs.get(id);
     if (!def || def.abstract || "contexts" in def) {
@@ -47,20 +52,11 @@ function requireItemVisual(id: string): void {
     );
 }
 
-const resourceIds = Object.keys(packs.records("bundu", "resources"));
-const entityIds = Object.keys(packs.records("bundu", "entities"));
-const buildingIds = Object.keys(packs.records("bundu", "buildings"));
-const itemIds = Object.keys(
-    Object.assign(
-        {},
-        packs.records("bundu", "items/consumable"),
-        packs.records("bundu", "items/main_hand"),
-        packs.records("bundu", "items/off_hand"),
-        packs.records("bundu", "items/wearable"),
-        packs.records("bundu", "items/placeable"),
-        packs.records("bundu", "items/materials")
-    )
-);
+const sources = registrySources();
+const resourceIds = [...sources.resource.keys()].map(bareId);
+const entityIds = [...sources.entity_type.keys()].map(bareId);
+const buildingIds = [...sources.structure.keys()].map(bareId);
+const itemIds = [...sources.item.keys()].map(bareId);
 
 for (const id of [...resourceIds, "stone_barrier"]) {
     requireConcreteObjectVisual(id, "Resource");
@@ -75,7 +71,6 @@ for (const id of itemIds) {
     requireItemVisual(id);
 }
 
-const sources = registrySources();
 const registryCounts = Object.entries(gameRegistries())
     .map(([name, registry]) => `${name}=${registry.size}`)
     .join(", ");

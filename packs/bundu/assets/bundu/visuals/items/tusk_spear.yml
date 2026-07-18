@@ -1,0 +1,3 @@
+id: item/tusk_spear
+extends: item/type/spear
+texture: bundu/item/tool/hunting_spear.svg

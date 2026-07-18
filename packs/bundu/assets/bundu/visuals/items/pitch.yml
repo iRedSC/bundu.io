@@ -1,0 +1,3 @@
+id: item/pitch
+extends: item/type/none
+texture: bundu/item/material/pitch.svg

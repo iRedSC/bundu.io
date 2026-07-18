@@ -15,25 +15,8 @@ export type GameRegistries = {
     [K in RegistryName]: Registry<K>;
 };
 
-const itemResources = [
-    "items/consumable",
-    "items/main_hand",
-    "items/off_hand",
-    "items/wearable",
-    "items/placeable",
-    "items/materials",
-] as const;
-
 let currentSources: RegistrySources | undefined;
 let currentRegistries: GameRegistries | undefined;
-
-function mergeSources(resources: readonly string[]): Map<string, SourcedRecord> {
-    const merged = new Map<string, SourcedRecord>();
-    for (const resource of resources) {
-        for (const [id, source] of packs.registryRecords(resource)) merged.set(id, source);
-    }
-    return merged;
-}
 
 function definitionsOrRecords(resource: string): Map<string, SourcedRecord> {
     const definitions = packs.registryDefinitions(resource);
@@ -57,11 +40,11 @@ function applyTags<K extends RegistryName>(registry: Registry<K>): void {
 
 export function loadRegistries(): GameRegistries {
     const sources: RegistrySources = {
-        item: mergeSources(itemResources),
-        structure: packs.registryRecords("buildings"),
-        resource: packs.registryRecords("resources"),
-        entity_type: packs.registryRecords("entities"),
-        ground_type: packs.registryRecords("ground_types"),
+        item: definitionsOrRecords("items"),
+        structure: definitionsOrRecords("buildings"),
+        resource: definitionsOrRecords("resources"),
+        entity_type: definitionsOrRecords("entities"),
+        ground_type: definitionsOrRecords("ground_types"),
         recipe: definitionsOrRecords("recipes"),
         loot_table: definitionsOrRecords("loot_tables"),
     };

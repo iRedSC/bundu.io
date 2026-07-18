@@ -1,0 +1,3 @@
+id: item/wood_helmet
+extends: item/type/helmet
+texture: bundu/item/equipment/wood_helmet.svg

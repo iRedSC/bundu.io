@@ -52,7 +52,7 @@ export function loadConfigs() {
         Partial<ItemConfig>
     >;
     const groundTypeConfig = records(sources.ground_type);
-    const itemTypes = packs.records("bundu", "items/types") as Partial<
+    const itemTypes = packs.records("bundu", "item_types") as Partial<
         Record<string, Partial<ItemConfig>>
     >;
 

@@ -1,0 +1,3 @@
+id: item/ram_angry
+extends: item/type/none
+texture: bundu/entity/animal/ram/ram_angry.svg

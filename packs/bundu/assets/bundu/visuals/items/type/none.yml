@@ -1,0 +1,9 @@
+id: item/type/none
+abstract: true
+texture: bundu/misc/unknown_asset.svg
+contexts:
+    icon: {}
+    inventory: {}
+    hand: {}
+    body: {}
+    world: {}
