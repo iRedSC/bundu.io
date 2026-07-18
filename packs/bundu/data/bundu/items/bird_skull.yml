@@ -1,9 +1,11 @@
 type: book
 function: off_hand
-attributes:
-    attack.damage:
-        op: add
-        value: 5
-    health.regen_amount:
-        op: multiply
-        value: 0
+whenOffHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 5
+            health.regen_amount:
+                op: multiply
+                value: 0

@@ -1,9 +1,11 @@
 type: spear
 level: 3
-attributes:
-    attack.damage:
-        op: add
-        value: 12
-    health.defense.blocking:
-        op: add
-        value: 1
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 12
+            health.defense.blocking:
+                op: add
+                value: 1

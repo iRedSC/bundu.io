@@ -1,5 +1,7 @@
 type: shovel
-attributes:
-    attack.damage:
-        op: add
-        value: 3
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 3

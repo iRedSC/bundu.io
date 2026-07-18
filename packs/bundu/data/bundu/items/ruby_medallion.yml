@@ -1,12 +1,14 @@
 type: book
 function: off_hand
-attributes:
-    health.regen_amount:
-        op: add
-        value: 15
-    hunger.depletion_amount:
-        op: add
-        value: 30
-    health.max:
-        op: multiply
-        value: 0.7
+whenOffHand:
+    "*":
+        attributes:
+            health.regen_amount:
+                op: add
+                value: 15
+            hunger.depletion_amount:
+                op: add
+                value: 30
+            health.max:
+                op: multiply
+                value: 0.7

@@ -1,5 +1,7 @@
 type: knife
-attributes:
-    attack.damage:
-        op: add
-        value: 8
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 8

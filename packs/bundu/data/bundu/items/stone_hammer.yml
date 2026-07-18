@@ -1,9 +1,11 @@
 type: hammer
 level: 2
-attributes:
-    attack.damage:
-        op: add
-        value: 4
-    attack.damage.building:
-        op: add
-        value: 30
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 4
+            attack.damage.building:
+                op: add
+                value: 30

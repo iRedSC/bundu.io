@@ -1,8 +1,10 @@
 type: wrench
-attributes:
-    attack.damage:
-        op: add
-        value: 4
-    attack.building.damage:
-        op: add
-        value: -70
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 4
+            attack.building.damage:
+                op: add
+                value: -70

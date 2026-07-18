@@ -1,9 +1,11 @@
 type: sword
 level: 6
-attributes:
-    attack.damage:
-        op: add
-        value: 25
-    health.defense.blocking:
-        op: add
-        value: 6
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 25
+            health.defense.blocking:
+                op: add
+                value: 6

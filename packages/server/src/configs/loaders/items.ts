@@ -1,32 +1,23 @@
 import type { RegistryId } from "@bundu/shared/registry";
 import { ConfigLoader } from "./loader.js";
-import type { OcclusionHide } from "./occlusion_hide.js";
+import type { ContextBundle, EffectContext } from "./effect_context.js";
 
-export type ItemAttribute = {
-    op: "add" | "multiply";
-    value: number;
-};
-
-export type ItemConfig = {
+export type ItemConfig = ContextBundle & {
     type: string | null;
     function: string | null;
     level: number;
-    attributes: Record<string, ItemAttribute>;
     stats: Record<string, number>;
     flags: string[];
     unequip_delay: number;
     can_saturate: boolean;
     eat_duration_ms: number;
     places: RegistryId<"structure"> | null;
-    /** Hide identity from outsiders while this item is equipped (e.g. ninja hood). */
-    occlusionHide?: OcclusionHide;
 };
 
 const fallback: ItemConfig = {
     type: null,
     function: null,
     level: 0,
-    attributes: {},
     stats: {},
     flags: [],
     unequip_delay: 0,
@@ -36,3 +27,26 @@ const fallback: ItemConfig = {
 };
 
 export const ItemConfigs = new ConfigLoader<"item", ItemConfig>("item", fallback);
+
+/** Equip slot context for an item function. */
+export function equipContextName(
+    fn: string | null
+): "whenMainHand" | "whenOffHand" | "whenHelmet" | undefined {
+    switch (fn) {
+        case "main_hand":
+        case "building":
+            return "whenMainHand";
+        case "off_hand":
+            return "whenOffHand";
+        case "wear":
+            return "whenHelmet";
+        default:
+            return undefined;
+    }
+}
+
+export function itemEquipContext(config: ItemConfig): EffectContext | undefined {
+    const name = equipContextName(config.function);
+    if (!name) return undefined;
+    return config[name];
+}

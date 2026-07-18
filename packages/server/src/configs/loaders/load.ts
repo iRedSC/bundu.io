@@ -11,7 +11,12 @@ import {
 import { type AnimalConfig, AnimalConfigs } from "./animals.js";
 import { type GroundTypeConfig, GroundTypeConfigs } from "./ground_types.js";
 import { type DecorationConfig, DecorationConfigs } from "./decorations.js";
-import { parseOcclusionHide } from "./occlusion_hide.js";
+import {
+    EQUIP_CONTEXTS,
+    parseEffectContext,
+    SPATIAL_CONTEXTS,
+    type ContextName,
+} from "./effect_context.js";
 import { packs } from "../packs.js";
 import { gameplayConfig, setGameplayConfig } from "../gameplay.js";
 import { loadCraftingConfigs } from "./crafting.js";
@@ -22,6 +27,83 @@ import {
     type GameRegistries,
     type RegistrySources,
 } from "../registries.js";
+
+const CONTEXT_META = new Set([
+    "stack",
+    "proximityDistance",
+    "occupationType",
+]);
+
+function asObject(value: unknown): Record<string, unknown> | undefined {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+        return undefined;
+    }
+    return value as Record<string, unknown>;
+}
+
+/** Deep-merge when* YAML (meta keys + per-target hide/attributes). */
+function mergeRawContext(
+    base: unknown,
+    override: unknown
+): Record<string, unknown> | undefined {
+    const baseObj = asObject(base);
+    const overObj = asObject(override);
+    if (!baseObj && !overObj) return undefined;
+    if (!baseObj) return { ...overObj };
+    if (!overObj) return { ...baseObj };
+
+    const keys = new Set([...Object.keys(baseObj), ...Object.keys(overObj)]);
+    const result: Record<string, unknown> = {};
+    for (const key of keys) {
+        if (CONTEXT_META.has(key)) {
+            result[key] =
+                overObj[key] !== undefined ? overObj[key] : baseObj[key];
+            continue;
+        }
+        const baseTarget = asObject(baseObj[key]);
+        const overTarget = asObject(overObj[key]);
+        if (!baseTarget) {
+            result[key] = overTarget ? { ...overTarget } : overObj[key];
+            continue;
+        }
+        if (!overTarget) {
+            result[key] = { ...baseTarget };
+            continue;
+        }
+        const baseAttrs = asObject(baseTarget.attributes) ?? {};
+        const overAttrs = asObject(overTarget.attributes) ?? {};
+        result[key] = {
+            hide:
+                overTarget.hide !== undefined
+                    ? overTarget.hide
+                    : baseTarget.hide,
+            attributes: { ...baseAttrs, ...overAttrs },
+        };
+    }
+    return result;
+}
+
+function assignContexts(
+    record: Record<string, unknown>,
+    raw: Record<string, unknown>,
+    typeRaw: Record<string, unknown> | undefined,
+    path: string,
+    registries: GameRegistries,
+    ownerId: string,
+    allowed: readonly ContextName[]
+): void {
+    for (const name of allowed) {
+        const merged = mergeRawContext(typeRaw?.[name], raw[name]);
+        if (merged === undefined) continue;
+        record[name] = parseEffectContext(
+            merged,
+            `${path}.${name}`,
+            name,
+            registries,
+            ownerId
+        );
+    }
+}
 
 function records<K extends RegistryName>(
     sources: RegistrySources[K]
@@ -196,9 +278,14 @@ export function loadConfigs() {
                 typeof raw.solid === "boolean"
                     ? raw.solid
                     : defaultSolidForClass(record.class);
-            record.occlusionHide = parseOcclusionHide(
-                raw.occlusionHide,
-                `${id}.occlusionHide`
+            assignContexts(
+                record as Record<string, unknown>,
+                raw,
+                undefined,
+                id,
+                registries,
+                id,
+                SPATIAL_CONTEXTS
             );
             Object.assign(record, parsePlacementAllowDeny(registries, id, raw));
             const blocked = raw.placement?.blocked ?? [[0, 0]];
@@ -249,8 +336,22 @@ export function loadConfigs() {
             return mergeObjects(record, undefined, fallback);
         }
     );
+    const animalsOnly = Object.fromEntries(
+        Object.entries(animalConfig).filter(([id, value]) => {
+            const bare = id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
+            if (bare === "player") return false;
+            if (
+                value &&
+                typeof value === "object" &&
+                (value as { kind?: unknown }).kind === "player"
+            ) {
+                return false;
+            }
+            return true;
+        })
+    );
     AnimalConfigs.parse(
-        animalConfig as Record<string, Partial<AnimalConfig>>,
+        animalsOnly as Record<string, Partial<AnimalConfig>>,
         (id, record, fallback) => {
             const raw = record as Partial<AnimalConfig> & {
                 aggroAt?: string[];
@@ -297,6 +398,15 @@ export function loadConfigs() {
                 record,
                 parsePlacementAllowDeny(registries, resource, raw)
             );
+            assignContexts(
+                record as Record<string, unknown>,
+                raw,
+                undefined,
+                resource,
+                registries,
+                resource,
+                SPATIAL_CONTEXTS
+            );
             if (raw.loot_table) {
                 record.lootTable = resolve(
                     registries,
@@ -310,6 +420,8 @@ export function loadConfigs() {
         }
     );
 
+    const itemTypeRaws = itemTypes as Record<string, Record<string, unknown>>;
+
     const typesCallback = (
         id: string,
         record: Partial<ItemConfig>,
@@ -317,15 +429,11 @@ export function loadConfigs() {
     ): ItemConfig => {
         const raw = record as Partial<ItemConfig> & {
             places?: string;
-            occlusionHide?: unknown;
-        };
-        const typeRecord = itemTypes[record.type ?? "none"] ?? fallback;
+        } & Record<string, unknown>;
+        const typeKey = record.type ?? "none";
+        const typeRaw = itemTypeRaws[typeKey] ?? {};
+        const typeRecord = typeRaw as Partial<ItemConfig>;
 
-        record.attributes = mergeObjects(
-            typeRecord.attributes,
-            record.attributes,
-            {}
-        );
         record.stats = mergeObjects(typeRecord.stats, record.stats, {});
         record.flags = [...(typeRecord.flags ?? []), ...(record.flags ?? [])];
         if (raw.places) {
@@ -337,12 +445,21 @@ export function loadConfigs() {
                 `${id}.places`
             );
         }
-        record.occlusionHide = parseOcclusionHide(
-            raw.occlusionHide ??
-                (typeRecord as Partial<ItemConfig>).occlusionHide,
-            `${id}.occlusionHide`
+        assignContexts(
+            record as Record<string, unknown>,
+            raw,
+            typeRaw,
+            id,
+            registries,
+            id,
+            EQUIP_CONTEXTS
         );
-        return mergeObjects(typeRecord, record, fallback);
+        // Merge type fields but keep parsed contexts from `record`.
+        const merged = mergeObjects(typeRecord, record, fallback);
+        for (const name of EQUIP_CONTEXTS) {
+            merged[name] = record[name];
+        }
+        return merged;
     };
 
     ItemConfigs.parse(itemConfigData, typesCallback);
@@ -353,13 +470,11 @@ export function loadConfigs() {
         "bundu",
         "gameplay.rotting.claim_weapon"
     );
-    for (const id of Object.keys(gameplay.temperature.nearFire.warmthByStructure)) {
-        registries.structure.resolve(
-            id,
-            "bundu",
-            "gameplay.temperature.near_fire.warmth"
-        );
-    }
+    registries.entity_type.resolve(
+        "player",
+        "bundu",
+        "entity_type.player"
+    );
     registries.resource.resolveSet(
         gameplay.worldgen.resources,
         "bundu",

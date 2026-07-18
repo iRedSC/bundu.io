@@ -2,7 +2,7 @@ import type { OccupancyLayer } from "@bundu/shared/occupancy_layer";
 import type { RegistryId } from "@bundu/shared/registry";
 import type { TilePos } from "@bundu/shared/tiles";
 import { ConfigLoader } from "./loader.js";
-import type { OcclusionHide } from "./occlusion_hide.js";
+import type { ContextBundle } from "./effect_context.js";
 import type { PlacementAllowDeny } from "./placement_allow.js";
 
 export type BuildingClass =
@@ -13,32 +13,31 @@ export type BuildingClass =
     | "floor"
     | "roof";
 
-export type BuildingConfig = PlacementAllowDeny & {
-    class: BuildingClass;
-    health: number;
-    pointsPerSecond: number;
-    /** Shared key for spike↔wall/door matching. */
-    material?: string;
-    /** Placeover rank within an upgrade group (higher replaces lower). */
-    tier?: number;
-    /** Contact damage when spiked (from spike config). */
-    damage?: number;
-    /** Reflect damage when the spiked structure is hit. */
-    on_hit_damage?: number;
-    /** Extra world-unit radius added to the structure collider for contact attacks. */
-    attack_range?: number;
-    /**
-     * When true, footprint tiles block movers/pathing.
-     * Defaults by class: walls/doors/buildings solid; floors/roofs not.
-     */
-    solid: boolean;
-    /** Hide identity from outsiders while under this building (typically roofs). */
-    occlusionHide?: OcclusionHide;
-    placement: {
-        blocked: readonly TilePos[];
-        ground: readonly RegistryId<"ground_type">[];
+export type BuildingConfig = PlacementAllowDeny &
+    ContextBundle & {
+        class: BuildingClass;
+        health: number;
+        pointsPerSecond: number;
+        /** Shared key for spike↔wall/door matching. */
+        material?: string;
+        /** Placeover rank within an upgrade group (higher replaces lower). */
+        tier?: number;
+        /** Contact damage when spiked (from spike config). */
+        damage?: number;
+        /** Reflect damage when the spiked structure is hit. */
+        on_hit_damage?: number;
+        /** Extra world-unit radius added to the structure collider for contact attacks. */
+        attack_range?: number;
+        /**
+         * When true, footprint tiles block movers/pathing.
+         * Defaults by class: walls/doors/buildings solid; floors/roofs not.
+         */
+        solid: boolean;
+        placement: {
+            blocked: readonly TilePos[];
+            ground: readonly RegistryId<"ground_type">[];
+        };
     };
-};
 
 export const BuildingConfigs = new ConfigLoader<"structure", BuildingConfig>(
     "structure",

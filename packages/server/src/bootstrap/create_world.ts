@@ -26,7 +26,7 @@ import { AnonOcclusionSystem } from "../systems/anon_occlusion";
 import { RottingSystem } from "../systems/rotting";
 import { AnimalSystem } from "../systems/animal";
 import { HungerSystem } from "../systems/hunger";
-import { NearFireSystem } from "../systems/near_fire";
+import { EffectContextSystem } from "../systems/effect_contexts";
 import { TemperatureSystem } from "../systems/temperature";
 import { AdminEditorSystem } from "../admin/editor";
 
@@ -61,7 +61,7 @@ export function createWorld(): ServerWorld {
         .addSystem(new CollisionSystem(world))
         .addSystem(new HealthSystem(world))
         .addSystem(new HungerSystem(world))
-        .addSystem(new NearFireSystem(world))
+        .addSystem(new EffectContextSystem(world))
         .addSystem(new TemperatureSystem(world))
         .addSystem(new AttackSystem(world))
         .addSystem(new SpikeSystem(world))

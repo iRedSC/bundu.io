@@ -4,58 +4,47 @@ import { Circle, Vector } from "sat";
 import { getVariantId } from "@bundu/shared/variant_map.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { Attributes } from "../components/attributes.js";
-import { Physics, Type } from "../components/base.js";
+import { Physics } from "../components/base.js";
 import { AnonProxy } from "../components/anon_proxy.js";
 import { PlayerData } from "../components/player.js";
 import { VisibleObjects } from "../components/visible_objects.js";
-import { BuildingConfigs } from "../configs/loaders/buildings.js";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { ItemConfigs } from "../configs/loaders/items.js";
-import {
-    type OcclusionHide,
-    orOcclusionHide,
-    shouldAnonymize,
-} from "../configs/loaders/occlusion_hide.js";
+import type { Hide } from "../configs/loaders/hide.js";
+import { orHide, shouldAnonymize } from "../configs/loaders/hide.js";
 import { System, type GameObject, type World } from "../engine";
 import { AnonymousPlayer } from "../game_objects/anonymous_player.js";
+import { payloadForSubject } from "./effect_apply.js";
+import { resolveSpatialHide } from "./effect_contexts.js";
+import { subjectMatchesTarget } from "./effect_targets.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import type { RoofSystem } from "./roof.js";
 
-/** Effective hide for a player (roof underfoot OR equipped gear). */
+const EQUIP_SLOTS = [
+    ["mainHand", "whenMainHand"],
+    ["offHand", "whenOffHand"],
+    ["helmet", "whenHelmet"],
+] as const;
+
+/** Effective hide for a player (spatial contexts OR equipped gear). */
 export function resolveEffectiveHide(
     player: GameObject,
     world: World
-): OcclusionHide | undefined {
+): Hide | undefined {
     const data = PlayerData.get(player);
     if (!data) return undefined;
 
-    let hide: OcclusionHide | undefined;
+    let hide = resolveSpatialHide(player, world);
 
-    const physics = Physics.get(player);
-    if (physics) {
-        const roofId = world.context.occupancy.get(
-            worldToTile(physics.position.x),
-            worldToTile(physics.position.y),
-            "roof"
-        );
-        if (roofId !== undefined) {
-            const roof = world.getObject(roofId);
-            const type = roof ? Type.get(roof) : undefined;
-            if (type) {
-                hide = orOcclusionHide(
-                    hide,
-                    BuildingConfigs.get(type.id).occlusionHide
-                );
-            }
-        }
-    }
-
-    for (const itemId of [data.mainHand, data.offHand, data.helmet]) {
+    for (const [slot, contextName] of EQUIP_SLOTS) {
+        const itemId = data[slot];
         if (itemId === undefined) continue;
-        hide = orOcclusionHide(
-            hide,
-            ItemConfigs.get(itemId).occlusionHide
+        const context = ItemConfigs.get(itemId)[contextName];
+        if (!context) continue;
+        const payload = payloadForSubject(context, (t) =>
+            subjectMatchesTarget(player, t)
         );
+        hide = orHide(hide, payload.hide);
     }
 
     return hide;
@@ -269,7 +258,7 @@ export class AnonOcclusionSystem extends System<GameEventMap> {
         player: GameObject,
         data: PlayerData,
         physics: Physics,
-        hide: OcclusionHide
+        hide: Hide
     ): void {
         const proxyId = proxyBySource.get(player.id);
         let proxy =
@@ -302,7 +291,7 @@ export class AnonOcclusionSystem extends System<GameEventMap> {
         source: GameObject,
         data: PlayerData,
         physics: Physics,
-        hide: OcclusionHide
+        hide: Hide
     ): void {
         const proxyPhys = Physics.get(proxy);
         const proxyData = AnonProxy.get(proxy);
@@ -354,7 +343,7 @@ function scrubAppearance(
     source: GameObject,
     data: PlayerData,
     physics: Physics,
-    hide: OcclusionHide
+    hide: Hide
 ): AnonProxy {
     const scale = Attributes.get(source)?.get("physics.scale") ?? 1;
     return {

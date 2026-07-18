@@ -29,11 +29,6 @@ export type GameplayConfig = {
     };
     temperature: {
         tickPeriodMs: number;
-        nearFire: {
-            radius: number;
-            /** Structure string id → additive temperature.warmth while in range. */
-            warmthByStructure: Record<string, number>;
-        };
     };
     dayCycle: {
         periods: {
@@ -138,19 +133,6 @@ function attributes(
 const DAY_PERIOD_NAMES = ["morning", "day", "evening", "night"] as const;
 type DayPeriodName = (typeof DAY_PERIOD_NAMES)[number];
 
-function parseNearFire(
-    value: Record<string, unknown>
-): GameplayConfig["temperature"]["nearFire"] {
-    const path = "gameplay.temperature.near_fire";
-    const radius = number(value, "radius", path);
-    if (radius <= 0) throw new Error(`${path}.radius: must be > 0`);
-    const warmthByStructure = numberRecord(value.warmth, `${path}.warmth`);
-    if (Object.keys(warmthByStructure).length === 0) {
-        throw new Error(`${path}.warmth: expected at least one structure`);
-    }
-    return { radius, warmthByStructure };
-}
-
 /** Named morning/day/evening/night entries, ordered to match client sky tints. */
 function parseDayCycle(
     value: Record<string, unknown>
@@ -233,9 +215,6 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
                 temperature,
                 "tick_period_ms",
                 "gameplay.temperature"
-            ),
-            nearFire: parseNearFire(
-                record(temperature.near_fire, "gameplay.temperature.near_fire")
             ),
         },
         dayCycle: parseDayCycle(dayCycle),

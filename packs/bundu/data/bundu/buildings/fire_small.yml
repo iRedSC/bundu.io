@@ -1,3 +1,11 @@
 class: building
 solid: false
 health: 500
+whenNearby:
+    stack: max
+    proximityDistance: 200
+    "*":
+        attributes:
+            temperature.warmth:
+                op: add
+                value: 15

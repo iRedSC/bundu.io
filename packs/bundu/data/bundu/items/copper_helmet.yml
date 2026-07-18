@@ -1,6 +1,8 @@
 type: helmet
 level: 3
-attributes:
-    health.defense:
-        op: add
-        value: 5
+whenHelmet:
+    "*":
+        attributes:
+            health.defense:
+                op: add
+                value: 5

@@ -19,14 +19,6 @@ hunger:
 
 temperature:
   tick_period_ms: 60000
-  # Nearby placed fires grant temperature.warmth (source id: near_fire).
-  # Warmth values are sized against night ambient_warmth (-20) and wearables.
-  near_fire:
-    radius: 200
-    warmth:
-      fire_small: 15
-      fire_big: 25
-      fire_pit: 35
 
 day_cycle:
   periods:
