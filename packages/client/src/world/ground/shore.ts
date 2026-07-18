@@ -11,6 +11,11 @@ export type GroundPatchRef = {
     h: number;
 };
 
+/** Sample every N edge tiles to keep shore lists small on large coasts. */
+const EDGE_STRIDE = 2;
+/** Hard cap — foam only needs a sparse random set. */
+const MAX_SHORES = 240;
+
 /**
  * Shore samples where land (non-ocean) meets ocean along rect edges.
  * Uses the same topmost-id stack rule as `topGroundAt`.
@@ -22,52 +27,54 @@ export function collectShoreSamples(
     const shores: ShoreSample[] = [];
     if (patches.length === 0) return shores;
 
+    // Highest id first so topPatchAt can return on first hit.
+    const byTop = [...patches].sort((a, b) => b.id - a.id);
+
     for (const patch of patches) {
         if (isOceanType(patch.type)) continue;
+        if (shores.length >= MAX_SHORES) break;
 
-        // Top edge → outward north
-        for (let tx = patch.x; tx < patch.x + patch.w; tx++) {
-            maybePush(shores, patches, isOceanType, tx, patch.y - 1, tx, patch.y, 0, -1);
-        }
-        // Bottom edge → outward south
-        for (let tx = patch.x; tx < patch.x + patch.w; tx++) {
-            maybePush(
-                shores,
-                patches,
-                isOceanType,
-                tx,
-                patch.y + patch.h,
-                tx,
-                patch.y + patch.h - 1,
-                0,
-                1
-            );
-        }
-        // Left edge → outward west
-        for (let ty = patch.y; ty < patch.y + patch.h; ty++) {
-            maybePush(shores, patches, isOceanType, patch.x - 1, ty, patch.x, ty, -1, 0);
-        }
-        // Right edge → outward east
-        for (let ty = patch.y; ty < patch.y + patch.h; ty++) {
-            maybePush(
-                shores,
-                patches,
-                isOceanType,
-                patch.x + patch.w,
-                ty,
-                patch.x + patch.w - 1,
-                ty,
-                1,
-                0
-            );
-        }
+        walkEdge(shores, byTop, isOceanType, patch, "n");
+        if (shores.length >= MAX_SHORES) break;
+        walkEdge(shores, byTop, isOceanType, patch, "s");
+        if (shores.length >= MAX_SHORES) break;
+        walkEdge(shores, byTop, isOceanType, patch, "w");
+        if (shores.length >= MAX_SHORES) break;
+        walkEdge(shores, byTop, isOceanType, patch, "e");
     }
     return shores;
 }
 
+function walkEdge(
+    out: ShoreSample[],
+    byTop: readonly GroundPatchRef[],
+    isOceanType: (type: number) => boolean,
+    patch: GroundPatchRef,
+    side: "n" | "s" | "w" | "e"
+): void {
+    if (side === "n" || side === "s") {
+        const tyLand = side === "n" ? patch.y : patch.y + patch.h - 1;
+        const tyOcean = side === "n" ? patch.y - 1 : patch.y + patch.h;
+        const ny = side === "n" ? -1 : 1;
+        for (let tx = patch.x; tx < patch.x + patch.w; tx += EDGE_STRIDE) {
+            if (out.length >= MAX_SHORES) return;
+            maybePush(out, byTop, isOceanType, tx, tyOcean, tx, tyLand, 0, ny);
+        }
+        return;
+    }
+
+    const txLand = side === "w" ? patch.x : patch.x + patch.w - 1;
+    const txOcean = side === "w" ? patch.x - 1 : patch.x + patch.w;
+    const nx = side === "w" ? -1 : 1;
+    for (let ty = patch.y; ty < patch.y + patch.h; ty += EDGE_STRIDE) {
+        if (out.length >= MAX_SHORES) return;
+        maybePush(out, byTop, isOceanType, txOcean, ty, txLand, ty, nx, 0);
+    }
+}
+
 function maybePush(
     out: ShoreSample[],
-    patches: readonly GroundPatchRef[],
+    byTop: readonly GroundPatchRef[],
     isOceanType: (type: number) => boolean,
     oceanTx: number,
     oceanTy: number,
@@ -76,9 +83,9 @@ function maybePush(
     nx: number,
     ny: number
 ): void {
-    const ocean = topPatchAt(patches, oceanTx, oceanTy);
+    const ocean = topPatchAt(byTop, oceanTx, oceanTy);
     if (!ocean || !isOceanType(ocean.type)) return;
-    const land = topPatchAt(patches, landTx, landTy);
+    const land = topPatchAt(byTop, landTx, landTy);
     if (!land || isOceanType(land.type)) return;
 
     out.push({
@@ -89,22 +96,21 @@ function maybePush(
     });
 }
 
+/** `byTop` must be sorted by id descending. */
 function topPatchAt(
-    patches: readonly GroundPatchRef[],
+    byTop: readonly GroundPatchRef[],
     tx: number,
     ty: number
 ): GroundPatchRef | undefined {
-    let best: GroundPatchRef | undefined;
-    for (const patch of patches) {
+    for (const patch of byTop) {
         if (
-            tx < patch.x ||
-            ty < patch.y ||
-            tx >= patch.x + patch.w ||
-            ty >= patch.y + patch.h
+            tx >= patch.x &&
+            ty >= patch.y &&
+            tx < patch.x + patch.w &&
+            ty < patch.y + patch.h
         ) {
-            continue;
+            return patch;
         }
-        if (!best || patch.id > best.id) best = patch;
     }
-    return best;
+    return undefined;
 }

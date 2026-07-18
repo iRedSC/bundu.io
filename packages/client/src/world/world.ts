@@ -138,6 +138,17 @@ export class World {
         visual: GroundVisual;
     }[] = [];
     private shoreSamples: ShoreSample[] = [];
+    /** Patches sorted by id desc — first hit in point queries is topmost. */
+    private groundByTop: {
+        id: number;
+        type: number;
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        visual: GroundVisual;
+    }[] = [];
+    private oceanTypeIds = new Set<number>();
     private readonly decorations: DecorationSprite[] = [];
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
@@ -168,6 +179,8 @@ export class World {
         for (const id of ids) this.removeClientObject(id);
         this.renderer.delete(GROUND_RENDER_ID);
         this.groundPatches.length = 0;
+        this.groundByTop = [];
+        this.oceanTypeIds.clear();
         this.shoreSamples = [];
         this.renderer.delete(DECORATION_RENDER_ID);
         this.decorations.length = 0;
@@ -758,13 +771,24 @@ export class World {
     };
 
     private rebuildShoreSamples(): void {
+        this.groundByTop = [...this.groundPatches].sort((a, b) => b.id - a.id);
+        this.oceanTypeIds.clear();
+        for (const patch of this.groundPatches) {
+            if (isOceanGroundModel(clientGroundType(patch.type).model)) {
+                this.oceanTypeIds.add(patch.type);
+            }
+        }
         this.shoreSamples = collectShoreSamples(this.groundPatches, (type) =>
-            isOceanGroundModel(clientGroundType(type).model)
+            this.oceanTypeIds.has(type)
         );
     }
 
     private updateGroundVisuals(deltaMS: number, now: number): void {
+        if (this.oceanTypeIds.size === 0) return;
+
         const bounds = this.viewport.getVisibleBounds();
+        const byTop = this.groundByTop;
+        const oceanTypes = this.oceanTypeIds;
         const ctx = {
             deltaMS,
             now,
@@ -777,27 +801,24 @@ export class World {
             emitParticles: (burst: ParticleBurst) => this.particles.burst(burst),
             shore: this.shoreSamples,
             isOceanAt: (worldX: number, worldY: number) => {
-                const tx = Math.floor(worldX / TILE_SIZE);
-                const ty = Math.floor(worldY / TILE_SIZE);
-                let top: (typeof this.groundPatches)[number] | undefined;
-                for (const patch of this.groundPatches) {
+                const tx = (worldX / TILE_SIZE) | 0;
+                const ty = (worldY / TILE_SIZE) | 0;
+                for (const patch of byTop) {
                     if (
-                        tx < patch.x ||
-                        ty < patch.y ||
-                        tx >= patch.x + patch.w ||
-                        ty >= patch.y + patch.h
+                        tx >= patch.x &&
+                        ty >= patch.y &&
+                        tx < patch.x + patch.w &&
+                        ty < patch.y + patch.h
                     ) {
-                        continue;
+                        return oceanTypes.has(patch.type);
                     }
-                    if (!top || patch.id > top.id) top = patch;
                 }
-                return top
-                    ? isOceanGroundModel(clientGroundType(top.type).model)
-                    : false;
+                return false;
             },
         };
         for (const patch of this.groundPatches) {
-            patch.visual.update?.(ctx);
+            // Solids have no update — skip the call overhead on large maps.
+            if (patch.visual.update) patch.visual.update(ctx);
         }
     }
 
