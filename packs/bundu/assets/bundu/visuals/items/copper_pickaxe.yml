@@ -1,0 +1,3 @@
+id: item/copper_pickaxe
+extends: item/type/pickaxe
+texture: bundu/item/tool/copper_pickaxe.svg

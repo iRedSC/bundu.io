@@ -27,14 +27,20 @@ loads these registries independently:
 - `recipe`
 - `loot_table`
 
-Aggregate files such as `data/<namespace>/entities.yml` derive the namespace
-from their directory and the path from each top-level key. Recipes and loot
-tables are independent files whose relative filename becomes the path:
+Registry entries are independent files whose relative filename becomes the path:
 
 ```text
+data/bundu/entities/bear.yml              -> bundu:bear
+data/bundu/resources/pine_tree.yml        -> bundu:pine_tree
+data/bundu/buildings/wood_wall.yml        -> bundu:wood_wall
+data/bundu/items/wood_sword.yml           -> bundu:wood_sword
+data/bundu/ground_types/grass.yml         -> bundu:grass
 data/bundu/recipes/wood_wall.yml          -> bundu:wood_wall
 data/bundu/loot_tables/bear_dead.yml      -> bundu:bear_dead
 ```
+
+Shared item templates live in the single document `data/<namespace>/item_types.yml`
+(not a registry). Each item sets `type: sword` (etc.) to merge those defaults.
 
 Bare entry references resolve relative to the definition's namespace. Use an
 explicit ID to cross namespaces:
@@ -48,9 +54,9 @@ Registry IDs are separate. `item:bundu:wood_wall` and
 location. Cross-registry relationships must be explicit—for example, a
 placeable item uses `places` to reference its structure.
 
-Aggregate registry records overlay by canonical ID. A later definition replaces
-the complete earlier definition rather than deep-merging it. Single documents,
-including `gameplay.yml`, replace the complete document.
+Definitions overlay by canonical ID. A later definition replaces the complete
+earlier definition rather than deep-merging it. Single documents, including
+`gameplay.yml` and `item_types.yml`, replace the complete document.
 
 ## Typed tags
 
@@ -146,14 +152,26 @@ Asset files use namespaced logical paths:
 
 ```text
 assets/bundu/textures/structure/wall/wood_wall.png
-assets/bundu/visuals/items/items.yml
+assets/bundu/visuals/items/wood_sword.yml
+assets/bundu/visuals/items/type/sword.yml
 assets/bundu/lang/en.yml
 assets/bundu/gameplay.yml
+```
+
+Visual YAML files use an explicit `id` field (filename is for organization).
+Item visuals use `item/<item_id>` ids, with shared abstracts under `item/type/...`:
+
+```yaml
+id: item/wood_sword
+extends: item/type/sword
+texture: bundu/item/tool/wood_sword.svg
 ```
 
 Definitions refer to textures as `bundu/structure/wall/wood_wall.png`. A later
 pack can replace an asset by providing the same namespace and relative path.
 Visual definitions overlay by visual ID in pack order.
+
+`lang/<code>.yml` stays a single language document (Minecraft-style).
 
 `assets/<namespace>/gameplay.yml` is client-only (shadows, etc.). It is served
 with resource packs and is not read by the server simulation. `data/.../gameplay.yml`

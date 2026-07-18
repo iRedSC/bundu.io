@@ -1,0 +1,9 @@
+id: item/meat
+extends: item/type/food
+texture: bundu/item/food/meat.svg
+contexts:
+    hand:
+        rotation: 100
+        scale: 0.6
+        y: 0.6
+        x: 0

@@ -1,0 +1,3 @@
+id: item/cobalt_spike
+extends: item/type/spike
+texture: bundu/item/structure/spike/cobalt_spike.png

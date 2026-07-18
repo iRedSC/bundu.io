@@ -1,0 +1,3 @@
+id: item/earmuffs
+extends: item/type/hat
+texture: bundu/item/equipment/earmuffs.svg

@@ -1,0 +1,3 @@
+id: item/cobalt_hammer
+extends: item/type/hammer
+texture: bundu/item/tool/cobalt_hammer.svg

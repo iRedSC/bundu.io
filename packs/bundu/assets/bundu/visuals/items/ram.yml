@@ -1,0 +1,3 @@
+id: item/ram
+extends: item/type/none
+texture: bundu/entity/animal/ram/ram.svg

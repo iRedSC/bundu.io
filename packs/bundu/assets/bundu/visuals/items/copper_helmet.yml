@@ -1,0 +1,3 @@
+id: item/copper_helmet
+extends: item/type/helmet
+texture: bundu/item/equipment/copper_helmet.svg

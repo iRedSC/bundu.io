@@ -1,0 +1,3 @@
+id: item/wood_wall
+extends: item/type/wall
+texture: bundu/structure/wall/wood_wall.png

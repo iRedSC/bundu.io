@@ -1,0 +1,3 @@
+id: item/deer
+extends: item/type/none
+texture: bundu/entity/animal/deer/deer.svg

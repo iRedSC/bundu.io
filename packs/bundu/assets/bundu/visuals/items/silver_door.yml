@@ -1,0 +1,3 @@
+id: item/silver_door
+extends: item/type/door
+texture: bundu/structure/door/silver_door.png

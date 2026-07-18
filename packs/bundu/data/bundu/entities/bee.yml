@@ -1,0 +1,14 @@
+health: 200
+score: 200
+behavior: hostile
+detectionRange: 300
+loseSightRange: 300
+passiveSpeed: 14
+activeSpeed: 17
+attack_damage: 15
+scale: 0.4
+hasHome: true
+aggroSwitch: random
+aggroLevel: low
+corpse: bee_dead
+spawn_count: 8

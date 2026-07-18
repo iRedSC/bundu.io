@@ -1,0 +1,6 @@
+type: book
+function: off_hand
+attributes:
+    attack.damage.animal:
+        op: add
+        value: 15

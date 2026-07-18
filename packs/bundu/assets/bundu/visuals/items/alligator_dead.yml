@@ -1,0 +1,6 @@
+id: item/alligator_dead
+extends: item/type/none
+texture: bundu/entity/animal/alligator/alligator_dead.svg
+contexts:
+    world:
+        scale: 1

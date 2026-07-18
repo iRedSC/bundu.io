@@ -1,0 +1,3 @@
+id: item/copper_sword
+extends: item/type/sword
+texture: bundu/item/tool/copper_sword.svg

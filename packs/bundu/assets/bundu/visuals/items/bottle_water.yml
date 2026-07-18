@@ -1,0 +1,3 @@
+id: item/bottle_water
+extends: item/type/food
+texture: bundu/item/food/bottle_water.svg

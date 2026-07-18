@@ -1,0 +1,3 @@
+id: item/book
+extends: item/type/book
+texture: bundu/item/book/book.svg

@@ -1,0 +1,9 @@
+type: hammer
+level: 3
+attributes:
+    attack.damage:
+        op: add
+        value: 5
+    attack.damage.building:
+        op: add
+        value: 40

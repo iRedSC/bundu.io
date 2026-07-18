@@ -1,0 +1,4 @@
+type: food
+stats:
+    hunger: 20
+    health: -35

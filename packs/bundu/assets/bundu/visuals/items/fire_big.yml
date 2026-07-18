@@ -1,0 +1,3 @@
+id: item/fire_big
+extends: item/type/building
+texture: bundu/structure/crafting/fire_big.svg

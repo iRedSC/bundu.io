@@ -1,0 +1,3 @@
+id: item/silver_helmet
+extends: item/type/helmet
+texture: bundu/item/equipment/silver_helmet.svg

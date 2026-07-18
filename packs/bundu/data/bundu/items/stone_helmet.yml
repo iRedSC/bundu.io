@@ -1,0 +1,6 @@
+type: helmet
+level: 2
+attributes:
+    health.defense:
+        op: add
+        value: 3

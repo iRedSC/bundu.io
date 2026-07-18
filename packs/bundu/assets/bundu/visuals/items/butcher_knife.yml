@@ -1,0 +1,3 @@
+id: item/butcher_knife
+extends: item/type/pickaxe
+texture: bundu/item/tool/knife.svg

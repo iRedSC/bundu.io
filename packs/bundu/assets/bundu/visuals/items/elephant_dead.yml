@@ -1,0 +1,6 @@
+id: item/elephant_dead
+extends: item/type/none
+texture: bundu/entity/animal/elephant/elephant_dead.svg
+contexts:
+    world:
+        scale: 1

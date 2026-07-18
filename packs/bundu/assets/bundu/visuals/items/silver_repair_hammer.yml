@@ -1,0 +1,3 @@
+id: item/silver_repair_hammer
+extends: item/type/none
+texture: bundu/misc/unknown_asset.svg

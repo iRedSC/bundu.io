@@ -1,0 +1,9 @@
+id: item/type/sword
+abstract: true
+extends: item/type/none
+contexts:
+    hand:
+        rotation: -135
+        x: 0
+        y: 0.3
+        scale: 0.75

@@ -1,0 +1,3 @@
+id: item/berry_bush
+extends: item/type/none
+texture: bundu/decoration/forest/berry_bush.svg

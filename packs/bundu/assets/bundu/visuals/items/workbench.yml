@@ -1,0 +1,3 @@
+id: item/workbench
+extends: item/type/building
+texture: bundu/structure/crafting/workbench.svg

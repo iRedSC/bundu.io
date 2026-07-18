@@ -1,0 +1,3 @@
+id: item/copper_spike
+extends: item/type/spike
+texture: bundu/item/structure/spike/copper_spike.png

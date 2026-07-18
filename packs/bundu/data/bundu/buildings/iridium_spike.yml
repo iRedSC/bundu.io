@@ -1,0 +1,6 @@
+class: spike
+material: iridium
+tier: 6
+damage: 70
+on_hit_damage: 40
+attack_range: 25

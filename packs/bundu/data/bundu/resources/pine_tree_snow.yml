@@ -1,0 +1,8 @@
+score: 5
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 0
+regen_speed: 5
+quantity: 30
+loot_table: pine_tree_snow

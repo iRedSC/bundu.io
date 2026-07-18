@@ -1,0 +1,3 @@
+id: item/coat
+extends: item/type/hat
+texture: bundu/item/equipment/coat.svg
