@@ -10,28 +10,28 @@ import {
     SpriteFactory,
     type ContaineredSprite,
 } from "@client/assets/sprite_factory";
-import { assemble, assembleTileEntity } from "../../visual/assemble";
-import { bindAnimations } from "../../visual/bind";
+import { assemble, assembleTileEntity } from "../../models/assemble";
+import { bindAnimations } from "../../models/bind";
 import {
     EntityStateStore,
-    VisualStateController,
-} from "../../visual/state";
+    ModelStateController,
+} from "../../models/state";
 import {
-    lookupContextVisual,
+    lookupModel,
     lookupObjectDef,
     structureDef,
     tileEntityDefs,
-} from "../../visual/defs";
+} from "../../models/defs";
 import type {
     AnimContext,
     ObjectDef,
     PartNode,
-} from "../../visual/types";
-import { EMPTY_ANIM_CONTEXT } from "../../visual/types";
+} from "../../models/types";
+import { EMPTY_ANIM_CONTEXT } from "../../models/types";
 import type { AnimationManager } from "../../animation/runtime";
 import type { ParticleBurst } from "../../rendering/particles/types";
 import { ANIMATION } from "../../animation/animations";
-import { hitRotation } from "../../visual/animations/hit";
+import { hitRotation } from "../../models/animations/hit";
 
 const HEALTH_BAR_WIDTH = 48;
 const HEALTH_BAR_HEIGHT = 5;
@@ -62,8 +62,8 @@ export class Structure extends GameObject {
     private readonly animationManager: AnimationManager;
     private readonly states: EntityStateStore;
     private readonly animContext: AnimContext = { ...EMPTY_ANIM_CONTEXT };
-    private stateController?: VisualStateController;
-    private usesContextVisual = false;
+    private stateController?: ModelStateController;
+    private usesWorldDisplay = false;
     /** When set, context scale multiplies this instead of replacing it. */
     private authoredSpriteScale?: number;
     private readonly variant?: string;
@@ -108,7 +108,7 @@ export class Structure extends GameObject {
         this.animationManager = animationManager;
         this.states = new EntityStateStore(states);
         this.ownerId = ownerIdFromStates(states);
-        this.applyVisualDefinition(variant);
+        this.applyModelDefinition(variant);
         this.container.zIndex = DEFAULT_STRUCTURE_Z;
         this.healthBar.zIndex = 100;
         this.healthBar.position.copyFrom(pos);
@@ -334,7 +334,7 @@ export class Structure extends GameObject {
             (this.healthBarFadeTo - this.healthBarFadeFrom) * progress;
     }
 
-    private applyVisualDefinition(variant?: string) {
+    private applyModelDefinition(variant?: string) {
         const tileEntity = tileEntityDefs.get(this.type);
         const objectVisual = lookupObjectDef(this.type);
         const def: ObjectDef = tileEntity ?? objectVisual ?? {
@@ -353,7 +353,7 @@ export class Structure extends GameObject {
         this.promoteWorldLayers(def, parts);
         this.visuals = [...parts.values()].map((part) => part.visual);
         this.sprite = first.visual;
-        this.usesContextVisual = tileEntity === undefined;
+        this.usesWorldDisplay = tileEntity === undefined;
         // Authored scale from the part that became `this.sprite` (first assembled part).
         if (objectVisual) {
             const spritePart = def.parts.find(
@@ -363,7 +363,7 @@ export class Structure extends GameObject {
         } else {
             this.authoredSpriteScale = undefined;
         }
-        this.refreshVisualContext();
+        this.refreshModelDisplay();
 
         const { animations, autoplay } = bindAnimations(
             def,
@@ -377,7 +377,7 @@ export class Structure extends GameObject {
         for (const animId of autoplay) {
             this.trigger(animId, this.animationManager);
         }
-        this.stateController = new VisualStateController(
+        this.stateController = new ModelStateController(
             def,
             parts,
             animations,
@@ -415,28 +415,28 @@ export class Structure extends GameObject {
         this.syncWorldLayers();
     }
 
-    refreshVisualContext() {
-        if (!this.usesContextVisual) return;
-        const context = lookupContextVisual(this.type)?.contexts.world;
-        if (!context?.texture) return;
+    refreshModelDisplay() {
+        if (!this.usesWorldDisplay) return;
+        const display = lookupModel(this.type)?.displays.world;
+        if (!display?.texture) return;
         if (this.authoredSpriteScale !== undefined) {
-            // Unit-normalize texture; context scale multiplies ObjectDef spriteScale
+            // Unit-normalize texture; display scale multiplies ObjectDef spriteScale
             // (does not replace container / physics visualScale).
             SpriteFactory.update(
                 this.sprite,
                 {
-                    x: context.x,
-                    y: context.y,
-                    rotation: context.rotation,
+                    x: display.x,
+                    y: display.y,
+                    rotation: display.rotation,
                     scale: 1,
                 },
-                context.texture
+                display.texture
             );
             this.sprite.scale.set(
-                this.authoredSpriteScale * (context.scale ?? 1)
+                this.authoredSpriteScale * (display.scale ?? 1)
             );
         } else {
-            SpriteFactory.update(this.sprite, context, context.texture);
+            SpriteFactory.update(this.sprite, display, display.texture);
         }
         this.sprite.renderable = true;
     }
@@ -470,7 +470,7 @@ export class Structure extends GameObject {
      * Rebuild visuals. Caller must `renderer.replace(id, ...containers)` so
      * newly promoted layers are tracked (hot reload).
      */
-    reloadVisualDefinition() {
+    reloadModelDefinition() {
         this.stateController?.dispose();
         this.stateController = undefined;
         this.animationManager.remove(this);
@@ -482,7 +482,7 @@ export class Structure extends GameObject {
             child.destroy({ children: true });
         }
         this.animations.clear();
-        this.applyVisualDefinition(this.variant);
+        this.applyModelDefinition(this.variant);
     }
 
     override dispose(): void {

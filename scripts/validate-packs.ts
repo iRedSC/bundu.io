@@ -1,22 +1,22 @@
 import { loadConfigs } from "../packages/server/src/configs/loaders/load";
-import { packs } from "../packages/server/src/configs/packs";
 import {
     gameRegistries,
     registrySources,
 } from "../packages/server/src/configs/registries";
 import { ResourcePackService } from "../packages/server/src/configs/resource_packs";
 import {
-    lookupContextVisual,
+    lookupModel,
     lookupObjectDef,
-    replaceCompiledVisualDefs,
+    replaceCompiledModelDefs,
     tileEntityDefs,
-    visualDefs,
-} from "../packages/client/src/visual/defs";
+    modelDefs,
+} from "../packages/client/src/models/defs";
+import { modelHasParts } from "../packages/client/src/models/types";
 
 loadConfigs();
 const resourcePacks = await ResourcePackService.create();
-replaceCompiledVisualDefs(
-    resourcePacks.compiledVisuals,
+replaceCompiledModelDefs(
+    resourcePacks.compiledModels,
     resourcePacks.manifest.assets.map((asset) => asset.path)
 );
 
@@ -25,30 +25,30 @@ function bareId(id: string): string {
     return index === -1 ? id : id.slice(index + 1);
 }
 
-function requireConcreteObjectVisual(id: string, kind: string): void {
-    const def = visualDefs.get(id);
-    if (!def || def.abstract || "contexts" in def) {
+function requireConcreteAssembledModel(id: string, kind: string): void {
+    const def = modelDefs.get(id);
+    if (!def || def.abstract || !modelHasParts(def)) {
         throw new Error(
-            `${kind} "${id}" needs its own concrete visual definition`
+            `${kind} "${id}" needs its own concrete assembled model definition`
         );
     }
 }
 
-function requireBuildingVisual(id: string): void {
-    if (tileEntityDefs.get(id) || lookupObjectDef(id) || lookupContextVisual(id)) {
+function requireBuildingModel(id: string): void {
+    if (tileEntityDefs.get(id) || lookupObjectDef(id) || lookupModel(id)) {
         return;
     }
     throw new Error(
-        `Building "${id}" needs a tile, object, or contextual visual definition`
+        `Building "${id}" needs a tile, assembled, or display model definition`
     );
 }
 
-function requireItemVisual(id: string): void {
-    if (lookupContextVisual(id) || lookupObjectDef(id) || lookupObjectDef(`item/${id}`)) {
+function requireItemModel(id: string): void {
+    if (lookupModel(id) || lookupObjectDef(id) || lookupObjectDef(`item/${id}`)) {
         return;
     }
     throw new Error(
-        `Item "${id}" needs a visual definition (item/${id} or contextual)`
+        `Item "${id}" needs a model definition (item/${id} or assembled)`
     );
 }
 
@@ -59,26 +59,22 @@ const buildingIds = [...sources.structure.keys()].map(bareId);
 const itemIds = [...sources.item.keys()].map(bareId);
 
 for (const id of [...resourceIds, "stone_barrier"]) {
-    requireConcreteObjectVisual(id, "Resource");
+    requireConcreteAssembledModel(id, "Resource");
 }
 for (const id of entityIds) {
-    requireConcreteObjectVisual(id, "Entity");
+    requireConcreteAssembledModel(id, "Entity");
 }
 for (const id of buildingIds) {
-    requireBuildingVisual(id);
+    requireBuildingModel(id);
 }
 for (const id of itemIds) {
-    requireItemVisual(id);
+    requireItemModel(id);
 }
 
 const registryCounts = Object.entries(gameRegistries())
     .map(([name, registry]) => `${name}=${registry.size}`)
     .join(", ");
-const recipeCount = sources.recipe.size;
-const lootTableCount = sources.loot_table.size;
 
 console.log(
-    `Validated ${packs.packs.length} pack(s): ${packs.packs
-        .map(({ manifest }) => `${manifest.id}@${manifest.version}`)
-        .join(", ")} (${registryCounts}, recipes=${recipeCount}, loot_tables=${lootTableCount}, ${resourcePacks.manifest.assets.length} assets, ${resourcePacks.manifest.fingerprint.slice(0, 12)})`
+    `Pack validation passed (${resourcePacks.manifest.packs.map((pack) => pack.id).join(", ")}; ${registryCounts}; ${resourcePacks.manifest.assets.length} textures).`
 );

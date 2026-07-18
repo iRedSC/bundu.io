@@ -1,9 +1,0 @@
-id: item/type/book
-abstract: true
-extends: item/type/none
-contexts:
-    hand:
-        rotation: -20
-        x: 0
-        y: 0.15
-        scale: 0.4

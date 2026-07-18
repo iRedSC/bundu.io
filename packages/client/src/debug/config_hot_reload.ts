@@ -3,19 +3,19 @@ import { Player } from "../world/objects/player";
 import { Structure } from "../world/objects/structure";
 import type { World } from "../world/world";
 import {
-    replaceVisualDefs,
-    type VisualDefs,
-} from "../visual/defs";
-import { applyClientGameplay } from "../visual/shadow";
+    replaceModelDefs,
+    type ModelDefs,
+} from "../models/defs";
+import { applyClientGameplay } from "../models/shadow";
 
-function reapplyVisualDefs(world: World) {
+function reapplyModelDefs(world: World) {
     for (const object of world.objects.all()) {
         if (object instanceof Player) {
-            object.reloadVisualDefinition();
+            object.reloadModelDefinition();
         } else if (object instanceof Animal) {
-            object.reloadVisualDefinition();
+            object.reloadModelDefinition();
         } else if (object instanceof Structure) {
-            object.reloadVisualDefinition();
+            object.reloadModelDefinition();
             world.reregisterObject(object);
         }
     }
@@ -23,7 +23,7 @@ function reapplyVisualDefs(world: World) {
 }
 
 /**
- * Watches pack YAML (visuals + client gameplay) and hot-applies.
+ * Watches pack YAML (models + client gameplay) and hot-applies.
  * Debug builds only — must not ship in prod (see check-prod-debug).
  */
 export function startConfigHotReload(world: World): () => void {
@@ -42,21 +42,21 @@ export function startConfigHotReload(world: World): () => void {
                 pending = false;
                 const timestamp = Date.now();
                 const [defsRes, gameplayRes] = await Promise.all([
-                    fetch(`/__dev/visual-defs?t=${timestamp}`),
+                    fetch(`/__dev/model-defs?t=${timestamp}`),
                     fetch(`/__dev/client-gameplay?t=${timestamp}`),
                 ]);
                 if (!defsRes.ok) {
                     console.warn(
-                        "[config-hot-reload] visual-defs fetch failed:",
+                        "[config-hot-reload] model-defs fetch failed:",
                         defsRes.status
                     );
                     continue;
                 }
-                const defs = (await defsRes.json()) as VisualDefs;
-                replaceVisualDefs(defs);
-                reapplyVisualDefs(world);
+                const defs = (await defsRes.json()) as ModelDefs;
+                replaceModelDefs(defs);
+                reapplyModelDefs(world);
                 console.info(
-                    "[config-hot-reload] visual definitions applied",
+                    "[config-hot-reload] model definitions applied",
                     `(${Object.keys(defs).length} files)`
                 );
                 if (gameplayRes.ok) {

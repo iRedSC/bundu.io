@@ -165,14 +165,14 @@ Asset files use namespaced logical paths:
 
 ```text
 assets/bundu/textures/structure/wall/wood_wall.png
-assets/bundu/visuals/items/wood_sword.yml
-assets/bundu/visuals/items/type/sword.yml
+assets/bundu/models/items/wood_sword.yml
+assets/bundu/models/items/type/sword.yml
 assets/bundu/lang/en.yml
 assets/bundu/gameplay.yml
 ```
 
-Visual YAML files use an explicit `id` field (filename is for organization).
-Item visuals use `item/<item_id>` ids, with shared abstracts under `item/type/...`:
+Model YAML files use an explicit `id` field (filename is for organization).
+Item models use `item/<item_id>` ids, with shared abstracts under `item/type/...`:
 
 ```yaml
 id: item/wood_sword
@@ -182,7 +182,7 @@ texture: bundu/item/tool/wood_sword.svg
 
 Definitions refer to textures as `bundu/structure/wall/wood_wall.png`. A later
 pack can replace an asset by providing the same namespace and relative path.
-Visual definitions overlay by visual ID in pack order.
+Model definitions overlay by model ID in pack order.
 
 `lang/<code>.yml` stays a single language document (Minecraft-style).
 
@@ -198,13 +198,13 @@ serving packs, the server sanitizes client-facing assets:
 
 - Textures are re-encoded to PNG (SVGs are rasterized, or the pack is rejected)
 - Hard caps apply to file size, dimensions, count, and total bytes
-- Visual definitions are compiled server-side; clients receive only the compiled
-  payload (`visuals.json` format 1)
+- Model definitions are compiled server-side; clients receive only the compiled
+  payload (`models.json` format 2)
 - Raw pack `data/` YAML is never sent. Clients get a curated `registries.json`
   projection (IDs, tags, placement, ground colors) plus authoritative world
   updates over the WebSocket
 
-Clients SHA-256-check the registry projection, compiled visuals, and assets
+Clients SHA-256-check the registry projection, compiled models, and assets
 before opening the WebSocket, then include the negotiated fingerprint in the
 connection URL. The server rejects clients from older formats or a different
 registry mapping. Development checkpoints also store the registry hash and are
@@ -212,7 +212,7 @@ ignored when their mapping is incompatible.
 
 The client build also embeds a sanitized copy of the bundu base pack under
 `/site/base-pack/`. When the game server's pack fingerprint matches that
-bundle, the client loads visuals, registries, and textures from the same
+bundle, the client loads models, registries, and textures from the same
 origin instead of downloading them from the server. Overlay packs or a
 different bundu revision change the fingerprint and fall back to a full
 server sync.

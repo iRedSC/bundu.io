@@ -1,6 +1,0 @@
-id: item/cobalt
-extends: item/type/none
-texture: bundu/item/material/cobalt.svg
-contexts:
-    world:
-        scale: 2

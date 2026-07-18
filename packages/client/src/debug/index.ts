@@ -1,5 +1,5 @@
 /**
- * Client-only debug tooling (hitboxes, Debug tools panel, visual-definition
+ * Client-only debug tooling (hitboxes, Debug tools panel, model-definition
  * hot reload).
  *
  * Prod entry must not statically import this barrel — use a `__DEBUG__`-guarded

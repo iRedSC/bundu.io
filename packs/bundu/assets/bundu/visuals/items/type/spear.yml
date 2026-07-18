@@ -1,9 +1,0 @@
-id: item/type/spear
-abstract: true
-extends: item/type/none
-contexts:
-    hand:
-        rotation: -135
-        x: 0
-        y: 0.5
-        scale: 1.2

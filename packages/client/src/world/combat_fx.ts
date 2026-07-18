@@ -11,8 +11,8 @@ import { Player } from "./objects/player";
 import { Animal } from "./objects/animal";
 import type ObjectContainer from "./object_container";
 import type { ParticleSystem } from "../rendering/particles/particle_system";
-import { structureHit } from "../visual/particles/structure_hit";
-import { hitFxFromStrength } from "../visual/animations/hit";
+import { structureHit } from "../models/particles/structure_hit";
+import { hitFxFromStrength } from "../models/animations/hit";
 import { Structure } from "./objects/structure";
 
 /** Combat visual FX packet handlers — attack, block, hurt. */

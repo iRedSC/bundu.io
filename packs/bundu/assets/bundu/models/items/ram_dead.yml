@@ -1,0 +1,6 @@
+id: item/ram_dead
+extends: item/type/none
+texture: bundu/entity/animal/ram/ram_dead.svg
+displays:
+    world:
+        scale: 1

@@ -1,0 +1,6 @@
+id: item/stone_barrier
+extends: item/type/none
+texture: bundu/structure/wall/stone_barrier.svg
+displays:
+    world:
+        scale: 1.7

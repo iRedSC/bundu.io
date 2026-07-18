@@ -1,0 +1,6 @@
+id: item/copper
+extends: item/type/none
+texture: bundu/item/material/copper.svg
+displays:
+    world:
+        scale: 1.7

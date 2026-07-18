@@ -1,0 +1,9 @@
+id: item/type/hammer
+abstract: true
+extends: item/type/none
+displays:
+    hand:
+        rotation: -100
+        x: 0.1
+        y: 0.25
+        scale: 0.45

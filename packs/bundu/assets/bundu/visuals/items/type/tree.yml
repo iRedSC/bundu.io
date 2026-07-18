@@ -1,9 +1,0 @@
-id: item/type/tree
-abstract: true
-extends: item/type/none
-contexts:
-    world:
-        x: 0
-        y: 0
-        rotation: 0
-        scale: 1.2

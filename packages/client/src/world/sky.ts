@@ -8,7 +8,7 @@ import {
 } from "../constants";
 import { colorLerp } from "@bundu/shared/transforms";
 import { Animation, type AnimationManager } from "../animation/runtime";
-import { shadowOffsetForPeriod, shadowStyle } from "../visual/shadow";
+import { shadowOffsetForPeriod, shadowStyle } from "../models/shadow";
 
 const PERIOD_COLORS = [
     MORNING_COLOR,

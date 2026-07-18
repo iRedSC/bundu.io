@@ -3,7 +3,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { Resvg } from "@resvg/resvg-js";
 import sharp from "sharp";
-import { toSanitizedTexturePath } from "@bundu/shared/visual/texture_paths";
+import { toSanitizedTexturePath } from "@bundu/shared/models/texture_paths";
 
 /** Hard caps for hostile pack textures before they are served to clients. */
 export const PACK_ASSET_LIMITS = {

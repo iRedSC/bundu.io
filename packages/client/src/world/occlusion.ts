@@ -1,5 +1,5 @@
 import { TILE_SIZE } from "@bundu/shared/tiles";
-import { tileEntityDefs } from "../visual/defs";
+import { tileEntityDefs } from "../models/defs";
 import type GameObject from "./game_object";
 import { Structure } from "./objects/structure";
 

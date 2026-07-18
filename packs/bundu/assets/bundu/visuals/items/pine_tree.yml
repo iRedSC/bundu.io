@@ -1,6 +1,0 @@
-id: item/pine_tree
-extends: item/type/tree
-texture: bundu/decoration/forest/pine_tree.svg
-contexts:
-    world:
-        scale: 1.6

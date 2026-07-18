@@ -1,6 +1,0 @@
-id: item/komodo_dragon_dead
-extends: item/type/none
-texture: bundu/entity/animal/komodo_dragon/komodo_dragon_dead.svg
-contexts:
-    world:
-        scale: 1

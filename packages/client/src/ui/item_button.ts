@@ -4,9 +4,9 @@ import { ITEM_BUTTON_SIZE } from "../constants";
 import { percentOf } from "@bundu/shared/math";
 import {
     clientRegistries,
-    clientVisualId,
+    clientModelId,
 } from "../configs/registries";
-import { mountSlotIcon } from "../visual/slot_icon";
+import { mountSlotIcon } from "../models/slot_icon";
 import {
     colorLerp,
     lerp,
@@ -115,7 +115,7 @@ export class ItemButton {
     background: ContaineredSprite;
 
     disableSprite: ContaineredSprite;
-    /** Icon content root (texture sprite or assembled `visual:` def). */
+    /** Icon content root (texture sprite or assembled `model:` def). */
     itemDisplay: Container;
 
     hovering: boolean = false;
@@ -238,7 +238,7 @@ export class ItemButton {
             return;
         }
 
-        const name = clientVisualId(clientRegistries().item.location(item));
+        const name = clientModelId(clientRegistries().item.location(item));
         this._item = item;
         this.itemDisplay.visible = true;
         this.clearIcon = mountSlotIcon(

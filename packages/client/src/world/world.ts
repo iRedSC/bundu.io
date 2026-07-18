@@ -35,7 +35,7 @@ import { GroundItem } from "./objects/ground_item";
 import {
     clientRegistries,
     clientStructurePlacement,
-    clientVisualId,
+    clientModelId,
 } from "../configs/registries";
 import { getVariantName } from "@bundu/shared/variant_map";
 import {
@@ -47,11 +47,11 @@ import {
     setActiveShadowLayer,
     ShadowLayer,
 } from "@client/rendering/shadow_layer";
-import { shadowStyle, type ShadowLight } from "../visual/shadow";
+import { shadowStyle, type ShadowLight } from "../models/shadow";
 import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
 import { clientTime } from "@client/globals";
-import { structurePlace } from "../visual/particles/structure_place";
+import { structurePlace } from "../models/particles/structure_place";
 
 /**
  * Unload movers only when freecam can see most of the map.
@@ -407,7 +407,7 @@ export class World {
 
         const structure = new Structure(
             packet.id,
-            clientVisualId(clientRegistries().resource.location(nodeType)),
+            clientModelId(clientRegistries().resource.location(nodeType)),
             deciPoint(packet.x, packet.y),
             packet.rotation,
             typeof collisionRadius === "number"
@@ -431,7 +431,7 @@ export class World {
 
         const structure = new Structure(
             packet.id,
-            clientVisualId(clientRegistries().structure.location(nodeType)),
+            clientModelId(clientRegistries().structure.location(nodeType)),
             deciPoint(packet.x, packet.y),
             packet.rotation,
             FOOTPRINT_CIRCLE_RADIUS,
@@ -641,7 +641,7 @@ export class World {
             this.clearPlacementGhost();
             this.placementGhost = new Structure(
                 PLACEMENT_GHOST_RENDER_ID,
-                clientVisualId(
+                clientModelId(
                     clientRegistries().structure.location(placement.id)
                 ),
                 new Point(),

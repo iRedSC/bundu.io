@@ -1,7 +1,7 @@
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
-import type { CompiledVisualDefs } from "@bundu/shared/visual/compile";
-import type { CompiledVisualsPayload, VisualDef } from "@bundu/shared/visual/types";
-import { applyClientGameplay } from "../visual/shadow";
+import type { CompiledModelDefs } from "@bundu/shared/models/compile";
+import type { CompiledModelsPayload, ModelDef } from "@bundu/shared/models/types";
+import { applyClientGameplay } from "../models/shadow";
 
 export type ResourceAssetSource = {
     path: string;
@@ -11,7 +11,7 @@ export type ResourceAssetSource = {
 export type LoadedResourcePacks = {
     fingerprint: string;
     assets: ResourceAssetSource[];
-    visualDefs: CompiledVisualDefs;
+    modelDefs: CompiledModelDefs;
     registries: ClientRegistryProjection;
 };
 
@@ -24,7 +24,7 @@ type ManifestAsset = {
 type Manifest = {
     format: 2;
     fingerprint: string;
-    visuals: { hash: string; url: string };
+    models: { hash: string; url: string };
     registries: { hash: string; url: string };
     gameplay: { hash: string; url: string };
     assets: ManifestAsset[];
@@ -54,7 +54,7 @@ function parseManifest(value: unknown): Manifest {
     if (raw.format !== 2) {
         throw new Error(`Unsupported resource pack format ${String(raw.format)}`);
     }
-    const visuals = record(raw.visuals, "pack manifest.visuals");
+    const models = record(raw.models, "pack manifest.models");
     const registries = record(raw.registries, "pack manifest.registries");
     const gameplay = record(raw.gameplay, "pack manifest.gameplay");
     if (!Array.isArray(raw.assets)) {
@@ -78,9 +78,9 @@ function parseManifest(value: unknown): Manifest {
     return {
         format: 2,
         fingerprint: string(raw.fingerprint, "pack manifest.fingerprint"),
-        visuals: {
-            hash: string(visuals.hash, "pack manifest.visuals.hash"),
-            url: string(visuals.url, "pack manifest.visuals.url"),
+        models: {
+            hash: string(models.hash, "pack manifest.models.hash"),
+            url: string(models.url, "pack manifest.models.url"),
         },
         registries: {
             hash: string(registries.hash, "pack manifest.registries.hash"),
@@ -94,18 +94,18 @@ function parseManifest(value: unknown): Manifest {
     };
 }
 
-function parseCompiledVisuals(value: unknown): CompiledVisualDefs {
-    const raw = record(value, "visual definitions");
-    if (raw.format !== 1) {
+function parseCompiledModels(value: unknown): CompiledModelDefs {
+    const raw = record(value, "model definitions");
+    if (raw.format !== 2) {
         throw new Error(
-            `Unsupported compiled visuals format ${String(raw.format)}`
+            `Unsupported compiled models format ${String(raw.format)}`
         );
     }
-    const defs = record(raw.defs, "visual definitions.defs") as Record<
+    const defs = record(raw.defs, "model definitions.defs") as Record<
         string,
-        VisualDef
+        ModelDef
     >;
-    const payload = { format: 1 as const, defs } satisfies CompiledVisualsPayload;
+    const payload = { format: 2 as const, defs } satisfies CompiledModelsPayload;
     return new Map(Object.entries(payload.defs));
 }
 
@@ -196,28 +196,28 @@ async function fetchBundledBaseManifest(): Promise<Manifest | undefined> {
 
 async function materializePack(
     manifest: Manifest,
-    resolveVisuals: URL,
+    resolveModels: URL,
     resolveRegistries: URL,
     resolveGameplay: URL,
     resolveAsset: (path: string) => URL,
     /** Game-server assets are content-addressed with ?hash=; bundled files are not. */
     contentAddressed: boolean
 ): Promise<LoadedResourcePacks> {
-    const visualUrl = new URL(resolveVisuals);
+    const modelsUrl = new URL(resolveModels);
     const registryUrl = new URL(resolveRegistries);
     const gameplayUrl = new URL(resolveGameplay);
     if (contentAddressed) {
-        visualUrl.searchParams.set("hash", manifest.visuals.hash);
+        modelsUrl.searchParams.set("hash", manifest.models.hash);
         registryUrl.searchParams.set("hash", manifest.registries.hash);
         gameplayUrl.searchParams.set("hash", manifest.gameplay.hash);
     }
-    const [visualData, registryData, gameplayData] = await Promise.all([
-        verified(visualUrl, manifest.visuals.hash),
+    const [modelsData, registryData, gameplayData] = await Promise.all([
+        verified(modelsUrl, manifest.models.hash),
         verified(registryUrl, manifest.registries.hash),
         verified(gameplayUrl, manifest.gameplay.hash),
     ]);
-    const visualDefs = parseCompiledVisuals(
-        JSON.parse(new TextDecoder().decode(visualData))
+    const modelDefs = parseCompiledModels(
+        JSON.parse(new TextDecoder().decode(modelsData))
     );
     const registries = record(
         JSON.parse(new TextDecoder().decode(registryData)),
@@ -244,7 +244,7 @@ async function materializePack(
 
     return {
         fingerprint: manifest.fingerprint,
-        visualDefs,
+        modelDefs,
         registries,
         assets,
     };
@@ -272,7 +272,7 @@ export async function loadResourcePacks(
             // On stale CDN/browser cache, fall through to the content-addressed server.
             return await materializePack(
                 manifest,
-                bundledUrl(bundled.visuals.url),
+                bundledUrl(bundled.models.url),
                 bundledUrl(bundled.registries.url),
                 bundledUrl(bundled.gameplay.url),
                 bundledAssetUrl,
@@ -288,7 +288,7 @@ export async function loadResourcePacks(
 
     return materializePack(
         manifest,
-        packUrl(base, manifest.visuals.url),
+        packUrl(base, manifest.models.url),
         packUrl(base, manifest.registries.url),
         packUrl(base, manifest.gameplay.url),
         (path) => assetUrl(base, path),

@@ -6,19 +6,16 @@ import {
 } from "@bundu/shared";
 import {
     clientRegistries,
-    clientVisualId,
+    clientModelId,
 } from "../../configs/registries";
 import { type Container, Graphics, type Point, Text } from "pixi.js";
 import GameObject from "../game_object";
 import type { AnimationManager } from "../../animation/runtime";
-import { assemble } from "../../visual/assemble";
-import { bindAnimations } from "../../visual/bind";
-import { playerDef } from "../../visual/defs";
-import type { AnimContext, PartNode, SlotDef } from "../../visual/types";
-import {
-    mountVisualContext,
-    type MountedVisual,
-} from "../../visual/context";
+import { assemble } from "../../models/assemble";
+import { bindAnimations } from "../../models/bind";
+import { playerDef } from "../../models/defs";
+import type { AnimContext, PartNode, SlotDef } from "../../models/types";
+import { mountModel, type MountedModel } from "../../models/mount";
 import { clientTime } from "@client/globals";
 import type { ParticleBurst } from "../../rendering/particles/types";
 
@@ -45,7 +42,7 @@ export class Player extends GameObject implements AnimContext {
     craftBar: Graphics;
     parts: Map<string, PartNode>;
     private slots: Map<string, { node: PartNode; def: SlotDef }>;
-    private readonly slotVisuals = new Map<string, MountedVisual>();
+    private readonly slotModels = new Map<string, MountedModel>();
     private readonly animationManager: AnimationManager;
     private readonly visualVariant?: string;
 
@@ -197,7 +194,7 @@ export class Player extends GameObject implements AnimContext {
         const items = clientRegistries().item;
         const visual = (id?: number | null) =>
             typeof id === "number" && id >= 0
-                ? clientVisualId(items.location(id))
+                ? clientModelId(items.location(id))
                 : "";
         this.mainhand = visual(equipment.mainhand);
         this.offhand = visual(equipment.offhand);
@@ -223,7 +220,7 @@ export class Player extends GameObject implements AnimContext {
         }, CHAT_MESSAGE_DURATION);
     }
 
-    reloadVisualDefinition() {
+    reloadModelDefinition() {
         this.clearEquipmentVisuals();
         this.animationManager.remove(this);
         for (const child of this.container.removeChildren()) {
@@ -261,13 +258,13 @@ export class Player extends GameObject implements AnimContext {
         const slot = this.slots.get(slotName);
         const attach = slot?.node.attach;
         if (!slot || !attach) return;
-        const mounted = mountVisualContext(itemId, slot.def.context, attach, {
+        const mounted = mountModel(itemId, slot.def.display, attach, {
             animationManager: this.animationManager,
             animationContext: this,
             anchor: slot.node.attachAnchor,
         });
         if (!mounted) return;
-        this.slotVisuals.set(slotName, mounted);
+        this.slotModels.set(slotName, mounted);
         attach.visible = true;
         if (slot.def.scale != null) {
             attach.scale.set(
@@ -280,8 +277,8 @@ export class Player extends GameObject implements AnimContext {
     }
 
     private clearEquipmentVisuals() {
-        for (const mounted of this.slotVisuals.values()) mounted.destroy();
-        this.slotVisuals.clear();
+        for (const mounted of this.slotModels.values()) mounted.destroy();
+        this.slotModels.clear();
         for (const slot of this.slots.values()) {
             if (!slot.node.attach) continue;
             slot.node.attach.visible = false;
@@ -335,7 +332,7 @@ export class Player extends GameObject implements AnimContext {
         this.particleAnchor = () => {
             const hand = this.parts.get("rightHand");
             if (!hand) throw new Error("Player visual is missing the right hand");
-            const held = this.slotVisuals.get("offhand")?.sprites[0];
+            const held = this.slotModels.get("offhand")?.sprites[0];
             return {
                 texture: held?.sprite.texture ?? hand.visual.sprite.texture,
                 x: this.position.x,
