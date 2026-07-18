@@ -192,7 +192,11 @@ export class World {
             const lastGT = this.systemLastUpdate.get(system.id) ?? 0;
             if (this.gameTime - lastGT < interval) continue;
 
-            this.systemLastUpdate.set(system.id, lastGT + interval);
+            // Anchor to current gameTime (not lastGT + interval). If a low-TPS
+            // system had no entities for a while, lastGT freezes; catching up
+            // one interval per world step would run it at 20 Hz with a full
+            // interval delta (animals looked 5× fast, then snapped back).
+            this.systemLastUpdate.set(system.id, this.gameTime);
             for (const object of objs) {
                 system.update(this.gameTime, interval, object);
             }

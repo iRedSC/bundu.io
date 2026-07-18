@@ -37,7 +37,9 @@ export default class GameObject {
         rotation: number,
         collisionRadius: number,
         visualScale: number = collisionRadius,
-        interpolationMS?: number
+        interpolationMS?: number,
+        /** Coast past the target as a fraction of interpolationMS (0 = stop on target). */
+        maxExtrapolate?: number
     ) {
         this.container = new Container();
         this.container.zIndex = 0;
@@ -59,7 +61,8 @@ export default class GameObject {
                 this.container.renderable = true;
                 this.debug.renderable = true;
             },
-            interpolationMS
+            interpolationMS,
+            maxExtrapolate
         );
         this.positionStates.set({
             x: pos.x,

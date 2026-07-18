@@ -176,6 +176,11 @@ export type AnimalData = {
     nextAggroCheckAt: number;
     /** While gameTime is below this, the animal will not acquire a target. */
     lostAggroUntil: number;
+    /**
+     * gameTime when the animal last failed to make progress while seeking.
+     * 0 means currently unstuck / not seeking.
+     */
+    stuckSince: number;
 };
 export const AnimalData = Component.register<AnimalData>(() => ({
     type: 0,
@@ -188,4 +193,5 @@ export const AnimalData = Component.register<AnimalData>(() => ({
     nextAttackAt: 0,
     nextAggroCheckAt: 0,
     lostAggroUntil: 0,
+    stuckSince: 0,
 }));
