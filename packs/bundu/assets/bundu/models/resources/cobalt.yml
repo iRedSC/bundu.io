@@ -3,8 +3,8 @@ extends: single_tile_node
 defaultVariant: base
 variants:
     base:
-        main: bundu/item/material/cobalt.svg
+        main: bundu/resource/cobalt_ore.png
 
 parts:
     main:
-        scale: 2
+        spillover: 50

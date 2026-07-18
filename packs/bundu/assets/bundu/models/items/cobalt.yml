@@ -1,6 +1,6 @@
 id: item/cobalt
 extends: item/type/none
-texture: bundu/item/material/cobalt.svg
+texture: bundu/resource/cobalt_ore.png
 displays:
     world:
         scale: 2
