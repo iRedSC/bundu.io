@@ -1,4 +1,4 @@
-import type { Container, Rectangle } from "pixi.js";
+import type { Container, Rectangle, Renderer } from "pixi.js";
 import type { ParticleBurst } from "../../rendering/particles/types";
 
 /** World-space view used to keep expensive FX viewport-scoped. */
@@ -13,12 +13,19 @@ export type GroundUpdateContext = {
     deltaMS: number;
     now: number;
     view: GroundViewBounds;
+    /** Pixi renderer — ocean wakes bake a faded displace map each frame. */
+    renderer: Renderer;
     /** Emit ambient foam / sparkles into the shared particle system. */
     emitParticles?: (burst: ParticleBurst) => void;
     /** Shore samples in world pixels (rebuilt when ground patches change). */
     shore: readonly ShoreSample[];
     /** True when the topmost ground at this world pixel is an ocean model. */
     isOceanAt: (worldX: number, worldY: number) => boolean;
+    /**
+     * Tiles from nearest land (`0` on land). Built with shores on patch change;
+     * O(1) lookup. Capped at 255.
+     */
+    landDistanceAt: (worldX: number, worldY: number) => number;
 };
 
 /** Outward-facing shore sample along a land↔ocean boundary. */
@@ -37,6 +44,13 @@ export type ShoreSample = {
 export type GroundVisual = {
     container: Container;
     update?(ctx: GroundUpdateContext): void;
+    /** Wake ripple at world position (ocean only). */
+    addWakeRipple?(
+        worldX: number,
+        worldY: number,
+        now: number,
+        kind?: "idle" | "move"
+    ): void;
 };
 
 export type GroundModelDef = {

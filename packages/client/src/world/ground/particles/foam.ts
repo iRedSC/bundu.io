@@ -2,6 +2,10 @@ import type { Texture } from "pixi.js";
 import type { ParticleBurst } from "../../../rendering/particles/types";
 
 const FOAM_TINTS = [0xe8f4ff, 0xffffff, 0xcfe8f8] as const;
+/** 70% ocean base (#1a5f8a) + 30% white. */
+const SPLASH_TINT = 0x5f8fad;
+/** 100° forward cone (full width, radians). */
+const SPLASH_SPREAD = (100 * Math.PI) / 180;
 
 /** Soft whitecap foam along shorelines. */
 export function oceanFoam(
@@ -24,6 +28,35 @@ export function oceanFoam(
         friction: 0.55,
         tint: FOAM_TINTS[Math.floor(Math.random() * FOAM_TINTS.length)],
         blendMode: "screen",
+        zIndex: GROUND_PARTICLE_Z,
+    };
+}
+
+/** Foam/splash burst from a mover's center, flung forward. */
+export function oceanSplash(
+    texture: Texture,
+    x: number,
+    y: number,
+    direction: number,
+    /** World units / second — particle speed is 1.8–2.2× this. */
+    speed: number
+): ParticleBurst {
+    const lo = Math.max(20, speed * 1.8);
+    const hi = Math.max(lo + 1, speed * 2.2);
+    return {
+        texture,
+        x,
+        y,
+        direction,
+        count: 6 + ((Math.random() * 3) | 0),
+        spread: SPLASH_SPREAD,
+        speed: [lo, hi],
+        lifetime: [450, 750],
+        size: [52, 96],
+        endSize: 14,
+        friction: 4.5,
+        tint: SPLASH_TINT,
+        blendMode: "normal",
         zIndex: GROUND_PARTICLE_Z,
     };
 }
