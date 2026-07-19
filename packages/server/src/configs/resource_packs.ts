@@ -256,7 +256,7 @@ export class ResourcePackService {
             groundTypes: Object.fromEntries(
                 [...GroundTypeConfigs.entries].map(([location, config]) => [
                     registries.ground_type.resolve(location),
-                    { color: config.color },
+                    { model: config.model },
                 ])
             ),
             decorations: Object.fromEntries(

@@ -12,6 +12,7 @@ import { AnimationManagers } from "../animation/animations";
 import {
     clientGroundType,
 } from "../configs/registries";
+import { groundModel } from "../world/ground";
 import type { LayeredRenderer } from "../rendering/layered_renderer";
 import type { EditorDeleteHover } from "../world/world";
 import { createDecoration } from "../world/decoration";
@@ -190,7 +191,10 @@ export class AdminGhost {
 
     private ensureGround(typeId: number, tw: number, th: number): void {
         if (this.ground) return;
-        const hex = clientGroundType(typeId).color.replace("#", "");
+        const hex = groundModel(clientGroundType(typeId).model).color.replace(
+            "#",
+            ""
+        );
         const color = Number.parseInt(hex, 16);
         const g = new Graphics();
         const pw = tw * TILE_SIZE;

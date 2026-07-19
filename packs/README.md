@@ -36,6 +36,8 @@ data/bundu/resources/pine_tree.yml        -> bundu:pine_tree
 data/bundu/buildings/wood_wall.yml        -> bundu:wood_wall
 data/bundu/items/wood_sword.yml           -> bundu:wood_sword
 data/bundu/ground_types/grass.yml         -> bundu:grass
+# ground_type fields: speed_multiplier, model (client ground-visual id)
+# plus optional whenOccupied effect contexts. Colors live on client models.
 data/bundu/decorations/beach.yml          -> bundu:beach
 data/bundu/recipes/wood_wall.yml          -> bundu:wood_wall
 data/bundu/loot_tables/bear_dead.yml      -> bundu:bear_dead
@@ -213,7 +215,7 @@ serving packs, the server sanitizes client-facing assets:
 - Model definitions are compiled server-side; clients receive only the compiled
   payload (`models.json` format 2)
 - Raw pack `data/` YAML is never sent. Clients get a curated `registries.json`
-  projection (IDs, tags, placement, ground colors) plus authoritative world
+  projection (IDs, tags, placement, ground models) plus authoritative world
   updates over the WebSocket
 
 Clients SHA-256-check the registry projection, compiled models, and assets
