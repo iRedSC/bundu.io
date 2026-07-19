@@ -1,3 +1,5 @@
+import type { GroundModelSet } from "./ground_models";
+
 export const REGISTRY_NAMES = [
     "item",
     "structure",
@@ -54,6 +56,11 @@ export type ClientRegistryProjection = RegistrySetProjection & {
     >;
     /** `model` is a client ground-visual id (not an entity ModelDef). */
     groundTypes: Record<number, { model: string }>;
+    /**
+     * Pack-authored ground visuals (`assets/<ns>/ground_models/*.yml`).
+     * Keyed by model id referenced from `groundTypes[].model`.
+     */
+    groundModels: GroundModelSet;
     /** Base world size + z-layer for decoration instances (`size * scale` at runtime). */
     decorations: Record<number, { size: number; z: number }>;
     /** Dynamic crafting/effect flag name → numeric id (assigned at pack load). */

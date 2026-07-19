@@ -1,88 +1,146 @@
-import {
-    BufferImageSource,
-    type Rectangle,
-    type Sprite,
-    Texture,
-} from "pixi.js";
+import { BufferImageSource, Sprite, Texture, type Container } from "pixi.js";
 import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
 import { NEARSHORE_OVERSHOOT_TILES } from "./nearshore_fill";
 import type { GroundPatchRef } from "./shore";
+import type { GroundViewBounds } from "./types";
 
 /** How far the organic edge can push past the authored rect (tiles). */
 export const LAND_SEAM_AMPLITUDE = 1.15;
-/** Per-patch bake texels per tile — sharp; cheap because each patch is small. */
-const SEAM_SUBDIV = 48;
-/** ~1 texel analytic AA (tiles). */
-const SEAM_AA = 0.5 / SEAM_SUBDIV;
 /** Extra sprite/frame padding so bulges / blobs stay visible. */
-export const LAND_SEAM_PAD_TILES = Math.ceil(LAND_SEAM_AMPLITUDE + SEAM_AA + 0.01);
-/** Land patches to bake per live tick (keep at 1 — bakes are heavy). */
+export const LAND_SEAM_PAD_TILES = Math.ceil(LAND_SEAM_AMPLITUDE + 0.02);
+/** Land chunks to bake per live tick. */
 export const LAND_SEAM_PER_TICK = 1;
 /** Live play: only run a bake tick every N frames to avoid hitching. */
 export const LAND_SEAM_TICK_INTERVAL = 3;
 
+/**
+ * Max tile edge of one seam chunk. Keeps crisp subdiv cheap:
+ * 32 × 48 texels/tile ≈ 1536 px — well under GPU comfort.
+ */
+const SEAM_CHUNK_TILES = 32;
+/** Hard cap on either bake edge (texels), belt-and-suspenders. */
+const SEAM_TEXEL_MAX = 2048;
+
+/** Zoom → seam texel density buckets (avoid rebaking every wheel tick). */
+const LOD_SUBDIV = [6, 24, 48] as const;
+export type SeamLod = 0 | 1 | 2;
+
 const TILE_N = WORLD_TILES * WORLD_TILES;
 
-export type LandSeamBakeResult = {
+export type LandSeamChunkBake = {
+    /** Ground entity id. */
     id: number;
     texture: Texture;
+    /** World-pixel placement. */
+    x: number;
+    y: number;
+    w: number;
+    h: number;
 };
 
+type SeamChunkJob = {
+    patch: GroundPatchRef;
+    /** Tile-space half-open rect. */
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+};
+
+/** Zoom → LOD. Play (~0.75–2.5) stays crisp; freecam overview stays cheap. */
+export function seamLodFromZoom(zoom: number): SeamLod {
+    if (zoom < 0.4) return 0;
+    if (zoom < 1.15) return 1;
+    return 2;
+}
+
 /**
- * Per-patch land↔land seam baker. Shared world fields rebuild once, then each
- * land rect gets its own high-res texture over a few frames.
+ * Edge-band seam baker: opaque fill stays a flat inset sprite; only the
+ * land↔land ring is baked in zoom-LOD chunks, visible ones first.
  */
 export class LandSeamBaker {
     private readonly topLand = new Uint8Array(TILE_N);
     private readonly oceanDist = new Float32Array(TILE_N);
-    private queue: GroundPatchRef[] = [];
+    private landPatches: GroundPatchRef[] = [];
+    private queue: SeamChunkJob[] = [];
     private colorOfType: (type: number) => number = () => 0;
-    private readonly textures = new Map<number, Texture>();
+    private readonly textures = new Map<string, Texture>();
     private total = 0;
     private done = 0;
+    private lod: SeamLod = 2;
 
     prepare(
         patches: readonly GroundPatchRef[],
         isOceanType: (type: number) => boolean,
-        colorOfType: (type: number) => number
+        colorOfType: (type: number) => number,
+        lod: SeamLod = this.lod
     ): void {
+        this.lod = lod;
         this.colorOfType = colorOfType;
-        this.queue = [];
-        for (const tex of this.textures.values()) tex.destroy(true);
-        this.textures.clear();
-
+        this.destroyTextures();
         this.topLand.fill(0);
+        this.landPatches = [];
+
         const byBottom = [...patches].sort((a, b) => a.id - b.id);
         for (const patch of byBottom) {
-            if (isOceanType(patch.type)) continue;
             const x1 = Math.max(0, patch.x);
             const y1 = Math.max(0, patch.y);
             const x2 = Math.min(WORLD_TILES, patch.x + patch.w);
             const y2 = Math.min(WORLD_TILES, patch.y + patch.h);
+            const land = isOceanType(patch.type) ? 0 : 1;
             for (let ty = y1; ty < y2; ty++) {
                 const row = ty * WORLD_TILES;
                 for (let tx = x1; tx < x2; tx++) {
-                    this.topLand[row + tx] = 1;
+                    this.topLand[row + tx] = land;
                 }
             }
-            this.queue.push(patch);
+            if (land) this.landPatches.push(patch);
         }
-        // Small patches first — seams appear sooner, less hitch per tick.
-        this.queue.sort((a, b) => a.w * a.h - b.w * b.h);
-        this.total = this.queue.length;
-        this.done = 0;
         fillOceanDistance(this.topLand, this.oceanDist);
+        this.rebuildQueue();
     }
 
-    /** Bake up to `limit` queued patches. */
-    tick(limit = LAND_SEAM_PER_TICK): LandSeamBakeResult[] {
-        const out: LandSeamBakeResult[] = [];
+    /** Change zoom LOD; returns true when callers must clear applied seam sprites. */
+    setLod(lod: SeamLod): boolean {
+        if (lod === this.lod) return false;
+        this.lod = lod;
+        this.destroyTextures();
+        if (this.landPatches.length > 0) this.rebuildQueue();
+        return true;
+    }
+
+    getLod(): SeamLod {
+        return this.lod;
+    }
+
+    /** Drop textures + queue (world clear / soft reconnect). */
+    reset(): void {
+        this.destroyTextures();
+        this.queue = [];
+        this.landPatches = [];
+        this.total = 0;
+        this.done = 0;
+        this.topLand.fill(0);
+        this.oceanDist.fill(0);
+    }
+
+    /**
+     * Bake up to `limit` chunks. When `view` is set, prefer chunks near the
+     * viewport (on-screen first, then closest).
+     */
+    tick(
+        limit = LAND_SEAM_PER_TICK,
+        view?: GroundViewBounds
+    ): LandSeamChunkBake[] {
+        const out: LandSeamChunkBake[] = [];
         while (limit > 0 && this.queue.length > 0) {
-            const patch = this.queue.shift();
-            if (!patch) break;
-            const texture = this.bakePatch(patch);
-            this.textures.set(patch.id, texture);
-            out.push({ id: patch.id, texture });
+            const index = view ? pickVisibleJob(this.queue, view) : 0;
+            const [job] = this.queue.splice(index, 1);
+            if (!job) break;
+            const baked = this.bakeChunk(job);
+            const key = chunkKey(job);
+            this.textures.set(key, baked.texture);
+            out.push(baked);
             this.done++;
             limit--;
         }
@@ -97,8 +155,30 @@ export class LandSeamBaker {
         return { done: this.done, total: this.total };
     }
 
-    private bakePatch(patch: GroundPatchRef): Texture {
-        const { topLand, oceanDist } = this;
+    private rebuildQueue(): void {
+        this.queue = [];
+        for (const patch of this.landPatches) {
+            for (const rect of edgeChunkRects(patch)) {
+                this.queue.push({ patch, ...rect });
+            }
+        }
+        // Small chunks first so coasts appear quickly when view is unknown.
+        this.queue.sort(
+            (a, b) =>
+                (a.x1 - a.x0) * (a.y1 - a.y0) - (b.x1 - b.x0) * (b.y1 - b.y0)
+        );
+        this.total = this.queue.length;
+        this.done = 0;
+    }
+
+    private destroyTextures(): void {
+        for (const tex of this.textures.values()) tex.destroy(true);
+        this.textures.clear();
+    }
+
+    private bakeChunk(job: SeamChunkJob): LandSeamChunkBake {
+        const { topLand, oceanDist, lod } = this;
+        const { patch, x0, y0, x1, y1 } = job;
         const pad = LAND_SEAM_PAD_TILES;
         const coastClear = NEARSHORE_OVERSHOOT_TILES;
         const rgb = this.colorOfType(patch.type);
@@ -106,25 +186,21 @@ export class LandSeamBaker {
         const lg = (rgb >> 8) & 0xff;
         const lb = rgb & 0xff;
 
-        const x0 = patch.x - pad;
-        const y0 = patch.y - pad;
-        const tw = (patch.w + pad * 2) * SEAM_SUBDIV;
-        const th = (patch.h + pad * 2) * SEAM_SUBDIV;
+        const tileW = Math.max(1e-6, x1 - x0);
+        const tileH = Math.max(1e-6, y1 - y0);
+        const subdiv = seamSubdiv(tileW, tileH, lod);
+        const aa = 0.5 / subdiv;
+        const tw = Math.max(1, Math.ceil(tileW * subdiv));
+        const th = Math.max(1, Math.ceil(tileH * subdiv));
         const pixels = new Uint8Array(tw * th * 4);
 
         for (let sy = 0; sy < th; sy++) {
             const row = sy * tw;
-            const py = y0 + (sy + 0.5) / SEAM_SUBDIV;
-            const ty = Math.min(
-                WORLD_TILES - 1,
-                Math.max(0, (py | 0))
-            );
+            const py = y0 + (sy + 0.5) / subdiv;
+            const ty = Math.min(WORLD_TILES - 1, Math.max(0, py | 0));
             for (let sx = 0; sx < tw; sx++) {
-                const px = x0 + (sx + 0.5) / SEAM_SUBDIV;
-                const tx = Math.min(
-                    WORLD_TILES - 1,
-                    Math.max(0, (px | 0))
-                );
+                const px = x0 + (sx + 0.5) / subdiv;
+                const tx = Math.min(WORLD_TILES - 1, Math.max(0, px | 0));
                 if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
                     continue;
                 }
@@ -139,10 +215,8 @@ export class LandSeamBaker {
                     patch.w,
                     patch.h
                 );
-                if (sdf <= -pad) {
-                    writeOpaque(pixels, row + sx, lr, lg, lb);
-                    continue;
-                }
+                // Deep interior is the inset fill sprite — leave transparent.
+                if (sdf <= -pad) continue;
                 if (sdf >= pad) continue;
 
                 const authLand = topLand[tile] !== 0;
@@ -150,13 +224,10 @@ export class LandSeamBaker {
 
                 const landLand = facesLandLand(tx, ty, patch, topLand);
                 let edge = sdf;
-                if (
-                    landLand &&
-                    Math.abs(sdf) <= LAND_SEAM_AMPLITUDE + SEAM_AA
-                ) {
+                if (landLand && Math.abs(sdf) <= LAND_SEAM_AMPLITUDE + aa) {
                     edge = sdf - seamOffset(px, py);
                 }
-                const cover = coverage(edge);
+                const cover = coverage(edge, aa);
                 if (cover <= 0) continue;
                 writeLand(pixels, row + sx, lr, lg, lb, cover);
             }
@@ -171,22 +242,104 @@ export class LandSeamBaker {
             alphaMode: "premultiplied-alpha",
             resource: pixels,
         });
-        return new Texture({ source });
+        return {
+            id: patch.id,
+            texture: new Texture({ source }),
+            x: x0 * TILE_SIZE,
+            y: y0 * TILE_SIZE,
+            w: tileW * TILE_SIZE,
+            h: tileH * TILE_SIZE,
+        };
     }
 }
 
-function writeOpaque(
-    pixels: Uint8Array,
-    texIndex: number,
-    lr: number,
-    lg: number,
-    lb: number
-): void {
-    const o = texIndex * 4;
-    pixels[o] = lr;
-    pixels[o + 1] = lg;
-    pixels[o + 2] = lb;
-    pixels[o + 3] = 255;
+function chunkKey(job: SeamChunkJob): string {
+    return `${job.patch.id}:${job.x0},${job.y0},${job.x1},${job.y1}`;
+}
+
+/** Edge-band (or full padded rect for tiny patches), split into chunks. */
+function edgeChunkRects(
+    patch: GroundPatchRef
+): Array<{ x0: number; y0: number; x1: number; y1: number }> {
+    const pad = LAND_SEAM_PAD_TILES;
+    const band = pad * 2;
+    const x0 = patch.x - pad;
+    const y0 = patch.y - pad;
+    const x1 = patch.x + patch.w + pad;
+    const y1 = patch.y + patch.h + pad;
+
+    if (patch.w <= band || patch.h <= band) {
+        return chunkRect(x0, y0, x1, y1);
+    }
+
+    return [
+        ...chunkRect(x0, y0, x1, patch.y + pad),
+        ...chunkRect(x0, patch.y + patch.h - pad, x1, y1),
+        ...chunkRect(x0, patch.y + pad, patch.x + pad, patch.y + patch.h - pad),
+        ...chunkRect(
+            patch.x + patch.w - pad,
+            patch.y + pad,
+            x1,
+            patch.y + patch.h - pad
+        ),
+    ];
+}
+
+function chunkRect(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number
+): Array<{ x0: number; y0: number; x1: number; y1: number }> {
+    const out: Array<{ x0: number; y0: number; x1: number; y1: number }> = [];
+    if (x1 <= x0 || y1 <= y0) return out;
+    for (let y = y0; y < y1; y += SEAM_CHUNK_TILES) {
+        for (let x = x0; x < x1; x += SEAM_CHUNK_TILES) {
+            out.push({
+                x0: x,
+                y0: y,
+                x1: Math.min(x1, x + SEAM_CHUNK_TILES),
+                y1: Math.min(y1, y + SEAM_CHUNK_TILES),
+            });
+        }
+    }
+    return out;
+}
+
+function pickVisibleJob(
+    queue: readonly SeamChunkJob[],
+    view: GroundViewBounds
+): number {
+    const pad = LAND_SEAM_PAD_TILES * TILE_SIZE;
+    const minX = view.minX - pad;
+    const minY = view.minY - pad;
+    const maxX = view.maxX + pad;
+    const maxY = view.maxY + pad;
+    const cx = (view.minX + view.maxX) * 0.5;
+    const cy = (view.minY + view.maxY) * 0.5;
+
+    let best = 0;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < queue.length; i++) {
+        const job = queue[i];
+        if (!job) continue;
+        const jx0 = job.x0 * TILE_SIZE;
+        const jy0 = job.y0 * TILE_SIZE;
+        const jx1 = job.x1 * TILE_SIZE;
+        const jy1 = job.y1 * TILE_SIZE;
+        const visible =
+            jx1 >= minX && jx0 <= maxX && jy1 >= minY && jy0 <= maxY;
+        const mx = (jx0 + jx1) * 0.5;
+        const my = (jy0 + jy1) * 0.5;
+        const dist = (mx - cx) * (mx - cx) + (my - cy) * (my - cy);
+        // Visible chunks always beat off-screen; then nearest center.
+        const score = visible ? dist : 1e15 + dist;
+        if (score < bestScore) {
+            bestScore = score;
+            best = i;
+        }
+    }
+    return best;
 }
 
 function writeLand(
@@ -200,7 +353,6 @@ function writeLand(
     const o = texIndex * 4;
     const pa = pixels[o + 3] ?? 0;
     if (pa === 0) {
-        // Premultiplied soft edge — composites over lower land sprites cleanly.
         pixels[o] = (lr * cover + 0.5) | 0;
         pixels[o + 1] = (lg * cover + 0.5) | 0;
         pixels[o + 2] = (lb * cover + 0.5) | 0;
@@ -217,11 +369,17 @@ function writeLand(
     pixels[o + 3] = 255;
 }
 
-function coverage(sdfW: number): number {
-    const b = SEAM_AA;
-    if (sdfW <= -b) return 1;
-    if (sdfW >= b) return 0;
-    const t = (sdfW + b) / (2 * b);
+function seamSubdiv(tileW: number, tileH: number, lod: SeamLod): number {
+    const target = LOD_SUBDIV[lod];
+    const maxEdge = Math.max(tileW, tileH, 1);
+    const capped = Math.max(1, Math.floor(SEAM_TEXEL_MAX / maxEdge));
+    return Math.max(1, Math.min(target, capped));
+}
+
+function coverage(sdfW: number, aa: number): number {
+    if (sdfW <= -aa) return 1;
+    if (sdfW >= aa) return 0;
+    const t = (sdfW + aa) / (2 * aa);
     const s = t * t * (3 - 2 * t);
     return 1 - s;
 }
@@ -343,32 +501,19 @@ function facesLandLand(
     return checks.length > 0;
 }
 
-/** Bind a per-patch seam texture onto a land sprite. */
-export function bindLandSeamSprite(
-    sprite: Sprite,
-    bounds: Rectangle,
-    map: Texture
+/** Append one baked edge chunk onto a seam overlay layer. */
+export function addLandSeamChunk(
+    layer: Container,
+    chunk: LandSeamChunkBake
 ): void {
-    const pad = LAND_SEAM_PAD_TILES;
-    sprite.texture = map;
-    sprite.tint = 0xffffff;
-    sprite.position.set(
-        bounds.x - pad * TILE_SIZE,
-        bounds.y - pad * TILE_SIZE
-    );
-    sprite.width = bounds.width + pad * 2 * TILE_SIZE;
-    sprite.height = bounds.height + pad * 2 * TILE_SIZE;
+    const sprite = new Sprite(chunk.texture);
+    sprite.position.set(chunk.x, chunk.y);
+    sprite.width = chunk.w;
+    sprite.height = chunk.h;
+    layer.addChild(sprite);
 }
 
-/** Drop a seam bake and restore the flat AABB fill (safe before texture destroy). */
-export function clearLandSeamSprite(
-    sprite: Sprite,
-    bounds: Rectangle,
-    color: number
-): void {
-    sprite.texture = Texture.WHITE;
-    sprite.tint = color;
-    sprite.position.set(bounds.x, bounds.y);
-    sprite.width = bounds.width;
-    sprite.height = bounds.height;
+/** Drop seam overlays (safe before texture destroy). */
+export function clearLandSeamLayer(layer: Container): void {
+    layer.removeChildren();
 }

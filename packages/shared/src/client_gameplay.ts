@@ -1,6 +1,59 @@
 /** Pack-authored client gameplay (`assets/<ns>/gameplay.yml`). */
 export type DayPeriodOffset = { x: number; y: number };
 
+export type Scroll2 = { x: number; y: number };
+
+export type OceanCausticLayer = {
+    tint: string;
+    alpha: number;
+    tileScale: number;
+    scroll: Scroll2;
+};
+
+export type OceanSwellLayer = {
+    world: number;
+    alpha: number;
+    scroll: Scroll2;
+};
+
+export type OceanWakeKind = {
+    startSize: number;
+    growSpeed: number;
+};
+
+/** Viewport ocean FX tuning (textures live on the ocean ground model). */
+export type OceanFxConfig = {
+    caustics: { a: OceanCausticLayer; b: OceanCausticLayer };
+    swell: { big: OceanSwellLayer; small: OceanSwellLayer };
+    displaceStrength: number;
+    wake: {
+        max: number;
+        lifeMs: number;
+        idle: OceanWakeKind;
+        move: OceanWakeKind;
+    };
+    splash: {
+        max: number;
+        strength: number;
+        spreadDeg: number;
+        friction: number;
+        speedMin: number;
+        speedMax: number;
+        sizeMin: number;
+        sizeMax: number;
+        sizeEnd: number;
+    };
+    particles: {
+        foamIntervalMs: [number, number];
+        sparkleIntervalMs: [number, number];
+        shoreFilterMs: number;
+    };
+    /** Soften heavy FX past this view area (world²). */
+    heavyArea: number;
+    /** Skip ambient particles past this view area (world²). */
+    particleMaxArea: number;
+};
+
 export type ClientGameplayConfig = {
     shadows: {
         alpha: number;
@@ -21,10 +74,13 @@ export type ClientGameplayConfig = {
             sources: Readonly<Record<string, number>>;
         };
     };
+    ocean: OceanFxConfig;
 };
 
 const DAY_PERIOD_NAMES = ["morning", "day", "evening", "night"] as const;
 type DayPeriodName = (typeof DAY_PERIOD_NAMES)[number];
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
 
 function record(value: unknown, path: string): Record<string, unknown> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -39,6 +95,42 @@ function number(source: Record<string, unknown>, key: string, path: string): num
         throw new Error(`${path}.${key}: expected a finite number`);
     }
     return value;
+}
+
+function positive(source: Record<string, unknown>, key: string, path: string): number {
+    const value = number(source, key, path);
+    if (value <= 0) throw new Error(`${path}.${key}: must be > 0`);
+    return value;
+}
+
+function hexColor(value: unknown, path: string): string {
+    if (typeof value !== "string" || !HEX.test(value)) {
+        throw new Error(`${path}: expected #rrggbb`);
+    }
+    return value.toLowerCase();
+}
+
+function scroll2(value: unknown, path: string): Scroll2 {
+    const raw = record(value, path);
+    return { x: number(raw, "x", path), y: number(raw, "y", path) };
+}
+
+function intervalMs(value: unknown, path: string): [number, number] {
+    if (!Array.isArray(value) || value.length !== 2) {
+        throw new Error(`${path}: expected [min, max]`);
+    }
+    const [lo, hi] = value;
+    if (
+        typeof lo !== "number" ||
+        typeof hi !== "number" ||
+        !Number.isFinite(lo) ||
+        !Number.isFinite(hi) ||
+        lo < 0 ||
+        hi < lo
+    ) {
+        throw new Error(`${path}: expected 0 <= min <= max`);
+    }
+    return [lo, hi];
 }
 
 function parsePeriodOffset(value: unknown, path: string): DayPeriodOffset {
@@ -120,9 +212,113 @@ function parseShadows(
     };
 }
 
+function parseCausticLayer(value: unknown, path: string): OceanCausticLayer {
+    const raw = record(value, path);
+    const alpha = number(raw, "alpha", path);
+    if (alpha < 0 || alpha > 1) throw new Error(`${path}.alpha: expected 0..1`);
+    return {
+        tint: hexColor(raw.tint, `${path}.tint`),
+        alpha,
+        tileScale: positive(raw, "tile_scale", path),
+        scroll: scroll2(raw.scroll, `${path}.scroll`),
+    };
+}
+
+function parseSwellLayer(value: unknown, path: string): OceanSwellLayer {
+    const raw = record(value, path);
+    const alpha = number(raw, "alpha", path);
+    if (alpha < 0 || alpha > 1) throw new Error(`${path}.alpha: expected 0..1`);
+    return {
+        world: positive(raw, "world", path),
+        alpha,
+        scroll: scroll2(raw.scroll, `${path}.scroll`),
+    };
+}
+
+function parseWakeKind(value: unknown, path: string): OceanWakeKind {
+    const raw = record(value, path);
+    return {
+        startSize: positive(raw, "start_size", path),
+        growSpeed: positive(raw, "grow_speed", path),
+    };
+}
+
+function parseOcean(value: Record<string, unknown>): OceanFxConfig {
+    const path = "client_gameplay.ocean";
+    const caustics = record(value.caustics, `${path}.caustics`);
+    const swell = record(value.swell, `${path}.swell`);
+    const wake = record(value.wake, `${path}.wake`);
+    const splash = record(value.splash, `${path}.splash`);
+    const particles = record(value.particles, `${path}.particles`);
+    const heavy = positive(value, "heavy_area", path);
+    const particleMax = positive(value, "particle_max_area", path);
+    return {
+        caustics: {
+            a: parseCausticLayer(caustics.a, `${path}.caustics.a`),
+            b: parseCausticLayer(caustics.b, `${path}.caustics.b`),
+        },
+        swell: {
+            big: parseSwellLayer(swell.big, `${path}.swell.big`),
+            small: parseSwellLayer(swell.small, `${path}.swell.small`),
+        },
+        displaceStrength: positive(value, "displace_strength", path),
+        wake: {
+            max: positive(wake, "max", `${path}.wake`),
+            lifeMs: positive(wake, "life_ms", `${path}.wake`),
+            idle: parseWakeKind(wake.idle, `${path}.wake.idle`),
+            move: parseWakeKind(wake.move, `${path}.wake.move`),
+        },
+        splash: (() => {
+            const speedMin = positive(splash, "speed_min", `${path}.splash`);
+            const speedMax = positive(splash, "speed_max", `${path}.splash`);
+            if (speedMin > speedMax) {
+                throw new Error(
+                    `${path}.splash: speed_min must be <= speed_max`
+                );
+            }
+            const sizeMin = positive(splash, "size_min", `${path}.splash`);
+            const sizeMax = positive(splash, "size_max", `${path}.splash`);
+            if (sizeMin > sizeMax) {
+                throw new Error(
+                    `${path}.splash: size_min must be <= size_max`
+                );
+            }
+            return {
+                max: positive(splash, "max", `${path}.splash`),
+                strength: positive(splash, "strength", `${path}.splash`),
+                spreadDeg: positive(splash, "spread_deg", `${path}.splash`),
+                friction: positive(splash, "friction", `${path}.splash`),
+                speedMin,
+                speedMax,
+                sizeMin,
+                sizeMax,
+                sizeEnd: positive(splash, "size_end", `${path}.splash`),
+            };
+        })(),
+        particles: {
+            foamIntervalMs: intervalMs(
+                particles.foam_interval_ms,
+                `${path}.particles.foam_interval_ms`
+            ),
+            sparkleIntervalMs: intervalMs(
+                particles.sparkle_interval_ms,
+                `${path}.particles.sparkle_interval_ms`
+            ),
+            shoreFilterMs: positive(
+                particles,
+                "shore_filter_ms",
+                `${path}.particles`
+            ),
+        },
+        heavyArea: heavy,
+        particleMaxArea: particleMax,
+    };
+}
+
 export function parseClientGameplayConfig(value: unknown): ClientGameplayConfig {
     const root = record(value, "client_gameplay");
     return {
         shadows: parseShadows(record(root.shadows, "client_gameplay.shadows")),
+        ocean: parseOcean(record(root.ocean, "client_gameplay.ocean")),
     };
 }

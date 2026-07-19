@@ -4,6 +4,7 @@ import {
     type RegistryName,
     type Registry,
 } from "@bundu/shared/registry";
+import { replaceGroundModels } from "../world/ground/models";
 
 let current:
     | {
@@ -20,6 +21,7 @@ export function replaceClientRegistries(
         ...projection,
         flags: projection.flags ?? {},
     };
+    replaceGroundModels(projection.groundModels ?? {});
 }
 
 export function clientRegistries(): {

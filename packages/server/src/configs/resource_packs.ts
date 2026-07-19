@@ -5,11 +5,19 @@ import { packs } from "./packs";
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
 import { parseClientGameplayConfig } from "@bundu/shared/client_gameplay";
 import {
+    parseGroundModelSet,
+    type GroundModelSet,
+    isOceanGroundModel,
+} from "@bundu/shared/ground_models";
+import {
     compileModelDefs,
     type CompiledModelDefs,
 } from "@bundu/shared/models/compile";
 import type { CompiledModelsPayload } from "@bundu/shared/models/types";
-import { rewritePackTextureRefs } from "@bundu/shared/models/texture_paths";
+import {
+    rewritePackTextureRefs,
+    toSanitizedTexturePath,
+} from "@bundu/shared/models/texture_paths";
 import { BuildingConfigs } from "./loaders/buildings";
 import { flagRegistry } from "./flag_registry";
 import { GroundTypeConfigs } from "./loaders/ground_types";
@@ -112,6 +120,23 @@ function validateCompiledTextures(
     }
 }
 
+function validateGroundModelTextures(
+    models: GroundModelSet,
+    availableAssets: ReadonlySet<string>
+): void {
+    for (const def of Object.values(models)) {
+        if (!isOceanGroundModel(def)) continue;
+        for (const [key, texture] of Object.entries(def.textures)) {
+            const path = toSanitizedTexturePath(texture);
+            if (!availableAssets.has(path)) {
+                throw new Error(
+                    `ground_model.${def.id}.textures.${key}: missing texture "${path}"`
+                );
+            }
+        }
+    }
+}
+
 export class ResourcePackService {
     readonly manifest: ResourcePackManifest;
     readonly modelsJson: string;
@@ -139,6 +164,7 @@ export class ResourcePackService {
     /** Load, sanitize, and compile pack assets for hostile client delivery. */
     static async create(): Promise<ResourcePackService> {
         const models: Record<string, unknown> = {};
+        const groundModelDocs: Record<string, unknown> = {};
         const pendingTextures: { logicalPath: string; bytes: Uint8Array }[] =
             [];
         let clientGameplayRaw: unknown;
@@ -195,6 +221,26 @@ export class ResourcePackService {
                         Object.assign(models, document);
                     }
                 }
+
+                const groundModelsRoot = path.join(
+                    namespaceRoot,
+                    "ground_models"
+                );
+                for (const filename of files(groundModelsRoot).filter((name) =>
+                    /\.ya?ml$/i.test(name)
+                )) {
+                    const stem = path
+                        .relative(groundModelsRoot, filename)
+                        .replaceAll("\\", "/")
+                        .replace(/\.ya?ml$/i, "");
+                    // Later packs override by file stem (same as model id default).
+                    groundModelDocs[stem] = rewritePackTextureRefs(
+                        record(
+                            Bun.YAML.parse(fs.readFileSync(filename, "utf8")),
+                            filename
+                        )
+                    );
+                }
             }
         }
 
@@ -233,10 +279,10 @@ export class ResourcePackService {
         // Aggregate under one source key so per-id YAML maps compile as definitions
         // (same shape the client historically received as `{ stack }`).
         const compiledModels = compileModelDefs({ stack: models });
-        validateCompiledTextures(
-            compiledModels,
-            new Set(servedAssets.keys())
-        );
+        const availableAssets = new Set(servedAssets.keys());
+        validateCompiledTextures(compiledModels, availableAssets);
+        const groundModels = parseGroundModelSet(groundModelDocs);
+        validateGroundModelTextures(groundModels, availableAssets);
         assertPackAssetBudget([...servedAssets.values()]);
 
         const payload: CompiledModelsPayload = {
@@ -245,6 +291,13 @@ export class ResourcePackService {
         };
         const modelsJson = JSON.stringify(payload);
         const registries = gameRegistries();
+        for (const [location, config] of GroundTypeConfigs.entries) {
+            if (!groundModels[config.model]) {
+                throw new Error(
+                    `ground_type ${location}: unknown ground model "${config.model}"`
+                );
+            }
+        }
         const projection: ClientRegistryProjection = {
             ...registryProjection(),
             structures: Object.fromEntries(
@@ -259,6 +312,7 @@ export class ResourcePackService {
                     { model: config.model },
                 ])
             ),
+            groundModels,
             decorations: Object.fromEntries(
                 [...DecorationConfigs.entries].map(([location, config]) => [
                     registries.decoration.resolve(location),

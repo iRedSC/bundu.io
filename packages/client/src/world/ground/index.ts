@@ -1,4 +1,10 @@
-export { GROUND_Z_BASE, GROUND_Z_OCEAN, GROUND_Z_OCEAN_FILL, createGround } from "./create";
+export {
+    GROUND_Z_BASE,
+    GROUND_Z_OCEAN,
+    GROUND_Z_OCEAN_FILL,
+    createGround,
+    createOceanFillForType,
+} from "./create";
 export {
     LAND_DISTANCE_MAX,
     LandDistanceField,
@@ -9,11 +15,19 @@ export {
     LAND_SEAM_PER_TICK,
     LAND_SEAM_TICK_INTERVAL,
     LandSeamBaker,
-    bindLandSeamSprite,
-    clearLandSeamSprite,
+    addLandSeamChunk,
+    clearLandSeamLayer,
+    seamLodFromZoom,
+    type LandSeamChunkBake,
+    type SeamLod,
 } from "./land_seam";
-export { groundModel, isOceanGroundModel, listGroundModels } from "./models";
-export { createOceanFill } from "./ocean";
+export {
+    groundModel,
+    isOceanGroundModel,
+    listGroundModels,
+    replaceGroundModels,
+} from "./models";
+export { applyOceanFx } from "./ocean_fx";
 export {
     NEARSHORE_BLEND_TILES,
     NEARSHORE_OVERSHOOT_TILES,
