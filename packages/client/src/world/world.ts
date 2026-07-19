@@ -242,6 +242,10 @@ export class World {
 
         const ids = Array.from(this.objects.all(), (object) => object.id);
         for (const id of ids) this.removeClientObject(id);
+        for (const patch of this.groundPatches) {
+            this.disposeGroundVisual(patch.visual);
+        }
+        if (this.oceanVisual) this.disposeGroundVisual(this.oceanVisual);
         this.renderer.delete(GROUND_RENDER_ID);
         this.oceanVisual = undefined;
         this.groundPatches.length = 0;
@@ -635,6 +639,7 @@ export class World {
 
     private removeClientObject(id: number): void {
         this.pendingObjectStates.delete(id);
+        this.clearLandFxState(id);
         const object = this.objects.get(id);
         if (object) {
             this.objects.delete(object);
@@ -829,6 +834,7 @@ export class World {
                     GROUND_RENDER_ID,
                     existing.visual.container
                 );
+                this.disposeGroundVisual(existing.visual);
                 break;
             }
             const modelId = clientGroundType(type).model;
@@ -867,6 +873,7 @@ export class World {
                     GROUND_RENDER_ID,
                     patch.visual.container
                 );
+                this.disposeGroundVisual(patch.visual);
                 break;
             }
         }
@@ -930,6 +937,7 @@ export class World {
                     this.oceanVisual.overlay
                 );
             }
+            this.disposeGroundVisual(this.oceanVisual);
             this.oceanVisual = undefined;
         }
         const isOcean = (type: number) => this.oceanTypeIds.has(type);
@@ -990,6 +998,16 @@ export class World {
         for (const chunk of baked) {
             byId.get(chunk.id)?.visual.applyLandSeam?.(chunk);
         }
+    }
+
+    private disposeGroundVisual(visual: GroundVisual): void {
+        visual.clearLandSeam?.();
+        if (visual.destroy) {
+            visual.destroy();
+            return;
+        }
+        visual.container.destroy({ children: true });
+        visual.overlay?.destroy({ children: true });
     }
 
     /** Swap seam LOD; clears applied overlays when the baker rebuilds. */
@@ -1105,7 +1123,14 @@ export class World {
             const stepX = x - prev.x;
             const stepY = y - prev.y;
             const step = Math.hypot(stepX, stepY);
-            if (step < 0.5) continue;
+            // Ignore teleport/resync jumps so recycled ids don't spray FX.
+            if (step < 0.5 || step > TILE_SIZE * 4) {
+                if (step > TILE_SIZE * 4) {
+                    this.landFxLastPos.set(object.id, { x, y });
+                    this.landFxTrailTravel.set(object.id, 0);
+                }
+                continue;
+            }
 
             const direction = Math.atan2(stepY, stepX);
             const landColor = parseHexColor(ground.color);

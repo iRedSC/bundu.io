@@ -60,10 +60,9 @@ export class LandDistanceField {
     }
 
     private inlandSample(tx: number, ty: number): number {
-        if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
-            return 0;
-        }
-        const d = this.dist[ty * WORLD_TILES + tx]!;
+        const cx = Math.min(WORLD_TILES - 1, Math.max(0, tx));
+        const cy = Math.min(WORLD_TILES - 1, Math.max(0, ty));
+        const d = this.dist[cy * WORLD_TILES + cx]!;
         return d < 0 ? -d : 0;
     }
 

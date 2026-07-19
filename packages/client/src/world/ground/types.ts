@@ -64,6 +64,8 @@ export type GroundVisual = {
     applyLandSeam?(chunk: LandSeamChunkBake): void;
     /** Drop seam overlays before textures are destroyed. */
     clearLandSeam?(): void;
+    /** Free GPU resources when the patch is unloaded. */
+    destroy?(): void;
     /** Wake ripple at world position (ocean only). */
     addWakeRipple?(
         worldX: number,

@@ -33,48 +33,48 @@ export function createSolidGround(
     const root = new Container();
     root.zIndex = zIndex;
 
+    // Prefer #202 FILL_INSET so organic cuts never reveal a hard rect; for tiny
+    // patches keep a full AABB fill (#204) so LOD clears don't leave holes.
     const insetPx = LAND_SEAM_FILL_INSET_TILES * TILE_SIZE;
     const insetW = bounds.width - insetPx * 2;
     const insetH = bounds.height - insetPx * 2;
-    // Tiny patches: no flat rect; seam bake owns the whole silhouette.
     const useInset = insetW > 0 && insetH > 0;
+    const fillX = useInset ? bounds.x + insetPx : bounds.x;
+    const fillY = useInset ? bounds.y + insetPx : bounds.y;
+    const fillW = useInset ? insetW : bounds.width;
+    const fillH = useInset ? insetH : bounds.height;
 
+    let owned: Texture | undefined;
     let paintLandFill: GroundVisual["paintLandFill"];
-    if (useInset) {
-        const fillX = bounds.x + insetPx;
-        const fillY = bounds.y + insetPx;
-        if (fill) {
-            const sprite = new Sprite(Texture.WHITE);
-            sprite.tint = color;
-            sprite.position.set(fillX, fillY);
-            sprite.width = insetW;
-            sprite.height = insetH;
-            root.addChild(sprite);
-            let owned: Texture | undefined;
-            paintLandFill = (inlandAt) => {
-                const next = bakeInsetFill(
-                    color,
-                    fill,
-                    fillX,
-                    fillY,
-                    insetW,
-                    insetH,
-                    inlandAt
-                );
-                owned?.destroy(true);
-                owned = next.texture;
-                sprite.texture = next.texture;
-                sprite.tint = 0xffffff;
-            };
-        } else {
-            // Opaque core inset past max seam cut — edge band owns the perimeter.
-            const flat = new Sprite(Texture.WHITE);
-            flat.tint = color;
-            flat.position.set(fillX, fillY);
-            flat.width = insetW;
-            flat.height = insetH;
-            root.addChild(flat);
-        }
+    if (fill) {
+        const sprite = new Sprite(Texture.WHITE);
+        sprite.tint = color;
+        sprite.position.set(fillX, fillY);
+        sprite.width = fillW;
+        sprite.height = fillH;
+        root.addChild(sprite);
+        paintLandFill = (inlandAt) => {
+            const next = bakeInsetFill(
+                color,
+                fill,
+                fillX,
+                fillY,
+                fillW,
+                fillH,
+                inlandAt
+            );
+            owned?.destroy(true);
+            owned = next.texture;
+            sprite.texture = next.texture;
+            sprite.tint = 0xffffff;
+        };
+    } else {
+        const flat = new Sprite(Texture.WHITE);
+        flat.tint = color;
+        flat.position.set(fillX, fillY);
+        flat.width = fillW;
+        flat.height = fillH;
+        root.addChild(flat);
     }
 
     const seamLayer = new Container();
@@ -88,6 +88,11 @@ export function createSolidGround(
         },
         clearLandSeam() {
             clearLandSeamLayer(seamLayer);
+        },
+        destroy() {
+            owned?.destroy(true);
+            owned = undefined;
+            root.destroy({ children: true });
         },
     };
 }
