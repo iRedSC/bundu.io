@@ -16,5 +16,7 @@ export function emitVitals(
         health: health.value,
         hunger: stats.get("hunger").value,
         heat: stats.get("temperature").value,
+        thirst: stats.get("thirst").value,
+        air: stats.get("air").value,
     });
 }

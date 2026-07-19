@@ -325,7 +325,7 @@ async function main() {
     // * GUI
     const gui = createUI();
     app.stage.addChild(gui.container);
-    setupGUIPacketReceiving(receiver, gui);
+    setupGUIPacketReceiving(receiver, gui, world);
 
     const session = new GameSession(receiver, {
         prepareConnection: prepareConnectionPacks,
@@ -339,6 +339,7 @@ async function main() {
             gui.health.update(0);
             gui.hunger.update(0);
             gui.heat.update(0);
+            gui.thirst.update(0);
             gui.inventory.update({ items: [], cursor: null });
             gui.recipeManager.recipes.clear();
             gui.craftingMenu.items = [];

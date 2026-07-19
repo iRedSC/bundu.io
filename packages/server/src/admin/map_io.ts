@@ -271,7 +271,6 @@ export function wipeMap(
     const object = new Ground({
         collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
         type: oceanId,
-        speedMultiplier: config.speed_multiplier,
         createPacket() {
             return [
                 this.type,

@@ -1,2 +1,7 @@
-speed_multiplier: 0.85
 model: mountain
+whenOccupied:
+  occupationType: center
+  "*":
+    attributes:
+      temperature.warmth: { op: add, value: -10 }
+      movement.speed: { op: multiply, value: 0.85 }

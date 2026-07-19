@@ -99,6 +99,20 @@ controller.http = (request, url) => {
             },
         });
     }
+    if (packPath === "/packs/stat_bars.json") {
+        if (
+            url.searchParams.get("hash") !== resourcePacks.manifest.statBars.hash
+        ) {
+            return new Response("Not Found", { status: 404, headers: packHeaders });
+        }
+        return new Response(resourcePacks.statBarsJson, {
+            headers: {
+                ...packHeaders,
+                "Content-Type": "application/json",
+                "Cache-Control": "public, max-age=31536000, immutable",
+            },
+        });
+    }
     const prefix = "/packs/assets/";
     if (!packPath.startsWith(prefix)) {
         return new Response("Not Found", { status: 404, headers: packHeaders });

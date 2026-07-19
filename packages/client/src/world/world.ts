@@ -245,7 +245,10 @@ export class World {
         for (const patch of this.groundPatches) {
             this.disposeGroundVisual(patch.visual);
         }
-        if (this.oceanVisual) this.disposeGroundVisual(this.oceanVisual);
+        if (this.oceanVisual) {
+            this.detachLocalAirRingFromOcean();
+            this.disposeGroundVisual(this.oceanVisual);
+        }
         this.renderer.delete(GROUND_RENDER_ID);
         this.oceanVisual = undefined;
         this.groundPatches.length = 0;
@@ -366,6 +369,36 @@ export class World {
             this.camera.follow(player.container);
         }
         this.refreshStructureOwnership();
+        this.syncLocalAirRingParent();
+    }
+
+    /**
+     * Air ring lives inside ocean `fxLayer` so it shares DisplacementFilter
+     * and the nearshore alpha mask. Viewport siblings miss both.
+     */
+    private syncLocalAirRingParent(): void {
+        const local =
+            this.user !== undefined ? this.objects.get(this.user) : undefined;
+        if (!(local instanceof Player)) return;
+        const ring = local.airRing;
+        ring.filters = null;
+        const fx = this.oceanVisual?.fxLayer;
+        if (fx) {
+            if (ring.parent !== fx) fx.addChildAt(ring, 0);
+            else if (fx.getChildIndex(ring) !== 0) fx.setChildIndex(ring, 0);
+            return;
+        }
+        if (ring.parent !== this.viewport) this.viewport.addChild(ring);
+    }
+
+    /** Pull the ring off ocean FX before the ocean container is destroyed. */
+    private detachLocalAirRingFromOcean(): void {
+        const local =
+            this.user !== undefined ? this.objects.get(this.user) : undefined;
+        if (!(local instanceof Player)) return;
+        const ring = local.airRing;
+        const fx = this.oceanVisual?.fxLayer;
+        if (fx && ring.parent === fx) this.viewport.addChild(ring);
     }
 
     /**
@@ -463,6 +496,14 @@ export class World {
         }
         this.attachLocalPlayer(player);
     };
+
+    /** Update the local player's underwater air ring from vitals. */
+    setLocalAir(air: number, max?: number): void {
+        const player = this.objects.get(this.user ?? -1);
+        if (!(player instanceof Player)) return;
+        player.setAir(air, max);
+        this.objects.updating.add(player);
+    }
 
     loadObject = (packet: ServerPacket.LoadObject) => {
         switch (packet.type) {
@@ -821,6 +862,7 @@ export class World {
     /** Rebind an object's display list after visuals are rebuilt in place. */
     reregisterObject(object: GameObject) {
         this.renderer.replace(object.id, ...object.containers);
+        if (object.id === this.user) this.syncLocalAirRingParent();
     }
 
     loadGround = (packet: ServerPacket.LoadGround) => {
@@ -896,6 +938,7 @@ export class World {
             this.oceanVisual.container,
             ...(this.oceanVisual.overlay ? [this.oceanVisual.overlay] : [])
         );
+        this.syncLocalAirRingParent();
         return this.oceanVisual;
     }
 
@@ -927,6 +970,7 @@ export class World {
         }
         if (oceanColor !== undefined) this.oceanColor = oceanColor;
         if (this.oceanTypeIds.size === 0 && this.oceanVisual) {
+            this.detachLocalAirRingFromOcean();
             this.renderer.remove(
                 GROUND_RENDER_ID,
                 this.oceanVisual.container

@@ -39,7 +39,6 @@ export function loadMap(world: World, playerSystem: PlayerSystem) {
         new Ground({
             collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
             type: groundType,
-            speedMultiplier: ground.speed_multiplier,
             createPacket() {
                 return [groundType, 0, 0, WORLD_TILES, WORLD_TILES];
             },

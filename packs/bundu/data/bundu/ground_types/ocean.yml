@@ -1,14 +1,12 @@
-speed_multiplier: 0.65
 model: ocean
 whenOccupied:
-    occupationType: center
-    "*":
-        flags:
-            - in_water
-        attributes:
-                movement.speed:
-                    op: multiply
-                    value: 0.75
-                attack.reach:
-                    op: multiply
-                    value: 0.75
+  occupationType: center
+  "*":
+    flags:
+      - in_water
+    attributes:
+      movement.speed: { op: multiply, value: 0.75 }
+      attack.reach: { op: multiply, value: 0.75 }
+      air.oxygen: { op: add, value: -5 }
+      temperature.warmth: { op: add, value: -3 }
+      thirst.hydration: { op: add, value: 10 }

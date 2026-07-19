@@ -19,15 +19,26 @@ export const AttributeList = [
     "health.defense.blocking",
 
     "hunger.max",
-    "hunger.depletion_amount",
+    "hunger.nourishment",
+    "hunger.cancel_regen_below",
+    "hunger.cancel_regen_above",
     "eating.movement_speed_multiplier",
 
     "temperature.max",
     "temperature.warmth",
     "temperature.insulation",
+    "temperature.cancel_regen_below",
+    "temperature.cancel_regen_above",
 
-    "water.max",
-    "water.depletion_amount",
+    "thirst.max",
+    "thirst.hydration",
+    "thirst.cancel_regen_below",
+    "thirst.cancel_regen_above",
+
+    "air.max",
+    "air.oxygen",
+    "air.cancel_regen_below",
+    "air.cancel_regen_above",
 ] as const;
 export type AttributeType = (typeof AttributeList)[number];
 

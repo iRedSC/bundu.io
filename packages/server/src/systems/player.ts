@@ -8,6 +8,7 @@ import { attackFacingRadians } from "@bundu/shared/attack_box";
 import { decodeMoveDirection } from "@bundu/shared/movement";
 import { SESSION_ENDED_CLOSE } from "@bundu/shared/session";
 import { type ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
+import { HitFlash } from "@bundu/shared/hit_flash";
 import {
     DecorationData,
     GroundData,
@@ -354,18 +355,38 @@ export class PlayerSystem extends System<GameEventMap> {
             });
         }
 
+        const thirstAmount = config.stats.thirst ?? 0;
+        if (thirstAmount !== 0) {
+            const thirst = stats.get("thirst");
+            const thirstMax = thirst.max ?? 100;
+            stats.set("thirst", {
+                value: Math.min(thirst.value + thirstAmount, thirstMax),
+                min: 0,
+                max: thirstMax,
+            });
+        }
+
         const healthDelta = config.stats.health ?? 0;
         const health = Health.get(player);
+        const { playerPacketManager, worldPacketManager } = this.world.context;
         if (health && healthDelta !== 0) {
+            const before = health.value;
             health.value = Math.max(
                 0,
                 Math.min(health.max, health.value + healthDelta)
             );
+            if (health.value > before) {
+                worldPacketManager.emit(ServerPacket.HitEvent, {
+                    id: player.id,
+                    angle: 0,
+                    strength: 0,
+                    flash: HitFlash.Heal,
+                });
+            }
         }
 
         this.clearEating(player);
-        clearMissingEquipment(player, this.world.context.playerPacketManager);
-        const { playerPacketManager, worldPacketManager } = this.world.context;
+        clearMissingEquipment(player, playerPacketManager);
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
         emitVitals(player, playerPacketManager);

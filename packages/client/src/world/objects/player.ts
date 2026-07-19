@@ -19,6 +19,8 @@ import type { AnimContext, PartNode, SlotDef } from "../../models/types";
 import { mountModel, type MountedModel } from "../../models/mount";
 import { clientTime } from "@client/globals";
 import type { ParticleBurst } from "../../rendering/particles/types";
+import { GROUND_Z_OCEAN } from "../ground/create";
+import { colorLerp, lerp } from "@bundu/shared/transforms";
 
 const BODY_TEXTURE = "bundu/entity/player/player.png";
 const BODY_WITHOUT_FEATURES =
@@ -41,10 +43,33 @@ const CRAFT_BAR_FILL = 0xe8c547;
 const CHAT_MESSAGE_Y = -88;
 const CHAT_MESSAGE_DURATION = 5_000;
 
+/** Just under ocean FX so water draws over the gauge. */
+const AIR_RING_Z = GROUND_Z_OCEAN - 1;
+const AIR_RING_RADIUS_SCALE = 1.9;
+const AIR_RING_WIDTH = 28;
+const AIR_RING_COLOR = 0xa8e6ff;
+const AIR_RING_EMPTY_TRACK = 0xe74c3c;
+const AIR_RING_LOW_RATIO = 0.25;
+const AIR_RING_TRACK_ALPHA = 0.12;
+const AIR_RING_EMPTY_TRACK_ALPHA = 0.45;
+const AIR_RING_FILL_ALPHA = 0.4;
+const AIR_RING_SHAKE_HZ = 4;
+const AIR_RING_SHAKE_RAD = 0.08;
+const AIR_RING_VALUE_LERP = 0.12;
+const AIR_RING_FADE_LERP = 0.1;
+/**
+ * Parent FX DisplacementFilter shifts the ring ~half a radius down+right;
+ * counter-offset so it still reads centered on the player.
+ */
+const AIR_RING_DISPLACE_NUDGE = 0.62;
+const AIR_DEFAULT_MAX = 100;
+
 export class Player extends GameObject implements AnimContext {
     name: Text;
     chatMessage: Text;
     craftBar: Graphics;
+    /** World-space air gauge; sits under ocean FX. */
+    airRing: Graphics;
     parts: Map<string, PartNode>;
     private slots: Map<string, { node: PartNode; def: SlotDef }>;
     private readonly slotModels = new Map<string, MountedModel>();
@@ -68,6 +93,12 @@ export class Player extends GameObject implements AnimContext {
     private selectedStructureId = 0;
     private structureRotation: TileRot = 0;
     private structureCursor: TilePos = { x: 0, y: 0 };
+    private air = AIR_DEFAULT_MAX;
+    private airMax = AIR_DEFAULT_MAX;
+    private airDisplay = AIR_DEFAULT_MAX;
+    /** 0 = hidden, 1 = fully shown. */
+    private airFade = 0;
+    private readonly airShakePhase = Math.random() * Math.PI * 2;
 
     /** Client-side look prediction; snaps immediately (no lerp flicker). */
     predictLook(rotation: number): number {
@@ -132,17 +163,28 @@ export class Player extends GameObject implements AnimContext {
         this.craftBar.zIndex = 101;
         this.craftBar.visible = false;
 
+        this.airRing = new Graphics();
+        this.airRing.zIndex = AIR_RING_Z;
+        this.airRing.visible = false;
+
         this.positionStates.callback = () => {
             this.name.renderable = true;
             this.chatMessage.renderable = true;
             this.craftBar.renderable = true;
+            this.airRing.renderable = true;
             this.container.renderable = true;
             this.debug.renderable = true;
         };
     }
 
     override get containers(): Container[] {
-        return [this.container, this.name, this.craftBar, this.chatMessage];
+        return [
+            this.airRing,
+            this.container,
+            this.name,
+            this.craftBar,
+            this.chatMessage,
+        ];
     }
 
     override update(now?: number): boolean {
@@ -153,9 +195,22 @@ export class Player extends GameObject implements AnimContext {
             this.position.y + CHAT_MESSAGE_Y
         );
         this.craftBar.position = this.position;
+        const airR = this.collisionRadius * AIR_RING_RADIUS_SCALE;
+        const nudge = airR * AIR_RING_DISPLACE_NUDGE;
+        this.airRing.position.set(
+            this.position.x - nudge,
+            this.position.y - nudge
+        );
         this.redrawCraftBar(now);
-        // Stay in the updating set while the bar is animating.
-        return done && !this.isCrafting;
+        const airAnimating = this.tickAirRing();
+        // Stay in the updating set while the bar / air ring is animating.
+        return done && !this.isCrafting && !airAnimating;
+    }
+
+    /** Drive the underwater air ring from vitals (`air` / `airMax`). */
+    setAir(value: number, max = this.airMax): void {
+        this.airMax = Math.max(1, max);
+        this.air = Math.min(this.airMax, Math.max(0, value));
     }
 
     /** `duration > 0` starts the overhead channel; `0` clears it. */
@@ -192,6 +247,94 @@ export class Player extends GameObject implements AnimContext {
                 .rect(x, CRAFT_BAR_Y, fillWidth, CRAFT_BAR_HEIGHT)
                 .fill(CRAFT_BAR_FILL);
         }
+    }
+
+    /**
+     * Lerp fill + fade, redraw, shake. Returns true while still animating.
+     */
+    private tickAirRing(): boolean {
+        this.airDisplay = lerp(this.airDisplay, this.air, AIR_RING_VALUE_LERP);
+        const targetFade = this.air < this.airMax ? 1 : 0;
+        this.airFade = lerp(this.airFade, targetFade, AIR_RING_FADE_LERP);
+        if (targetFade === 0 && this.airFade < 0.01) this.airFade = 0;
+        if (targetFade === 1 && this.airFade > 0.99) this.airFade = 1;
+
+        const valueSettled = Math.abs(this.airDisplay - this.air) < 0.05;
+        if (valueSettled) this.airDisplay = this.air;
+
+        this.redrawAirRing();
+        const shaking = this.tickAirRingShake();
+        const fading = this.airFade > 0 && this.airFade < 1;
+        return !valueSettled || fading || shaking;
+    }
+
+    private redrawAirRing(): void {
+        if (this.airFade <= 0) {
+            this.airRing.clear();
+            this.airRing.visible = false;
+            this.airRing.rotation = 0;
+            return;
+        }
+
+        const ratio = this.airDisplay / this.airMax;
+        const radius = this.collisionRadius * AIR_RING_RADIUS_SCALE;
+        // Track goes red from low threshold down to empty; fill stays cyan.
+        const lowT = Math.min(
+            1,
+            Math.max(0, 1 - ratio / AIR_RING_LOW_RATIO)
+        );
+        const trackColor = colorLerp(
+            AIR_RING_COLOR,
+            AIR_RING_EMPTY_TRACK,
+            lowT
+        );
+        const trackAlpha =
+            lerp(AIR_RING_TRACK_ALPHA, AIR_RING_EMPTY_TRACK_ALPHA, lowT) *
+            this.airFade;
+        const fillAlpha = AIR_RING_FILL_ALPHA * this.airFade;
+        const stroke = {
+            width: AIR_RING_WIDTH,
+            cap: "round" as const,
+            join: "round" as const,
+        };
+
+        this.airRing.clear();
+        this.airRing.circle(0, 0, radius).stroke({
+            ...stroke,
+            color: trackColor,
+            alpha: trackAlpha,
+        });
+        if (ratio > 0.001) {
+            const start = -Math.PI / 2;
+            const end = start + Math.PI * 2 * Math.min(1, ratio);
+            this.airRing
+                .moveTo(Math.cos(start) * radius, Math.sin(start) * radius)
+                .arc(0, 0, radius, start, end)
+                .stroke({
+                    ...stroke,
+                    color: AIR_RING_COLOR,
+                    alpha: fillAlpha,
+                });
+        }
+        this.airRing.visible = true;
+    }
+
+    /** Rotational shake while air is critically low. Returns true if animating. */
+    private tickAirRingShake(): boolean {
+        if (this.airFade <= 0) {
+            this.airRing.rotation = 0;
+            return false;
+        }
+        const ratio = this.airDisplay / this.airMax;
+        if (ratio > AIR_RING_LOW_RATIO) {
+            this.airRing.rotation = 0;
+            return false;
+        }
+        const t = performance.now() / 1000;
+        this.airRing.rotation =
+            Math.sin(t * Math.PI * 2 * AIR_RING_SHAKE_HZ + this.airShakePhase) *
+            AIR_RING_SHAKE_RAD;
+        return true;
     }
 
     setEquipment(equipment?: Equipment) {

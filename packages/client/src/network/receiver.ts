@@ -67,13 +67,19 @@ export function setupPacketReceiving(
 
 export function setupGUIPacketReceiving(
     receiver: ClientPacketReceiver,
-    ui: UI
+    ui: UI,
+    world: World
 ) {
-    receiver.on(ServerPacket.UpdateVitals, ({ health, hunger, heat }) => {
-        ui.health.update(health);
-        ui.hunger.update(hunger);
-        ui.heat.update(heat);
-    });
+    receiver.on(
+        ServerPacket.UpdateVitals,
+        ({ health, hunger, heat, thirst, air }) => {
+            ui.health.update(health);
+            ui.hunger.update(hunger);
+            ui.heat.update(heat);
+            ui.thirst.update(thirst);
+            world.setLocalAir(air);
+        }
+    );
     receiver.on(
         ServerPacket.RecipeList,
         ui.recipeManager.updateRecipes.bind(ui.recipeManager)

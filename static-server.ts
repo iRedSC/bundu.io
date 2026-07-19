@@ -14,14 +14,17 @@ type PackNamespaceRoots = {
     modelDirs: readonly string[];
     /** Client gameplay.yml paths; later packs override earlier ones. */
     gameplayFiles: readonly string[];
+    /** Client stat_bars.yml paths; later packs override earlier ones. */
+    statBarsFiles: readonly string[];
 };
 
 function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
     const textureRoots = new Map<string, string[]>();
     const modelDirs: string[] = [];
     const gameplayFiles: string[] = [];
+    const statBarsFiles: string[] = [];
     if (!fs.existsSync(packsRoot)) {
-        return { textureRoots, modelDirs, gameplayFiles };
+        return { textureRoots, modelDirs, gameplayFiles, statBarsFiles };
     }
 
     const packDirs = fs
@@ -42,6 +45,7 @@ function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
             const textures = path.join(assetsRoot, namespace, "textures");
             const models = path.join(assetsRoot, namespace, "models");
             const gameplay = path.join(assetsRoot, namespace, "gameplay.yml");
+            const statBars = path.join(assetsRoot, namespace, "stat_bars.yml");
             if (fs.existsSync(textures)) {
                 const roots = textureRoots.get(namespace) ?? [];
                 roots.push(textures);
@@ -49,12 +53,13 @@ function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
             }
             if (fs.existsSync(models)) modelDirs.push(models);
             if (fs.existsSync(gameplay)) gameplayFiles.push(gameplay);
+            if (fs.existsSync(statBars)) statBarsFiles.push(statBars);
         }
     }
-    return { textureRoots, modelDirs, gameplayFiles };
+    return { textureRoots, modelDirs, gameplayFiles, statBarsFiles };
 }
 
-const { textureRoots, modelDirs, gameplayFiles } =
+const { textureRoots, modelDirs, gameplayFiles, statBarsFiles } =
     discoverPackAssetRoots(PACKS_ROOT);
 
 type SseClient = {
@@ -150,6 +155,19 @@ function clientGameplayJson(): Response {
     });
 }
 
+function clientStatBarsJson(): Response {
+    if (statBarsFiles.length === 0) {
+        return new Response("Missing client stat_bars.yml", { status: 404 });
+    }
+    const filepath = statBarsFiles[statBarsFiles.length - 1];
+    if (!filepath) {
+        return new Response("Missing client stat_bars.yml", { status: 404 });
+    }
+    return Response.json(Bun.YAML.parse(fs.readFileSync(filepath, "utf8")), {
+        headers: { "Cache-Control": "no-store" },
+    });
+}
+
 function resolveTexture(namespace: string, relative: string): string | undefined {
     const roots = textureRoots.get(namespace);
     if (!roots) return undefined;
@@ -183,6 +201,9 @@ if (DEV_CONFIG_RELOAD) {
         });
     for (const directory of modelDirs) watchYaml(directory);
     for (const filepath of gameplayFiles) {
+        watchYaml(path.dirname(filepath));
+    }
+    for (const filepath of statBarsFiles) {
         watchYaml(path.dirname(filepath));
     }
 
@@ -226,6 +247,14 @@ serve({
                 } catch (err) {
                     console.error("[static] failed to load client gameplay", err);
                     return new Response("Gameplay error", { status: 500 });
+                }
+            }
+            if (url.pathname === "/__dev/client-stat-bars") {
+                try {
+                    return clientStatBarsJson();
+                } catch (err) {
+                    console.error("[static] failed to load client stat bars", err);
+                    return new Response("Stat bars error", { status: 500 });
                 }
             }
         }

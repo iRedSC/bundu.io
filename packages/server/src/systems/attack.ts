@@ -121,6 +121,7 @@ export class AttackSystem extends System<GameEventMap> {
                     id: object.id,
                     angle,
                     strength: 1,
+                    flash: 0,
                 });
                 this.trigger(GameEvent.ToggleDoor, { object, source });
                 continue;
@@ -137,6 +138,7 @@ export class AttackSystem extends System<GameEventMap> {
                 id: object.id,
                 angle,
                 strength: hit.strength,
+                flash: 0,
             });
         }
     }

@@ -22,6 +22,7 @@ import {
     createDropletDisplacementTexture,
     createSplashRefractionFilter,
 } from "./splash_refraction";
+import { sizeEnvelope } from "../../rendering/particles/size_envelope";
 import type {
     GroundUpdateContext,
     GroundVisual,
@@ -148,6 +149,7 @@ export function createOceanGround(
         velocityY: number;
         lifetime: number;
         startSize: number;
+        peakSize: number | undefined;
         rotation: number;
     };
     const splashes: Splash[] = [];
@@ -197,16 +199,27 @@ export function createOceanGround(
         worldY: number,
         now: number,
         direction: number,
-        speed: number
+        speed: number,
+        intensity = 1
     ) => {
         const { splash } = oceanFx;
-        const count = 6 + ((Math.random() * 3) | 0);
+        const count = Math.max(
+            1,
+            Math.round((6 + ((Math.random() * 3) | 0)) * Math.max(0, intensity))
+        );
         const lo = Math.max(20, speed * splash.speedMin);
         const hi = Math.max(lo + 1, speed * splash.speedMax);
         const spread = (splash.spreadDeg * Math.PI) / 180;
         for (let i = 0; i < count && splashes.length < splash.max; i++) {
             const angle = direction + (Math.random() - 0.5) * spread;
             const particleSpeed = lo + Math.random() * (hi - lo);
+            const peakSize =
+                splash.peakSizeMin !== undefined &&
+                splash.peakSizeMax !== undefined
+                    ? splash.peakSizeMin +
+                      Math.random() *
+                          (splash.peakSizeMax - splash.peakSizeMin)
+                    : undefined;
             splashes.push({
                 x: worldX,
                 y: worldY,
@@ -218,6 +231,7 @@ export function createOceanGround(
                 startSize:
                     splash.sizeMin +
                     Math.random() * (splash.sizeMax - splash.sizeMin),
+                peakSize,
                 rotation: Math.random() * Math.PI * 2,
             });
         }
@@ -351,8 +365,13 @@ export function createOceanGround(
                 (entry.y - overlayY) * scale
             );
             sprite.rotation = entry.rotation;
-            const size =
-                entry.startSize + (splash.sizeEnd - entry.startSize) * t;
+            const size = sizeEnvelope(
+                t,
+                entry.startSize,
+                splash.sizeEnd,
+                entry.peakSize,
+                splash.peakAt
+            );
             sprite.scale.set(
                 (size / Math.max(1, sprite.texture.width)) * scale
             );
@@ -430,6 +449,8 @@ export function createOceanGround(
     return {
         container: root,
         overlay: splashOverlay,
+        /** Displace-filtered + shore-masked layer — parent underwater overlays here. */
+        fxLayer: fx,
         addWakeRipple,
         addSplashDisplacement,
         update(ctx: GroundUpdateContext) {

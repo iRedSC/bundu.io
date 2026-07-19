@@ -1,6 +1,8 @@
 import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Attributes } from "../components/attributes";
 import { gameplayConfig } from "../configs/gameplay";
+import type { EffectAttribute } from "../configs/loaders/effect_context.js";
+import { applyAttributes } from "../systems/effect_apply.js";
 import type { GameObject } from "../engine/game_object.js";
 import type { PlayerPacketManager } from "../engine/network/packets/manager";
 
@@ -82,17 +84,16 @@ export class DayCycle {
         return true;
     }
 
-    /** Apply current period ambient warmth to one player. */
+    /** Apply current period attribute modifiers to one player. */
     applyAmbient(player: GameObject): void {
         const attributes = Attributes.get(player);
         if (!attributes) return;
         const period = gameplayConfig().dayCycle.periods[this.period];
         if (!period) return;
-        attributes.set(
-            "temperature.warmth",
+        applyAttributes(
+            attributes,
             AMBIENT_SOURCE,
-            "add",
-            period.ambientWarmth
+            period.attributes as Record<string, EffectAttribute>
         );
     }
 
@@ -104,7 +105,7 @@ export class DayCycle {
 
     /**
      * Advance from gameTime, broadcast on period change or to new joiners,
-     * and refresh ambient warmth when the period flips.
+     * and refresh ambient attributes when the period flips.
      */
     update(
         gameTime: number,

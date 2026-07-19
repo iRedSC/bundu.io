@@ -57,7 +57,6 @@ export const Door = Component.register<Door>(() => ({ open: false }));
 export type GroundData = {
     collider: Box;
     type: number;
-    speedMultiplier: number;
     createPacket: () => [
         type: number,
         x: number,
@@ -69,7 +68,6 @@ export type GroundData = {
 export const GroundData = Component.register<GroundData>(() => ({
     collider: new Box(new Vector(), 100, 100),
     type: 1,
-    speedMultiplier: 1,
     createPacket() {
         return [
             this.type,

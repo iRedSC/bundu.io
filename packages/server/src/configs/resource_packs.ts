@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { packs } from "./packs";
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
 import { parseClientGameplayConfig } from "@bundu/shared/client_gameplay";
+import { parseStatBarsConfig } from "@bundu/shared/stat_bars";
 import {
     parseGroundModelSet,
     type GroundModelSet,
@@ -46,6 +47,7 @@ export type ResourcePackManifest = {
     models: { hash: string; url: string };
     registries: { hash: string; url: string };
     gameplay: { hash: string; url: string };
+    statBars: { hash: string; url: string };
     assets: ResourceAsset[];
 };
 
@@ -149,6 +151,7 @@ export class ResourcePackService {
     readonly modelsJson: string;
     readonly registriesJson: string;
     readonly gameplayJson: string;
+    readonly statBarsJson: string;
     readonly compiledModels: CompiledModelDefs;
     private readonly servedAssets = new Map<string, ServedAsset>();
 
@@ -157,6 +160,7 @@ export class ResourcePackService {
         modelsJson: string,
         registriesJson: string,
         gameplayJson: string,
+        statBarsJson: string,
         compiledModels: CompiledModelDefs,
         servedAssets: Map<string, ServedAsset>
     ) {
@@ -164,6 +168,7 @@ export class ResourcePackService {
         this.modelsJson = modelsJson;
         this.registriesJson = registriesJson;
         this.gameplayJson = gameplayJson;
+        this.statBarsJson = statBarsJson;
         this.compiledModels = compiledModels;
         this.servedAssets = servedAssets;
     }
@@ -175,6 +180,7 @@ export class ResourcePackService {
         const pendingTextures: { logicalPath: string; bytes: Uint8Array }[] =
             [];
         let clientGameplayRaw: unknown;
+        let clientStatBarsRaw: unknown;
 
         for (const pack of packs.packs) {
             const assetsRoot = path.join(pack.directory, "assets");
@@ -192,6 +198,14 @@ export class ResourcePackService {
                     // Later packs replace the complete client gameplay document.
                     clientGameplayRaw = Bun.YAML.parse(
                         fs.readFileSync(gameplayFile, "utf8")
+                    );
+                }
+
+                const statBarsFile = path.join(namespaceRoot, "stat_bars.yml");
+                if (fs.existsSync(statBarsFile)) {
+                    // Later packs replace the complete client stat bars document.
+                    clientStatBarsRaw = Bun.YAML.parse(
+                        fs.readFileSync(statBarsFile, "utf8")
                     );
                 }
 
@@ -256,9 +270,16 @@ export class ResourcePackService {
                 "Resource packs: missing assets/<namespace>/gameplay.yml"
             );
         }
+        if (clientStatBarsRaw === undefined) {
+            throw new Error(
+                "Resource packs: missing assets/<namespace>/stat_bars.yml"
+            );
+        }
         // Validate at pack build time; client re-parses the snake_case document.
         parseClientGameplayConfig(clientGameplayRaw);
+        parseStatBarsConfig(clientStatBarsRaw);
         const gameplayJson = JSON.stringify(clientGameplayRaw);
+        const statBarsJson = JSON.stringify(clientStatBarsRaw);
 
         const sanitized = await Promise.all(
             pendingTextures.map(({ logicalPath, bytes }) =>
@@ -332,6 +353,7 @@ export class ResourcePackService {
         const modelsHash = hash(modelsJson);
         const registriesHash = hash(registriesJson);
         const gameplayHash = hash(gameplayJson);
+        const statBarsHash = hash(statBarsJson);
         const assets = [...servedAssets.values()]
             .map(({ bytes: _bytes, ...asset }) => asset)
             .sort((left, right) => left.path.localeCompare(right.path));
@@ -348,6 +370,7 @@ export class ResourcePackService {
                 modelsHash,
                 registriesHash,
                 gameplayHash,
+                statBarsHash,
                 assets,
             })
         );
@@ -363,11 +386,13 @@ export class ResourcePackService {
                     url: "/packs/registries.json",
                 },
                 gameplay: { hash: gameplayHash, url: "/packs/gameplay.json" },
+                statBars: { hash: statBarsHash, url: "/packs/stat_bars.json" },
                 assets,
             },
             modelsJson,
             registriesJson,
             gameplayJson,
+            statBarsJson,
             compiledModels,
             servedAssets
         );

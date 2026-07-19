@@ -9,59 +9,49 @@ import { applyVitalsTickDamage } from "./vitals_damage.js";
 import { HitFlash } from "@bundu/shared/hit_flash";
 import { takeVitalsTicks } from "./vitals_tick.js";
 
-/** Applies hunger.nourishment once every vitals.tick_period_ms. */
-export class HungerSystem extends System<GameEventMap> {
+/** Applies thirst.hydration once every vitals.tick_period_ms. */
+export class ThirstSystem extends System<GameEventMap> {
     constructor(world: World) {
         super(world, [PlayerData, Attributes, Stats], 0.2);
     }
 
     override update(_time: number, delta: number, player: GameObject): void {
-        // Soft-park: disconnected players do not drain hunger.
         if (!this.world.context.socketManager.getSocket(player.id)) return;
         if (PlayerData.get(player)?.freecam) return;
 
-        const data = player.get(PlayerData);
         const attributes = player.get(Attributes);
         const stats = player.get(Stats);
-        const hunger = stats.get("hunger");
-        const config = gameplayConfig().hunger;
-        const before = hunger.value;
-        const max = hunger.max ?? attributes.get("hunger.max");
+        const thirst = stats.get("thirst");
+        const before = thirst.value;
+        const max = thirst.max ?? attributes.get("thirst.max") ?? 100;
 
         const ticks = takeVitalsTicks(
             player.id,
-            "hunger",
+            "thirst",
             delta,
             gameplayConfig().vitals.tickPeriodMs
         );
         if (ticks > 0) {
-            let multiplier = 1;
-            if (data.moveDir[0] !== 0 || data.moveDir[1] !== 0) {
-                multiplier *= config.movingMultiplier;
-            }
-            if (data.attacking) multiplier *= config.attackingMultiplier;
-
-            const amount =
-                attributes.get("hunger.nourishment") * multiplier * ticks;
+            const amount = attributes.get("thirst.hydration") * ticks;
             if (amount !== 0) {
-                stats.set("hunger", {
+                stats.set("thirst", {
                     value: Math.min(max, Math.max(0, before + amount)),
+                    max,
                 });
             }
 
-            // Damage only on ticks while already empty — not the tick that hits 0.
             if (before <= 0) {
                 applyVitalsTickDamage(
                     this.world,
                     player,
-                    config.starvationDamage,
+                    gameplayConfig().thirst.dehydrationDamage,
                     ticks,
-                    HitFlash.Starve
+                    HitFlash.Dehydrate
                 );
             }
         }
 
-        if (hunger.value !== before) {
+        if (thirst.value !== before) {
             emitVitals(player, this.world.context.playerPacketManager);
         }
     }

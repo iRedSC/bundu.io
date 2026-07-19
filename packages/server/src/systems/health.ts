@@ -1,9 +1,14 @@
-import { Attributes } from "../components/attributes.js";
+import {
+    Attributes,
+    type AttributesData,
+} from "../components/attributes.js";
 import { Health, Rotting, Spiked, TileEntity } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
+import { Stats } from "../components/stats.js";
 import { type GameObject, System, type World } from "../engine";
 import { emitVitals } from "../network/vitals.js";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
+import { HitFlash } from "@bundu/shared/hit_flash";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { gameplayConfig } from "../configs/gameplay.js";
 
@@ -27,10 +32,26 @@ export class HealthSystem extends System<GameEventMap> {
         if (time - health.lastRegen < gameplayConfig().health.regenIntervalMs) return;
 
         health.lastRegen = time;
+        if (regenCancelled(object, attributes)) return;
+
+        const naturalLimit = gameplayConfig().health.naturalLimit;
+        if (health.value >= naturalLimit) return;
+
         const regen = attributes.get("health.regen_amount");
-        health.value = health.max
-            ? Math.min(health.value + regen, health.max)
-            : health.value + regen;
+        if (regen <= 0) return;
+        const before = health.value;
+        const cap = health.max
+            ? Math.min(health.max, naturalLimit)
+            : naturalLimit;
+        health.value = Math.min(health.value + regen, cap);
+        if (health.value > before && PlayerData.get(object)) {
+            this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
+                id: object.id,
+                angle: 0,
+                strength: 0,
+                flash: HitFlash.Heal,
+            });
+        }
         emitVitals(object, this.world.context.playerPacketManager);
     }
 
@@ -69,4 +90,32 @@ export class HealthSystem extends System<GameEventMap> {
         );
         emitVitals(target, this.world.context.playerPacketManager);
     }
+}
+
+function regenCancelled(
+    object: GameObject,
+    attributes: AttributesData
+): boolean {
+    const stats = Stats.get(object);
+    if (!stats) return false;
+
+    const hunger = stats.get("hunger").value;
+    if (hunger < attributes.get("hunger.cancel_regen_below")) return true;
+
+    const temperature = stats.get("temperature").value;
+    const tempBelow = attributes.get("temperature.cancel_regen_below");
+    const tempAbove = attributes.get("temperature.cancel_regen_above");
+    if (temperature < tempBelow) return true;
+    if (tempAbove > 0 && temperature > tempAbove) return true;
+
+    const thirst = stats.get("thirst").value;
+    const thirstBelow = attributes.get("thirst.cancel_regen_below");
+    const thirstAbove = attributes.get("thirst.cancel_regen_above");
+    if (thirst < thirstBelow) return true;
+    if (thirstAbove > 0 && thirst > thirstAbove) return true;
+
+    const air = stats.get("air").value;
+    if (air < attributes.get("air.cancel_regen_below")) return true;
+
+    return false;
 }

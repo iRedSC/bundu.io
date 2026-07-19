@@ -4,7 +4,8 @@ import { clamp } from "@bundu/shared";
 export const StatList = [
     "hunger",
     "temperature",
-    "water",
+    "thirst",
+    "air",
 
     "heal_ticks",
     "poison_ticks",
@@ -57,8 +58,9 @@ export class StatsData {
      * @param max optional max to clamp the value
      */
     set(type: StatType, data: { value: number; min?: number; max?: number }) {
-        this.types[type] ??= data;
-        const stat = this.types[type];
+        // Always own the record — never alias caller objects (e.g. gameplay.yml
+        // initial_stats), or drain permanently mutates spawn defaults.
+        const stat = (this.types[type] ??= { value: 0 });
         if (data.min !== undefined) stat.min = data.min;
         if (data.max !== undefined) stat.max = data.max;
         stat.value = clamp(data.value, stat.min ?? null, stat.max ?? null);

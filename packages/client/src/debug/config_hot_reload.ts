@@ -7,6 +7,7 @@ import {
     type ModelDefs,
 } from "../models/defs";
 import { applyClientGameplay } from "../models/shadow";
+import { applyStatBars } from "../ui/stat_bars_config";
 
 function reapplyModelDefs(world: World) {
     for (const object of world.objects.all()) {
@@ -41,9 +42,10 @@ export function startConfigHotReload(world: World): () => void {
             do {
                 pending = false;
                 const timestamp = Date.now();
-                const [defsRes, gameplayRes] = await Promise.all([
+                const [defsRes, gameplayRes, statBarsRes] = await Promise.all([
                     fetch(`/__dev/model-defs?t=${timestamp}`),
                     fetch(`/__dev/client-gameplay?t=${timestamp}`),
+                    fetch(`/__dev/client-stat-bars?t=${timestamp}`),
                 ]);
                 if (!defsRes.ok) {
                     console.warn(
@@ -66,6 +68,15 @@ export function startConfigHotReload(world: World): () => void {
                     console.warn(
                         "[config-hot-reload] client-gameplay fetch failed:",
                         gameplayRes.status
+                    );
+                }
+                if (statBarsRes.ok) {
+                    applyStatBars(await statBarsRes.json());
+                    console.info("[config-hot-reload] client stat bars applied");
+                } else {
+                    console.warn(
+                        "[config-hot-reload] client-stat-bars fetch failed:",
+                        statBarsRes.status
                     );
                 }
             } while (pending);

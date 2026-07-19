@@ -79,7 +79,6 @@ export type ObjectSnapshot =
           width: number;
           height: number;
           groundType: number;
-          speedMultiplier: number;
       } & Pick<BaseSnapshot, "id">)
     | ({
           kind: "decoration";
@@ -239,7 +238,6 @@ const groundHandler: KindHandler<"ground"> = {
             width: ground.collider.w,
             height: ground.collider.h,
             groundType: ground.type,
-            speedMultiplier: ground.speedMultiplier,
         };
     },
     restore(world, snapshot) {
@@ -251,7 +249,6 @@ const groundHandler: KindHandler<"ground"> = {
         const object = new Ground({
             collider,
             type: snapshot.groundType,
-            speedMultiplier: snapshot.speedMultiplier,
             createPacket() {
                 return [
                     this.type,

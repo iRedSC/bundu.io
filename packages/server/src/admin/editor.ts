@@ -452,7 +452,6 @@ export class AdminEditorSystem extends System<GameEventMap> {
         const object = new Ground({
             collider: new Box(new Vector(tx, ty), tw, th),
             type: typeId,
-            speedMultiplier: config.speed_multiplier,
             createPacket() {
                 return [
                     this.type,

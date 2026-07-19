@@ -3,6 +3,6 @@ function: off_hand
 whenOffHand:
     "*":
         attributes:
-            water.depletion_amount:
+            thirst.hydration:
                 op: multiply
                 value: 0.75

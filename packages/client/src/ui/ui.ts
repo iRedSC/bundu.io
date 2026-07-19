@@ -8,8 +8,18 @@ import { Grid } from "./grid";
 import { CraftingMenu, RecipeManager } from "./crafting_menu";
 import { Inventory } from "./inventory";
 import { StatBar } from "./statbars";
+import { getStatBarsConfig } from "./stat_bars_config";
 import { Leaderboard } from "./leaderboard";
 import { ITEM_BUTTON_SIZE } from "../constants";
+
+/** Screen-space footprint of one vertical bar (matches scale 175 ≈). */
+const BAR_W = 48;
+const BAR_H = 175;
+const BAR_GAP = 0;
+/** Gap between vitals row right edge and hotbar left edge. */
+const HOTBAR_GAP = 8;
+/** Raise bottom-aligned bars a touch above the hotbar baseline. */
+const HOTBAR_LIFT = 12;
 
 export type UI = {
     container: Container;
@@ -19,6 +29,7 @@ export type UI = {
     health: StatBar;
     hunger: StatBar;
     heat: StatBar;
+    thirst: StatBar;
     leaderboard: Leaderboard;
     tick: (now?: number) => void;
     destroy: () => void;
@@ -40,54 +51,43 @@ export function createUI() {
     );
     const craftingMenu = new CraftingMenu(craftingGrid);
 
-    const statsGrid = new Grid(60, 5, 150, 60, 1);
-
-    const health = new StatBar({
-        max: 200,
-        icon: "bundu/ui/health_bar_icon.png",
-        tint: 0x88fa57,
-        overlayTint: 0x37ad98,
-        diffTint: 0xd4ffe4,
-        split: false,
-    });
-
-    const hunger = new StatBar({
-        max: 200,
-        split: true,
-        icon: "bundu/ui/hunger_bar_icon.png",
-        tint: 0xb06b30,
-        overlayTint: 0xd48457,
-        diffTint: 0x6e5648,
-    });
-
-    const heat = new StatBar({
-        max: 200,
-        split: true,
-        icon: "bundu/ui/heat_bar_icon.png",
-        tint: 0xb85a48,
-        overlayTint: 0xb02a2a,
-        diffTint: 0x5f7b85,
-    });
+    const bars = getStatBarsConfig();
+    const health = new StatBar(bars.health);
+    const hunger = new StatBar(bars.hunger);
+    const thirst = new StatBar(bars.thirst);
+    const heat = new StatBar(bars.heat);
     const leaderboard = new Leaderboard();
 
+    // Right-aligned: health nearest hotbar; extra bars grow leftward.
+    const fromRight = [health, hunger, thirst, heat];
     const statContainer = new Container();
-    statContainer.pivot.set(statContainer.width / 2, statContainer.height / 2);
-    statContainer.addChild(health.container);
-    statContainer.addChild(hunger.container);
-    statContainer.addChild(heat.container);
+    for (let i = 0; i < fromRight.length; i++) {
+        const bar = fromRight[i]!;
+        statContainer.addChild(bar.container);
+        // i=0 at x=0 (rightmost); others step left.
+        bar.container.position.set(-i * (BAR_W + BAR_GAP), 0);
+    }
 
-    statsGrid.arrange([health.container, hunger.container, heat.container]);
+    function layoutVitals() {
+        // Right edge of the vitals row sits just left of the hotbar's left edge.
+        // Fixed footprint — shaking bars must not change getLocalBounds and shift us.
+        const hotbarLeft =
+            inventory.container.position.x - ITEM_BUTTON_SIZE / 2;
+        const rightEdge = BAR_W / 2;
+        statContainer.position.set(
+            hotbarLeft - HOTBAR_GAP - rightEdge,
+            inventory.container.position.y +
+                ITEM_BUTTON_SIZE / 2 -
+                BAR_H / 2 -
+                HOTBAR_LIFT
+        );
+    }
 
     function resize() {
         craftingMenu.resize();
         inventory.resize();
         leaderboard.resize();
-        statContainer.position.set(
-            percentOf(50, window.innerWidth) - percentOf(46, (150 + 60) * 3),
-            inventory.container.position.y -
-                ITEM_BUTTON_SIZE -
-                statsGrid.spacingV
-        );
+        layoutVitals();
     }
 
     ui.addChild(statContainer);
@@ -106,10 +106,14 @@ export function createUI() {
         health,
         hunger,
         heat,
+        thirst,
         leaderboard,
         tick(now?: number) {
+            // Inventory recenters when slots arrive — keep vitals glued to it.
+            layoutVitals();
             health.tick();
             hunger.tick();
+            thirst.tick();
             heat.tick();
             inventory.tick(now);
             craftingMenu.tick(now);

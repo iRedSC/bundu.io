@@ -6,9 +6,9 @@ whenOffHand:
             health.regen_amount:
                 op: add
                 value: 15
-            hunger.depletion_amount:
+            hunger.nourishment:
                 op: add
-                value: 30
+                value: -1800
             health.max:
                 op: multiply
                 value: 0.7
