@@ -32,8 +32,9 @@ function toClientModel(def: PackGroundModelDef): GroundModelDef {
         id: def.id,
         kind: "solid",
         color: def.color,
+        fill: def.fill,
         create(bounds, zIndex) {
-            return createSolidGround(rgb, bounds, zIndex);
+            return createSolidGround(rgb, bounds, zIndex, def.fill);
         },
     };
 }

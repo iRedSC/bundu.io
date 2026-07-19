@@ -1,6 +1,8 @@
 import { BufferImageSource, Sprite, Texture, type Container } from "pixi.js";
+import type { SolidGroundFill } from "@bundu/shared/ground_models";
 import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
 import { PLAY_MIN_ZOOM } from "../../rendering/camera";
+import { shadeLandFill } from "./land_fill_shade";
 import { NEARSHORE_OVERSHOOT_TILES } from "./nearshore_fill";
 import type { GroundPatchRef } from "./shore";
 import type { GroundViewBounds } from "./types";
@@ -69,8 +71,9 @@ export function seamLodFromZoom(zoom: number, freecam = false): SeamLod {
 }
 
 /**
- * Edge-band seam baker: opaque fill stays a flat inset sprite; only the
+ * Edge-band seam baker: opaque fill stays an inset sprite; only the
  * land↔land ring is baked in zoom-LOD chunks, visible ones first.
+ * Textured fills (sand/forest) shade here so color follows the organic edge.
  */
 export class LandSeamBaker {
     private readonly topLand = new Uint8Array(TILE_N);
@@ -78,6 +81,9 @@ export class LandSeamBaker {
     private landPatches: GroundPatchRef[] = [];
     private queue: SeamChunkJob[] = [];
     private colorOfType: (type: number) => number = () => 0;
+    private fillOfType: (type: number) => SolidGroundFill | undefined = () =>
+        undefined;
+    private inlandAt: (tileX: number, tileY: number) => number = () => 0;
     private readonly textures = new Map<string, Texture>();
     private total = 0;
     private done = 0;
@@ -87,10 +93,14 @@ export class LandSeamBaker {
         patches: readonly GroundPatchRef[],
         isOceanType: (type: number) => boolean,
         colorOfType: (type: number) => number,
-        lod: SeamLod = this.lod
+        lod: SeamLod = this.lod,
+        fillOfType?: (type: number) => SolidGroundFill | undefined,
+        inlandAt?: (tileX: number, tileY: number) => number
     ): void {
         this.lod = lod;
         this.colorOfType = colorOfType;
+        this.fillOfType = fillOfType ?? (() => undefined);
+        this.inlandAt = inlandAt ?? (() => 0);
         this.destroyTextures();
         this.topLand.fill(0);
         this.landPatches = [];
@@ -191,12 +201,16 @@ export class LandSeamBaker {
     }
 
     private bakeChunk(job: SeamChunkJob): LandSeamChunkBake {
-        const { topLand, oceanDist, lod } = this;
+        const { topLand, oceanDist, lod, fillOfType, inlandAt } = this;
         const { patch, x0, y0, x1, y1 } = job;
         const pad = LAND_SEAM_PAD_TILES;
         const fillInset = LAND_SEAM_FILL_INSET_TILES;
-        const coastClear = NEARSHORE_OVERSHOOT_TILES;
         const rgb = this.colorOfType(patch.type);
+        const fill = fillOfType(patch.type);
+        // Flat lands leave the nearshore overshoot band clear so shore color owns
+        // it. Textured fills must paint that strip or a hard seam appears ~2.5
+        // tiles inland where flat nearshore meets textured land.
+        const coastClear = fill ? 0 : NEARSHORE_OVERSHOOT_TILES;
         const lr = (rgb >> 16) & 0xff;
         const lg = (rgb >> 8) & 0xff;
         const lb = rgb & 0xff;
@@ -236,7 +250,16 @@ export class LandSeamBaker {
                     patch.w <= fillInset * 2 || patch.h <= fillInset * 2;
                 if (sdf <= -fillInset) {
                     if (!tiny) continue;
-                    writeLand(pixels, row + sx, lr, lg, lb, 1);
+                    const [tr, tg, tb] = shadeLandFill(
+                        lr,
+                        lg,
+                        lb,
+                        fill,
+                        px,
+                        py,
+                        inlandAt(px, py)
+                    );
+                    writeLand(pixels, row + sx, tr, tg, tb, 1);
                     continue;
                 }
                 if (sdf >= pad) continue;
@@ -251,7 +274,16 @@ export class LandSeamBaker {
                 }
                 const cover = coverage(edge, aa);
                 if (cover <= 0) continue;
-                writeLand(pixels, row + sx, lr, lg, lb, cover);
+                const [r, g, b] = shadeLandFill(
+                    lr,
+                    lg,
+                    lb,
+                    fill,
+                    px,
+                    py,
+                    inlandAt(px, py)
+                );
+                writeLand(pixels, row + sx, r, g, b, cover);
             }
         }
 
@@ -398,7 +430,7 @@ function seamSubdiv(tileW: number, tileH: number, lod: SeamLod): number {
     return Math.max(1, Math.min(target, capped));
 }
 
-function coverage(sdfW: number, aa: number): number {
+export function coverage(sdfW: number, aa: number): number {
     if (sdfW <= -aa) return 1;
     if (sdfW >= aa) return 0;
     const t = (sdfW + aa) / (2 * aa);
@@ -438,7 +470,7 @@ function fillOceanDistance(topLand: Uint8Array, out: Float32Array): void {
     }
 }
 
-function seamOffset(px: number, py: number): number {
+export function seamOffset(px: number, py: number): number {
     const wx =
         px +
         0.9 * Math.sin(0.45 * py + 0.2 * px + 0.6) +
@@ -464,7 +496,7 @@ function seamOffset(px: number, py: number): number {
     );
 }
 
-function boxSdf(
+export function boxSdf(
     px: number,
     py: number,
     x: number,
@@ -479,7 +511,7 @@ function boxSdf(
     return Math.min(Math.max(qx, qy), 0) + Math.hypot(ox, oy);
 }
 
-function facesLandLand(
+export function facesLandLand(
     tx: number,
     ty: number,
     patch: GroundPatchRef,

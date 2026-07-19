@@ -38,6 +38,35 @@ export class LandDistanceField {
         return this.atTile((worldX / TILE_SIZE) | 0, (worldY / TILE_SIZE) | 0);
     }
 
+    /**
+     * Tiles inland from nearest ocean (0 on/over water). Bilinear in tile space
+     * so sand-band iso-lines stay smooth under fill subdiv.
+     */
+    inlandAt(tileX: number, tileY: number): number {
+        const x0 = Math.floor(tileX);
+        const y0 = Math.floor(tileY);
+        const fx = tileX - x0;
+        const fy = tileY - y0;
+        const s00 = this.inlandSample(x0, y0);
+        const s10 = this.inlandSample(x0 + 1, y0);
+        const s01 = this.inlandSample(x0, y0 + 1);
+        const s11 = this.inlandSample(x0 + 1, y0 + 1);
+        return (
+            s00 * (1 - fx) * (1 - fy) +
+            s10 * fx * (1 - fy) +
+            s01 * (1 - fx) * fy +
+            s11 * fx * fy
+        );
+    }
+
+    private inlandSample(tx: number, ty: number): number {
+        if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
+            return 0;
+        }
+        const d = this.dist[ty * WORLD_TILES + tx]!;
+        return d < 0 ? -d : 0;
+    }
+
     rebuild(
         patches: readonly GroundPatchRef[],
         isOceanType: (type: number) => boolean,
