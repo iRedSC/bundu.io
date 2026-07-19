@@ -77,10 +77,10 @@ export class PlayerSystem extends System<GameEventMap> {
     override update(time: number, _delta: number, player: GameObject): void {
         // Soft-disconnected players stay alive but ignore sim intent / channels.
         if (!this.world.context.socketManager.getSocket(player.id)) return;
-        // Freecam: body parked — no combat/move ticks.
-        if (PlayerData.get(player)?.freecam) return;
+        const data = PlayerData.get(player);
+        // Waiting for ClientReady, or freecam: body parked — no combat/move ticks.
+        if (!data?.clientReady || data.freecam) return;
 
-        const data = player.get(PlayerData);
         const attributes = player.get(Attributes);
 
         if (data.crafting && time >= data.crafting.endsAt) {
@@ -139,6 +139,7 @@ export class PlayerSystem extends System<GameEventMap> {
     parkDisconnected(player: GameObject) {
         const data = PlayerData.get(player);
         if (!data) return;
+        data.clientReady = false;
         // clearCraft/clearEating before intent wipe so channel side effects still run.
         this.clearCraft(player, false);
         this.clearEating(player, false);
@@ -150,10 +151,46 @@ export class PlayerSystem extends System<GameEventMap> {
     }
 
     /**
+     * Client finished local load — enter the world (first spawn) and/or loadView.
+     */
+    clientReady = (playerId: number, _packet: ClientPacket.ClientReady) => {
+        const player = this.world.getObject(playerId);
+        if (!player?.active) return;
+        const data = PlayerData.get(player);
+        if (!data || data.clientReady) return;
+        data.clientReady = true;
+
+        if (data.pendingSpawn) {
+            data.pendingSpawn = false;
+            const physics = Physics.get(player);
+            if (physics) {
+                this.world.context.quadtree.insert(player.id, physics.position);
+                this.renderDistanceSystem?.newObject({ object: player });
+            }
+        }
+
+        if (data.freecam) {
+            data.freecamView = undefined;
+            this.world.context.quadtree.delete(player.id);
+            this.renderDistanceSystem?.ensureSelfVisible(player);
+            this.world.context.playerPacketManager.set(
+                player.id,
+                ServerPacket.FreecamMode,
+                { enabled: true }
+            );
+            return;
+        }
+
+        this.renderDistanceSystem?.loadView(player);
+    };
+
+    /**
      * Socket bind sync - sole place for client-only spawn packets.
      * System `enter` stays free of client delivery (indexing only).
      */
     syncSession(player: GameObject) {
+        const data = PlayerData.get(player);
+        if (data) data.clientReady = false;
         const packets = [...this.world.query([GroundData])]
             .sort((a, b) => a.id - b.id)
             .map((ground) => groundWire(ground));
@@ -181,6 +218,11 @@ export class PlayerSystem extends System<GameEventMap> {
         syncFlags(player, playerPacketManager, true);
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
+        if (data?.freecam) {
+            playerPacketManager.set(player.id, ServerPacket.FreecamMode, {
+                enabled: true,
+            });
+        }
     }
 
     kill({ object: target }: GameEvent.Kill) {
@@ -418,8 +460,8 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
-        if (data.freecam) {
-            data.moveDir = [0, 0];
+        if (!data?.clientReady || data.freecam) {
+            if (data) data.moveDir = [0, 0];
             return;
         }
         // Accept intent while crafting so held keys resume when the channel ends.
@@ -429,15 +471,16 @@ export class PlayerSystem extends System<GameEventMap> {
     rotate = (playerId: number, { rotation }: ClientPacket.Rotation) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
-        if (PlayerData.get(player)?.freecam) return;
+        const data = PlayerData.get(player);
+        if (!data?.clientReady || data.freecam) return;
         this.trigger(GameEvent.Rotate, { object: player, rotation });
     };
 
     attack = (playerId: number, { stop }: ClientPacket.Attack) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
-        if (PlayerData.get(player)?.freecam) return;
-        const data = player.get(PlayerData);
+        const data = PlayerData.get(player);
+        if (!data?.clientReady || data.freecam) return;
         if (data.crafting || data.eating) return;
         if (data.selectedStructure.id !== -1) {
             data.attacking = false;
@@ -453,8 +496,8 @@ export class PlayerSystem extends System<GameEventMap> {
     block = (playerId: number, { stop }: ClientPacket.Block) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
-        if (PlayerData.get(player)?.freecam) return;
         const data = PlayerData.get(player);
+        if (!data?.clientReady || data.freecam) return;
         if (data.crafting) return;
         if (data.eating) {
             if (stop) this.clearEating(player);
@@ -753,6 +796,7 @@ export class PlayerSystem extends System<GameEventMap> {
     viewBounds = (playerId: number, packet: ClientPacket.ViewBounds) => {
         const player = this.world.getObject(playerId);
         if (!player) return;
+        if (!PlayerData.get(player)?.clientReady) return;
         this.renderDistanceSystem?.setViewBounds(player, packet);
     };
 

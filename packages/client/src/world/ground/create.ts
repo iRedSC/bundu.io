@@ -11,8 +11,15 @@ import type { GroundVisual } from "./types";
 export const GROUND_Z_BASE = -1_000_000_000;
 
 /**
- * Ocean draws above all land so an SDF alpha mask can fade the whole ocean
- * (fill + caustics) over beaches. Below admin grid (-1) and entities (0+).
+ * Ocean flat fill under land. Uses a fully opaque shoreColor bake (never fade
+ * color alpha — that reintroduces the blue coastline fringe). Land stays
+ * clear on the beach band so this fill + FX own the ocean↔land seam.
+ */
+export const GROUND_Z_OCEAN_FILL = GROUND_Z_BASE - 1;
+
+/**
+ * Ocean FX above land so the fading shore mask can wash caustics onto beaches.
+ * Below admin grid (-1) and entities (0+).
  */
 export const GROUND_Z_OCEAN = -10;
 

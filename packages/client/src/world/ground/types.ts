@@ -50,6 +50,10 @@ export type GroundVisual = {
     /** Optional independently sorted layer (frontmost ocean refraction). */
     overlay?: Container;
     update?(ctx: GroundUpdateContext): void;
+    /** Bind land↔land seam bake (solid land only). */
+    applyLandSeam?(map: Texture): void;
+    /** Restore flat fill before seam textures are destroyed. */
+    clearLandSeam?(): void;
     /** Wake ripple at world position (ocean only). */
     addWakeRipple?(
         worldX: number,

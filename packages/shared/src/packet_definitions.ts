@@ -246,6 +246,8 @@ export const ClientPacket = {
     AdminDownloadMap: 0x1a,
     /** Freecam editor: wipe placeables; keeps a fresh base ground floor. */
     AdminWipeMap: 0x1b,
+    /** Client finished local load (terrain, etc.) — server may spawn / loadView. */
+    ClientReady: 0x1c,
 } as const;
 
 export namespace ClientPacket {
@@ -312,6 +314,7 @@ export namespace ClientPacket {
     export type AdminSaveMap = Record<string, never>;
     export type AdminDownloadMap = Record<string, never>;
     export type AdminWipeMap = Record<string, never>;
+    export type ClientReady = Record<string, never>;
 }
 
 /** ID → payload map for server packets. */
@@ -372,6 +375,7 @@ export type ClientPacketMap = {
     [ClientPacket.AdminSaveMap]: ClientPacket.AdminSaveMap;
     [ClientPacket.AdminDownloadMap]: ClientPacket.AdminDownloadMap;
     [ClientPacket.AdminWipeMap]: ClientPacket.AdminWipeMap;
+    [ClientPacket.ClientReady]: ClientPacket.ClientReady;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -474,6 +478,7 @@ export const ClientSchema: {
     [ClientPacket.AdminSaveMap]: { fields: [] },
     [ClientPacket.AdminDownloadMap]: { fields: [] },
     [ClientPacket.AdminWipeMap]: { fields: [] },
+    [ClientPacket.ClientReady]: { fields: [] },
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -668,5 +673,9 @@ export const ClientPacketGuards = {
     [ClientPacket.AdminWipeMap]: (
         value: unknown
     ): value is ClientPacket.AdminWipeMap =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.ClientReady]: (
+        value: unknown
+    ): value is ClientPacket.ClientReady =>
         isRecord(value) && Object.keys(value).length === 0,
 } satisfies PacketGuards<ClientPacketMap>;

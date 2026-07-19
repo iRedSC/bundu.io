@@ -29,16 +29,27 @@
             <input type="text" id="name-input" placeholder="username" maxlength="24" autocomplete="off" />
             <button id="play-button" class="menu" type="button">Play</button>
         </div>
-        <div id="pack-loading" class="pack-overlay menu hidden" aria-live="polite">
-            <p class="pack-overlay-title">Loading resource packs…</p>
-            <p class="pack-overlay-detail">Waiting for the game server</p>
+        <div
+            id="loading-screen"
+            class="loading-overlay menu hidden"
+            aria-live="polite"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+        >
+            <p id="loading-title" class="loading-title">Loading…</p>
+            <p id="loading-status" class="loading-status"></p>
+            <div class="loading-bar" aria-hidden="true">
+                <div id="loading-bar-fill" class="loading-bar-fill"></div>
+            </div>
         </div>
-        <div id="pack-error" class="pack-overlay menu hidden" role="alert">
-            <p class="pack-overlay-title">Could not load resource packs</p>
-            <p id="pack-error-message" class="pack-overlay-detail"></p>
-            <div class="pack-overlay-actions">
-                <button id="pack-retry-button" type="button">Retry</button>
-                <button id="pack-back-button" type="button">Back to menu</button>
+        <div id="loading-error" class="loading-overlay menu hidden" role="alert">
+            <p id="loading-error-title" class="loading-title">Something went wrong</p>
+            <p id="loading-error-message" class="loading-status"></p>
+            <div class="loading-actions">
+                <button id="loading-retry-button" type="button">Retry</button>
+                <button id="loading-back-button" type="button">Back to menu</button>
             </div>
         </div>
         <div class="chat-container hidden">

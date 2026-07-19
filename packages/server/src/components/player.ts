@@ -55,6 +55,13 @@ export type PlayerData = {
      * Same non-undefined group → peers see the real player under occlusion.
      */
     underRoofGroupId?: number;
+    /**
+     * True until the client's first ClientReady after create — hidden from peers
+     * and not in the spatial index until then.
+     */
+    pendingSpawn?: boolean;
+    /** Cleared on connect; set by ClientReady before loadView / gameplay. */
+    clientReady?: boolean;
 };
 export const PlayerData = Component.register<PlayerData>(() => ({
     name: "unnamed",

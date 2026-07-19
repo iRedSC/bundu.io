@@ -20,9 +20,13 @@ import {
     createOceanFill,
     GROUND_Z_BASE,
     GROUND_Z_OCEAN,
+    GROUND_Z_OCEAN_FILL,
     groundModel,
     isOceanGroundModel,
     LandDistanceField,
+    LandSeamBaker,
+    LAND_SEAM_PER_TICK,
+    LAND_SEAM_TICK_INTERVAL,
     NearshoreFill,
     type GroundVisual,
     type ShoreSample,
@@ -149,6 +153,9 @@ export class World {
     private shoreSamples: ShoreSample[] = [];
     private readonly landDistance = new LandDistanceField();
     private readonly nearshoreFill = new NearshoreFill();
+    private readonly landSeamBaker = new LandSeamBaker();
+    /** Frame counter for live seam bake pacing. */
+    private landSeamFrame = 0;
     /** Patches sorted by id desc — first hit in point queries is topmost. */
     private groundByTop: GroundPatch[] = [];
     private oceanTypeIds = new Set<number>();
@@ -245,6 +252,7 @@ export class World {
             }
         }
         this.particles.update(deltaMS);
+        this.tickLandSeams();
         this.updateGroundVisuals(deltaMS, now);
         this.updatePlacementGhost();
         this.camera.update();
@@ -778,7 +786,7 @@ export class World {
                           w * TILE_SIZE,
                           h * TILE_SIZE
                       ),
-                      GROUND_Z_OCEAN - 1
+                      GROUND_Z_OCEAN_FILL
                   )
                 : createGround(
                       type,
@@ -851,20 +859,57 @@ export class World {
             this.oceanVisual = undefined;
         }
         const isOcean = (type: number) => this.oceanTypeIds.has(type);
+        const colorOfType = (type: number) => {
+            const hex = groundModel(clientGroundType(type).model).color;
+            return Number.parseInt(hex.replace("#", ""), 16);
+        };
         this.shoreSamples = collectShoreSamples(this.groundPatches, isOcean);
-        this.landDistance.rebuild(
-            this.groundPatches,
-            isOcean,
-            (type) => {
-                const hex = groundModel(clientGroundType(type).model).color;
-                return Number.parseInt(hex.replace("#", ""), 16);
-            }
-        );
+        this.landDistance.rebuild(this.groundPatches, isOcean, colorOfType);
         const oceanHex = groundModel("ocean").color;
         this.nearshoreFill.setOceanColor(
             Number.parseInt(oceanHex.replace("#", ""), 16)
         );
         this.nearshoreFill.paint(this.landDistance);
+        // Unbind before prepare destroys textures — Pixi crashes on null alphaMode
+        // if sprites still reference destroyed sources.
+        for (const patch of this.groundPatches) {
+            patch.visual.clearLandSeam?.();
+        }
+        this.landSeamBaker.prepare(this.groundPatches, isOcean, colorOfType);
+        this.landSeamFrame = 0;
+    }
+
+    /** Bake a few per-patch land seams each frame (spread load, sharper edges). */
+    private tickLandSeams(limit?: number): void {
+        if (this.landSeamBaker.pending === 0) return;
+        // Live: one patch every few frames. Loading flush passes an explicit limit.
+        if (limit === undefined) {
+            this.landSeamFrame++;
+            if (this.landSeamFrame % LAND_SEAM_TICK_INTERVAL !== 0) return;
+            limit = LAND_SEAM_PER_TICK;
+        }
+        const baked = this.landSeamBaker.tick(limit);
+        if (baked.length === 0) return;
+        const byId = new Map(
+            this.groundPatches.map((patch) => [patch.id, patch])
+        );
+        for (const { id, texture } of baked) {
+            byId.get(id)?.visual.applyLandSeam?.(texture);
+        }
+    }
+
+    /** Land-seam bake progress after the latest ground rebuild. */
+    landSeamProgress(): { done: number; total: number; pending: number } {
+        const { done, total } = this.landSeamBaker.progress;
+        return { done, total, pending: this.landSeamBaker.pending };
+    }
+
+    /**
+     * Bake several seam patches now (loading screen). Returns true when idle.
+     */
+    flushLandSeams(limit = 6): boolean {
+        this.tickLandSeams(limit);
+        return this.landSeamBaker.pending === 0;
     }
 
     private updateGroundVisuals(deltaMS: number, now: number): void {
