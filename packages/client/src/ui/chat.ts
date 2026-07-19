@@ -227,6 +227,18 @@ export class ChatController {
         this.historyIndex = -1;
     }
 
+    /**
+     * Apply the highlighted insertable suggestion.
+     * Returns true when compose should stay open (suggestion applied).
+     */
+    acceptSuggestion(): boolean {
+        if (!this.suggestions.some((entry) => entry.insert)) return false;
+        const current = this.suggestions[this.suggestIndex];
+        if (!current?.insert) return false;
+        this.applyCurrentSuggestion();
+        return true;
+    }
+
     private onInputKeyDown(event: KeyboardEvent): void {
         if (event.key === "Escape") {
             event.preventDefault();
@@ -239,26 +251,7 @@ export class ChatController {
         if (event.key === "Tab") {
             event.preventDefault();
             if (!hasSuggest) return;
-            if (event.shiftKey) {
-                this.moveSuggest(-1);
-                this.applyCurrentSuggestion();
-                return;
-            }
-            const sizeBefore = this.suggestions.length;
-            const insertBefore =
-                this.suggestions[this.suggestIndex]?.insert ?? "";
-            this.applyCurrentSuggestion();
-            if (!insertBefore) {
-                this.moveSuggest(1);
-                return;
-            }
-            // Same completion set — advance highlight for the next Tab.
-            if (
-                this.suggestions.length === sizeBefore &&
-                this.suggestions.some((entry) => entry.insert === insertBefore)
-            ) {
-                this.moveSuggest(1);
-            }
+            this.moveSuggest(event.shiftKey ? -1 : 1);
             return;
         }
 

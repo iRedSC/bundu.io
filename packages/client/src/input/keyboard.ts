@@ -125,13 +125,17 @@ export class KeyboardInputListener {
 
                 if (!this.chat) return;
 
-                this.chatOpen = !this.chatOpen;
                 if (this.chatOpen) {
-                    this.chat.openCompose();
+                    // Enter selects an autocomplete option when one is insertable.
+                    if (this.chat.acceptSuggestion()) return;
+                    this.chatOpen = false;
+                    const message = this.chat.takeMessage();
+                    if (message) this.onSendChat(message);
                     return;
                 }
-                const message = this.chat.takeMessage();
-                if (message) this.onSendChat(message);
+
+                this.chatOpen = true;
+                this.chat.openCompose();
             },
         });
         this.keybinds.bindKey("placement_rotate", {

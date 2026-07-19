@@ -60,7 +60,7 @@ export type CommandSuggestion = {
     hint?: string;
 };
 
-function argTypeHint(arg: CommandArgProjection): string {
+function argTypeToken(arg: CommandArgProjection): string {
     switch (arg.type) {
         case "integer":
             return "<int>";
@@ -73,6 +73,11 @@ function argTypeHint(arg: CommandArgProjection): string {
         case "enum":
             return `<${arg.name}>`;
     }
+}
+
+/** Keyed type hint, e.g. `amount: <int>`. */
+function argTypeHint(arg: CommandArgProjection): string {
+    return `${arg.name}: ${argTypeToken(arg)}`;
 }
 
 function commandUsageHint(command: CommandProjection): string | undefined {
