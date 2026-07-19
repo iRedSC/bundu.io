@@ -82,6 +82,8 @@ function itemSuggestionIds(): string[] {
 
 export class ChatController {
     private readonly hud: ChatHud;
+    private serverRegistry: CommandRegistryProjection = { commands: [] };
+    private clientRegistry: CommandRegistryProjection = { commands: [] };
     private registry: CommandRegistryProjection = { commands: [] };
     private history = loadHistory();
     private historyIndex = -1;
@@ -122,7 +124,23 @@ export class ChatController {
     }
 
     setRegistry(registry: CommandRegistryProjection): void {
-        this.registry = registry;
+        this.serverRegistry = registry;
+        this.rebuildRegistry();
+    }
+
+    /** Client-only commands (e.g. `/debug hitboxes`) merged into suggest/highlight. */
+    setClientRegistry(registry: CommandRegistryProjection): void {
+        this.clientRegistry = registry;
+        this.rebuildRegistry();
+    }
+
+    private rebuildRegistry(): void {
+        this.registry = {
+            commands: [
+                ...this.clientRegistry.commands,
+                ...this.serverRegistry.commands,
+            ],
+        };
         if (this.open) {
             this.refreshSuggest();
             this.refreshHighlight();

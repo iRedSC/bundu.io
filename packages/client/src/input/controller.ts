@@ -51,6 +51,8 @@ export class InputController {
     private readonly onPointerMove: (event: PointerEvent) => void;
     onToggleLeaderboard: () => void = () => {};
     onShowWorldHover: (show: boolean) => void = () => {};
+    /** Return true to consume the message (client-only command). */
+    onClientChatCommand: (message: string) => boolean = () => false;
 
     constructor(
         private readonly sendPacket: SendPacket,
@@ -190,6 +192,7 @@ export class InputController {
     private handleSendChat(message: string) {
         const trimmed = message.trim();
         if (!trimmed) return;
+        if (this.onClientChatCommand(trimmed)) return;
         this.sendPacket(ClientPacket.ChatMessage, { message: trimmed });
     }
 

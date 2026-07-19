@@ -1,11 +1,14 @@
 import type { Container } from "pixi.js";
+import type { ChatController } from "../ui/chat";
 import { registerAttackHitboxDrawer } from "./attack_hitbox";
+import { CLIENT_DEBUG_COMMANDS, tryHandleClientDebugCommand } from "./client_commands";
 import { registerObjectDebugFactory } from "./object_debug";
 import {
     createObjectDebug,
     debugContainer,
     drawAttackHitbox,
     isDebugHitboxesVisible,
+    onDebugHitboxesVisibleChange,
     setDebugHitboxesVisible,
 } from "./overlay";
 
@@ -59,18 +62,19 @@ function bindToggle(
     initial: boolean,
     onChange: (active: boolean) => void
 ) {
-    const setActive = (active: boolean) => {
+    const setActive = (active: boolean, notify: boolean) => {
         button.textContent = `${label}: ${active ? "On" : "Off"}`;
         button.ariaPressed = String(active);
-        onChange(active);
+        if (notify) onChange(active);
     };
     button.addEventListener("pointerdown", (e) => e.stopPropagation());
     button.addEventListener("pointerup", (e) => e.stopPropagation());
     button.addEventListener("click", (e) => {
         e.stopPropagation();
-        setActive(button.ariaPressed !== "true");
+        setActive(button.ariaPressed !== "true", true);
     });
-    setActive(initial);
+    setActive(initial, true);
+    return (active: boolean) => setActive(active, false);
 }
 
 /**
@@ -93,14 +97,14 @@ export function mountClientDebug(viewport: Container): ClientDebugHandle {
     panel.setAttribute("aria-label", "Debug tools");
     panel.innerHTML = `
         <h2 class="debug-tools-title">Debug tools</h2>
-        <button id="debug-hitboxes" class="debug-tool-btn" type="button">Hitboxes: On</button>
+        <button id="debug-hitboxes" class="debug-tool-btn" type="button">Hitboxes: Off</button>
     `;
     document.body.appendChild(panel);
 
     const hitboxesToggle = panel.querySelector<HTMLButtonElement>("#debug-hitboxes");
 
     if (hitboxesToggle) {
-        bindToggle(
+        const syncButton = bindToggle(
             hitboxesToggle,
             "Hitboxes",
             isDebugHitboxesVisible(),
@@ -108,7 +112,24 @@ export function mountClientDebug(viewport: Container): ClientDebugHandle {
                 setDebugHitboxesVisible(visible);
             }
         );
+        onDebugHitboxesVisibleChange(syncButton);
     }
 
     return {};
+}
+
+/** Wire client-only `/debug …` commands into chat + send path. */
+export function bindDebugChat(
+    chat: ChatController,
+    onClientCommand: (
+        handler: (message: string) => boolean
+    ) => void
+): void {
+    chat.setClientRegistry(CLIENT_DEBUG_COMMANDS);
+    onClientCommand((message) => {
+        const result = tryHandleClientDebugCommand(message);
+        if (!result) return false;
+        chat.appendCommandResult(result.message, result.ok);
+        return true;
+    });
 }

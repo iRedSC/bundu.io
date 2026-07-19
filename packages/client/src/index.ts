@@ -307,9 +307,13 @@ async function main() {
     app.stage.addChild(viewport);
 
     // Debug tools / overlay — omitted entirely from prod bundles.
+    let bindDebugChat:
+        | typeof import("./debug/tools").bindDebugChat
+        | undefined;
     if (__DEBUG__) {
-        const { mountClientDebug } = await import("./debug/tools");
-        mountClientDebug(viewport);
+        const debugTools = await import("./debug/tools");
+        debugTools.mountClientDebug(viewport);
+        bindDebugChat = debugTools.bindDebugChat;
         const { initDevtools } = await import("@pixi/devtools");
         await initDevtools({ app });
     }
@@ -445,6 +449,9 @@ async function main() {
         isFreecam: () => world.camera.isFreecam(),
     });
     input.bindChat(chat);
+    bindDebugChat?.(chat, (handler) => {
+        input.onClientChatCommand = handler;
+    });
     input.onToggleLeaderboard = () => gui.leaderboard.toggle();
     input.onShowWorldHover = (show) => world.setShowAllHover(show);
     world.onPlacementValidity = (allowed) => input.onPlacementValidity(allowed);
