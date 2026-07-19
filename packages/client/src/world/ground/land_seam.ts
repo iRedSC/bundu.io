@@ -201,12 +201,12 @@ export class LandSeamBaker {
     }
 
     private bakeChunk(job: SeamChunkJob): LandSeamChunkBake {
-        const { topLand, oceanDist, lod, fillOfType, inlandAt } = this;
+        const { topLand, oceanDist, lod } = this;
         const { patch, x0, y0, x1, y1 } = job;
         const pad = LAND_SEAM_PAD_TILES;
         const fillInset = LAND_SEAM_FILL_INSET_TILES;
         const rgb = this.colorOfType(patch.type);
-        const fill = fillOfType(patch.type);
+        const fill = this.fillOfType(patch.type);
         // Flat lands leave the nearshore overshoot band clear so shore color owns
         // it. Textured fills must paint that strip or a hard seam appears ~2.5
         // tiles inland where flat nearshore meets textured land.
@@ -257,7 +257,7 @@ export class LandSeamBaker {
                         fill,
                         px,
                         py,
-                        inlandAt(px, py)
+                        this.inlandAt(px, py)
                     );
                     writeLand(pixels, row + sx, tr, tg, tb, 1);
                     continue;
@@ -281,7 +281,7 @@ export class LandSeamBaker {
                     fill,
                     px,
                     py,
-                    inlandAt(px, py)
+                    this.inlandAt(px, py)
                 );
                 writeLand(pixels, row + sx, r, g, b, cover);
             }
