@@ -18,7 +18,6 @@ import {
 import { Flags } from "../components/flags.js";
 import {
     Inventory,
-    addItem,
     cursorSlot as applyCursorSlot,
     ensureSlotCapacity,
     hasItems,
@@ -46,6 +45,7 @@ import {
     clearMissingEquipment,
     emitEquipment,
     emitInventory,
+    receiveItem,
     selectEquipment,
 } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
@@ -441,17 +441,14 @@ export class PlayerSystem extends System<GameEventMap> {
             return;
         }
 
-        const result = ItemConfigs.get(recipe.resultItemId);
-        if (result.function === "backpack") {
-            if (data.backpack || !removeItems(inv, recipe.ingredients)) return;
-            data.backpack = true;
-            ensureSlotCapacity(inv, slotCapacityFor(true));
-        } else {
-            if (!removeItems(inv, recipe.ingredients)) return;
-            const remaining = addItem(inv, recipe.resultItemId, recipe.amount);
-            if (remaining > 0) {
-                this.dropItem(player, recipe.resultItemId, remaining);
-            }
+        if (!removeItems(inv, recipe.ingredients)) return;
+        const remaining = receiveItem(
+            player,
+            recipe.resultItemId,
+            recipe.amount
+        );
+        if (remaining > 0) {
+            this.dropItem(player, recipe.resultItemId, remaining);
         }
 
         data.score += recipe.score;

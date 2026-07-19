@@ -3,10 +3,10 @@ import {
     Attributes,
     type AttributeType,
 } from "../components/attributes.js";
-import { addItem, Inventory } from "../components/inventory.js";
 import { StatList, type StatType, Stats } from "../components/stats.js";
 import type { GameObject } from "../engine";
 import { gameRegistries } from "../configs/registries.js";
+import { receiveItem } from "../network/inventory.js";
 
 function resolveItemId(value?: string): number | undefined {
     if (!value) return undefined;
@@ -95,9 +95,8 @@ export function tryHandleDebugChatCommand(
         case "give": {
             const numericId = resolveItemId(command[1]);
             const count = Number(command[2] ?? 1);
-            const inv = Inventory.get(player);
-            if (numericId === undefined || !inv || !(count > 0)) return true;
-            addItem(inv, numericId, count);
+            if (numericId === undefined || !(count > 0)) return true;
+            receiveItem(player, numericId, count);
             break;
         }
         case "kit": {
@@ -105,11 +104,9 @@ export function tryHandleDebugChatCommand(
             if (kitId === undefined) return true;
             if (!kits[kitId]) return true;
             const kit = kits[kitId];
-            const inv = Inventory.get(player);
-            if (!inv) return true;
             for (const [itemId, count] of Object.entries(kit)) {
                 const numericId = resolveItemId(itemId);
-                if (numericId !== undefined) addItem(inv, numericId, count);
+                if (numericId !== undefined) receiveItem(player, numericId, count);
             }
             break;
         }
