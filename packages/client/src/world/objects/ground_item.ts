@@ -1,6 +1,6 @@
 import {
     clientRegistries,
-    clientModelId,
+    clientItemModelId,
 } from "../../configs/registries";
 import { lerp, radians } from "@bundu/shared/transforms";
 import type { Container, Point } from "pixi.js";
@@ -35,7 +35,7 @@ export class GroundItem extends GameObject {
 
     constructor(id: number, itemId: number, position: Point, rotation: number) {
         super(id, position, radians(rotation), 12, 1);
-        const name = clientModelId(clientRegistries().item.location(itemId));
+        const name = clientItemModelId(clientRegistries().item.location(itemId));
         const mounted = mountModel(name, "world", this.container, {
             maxSize: ITEM_SIZE,
             shadows: false,
