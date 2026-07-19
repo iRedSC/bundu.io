@@ -24,13 +24,13 @@ const INVENTORY_COLORS = {
 } as const;
 
 const DRAG_THRESHOLD = 8;
+/**
+ * If a drag never leaves this radius from the press, treat release as a select.
+ * Dragging out and back does not count — once left, it's a real drag.
+ */
+const SELECT_DRAG_SLACK = 28;
 /** How quickly flying items ease toward their target. */
 const FLY_LERP = 0.28;
-/** World-drop travel — exponential, but slower than slot flies. */
-const DROP_POS_LERP = 0.1;
-const DROP_SCALE_LERP = 0.12;
-const DROP_PEAK_SCALE = 1.55;
-const DROP_END_SCALE = 0.3;
 const FLY_SNAP = 3;
 
 export class InventoryButton extends ItemButton {
@@ -95,17 +95,15 @@ const inventoryGrid = new Grid(
 type SelectCB = (slot: number) => void;
 type MoveCB = (from: number, to: number) => void;
 type CursorCB = (slot: number, mode: PlaceModeType) => void;
+type WorldDropCB = (
+    originGlobal: { x: number; y: number },
+    buttonScale: number
+) => void;
 
 type Fly = {
     view: InventoryButton;
-    mode: "slot" | "pointer" | "drop";
+    mode: "slot" | "pointer";
     slot?: number;
-    /** Fixed local target for drop flights. */
-    tx?: number;
-    ty?: number;
-    /** Distance from start → player when the drop began. */
-    startDist?: number;
-    startScale?: number;
 };
 
 /**
@@ -124,8 +122,11 @@ export class Inventory {
     onCursor?: CursorCB;
     /** When true, pointer/drag/cursor handlers skip local mutations. */
     isLocked?: () => boolean;
-    /** Global/stage position where world drops should fly (e.g. local player). */
-    getDropTargetGlobal?: () => { x: number; y: number } | null;
+    /**
+     * Local world drop — origin in global/stage space and current button scale.
+     * The ground item animates from here; no UI fly.
+     */
+    onWorldDrop?: WorldDropCB;
 
     private ghost = new InventoryButton();
     private flies: Fly[] = [];
@@ -134,6 +135,8 @@ export class Inventory {
 
     private dragFrom: number | null = null;
     private dragging = false;
+    /** True once the pointer leaves SELECT_DRAG_SLACK — real drag, not a click. */
+    private dragCommitted = false;
     /** Stack shown on the pointer during left-drag (not the server cursor). */
     private dragStack: ItemStack | null = null;
     private dragStart = { x: 0, y: 0 };
@@ -216,6 +219,7 @@ export class Inventory {
             if (ev.button === 0) {
                 this.dragFrom = slot;
                 this.dragging = false;
+                this.dragCommitted = false;
                 this.dragStart = { x: ev.clientX, y: ev.clientY };
                 button.down = true;
             } else if (ev.button === 2) {
@@ -255,10 +259,19 @@ export class Inventory {
 
         if (this.locked()) return;
 
-        if (this.dragFrom !== null && !this.dragging) {
+        if (this.dragFrom !== null) {
             const dx = ev.clientX - this.dragStart.x;
             const dy = ev.clientY - this.dragStart.y;
-            if (dx * dx + dy * dy >= DRAG_THRESHOLD * DRAG_THRESHOLD) {
+            const dist2 = dx * dx + dy * dy;
+
+            if (
+                !this.dragCommitted &&
+                dist2 >= SELECT_DRAG_SLACK * SELECT_DRAG_SLACK
+            ) {
+                this.dragCommitted = true;
+            }
+
+            if (!this.dragging && dist2 >= DRAG_THRESHOLD * DRAG_THRESHOLD) {
                 this.dragging = true;
                 const stack = this.slots[this.dragFrom];
                 if (stack) {
@@ -294,9 +307,21 @@ export class Inventory {
             } else if (this.dragFrom !== null) {
                 if (this.dragging) {
                     const from = this.dragFrom;
-                    const to = this.hoverSlot ?? -1;
-                    this.finishDrag(from, to);
-                    this.onMove?.(from, to);
+                    if (!this.dragCommitted) {
+                        // Never left the click slack — treat as select.
+                        if (this.dragStack) {
+                            this.buttons[from]?.setStack(
+                                this.slots[from] ?? null
+                            );
+                            this.syncGhostToCursor();
+                        }
+                        this.selectedSlot = from;
+                        this.onSelect?.(from);
+                    } else {
+                        const to = this.hoverSlot ?? -1;
+                        this.finishDrag(from, to);
+                        this.onMove?.(from, to);
+                    }
                 } else {
                     this.selectedSlot = this.dragFrom;
                     this.onSelect?.(this.dragFrom);
@@ -314,6 +339,7 @@ export class Inventory {
     private clearDrag() {
         this.dragFrom = null;
         this.dragging = false;
+        this.dragCommitted = false;
         this.dragStack = null;
     }
 
@@ -334,17 +360,17 @@ export class Inventory {
         };
     }
 
-    private dropTargetLocal(): { x: number; y: number } {
-        const global = this.getDropTargetGlobal?.();
-        if (!global) return this.pointerLocal();
-        return this.container.toLocal(global);
-    }
-
     private slotPos(slot: number): { x: number; y: number } {
         const btn = this.buttons[slot];
         return btn
             ? { x: btn.button.position.x, y: btn.button.position.y }
             : this.pointerLocal();
+    }
+
+    /** Hand a world drop off to the ground-item animation. */
+    private emitWorldDrop(localX: number, localY: number, scale: number) {
+        const global = this.container.toGlobal({ x: localX, y: localY });
+        this.onWorldDrop?.(global, scale || 1);
     }
 
     private startFly(
@@ -360,8 +386,6 @@ export class Inventory {
         this.setupOverlay(view);
         view.button.zIndex = 1001;
         view.setStack(stack);
-        // Count only hides on world-drop flights.
-        if (mode === "drop") view.amount.text = "";
         view.button.visible = true;
         view.button.position.set(fromX, fromY);
         view.button.scale.set(fromScale || 1);
@@ -372,18 +396,7 @@ export class Inventory {
             this.buttons[slot]?.setStack(null);
         }
 
-        const fly: Fly = { view, mode, slot };
-        if (mode === "drop") {
-            const target = this.dropTargetLocal();
-            fly.tx = target.x;
-            fly.ty = target.y;
-            fly.startScale = fromScale || 1;
-            fly.startDist = Math.max(
-                1,
-                Math.hypot(fromX - target.x, fromY - target.y)
-            );
-        }
-        this.flies.push(fly);
+        this.flies.push({ view, mode, slot });
     }
 
     private finishFly(fly: Fly) {
@@ -426,8 +439,7 @@ export class Inventory {
         }
 
         if (to < 0) {
-            // Dropped outside — fly toward the player / spawn point.
-            this.startFly(fromStack, ghostX, ghostY, ghostScale, "drop");
+            this.emitWorldDrop(ghostX, ghostY, ghostScale);
             this.slots[from] = null;
             this.rebuildItemsMap();
             this.buttons[from]?.setStack(null);
@@ -472,19 +484,16 @@ export class Inventory {
         // Drop from cursor outside.
         if (slot < 0) {
             const take = amountForMode(this.cursor[1], mode);
-            const dropped: ItemStack = [this.cursor[0], take];
             this.cursor = this.shrinkCursor(take);
             this.rebuildItemsMap();
-            this.startFly(
-                dropped,
+            this.emitWorldDrop(
                 this.ghost.button.visible
                     ? this.ghost.button.position.x
                     : pointer.x,
                 this.ghost.button.visible
                     ? this.ghost.button.position.y
                     : pointer.y,
-                this.ghost.button.scale.x,
-                "drop"
+                this.ghost.button.scale.x
             );
             this.syncGhostToCursor();
             this.onCursor?.(slot, mode);
@@ -665,63 +674,32 @@ export class Inventory {
             this.ghost.button.scale.set(scale);
         }
 
-        // Flying drops / swaps.
+        // Flying swaps / slot settles.
         for (let i = this.flies.length - 1; i >= 0; i--) {
             const fly = this.flies[i];
             if (!fly) continue;
 
             let tx = pointer.x;
             let ty = pointer.y;
-            let ts = 1;
 
             if (fly.mode === "slot" && fly.slot !== undefined) {
                 const pos = this.slotPos(fly.slot);
                 tx = pos.x;
                 ty = pos.y;
-            } else if (fly.mode === "drop") {
-                tx = fly.tx ?? pointer.x;
-                ty = fly.ty ?? pointer.y;
-                const dist = Math.hypot(
-                    fly.view.button.position.x - tx,
-                    fly.view.button.position.y - ty
-                );
-                const startDist = fly.startDist ?? dist;
-                const t = Math.min(1, Math.max(0, 1 - dist / startDist));
-                // Grow through the first third, then shrink into the player.
-                if (t < 0.35) {
-                    ts = lerp(
-                        fly.startScale ?? 1,
-                        DROP_PEAK_SCALE,
-                        t / 0.35
-                    );
-                } else {
-                    ts = lerp(
-                        DROP_PEAK_SCALE,
-                        DROP_END_SCALE,
-                        (t - 0.35) / 0.65
-                    );
-                }
             }
 
             const v = fly.view.button;
-            const posLerp = fly.mode === "drop" ? DROP_POS_LERP : FLY_LERP;
-            const scaleLerp =
-                fly.mode === "drop" ? DROP_SCALE_LERP : FLY_LERP;
-            v.position.x = lerp(v.position.x, tx, posLerp);
-            v.position.y = lerp(v.position.y, ty, posLerp);
-            const s = lerp(v.scale.x, ts, scaleLerp);
+            v.position.x = lerp(v.position.x, tx, FLY_LERP);
+            v.position.y = lerp(v.position.y, ty, FLY_LERP);
+            const s = lerp(v.scale.x, 1, FLY_LERP);
             v.scale.set(s);
 
             const dx = v.position.x - tx;
             const dy = v.position.y - ty;
-            const arrived =
-                fly.mode === "drop"
-                    ? dx * dx + dy * dy < FLY_SNAP * FLY_SNAP &&
-                      v.scale.x < 0.5
-                    : dx * dx + dy * dy < FLY_SNAP * FLY_SNAP &&
-                      Math.abs(v.scale.x - ts) < 0.05;
-
-            if (arrived) {
+            if (
+                dx * dx + dy * dy < FLY_SNAP * FLY_SNAP &&
+                Math.abs(v.scale.x - 1) < 0.05
+            ) {
                 this.flies.splice(i, 1);
                 this.finishFly(fly);
             }
