@@ -84,6 +84,9 @@ export class InventoryButton extends ItemButton {
     }
 }
 
+/** Columns per hotbar row - matches server `HOTBAR_SIZE`. */
+const HOTBAR_COLUMNS = 10;
+
 const inventoryGrid = new Grid(
     percentOf(10, ITEM_BUTTON_SIZE),
     percentOf(10, ITEM_BUTTON_SIZE),
@@ -178,7 +181,9 @@ export class Inventory {
 
         this.selectedSlot = Math.min(this.selectedSlot, this.buttons.length - 1);
 
-        inventoryGrid.arrange(this.buttons);
+        const columns = Math.min(HOTBAR_COLUMNS, this.buttons.length) || 1;
+        inventoryGrid.maxRows = Math.ceil(this.buttons.length / columns) || 1;
+        inventoryGrid.arrangeRows(this.buttons, columns);
         this.container.addChild(this.ghost.button);
         for (const fly of this.flies) {
             this.container.addChild(fly.view.button);
@@ -740,17 +745,17 @@ export class Inventory {
     }
 
     resize() {
+        const columns = Math.min(HOTBAR_COLUMNS, this.slotCount) || 1;
+        const rows = Math.ceil(this.slotCount / columns) || 1;
+        const cell =
+            ITEM_BUTTON_SIZE + percentOf(10, ITEM_BUTTON_SIZE);
         this.container.position.set(
             percentOf(50, window.innerWidth) -
-                percentOf(
-                    50,
-                    (ITEM_BUTTON_SIZE + percentOf(10, ITEM_BUTTON_SIZE)) *
-                        (this.slotCount - 1)
-                ),
-
+                percentOf(50, cell * (columns - 1)),
             window.innerHeight -
                 ITEM_BUTTON_SIZE / 2 -
-                percentOf(10, ITEM_BUTTON_SIZE)
+                percentOf(10, ITEM_BUTTON_SIZE) -
+                cell * (rows - 1)
         );
     }
 }

@@ -18,11 +18,14 @@ import {
 import { Flags } from "../components/flags.js";
 import {
     Inventory,
-    canConsumeAndAdd,
+    addItem,
     cursorSlot as applyCursorSlot,
+    ensureSlotCapacity,
+    hasItems,
     moveSlot as applyMoveSlot,
     removeItem,
-    tryConsumeAndAdd,
+    removeItems,
+    slotCapacityFor,
     type ItemStack,
 } from "../components/inventory.js";
 import {
@@ -221,6 +224,10 @@ export class PlayerSystem extends System<GameEventMap> {
         dayCycle.syncPlayer(player.id, playerPacketManager);
         emitVitals(player, playerPacketManager);
         syncFlags(player, playerPacketManager, true);
+        const inv = Inventory.get(player);
+        if (inv && data?.backpack) {
+            ensureSlotCapacity(inv, slotCapacityFor(true));
+        }
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
         if (data?.freecam) {
@@ -433,15 +440,18 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!recipe || !inv || !this.hasCraftingRequirements(player, recipe.flags)) {
             return;
         }
-        if (
-            !tryConsumeAndAdd(
-                inv,
-                recipe.ingredients,
-                recipe.resultItemId,
-                recipe.amount
-            )
-        ) {
-            return;
+
+        const result = ItemConfigs.get(recipe.resultItemId);
+        if (result.function === "backpack") {
+            if (data.backpack || !removeItems(inv, recipe.ingredients)) return;
+            data.backpack = true;
+            ensureSlotCapacity(inv, slotCapacityFor(true));
+        } else {
+            if (!removeItems(inv, recipe.ingredients)) return;
+            const remaining = addItem(inv, recipe.resultItemId, recipe.amount);
+            if (remaining > 0) {
+                this.dropItem(player, recipe.resultItemId, remaining);
+            }
         }
 
         data.score += recipe.score;
@@ -465,15 +475,12 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!recipe) return;
 
         const inv = Inventory.get(player);
+        const result = ItemConfigs.get(recipe.resultItemId);
         if (
             !inv ||
             !this.hasCraftingRequirements(player, recipe.flags) ||
-            !canConsumeAndAdd(
-                inv,
-                recipe.ingredients,
-                recipe.resultItemId,
-                recipe.amount
-            )
+            !hasItems(inv, recipe.ingredients) ||
+            (result.function === "backpack" && data.backpack)
         ) {
             return;
         }
