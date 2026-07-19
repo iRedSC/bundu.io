@@ -97,7 +97,7 @@ export function mountClientDebug(viewport: Container): ClientDebugHandle {
     panel.setAttribute("aria-label", "Debug tools");
     panel.innerHTML = `
         <h2 class="debug-tools-title">Debug tools</h2>
-        <button id="debug-hitboxes" class="debug-tool-btn" type="button">Hitboxes: On</button>
+        <button id="debug-hitboxes" class="debug-tool-btn" type="button">Hitboxes: Off</button>
     `;
     document.body.appendChild(panel);
 

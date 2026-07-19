@@ -14,7 +14,8 @@ hitboxLayer.label = "debug-hitbox-layer";
 hitboxLayer.zIndex = 1;
 hitboxLayer.eventMode = "none";
 hitboxLayer.sortableChildren = true;
-hitboxLayer.visible = true;
+/** Off by default — enable via Debug tools or `/debug hitboxes`. */
+hitboxLayer.visible = false;
 
 debugContainer.addChild(hitboxLayer);
 
