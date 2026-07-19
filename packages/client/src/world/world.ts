@@ -60,8 +60,6 @@ import {
 } from "../assets/sprite_factory";
 import { ParticleSystem } from "@client/rendering/particles/particle_system";
 import type { ParticleBurst } from "../rendering/particles/types";
-import { getAsset } from "../assets/load";
-import { oceanSplash } from "./ground/particles/foam";
 import {
     setActiveShadowLayer,
     ShadowLayer,
@@ -823,7 +821,11 @@ export class World {
             WORLD_BOUNDS,
             GROUND_Z_OCEAN
         );
-        this.renderer.add(GROUND_RENDER_ID, this.oceanVisual.container);
+        this.renderer.add(
+            GROUND_RENDER_ID,
+            this.oceanVisual.container,
+            ...(this.oceanVisual.overlay ? [this.oceanVisual.overlay] : [])
+        );
         return this.oceanVisual;
     }
 
@@ -840,6 +842,12 @@ export class World {
                 GROUND_RENDER_ID,
                 this.oceanVisual.container
             );
+            if (this.oceanVisual.overlay) {
+                this.renderer.remove(
+                    GROUND_RENDER_ID,
+                    this.oceanVisual.overlay
+                );
+            }
             this.oceanVisual = undefined;
         }
         const isOcean = (type: number) => this.oceanTypeIds.has(type);
@@ -1008,14 +1016,12 @@ export class World {
                     8 +
                     object.collisionRadius * 0.2 +
                     (8 + object.collisionRadius * 0.15) * rampEase;
-                this.particles.burst(
-                    oceanSplash(
-                        getAsset("bundu/effect/ocean_foam.png"),
-                        x + Math.cos(direction) * ahead,
-                        y + Math.sin(direction) * ahead,
-                        direction,
-                        throwSpeed
-                    )
+                visual.addSplashDisplacement?.(
+                    x + Math.cos(direction) * ahead,
+                    y + Math.sin(direction) * ahead,
+                    now,
+                    direction,
+                    throwSpeed
                 );
             }
 

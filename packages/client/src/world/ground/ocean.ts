@@ -14,6 +14,10 @@ import {
     bindNearshoreSprite,
     type NearshoreBindState,
 } from "./nearshore_fill";
+import {
+    createDropletDisplacementTexture,
+    createSplashRefractionFilter,
+} from "./splash_refraction";
 import type {
     GroundModelDef,
     GroundUpdateContext,
@@ -55,6 +59,13 @@ const IDLE_START_SIZE = 160;
 const IDLE_GROW_SPEED = 160;
 const MOVE_START_SIZE = 90;
 const MOVE_GROW_SPEED = 240;
+const SPLASH_MAX = 300;
+const SPLASH_SPREAD = (100 * Math.PI) / 180;
+const SPLASH_FRICTION = 4.5;
+const SPLASH_SPEED = { min: 1.7, max: 2.1 };
+const SPLASH_SIZE = { min: 50, max: 88, end: 12 };
+const SPLASH_OVERLAY_Z = 1_000_000_000;
+const SPLASH_STRENGTH = 14;
 /** Single displace pass strength (swell + wakes share this). */
 const DISPLACE_STRENGTH = 140;
 /**
@@ -87,6 +98,8 @@ export function createOceanGround(
     const rippleMoveTex = getAsset(RIPPLE_MOVE);
     const foamTex = getAsset(FOAM);
     const sparkleTex = getAsset(SPARKLE);
+    const dropletTex = createDropletDisplacementTexture();
+
     displaceTex.source.addressMode = "repeat";
     for (const tex of [rippleIdleTex, rippleMoveTex]) {
         tex.source.addressMode = "clamp-to-edge";
@@ -174,6 +187,32 @@ export function createOceanGround(
     const wakes: Wake[] = [];
     const wakeSprites: Sprite[] = [];
 
+    type Splash = {
+        x: number;
+        y: number;
+        born: number;
+        updatedAt: number;
+        velocityX: number;
+        velocityY: number;
+        lifetime: number;
+        startSize: number;
+        rotation: number;
+    };
+    const splashes: Splash[] = [];
+    const splashSprites: Sprite[] = [];
+    const splashBake = new Container();
+    const splashRt = RenderTexture.create({
+        width: 64,
+        height: 64,
+        dynamic: true,
+    });
+    const splashOverlay = new Sprite(splashRt);
+    splashOverlay.zIndex = SPLASH_OVERLAY_Z;
+    splashOverlay.visible = false;
+    const splashRefraction = createSplashRefractionFilter();
+    const splashFilter = splashRefraction.filter;
+    splashFilter.padding = SPLASH_STRENGTH + 8;
+    splashOverlay.filters = [splashFilter];
 
     const ensureWakeSprite = (i: number, kind: "idle" | "move"): Sprite => {
         const tex = kind === "move" ? rippleMoveTex : rippleIdleTex;
@@ -201,7 +240,48 @@ export function createOceanGround(
         wakes.push({ x: worldX, y: worldY, born: now, kind });
     };
 
+    const addSplashDisplacement = (
+        worldX: number,
+        worldY: number,
+        now: number,
+        direction: number,
+        speed: number
+    ) => {
+        const count = 6 + ((Math.random() * 3) | 0);
+        const lo = Math.max(20, speed * SPLASH_SPEED.min);
+        const hi = Math.max(lo + 1, speed * SPLASH_SPEED.max);
+        for (let i = 0; i < count && splashes.length < SPLASH_MAX; i++) {
+            const angle =
+                direction + (Math.random() - 0.5) * SPLASH_SPREAD;
+            const particleSpeed = lo + Math.random() * (hi - lo);
+            splashes.push({
+                x: worldX,
+                y: worldY,
+                born: now,
+                updatedAt: now,
+                velocityX: Math.cos(angle) * particleSpeed,
+                velocityY: Math.sin(angle) * particleSpeed,
+                lifetime: 450 + Math.random() * 300,
+                startSize:
+                    SPLASH_SIZE.min +
+                    Math.random() * (SPLASH_SIZE.max - SPLASH_SIZE.min),
+                rotation: Math.random() * Math.PI * 2,
+            });
+        }
+    };
 
+    const splashSprite = (i: number): Sprite => {
+        let sprite = splashSprites[i];
+        if (!sprite) {
+            sprite = new Sprite(dropletTex);
+            sprite.anchor.set(0.5);
+            sprite.blendMode = "normal-npm";
+            splashSprites[i] = sprite;
+            splashBake.addChild(sprite);
+        }
+        sprite.visible = true;
+        return sprite;
+    };
 
     let overlayX = 0;
     let overlayY = 0;
@@ -221,6 +301,12 @@ export function createOceanGround(
             const wake = wakes[i];
             if (!wake || now - wake.born >= WAKE_LIFE_MS) wakes.splice(i, 1);
         }
+        for (let i = splashes.length - 1; i >= 0; i--) {
+            const splash = splashes[i];
+            if (!splash || now - splash.born >= splash.lifetime) {
+                splashes.splice(i, 1);
+            }
+        }
 
         if (overlayW < 1 || overlayH < 1) return;
 
@@ -229,6 +315,9 @@ export function createOceanGround(
         const rtH = Math.max(1, Math.ceil(overlayH * scale));
         if (mapRt.width !== rtW || mapRt.height !== rtH) {
             mapRt.resize(rtW, rtH);
+        }
+        if (splashRt.width !== rtW || splashRt.height !== rtH) {
+            splashRt.resize(rtW, rtH);
         }
 
         swellBig.width = rtW;
@@ -300,6 +389,51 @@ export function createOceanGround(
             displaceFilter.padding = padding;
         }
 
+        for (const sprite of splashSprites) sprite.visible = false;
+        for (let i = 0; i < splashes.length; i++) {
+            const splash = splashes[i];
+            if (!splash) continue;
+            const deltaSeconds = Math.max(0, now - splash.updatedAt) / 1000;
+            splash.updatedAt = now;
+            const friction = Math.exp(-SPLASH_FRICTION * deltaSeconds);
+            splash.velocityX *= friction;
+            splash.velocityY *= friction;
+            splash.x += splash.velocityX * deltaSeconds;
+            splash.y += splash.velocityY * deltaSeconds;
+            const t = (now - splash.born) / splash.lifetime;
+            const sprite = splashSprite(i);
+            sprite.position.set(
+                (splash.x - overlayX) * scale,
+                (splash.y - overlayY) * scale
+            );
+            sprite.rotation = splash.rotation;
+            const size =
+                splash.startSize +
+                (SPLASH_SIZE.end - splash.startSize) * t;
+            sprite.scale.set(
+                (size / Math.max(1, sprite.texture.width)) * scale
+            );
+            sprite.alpha = 1 - t;
+        }
+
+        splashOverlay.visible = splashes.length > 0;
+        if (!splashOverlay.visible) return;
+        renderer.render({
+            container: splashBake,
+            target: splashRt,
+            clear: true,
+            clearColor: { r: 0.5, g: 0.5, b: 0.5, a: 0 },
+        });
+        splashOverlay.texture = splashRt;
+        splashOverlay.position.set(overlayX, overlayY);
+        splashOverlay.width = overlayW;
+        splashOverlay.height = overlayH;
+        splashRefraction.setStrength(
+            SPLASH_STRENGTH * Math.max(0.001, zoom)
+        );
+        splashFilter.padding = Math.ceil(
+            SPLASH_STRENGTH * Math.max(0.001, zoom) + 8
+        );
     };
 
     let nextFoamAt = 0;
@@ -331,6 +465,7 @@ export function createOceanGround(
         const h = Math.max(0, bottom - y);
         if (w < 1 || h < 1) {
             fx.visible = false;
+            splashOverlay.visible = false;
             overlayW = 0;
             return false;
         }
@@ -353,7 +488,9 @@ export function createOceanGround(
 
     return {
         container: root,
+        overlay: splashOverlay,
         addWakeRipple,
+        addSplashDisplacement,
         update(ctx: GroundUpdateContext) {
             bindNearshoreSprite(fxMask, bounds, ctx.shoreMask, maskBind);
             if (!syncOverlay(ctx.view)) return;

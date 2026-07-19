@@ -47,6 +47,8 @@ export type ShoreSample = {
  */
 export type GroundVisual = {
     container: Container;
+    /** Optional independently sorted layer (frontmost ocean refraction). */
+    overlay?: Container;
     update?(ctx: GroundUpdateContext): void;
     /** Wake ripple at world position (ocean only). */
     addWakeRipple?(
@@ -54,6 +56,14 @@ export type GroundVisual = {
         worldY: number,
         now: number,
         kind?: "idle" | "move"
+    ): void;
+    /** Moving signed displacement sprites for clear, refractive splashes. */
+    addSplashDisplacement?(
+        worldX: number,
+        worldY: number,
+        now: number,
+        direction: number,
+        speed: number
     ): void;
 };
 
