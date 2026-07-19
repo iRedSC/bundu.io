@@ -37,7 +37,8 @@ import { decorationWire } from "../systems/decoration_wire.js";
 import { clearEditorHistory } from "./history.js";
 
 const mapsRoot = path.resolve(import.meta.dir, "../../../../maps");
-const defaultFilename = path.join(mapsRoot, "editor-map.yml");
+const editorFilename = path.join(mapsRoot, "editor-map.yml");
+const defaultMapFilename = path.join(mapsRoot, "default-map.yml");
 const legacyCacheFilename = path.resolve(
     import.meta.dir,
     "../../../../.cache/editor-map.yml"
@@ -54,7 +55,7 @@ type Trigger = <T extends keyof GameEventMap>(
  */
 export function editorMapPath(): string {
     const raw = process.env.BUNDU_EDITOR_MAP;
-    if (!raw) return defaultFilename;
+    if (!raw) return editorFilename;
     const resolved = path.resolve(mapsRoot, raw);
     if (
         resolved !== mapsRoot &&
@@ -65,6 +66,11 @@ export function editorMapPath(): string {
         );
     }
     return resolved;
+}
+
+/** Tracked fallback map used when no freecam save exists. */
+export function defaultMapPath(): string {
+    return defaultMapFilename;
 }
 
 function shortLocation(location: string): string {
@@ -259,22 +265,32 @@ function addBaseGround(world: World, typeRef: string): Ground {
 }
 
 /**
- * Load `maps/editor-map.yml` when present; otherwise a blank ocean map.
- * Migrates a legacy `.cache/editor-map.yml` once if the new path is empty.
+ * Load order: freecam `editor-map.yml` → tracked `default-map.yml` → blank ocean.
+ * Migrates a legacy `.cache/editor-map.yml` once if the editor path is empty.
  * Safe to call once at boot on an empty world.
  */
 export function loadEditorMapOrBlank(world: World): void {
-    const target = editorMapPath();
-    if (!fs.existsSync(target) && fs.existsSync(legacyCacheFilename)) {
-        fs.mkdirSync(path.dirname(target), { recursive: true });
-        fs.copyFileSync(legacyCacheFilename, target);
-        console.info(`[map] migrated ${legacyCacheFilename} -> ${target}`);
+    const editor = editorMapPath();
+    if (!fs.existsSync(editor) && fs.existsSync(legacyCacheFilename)) {
+        fs.mkdirSync(path.dirname(editor), { recursive: true });
+        fs.copyFileSync(legacyCacheFilename, editor);
+        console.info(`[map] migrated ${legacyCacheFilename} -> ${editor}`);
     }
-    if (!fs.existsSync(target)) {
+
+    const target = fs.existsSync(editor)
+        ? editor
+        : fs.existsSync(defaultMapFilename)
+          ? defaultMapFilename
+          : null;
+
+    if (!target) {
         loadBlankMap(world);
-        console.info(`[map] no saved map at ${target}; loaded blank`);
+        console.info(
+            `[map] no editor or default map; loaded blank (looked for ${editor})`
+        );
         return;
     }
+
     const yaml = fs.readFileSync(target, "utf8");
     importMapYaml(world, yaml);
     console.info(`[map] loaded ${target}`);
