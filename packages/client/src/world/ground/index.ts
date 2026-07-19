@@ -15,8 +15,11 @@ export {
     LAND_SEAM_PER_TICK,
     LAND_SEAM_TICK_INTERVAL,
     LandSeamBaker,
-    bindLandSeamSprite,
-    clearLandSeamSprite,
+    addLandSeamChunk,
+    clearLandSeamLayer,
+    seamLodFromZoom,
+    type LandSeamChunkBake,
+    type SeamLod,
 } from "./land_seam";
 export {
     groundModel,

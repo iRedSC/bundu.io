@@ -27,6 +27,7 @@ import {
     LAND_SEAM_PER_TICK,
     LAND_SEAM_TICK_INTERVAL,
     NearshoreFill,
+    seamLodFromZoom,
     type GroundVisual,
     type ShoreSample,
 } from "./ground";
@@ -893,26 +894,37 @@ export class World {
         for (const patch of this.groundPatches) {
             patch.visual.clearLandSeam?.();
         }
-        this.landSeamBaker.prepare(this.groundPatches, isOcean, colorOfType);
+        // Rebuild at crisp LOD; live play may drop via zoom buckets.
+        this.landSeamBaker.prepare(this.groundPatches, isOcean, colorOfType, 2);
         this.landSeamFrame = 0;
     }
 
-    /** Bake a few per-patch land seams each frame (spread load, sharper edges). */
+    /** Bake a few edge-band seam chunks each frame (visible first when live). */
     private tickLandSeams(limit?: number): void {
-        if (this.landSeamBaker.pending === 0) return;
-        // Live: one patch every few frames. Loading flush passes an explicit limit.
-        if (limit === undefined) {
+        const live = limit === undefined;
+        if (live) {
+            const zoom = Math.hypot(
+                this.viewport.scale.x,
+                this.viewport.scale.y
+            );
+            if (this.landSeamBaker.setLod(seamLodFromZoom(zoom))) {
+                for (const patch of this.groundPatches) {
+                    patch.visual.clearLandSeam?.();
+                }
+            }
             this.landSeamFrame++;
             if (this.landSeamFrame % LAND_SEAM_TICK_INTERVAL !== 0) return;
             limit = LAND_SEAM_PER_TICK;
         }
-        const baked = this.landSeamBaker.tick(limit);
+        if (this.landSeamBaker.pending === 0) return;
+        const view = live ? this.camera.worldBounds() : undefined;
+        const baked = this.landSeamBaker.tick(limit, view);
         if (baked.length === 0) return;
         const byId = new Map(
             this.groundPatches.map((patch) => [patch.id, patch])
         );
-        for (const { id, texture } of baked) {
-            byId.get(id)?.visual.applyLandSeam?.(texture);
+        for (const chunk of baked) {
+            byId.get(chunk.id)?.visual.applyLandSeam?.(chunk);
         }
     }
 

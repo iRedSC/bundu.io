@@ -1,6 +1,7 @@
 import type { OceanGroundTextures } from "@bundu/shared/ground_models";
 import type { Container, Rectangle, Renderer, Texture } from "pixi.js";
 import type { ParticleBurst } from "../../rendering/particles/types";
+import type { LandSeamChunkBake } from "./land_seam";
 
 /** World-space view used to keep expensive FX viewport-scoped. */
 export type GroundViewBounds = {
@@ -51,9 +52,9 @@ export type GroundVisual = {
     /** Optional independently sorted layer (frontmost ocean refraction). */
     overlay?: Container;
     update?(ctx: GroundUpdateContext): void;
-    /** Bind land↔land seam bake (solid land only). */
-    applyLandSeam?(map: Texture): void;
-    /** Restore flat fill before seam textures are destroyed. */
+    /** Append one edge-band seam chunk (solid land only). */
+    applyLandSeam?(chunk: LandSeamChunkBake): void;
+    /** Drop seam overlays before textures are destroyed. */
     clearLandSeam?(): void;
     /** Wake ripple at world position (ocean only). */
     addWakeRipple?(
