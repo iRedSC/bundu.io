@@ -3,6 +3,7 @@ import {
     axesFromPressedKeys,
     type MoveAxes,
 } from "@bundu/shared";
+import type { ChatController } from "../ui/chat";
 
 export class KeyboardInputListener {
     keybinds: Keystrokes;
@@ -14,6 +15,8 @@ export class KeyboardInputListener {
         left: false,
         right: false,
     };
+
+    private chat?: ChatController;
 
     /** Blocks browser focus-steal on Tab while playing. */
     private readonly onTabKeyDown = (event: KeyboardEvent) => {
@@ -100,25 +103,15 @@ export class KeyboardInputListener {
                     return;
                 }
 
+                if (!this.chat) return;
+
                 this.chatOpen = !this.chatOpen;
-                if (this.chatOpen === true) {
-                    document
-                        .querySelector(".chat-container")
-                        ?.classList.remove("hidden");
-                    document
-                        .querySelector<HTMLInputElement>("#chat-input")
-                        ?.focus();
+                if (this.chatOpen) {
+                    this.chat.openCompose();
                     return;
                 }
-                const chat =
-                    document.querySelector<HTMLInputElement>("#chat-input");
-                if (chat) {
-                    this.onSendChat(chat.value);
-                    chat.value = "";
-                }
-                document
-                    .querySelector(".chat-container")
-                    ?.classList.add("hidden");
+                const message = this.chat.takeMessage();
+                if (message) this.onSendChat(message);
             },
         });
         this.keybinds.bindKey("placement_rotate", {
@@ -136,14 +129,16 @@ export class KeyboardInputListener {
         });
     }
 
+    bindChat(chat: ChatController): void {
+        this.chat = chat;
+        chat.onComposeClosed = () => {
+            this.chatOpen = false;
+        };
+    }
+
     closeChat() {
         this.chatOpen = false;
-        const chat = document.querySelector<HTMLInputElement>("#chat-input");
-        if (chat) {
-            chat.value = "";
-            chat.blur();
-        }
-        document.querySelector(".chat-container")?.classList.add("hidden");
+        this.chat?.closeCompose();
     }
 
     destroy(): void {

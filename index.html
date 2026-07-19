@@ -52,13 +52,26 @@
                 <button id="loading-back-button" type="button">Back to menu</button>
             </div>
         </div>
-        <div class="chat-container hidden">
-            <input
-                type="text"
-                id="chat-input"
-                autocomplete="off"
-                placeholder="chat message"
-            />
+        <div id="chat-hud" class="chat-hud hidden">
+            <div id="chat-log" class="chat-log" aria-live="polite"></div>
+            <div id="chat-compose" class="chat-compose hidden">
+                <ul id="chat-suggest" class="chat-suggest"></ul>
+                <div class="chat-input-row">
+                    <pre
+                        id="chat-highlight"
+                        class="chat-highlight"
+                        aria-hidden="true"
+                    ></pre>
+                    <input
+                        type="text"
+                        id="chat-input"
+                        autocomplete="off"
+                        spellcheck="false"
+                        maxlength="256"
+                        placeholder="Message or /command"
+                    />
+                </div>
+            </div>
         </div>
     </body>
 </html>

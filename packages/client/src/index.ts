@@ -2,6 +2,7 @@ import { Application, type Renderer } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
 import {
     receiver,
+    setupChatPacketReceiving,
     setupGUIPacketReceiving,
     setupPacketReceiving,
 } from "./network/receiver";
@@ -9,6 +10,7 @@ import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
 import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
+import { ChatController } from "./ui/chat";
 import { createAdminEditor } from "./admin/editor";
 import { initAssets } from "./assets/load";
 import {
@@ -326,6 +328,8 @@ async function main() {
     const gui = createUI();
     app.stage.addChild(gui.container);
     setupGUIPacketReceiving(receiver, gui);
+    const chat = new ChatController();
+    setupChatPacketReceiving(receiver, world, chat);
 
     const session = new GameSession(receiver, {
         prepareConnection: prepareConnectionPacks,
@@ -344,6 +348,7 @@ async function main() {
             gui.craftingMenu.items = [];
             gui.craftingMenu.update();
             gui.leaderboard.clear();
+            chat.setRegistry({ commands: [] });
             input.closeChat();
         },
         setConnecting: (connecting) => {
@@ -364,6 +369,7 @@ async function main() {
         onConnected: () => {
             playButton.textContent = "Play";
             setMenuVisible(false);
+            chat.setVisible(true);
             void waitForWorldReady(world).then(({ ready, gen }) => {
                 // Soft disconnect / back-to-menu bumps the gate; don't send stale ready.
                 if (!ready || gen !== worldGateGeneration) return;
@@ -384,6 +390,7 @@ async function main() {
             dropSessionId();
             playButton.textContent = "Play";
             setMenuVisible(true);
+            chat.setVisible(false);
             nameInput.focus();
         },
     });
@@ -437,6 +444,7 @@ async function main() {
         isPlacementAllowed: () => world.isPlacementAllowed(),
         isFreecam: () => world.camera.isFreecam(),
     });
+    input.bindChat(chat);
     input.onToggleLeaderboard = () => gui.leaderboard.toggle();
     input.onShowWorldHover = (show) => world.setShowAllHover(show);
     world.onPlacementValidity = (allowed) => input.onPlacementValidity(allowed);
