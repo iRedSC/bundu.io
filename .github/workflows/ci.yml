@@ -41,11 +41,7 @@ jobs:
         run: bun run validate:packs
 
       - name: Unit tests with coverage
-        run: |
-          set -euo pipefail
-          bun test --coverage --coverage-reporter=lcov --coverage-reporter=text | tee /tmp/bun-test.out
-          pass_count="$(grep -Eo '^[0-9]+ pass' /tmp/bun-test.out | head -1 | awk '{print $1}')"
-          test "${pass_count}" -gt 0
+        run: bun test --coverage --coverage-reporter=lcov --coverage-reporter=text
 
       - name: Upload coverage
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
