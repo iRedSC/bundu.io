@@ -107,7 +107,7 @@ button:disabled {
     transform: translate(-50%, -50%);
 }
 
-.pack-overlay {
+.loading-overlay {
     z-index: 4;
     position: absolute;
     inset: 0;
@@ -118,33 +118,51 @@ button:disabled {
     gap: 0.75rem;
     padding: 1.5rem;
     text-align: center;
-    background: rgba(12, 18, 14, 0.72);
+    background: rgba(12, 18, 14, 0.78);
     color: #f2f0e4;
     pointer-events: all;
     font-family: "Nunito", system-ui, sans-serif;
 }
 
-/* Must beat .pack-overlay { display: flex } — same specificity, later rule. */
-.pack-overlay.hidden {
+/* Must beat .loading-overlay { display: flex } — same specificity, later rule. */
+.loading-overlay.hidden {
     display: none;
 }
 
-.pack-overlay-title {
+.loading-title {
     font-family: "Aoboshi One", serif;
     font-size: 1.5rem;
 }
 
-.pack-overlay-detail {
+.loading-status {
     max-width: 28rem;
+    min-height: 1.5em;
     opacity: 0.9;
 }
 
-.pack-overlay-actions {
+.loading-bar {
+    width: min(20rem, 70vw);
+    height: 0.65rem;
+    margin-top: 0.35rem;
+    border-radius: 999px;
+    background: rgba(242, 240, 228, 0.15);
+    overflow: hidden;
+}
+
+.loading-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #c4a035, #e8d078);
+    transition: width 0.15s ease-out;
+}
+
+.loading-actions {
     display: flex;
     gap: 0.75rem;
     margin-top: 0.5rem;
 }
 
-.pack-overlay-actions button {
+.loading-actions button {
     margin-left: 0;
 }

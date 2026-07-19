@@ -14,7 +14,9 @@ export const NEARSHORE_BLEND_TILES = 12;
 export const NEARSHORE_OVERSHOOT_TILES = 2.5;
 
 /**
- * World-tile ocean bake split into opaque color and an effects alpha mask.
+ * World-tile ocean bake split into opaque color and a separate effects mask.
+ * Color alpha is always 255 — fading it mixes ocean blue into the coast.
+ * Only the mask fades, and only caustics/FX sample that mask.
  */
 export class NearshoreFill {
     private readonly maskPixels = new Uint8Array(

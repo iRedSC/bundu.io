@@ -56,6 +56,8 @@ export function createPlayer(
             score: 0,
             sessionId,
             playerSkin: getVariantName(skinId) ?? "base",
+            pendingSpawn: true,
+            clientReady: false,
 
             moveDir: [0, 0],
             selectedStructure: {

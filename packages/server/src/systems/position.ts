@@ -1,6 +1,7 @@
 import { WORLD_BOUNDS, worldToDeci, worldToTile } from "@bundu/shared/tiles";
 import type { BasicPoint } from "@bundu/shared";
 import { Physics, TileEntity } from "../components/base.js";
+import { PlayerData } from "../components/player.js";
 import { type GameObject, System, type World } from "../engine";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
@@ -51,6 +52,9 @@ export class PositionSystem extends System<GameEventMap> {
                 return;
             }
         }
+
+        // New players wait for ClientReady before spatial index / peer announce.
+        if (PlayerData.get(object)?.pendingSpawn) return;
 
         this.world.context.quadtree.insert(object.id, physics.position);
         this.trigger(GameEvent.NewObject, { object });

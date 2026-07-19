@@ -22,6 +22,15 @@ import { GameSession } from "./session/game_session";
 import { clientTime } from "./globals";
 import { replaceCompiledModelDefs } from "./models/defs";
 import { replaceClientRegistries } from "./configs/registries";
+import {
+    hideLoading,
+    isLoadingOverlay,
+    loadingBackButton,
+    loadingRetryButton,
+    setLoadingProgress,
+    showLoading,
+    showLoadingError,
+} from "./ui/loading_screen";
 
 declare const __DEBUG__: boolean;
 
@@ -40,7 +49,7 @@ globalThis.__PIXI_APP__ = app;
 
 function setMenuVisible(visible: boolean) {
     document.querySelectorAll(".menu").forEach((item) => {
-        if (item.id === "pack-loading" || item.id === "pack-error") return;
+        if (isLoadingOverlay(item)) return;
         item.classList.toggle("hidden", !visible);
     });
 }
@@ -51,36 +60,13 @@ function element<T extends HTMLElement>(id: string): T {
     return node as T;
 }
 
-const packLoading = element<HTMLElement>("pack-loading");
-const packError = element<HTMLElement>("pack-error");
-const packErrorMessage = element<HTMLElement>("pack-error-message");
-const packRetryButton = element<HTMLButtonElement>("pack-retry-button");
-const packBackButton = element<HTMLButtonElement>("pack-back-button");
-
-function showPackLoading() {
-    packError.classList.add("hidden");
-    packLoading.classList.remove("hidden");
-}
-
-function hidePackOverlays() {
-    packLoading.classList.add("hidden");
-    packError.classList.add("hidden");
-}
-
-function showPackError(error: unknown) {
-    packLoading.classList.add("hidden");
-    packErrorMessage.textContent =
-        error instanceof Error
-            ? error.message
-            : String(error || "Start the game server and try again.");
-    packError.classList.remove("hidden");
-}
-
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 let packFingerprint = "";
+/** Cancels an in-flight waitForWorldReady when the session hard-fails / backs out. */
+let worldGateGeneration = 0;
 const SESSION_KEY = "bundu.session_id";
 
 function readSessionId(): string {
@@ -99,32 +85,64 @@ function dropSessionId(): void {
 
 ensureSessionId();
 
-async function synchronizeResourcePacks() {
+async function synchronizeResourcePacks(): Promise<void> {
+    setLoadingProgress({
+        title: "Loading…",
+        status: "Checking resource packs…",
+        progress: 0.05,
+    });
     if (
         packFingerprint &&
         (await getResourcePackFingerprint(GAME_WS_URL)) === packFingerprint
     ) {
+        setLoadingProgress({
+            status: "Resource packs ready",
+            progress: 0.5,
+        });
         return;
     }
+    setLoadingProgress({
+        status: "Downloading resource packs…",
+        progress: 0.15,
+    });
     const resourcePacks = await loadResourcePacks(GAME_WS_URL);
+    setLoadingProgress({
+        status: "Applying registries…",
+        progress: 0.45,
+    });
     replaceClientRegistries(resourcePacks.registries);
+    setLoadingProgress({
+        status: "Loading textures…",
+        progress: 0.55,
+    });
     await initAssets(resourcePacks.assets);
+    setLoadingProgress({
+        status: "Compiling models…",
+        progress: 0.85,
+    });
     replaceCompiledModelDefs(
         resourcePacks.modelDefs,
         resourcePacks.assets.map((asset) => asset.path)
     );
     packFingerprint = resourcePacks.fingerprint;
+    setLoadingProgress({
+        status: "Resource packs ready",
+        progress: 0.9,
+    });
 }
 
 async function synchronizeResourcePacksWithRetry(
     attempts = PACK_SYNC_ATTEMPTS
 ): Promise<void> {
-    showPackLoading();
+    showLoading({
+        title: "Loading…",
+        status: "Starting…",
+        progress: 0,
+    });
     let lastError: unknown;
     for (let attempt = 1; attempt <= attempts; attempt++) {
         try {
             await synchronizeResourcePacks();
-            hidePackOverlays();
             return;
         } catch (error) {
             lastError = error;
@@ -132,16 +150,21 @@ async function synchronizeResourcePacksWithRetry(
                 `Resource pack sync failed (attempt ${attempt}/${attempts})`,
                 error
             );
-            if (attempt < attempts) await sleep(PACK_SYNC_RETRY_MS);
+            if (attempt < attempts) {
+                setLoadingProgress({
+                    status: `Retrying resource packs (${attempt}/${attempts})…`,
+                });
+                await sleep(PACK_SYNC_RETRY_MS);
+            }
         }
     }
-    showPackError(lastError);
+    showLoadingError(lastError, "Could not load resource packs");
     throw lastError instanceof Error
         ? lastError
         : new Error("Resource pack sync failed");
 }
 
-/** Quiet when already synced; otherwise show pack loading UI. */
+/** Quiet when already synced; otherwise show loading UI. */
 async function prepareConnectionPacks(): Promise<void> {
     if (packFingerprint) {
         try {
@@ -184,7 +207,7 @@ async function waitForPlayPackSync(
                 });
         };
         const onBack = () => {
-            hidePackOverlays();
+            hideLoading();
             setMenuVisible(true);
         };
         const onPlay = (event: Event) => {
@@ -198,16 +221,65 @@ async function waitForPlayPackSync(
             tryLoad();
         };
         const cleanup = () => {
-            packRetryButton.removeEventListener("click", tryLoad);
-            packBackButton.removeEventListener("click", onBack);
+            loadingRetryButton.removeEventListener("click", tryLoad);
+            loadingBackButton.removeEventListener("click", onBack);
             playButton.removeEventListener("click", onPlay, true);
             nameInput.removeEventListener("keydown", onNameKey);
         };
-        packRetryButton.addEventListener("click", tryLoad);
-        packBackButton.addEventListener("click", onBack);
+        loadingRetryButton.addEventListener("click", tryLoad);
+        loadingBackButton.addEventListener("click", onBack);
         playButton.addEventListener("click", onPlay, true);
         nameInput.addEventListener("keydown", onNameKey);
     });
+}
+
+async function waitForWorldReady(world: World): Promise<boolean> {
+    const gen = ++worldGateGeneration;
+    showLoading({
+        title: "Loading…",
+        status: "Connecting to world…",
+        progress: 0.55,
+    });
+
+    const started = performance.now();
+    // Wait for the first ground rebuild (or a short timeout on empty maps).
+    while (gen === worldGateGeneration) {
+        const { total } = world.landSeamProgress();
+        if (total > 0 || performance.now() - started > 2500) break;
+        setLoadingProgress({
+            status: "Loading world…",
+            progress: 0.6,
+        });
+        await sleep(40);
+    }
+    if (gen !== worldGateGeneration) return false;
+
+    while (gen === worldGateGeneration) {
+        const { done, total, pending } = world.landSeamProgress();
+        if (pending === 0) {
+            // No land patches, or bake finished.
+            if (total === 0 && performance.now() - started < 400) {
+                await sleep(40);
+                continue;
+            }
+            break;
+        }
+        world.flushLandSeams(8);
+        const frac = total > 0 ? done / total : 1;
+        setLoadingProgress({
+            status:
+                total > 0
+                    ? `Preparing terrain… (${done}/${total})`
+                    : "Preparing terrain…",
+            progress: 0.65 + 0.34 * frac,
+        });
+        await sleep(0);
+    }
+    if (gen !== worldGateGeneration) return false;
+
+    setLoadingProgress({ status: "Ready", progress: 1 });
+    hideLoading();
+    return true;
 }
 
 async function main() {
@@ -275,6 +347,13 @@ async function main() {
         },
         setConnecting: (connecting) => {
             playButton.disabled = connecting;
+            if (connecting) {
+                showLoading({
+                    title: "Loading…",
+                    status: "Connecting…",
+                    progress: 0.5,
+                });
+            }
             if (connecting && !document.querySelector(".menu:not(.hidden)")) {
                 playButton.textContent = "Reconnecting…";
             } else if (!connecting) {
@@ -284,6 +363,10 @@ async function main() {
         onConnected: () => {
             playButton.textContent = "Play";
             setMenuVisible(false);
+            void waitForWorldReady(world).then((ready) => {
+                if (!ready) return;
+                session.sendPacket(ClientPacket.ClientReady, {});
+            });
         },
         onSoftDisconnected: () => {
             // Keep game shell visible; reconnect with the same reclaim token.
@@ -291,6 +374,8 @@ async function main() {
             playButton.textContent = "Reconnecting…";
         },
         onHardDisconnected: () => {
+            worldGateGeneration++;
+            hideLoading();
             dropSessionId();
             playButton.textContent = "Play";
             setMenuVisible(true);
@@ -319,11 +404,12 @@ async function main() {
     world.onViewBounds = (bounds) => {
         session.sendPacket(ClientPacket.ViewBounds, bounds);
     };
-    packRetryButton.addEventListener("click", () => {
+    loadingRetryButton.addEventListener("click", () => {
         void session.connect();
     });
-    packBackButton.addEventListener("click", () => {
-        hidePackOverlays();
+    loadingBackButton.addEventListener("click", () => {
+        worldGateGeneration++;
+        hideLoading();
         setMenuVisible(true);
     });
 
@@ -430,5 +516,5 @@ async function main() {
 
 main().catch((error: unknown) => {
     console.error("Client startup failed", error);
-    showPackError(error);
+    showLoadingError(error);
 });

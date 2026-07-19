@@ -579,7 +579,7 @@ export function createOceanGround(
     };
 }
 
-/** Opaque ocean color for one authored ground rectangle. */
+/** Ocean color fill for one authored ground rectangle. */
 export function createOceanFill(
     bounds: Rectangle,
     zIndex: number

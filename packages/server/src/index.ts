@@ -8,10 +8,8 @@ import {
     restoreDevCheckpoint,
     saveDevCheckpoint,
 } from "./bootstrap/dev_checkpoint";
-import { PlayerData } from "./components/player";
-import { ServerPacket } from "@bundu/shared/packet_definitions";
 
-const { world, playerSystem, renderDistanceSystem, receiver } = createWorld();
+const { world, playerSystem, receiver } = createWorld();
 const resourcePacks = await ResourcePackService.create();
 const DEBUG = process.env.BUNDU_DEBUG === "1";
 if (
@@ -30,21 +28,8 @@ const controller = new ServerController(socketManager, (username, skinId, sessio
 controller.connect = (socket) => {
     const player = world.getObject(socket.data.playerId);
     if (!player?.active) return;
+    // Ground / HUD sync only — loadView waits for ClientReady.
     playerSystem.syncSession(player);
-    const data = PlayerData.get(player);
-    if (data?.freecam) {
-        // Reclaim mid-freecam: re-assert mode, keep self loaded, wait for ViewBounds.
-        data.freecamView = undefined;
-        world.context.quadtree.delete(player.id);
-        renderDistanceSystem.ensureSelfVisible(player);
-        world.context.playerPacketManager.set(
-            player.id,
-            ServerPacket.FreecamMode,
-            { enabled: true }
-        );
-        return;
-    }
-    renderDistanceSystem.loadView(player);
 };
 
 const packHeaders = {
