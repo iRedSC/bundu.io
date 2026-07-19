@@ -1,4 +1,4 @@
-import type { Container, Rectangle, Renderer } from "pixi.js";
+import type { Container, Rectangle, Renderer, Texture } from "pixi.js";
 import type { ParticleBurst } from "../../rendering/particles/types";
 
 /** World-space view used to keep expensive FX viewport-scoped. */
@@ -26,6 +26,10 @@ export type GroundUpdateContext = {
      * O(1) lookup. Capped at 255.
      */
     landDistanceAt: (worldX: number, worldY: number) => number;
+    /** Opaque world-tile ocean→land color bake. */
+    shoreColor: Texture;
+    /** Independent land-side fade used only to mask ocean effects. */
+    shoreMask: Texture;
 };
 
 /** Outward-facing shore sample along a land↔ocean boundary. */

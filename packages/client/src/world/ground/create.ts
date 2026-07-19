@@ -10,6 +10,12 @@ import type { GroundVisual } from "./types";
  */
 export const GROUND_Z_BASE = -1_000_000_000;
 
+/**
+ * Ocean draws above all land so an SDF alpha mask can fade the whole ocean
+ * (fill + caustics) over beaches. Below admin grid (-1) and entities (0+).
+ */
+export const GROUND_Z_OCEAN = -10;
+
 /** Build a ground visual from the type's ground model. */
 export function createGround(
     type: number,

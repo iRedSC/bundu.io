@@ -10,6 +10,10 @@ import {
 } from "pixi.js";
 import { getAsset } from "../../assets/load";
 import { oceanFoam, oceanSparkle } from "./particles/foam";
+import {
+    bindNearshoreSprite,
+    type NearshoreBindState,
+} from "./nearshore_fill";
 import type {
     GroundModelDef,
     GroundUpdateContext,
@@ -30,7 +34,6 @@ const SPARKLE = "bundu/effect/ocean_sparkle.png";
 const FX_HEAVY_AREA = 2_800 * 2_800;
 /** Skip ambient particles past this (spawn cost scales with view). */
 const FX_PARTICLE_MAX_AREA = 6_000 * 6_000;
-const VIEW_PAD = 40;
 
 const SCROLL_A = { x: 12, y: 8 };
 const SCROLL_B = { x: -9, y: 11 };
@@ -54,6 +57,11 @@ const MOVE_START_SIZE = 90;
 const MOVE_GROW_SPEED = 240;
 /** Single displace pass strength (swell + wakes share this). */
 const DISPLACE_STRENGTH = 140;
+/**
+ * Extra world pad on caustics / displace bake so the filter can sample past
+ * the view edge. ≈ {@link DISPLACE_STRENGTH} world units (warp is strength×zoom).
+ */
+const DISPLACE_OVERSHOOT = DISPLACE_STRENGTH + 40;
 /** Cap bake RT edge so huge views stay cheap. */
 const BAKE_RT_MAX = 1024;
 
@@ -62,8 +70,8 @@ function worldTile(overlay: number, scroll: number): number {
 }
 
 /**
- * Ocean: fill + two caustic layers, warped by one DisplacementFilter whose
- * map is baked each frame (scrolling swell + fading wake ripples).
+ * Shared viewport-scoped ocean effects. Ground patches render their opaque
+ * color separately so the fading effects mask cannot create a coastline halo.
  */
 export function createOceanGround(
     bounds: Rectangle,
@@ -73,19 +81,12 @@ export function createOceanGround(
     root.zIndex = zIndex;
     root.cullable = false;
 
-    const fill = new Sprite(Texture.WHITE);
-    fill.tint = BASE_COLOR;
-    fill.width = 1;
-    fill.height = 1;
-    root.addChild(fill);
-
     const causticsTex = getAsset(CAUSTICS);
     const displaceTex = getAsset(DISPLACE);
     const rippleIdleTex = getAsset(RIPPLE_IDLE);
     const rippleMoveTex = getAsset(RIPPLE_MOVE);
     const foamTex = getAsset(FOAM);
     const sparkleTex = getAsset(SPARKLE);
-
     displaceTex.source.addressMode = "repeat";
     for (const tex of [rippleIdleTex, rippleMoveTex]) {
         tex.source.addressMode = "clamp-to-edge";
@@ -95,12 +96,21 @@ export function createOceanGround(
     const fx = new Container();
     root.addChild(fx);
 
+    /** Fade effects over shore; the opaque color fill remains outside this mask. */
+    const fxMask = new Sprite(Texture.WHITE);
+    fxMask.position.set(bounds.x, bounds.y);
+    fxMask.width = bounds.width;
+    fxMask.height = bounds.height;
+    root.addChild(fxMask);
+    fx.setMask({ mask: fxMask, channel: "alpha" });
+    const maskBind: NearshoreBindState = {};
+
     const causticsA = new TilingSprite({
         texture: causticsTex,
         width: 1,
         height: 1,
     });
-    causticsA.tint = 0x3d6a88;
+    causticsA.tint = 0x366888;
     causticsA.alpha = 0.055;
     causticsA.blendMode = "add";
     causticsA.tileScale.set(TILE_A);
@@ -111,13 +121,13 @@ export function createOceanGround(
         width: 1,
         height: 1,
     });
-    causticsB.tint = 0xa8dcff;
+    causticsB.tint = 0x8cc3e8;
     causticsB.alpha = 0.045;
     causticsB.blendMode = "add";
     causticsB.tileScale.set(TILE_B);
     fx.addChild(causticsB);
 
-    // One bake: swell layers + wake ripples → one DisplacementFilter.
+    // Swell layers + wake ripples distort the low ocean effects pass.
     const bake = new Container();
     const swellBig = new TilingSprite({
         texture: displaceTex,
@@ -143,6 +153,8 @@ export function createOceanGround(
         dynamic: true,
     });
     const mapSprite = new Sprite(mapRt);
+    // Keep in the tree for DisplacementFilter transforms; don't composite it.
+    mapSprite.renderable = false;
     root.addChild(mapSprite);
 
     const displaceFilter = new DisplacementFilter({
@@ -161,6 +173,7 @@ export function createOceanGround(
     };
     const wakes: Wake[] = [];
     const wakeSprites: Sprite[] = [];
+
 
     const ensureWakeSprite = (i: number, kind: "idle" | "move"): Sprite => {
         const tex = kind === "move" ? rippleMoveTex : rippleIdleTex;
@@ -187,6 +200,8 @@ export function createOceanGround(
         if (wakes.length >= WAKE_MAX) return;
         wakes.push({ x: worldX, y: worldY, born: now, kind });
     };
+
+
 
     let overlayX = 0;
     let overlayY = 0;
@@ -279,11 +294,12 @@ export function createOceanGround(
         const strength = DISPLACE_STRENGTH * Math.max(0.001, zoom);
         displaceFilter.scale.x = strength;
         displaceFilter.scale.y = strength;
-        // Quantize padding so tiny zoom jitter doesn't resize the filter RT.
-        const padding = Math.ceil(strength * 0.65);
+        // Padding must be ≥ scale or the filter RT clips the warp (visible box).
+        const padding = Math.ceil(strength + 8);
         if (Math.abs(padding - displaceFilter.padding) >= 2) {
             displaceFilter.padding = padding;
         }
+
     };
 
     let nextFoamAt = 0;
@@ -292,9 +308,6 @@ export function createOceanGround(
     let visibleShores: ShoreSample[] = [];
 
     const setOverlay = (x: number, y: number, w: number, h: number) => {
-        fill.position.set(x, y);
-        fill.width = w;
-        fill.height = h;
         causticsA.position.set(x, y);
         causticsA.width = w;
         causticsA.height = h;
@@ -304,14 +317,19 @@ export function createOceanGround(
     };
 
     const syncOverlay = (view: GroundViewBounds) => {
-        const x = Math.max(bounds.x, view.minX - VIEW_PAD);
-        const y = Math.max(bounds.y, view.minY - VIEW_PAD);
-        const right = Math.min(bounds.x + bounds.width, view.maxX + VIEW_PAD);
-        const bottom = Math.min(bounds.y + bounds.height, view.maxY + VIEW_PAD);
+        const x = Math.max(bounds.x, view.minX - DISPLACE_OVERSHOOT);
+        const y = Math.max(bounds.y, view.minY - DISPLACE_OVERSHOOT);
+        const right = Math.min(
+            bounds.x + bounds.width,
+            view.maxX + DISPLACE_OVERSHOOT
+        );
+        const bottom = Math.min(
+            bounds.y + bounds.height,
+            view.maxY + DISPLACE_OVERSHOOT
+        );
         const w = Math.max(0, right - x);
         const h = Math.max(0, bottom - y);
         if (w < 1 || h < 1) {
-            fill.visible = false;
             fx.visible = false;
             overlayW = 0;
             return false;
@@ -329,7 +347,6 @@ export function createOceanGround(
             overlayH = h;
             setOverlay(x, y, w, h);
         }
-        fill.visible = true;
         fx.visible = true;
         return true;
     };
@@ -338,6 +355,7 @@ export function createOceanGround(
         container: root,
         addWakeRipple,
         update(ctx: GroundUpdateContext) {
+            bindNearshoreSprite(fxMask, bounds, ctx.shoreMask, maskBind);
             if (!syncOverlay(ctx.view)) return;
 
             const area = overlayW * overlayH;
@@ -420,6 +438,27 @@ export function createOceanGround(
                     ctx.emitParticles(oceanSparkle(sparkleTex, sx, sy));
                 }
             }
+        },
+    };
+}
+
+/** Opaque ocean color for one authored ground rectangle. */
+export function createOceanFill(
+    bounds: Rectangle,
+    zIndex: number
+): GroundVisual {
+    const fill = new Sprite(Texture.WHITE);
+    fill.tint = BASE_COLOR;
+    fill.position.set(bounds.x, bounds.y);
+    fill.width = bounds.width;
+    fill.height = bounds.height;
+    fill.zIndex = zIndex;
+    const bind: NearshoreBindState = {};
+
+    return {
+        container: fill,
+        update(ctx) {
+            bindNearshoreSprite(fill, bounds, ctx.shoreColor, bind);
         },
     };
 }

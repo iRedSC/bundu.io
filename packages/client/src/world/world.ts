@@ -17,9 +17,13 @@ import { SkyUndoLayer } from "./sky_undo_layer";
 import {
     collectShoreSamples,
     createGround,
+    createOceanFill,
     GROUND_Z_BASE,
+    GROUND_Z_OCEAN,
+    groundModel,
     isOceanGroundModel,
     LandDistanceField,
+    NearshoreFill,
     type GroundVisual,
     type ShoreSample,
 } from "./ground";
@@ -31,7 +35,7 @@ import {
 } from "@bundu/shared";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
-import { Point, Text, type Renderer } from "pixi.js";
+import { Point, Rectangle, Text, type Renderer } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
@@ -56,6 +60,8 @@ import {
 } from "../assets/sprite_factory";
 import { ParticleSystem } from "@client/rendering/particles/particle_system";
 import type { ParticleBurst } from "../rendering/particles/types";
+import { getAsset } from "../assets/load";
+import { oceanSplash } from "./ground/particles/foam";
 import {
     setActiveShadowLayer,
     ShadowLayer,
@@ -65,14 +71,22 @@ import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
 import { clientTime } from "@client/globals";
 import { structurePlace } from "../models/particles/structure_place";
-import { getAsset } from "../assets/load";
-import { oceanSplash } from "./ground/particles/foam";
 
 /**
  * Unload movers only when freecam can see most of the map.
  * (~80% of world half-extent — far beyond play render distance.)
  */
 const FREECAM_OVERVIEW_HALF = WORLD_BOUNDS * 0.4;
+
+type GroundPatch = {
+    id: number;
+    type: number;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    visual: GroundVisual;
+};
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -132,27 +146,13 @@ export class World {
      * Client ground patches. Stack order / unload / delete-hover use entity `id`
      * (higher id on top) — same contract as server `topGroundAt` and map YAML.
      */
-    private readonly groundPatches: {
-        id: number;
-        type: number;
-        x: number;
-        y: number;
-        w: number;
-        h: number;
-        visual: GroundVisual;
-    }[] = [];
+    private readonly groundPatches: GroundPatch[] = [];
+    private oceanVisual?: GroundVisual;
     private shoreSamples: ShoreSample[] = [];
     private readonly landDistance = new LandDistanceField();
+    private readonly nearshoreFill = new NearshoreFill();
     /** Patches sorted by id desc — first hit in point queries is topmost. */
-    private groundByTop: {
-        id: number;
-        type: number;
-        x: number;
-        y: number;
-        w: number;
-        h: number;
-        visual: GroundVisual;
-    }[] = [];
+    private groundByTop: GroundPatch[] = [];
     private oceanTypeIds = new Set<number>();
     /** Last idle / move wake spawn times per entity on water. */
     private readonly wakeIdleAt = new Map<number, number>();
@@ -194,6 +194,7 @@ export class World {
         const ids = Array.from(this.objects.all(), (object) => object.id);
         for (const id of ids) this.removeClientObject(id);
         this.renderer.delete(GROUND_RENDER_ID);
+        this.oceanVisual = undefined;
         this.groundPatches.length = 0;
         this.groundByTop = [];
         this.oceanTypeIds.clear();
@@ -763,17 +764,33 @@ export class World {
                 const existing = this.groundPatches[i];
                 if (!existing || existing.id !== id) continue;
                 this.groundPatches.splice(i, 1);
-                this.renderer.remove(GROUND_RENDER_ID, existing.visual.container);
+                this.renderer.remove(
+                    GROUND_RENDER_ID,
+                    existing.visual.container
+                );
                 break;
             }
-            const visual = createGround(
-                type,
-                x * TILE_SIZE,
-                y * TILE_SIZE,
-                w * TILE_SIZE,
-                h * TILE_SIZE,
-                GROUND_Z_BASE + id
-            );
+            const modelId = clientGroundType(type).model;
+            const ocean = isOceanGroundModel(modelId);
+            const visual = ocean
+                ? createOceanFill(
+                      new Rectangle(
+                          x * TILE_SIZE,
+                          y * TILE_SIZE,
+                          w * TILE_SIZE,
+                          h * TILE_SIZE
+                      ),
+                      GROUND_Z_OCEAN - 1
+                  )
+                : createGround(
+                      type,
+                      x * TILE_SIZE,
+                      y * TILE_SIZE,
+                      w * TILE_SIZE,
+                      h * TILE_SIZE,
+                      GROUND_Z_BASE + id
+                  );
+            if (ocean) this.ensureOceanVisual(type);
             this.groundPatches.push({ id, type, x, y, w, h, visual });
             this.renderer.add(GROUND_RENDER_ID, visual.container);
         }
@@ -786,12 +803,29 @@ export class World {
                 const patch = this.groundPatches[i];
                 if (!patch || patch.id !== id) continue;
                 this.groundPatches.splice(i, 1);
-                this.renderer.remove(GROUND_RENDER_ID, patch.visual.container);
+                this.renderer.remove(
+                    GROUND_RENDER_ID,
+                    patch.visual.container
+                );
                 break;
             }
         }
         this.rebuildShoreSamples();
     };
+
+    private ensureOceanVisual(type: number): GroundVisual {
+        if (this.oceanVisual) return this.oceanVisual;
+        this.oceanVisual = createGround(
+            type,
+            0,
+            0,
+            WORLD_BOUNDS,
+            WORLD_BOUNDS,
+            GROUND_Z_OCEAN
+        );
+        this.renderer.add(GROUND_RENDER_ID, this.oceanVisual.container);
+        return this.oceanVisual;
+    }
 
     private rebuildShoreSamples(): void {
         this.groundByTop = [...this.groundPatches].sort((a, b) => b.id - a.id);
@@ -801,9 +835,28 @@ export class World {
                 this.oceanTypeIds.add(patch.type);
             }
         }
+        if (this.oceanTypeIds.size === 0 && this.oceanVisual) {
+            this.renderer.remove(
+                GROUND_RENDER_ID,
+                this.oceanVisual.container
+            );
+            this.oceanVisual = undefined;
+        }
         const isOcean = (type: number) => this.oceanTypeIds.has(type);
         this.shoreSamples = collectShoreSamples(this.groundPatches, isOcean);
-        this.landDistance.rebuild(this.groundPatches, isOcean);
+        this.landDistance.rebuild(
+            this.groundPatches,
+            isOcean,
+            (type) => {
+                const hex = groundModel(clientGroundType(type).model).color;
+                return Number.parseInt(hex.replace("#", ""), 16);
+            }
+        );
+        const oceanHex = groundModel("ocean").color;
+        this.nearshoreFill.setOceanColor(
+            Number.parseInt(oceanHex.replace("#", ""), 16)
+        );
+        this.nearshoreFill.paint(this.landDistance);
     }
 
     private updateGroundVisuals(deltaMS: number, now: number): void {
@@ -828,20 +881,9 @@ export class World {
             return false;
         };
         const oceanVisualAt = (worldX: number, worldY: number) => {
-            const tx = (worldX / TILE_SIZE) | 0;
-            const ty = (worldY / TILE_SIZE) | 0;
-            for (const patch of byTop) {
-                if (
-                    tx >= patch.x &&
-                    ty >= patch.y &&
-                    tx < patch.x + patch.w &&
-                    ty < patch.y + patch.h &&
-                    oceanTypes.has(patch.type)
-                ) {
-                    return patch.visual;
-                }
-            }
-            return undefined;
+            return isOceanAt(worldX, worldY)
+                ? this.oceanVisual
+                : undefined;
         };
 
         this.spawnWakeRipples(deltaMS, now, isOceanAt, oceanVisualAt);
@@ -861,16 +903,16 @@ export class World {
             isOceanAt,
             landDistanceAt: (wx: number, wy: number) =>
                 this.landDistance.atWorld(wx, wy),
+            shoreColor: this.nearshoreFill.colorTexture,
+            shoreMask: this.nearshoreFill.maskTexture,
         };
-        for (const patch of this.groundPatches) {
-            // Solids have no update — skip the call overhead on large maps.
-            if (patch.visual.update) patch.visual.update(ctx);
-        }
+        this.oceanVisual?.update?.(ctx);
+        for (const patch of this.groundPatches) patch.visual.update?.(ctx);
     }
 
     /**
      * Idle ripples for anything on ocean (players, animals, resources,
-     * structures/floors). Splash + move ripples only for movers.
+     * structures/floors). Moving actors also disturb the displacement map.
      */
     private spawnWakeRipples(
         deltaMS: number,
@@ -900,7 +942,11 @@ export class World {
         for (const object of this.objects.all()) {
             const { x, y } = object.position;
             if (!isOceanAt(x, y)) {
+                // Re-entry must start from a fresh position sample. Keeping the
+                // last wet position turns time spent on land into one huge step.
+                this.wakeLastPos.delete(object.id);
                 this.wakeTravel.set(object.id, 0);
+                this.wakeSplashAt.delete(object.id);
                 this.wakeMoveDelta.set(object.id, { x: 0, y: 0 });
                 this.wakeMoveAge.set(object.id, 0);
                 continue;
@@ -952,7 +998,7 @@ export class World {
             const lastSplash = this.wakeSplashAt.get(object.id) ?? 0;
             if (now - lastSplash >= SPLASH_INTERVAL) {
                 this.wakeSplashAt.set(object.id, now);
-                const heading = Math.atan2(delta.y, delta.x);
+                const direction = Math.atan2(delta.y, delta.x);
                 const moverSpeed = step / dt;
                 const ramp = Math.min(1, moveAge / SPLASH_RAMP_MS);
                 const rampEase = ramp * ramp * (3 - 2 * ramp);
@@ -965,9 +1011,9 @@ export class World {
                 this.particles.burst(
                     oceanSplash(
                         getAsset("bundu/effect/ocean_foam.png"),
-                        x + Math.cos(heading) * ahead,
-                        y + Math.sin(heading) * ahead,
-                        heading,
+                        x + Math.cos(direction) * ahead,
+                        y + Math.sin(direction) * ahead,
+                        direction,
                         throwSpeed
                     )
                 );

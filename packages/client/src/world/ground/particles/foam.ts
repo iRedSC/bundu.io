@@ -85,5 +85,5 @@ export function oceanSparkle(
     };
 }
 
-/** Above ground fills, below decorations/entities. */
-export const GROUND_PARTICLE_Z = -500_000_000;
+/** Above ocean ground (-10), below admin grid (-1) and entities (0+). */
+export const GROUND_PARTICLE_Z = -5;
