@@ -26,6 +26,7 @@ function expectRejectsNonObjects(guard: (value: unknown) => boolean): void {
   expect(guard(undefined)).toBe(false);
   expect(guard(0)).toBe(false);
   expect(guard("obj")).toBe(false);
+  expect(guard(true)).toBe(false);
 }
 
 describe("ClientPacketGuards shared rejection", () => {
@@ -46,11 +47,14 @@ describe("Rotation", () => {
     expect(guard({ rotation: 90.5 })).toBe(true);
   });
 
-  test("rejects non-finite and out-of-range rotations", () => {
-    expect(guard({ rotation: 360.1 })).toBe(false);
-    expect(guard({ rotation: -360.1 })).toBe(false);
+  test("rejects non-finite, wrong-type, and out-of-range by ±1", () => {
+    expect(guard({ rotation: 361 })).toBe(false);
+    expect(guard({ rotation: -361 })).toBe(false);
     expect(guard({ rotation: Number.POSITIVE_INFINITY })).toBe(false);
+    expect(guard({ rotation: Number.NEGATIVE_INFINITY })).toBe(false);
     expect(guard({ rotation: Number.NaN })).toBe(false);
+    expect(guard({ rotation: "0" })).toBe(false);
+    expect(guard({ rotation: null })).toBe(false);
     expect(guard({})).toBe(false);
   });
 });
@@ -58,7 +62,6 @@ describe("Rotation", () => {
 describe("Movement", () => {
   const guard = ClientPacketGuards[ClientPacket.Movement];
   const valid = [1, 2, 3, 5, 6, 7, 9, 10, 11];
-  const invalid = [0, 4, 8, 12, -1, 1.5, Number.NaN];
 
   test("accepts the whitelist of safe integer directions", () => {
     for (const direction of valid) {
@@ -66,10 +69,16 @@ describe("Movement", () => {
     }
   });
 
-  test("rejects cardinal-zero, diagonals-off-grid, and non-safe values", () => {
-    for (const direction of invalid) {
+  test("rejects 0/4/8/12, non-safe values, wrong types, and Infinity/NaN", () => {
+    for (const direction of [0, 4, 8, 12, -1, 13, 1.5]) {
       expect(guard({ direction })).toBe(false);
     }
+    expect(guard({ direction: Number.POSITIVE_INFINITY })).toBe(false);
+    expect(guard({ direction: Number.NEGATIVE_INFINITY })).toBe(false);
+    expect(guard({ direction: Number.NaN })).toBe(false);
+    expect(guard({ direction: "1" })).toBe(false);
+    expect(guard({ direction: null })).toBe(false);
+    expect(guard({})).toBe(false);
   });
 });
 
@@ -80,6 +89,9 @@ describe("Attack and Block", () => {
       expect(guard({ stop: true })).toBe(true);
       expect(guard({ stop: false })).toBe(true);
       expect(guard({ stop: 1 })).toBe(false);
+      expect(guard({ stop: 0 })).toBe(false);
+      expect(guard({ stop: "true" })).toBe(false);
+      expect(guard({ stop: null })).toBe(false);
       expect(guard({})).toBe(false);
     }
   });
@@ -94,11 +106,14 @@ describe("SelectItem", () => {
     expect(guard({ slot: 10 })).toBe(true);
   });
 
-  test("rejects out-of-range and non-safe slots", () => {
+  test("rejects boundary ±1, non-safe, wrong types, and Infinity/NaN", () => {
     expect(guard({ slot: -1 })).toBe(false);
     expect(guard({ slot: 256 })).toBe(false);
     expect(guard({ slot: 1.5 })).toBe(false);
     expect(guard({ slot: Number.NaN })).toBe(false);
+    expect(guard({ slot: Number.POSITIVE_INFINITY })).toBe(false);
+    expect(guard({ slot: "0" })).toBe(false);
+    expect(guard({ slot: null })).toBe(false);
   });
 });
 
@@ -111,12 +126,16 @@ describe("MoveSlot", () => {
     expect(guard({ from: 3, to: 7 })).toBe(true);
   });
 
-  test("rejects illegal endpoints", () => {
+  test("rejects illegal endpoints, wrong types, and Infinity/NaN", () => {
     expect(guard({ from: -1, to: 0 })).toBe(false);
     expect(guard({ from: 256, to: 0 })).toBe(false);
     expect(guard({ from: 0, to: -2 })).toBe(false);
     expect(guard({ from: 0, to: 256 })).toBe(false);
     expect(guard({ from: 1.5, to: 0 })).toBe(false);
+    expect(guard({ from: Number.NaN, to: 0 })).toBe(false);
+    expect(guard({ from: 0, to: Number.POSITIVE_INFINITY })).toBe(false);
+    expect(guard({ from: "0", to: 0 })).toBe(false);
+    expect(guard({ from: null, to: 0 })).toBe(false);
   });
 });
 
@@ -128,10 +147,13 @@ describe("CraftItem", () => {
     expect(guard({ recipeId: 42 })).toBe(true);
   });
 
-  test("rejects negative and non-safe recipe ids", () => {
+  test("rejects negative, non-safe, wrong types, and Infinity/NaN", () => {
     expect(guard({ recipeId: -1 })).toBe(false);
     expect(guard({ recipeId: 1.5 })).toBe(false);
     expect(guard({ recipeId: Number.NaN })).toBe(false);
+    expect(guard({ recipeId: Number.POSITIVE_INFINITY })).toBe(false);
+    expect(guard({ recipeId: "0" })).toBe(false);
+    expect(guard({ recipeId: null })).toBe(false);
   });
 });
 
@@ -143,10 +165,12 @@ describe("ChatMessage", () => {
     expect(guard({ message: "x".repeat(256) })).toBe(true);
   });
 
-  test("rejects empty and oversized messages", () => {
+  test("rejects empty, 257-char, and non-string messages", () => {
     expect(guard({ message: "" })).toBe(false);
     expect(guard({ message: "x".repeat(257) })).toBe(false);
     expect(guard({ message: 1 })).toBe(false);
+    expect(guard({ message: null })).toBe(false);
+    expect(guard({})).toBe(false);
   });
 });
 
@@ -161,11 +185,18 @@ describe("CursorSlot", () => {
     }
   });
 
-  test("rejects illegal slot or mode", () => {
+  test("rejects illegal slot/mode, wrong types, and Infinity/NaN", () => {
     expect(guard({ slot: -2, mode: PlaceMode.All })).toBe(false);
     expect(guard({ slot: 256, mode: PlaceMode.All })).toBe(false);
     expect(guard({ slot: 0, mode: 3 })).toBe(false);
     expect(guard({ slot: 0, mode: -1 })).toBe(false);
+    expect(guard({ slot: 1.5, mode: PlaceMode.All })).toBe(false);
+    expect(guard({ slot: Number.NaN, mode: PlaceMode.All })).toBe(false);
+    expect(guard({ slot: Number.POSITIVE_INFINITY, mode: PlaceMode.All })).toBe(
+      false,
+    );
+    expect(guard({ slot: "0", mode: PlaceMode.All })).toBe(false);
+    expect(guard({ slot: 0, mode: "0" })).toBe(false);
   });
 });
 
@@ -188,11 +219,15 @@ describe("SetStructurePlacement", () => {
     expect(guard({ rotation: 3, x: -10, y: 20 })).toBe(true);
   });
 
-  test("rejects illegal rotation or non-safe coordinates", () => {
+  test("rejects illegal rotation, non-safe coordinates, and Infinity/NaN", () => {
     expect(guard({ rotation: 4, x: 0, y: 0 })).toBe(false);
     expect(guard({ rotation: -1, x: 0, y: 0 })).toBe(false);
     expect(guard({ rotation: 1, x: 1.5, y: 0 })).toBe(false);
     expect(guard({ rotation: 1, x: 0, y: Number.NaN })).toBe(false);
+    expect(guard({ rotation: 1, x: Number.POSITIVE_INFINITY, y: 0 })).toBe(
+      false,
+    );
+    expect(guard({ rotation: "0", x: 0, y: 0 })).toBe(false);
   });
 });
 
@@ -220,7 +255,7 @@ describe("ViewBounds", () => {
     ).toBe(true);
   });
 
-  test("rejects inverted axes, non-finite values, and oversized spans", () => {
+  test("rejects inverted axes, non-finite values, wrong types, and oversized spans", () => {
     expect(
       guard({
         minX: 5,
@@ -241,8 +276,35 @@ describe("ViewBounds", () => {
     ).toBe(false);
     expect(
       guard({
+        minX: 0,
+        minY: 0,
+        maxX: 0,
+        maxY: FREECAM_MAX_VIEW_EXTENT + 1,
+        overview: false,
+      }),
+    ).toBe(false);
+    expect(
+      guard({
         minX: Number.NaN,
         minY: 0,
+        maxX: 1,
+        maxY: 1,
+        overview: false,
+      }),
+    ).toBe(false);
+    expect(
+      guard({
+        minX: Number.POSITIVE_INFINITY,
+        minY: 0,
+        maxX: 1,
+        maxY: 1,
+        overview: false,
+      }),
+    ).toBe(false);
+    expect(
+      guard({
+        minX: 0,
+        minY: Number.NEGATIVE_INFINITY,
         maxX: 1,
         maxY: 1,
         overview: false,
@@ -255,6 +317,15 @@ describe("ViewBounds", () => {
         maxX: 1,
         maxY: 1,
         overview: 1,
+      }),
+    ).toBe(false);
+    expect(
+      guard({
+        minX: "0",
+        minY: 0,
+        maxX: 1,
+        maxY: 1,
+        overview: false,
       }),
     ).toBe(false);
   });
@@ -288,13 +359,17 @@ describe("AdminPlace", () => {
     ).toBe(true);
   });
 
-  test("rejects illegal kind, typeId, and scale", () => {
+  test("rejects illegal kind, typeId, scale, wrong types, and Infinity/NaN", () => {
     expect(guard({ ...base, kind: -1 })).toBe(false);
     expect(guard({ ...base, typeId: 0 })).toBe(false);
     expect(guard({ ...base, typeId: -1 })).toBe(false);
+    expect(guard({ ...base, typeId: 1.5 })).toBe(false);
+    expect(guard({ ...base, typeId: Number.NaN })).toBe(false);
     expect(guard({ ...base, scale: 0 })).toBe(false);
     expect(guard({ ...base, scale: 100.1 })).toBe(false);
     expect(guard({ ...base, scale: Number.POSITIVE_INFINITY })).toBe(false);
+    expect(guard({ ...base, scale: Number.NaN })).toBe(false);
+    expect(guard({ ...base, scale: "1" })).toBe(false);
   });
 
   test("rejects decorations outside world or with non-1x1 size", () => {
@@ -370,6 +445,14 @@ describe("AdminPlace", () => {
         h: WORLD_TILES,
       }),
     ).toBe(false);
+    expect(
+      guard({
+        ...base,
+        kind: AdminPlaceKind.Ground,
+        w: WORLD_TILES + 1,
+        h: WORLD_TILES + 1,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -389,13 +472,23 @@ describe("AdminDeleteAt", () => {
     ).toBe(true);
   });
 
-  test("rejects out-of-bounds or illegal kind", () => {
+  test("rejects out-of-bounds, illegal kind, wrong types, and Infinity/NaN", () => {
     expect(guard({ x: -1, y: 0, kind: AdminPlaceKind.Decoration })).toBe(false);
     expect(
       guard({ x: WORLD_BOUNDS + 1, y: 0, kind: AdminPlaceKind.Decoration }),
     ).toBe(false);
     expect(guard({ x: 0, y: 0, kind: -1 })).toBe(false);
     expect(guard({ x: Number.NaN, y: 0, kind: AdminPlaceKind.Decoration })).toBe(
+      false,
+    );
+    expect(
+      guard({
+        x: Number.POSITIVE_INFINITY,
+        y: 0,
+        kind: AdminPlaceKind.Decoration,
+      }),
+    ).toBe(false);
+    expect(guard({ x: "0", y: 0, kind: AdminPlaceKind.Decoration })).toBe(
       false,
     );
   });
@@ -408,6 +501,8 @@ describe("AdminSetAnimalsFrozen", () => {
     expect(guard({ frozen: true })).toBe(true);
     expect(guard({ frozen: false })).toBe(true);
     expect(guard({ frozen: 0 })).toBe(false);
+    expect(guard({ frozen: "true" })).toBe(false);
+    expect(guard({ frozen: null })).toBe(false);
     expect(guard({})).toBe(false);
   });
 });

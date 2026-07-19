@@ -26,14 +26,18 @@ describe("Quadtree", () => {
     expect(tree.get(2)).toEqual({ x: 50, y: 50 });
   });
 
-  test("query bounds are inclusive on the edges", () => {
+  test("query bounds are inclusive on the edges and exclusive just outside", () => {
     objects.set(1, { x: 0, y: 0 });
     objects.set(2, { x: 100, y: 100 });
+    objects.set(3, { x: 50, y: 50 });
     tree.insert(1, objects.get(1)!);
     tree.insert(2, objects.get(2)!);
+    tree.insert(3, objects.get(3)!);
 
     expect(tree.query([{ x: 0, y: 0 }, { x: 0, y: 0 }])).toEqual([1]);
     expect(tree.query([{ x: 100, y: 100 }, { x: 100, y: 100 }])).toEqual([2]);
+    expect(tree.query([{ x: 0.01, y: 0 }, { x: 99.99, y: 100 }])).toEqual([3]);
+    expect(tree.query([{ x: -1, y: -1 }, { x: -0.01, y: -0.01 }])).toEqual([]);
   });
 
   test("delete removes an id from subsequent queries", () => {
@@ -46,6 +50,8 @@ describe("Quadtree", () => {
 
     expect(tree.query([{ x: 0, y: 0 }, { x: 100, y: 100 }])).toEqual([2]);
     expect(tree.get(1)).toBeUndefined();
+    expect(objects.has(1)).toBe(false);
+    expect(objects.has(2)).toBe(true);
   });
 
   test("clear empties the spatial index but leaves the objects map intact", () => {
@@ -57,6 +63,8 @@ describe("Quadtree", () => {
     tree.clear();
 
     expect(objects.size).toBe(2);
+    expect(objects.get(1)).toEqual({ x: 5, y: 5 });
+    expect(objects.get(2)).toEqual({ x: 15, y: 15 });
     expect(tree.query([{ x: 0, y: 0 }, { x: 100, y: 100 }])).toEqual([]);
 
     tree.rebuild();

@@ -21,6 +21,8 @@ describe("isAllowedByLists", () => {
   test("deny wins over allow, including when listed in both", () => {
     expect(isAllowedByLists(5, [5], [5])).toBe(false);
     expect(isAllowedByLists(5, [5, 6], [5])).toBe(false);
+    expect(isAllowedByLists(5, undefined, [5])).toBe(false);
+    expect(isAllowedByLists(5, [], [5])).toBe(false);
     expect(isAllowedByLists(6, [5, 6], [5])).toBe(true);
     expect(isAllowedByLists(8, undefined, [8])).toBe(false);
   });

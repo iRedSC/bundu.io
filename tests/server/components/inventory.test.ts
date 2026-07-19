@@ -34,14 +34,10 @@ function snapshot(inv: Inventory): Inventory {
   };
 }
 
-describe("emptySlots and inventory constants", () => {
-  test("HOTBAR_SIZE is 10 and SLOT_OUTSIDE is -1", () => {
-    expect(HOTBAR_SIZE).toBe(10);
-    expect(SLOT_OUTSIDE).toBe(-1);
-  });
-
-  test("emptySlots defaults to hotbar size of nulls", () => {
+describe("emptySlots", () => {
+  test("defaults to HOTBAR_SIZE nulls and honors an explicit count", () => {
     expect(emptySlots()).toEqual(Array.from({ length: HOTBAR_SIZE }, () => null));
+    expect(emptySlots()).toHaveLength(10);
     expect(emptySlots(3)).toEqual([null, null, null]);
   });
 });
@@ -57,7 +53,7 @@ describe("addItem", () => {
 
     expect(addItem(inv, 1, 120)).toBe(0);
     expect(inv.slots).toEqual([
-      { id: 1, count: 999 },
+      { id: 1, count: MAX_STACK },
       null,
       { id: 1, count: 71 },
       null,
@@ -68,22 +64,29 @@ describe("addItem", () => {
     // Overflow remaining same-id capacity (999-71=928) into the first empty slot.
     expect(addItem(inv, 1, 930)).toBe(0);
     expect(inv.slots).toEqual([
-      { id: 1, count: 999 },
+      { id: 1, count: MAX_STACK },
       { id: 1, count: 2 },
-      { id: 1, count: 999 },
+      { id: 1, count: MAX_STACK },
       null,
     ]);
   });
 
-  test("returns leftover that cannot fit under MAX_STACK", () => {
-    const inv = makeInv([{ id: 2, count: MAX_STACK }, null]);
+  test("respects MAX_STACK boundaries and returns leftover that cannot fit", () => {
+    const nearCap = makeInv([{ id: 2, count: MAX_STACK - 1 }, null]);
+    expect(addItem(nearCap, 2, 1)).toBe(0);
+    expect(nearCap.slots).toEqual([{ id: 2, count: MAX_STACK }, null]);
 
+    const inv = makeInv([{ id: 2, count: MAX_STACK }, null]);
     expect(addItem(inv, 2, 5)).toBe(0);
     expect(inv.slots).toEqual([{ id: 2, count: MAX_STACK }, { id: 2, count: 5 }]);
 
     const full = makeInv([{ id: 3, count: MAX_STACK }]);
     expect(addItem(full, 3, 10)).toBe(10);
     expect(full.slots).toEqual([{ id: 3, count: MAX_STACK }]);
+
+    const empty = makeInv([null]);
+    expect(addItem(empty, 4, MAX_STACK + 1)).toBe(1);
+    expect(empty.slots).toEqual([{ id: 4, count: MAX_STACK }]);
   });
 
   test("does not mutate cursor or selected", () => {
@@ -96,13 +99,18 @@ describe("addItem", () => {
 
 describe("tryAddItems", () => {
   test("empty iterable succeeds without changing slots", () => {
-    const inv = makeInv([{ id: 1, count: 1 }]);
+    const inv = makeInv([{ id: 1, count: 1 }], 2, { id: 9, count: 1 });
+    const before = snapshot(inv);
     expect(tryAddItems(inv, [])).toBe(true);
-    expect(inv.slots).toEqual([{ id: 1, count: 1 }]);
+    expect(inv).toEqual(before);
   });
 
-  test("all-or-nothing: restores slots when any item cannot fully fit", () => {
-    const inv = makeInv([{ id: 1, count: MAX_STACK }, null]);
+  test("all-or-nothing: restores exact inventory state when any item cannot fully fit", () => {
+    const inv = makeInv(
+      [{ id: 1, count: MAX_STACK }, null],
+      3,
+      { id: 7, count: 4 },
+    );
     const before = snapshot(inv);
 
     expect(
@@ -112,6 +120,9 @@ describe("tryAddItems", () => {
       ]),
     ).toBe(false);
     expect(inv).toEqual(before);
+    expect(inv.slots).toEqual([{ id: 1, count: MAX_STACK }, null]);
+    expect(inv.selected).toBe(3);
+    expect(inv.cursor).toEqual({ id: 7, count: 4 });
   });
 
   test("commits every item when the whole batch fits", () => {
@@ -144,9 +155,12 @@ describe("countItem and hasItems", () => {
     expect(countItem(inv, 1)).toBe(5);
     expect(countItem(inv, 2)).toBe(4);
     expect(countItem(inv, 9)).toBe(0);
+    // Cursor holds 99 of id 1 — still not counted.
+    expect(inv.cursor).toEqual({ id: 1, count: 99 });
+    expect(countItem(inv, 1)).toBe(5);
   });
 
-  test("hasItems treats empty requirements as satisfied", () => {
+  test("hasItems treats empty requirements as satisfied and ignores cursor stock", () => {
     expect(hasItems(inv, [])).toBe(true);
     expect(hasItems(inv, [[1, 5]])).toBe(true);
     expect(hasItems(inv, [[1, 6]])).toBe(false);
@@ -168,7 +182,10 @@ describe("removeItem and removeItems", () => {
   });
 
   test("removeItem leaves inventory unchanged when insufficient", () => {
-    const inv = makeInv([{ id: 1, count: 2 }, { id: 1, count: 2 }]);
+    const inv = makeInv([{ id: 1, count: 2 }, { id: 1, count: 2 }], 1, {
+      id: 9,
+      count: 1,
+    });
     const before = snapshot(inv);
     expect(removeItem(inv, 1, 5)).toBe(false);
     expect(inv).toEqual(before);
@@ -181,7 +198,10 @@ describe("removeItem and removeItems", () => {
   });
 
   test("removeItems rolls back entirely when any requirement is missing", () => {
-    const inv = makeInv([{ id: 1, count: 2 }, { id: 2, count: 1 }]);
+    const inv = makeInv([{ id: 1, count: 2 }, { id: 2, count: 1 }], 0, {
+      id: 3,
+      count: 8,
+    });
     const before = snapshot(inv);
     expect(
       removeItems(inv, [
@@ -207,7 +227,7 @@ describe("removeItem and removeItems", () => {
 
 describe("tryConsumeAndAdd / canConsumeAndAdd", () => {
   test("canConsumeAndAdd never mutates and mirrors craft feasibility", () => {
-    const inv = makeInv([{ id: 1, count: 2 }, null]);
+    const inv = makeInv([{ id: 1, count: 2 }, null], 5, { id: 8, count: 3 });
     const before = snapshot(inv);
 
     expect(canConsumeAndAdd(inv, [[1, 2]], 9, 1)).toBe(true);
@@ -215,10 +235,14 @@ describe("tryConsumeAndAdd / canConsumeAndAdd", () => {
 
     expect(canConsumeAndAdd(inv, [[1, 3]], 9, 1)).toBe(false);
     expect(inv).toEqual(before);
+
+    // Feasible dry-run still leaves the live inventory untouched.
+    expect(canConsumeAndAdd(inv, [[1, 1]], 9, MAX_STACK)).toBe(true);
+    expect(inv).toEqual(before);
   });
 
   test("fails atomically when ingredients are missing", () => {
-    const inv = makeInv([{ id: 1, count: 1 }, null]);
+    const inv = makeInv([{ id: 1, count: 1 }, null], 2, { id: 4, count: 1 });
     const before = snapshot(inv);
     expect(tryConsumeAndAdd(inv, [[1, 2]], 9, 1)).toBe(false);
     expect(inv).toEqual(before);
@@ -226,7 +250,10 @@ describe("tryConsumeAndAdd / canConsumeAndAdd", () => {
 
   test("fails atomically when the product cannot fully fit", () => {
     // Consuming one ingredient must not free a slot, and the product stack is full.
-    const inv = makeInv([{ id: 1, count: 2 }, { id: 9, count: MAX_STACK }]);
+    const inv = makeInv([{ id: 1, count: 2 }, { id: 9, count: MAX_STACK }], 1, {
+      id: 3,
+      count: 2,
+    });
     const before = snapshot(inv);
     expect(tryConsumeAndAdd(inv, [[1, 1]], 9, 1)).toBe(false);
     expect(inv).toEqual(before);
@@ -273,6 +300,7 @@ describe("moveSlot", () => {
   });
 
   test("SLOT_OUTSIDE clears the source slot", () => {
+    expect(SLOT_OUTSIDE).toBe(-1);
     const inv = makeInv([{ id: 1, count: 4 }, { id: 2, count: 1 }]);
     expect(moveSlot(inv, 0, SLOT_OUTSIDE)).toBe(true);
     expect(inv.slots).toEqual([null, { id: 2, count: 1 }]);
@@ -309,6 +337,16 @@ describe("cursorSlot", () => {
     const before = snapshot(inv);
     expect(cursorSlot(inv, 0, PlaceMode.All)).toBe(false);
     expect(inv).toEqual(before);
+  });
+
+  test("partial merge stops at MAX_STACK and leaves remainder on the cursor", () => {
+    const inv = makeInv([{ id: 1, count: MAX_STACK - 2 }], 0, {
+      id: 1,
+      count: 5,
+    });
+    expect(cursorSlot(inv, 0, PlaceMode.All)).toBe(true);
+    expect(inv.slots[0]).toEqual({ id: 1, count: MAX_STACK });
+    expect(inv.cursor).toEqual({ id: 1, count: 3 });
   });
 
   test("swaps when cursor and slot hold different items", () => {

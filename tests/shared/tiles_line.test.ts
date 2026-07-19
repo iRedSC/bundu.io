@@ -34,16 +34,22 @@ describe("tilesOnLine", () => {
     ]);
   });
 
-  test("is inclusive Bresenham for a shallow slope", () => {
-    const line: TilePos[] = tilesOnLine({ x: 0, y: 0 }, { x: 4, y: 2 });
-    expect(line[0]).toEqual({ x: 0, y: 0 });
-    expect(line[line.length - 1]).toEqual({ x: 4, y: 2 });
-    expect(line).toEqual([
+  test("is inclusive Bresenham for a shallow slope in both directions", () => {
+    const forward: TilePos[] = tilesOnLine({ x: 0, y: 0 }, { x: 4, y: 2 });
+    expect(forward).toEqual([
       { x: 0, y: 0 },
       { x: 1, y: 0 },
       { x: 2, y: 1 },
       { x: 3, y: 1 },
       { x: 4, y: 2 },
+    ]);
+    // Reverse direction is also inclusive but may visit different intermediate tiles.
+    expect(tilesOnLine({ x: 4, y: 2 }, { x: 0, y: 0 })).toEqual([
+      { x: 4, y: 2 },
+      { x: 3, y: 2 },
+      { x: 2, y: 1 },
+      { x: 1, y: 1 },
+      { x: 0, y: 0 },
     ]);
   });
 });

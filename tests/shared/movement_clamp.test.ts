@@ -1,29 +1,26 @@
 import { describe, expect, test } from "bun:test";
 import { encodeMoveDirection } from "@bundu/shared";
 
-const VALID_DIRECTIONS = new Set([1, 2, 3, 5, 6, 7, 9, 10, 11]);
-
 describe("encodeMoveDirection", () => {
-  test("packs every in-range axis pair into the movement whitelist", () => {
-    for (const x of [0, 1, 2] as const) {
-      for (const y of [0, 1, 2] as const) {
-        expect(VALID_DIRECTIONS.has(encodeMoveDirection(x, y))).toBe(true);
-      }
-    }
+  test("packs every in-range axis pair into the exact movement byte", () => {
+    // Axes 0/1/2 → packed ((x<<2)|y)+1; idle center is 6.
+    expect(encodeMoveDirection(0, 0)).toBe(1);
+    expect(encodeMoveDirection(0, 1)).toBe(2);
+    expect(encodeMoveDirection(0, 2)).toBe(3);
+    expect(encodeMoveDirection(1, 0)).toBe(5);
+    expect(encodeMoveDirection(1, 1)).toBe(6);
+    expect(encodeMoveDirection(1, 2)).toBe(7);
+    expect(encodeMoveDirection(2, 0)).toBe(9);
+    expect(encodeMoveDirection(2, 1)).toBe(10);
+    expect(encodeMoveDirection(2, 2)).toBe(11);
   });
 
-  test("clamps out-of-range axes before packing so results stay whitelisted", () => {
-    const samples: [number, number][] = [
-      [-5, 1],
-      [9, 1],
-      [1, -3],
-      [1, 8],
-      [-100, 100],
-      [0.4, 1.9],
-    ];
-
-    for (const [x, y] of samples) {
-      expect(VALID_DIRECTIONS.has(encodeMoveDirection(x, y))).toBe(true);
-    }
+  test("clamps out-of-range axes before packing", () => {
+    expect(encodeMoveDirection(-5, 1)).toBe(2); // x→0, y→1
+    expect(encodeMoveDirection(9, 1)).toBe(10); // x→2, y→1
+    expect(encodeMoveDirection(1, -3)).toBe(5); // x→1, y→0
+    expect(encodeMoveDirection(1, 8)).toBe(7); // x→1, y→2
+    expect(encodeMoveDirection(-100, 100)).toBe(3); // x→0, y→2
+    expect(encodeMoveDirection(0.4, 1.9)).toBe(6); // x→1, y→1
   });
 });
