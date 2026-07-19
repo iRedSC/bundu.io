@@ -289,7 +289,7 @@ export function suggestCommand(
             return [
                 {
                     insert: `/${name}`,
-                    label: `/${name}`,
+                    label: name,
                     hint: commandUsageHint(command),
                 },
             ];

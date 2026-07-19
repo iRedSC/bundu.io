@@ -133,11 +133,14 @@ export class ChatController {
         return this.open;
     }
 
-    openCompose(): void {
+    openCompose(initial = ""): void {
         this.open = true;
         this.hud.compose.classList.remove("hidden");
         this.hud.log.classList.remove("hidden");
+        this.hud.input.value = initial;
         this.hud.input.focus();
+        const cursor = initial.length;
+        this.hud.input.setSelectionRange(cursor, cursor);
         this.historyIndex = -1;
         this.draft = "";
         this.refreshSuggest();

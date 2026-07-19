@@ -24,6 +24,25 @@ export class KeyboardInputListener {
         event.preventDefault();
     };
 
+    /** Open command compose with a leading `/`. */
+    private readonly onSlashKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) {
+            return;
+        }
+        if (this.chatOpen || !this.chat) return;
+        const active = document.activeElement;
+        if (
+            active instanceof HTMLInputElement ||
+            active instanceof HTMLTextAreaElement ||
+            (active instanceof HTMLElement && active.isContentEditable)
+        ) {
+            return;
+        }
+        event.preventDefault();
+        this.chatOpen = true;
+        this.chat.openCompose("/");
+    };
+
     onMoveInput: (direction: MoveAxes) => void = () => {};
     onSendChat: (message: string) => void = () => {};
     onRotateStructure: () => void = () => {};
@@ -46,6 +65,7 @@ export class KeyboardInputListener {
 
         this.chatOpen = false;
         document.addEventListener("keydown", this.onTabKeyDown);
+        document.addEventListener("keydown", this.onSlashKeyDown);
 
         const emitMove = () => {
             this.onMoveInput(axesFromPressedKeys(this.pressed));
@@ -143,6 +163,7 @@ export class KeyboardInputListener {
 
     destroy(): void {
         document.removeEventListener("keydown", this.onTabKeyDown);
+        document.removeEventListener("keydown", this.onSlashKeyDown);
         this.onShowWorldHover(false);
         this.keybinds.unbindEnvironment();
     }
