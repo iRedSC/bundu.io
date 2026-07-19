@@ -22,6 +22,8 @@ type ActiveParticle = {
     startScale: number;
     endScale: number;
     sizeEndAt: number;
+    startAlpha: number;
+    alphaHold: number;
 };
 
 const random = (range: NumberRange): number => {
@@ -44,6 +46,7 @@ export class ParticleSystem {
             const speed = random(options.speed);
             const size = random(options.size);
             const scale = size / Math.max(options.texture.width, options.texture.height);
+            const startAlpha = options.alpha ?? 1;
             const view = new Particle({
                 texture: options.texture,
                 x: options.x,
@@ -54,6 +57,7 @@ export class ParticleSystem {
                 scaleX: scale,
                 scaleY: scale,
                 tint: options.tint ?? 0xffffff,
+                alpha: startAlpha,
             });
 
             container.addParticle(view);
@@ -76,6 +80,8 @@ export class ParticleSystem {
                     (options.endSize ?? 0) /
                     Math.max(options.texture.width, options.texture.height),
                 sizeEndAt: options.sizeEndAt ?? 1,
+                startAlpha,
+                alphaHold: Math.min(1, Math.max(0, options.alphaHold ?? 0)),
             });
         }
     }
@@ -126,7 +132,12 @@ export class ParticleSystem {
                 (particle.endScale - particle.startScale) * sizeProgress;
             particle.view.scaleX = scale;
             particle.view.scaleY = scale;
-            particle.view.alpha = 1 - progress;
+            const hold = particle.alphaHold;
+            const fade =
+                hold >= 1
+                    ? 0
+                    : Math.max(0, (progress - hold) / (1 - hold));
+            particle.view.alpha = particle.startAlpha * (1 - fade);
         }
     }
 

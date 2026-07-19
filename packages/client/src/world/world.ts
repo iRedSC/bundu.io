@@ -28,10 +28,17 @@ import {
     LAND_SEAM_TICK_INTERVAL,
     NearshoreFill,
     seamLodFromZoom,
+    solidGroundModel,
     type GroundVisual,
+    type SeamLod,
     type ShoreSample,
 } from "./ground";
-import { parseHexColor } from "@bundu/shared/ground_models";
+import { parseHexColor, type SolidGroundFill } from "@bundu/shared/ground_models";
+import type { ModelFootstepsDef } from "@bundu/shared/models/types";
+import { toSanitizedTexturePath } from "@bundu/shared/models/texture_paths";
+import { softCircleTexture } from "./ground/particles/circle";
+import { landFootstep } from "./ground/particles/footsteps";
+import { landTrailBursts } from "./ground/particles/trail";
 import { createDecoration, type DecorationSprite } from "./decoration";
 import {
     radians,
@@ -40,7 +47,9 @@ import {
 } from "@bundu/shared";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
-import { Point, Text, type Renderer } from "pixi.js";
+import { getAsset } from "../assets/load";
+import { animalDef, playerDef } from "../models/defs";
+import { Point, Text, type Renderer, type Texture } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
@@ -90,6 +99,29 @@ type GroundPatch = {
     h: number;
     visual: GroundVisual;
 };
+
+/** Actor model footsteps, or undefined when disabled / unset. */
+function actorFootsteps(
+    object: Player | Animal
+): ModelFootstepsDef | undefined {
+    const raw =
+        object instanceof Player
+            ? playerDef.footsteps
+            : animalDef(object.modelId).footsteps;
+    if (!raw) return undefined;
+    return raw;
+}
+
+function footstepTexture(
+    config: ModelFootstepsDef,
+    fallback: Texture
+): { texture: Texture; tint: number } {
+    if (!config.texture) return { texture: fallback, tint: 0x1a1a1a };
+    return {
+        texture: getAsset(toSanitizedTexturePath(config.texture)),
+        tint: 0xffffff,
+    };
+}
 
 type LoadPlayer = Extract<
     ServerPacket.LoadObject,
@@ -160,6 +192,8 @@ export class World {
     private oceanTypeIds = new Set<number>();
     /** Topmost-patch ocean mask (1 = ocean). Empty tiles stay 0. */
     private readonly oceanTiles = new Uint8Array(WORLD_TILES * WORLD_TILES);
+    /** Topmost ground type id per tile (0 = empty). Registry ids start at 1. */
+    private readonly topGroundTypes = new Uint16Array(WORLD_TILES * WORLD_TILES);
     /** First ocean model color in the current stack (nearshore bake). */
     private oceanColor = 0x1a5f8a;
     /** True after at least one LoadGround/UnloadGround sync this session. */
@@ -174,6 +208,11 @@ export class World {
     private readonly wakeMoveDelta = new Map<number, { x: number; y: number }>();
     /** ms of continuous water-move — splash throw ramps with this. */
     private readonly wakeMoveAge = new Map<number, number>();
+    /** Land footsteps / trail tracking (mirrors wake travel sampling). */
+    private readonly landFxLastPos = new Map<number, { x: number; y: number }>();
+    private readonly landFxFootAt = new Map<number, number>();
+    private readonly landFxTrailTravel = new Map<number, number>();
+    private readonly landFxFootStep = new Map<number, number>();
     private readonly decorations: DecorationSprite[] = [];
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
@@ -203,11 +242,16 @@ export class World {
 
         const ids = Array.from(this.objects.all(), (object) => object.id);
         for (const id of ids) this.removeClientObject(id);
+        for (const patch of this.groundPatches) {
+            this.disposeGroundVisual(patch.visual);
+        }
+        if (this.oceanVisual) this.disposeGroundVisual(this.oceanVisual);
         this.renderer.delete(GROUND_RENDER_ID);
         this.oceanVisual = undefined;
         this.groundPatches.length = 0;
         this.oceanTypeIds.clear();
         this.oceanTiles.fill(0);
+        this.topGroundTypes.fill(0);
         this.shoreSamples = [];
         this.landSeamBaker.reset();
         this.groundSynced = false;
@@ -218,6 +262,10 @@ export class World {
         this.wakeTravel.clear();
         this.wakeMoveDelta.clear();
         this.wakeMoveAge.clear();
+        this.landFxLastPos.clear();
+        this.landFxFootAt.clear();
+        this.landFxTrailTravel.clear();
+        this.landFxFootStep.clear();
         this.renderer.delete(DECORATION_RENDER_ID);
         this.decorations.length = 0;
         this.shadows.clear();
@@ -322,9 +370,13 @@ export class World {
 
     /**
      * Enter/exit freecam spectate mode: detach camera, hide the local avatar.
+     * Freecam immediately drops seam LOD and keeps it cheap until exit.
      */
     setFreecamMode(enabled: boolean): void {
         this.camera.setFreecam(enabled);
+        if (enabled) {
+            this.applyLandSeamLod(0);
+        }
         const local =
             this.user !== undefined ? this.objects.get(this.user) : undefined;
         if (local) {
@@ -587,6 +639,7 @@ export class World {
 
     private removeClientObject(id: number): void {
         this.pendingObjectStates.delete(id);
+        this.clearLandFxState(id);
         const object = this.objects.get(id);
         if (object) {
             this.objects.delete(object);
@@ -781,6 +834,7 @@ export class World {
                     GROUND_RENDER_ID,
                     existing.visual.container
                 );
+                this.disposeGroundVisual(existing.visual);
                 break;
             }
             const modelId = clientGroundType(type).model;
@@ -819,6 +873,7 @@ export class World {
                     GROUND_RENDER_ID,
                     patch.visual.container
                 );
+                this.disposeGroundVisual(patch.visual);
                 break;
             }
         }
@@ -847,6 +902,7 @@ export class World {
     private rebuildShoreSamples(): void {
         this.oceanTypeIds.clear();
         this.oceanTiles.fill(0);
+        this.topGroundTypes.fill(0);
         let oceanColor: number | undefined;
         const byBottom = [...this.groundPatches].sort((a, b) => a.id - b.id);
         for (const patch of byBottom) {
@@ -865,6 +921,7 @@ export class World {
                 const row = ty * WORLD_TILES;
                 for (let tx = x1; tx < x2; tx++) {
                     this.oceanTiles[row + tx] = bit;
+                    this.topGroundTypes[row + tx] = patch.type;
                 }
             }
         }
@@ -880,22 +937,39 @@ export class World {
                     this.oceanVisual.overlay
                 );
             }
+            this.disposeGroundVisual(this.oceanVisual);
             this.oceanVisual = undefined;
         }
         const isOcean = (type: number) => this.oceanTypeIds.has(type);
         const colorOfType = (type: number) =>
             parseHexColor(groundModel(clientGroundType(type).model).color);
+        const fillOfType = (type: number): SolidGroundFill | undefined => {
+            const model = groundModel(clientGroundType(type).model);
+            return model.kind === "solid" ? model.fill : undefined;
+        };
         this.shoreSamples = collectShoreSamples(this.groundPatches, isOcean);
         this.landDistance.rebuild(this.groundPatches, isOcean, colorOfType);
         this.nearshoreFill.setOceanColor(this.oceanColor);
         this.nearshoreFill.paint(this.landDistance);
+        const inlandAt = (tx: number, ty: number) =>
+            this.landDistance.inlandAt(tx, ty);
+        for (const patch of this.groundPatches) {
+            patch.visual.paintLandFill?.(inlandAt);
+        }
         // Unbind before prepare destroys textures — Pixi crashes on null alphaMode
         // if sprites still reference destroyed sources.
         for (const patch of this.groundPatches) {
             patch.visual.clearLandSeam?.();
         }
-        // Rebuild at crisp LOD; live play may drop via zoom buckets.
-        this.landSeamBaker.prepare(this.groundPatches, isOcean, colorOfType, 2);
+        // Rebuild at crisp LOD; freecam / zoom-out may drop via live ticks.
+        this.landSeamBaker.prepare(
+            this.groundPatches,
+            isOcean,
+            colorOfType,
+            2,
+            fillOfType,
+            inlandAt
+        );
         this.landSeamFrame = 0;
     }
 
@@ -907,11 +981,9 @@ export class World {
                 this.viewport.scale.x,
                 this.viewport.scale.y
             );
-            if (this.landSeamBaker.setLod(seamLodFromZoom(zoom))) {
-                for (const patch of this.groundPatches) {
-                    patch.visual.clearLandSeam?.();
-                }
-            }
+            this.applyLandSeamLod(
+                seamLodFromZoom(zoom, this.camera.isFreecam())
+            );
             this.landSeamFrame++;
             if (this.landSeamFrame % LAND_SEAM_TICK_INTERVAL !== 0) return;
             limit = LAND_SEAM_PER_TICK;
@@ -925,6 +997,24 @@ export class World {
         );
         for (const chunk of baked) {
             byId.get(chunk.id)?.visual.applyLandSeam?.(chunk);
+        }
+    }
+
+    private disposeGroundVisual(visual: GroundVisual): void {
+        visual.clearLandSeam?.();
+        if (visual.destroy) {
+            visual.destroy();
+            return;
+        }
+        visual.container.destroy({ children: true });
+        visual.overlay?.destroy({ children: true });
+    }
+
+    /** Swap seam LOD; clears applied overlays when the baker rebuilds. */
+    private applyLandSeamLod(lod: SeamLod): void {
+        if (!this.landSeamBaker.setLod(lod)) return;
+        for (const patch of this.groundPatches) {
+            patch.visual.clearLandSeam?.();
         }
     }
 
@@ -948,6 +1038,8 @@ export class World {
     }
 
     private updateGroundVisuals(deltaMS: number, now: number): void {
+        this.spawnLandMoveFx(now);
+
         if (this.oceanTypeIds.size === 0) return;
 
         const bounds = this.viewport.getVisibleBounds();
@@ -988,6 +1080,122 @@ export class World {
         };
         this.oceanVisual?.update?.(ctx);
         for (const patch of this.groundPatches) patch.visual.update?.(ctx);
+    }
+
+    /**
+     * Footsteps / debris trails for movers on solid ground.
+     * Land toggles footsteps; actor models define the print params/texture.
+     */
+    private spawnLandMoveFx(now: number): void {
+        const types = this.topGroundTypes;
+        const circle = softCircleTexture();
+
+        for (const object of this.objects.all()) {
+            if (!(object instanceof Player || object instanceof Animal)) {
+                continue;
+            }
+
+            const { x, y } = object.position;
+            const tx = (x / TILE_SIZE) | 0;
+            const ty = (y / TILE_SIZE) | 0;
+            if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
+                this.clearLandFxState(object.id);
+                continue;
+            }
+
+            const typeId = types[ty * WORLD_TILES + tx] ?? 0;
+            if (typeId === 0 || this.oceanTypeIds.has(typeId)) {
+                this.clearLandFxState(object.id);
+                continue;
+            }
+
+            const ground = solidGroundModel(clientGroundType(typeId).model);
+            const actorSteps = actorFootsteps(object);
+            if (!ground?.trail && !(ground?.footsteps && actorSteps)) {
+                this.clearLandFxState(object.id);
+                continue;
+            }
+
+            const prev = this.landFxLastPos.get(object.id);
+            this.landFxLastPos.set(object.id, { x, y });
+            if (!prev) continue;
+
+            const stepX = x - prev.x;
+            const stepY = y - prev.y;
+            const step = Math.hypot(stepX, stepY);
+            // Ignore teleport/resync jumps so recycled ids don't spray FX.
+            if (step < 0.5 || step > TILE_SIZE * 4) {
+                if (step > TILE_SIZE * 4) {
+                    this.landFxLastPos.set(object.id, { x, y });
+                    this.landFxTrailTravel.set(object.id, 0);
+                }
+                continue;
+            }
+
+            const direction = Math.atan2(stepY, stepX);
+            const landColor = parseHexColor(ground.color);
+
+            if (ground.footsteps && actorSteps) {
+                const interval = actorSteps.intervalMs || 250;
+                const last = this.landFxFootAt.get(object.id);
+                if (last === undefined || now - last >= interval) {
+                    this.landFxFootAt.set(object.id, now);
+                    const stepIndex =
+                        (this.landFxFootStep.get(object.id) ?? 0) + 1;
+                    this.landFxFootStep.set(object.id, stepIndex);
+                    const side = stepIndex % 2 === 0 ? 1 : -1;
+                    const perp = direction + Math.PI / 2;
+                    const stride = actorSteps.stride * side;
+                    const behind = object.collisionRadius * 0.65;
+                    const { texture, tint } = footstepTexture(
+                        actorSteps,
+                        circle
+                    );
+                    this.particles.burst(
+                        landFootstep(
+                            texture,
+                            x -
+                                Math.cos(direction) * behind +
+                                Math.cos(perp) * stride,
+                            y -
+                                Math.sin(direction) * behind +
+                                Math.sin(perp) * stride,
+                            actorSteps,
+                            tint
+                        )
+                    );
+                }
+            }
+
+            if (ground.trail) {
+                const travel =
+                    (this.landFxTrailTravel.get(object.id) ?? 0) + step;
+                if (travel >= ground.trail.spacing) {
+                    this.landFxTrailTravel.set(object.id, 0);
+                    const diameter = object.collisionRadius * 2;
+                    for (const burst of landTrailBursts(
+                        circle,
+                        x,
+                        y,
+                        direction + Math.PI,
+                        landColor,
+                        diameter,
+                        ground.trail
+                    )) {
+                        this.particles.burst(burst);
+                    }
+                } else {
+                    this.landFxTrailTravel.set(object.id, travel);
+                }
+            }
+        }
+    }
+
+    private clearLandFxState(id: number): void {
+        this.landFxLastPos.delete(id);
+        this.landFxFootAt.delete(id);
+        this.landFxTrailTravel.delete(id);
+        this.landFxFootStep.delete(id);
     }
 
     /**

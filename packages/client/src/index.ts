@@ -261,9 +261,10 @@ async function waitForWorldReady(
     if (gen !== worldGateGeneration) return { ready: false, gen };
 
     while (gen === worldGateGeneration) {
-        const { done, total, pending } = world.landSeamProgress();
-        if (pending === 0) break;
+        if (world.landSeamProgress().pending === 0) break;
         world.flushLandSeams(8);
+        // Progress after flush — pre-flush `done` left the bar lagging the bake.
+        const { done, total } = world.landSeamProgress();
         const frac = total > 0 ? done / total : 1;
         setLoadingProgress({
             status: `Preparing terrain… (${done}/${total})`,
@@ -274,6 +275,10 @@ async function waitForWorldReady(
     if (gen !== worldGateGeneration) return { ready: false, gen };
 
     setLoadingProgress({ status: "Ready", progress: 1 });
+    // Bar uses a 150ms width transition — wait so 100% paints before teardown.
+    await sleep(180);
+    if (gen !== worldGateGeneration) return { ready: false, gen };
+
     hideLoading();
     return { ready: true, gen };
 }

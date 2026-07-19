@@ -11,6 +11,7 @@ export {
 } from "./land_distance";
 export {
     LAND_SEAM_AMPLITUDE,
+    LAND_SEAM_FILL_INSET_TILES,
     LAND_SEAM_PAD_TILES,
     LAND_SEAM_PER_TICK,
     LAND_SEAM_TICK_INTERVAL,
@@ -26,6 +27,7 @@ export {
     isOceanGroundModel,
     listGroundModels,
     replaceGroundModels,
+    solidGroundModel,
 } from "./models";
 export { applyOceanFx } from "./ocean_fx";
 export {

@@ -1,6 +1,8 @@
 id: animal
 abstract: true
 
+footsteps: true
+
 parts:
     body:
         # Relative to TILE_SIZE visual root (scale 1 = 1 tile)

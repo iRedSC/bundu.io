@@ -1,4 +1,7 @@
-import type { OceanGroundTextures } from "@bundu/shared/ground_models";
+import type {
+    OceanGroundTextures,
+    SolidGroundFill,
+} from "@bundu/shared/ground_models";
 import type { Container, Rectangle, Renderer, Texture } from "pixi.js";
 import type { ParticleBurst } from "../../rendering/particles/types";
 import type { LandSeamChunkBake } from "./land_seam";
@@ -52,10 +55,17 @@ export type GroundVisual = {
     /** Optional independently sorted layer (frontmost ocean refraction). */
     overlay?: Container;
     update?(ctx: GroundUpdateContext): void;
+    /**
+     * Rebake textured inset fill (sand/forest) after shore distance rebuild.
+     * Tile-space inland sampler — same contract as sand-band shading.
+     */
+    paintLandFill?(inlandAt: (tileX: number, tileY: number) => number): void;
     /** Append one edge-band seam chunk (solid land only). */
     applyLandSeam?(chunk: LandSeamChunkBake): void;
     /** Drop seam overlays before textures are destroyed. */
     clearLandSeam?(): void;
+    /** Free GPU resources when the patch is unloaded. */
+    destroy?(): void;
     /** Wake ripple at world position (ocean only). */
     addWakeRipple?(
         worldX: number,
@@ -82,6 +92,7 @@ type GroundModelBase = {
 
 export type SolidGroundModelDef = GroundModelBase & {
     kind: "solid";
+    fill?: SolidGroundFill;
 };
 
 export type OceanGroundModelRuntime = GroundModelBase & {

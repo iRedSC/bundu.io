@@ -208,7 +208,31 @@ export type ModelDef = {
     /** Display transforms: inventory, icon, hand, body, world, … */
     displays: Readonly<Record<string, ModelDisplay>>;
     tile?: TileGeometry;
+    /**
+     * Actor footsteps when standing on land with `footsteps: true`.
+     * `false` disables; `true` expands to defaults; object sets params + optional texture.
+     */
+    footsteps?: false | ModelFootstepsDef;
 };
+
+/** Actor footstep FX (surface only toggles whether these play). */
+export type ModelFootstepsDef = {
+    /** ms between prints while moving. */
+    intervalMs: number;
+    size: ModelFxRange;
+    lifetime: ModelFxRange;
+    /** Peak alpha while held (then fades to 0). */
+    alpha: number;
+    /** Lifetime progress [0,1] before the print starts fading. */
+    fadeAt: number;
+    /** Lateral offset from the path for left/right prints. */
+    stride: number;
+    /** Pack texture path. Omit for the default soft circle (dark tint). */
+    texture?: string;
+};
+
+/** Scalar or `[min, max]` for model FX ranges. */
+export type ModelFxRange = number | readonly [min: number, max: number];
 
 /** Assembled model with a part graph (actors, structures). */
 export type ObjectDef = ModelDef & {
