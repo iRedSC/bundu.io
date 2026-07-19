@@ -268,17 +268,33 @@ function parseOcean(value: Record<string, unknown>): OceanFxConfig {
             idle: parseWakeKind(wake.idle, `${path}.wake.idle`),
             move: parseWakeKind(wake.move, `${path}.wake.move`),
         },
-        splash: {
-            max: positive(splash, "max", `${path}.splash`),
-            strength: positive(splash, "strength", `${path}.splash`),
-            spreadDeg: positive(splash, "spread_deg", `${path}.splash`),
-            friction: positive(splash, "friction", `${path}.splash`),
-            speedMin: positive(splash, "speed_min", `${path}.splash`),
-            speedMax: positive(splash, "speed_max", `${path}.splash`),
-            sizeMin: positive(splash, "size_min", `${path}.splash`),
-            sizeMax: positive(splash, "size_max", `${path}.splash`),
-            sizeEnd: positive(splash, "size_end", `${path}.splash`),
-        },
+        splash: (() => {
+            const speedMin = positive(splash, "speed_min", `${path}.splash`);
+            const speedMax = positive(splash, "speed_max", `${path}.splash`);
+            if (speedMin > speedMax) {
+                throw new Error(
+                    `${path}.splash: speed_min must be <= speed_max`
+                );
+            }
+            const sizeMin = positive(splash, "size_min", `${path}.splash`);
+            const sizeMax = positive(splash, "size_max", `${path}.splash`);
+            if (sizeMin > sizeMax) {
+                throw new Error(
+                    `${path}.splash: size_min must be <= size_max`
+                );
+            }
+            return {
+                max: positive(splash, "max", `${path}.splash`),
+                strength: positive(splash, "strength", `${path}.splash`),
+                spreadDeg: positive(splash, "spread_deg", `${path}.splash`),
+                friction: positive(splash, "friction", `${path}.splash`),
+                speedMin,
+                speedMax,
+                sizeMin,
+                sizeMax,
+                sizeEnd: positive(splash, "size_end", `${path}.splash`),
+            };
+        })(),
         particles: {
             foamIntervalMs: intervalMs(
                 particles.foam_interval_ms,

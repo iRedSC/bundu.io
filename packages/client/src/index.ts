@@ -233,7 +233,9 @@ async function waitForPlayPackSync(
     });
 }
 
-async function waitForWorldReady(world: World): Promise<boolean> {
+async function waitForWorldReady(
+    world: World
+): Promise<{ ready: boolean; gen: number }> {
     const gen = ++worldGateGeneration;
     showLoading({
         title: "Loading…",
@@ -247,7 +249,8 @@ async function waitForWorldReady(world: World): Promise<boolean> {
         if (world.hasGroundSync()) break;
         if (performance.now() - started > 15_000) {
             hideLoading();
-            return false;
+            setMenuVisible(true);
+            return { ready: false, gen };
         }
         setLoadingProgress({
             status: "Loading world…",
@@ -255,7 +258,7 @@ async function waitForWorldReady(world: World): Promise<boolean> {
         });
         await sleep(40);
     }
-    if (gen !== worldGateGeneration) return false;
+    if (gen !== worldGateGeneration) return { ready: false, gen };
 
     while (gen === worldGateGeneration) {
         const { done, total, pending } = world.landSeamProgress();
@@ -268,11 +271,11 @@ async function waitForWorldReady(world: World): Promise<boolean> {
         });
         await sleep(0);
     }
-    if (gen !== worldGateGeneration) return false;
+    if (gen !== worldGateGeneration) return { ready: false, gen };
 
     setLoadingProgress({ status: "Ready", progress: 1 });
     hideLoading();
-    return true;
+    return { ready: true, gen };
 }
 
 async function main() {
@@ -356,8 +359,9 @@ async function main() {
         onConnected: () => {
             playButton.textContent = "Play";
             setMenuVisible(false);
-            void waitForWorldReady(world).then((ready) => {
-                if (!ready) return;
+            void waitForWorldReady(world).then(({ ready, gen }) => {
+                // Soft disconnect / back-to-menu bumps the gate; don't send stale ready.
+                if (!ready || gen !== worldGateGeneration) return;
                 session.sendPacket(ClientPacket.ClientReady, {});
             });
         },
