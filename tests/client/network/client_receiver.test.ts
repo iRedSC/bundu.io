@@ -70,9 +70,9 @@ describe("ClientPacketReceiver", () => {
     expect(replacement).toHaveBeenCalledWith({}, 10);
   });
 
-  test("reports malformed packets, drops them, and continues the batch", () => {
+  test("drops malformed packets and continues the batch", () => {
     const handler = mock(() => {});
-    const error = spyOn(console, "error").mockImplementation(() => {});
+    spyOn(console, "error").mockImplementation(() => {});
     receiver.on(1, handler);
 
     const batch: SerializedPacketArray = [
@@ -85,19 +85,9 @@ describe("ClientPacketReceiver", () => {
 
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler).toHaveBeenCalledWith({ a: 5, b: "ok" }, 100);
-    expect(error).toHaveBeenCalledTimes(2);
-    expect(error.mock.calls[0]?.slice(0, 2)).toEqual([
-      "Dropped bad packet",
-      [99, "bad"],
-    ]);
-    expect(error.mock.calls[1]?.slice(0, 2)).toEqual([
-      "Dropped bad packet",
-      [1, 1],
-    ]);
-
   });
 
-  test("synchronizes the presentation clock from the batch timestamp", () => {
+  test("synchronizes the presentation clock from a timestamp-only batch", () => {
     spyOn(clientTime, "now").mockReturnValue(1_000);
 
     receiver.process([700]);

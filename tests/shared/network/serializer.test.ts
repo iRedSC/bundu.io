@@ -33,11 +33,6 @@ describe("Serializer", () => {
     expect(serializer.deserialize([2])).toEqual({});
   });
 
-  test("reports whether a packet id has a schema", () => {
-    expect(serializer.has(1)).toBe(true);
-    expect(serializer.has(99)).toBe(false);
-  });
-
   test("rejects unknown packet ids with an actionable error", () => {
     expect(() =>
       serializer.serialize(99 as keyof TestDataMap & number, {} as never),

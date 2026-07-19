@@ -42,6 +42,14 @@ describe("movement wire directions", () => {
     expect(
       axesFromPressedKeys({ up: true, down: true, left: true, right: true }),
     ).toEqual([1, 1]);
+    expect(
+      axesFromPressedKeys({
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+      }),
+    ).toEqual([1, 1]);
   });
 });
 
@@ -53,6 +61,18 @@ describe("attack geometry", () => {
       { x: 16, y: 22 },
       { x: 10, y: 22 },
     ]);
+  });
+
+  test("rotates the attack box with mathematical facing", () => {
+    const points = attackBoxPoints({ x: 0, y: 0 }, Math.PI / 2, 4, 2);
+    expect(points).toHaveLength(4);
+
+    const xs = points.map((point) => point.x).sort((a, b) => a - b);
+    const ys = points.map((point) => point.y).sort((a, b) => a - b);
+    expect(xs[0]).toBeCloseTo(-1);
+    expect(xs[3]).toBeCloseTo(1);
+    expect(ys[0]).toBeCloseTo(0);
+    expect(ys[3]).toBeCloseTo(4);
   });
 
   test("converts sprite-up rotation to mathematical facing", () => {
@@ -72,6 +92,7 @@ describe("structure placement geometry", () => {
   test("centers rotated footprints and places that center on the cursor tile", () => {
     expect(footprintCenter(square, 0)).toEqual({ x: 0.5, y: 0.5 });
     expect(footprintCenter(square, 1)).toEqual({ x: -0.5, y: 0.5 });
+    expect(footprintCenter([], 0)).toEqual({ x: 0, y: 0 });
     expect(structureOriginAtPoint({ x: 10, y: 20 }, square, 1)).toEqual({
       x: 11,
       y: 20,
@@ -89,6 +110,14 @@ describe("Range", () => {
     ]);
     expect(range.contains({ x: 6, y: 4 })).toBe(true);
     expect(range.contains({ x: 5.99, y: 4 })).toBe(false);
+  });
+
+  test("builds from two corners and reports dimensions", () => {
+    const range = new Range({ x: 2, y: 5 }, { x: 8, y: 1 });
+
+    expect(range.dimensions).toEqual([6, 4]);
+    expect(range.contains({ x: 2, y: 1 })).toBe(true);
+    expect(range.contains({ x: 8, y: 5 })).toBe(true);
   });
 
   test("treats touching edges as intersection but rejects separated ranges", () => {

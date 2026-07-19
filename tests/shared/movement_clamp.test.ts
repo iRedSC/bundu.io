@@ -2,8 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { encodeMoveDirection } from "@bundu/shared";
 
 describe("encodeMoveDirection", () => {
-  test("packs every in-range axis pair into the exact movement byte", () => {
-    // Axes 0/1/2 → packed ((x<<2)|y)+1; idle center is 6.
+  test("packs every in-range axis pair into the movement wire whitelist", () => {
     expect(encodeMoveDirection(0, 0)).toBe(1);
     expect(encodeMoveDirection(0, 1)).toBe(2);
     expect(encodeMoveDirection(0, 2)).toBe(3);

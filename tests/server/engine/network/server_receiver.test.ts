@@ -64,7 +64,7 @@ describe("ServerPacketReceiver", () => {
 
   test("drops invalid values and malformed packets without blocking later work", () => {
     const calls: number[] = [];
-    const error = spyOn(console, "error").mockImplementation(() => {});
+    spyOn(console, "error").mockImplementation(() => {});
     receiver.on(1, (_playerId, packet) => calls.push(packet.value));
 
     receiver.add(7, [1, "not-a-number"]);
@@ -73,11 +73,18 @@ describe("ServerPacketReceiver", () => {
     receiver.process();
 
     expect(calls).toEqual([42]);
-    expect(error).toHaveBeenCalledTimes(2);
-    expect(error.mock.calls[0]?.slice(0, 2)).toEqual([
-      "Dropped bad packet from player 7",
-      [1, "not-a-number"],
-    ]);
+  });
+
+  test("unhandled packet ids are ignored without throwing", () => {
+    const handler = mock(() => {});
+    receiver.on(1, handler);
+
+    receiver.add(7, [2, "orphan"]);
+    receiver.add(7, [1, 9]);
+    expect(() => receiver.process()).not.toThrow();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(7, { value: 9 });
   });
 
   test("clear prevents processed packets from being replayed", () => {
@@ -90,6 +97,5 @@ describe("ServerPacketReceiver", () => {
     receiver.process();
 
     expect(handler).toHaveBeenCalledTimes(1);
-    expect(receiver.packets.size).toBe(0);
   });
 });

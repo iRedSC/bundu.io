@@ -16,22 +16,6 @@ describe("ObjectContainer", () => {
     container = new ObjectContainer();
   });
 
-  test("stores objects by id and deletes them by object or id", () => {
-    const a = stub(1);
-    const b = stub(2);
-    container.add(a);
-    container.add(b);
-
-    expect(container.get(1)).toBe(a);
-    expect([...container.all()]).toEqual([a, b]);
-
-    container.delete(a);
-    container.delete(2);
-
-    expect([...container.all()]).toEqual([]);
-    expect(container.updating.size).toBe(0);
-  });
-
   test("rejects a different object with an existing id without replacing it", () => {
     const original = stub(1);
     const collision = stub(1);

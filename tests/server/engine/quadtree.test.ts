@@ -13,26 +13,34 @@ describe("Quadtree", () => {
   });
 
   test("insert then query returns only ids whose positions fall in range", () => {
-    objects.set(1, { x: 10, y: 10 });
-    objects.set(2, { x: 50, y: 50 });
-    objects.set(3, { x: 90, y: 90 });
+    const a = { x: 10, y: 10 };
+    const b = { x: 50, y: 50 };
+    const c = { x: 90, y: 90 };
+    objects.set(1, a);
+    objects.set(2, b);
+    objects.set(3, c);
 
-    tree.insert(1, objects.get(1)!);
-    tree.insert(2, objects.get(2)!);
-    tree.insert(3, objects.get(3)!);
+    tree.insert(1, a);
+    tree.insert(2, b);
+    tree.insert(3, c);
 
-    expect(tree.query([{ x: 0, y: 0 }, { x: 60, y: 60 }]).sort()).toEqual([1, 2]);
+    expect(tree.query([{ x: 0, y: 0 }, { x: 60, y: 60 }]).sort()).toEqual([
+      1, 2,
+    ]);
     expect(tree.query([{ x: 50, y: 50 }, { x: 50, y: 50 }])).toEqual([2]);
     expect(tree.get(2)).toEqual({ x: 50, y: 50 });
   });
 
   test("query bounds are inclusive on the edges and exclusive just outside", () => {
-    objects.set(1, { x: 0, y: 0 });
-    objects.set(2, { x: 100, y: 100 });
-    objects.set(3, { x: 50, y: 50 });
-    tree.insert(1, objects.get(1)!);
-    tree.insert(2, objects.get(2)!);
-    tree.insert(3, objects.get(3)!);
+    const origin = { x: 0, y: 0 };
+    const far = { x: 100, y: 100 };
+    const mid = { x: 50, y: 50 };
+    objects.set(1, origin);
+    objects.set(2, far);
+    objects.set(3, mid);
+    tree.insert(1, origin);
+    tree.insert(2, far);
+    tree.insert(3, mid);
 
     expect(tree.query([{ x: 0, y: 0 }, { x: 0, y: 0 }])).toEqual([1]);
     expect(tree.query([{ x: 100, y: 100 }, { x: 100, y: 100 }])).toEqual([2]);
@@ -41,10 +49,12 @@ describe("Quadtree", () => {
   });
 
   test("delete removes an id from subsequent queries", () => {
-    objects.set(1, { x: 20, y: 20 });
-    objects.set(2, { x: 30, y: 30 });
-    tree.insert(1, objects.get(1)!);
-    tree.insert(2, objects.get(2)!);
+    const a = { x: 20, y: 20 };
+    const b = { x: 30, y: 30 };
+    objects.set(1, a);
+    objects.set(2, b);
+    tree.insert(1, a);
+    tree.insert(2, b);
 
     tree.delete(1);
 
@@ -55,10 +65,12 @@ describe("Quadtree", () => {
   });
 
   test("clear empties the spatial index but leaves the objects map intact", () => {
-    objects.set(1, { x: 5, y: 5 });
-    objects.set(2, { x: 15, y: 15 });
-    tree.insert(1, objects.get(1)!);
-    tree.insert(2, objects.get(2)!);
+    const a = { x: 5, y: 5 };
+    const b = { x: 15, y: 15 };
+    objects.set(1, a);
+    objects.set(2, b);
+    tree.insert(1, a);
+    tree.insert(2, b);
 
     tree.clear();
 
@@ -68,15 +80,19 @@ describe("Quadtree", () => {
     expect(tree.query([{ x: 0, y: 0 }, { x: 100, y: 100 }])).toEqual([]);
 
     tree.rebuild();
-    expect(tree.query([{ x: 0, y: 0 }, { x: 100, y: 100 }]).sort()).toEqual([1, 2]);
+    expect(tree.query([{ x: 0, y: 0 }, { x: 100, y: 100 }]).sort()).toEqual([
+      1, 2,
+    ]);
   });
 
   test("re-inserting an id moves it for later queries", () => {
-    objects.set(1, { x: 10, y: 10 });
-    tree.insert(1, objects.get(1)!);
+    const start = { x: 10, y: 10 };
+    const moved = { x: 80, y: 80 };
+    objects.set(1, start);
+    tree.insert(1, start);
 
-    objects.set(1, { x: 80, y: 80 });
-    tree.insert(1, objects.get(1)!);
+    objects.set(1, moved);
+    tree.insert(1, moved);
 
     expect(tree.query([{ x: 0, y: 0 }, { x: 20, y: 20 }])).toEqual([]);
     expect(tree.query([{ x: 70, y: 70 }, { x: 90, y: 90 }])).toEqual([1]);

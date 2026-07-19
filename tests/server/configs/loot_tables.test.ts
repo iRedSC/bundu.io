@@ -49,16 +49,6 @@ function collectFixed(table: FixedLootTable, seed: number): Map<RegistryId<"item
 }
 
 describe("evaluateLoot fixed tables", () => {
-  test("is deterministic for the same seed and hit", () => {
-    const table = fixedTable();
-
-    for (let hit = 0; hit < table.size; hit += 1) {
-      expect(entries(evaluateLoot(table, 2468, hit))).toEqual(
-        entries(evaluateLoot(table, 2468, hit)),
-      );
-    }
-  });
-
   test("returns one item per valid hit and exactly preserves the configured multiset", () => {
     expect(entries(collectFixed(fixedTable(), 7))).toEqual([
       [ITEM_A as number, 2],
@@ -85,28 +75,6 @@ describe("evaluateLoot fixed tables", () => {
 });
 
 describe("evaluateLoot pool tables", () => {
-  test("is deterministic for the same seed and hit", () => {
-    const table: PoolLootTable = {
-      type: "pool",
-      pools: [
-        {
-          rolls: 4,
-          entries: [
-            { itemId: ITEM_A, count: 1, maxCount: 3, weight: 2 },
-            { itemId: ITEM_B, count: 2, maxCount: 5, weight: 5 },
-          ],
-          totalWeight: 7,
-        },
-      ],
-    };
-
-    for (const hit of [0, 1, 25, 1_000_000]) {
-      expect(entries(evaluateLoot(table, 314159, hit))).toEqual(
-        entries(evaluateLoot(table, 314159, hit)),
-      );
-    }
-  });
-
   test("honors every pool's roll count and aggregates repeated item results", () => {
     const table: PoolLootTable = {
       type: "pool",

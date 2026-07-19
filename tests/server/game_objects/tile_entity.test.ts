@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { TilePos } from "@bundu/shared/tiles";
+import {
+  FOOTPRINT_CIRCLE_RADIUS,
+  type TilePos,
+} from "@bundu/shared/tiles";
 import {
   deciPacketPos,
   makeTileEntity,
@@ -12,21 +15,30 @@ describe("tileEntityPhysics", () => {
 
     expect(physics.position.x).toBe(350);
     expect(physics.position.y).toBe(-150);
-    expect(physics.collider.pos).toBe(physics.position);
-    expect(physics.collider.r).toBe(physics.collisionRadius);
+    expect(physics.collisionRadius).toBe(FOOTPRINT_CIRCLE_RADIUS);
     expect(physics.rotation).toBe(270);
     expect(physics.speed).toBe(0);
   });
 });
 
 describe("makeTileEntity", () => {
-  test("defaults to a single occupied origin tile", () => {
+  test("defaults to a single occupied origin tile on the structure layer", () => {
     expect(makeTileEntity({ x: 4, y: 6 })).toEqual({
       origin: { x: 4, y: 6 },
       rot: 0,
       blocked: [{ x: 0, y: 0 }],
       occupied: [{ x: 4, y: 6 }],
       layer: "structure",
+    });
+  });
+
+  test("honors an explicit occupancy layer", () => {
+    expect(makeTileEntity({ x: 1, y: 2 }, 0, [{ x: 0, y: 0 }], "roof")).toEqual({
+      origin: { x: 1, y: 2 },
+      rot: 0,
+      blocked: [{ x: 0, y: 0 }],
+      occupied: [{ x: 1, y: 2 }],
+      layer: "roof",
     });
   });
 

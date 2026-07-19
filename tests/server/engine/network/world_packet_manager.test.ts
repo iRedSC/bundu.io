@@ -49,7 +49,7 @@ describe("WorldPacketManager", () => {
     ]);
   });
 
-  test("clear removes queued state and events", () => {
+  test("process leaves queues intact until clear", () => {
     const manager = new WorldPacketManager(
       new Serializer<ServerPacketMap>(ServerSchema),
     );
@@ -57,8 +57,16 @@ describe("WorldPacketManager", () => {
     manager.set(ServerPacket.SetRotation, { id: object.id, rotation: 90 });
     manager.emit(ServerPacket.ChatMessage, { id: object.id, message: "event" });
 
-    manager.clear();
+    const first = manager.process([object].values());
+    const second = manager.process([object].values());
 
+    expect(first).toEqual([
+      [ServerPacket.SetRotation, object.id, 90],
+      [ServerPacket.ChatMessage, object.id, "event"],
+    ]);
+    expect(second).toEqual(first);
+
+    manager.clear();
     expect(manager.process([object].values())).toEqual([]);
   });
 });
