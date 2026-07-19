@@ -10,12 +10,15 @@ import type { GroundPatchRef } from "./shore";
 
 /** How far the organic edge can push past the authored rect (tiles). */
 export const LAND_SEAM_AMPLITUDE = 1.15;
-/** Per-patch bake texels per tile — sharp; cheap because each patch is small. */
-const SEAM_SUBDIV = 48;
-/** ~1 texel analytic AA (tiles). */
-const SEAM_AA = 0.5 / SEAM_SUBDIV;
+/**
+ * Target texels per tile. Large patches drop to a lower subdiv so one bake
+ * cannot allocate hundreds of MB (200² @ 48 ≈ 366MB).
+ */
+const SEAM_SUBDIV_TARGET = 48;
+/** Hard cap on either bake edge (texels). */
+const SEAM_TEXEL_MAX = 2048;
 /** Extra sprite/frame padding so bulges / blobs stay visible. */
-export const LAND_SEAM_PAD_TILES = Math.ceil(LAND_SEAM_AMPLITUDE + SEAM_AA + 0.01);
+export const LAND_SEAM_PAD_TILES = Math.ceil(LAND_SEAM_AMPLITUDE + 0.02);
 /** Land patches to bake per live tick (keep at 1 — bakes are heavy). */
 export const LAND_SEAM_PER_TICK = 1;
 /** Live play: only run a bake tick every N frames to avoid hitching. */
@@ -54,24 +57,35 @@ export class LandSeamBaker {
         this.topLand.fill(0);
         const byBottom = [...patches].sort((a, b) => a.id - b.id);
         for (const patch of byBottom) {
-            if (isOceanType(patch.type)) continue;
             const x1 = Math.max(0, patch.x);
             const y1 = Math.max(0, patch.y);
             const x2 = Math.min(WORLD_TILES, patch.x + patch.w);
             const y2 = Math.min(WORLD_TILES, patch.y + patch.h);
+            const land = isOceanType(patch.type) ? 0 : 1;
             for (let ty = y1; ty < y2; ty++) {
                 const row = ty * WORLD_TILES;
                 for (let tx = x1; tx < x2; tx++) {
-                    this.topLand[row + tx] = 1;
+                    this.topLand[row + tx] = land;
                 }
             }
-            this.queue.push(patch);
+            if (land) this.queue.push(patch);
         }
         // Small patches first — seams appear sooner, less hitch per tick.
         this.queue.sort((a, b) => a.w * a.h - b.w * b.h);
         this.total = this.queue.length;
         this.done = 0;
         fillOceanDistance(this.topLand, this.oceanDist);
+    }
+
+    /** Drop textures + queue (world clear / soft reconnect). */
+    reset(): void {
+        for (const tex of this.textures.values()) tex.destroy(true);
+        this.textures.clear();
+        this.queue = [];
+        this.total = 0;
+        this.done = 0;
+        this.topLand.fill(0);
+        this.oceanDist.fill(0);
     }
 
     /** Bake up to `limit` queued patches. */
@@ -108,19 +122,23 @@ export class LandSeamBaker {
 
         const x0 = patch.x - pad;
         const y0 = patch.y - pad;
-        const tw = (patch.w + pad * 2) * SEAM_SUBDIV;
-        const th = (patch.h + pad * 2) * SEAM_SUBDIV;
+        const tileW = patch.w + pad * 2;
+        const tileH = patch.h + pad * 2;
+        const subdiv = seamSubdiv(tileW, tileH);
+        const aa = 0.5 / subdiv;
+        const tw = Math.max(1, Math.ceil(tileW * subdiv));
+        const th = Math.max(1, Math.ceil(tileH * subdiv));
         const pixels = new Uint8Array(tw * th * 4);
 
         for (let sy = 0; sy < th; sy++) {
             const row = sy * tw;
-            const py = y0 + (sy + 0.5) / SEAM_SUBDIV;
+            const py = y0 + (sy + 0.5) / subdiv;
             const ty = Math.min(
                 WORLD_TILES - 1,
                 Math.max(0, (py | 0))
             );
             for (let sx = 0; sx < tw; sx++) {
-                const px = x0 + (sx + 0.5) / SEAM_SUBDIV;
+                const px = x0 + (sx + 0.5) / subdiv;
                 const tx = Math.min(
                     WORLD_TILES - 1,
                     Math.max(0, (px | 0))
@@ -150,13 +168,10 @@ export class LandSeamBaker {
 
                 const landLand = facesLandLand(tx, ty, patch, topLand);
                 let edge = sdf;
-                if (
-                    landLand &&
-                    Math.abs(sdf) <= LAND_SEAM_AMPLITUDE + SEAM_AA
-                ) {
+                if (landLand && Math.abs(sdf) <= LAND_SEAM_AMPLITUDE + aa) {
                     edge = sdf - seamOffset(px, py);
                 }
-                const cover = coverage(edge);
+                const cover = coverage(edge, aa);
                 if (cover <= 0) continue;
                 writeLand(pixels, row + sx, lr, lg, lb, cover);
             }
@@ -217,11 +232,16 @@ function writeLand(
     pixels[o + 3] = 255;
 }
 
-function coverage(sdfW: number): number {
-    const b = SEAM_AA;
-    if (sdfW <= -b) return 1;
-    if (sdfW >= b) return 0;
-    const t = (sdfW + b) / (2 * b);
+function seamSubdiv(tileW: number, tileH: number): number {
+    const maxEdge = Math.max(tileW, tileH, 1);
+    const capped = Math.max(1, Math.floor(SEAM_TEXEL_MAX / maxEdge));
+    return Math.max(1, Math.min(SEAM_SUBDIV_TARGET, capped));
+}
+
+function coverage(sdfW: number, aa: number): number {
+    if (sdfW <= -aa) return 1;
+    if (sdfW >= aa) return 0;
+    const t = (sdfW + aa) / (2 * aa);
     const s = t * t * (3 - 2 * t);
     return 1 - s;
 }

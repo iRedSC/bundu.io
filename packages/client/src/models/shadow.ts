@@ -5,6 +5,7 @@ import type {
 import {
     parseClientGameplayConfig,
 } from "@bundu/shared/client_gameplay";
+import { applyOceanFx } from "../world/ground/ocean_fx";
 
 /** Global drop-shadow look — pack defaults applied via {@link applyClientGameplay}. */
 export type ShadowStyle = {
@@ -92,6 +93,7 @@ function applyShadows(config: ClientGameplayConfig["shadows"]): void {
 export function applyClientGameplay(raw: unknown): ClientGameplayConfig {
     const config = parseClientGameplayConfig(raw);
     applyShadows(config.shadows);
+    applyOceanFx(config.ocean);
     return config;
 }
 

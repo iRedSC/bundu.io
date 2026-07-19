@@ -37,7 +37,8 @@ data/bundu/buildings/wood_wall.yml        -> bundu:wood_wall
 data/bundu/items/wood_sword.yml           -> bundu:wood_sword
 data/bundu/ground_types/grass.yml         -> bundu:grass
 # ground_type fields: speed_multiplier, model (client ground-visual id)
-# plus optional whenOccupied effect contexts. Colors live on client models.
+# plus optional whenOccupied effect contexts.
+# Visuals (color/kind/textures) live in assets/<ns>/ground_models/<model>.yml
 data/bundu/decorations/beach.yml          -> bundu:beach
 data/bundu/recipes/wood_wall.yml          -> bundu:wood_wall
 data/bundu/loot_tables/bear_dead.yml      -> bundu:bear_dead
@@ -174,7 +175,34 @@ assets/bundu/models/items/type/sword.yml
 assets/bundu/models/decorations/beach.yml
 assets/bundu/lang/en.yml
 assets/bundu/gameplay.yml
+assets/bundu/ground_models/grass.yml
+assets/bundu/ground_models/ocean.yml
 ```
+
+### Ground models
+
+Client ground visuals (not entity `ModelDef`s) live under
+`assets/<namespace>/ground_models/<id>.yml`. `ground_type.model` must reference
+one of these ids. Kinds:
+
+```yaml
+# solid fill + land↔land seam bake
+kind: solid
+color: "#2a462b"
+
+# ocean FX + nearshore bake (textures sanitized like entity models)
+kind: ocean
+color: "#1a5f8a"
+textures:
+    caustics: bundu/effect/ocean_caustics.jpg
+    displace: bundu/effect/ocean_displace.png
+    ripple_idle: bundu/effect/ocean_ripple.png
+    ripple_move: bundu/effect/ocean_ripple_move.png
+    foam: bundu/effect/ocean_foam.svg
+    sparkle: bundu/effect/ocean_sparkle.svg
+```
+
+Ocean scroll/wake/splash tuning is pack-authored under `gameplay.yml` → `ocean:`.
 
 Model YAML files use an explicit `id` field (filename is for organization).
 Item models use `item/<item_id>` ids, with shared abstracts under `item/type/...`.

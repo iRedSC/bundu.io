@@ -17,10 +17,9 @@ import { SkyUndoLayer } from "./sky_undo_layer";
 import {
     collectShoreSamples,
     createGround,
-    createOceanFill,
+    createOceanFillForType,
     GROUND_Z_BASE,
     GROUND_Z_OCEAN,
-    GROUND_Z_OCEAN_FILL,
     groundModel,
     isOceanGroundModel,
     LandDistanceField,
@@ -31,6 +30,7 @@ import {
     type GroundVisual,
     type ShoreSample,
 } from "./ground";
+import { parseHexColor } from "@bundu/shared/ground_models";
 import { createDecoration, type DecorationSprite } from "./decoration";
 import {
     radians,
@@ -39,7 +39,7 @@ import {
 } from "@bundu/shared";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
-import { Point, Rectangle, Text, type Renderer } from "pixi.js";
+import { Point, Text, type Renderer } from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
@@ -156,9 +156,13 @@ export class World {
     private readonly landSeamBaker = new LandSeamBaker();
     /** Frame counter for live seam bake pacing. */
     private landSeamFrame = 0;
-    /** Patches sorted by id desc — first hit in point queries is topmost. */
-    private groundByTop: GroundPatch[] = [];
     private oceanTypeIds = new Set<number>();
+    /** Topmost-patch ocean mask (1 = ocean). Empty tiles stay 0. */
+    private readonly oceanTiles = new Uint8Array(WORLD_TILES * WORLD_TILES);
+    /** First ocean model color in the current stack (nearshore bake). */
+    private oceanColor = 0x1a5f8a;
+    /** True after at least one LoadGround/UnloadGround sync this session. */
+    private groundSynced = false;
     /** Last idle / move wake spawn times per entity on water. */
     private readonly wakeIdleAt = new Map<number, number>();
     private readonly wakeMoveAt = new Map<number, number>();
@@ -201,9 +205,11 @@ export class World {
         this.renderer.delete(GROUND_RENDER_ID);
         this.oceanVisual = undefined;
         this.groundPatches.length = 0;
-        this.groundByTop = [];
         this.oceanTypeIds.clear();
+        this.oceanTiles.fill(0);
         this.shoreSamples = [];
+        this.landSeamBaker.reset();
+        this.groundSynced = false;
         this.wakeIdleAt.clear();
         this.wakeMoveAt.clear();
         this.wakeSplashAt.clear();
@@ -779,14 +785,12 @@ export class World {
             const modelId = clientGroundType(type).model;
             const ocean = isOceanGroundModel(modelId);
             const visual = ocean
-                ? createOceanFill(
-                      new Rectangle(
-                          x * TILE_SIZE,
-                          y * TILE_SIZE,
-                          w * TILE_SIZE,
-                          h * TILE_SIZE
-                      ),
-                      GROUND_Z_OCEAN_FILL
+                ? createOceanFillForType(
+                      type,
+                      x * TILE_SIZE,
+                      y * TILE_SIZE,
+                      w * TILE_SIZE,
+                      h * TILE_SIZE
                   )
                 : createGround(
                       type,
@@ -800,6 +804,7 @@ export class World {
             this.groundPatches.push({ id, type, x, y, w, h, visual });
             this.renderer.add(GROUND_RENDER_ID, visual.container);
         }
+        this.groundSynced = true;
         this.rebuildShoreSamples();
     };
 
@@ -816,6 +821,7 @@ export class World {
                 break;
             }
         }
+        this.groundSynced = true;
         this.rebuildShoreSamples();
     };
 
@@ -838,13 +844,30 @@ export class World {
     }
 
     private rebuildShoreSamples(): void {
-        this.groundByTop = [...this.groundPatches].sort((a, b) => b.id - a.id);
         this.oceanTypeIds.clear();
-        for (const patch of this.groundPatches) {
-            if (isOceanGroundModel(clientGroundType(patch.type).model)) {
+        this.oceanTiles.fill(0);
+        let oceanColor: number | undefined;
+        const byBottom = [...this.groundPatches].sort((a, b) => a.id - b.id);
+        for (const patch of byBottom) {
+            const modelId = clientGroundType(patch.type).model;
+            const ocean = isOceanGroundModel(modelId);
+            if (ocean) {
                 this.oceanTypeIds.add(patch.type);
+                oceanColor ??= parseHexColor(groundModel(modelId).color);
+            }
+            const x1 = Math.max(0, patch.x);
+            const y1 = Math.max(0, patch.y);
+            const x2 = Math.min(WORLD_TILES, patch.x + patch.w);
+            const y2 = Math.min(WORLD_TILES, patch.y + patch.h);
+            const bit = ocean ? 1 : 0;
+            for (let ty = y1; ty < y2; ty++) {
+                const row = ty * WORLD_TILES;
+                for (let tx = x1; tx < x2; tx++) {
+                    this.oceanTiles[row + tx] = bit;
+                }
             }
         }
+        if (oceanColor !== undefined) this.oceanColor = oceanColor;
         if (this.oceanTypeIds.size === 0 && this.oceanVisual) {
             this.renderer.remove(
                 GROUND_RENDER_ID,
@@ -859,16 +882,11 @@ export class World {
             this.oceanVisual = undefined;
         }
         const isOcean = (type: number) => this.oceanTypeIds.has(type);
-        const colorOfType = (type: number) => {
-            const hex = groundModel(clientGroundType(type).model).color;
-            return Number.parseInt(hex.replace("#", ""), 16);
-        };
+        const colorOfType = (type: number) =>
+            parseHexColor(groundModel(clientGroundType(type).model).color);
         this.shoreSamples = collectShoreSamples(this.groundPatches, isOcean);
         this.landDistance.rebuild(this.groundPatches, isOcean, colorOfType);
-        const oceanHex = groundModel("ocean").color;
-        this.nearshoreFill.setOceanColor(
-            Number.parseInt(oceanHex.replace("#", ""), 16)
-        );
+        this.nearshoreFill.setOceanColor(this.oceanColor);
         this.nearshoreFill.paint(this.landDistance);
         // Unbind before prepare destroys textures — Pixi crashes on null alphaMode
         // if sprites still reference destroyed sources.
@@ -904,6 +922,11 @@ export class World {
         return { done, total, pending: this.landSeamBaker.pending };
     }
 
+    /** True once the server has sent at least one ground sync this session. */
+    hasGroundSync(): boolean {
+        return this.groundSynced;
+    }
+
     /**
      * Bake several seam patches now (loading screen). Returns true when idle.
      */
@@ -916,22 +939,14 @@ export class World {
         if (this.oceanTypeIds.size === 0) return;
 
         const bounds = this.viewport.getVisibleBounds();
-        const byTop = this.groundByTop;
-        const oceanTypes = this.oceanTypeIds;
+        const oceanTiles = this.oceanTiles;
         const isOceanAt = (worldX: number, worldY: number) => {
             const tx = (worldX / TILE_SIZE) | 0;
             const ty = (worldY / TILE_SIZE) | 0;
-            for (const patch of byTop) {
-                if (
-                    tx >= patch.x &&
-                    ty >= patch.y &&
-                    tx < patch.x + patch.w &&
-                    ty < patch.y + patch.h
-                ) {
-                    return oceanTypes.has(patch.type);
-                }
+            if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
+                return false;
             }
-            return false;
+            return oceanTiles[ty * WORLD_TILES + tx] === 1;
         };
         const oceanVisualAt = (worldX: number, worldY: number) => {
             return isOceanAt(worldX, worldY)

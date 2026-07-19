@@ -1,3 +1,4 @@
+import type { OceanGroundTextures } from "@bundu/shared/ground_models";
 import type { Container, Rectangle, Renderer, Texture } from "pixi.js";
 import type { ParticleBurst } from "../../rendering/particles/types";
 
@@ -71,9 +72,22 @@ export type GroundVisual = {
     ): void;
 };
 
-export type GroundModelDef = {
+type GroundModelBase = {
     id: string;
     /** Admin palette / ghost swatch + base fill. */
     color: string;
     create(bounds: Rectangle, zIndex: number): GroundVisual;
 };
+
+export type SolidGroundModelDef = GroundModelBase & {
+    kind: "solid";
+};
+
+export type OceanGroundModelRuntime = GroundModelBase & {
+    kind: "ocean";
+    textures: OceanGroundTextures;
+    /** Opaque fill under land (shared shore color bake). */
+    createFill(bounds: Rectangle, zIndex: number): GroundVisual;
+};
+
+export type GroundModelDef = SolidGroundModelDef | OceanGroundModelRuntime;

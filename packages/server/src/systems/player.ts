@@ -411,7 +411,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
-        if (!data || data.crafting) return;
+        if (!data?.clientReady || data.crafting) return;
         this.clearEating(player);
 
         const recipe = craftingList.get(recipeId);
@@ -541,7 +541,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
-        if (data?.crafting) return;
+        if (!data?.clientReady || data.crafting) return;
         this.clearEating(player);
         const inv = Inventory.get(player);
         if (!inv || slot < 0 || slot >= inv.slots.length) return;
@@ -561,7 +561,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
-        if (data?.crafting) return;
+        if (!data?.clientReady || data.crafting) return;
         this.clearEating(player);
         const inv = Inventory.get(player);
         if (!inv) return;
@@ -587,7 +587,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
-        if (data?.crafting) return;
+        if (!data?.clientReady || data.crafting) return;
         this.clearEating(player);
         const inv = Inventory.get(player);
         if (!inv) return;

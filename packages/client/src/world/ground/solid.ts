@@ -1,5 +1,5 @@
 import { Sprite, Texture, type Rectangle } from "pixi.js";
-import type { GroundModelDef, GroundVisual } from "./types";
+import type { GroundVisual } from "./types";
 import { bindLandSeamSprite, clearLandSeamSprite } from "./land_seam";
 
 export function createSolidGround(
@@ -21,17 +21,6 @@ export function createSolidGround(
         },
         clearLandSeam() {
             clearLandSeamSprite(sprite, bounds, color);
-        },
-    };
-}
-
-export function solidModel(id: string, hex: string): GroundModelDef {
-    const color = Number.parseInt(hex.replace("#", ""), 16);
-    return {
-        id,
-        color: hex,
-        create(bounds, zIndex) {
-            return createSolidGround(color, bounds, zIndex);
         },
     };
 }

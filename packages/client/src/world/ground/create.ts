@@ -35,3 +35,21 @@ export function createGround(
     const model = groundModel(clientGroundType(type).model);
     return model.create(new Rectangle(x, y, w, h), zIndex);
 }
+
+/** Opaque ocean fill for one authored ocean rectangle. */
+export function createOceanFillForType(
+    type: number,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    zIndex = GROUND_Z_OCEAN_FILL
+): GroundVisual {
+    const model = groundModel(clientGroundType(type).model);
+    if (model.kind !== "ocean") {
+        throw new Error(
+            `Ground type ${type} model "${model.id}" is not ocean`
+        );
+    }
+    return model.createFill(new Rectangle(x, y, w, h), zIndex);
+}

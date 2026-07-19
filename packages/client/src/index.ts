@@ -242,10 +242,13 @@ async function waitForWorldReady(world: World): Promise<boolean> {
     });
 
     const started = performance.now();
-    // Wait for the first ground rebuild (or a short timeout on empty maps).
+    // Wait until the server has synced ground (including ocean-only maps).
     while (gen === worldGateGeneration) {
-        const { total } = world.landSeamProgress();
-        if (total > 0 || performance.now() - started > 2500) break;
+        if (world.hasGroundSync()) break;
+        if (performance.now() - started > 15_000) {
+            hideLoading();
+            return false;
+        }
         setLoadingProgress({
             status: "Loading world…",
             progress: 0.6,
@@ -256,21 +259,11 @@ async function waitForWorldReady(world: World): Promise<boolean> {
 
     while (gen === worldGateGeneration) {
         const { done, total, pending } = world.landSeamProgress();
-        if (pending === 0) {
-            // No land patches, or bake finished.
-            if (total === 0 && performance.now() - started < 400) {
-                await sleep(40);
-                continue;
-            }
-            break;
-        }
+        if (pending === 0) break;
         world.flushLandSeams(8);
         const frac = total > 0 ? done / total : 1;
         setLoadingProgress({
-            status:
-                total > 0
-                    ? `Preparing terrain… (${done}/${total})`
-                    : "Preparing terrain…",
+            status: `Preparing terrain… (${done}/${total})`,
             progress: 0.65 + 0.34 * frac,
         });
         await sleep(0);
@@ -369,6 +362,9 @@ async function main() {
             });
         },
         onSoftDisconnected: () => {
+            // Cancel any in-flight ClientReady gate; reconnect restarts it.
+            worldGateGeneration++;
+            hideLoading();
             // Keep game shell visible; reconnect with the same reclaim token.
             setMenuVisible(false);
             playButton.textContent = "Reconnecting…";

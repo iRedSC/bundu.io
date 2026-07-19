@@ -18,3 +18,50 @@ shadows:
             fire_small: 0.8
             fire_big: 1
             fire_pit: 1.2
+
+# Ocean FX tuning. Textures live on the ocean ground model.
+ocean:
+    caustics:
+        a:
+            tint: "#366888"
+            alpha: 0.055
+            tile_scale: 2.4
+            scroll: { x: 12, y: 8 }
+        b:
+            tint: "#8cc3e8"
+            alpha: 0.045
+            tile_scale: 1.15
+            scroll: { x: -9, y: 11 }
+    swell:
+        big:
+            world: 720
+            alpha: 0.4
+            scroll: { x: 28, y: 18 }
+        small:
+            world: 280
+            alpha: 0.18
+            scroll: { x: 42, y: 27 }
+    displace_strength: 140
+    wake:
+        max: 300
+        life_ms: 5000
+        idle: { start_size: 160, grow_speed: 160 }
+        move: { start_size: 90, grow_speed: 240 }
+    splash:
+        max: 300
+        strength: 14
+        spread_deg: 100
+        friction: 4.5
+        speed_min: 1.7
+        speed_max: 2.1
+        size_min: 50
+        size_max: 88
+        size_end: 12
+    particles:
+        foam_interval_ms: [180, 400]
+        sparkle_interval_ms: [280, 600]
+        shore_filter_ms: 250
+    # Soften heavy FX past this view area (world²); never fully cull.
+    heavy_area: 7840000
+    # Skip ambient particles past this view area (world²).
+    particle_max_area: 36000000
