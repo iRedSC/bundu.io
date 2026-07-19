@@ -3,6 +3,7 @@ import {
     suggestCommand,
     tokenizeCommand,
     type CommandRegistryProjection,
+    type CommandSuggestion,
     type CommandToken,
 } from "@bundu/shared/command";
 import { clientRegistries } from "../configs/registries";
@@ -85,7 +86,7 @@ export class ChatController {
     private history = loadHistory();
     private historyIndex = -1;
     private draft = "";
-    private suggestions: string[] = [];
+    private suggestions: CommandSuggestion[] = [];
     private suggestIndex = 0;
     private open = false;
     /** Dedupe anon-proxy double ChatMessage emits. */
@@ -102,6 +103,8 @@ export class ChatController {
             highlight: el("chat-highlight"),
             input: el<HTMLInputElement>("chat-input"),
         };
+
+        this.hud.log.classList.add("hidden");
 
         this.hud.input.addEventListener("input", () => {
             this.historyIndex = -1;
@@ -133,11 +136,13 @@ export class ChatController {
     openCompose(): void {
         this.open = true;
         this.hud.compose.classList.remove("hidden");
+        this.hud.log.classList.remove("hidden");
         this.hud.input.focus();
         this.historyIndex = -1;
         this.draft = "";
         this.refreshSuggest();
         this.refreshHighlight();
+        this.hud.log.scrollTop = this.hud.log.scrollHeight;
     }
 
     closeCompose(clear = true): void {
@@ -149,6 +154,7 @@ export class ChatController {
         }
         this.hud.input.blur();
         this.hud.compose.classList.add("hidden");
+        this.hud.log.classList.add("hidden");
         this.hud.suggest.replaceChildren();
         this.suggestions = [];
         this.refreshHighlight();
@@ -165,6 +171,7 @@ export class ChatController {
         this.draft = "";
         this.hud.input.blur();
         this.hud.compose.classList.add("hidden");
+        this.hud.log.classList.add("hidden");
         this.hud.suggest.replaceChildren();
         this.suggestions = [];
         this.refreshHighlight();
@@ -204,7 +211,9 @@ export class ChatController {
         while (this.hud.log.children.length > LOG_LIMIT) {
             this.hud.log.firstElementChild?.remove();
         }
-        this.hud.log.scrollTop = this.hud.log.scrollHeight;
+        if (this.open) {
+            this.hud.log.scrollTop = this.hud.log.scrollHeight;
+        }
     }
 
     private pushHistory(entry: string): void {
@@ -216,6 +225,51 @@ export class ChatController {
     }
 
     private onInputKeyDown(event: KeyboardEvent): void {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            this.closeCompose();
+            return;
+        }
+
+        const hasSuggest = this.suggestions.length > 0;
+
+        if (event.key === "Tab") {
+            event.preventDefault();
+            if (!hasSuggest) return;
+            if (event.shiftKey) {
+                this.moveSuggest(-1);
+                this.applyCurrentSuggestion();
+                return;
+            }
+            const sizeBefore = this.suggestions.length;
+            const insertBefore =
+                this.suggestions[this.suggestIndex]?.insert ?? "";
+            this.applyCurrentSuggestion();
+            if (!insertBefore) {
+                this.moveSuggest(1);
+                return;
+            }
+            // Same completion set — advance highlight for the next Tab.
+            if (
+                this.suggestions.length === sizeBefore &&
+                this.suggestions.some((entry) => entry.insert === insertBefore)
+            ) {
+                this.moveSuggest(1);
+            }
+            return;
+        }
+
+        if (hasSuggest && event.key === "ArrowDown") {
+            event.preventDefault();
+            this.moveSuggest(1);
+            return;
+        }
+        if (hasSuggest && event.key === "ArrowUp") {
+            event.preventDefault();
+            this.moveSuggest(-1);
+            return;
+        }
+
         if (event.key === "ArrowUp") {
             event.preventDefault();
             this.historyStep(-1);
@@ -224,18 +278,15 @@ export class ChatController {
         if (event.key === "ArrowDown") {
             event.preventDefault();
             this.historyStep(1);
-            return;
         }
-        if (event.key === "Tab") {
-            if (this.suggestions.length === 0) return;
-            event.preventDefault();
-            this.applyCurrentSuggestion();
-            return;
-        }
-        if (event.key === "Escape") {
-            event.preventDefault();
-            this.closeCompose();
-        }
+    }
+
+    private moveSuggest(delta: number): void {
+        if (this.suggestions.length === 0) return;
+        const count = this.suggestions.length;
+        this.suggestIndex = (this.suggestIndex + delta + count) % count;
+        this.renderSuggestList();
+        this.scrollActiveSuggestIntoView();
     }
 
     private historyStep(delta: number): void {
@@ -259,7 +310,7 @@ export class ChatController {
         this.refreshHighlight();
     }
 
-    private refreshSuggest(): void {
+    private refreshSuggest(resetIndex = true): void {
         const value = this.hud.input.value;
         const cursor = this.hud.input.selectionStart ?? value.length;
         this.suggestions = value.startsWith("/")
@@ -267,13 +318,33 @@ export class ChatController {
                   itemIds: itemSuggestionIds(),
               })
             : [];
-        this.suggestIndex = 0;
+        if (resetIndex) this.suggestIndex = 0;
+        else if (this.suggestIndex >= this.suggestions.length) {
+            this.suggestIndex = Math.max(0, this.suggestions.length - 1);
+        }
+        this.renderSuggestList();
+    }
+
+    private renderSuggestList(): void {
         this.hud.suggest.replaceChildren();
         for (const [index, suggestion] of this.suggestions.entries()) {
             const item = document.createElement("li");
             item.className = "chat-suggest-item";
+            if (!suggestion.insert) item.classList.add("chat-suggest-type");
             if (index === this.suggestIndex) item.classList.add("active");
-            item.textContent = suggestion;
+
+            const label = document.createElement("span");
+            label.className = "chat-suggest-label";
+            label.textContent = suggestion.label;
+            item.appendChild(label);
+
+            if (suggestion.hint) {
+                const hint = document.createElement("span");
+                hint.className = "chat-suggest-hint";
+                hint.textContent = suggestion.hint;
+                item.appendChild(hint);
+            }
+
             item.addEventListener("mousedown", (event) => {
                 event.preventDefault();
                 this.suggestIndex = index;
@@ -283,14 +354,25 @@ export class ChatController {
         }
     }
 
+    private scrollActiveSuggestIntoView(): void {
+        const active = this.hud.suggest.children[this.suggestIndex];
+        if (active instanceof HTMLElement) {
+            active.scrollIntoView({ block: "nearest" });
+        }
+    }
+
     private applyCurrentSuggestion(): void {
         const suggestion = this.suggestions[this.suggestIndex];
-        if (!suggestion) return;
+        if (!suggestion?.insert) return;
         const cursor = this.hud.input.selectionStart ?? this.hud.input.value.length;
         const next = applySuggestion(this.hud.input.value, cursor, suggestion);
         this.hud.input.value = next.value;
         this.hud.input.setSelectionRange(next.cursor, next.cursor);
-        this.refreshSuggest();
+        const kept = suggestion.insert;
+        this.refreshSuggest(false);
+        const idx = this.suggestions.findIndex((entry) => entry.insert === kept);
+        this.suggestIndex = idx >= 0 ? idx : 0;
+        this.renderSuggestList();
         this.refreshHighlight();
     }
 

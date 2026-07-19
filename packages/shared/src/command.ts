@@ -50,6 +50,41 @@ export type SuggestContext = {
     itemIds?: readonly string[];
 };
 
+/** One autocomplete row. Type-only rows have an empty `insert`. */
+export type CommandSuggestion = {
+    /** Text written into the input when applied. */
+    insert: string;
+    /** Primary text in the list. */
+    label: string;
+    /** Type / usage hint shown beside the label (e.g. `<int>`). */
+    hint?: string;
+};
+
+function argTypeHint(arg: CommandArgProjection): string {
+    switch (arg.type) {
+        case "integer":
+            return "<int>";
+        case "float":
+            return "<float>";
+        case "word":
+            return `<${arg.name}>`;
+        case "item":
+            return "<item>";
+        case "enum":
+            return `<${arg.name}>`;
+    }
+}
+
+function commandUsageHint(command: CommandProjection): string | undefined {
+    if (command.args.length === 0) return undefined;
+    return command.args
+        .map((arg) => {
+            const hint = argTypeHint(arg);
+            return arg.optional ? `[${hint}]` : hint;
+        })
+        .join(" ");
+}
+
 class StringReader {
     readonly input: string;
     cursor = 0;
@@ -142,16 +177,32 @@ function suggestionsForArg(
     arg: CommandArgProjection,
     partial: string,
     ctx: SuggestContext
-): string[] {
+): CommandSuggestion[] {
+    const hint = argTypeHint(arg);
     switch (arg.type) {
         case "enum":
-            return filterPrefix(arg.values ?? [], partial);
-        case "item":
-            return filterPrefix(ctx.itemIds ?? [], partial).slice(0, 40);
+            return filterPrefix(arg.values ?? [], partial).map((value) => ({
+                insert: value,
+                label: value,
+                hint,
+            }));
+        case "item": {
+            const items = filterPrefix(ctx.itemIds ?? [], partial)
+                .slice(0, 40)
+                .map((value) => ({
+                    insert: value,
+                    label: value,
+                    hint,
+                }));
+            if (items.length === 0) {
+                return [{ insert: "", label: hint }];
+            }
+            return items;
+        }
         case "integer":
         case "float":
         case "word":
-            return [];
+            return [{ insert: "", label: hint }];
     }
 }
 
@@ -205,14 +256,14 @@ export function parseCommand(
 
 /**
  * Completions for the token under `cursor` (0..length).
- * Returns bare suggestion strings (no leading `/` except for first command).
+ * Command names include a usage `hint`; typed args include `<int>`-style hints.
  */
 export function suggestCommand(
     input: string,
     cursor: number,
     registry: CommandRegistryProjection,
     ctx: SuggestContext = {}
-): string[] {
+): CommandSuggestion[] {
     const clamped = Math.max(0, Math.min(cursor, input.length));
     const before = input.slice(0, clamped);
     if (!before.startsWith("/")) return [];
@@ -232,7 +283,17 @@ export function suggestCommand(
         return filterPrefix(
             registry.commands.map((command) => command.name),
             partial
-        ).map((name) => `/${name}`);
+        ).flatMap((name) => {
+            const command = findCommand(registry, name);
+            if (!command) return [];
+            return [
+                {
+                    insert: `/${name}`,
+                    label: `/${name}`,
+                    hint: commandUsageHint(command),
+                },
+            ];
+        });
     }
 
     const command = findCommand(registry, nameTok.value);
@@ -346,24 +407,28 @@ export function filterRegistryByOpLevel(
 export function applySuggestion(
     input: string,
     cursor: number,
-    suggestion: string
+    suggestion: string | CommandSuggestion
 ): { value: string; cursor: number } {
+    const insert =
+        typeof suggestion === "string" ? suggestion : suggestion.insert;
+    if (!insert) return { value: input, cursor };
+
     const clamped = Math.max(0, Math.min(cursor, input.length));
     const before = input.slice(0, clamped);
     const after = input.slice(clamped);
 
-    if (suggestion.startsWith("/")) {
+    if (insert.startsWith("/")) {
         const space = before.indexOf(" ");
         const headEnd = space === -1 ? before.length : space;
-        const value = `${suggestion}${before.slice(headEnd)}${after}`;
-        return { value, cursor: suggestion.length };
+        const value = `${insert}${before.slice(headEnd)}${after}`;
+        return { value, cursor: insert.length };
     }
 
     let i = clamped;
     while (i > 0 && before[i - 1] !== " " && before[i - 1] !== "/") i--;
     let j = 0;
     while (j < after.length && after[j] !== " ") j++;
-    const value = `${before.slice(0, i)}${suggestion}${after.slice(j)}`;
-    const nextCursor = i + suggestion.length;
+    const value = `${before.slice(0, i)}${insert}${after.slice(j)}`;
+    const nextCursor = i + insert.length;
     return { value, cursor: nextCursor };
 }

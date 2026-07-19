@@ -103,7 +103,8 @@ button:disabled {
     z-index: 3;
     position: absolute;
     left: 50%;
-    bottom: 8%;
+    /* Clear the hotbar (sits near the bottom edge). */
+    bottom: max(7.5rem, 20%);
     transform: translateX(-50%);
     width: min(42rem, 92vw);
     display: flex;
@@ -135,6 +136,10 @@ button:disabled {
         #000 100%
     );
     scrollbar-width: thin;
+}
+
+.chat-log.hidden {
+    display: none;
 }
 
 .chat-log-line {
@@ -184,15 +189,38 @@ button:disabled {
 }
 
 .chat-suggest-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
     padding: 0.3rem 0.55rem;
     color: #e8e4d4;
     font-size: 0.9rem;
     cursor: pointer;
 }
 
+.chat-suggest-item.chat-suggest-type {
+    cursor: default;
+    font-style: italic;
+    color: #b0b8a0;
+}
+
 .chat-suggest-item.active,
 .chat-suggest-item:hover {
     background: rgba(120, 150, 90, 0.28);
+}
+
+.chat-suggest-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-suggest-hint {
+    flex: 0 0 auto;
+    color: #8fa88a;
+    font-size: 0.82rem;
 }
 
 .chat-input-row {
