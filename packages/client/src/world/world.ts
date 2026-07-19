@@ -29,6 +29,7 @@ import {
     NearshoreFill,
     seamLodFromZoom,
     type GroundVisual,
+    type SeamLod,
     type ShoreSample,
 } from "./ground";
 import { parseHexColor } from "@bundu/shared/ground_models";
@@ -322,9 +323,13 @@ export class World {
 
     /**
      * Enter/exit freecam spectate mode: detach camera, hide the local avatar.
+     * Freecam immediately drops seam LOD and keeps it cheap until exit.
      */
     setFreecamMode(enabled: boolean): void {
         this.camera.setFreecam(enabled);
+        if (enabled) {
+            this.applyLandSeamLod(0);
+        }
         const local =
             this.user !== undefined ? this.objects.get(this.user) : undefined;
         if (local) {
@@ -894,7 +899,7 @@ export class World {
         for (const patch of this.groundPatches) {
             patch.visual.clearLandSeam?.();
         }
-        // Rebuild at crisp LOD; live play may drop via zoom buckets.
+        // Rebuild at crisp LOD; freecam / zoom-out may drop via live ticks.
         this.landSeamBaker.prepare(this.groundPatches, isOcean, colorOfType, 2);
         this.landSeamFrame = 0;
     }
@@ -907,11 +912,9 @@ export class World {
                 this.viewport.scale.x,
                 this.viewport.scale.y
             );
-            if (this.landSeamBaker.setLod(seamLodFromZoom(zoom))) {
-                for (const patch of this.groundPatches) {
-                    patch.visual.clearLandSeam?.();
-                }
-            }
+            this.applyLandSeamLod(
+                seamLodFromZoom(zoom, this.camera.isFreecam())
+            );
             this.landSeamFrame++;
             if (this.landSeamFrame % LAND_SEAM_TICK_INTERVAL !== 0) return;
             limit = LAND_SEAM_PER_TICK;
@@ -925,6 +928,14 @@ export class World {
         );
         for (const chunk of baked) {
             byId.get(chunk.id)?.visual.applyLandSeam?.(chunk);
+        }
+    }
+
+    /** Swap seam LOD; clears applied overlays when the baker rebuilds. */
+    private applyLandSeamLod(lod: SeamLod): void {
+        if (!this.landSeamBaker.setLod(lod)) return;
+        for (const patch of this.groundPatches) {
+            patch.visual.clearLandSeam?.();
         }
     }
 
