@@ -1,5 +1,6 @@
 import { BufferImageSource, Sprite, Texture, type Container } from "pixi.js";
 import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
+import { PLAY_MIN_ZOOM } from "../../rendering/camera";
 import { NEARSHORE_OVERSHOOT_TILES } from "./nearshore_fill";
 import type { GroundPatchRef } from "./shore";
 import type { GroundViewBounds } from "./types";
@@ -8,6 +9,11 @@ import type { GroundViewBounds } from "./types";
 export const LAND_SEAM_AMPLITUDE = 1.15;
 /** Extra sprite/frame padding so bulges / blobs stay visible. */
 export const LAND_SEAM_PAD_TILES = Math.ceil(LAND_SEAM_AMPLITUDE + 0.02);
+/**
+ * Flat fill stays this far inside the authored edge so organic cuts (and
+ * corner bites) never reveal the hard rect. Seam band paints the ring.
+ */
+export const LAND_SEAM_FILL_INSET_TILES = LAND_SEAM_PAD_TILES + 1;
 /** Land chunks to bake per live tick. */
 export const LAND_SEAM_PER_TICK = 1;
 /** Live play: only run a bake tick every N frames to avoid hitching. */
@@ -15,14 +21,17 @@ export const LAND_SEAM_TICK_INTERVAL = 3;
 
 /**
  * Max tile edge of one seam chunk. Keeps crisp subdiv cheap:
- * 32 × 48 texels/tile ≈ 1536 px — well under GPU comfort.
+ * 32 × 64 texels/tile = 2048 px — at the texel cap.
  */
 const SEAM_CHUNK_TILES = 32;
 /** Hard cap on either bake edge (texels), belt-and-suspenders. */
 const SEAM_TEXEL_MAX = 2048;
 
-/** Zoom → seam texel density buckets (avoid rebaking every wheel tick). */
-const LOD_SUBDIV = [6, 24, 48] as const;
+/**
+ * Zoom → seam texel density. Play zooms use the top bucket; freecam stays on
+ * the cheap floor. Mid bucket is only for the freecam zoom-out ramp.
+ */
+const LOD_SUBDIV = [8, 32, 64] as const;
 export type SeamLod = 0 | 1 | 2;
 
 const TILE_N = WORLD_TILES * WORLD_TILES;
@@ -47,10 +56,15 @@ type SeamChunkJob = {
     y1: number;
 };
 
-/** Zoom → LOD. Play (~0.75–2.5) stays crisp; freecam overview stays cheap. */
-export function seamLodFromZoom(zoom: number): SeamLod {
+/**
+ * Zoom → LOD. Any play-accessible zoom stays max (and higher-res than before).
+ * Freecam forces the cheap bucket immediately and keeps it; if freecam is off
+ * but zoom is somehow below play floor, mid/low buckets still apply.
+ */
+export function seamLodFromZoom(zoom: number, freecam = false): SeamLod {
+    if (freecam) return 0;
     if (zoom < 0.4) return 0;
-    if (zoom < 1.15) return 1;
+    if (zoom < PLAY_MIN_ZOOM) return 1;
     return 2;
 }
 
@@ -180,6 +194,7 @@ export class LandSeamBaker {
         const { topLand, oceanDist, lod } = this;
         const { patch, x0, y0, x1, y1 } = job;
         const pad = LAND_SEAM_PAD_TILES;
+        const fillInset = LAND_SEAM_FILL_INSET_TILES;
         const coastClear = NEARSHORE_OVERSHOOT_TILES;
         const rgb = this.colorOfType(patch.type);
         const lr = (rgb >> 16) & 0xff;
@@ -215,8 +230,15 @@ export class LandSeamBaker {
                     patch.w,
                     patch.h
                 );
-                // Deep interior is the inset fill sprite — leave transparent.
-                if (sdf <= -pad) continue;
+                // Deep interior is the inset fill — leave transparent. Tiny
+                // patches have no fill sprite, so paint the core opaque here.
+                const tiny =
+                    patch.w <= fillInset * 2 || patch.h <= fillInset * 2;
+                if (sdf <= -fillInset) {
+                    if (!tiny) continue;
+                    writeLand(pixels, row + sx, lr, lg, lb, 1);
+                    continue;
+                }
                 if (sdf >= pad) continue;
 
                 const authLand = topLand[tile] !== 0;
@@ -262,25 +284,25 @@ function edgeChunkRects(
     patch: GroundPatchRef
 ): Array<{ x0: number; y0: number; x1: number; y1: number }> {
     const pad = LAND_SEAM_PAD_TILES;
-    const band = pad * 2;
+    const inset = LAND_SEAM_FILL_INSET_TILES;
     const x0 = patch.x - pad;
     const y0 = patch.y - pad;
     const x1 = patch.x + patch.w + pad;
     const y1 = patch.y + patch.h + pad;
 
-    if (patch.w <= band || patch.h <= band) {
+    if (patch.w <= inset * 2 || patch.h <= inset * 2) {
         return chunkRect(x0, y0, x1, y1);
     }
 
     return [
-        ...chunkRect(x0, y0, x1, patch.y + pad),
-        ...chunkRect(x0, patch.y + patch.h - pad, x1, y1),
-        ...chunkRect(x0, patch.y + pad, patch.x + pad, patch.y + patch.h - pad),
+        ...chunkRect(x0, y0, x1, patch.y + inset),
+        ...chunkRect(x0, patch.y + patch.h - inset, x1, y1),
+        ...chunkRect(x0, patch.y + inset, patch.x + inset, patch.y + patch.h - inset),
         ...chunkRect(
-            patch.x + patch.w - pad,
-            patch.y + pad,
+            patch.x + patch.w - inset,
+            patch.y + inset,
             x1,
-            patch.y + patch.h - pad
+            patch.y + patch.h - inset
         ),
     ];
 }
@@ -481,7 +503,7 @@ function facesLandLand(
             const dt = ty - patch.y;
             const db = patch.y + patch.h - 1 - ty;
             const m = Math.min(dl, dr, dt, db);
-            if (m > LAND_SEAM_PAD_TILES) return false;
+            if (m > LAND_SEAM_FILL_INSET_TILES) return false;
             if (m === dl) checks.push([patch.x - 1, ty]);
             if (m === dr) checks.push([patch.x + patch.w, ty]);
             if (m === dt) checks.push([tx, patch.y - 1]);

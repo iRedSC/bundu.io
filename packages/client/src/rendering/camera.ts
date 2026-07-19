@@ -7,7 +7,8 @@ export type CameraOptions = {
     maxZoom?: number;
 };
 
-const PLAY_MIN_ZOOM = 0.75;
+/** Play-mode zoom floor — also the seam LOD “stay crisp” threshold. */
+export const PLAY_MIN_ZOOM = 0.75;
 const PLAY_MAX_ZOOM = 2.5;
 const FREECAM_MIN_ZOOM = 0.05;
 const FREECAM_MAX_ZOOM = 2.5;

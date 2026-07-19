@@ -1,7 +1,7 @@
 import { Container, Sprite, Texture, type Rectangle } from "pixi.js";
 import { TILE_SIZE } from "@bundu/shared/tiles";
 import {
-    LAND_SEAM_PAD_TILES,
+    LAND_SEAM_FILL_INSET_TILES,
     addLandSeamChunk,
     clearLandSeamLayer,
     type LandSeamChunkBake,
@@ -16,23 +16,19 @@ export function createSolidGround(
     const root = new Container();
     root.zIndex = zIndex;
 
-    const fill = new Sprite(Texture.WHITE);
-    fill.tint = color;
-    const padPx = LAND_SEAM_PAD_TILES * TILE_SIZE;
-    const insetW = bounds.width - padPx * 2;
-    const insetH = bounds.height - padPx * 2;
+    const insetPx = LAND_SEAM_FILL_INSET_TILES * TILE_SIZE;
+    const insetW = bounds.width - insetPx * 2;
+    const insetH = bounds.height - insetPx * 2;
     if (insetW > 0 && insetH > 0) {
-        // Safe opaque core — edge band overlays own the wiggly perimeter.
-        fill.position.set(bounds.x + padPx, bounds.y + padPx);
+        // Opaque core inset past max seam cut — edge band owns the perimeter.
+        const fill = new Sprite(Texture.WHITE);
+        fill.tint = color;
+        fill.position.set(bounds.x + insetPx, bounds.y + insetPx);
         fill.width = insetW;
         fill.height = insetH;
-    } else {
-        // Tiny patch: full AABB fill; seam chunks cover the padded ring.
-        fill.position.set(bounds.x, bounds.y);
-        fill.width = bounds.width;
-        fill.height = bounds.height;
+        root.addChild(fill);
     }
-    root.addChild(fill);
+    // Tiny patches: no flat rect; seam bake owns the whole silhouette.
 
     const seamLayer = new Container();
     root.addChild(seamLayer);
