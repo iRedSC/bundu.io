@@ -1,9 +1,4 @@
-import {
-    BufferImageSource,
-    Container,
-    Sprite,
-    Texture,
-} from "pixi.js";
+import { BufferImageSource, Sprite, Texture, type Container } from "pixi.js";
 import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
 import { NEARSHORE_OVERSHOOT_TILES } from "./nearshore_fill";
 import type { GroundPatchRef } from "./shore";
