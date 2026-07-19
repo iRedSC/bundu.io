@@ -230,12 +230,20 @@ export class ChatController {
     /**
      * Apply the highlighted insertable suggestion.
      * Returns true when compose should stay open (suggestion applied).
+     * If the completion is already fully typed, returns false so Enter sends.
      */
     acceptSuggestion(): boolean {
         if (!this.suggestions.some((entry) => entry.insert)) return false;
         const current = this.suggestions[this.suggestIndex];
         if (!current?.insert) return false;
+        const before = this.hud.input.value;
+        const beforeCursor =
+            this.hud.input.selectionStart ?? before.length;
         this.applyCurrentSuggestion();
+        const after = this.hud.input.value;
+        const afterCursor = this.hud.input.selectionStart ?? after.length;
+        // Already complete — let Enter send instead of no-oping.
+        if (before === after && beforeCursor === afterCursor) return false;
         return true;
     }
 
