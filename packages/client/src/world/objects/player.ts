@@ -11,13 +11,18 @@ import {
 import { type Container, Graphics, type Point, Text } from "pixi.js";
 import GameObject from "../game_object";
 import type { AnimationManager } from "../../animation/runtime";
-import { assemble } from "../../models/assemble";
+import { SpriteFactory } from "../../assets/sprite_factory";
+import { assemble, spilloverSpriteScale } from "../../models/assemble";
 import { bindAnimations } from "../../models/bind";
 import { playerDef } from "../../models/defs";
 import type { AnimContext, PartNode, SlotDef } from "../../models/types";
 import { mountModel, type MountedModel } from "../../models/mount";
 import { clientTime } from "@client/globals";
 import type { ParticleBurst } from "../../rendering/particles/types";
+
+const BODY_TEXTURE = "bundu/entity/player/player.png";
+const BODY_WITHOUT_FEATURES =
+    "bundu/entity/player/player_without_features.png";
 
 type nullish = undefined | null;
 
@@ -209,6 +214,28 @@ export class Player extends GameObject implements AnimContext {
         this.fillSlot("mainhand", this.mainhand);
         this.fillSlot("offhand", this.offhand);
         this.fillSlot("helmet", this.helmet);
+        this.setBodyTexture(
+            this.helmet ? BODY_WITHOUT_FEATURES : BODY_TEXTURE,
+            // Hat body is unpadded 100×100; default body uses authored spillover.
+            this.helmet ? 0 : undefined
+        );
+    }
+
+    private setBodyTexture(texture: string, spillover?: number) {
+        const body = this.parts.get("body");
+        if (!body) return;
+        const part = playerDef.parts.find((entry) => entry.name === "body");
+        SpriteFactory.update(body.visual, undefined, texture);
+        const scale = spilloverSpriteScale(
+            part?.spriteScale,
+            spillover ?? part?.spillover,
+            body.visual.sprite.texture
+        );
+        body.visual.scale.set(scale);
+        if (body.shadow) {
+            SpriteFactory.update(body.shadow, undefined, texture);
+            body.shadow.scale.set(scale);
+        }
     }
 
     showChatMessage(message: string) {

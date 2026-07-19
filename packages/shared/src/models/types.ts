@@ -27,8 +27,9 @@ export type PartDef = PartPose & {
     /** ContaineredSprite.scale on the visual (not SpriteFactory normalize). */
     spriteScale?: number;
     /**
-     * Extra pixels beyond the tile footprint this part's texture covers
-     * (tile entities only). Does not expand other parts' canvas.
+     * Extra pixels of padding around logical content.
+     * Actors: keeps content the same on-screen size as an unpadded texture.
+     * Tile entities: overhang beyond the shared tile canvas (per-part override).
      */
     spillover?: number;
     /** Create a hidden attach child for equipment / overlays. */

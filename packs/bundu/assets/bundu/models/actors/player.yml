@@ -1,19 +1,15 @@
 id: player
 parts:
     leftHand:
-        sprite: bundu/entity/player/hand.svg
-        scale: 0.7
-        pivot: { x: 1, y: 0 }
-        spriteScale: 0.5
+        sprite: bundu/entity/player/player_hand.svg
+        pivot: { x: 0.75, y: 0 }
         attach: true
         zIndex: 0
         shadow: 1
 
     rightHand:
-        sprite: bundu/entity/player/hand.svg
-        scale: 0.7
-        pivot: { x: -1, y: 0 }
-        spriteScale: 0.5
+        sprite: bundu/entity/player/player_hand.svg
+        pivot: { x: -0.75, y: 0 }
         attach: true
         attachAnchor: { x: 1, y: 0.5 }
         zIndex: 1
@@ -25,6 +21,7 @@ parts:
         attachAbove: true
         zIndex: 2
         shadow: 1
+        spillover: 50
 
 # Example:
 # variants:

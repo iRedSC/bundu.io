@@ -2,6 +2,7 @@ import {
     moveToward,
     moveInDirection,
     radians,
+    degrees,
 } from "@bundu/shared/transforms";
 import { attackFacingRadians } from "@bundu/shared/attack_box";
 import { decodeMoveDirection } from "@bundu/shared/movement";
@@ -12,6 +13,7 @@ import {
     GroundData,
     Health,
     Physics,
+    ResourceData,
 } from "../components/base.js";
 import { Flags } from "../components/flags.js";
 import {
@@ -21,6 +23,7 @@ import {
     moveSlot as applyMoveSlot,
     removeItem,
     tryConsumeAndAdd,
+    type ItemStack,
 } from "../components/inventory.js";
 import {
     clearEphemeralPlayerAttributeSources,
@@ -50,14 +53,16 @@ import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
 import { clearEditorHistory } from "../admin/history.js";
 import { clearAnimalsFrozenFor } from "../admin/state.js";
 import { PlaceMode } from "@bundu/shared/inventory";
-import { pointToTile, WORLD_BOUNDS, worldToDeci } from "@bundu/shared/tiles";
+import { pointToTile, TILE_SIZE, WORLD_BOUNDS, worldToDeci } from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { GroundItem } from "../game_objects/ground_item.js";
+import { Resource } from "../game_objects/resource.js";
 import { Circle, Vector } from "sat";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { syncFlags } from "../network/flags.js";
 import type { RenderDistanceSystem } from "./render_distance.js";
 import { getAnonProxyId } from "./anon_occlusion.js";
+import { gameRegistries } from "../configs/registries.js";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
@@ -229,16 +234,58 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!target.active) return;
         this.clearCraft(target);
         this.clearEating(target);
+
+        const physics = target.get(Physics);
+        const scale = target.get(Attributes).get("physics.scale");
+        const lootStacks = inventoryLoot(Inventory.get(target));
+        const position = new Vector(physics.position.x, physics.position.y);
+        const rotation = degrees(
+            attackFacingRadians(radians(physics.rotation))
+        );
+
         const data = PlayerData.get(target);
         if (data) data.sessionId = undefined;
         clearAnimalsFrozenFor(target.id);
         clearEditorHistory(target.id);
         target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
+
+        this.spawnPlayerCorpse(position, rotation, scale, lootStacks);
+
         const { socketManager } = this.world.context;
         const socket = socketManager.getSocket(target.id);
         socketManager.deleteClient(target.id);
         socket?.close(SESSION_ENDED_CLOSE, "session ended");
+    }
+
+    private spawnPlayerCorpse(
+        position: Vector,
+        rotation: number,
+        scale: number,
+        lootStacks: ItemStack[]
+    ) {
+        const baseRadius = TILE_SIZE / 2;
+        const corpse = new Resource(
+            {
+                position,
+                collider: new Circle(position, baseRadius),
+                collisionRadius: baseRadius,
+                rotation,
+                speed: 0,
+            },
+            {
+                id: gameRegistries().resource.resolve("player_dead", "bundu"),
+                variant: "base",
+            },
+            undefined,
+            scale
+        );
+        const resource = corpse.get(ResourceData);
+        resource.lootStacks = lootStacks;
+        resource.quantity = lootStacks.length;
+        resource.maximumQuantity = lootStacks.length;
+        resource.lootTableId = null;
+        this.world.addObject(corpse);
     }
 
     private emitCraftEvent(
@@ -816,4 +863,16 @@ export class PlayerSystem extends System<GameEventMap> {
         clearEphemeralPlayerIntent(data);
         this.renderDistanceSystem.enterFreecam(player);
     }
-};
+}
+
+function inventoryLoot(inventory: Inventory | undefined): ItemStack[] {
+    if (!inventory) return [];
+    const stacks: ItemStack[] = [];
+    for (const slot of inventory.slots) {
+        if (slot) stacks.push({ id: slot.id, count: slot.count });
+    }
+    if (inventory.cursor) {
+        stacks.push({ id: inventory.cursor.id, count: inventory.cursor.count });
+    }
+    return stacks;
+}

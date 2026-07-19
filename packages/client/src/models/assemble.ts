@@ -16,6 +16,28 @@ export type AssembledObject = {
     slots: Map<string, { node: PartNode; def: SlotDef }>;
 };
 
+/**
+ * Unit-normalized sprites use the full texture; spillover padding would shrink
+ * the logical content. Scale so content matches an unpadded texture.
+ */
+export function spilloverSpriteScale(
+    spriteScale: number | undefined,
+    spillover: number | undefined,
+    texture: { width: number; height: number }
+): number {
+    const base = spriteScale ?? 1;
+    const pad = spillover ?? 0;
+    if (pad <= 0) return base;
+    const longest = Math.max(texture.width, texture.height);
+    const content = longest - pad * 2;
+    if (content <= 0) {
+        throw new Error(
+            `spillover ${pad} leaves no content in ${longest}px texture`
+        );
+    }
+    return base * (longest / content);
+}
+
 /** Same silhouette as the part, solid black — posed by {@link ShadowLayer}. */
 function buildShadow(
     texture: string,
@@ -24,7 +46,9 @@ function buildShadow(
 ): ContaineredSprite {
     const shadow = SpriteFactory.build(texture);
     shadow.anchor.set(anchor.x, anchor.y);
-    shadow.scale.set(part.spriteScale ?? 1);
+    shadow.scale.set(
+        spilloverSpriteScale(part.spriteScale, part.spillover, shadow.sprite.texture)
+    );
     shadow.sprite.tint = 0x000000;
     shadow.eventMode = "none";
     return shadow;
@@ -74,7 +98,13 @@ function assembleSprites(
         const visual = SpriteFactory.build(sprite ?? "");
         const anchor = part.anchor ?? { x: 0.5, y: 0.5 };
         visual.anchor.set(anchor.x, anchor.y);
-        visual.scale.set(part.spriteScale ?? 1);
+        visual.scale.set(
+            spilloverSpriteScale(
+                part.spriteScale,
+                part.spillover,
+                visual.sprite.texture
+            )
+        );
         if (!sprite) visual.renderable = false;
         if (part.blendMode !== undefined) {
             // Set on root (inheritance) and the sprite — advanced blends need the renderable.

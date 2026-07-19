@@ -10,6 +10,18 @@ import { GameEvent, type GameEventMap } from "./event_map.js";
 
 const UNARMED_HARVEST = { type: "pickaxe", level: 0 } as const;
 
+function nextLoot(data: ResourceData): Map<number, number> {
+    if (data.lootStacks) {
+        const stack = data.lootStacks[data.harvestHit];
+        if (!stack) return new Map();
+        return new Map([[stack.id, stack.count]]);
+    }
+    if (data.lootTableId === null) return new Map();
+    return new Map(
+        evaluateLootTable(data.lootTableId, data.lootSeed, data.harvestHit)
+    );
+}
+
 export class ResourceSystem extends System<GameEventMap> {
     constructor(world: World) {
         super(world, [ResourceData], 1);
@@ -95,14 +107,7 @@ export class ResourceSystem extends System<GameEventMap> {
         let processed = 0;
         let inventoryChanged = false;
         while (processed < amount && data.quantity > 0) {
-            const loot =
-                data.lootTableId === null
-                    ? new Map<number, number>()
-                    : evaluateLootTable(
-                          data.lootTableId,
-                          data.lootSeed,
-                          data.harvestHit
-                      );
+            const loot = nextLoot(data);
             // Empty fixed-loot miss (hit past table size) must not drain stock.
             if (loot.size === 0) break;
             if (!tryAddItems(inventory, loot)) break;

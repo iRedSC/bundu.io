@@ -1,3 +1,0 @@
-id: item/player_hat
-extends: item/type/none
-texture: bundu/entity/player/player_hat.svg

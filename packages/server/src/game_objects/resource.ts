@@ -28,6 +28,7 @@ export class Resource extends GameObject {
                 harvestHit: 0,
                 decayAt: config.decay,
                 lastRegen: 0,
+                lootStacks: null,
             })
         )
             .add(new Physics(physics))
