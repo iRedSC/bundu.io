@@ -126,8 +126,7 @@ export class KeyboardInputListener {
                 if (!this.chat) return;
 
                 if (this.chatOpen) {
-                    // Enter selects an autocomplete option when one is insertable.
-                    if (this.chat.acceptSuggestion()) return;
+                    // Tab cycles/fills suggestions; Enter always sends.
                     this.chatOpen = false;
                     const message = this.chat.takeMessage();
                     if (message) this.onSendChat(message);

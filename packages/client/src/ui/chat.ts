@@ -227,26 +227,6 @@ export class ChatController {
         this.historyIndex = -1;
     }
 
-    /**
-     * Apply the highlighted insertable suggestion.
-     * Returns true when compose should stay open (suggestion applied).
-     * If the completion is already fully typed, returns false so Enter sends.
-     */
-    acceptSuggestion(): boolean {
-        if (!this.suggestions.some((entry) => entry.insert)) return false;
-        const current = this.suggestions[this.suggestIndex];
-        if (!current?.insert) return false;
-        const before = this.hud.input.value;
-        const beforeCursor =
-            this.hud.input.selectionStart ?? before.length;
-        this.applyCurrentSuggestion();
-        const after = this.hud.input.value;
-        const afterCursor = this.hud.input.selectionStart ?? after.length;
-        // Already complete — let Enter send instead of no-oping.
-        if (before === after && beforeCursor === afterCursor) return false;
-        return true;
-    }
-
     private onInputKeyDown(event: KeyboardEvent): void {
         if (event.key === "Escape") {
             event.preventDefault();
@@ -259,18 +239,18 @@ export class ChatController {
         if (event.key === "Tab") {
             event.preventDefault();
             if (!hasSuggest) return;
-            this.moveSuggest(event.shiftKey ? -1 : 1);
+            this.cycleSuggest(event.shiftKey ? -1 : 1);
             return;
         }
 
         if (hasSuggest && event.key === "ArrowDown") {
             event.preventDefault();
-            this.moveSuggest(1);
+            this.cycleSuggest(1);
             return;
         }
         if (hasSuggest && event.key === "ArrowUp") {
             event.preventDefault();
-            this.moveSuggest(-1);
+            this.cycleSuggest(-1);
             return;
         }
 
@@ -285,11 +265,52 @@ export class ChatController {
         }
     }
 
-    private moveSuggest(delta: number): void {
+    /** True when applying this suggestion would not change the input. */
+    private isSuggestionApplied(suggestion: CommandSuggestion): boolean {
+        if (!suggestion.insert) return true;
+        const value = this.hud.input.value;
+        const cursor = this.hud.input.selectionStart ?? value.length;
+        const next = applySuggestion(value, cursor, suggestion);
+        return next.value === value;
+    }
+
+    /** Cycle highlight and autofill the selected suggestion into the input. */
+    private cycleSuggest(delta: number): void {
         if (this.suggestions.length === 0) return;
-        const count = this.suggestions.length;
-        this.suggestIndex = (this.suggestIndex + delta + count) % count;
-        this.renderSuggestList();
+        const insertable = this.suggestions
+            .map((entry, index) => ({ entry, index }))
+            .filter(({ entry }) => entry.insert);
+        if (insertable.length === 0) {
+            // Type-only rows — just move the highlight.
+            const count = this.suggestions.length;
+            this.suggestIndex = (this.suggestIndex + delta + count) % count;
+            this.renderSuggestList();
+            this.scrollActiveSuggestIntoView();
+            return;
+        }
+
+        const current = this.suggestions[this.suggestIndex];
+        // First Tab fills the current row; further Tabs cycle to the next.
+        if (
+            delta > 0 &&
+            current?.insert &&
+            !this.isSuggestionApplied(current)
+        ) {
+            this.applyCurrentSuggestion();
+            this.scrollActiveSuggestIntoView();
+            return;
+        }
+
+        const currentPos = insertable.findIndex(
+            ({ index }) => index === this.suggestIndex
+        );
+        const from = currentPos >= 0 ? currentPos : 0;
+        const next =
+            (from + delta + insertable.length) % insertable.length;
+        const chosen = insertable[next];
+        if (!chosen) return;
+        this.suggestIndex = chosen.index;
+        this.applyCurrentSuggestion();
         this.scrollActiveSuggestIntoView();
     }
 
