@@ -1,4 +1,13 @@
 id: player
+
+footsteps:
+    interval_ms: 250
+    size: [35, 35]
+    lifetime: [6500, 6500]
+    alpha: 0.22
+    fade_at: 0.55
+    stride: 28
+
 parts:
     leftHand:
         sprite: bundu/entity/player/player_hand.svg

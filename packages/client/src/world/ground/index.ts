@@ -27,6 +27,7 @@ export {
     isOceanGroundModel,
     listGroundModels,
     replaceGroundModels,
+    solidGroundModel,
 } from "./models";
 export { applyOceanFx } from "./ocean_fx";
 export {

@@ -11,6 +11,8 @@ export type {
     HitData,
     ModelDef,
     ModelDisplay,
+    ModelFootstepsDef,
+    ModelFxRange,
     ObjectDef,
     OcclusionDef,
     PartBlendMode,

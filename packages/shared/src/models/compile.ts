@@ -4,6 +4,8 @@ import type {
     AnimPreset,
     ModelDef,
     ModelDisplay,
+    ModelFootstepsDef,
+    ModelFxRange,
     OcclusionDef,
     PartBlendMode,
     PartDef,
@@ -106,6 +108,102 @@ function optionalBlendMode(
         );
     }
     return mode as PartBlendMode;
+}
+
+/**
+ * Actor footsteps: `false` off, `true` → defaults, object → params (+ optional texture).
+ * Land only toggles whether these play (`ground_models.footsteps: true`).
+ */
+const DEFAULT_FOOTSTEPS: ModelFootstepsDef = {
+    intervalMs: 250,
+    size: [35, 35],
+    lifetime: [6500, 6500],
+    alpha: 0.22,
+    fadeAt: 0.55,
+    stride: 28,
+};
+
+function fxRange(value: unknown, path: string): ModelFxRange {
+    if (typeof value === "number") {
+        if (!Number.isFinite(value) || value < 0) {
+            throw new Error(`${path}: expected a non-negative number`);
+        }
+        return value;
+    }
+    if (!Array.isArray(value) || value.length !== 2) {
+        throw new Error(`${path}: expected a number or [min, max]`);
+    }
+    const [lo, hi] = value;
+    if (
+        typeof lo !== "number" ||
+        typeof hi !== "number" ||
+        !Number.isFinite(lo) ||
+        !Number.isFinite(hi) ||
+        lo < 0 ||
+        hi < lo
+    ) {
+        throw new Error(`${path}: expected 0 <= min <= max`);
+    }
+    return [lo, hi];
+}
+
+function compileFootsteps(
+    value: unknown,
+    path: string
+): false | ModelFootstepsDef | undefined {
+    if (value === undefined) return undefined;
+    if (value === false) return false;
+    if (value === true) return { ...DEFAULT_FOOTSTEPS };
+
+    const raw = record(value, path);
+    const pick = (snake: string, camel: string) => raw[snake] ?? raw[camel];
+
+    const intervalRaw = pick("interval_ms", "intervalMs");
+    const intervalMs =
+        intervalRaw === undefined
+            ? DEFAULT_FOOTSTEPS.intervalMs
+            : number(intervalRaw, `${path}.interval_ms`);
+    if (intervalMs <= 0) throw new Error(`${path}.interval_ms: must be > 0`);
+
+    const size =
+        pick("size", "size") === undefined
+            ? DEFAULT_FOOTSTEPS.size
+            : fxRange(pick("size", "size"), `${path}.size`);
+    const lifetime =
+        pick("lifetime", "lifetime") === undefined
+            ? DEFAULT_FOOTSTEPS.lifetime
+            : fxRange(pick("lifetime", "lifetime"), `${path}.lifetime`);
+
+    const alphaRaw = pick("alpha", "alpha");
+    const alpha =
+        alphaRaw === undefined
+            ? DEFAULT_FOOTSTEPS.alpha
+            : number(alphaRaw, `${path}.alpha`);
+    if (alpha < 0 || alpha > 1) throw new Error(`${path}.alpha: expected 0..1`);
+
+    const fadeRaw = pick("fade_at", "fadeAt");
+    const fadeAt =
+        fadeRaw === undefined
+            ? DEFAULT_FOOTSTEPS.fadeAt
+            : number(fadeRaw, `${path}.fade_at`);
+    if (fadeAt < 0 || fadeAt > 1) {
+        throw new Error(`${path}.fade_at: expected 0..1`);
+    }
+
+    const strideRaw = pick("stride", "stride");
+    const stride =
+        strideRaw === undefined
+            ? DEFAULT_FOOTSTEPS.stride
+            : number(strideRaw, `${path}.stride`);
+    if (stride <= 0) throw new Error(`${path}.stride: must be > 0`);
+
+    const textureRaw = pick("texture", "texture");
+    const texture =
+        textureRaw === undefined
+            ? undefined
+            : string(textureRaw, `${path}.texture`);
+
+    return { intervalMs, size, lifetime, alpha, fadeAt, stride, texture };
 }
 
 function point(value: unknown, path: string): { x: number; y: number } | undefined {
@@ -490,6 +588,7 @@ function compileDef(raw: RawDef): ModelDef {
     }
     const displays = compileDisplays(raw.displays, `${id}.displays`, texture);
     const abstract = raw.abstract === undefined ? false : boolean(raw.abstract, `${id}.abstract`);
+    const footsteps = compileFootsteps(raw.footsteps, `${id}.footsteps`);
     const base: ModelDef = {
         id,
         abstract,
@@ -504,6 +603,7 @@ function compileDef(raw: RawDef): ModelDef {
         alphaFadeMs,
         occlusion,
         displays,
+        footsteps,
     };
 
     if (!abstract && !modelHasParts(base) && !texture) {
