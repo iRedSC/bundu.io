@@ -88,6 +88,8 @@ try {
             () => reject(new Error(`WebSocket smoke test timed out: ${url}`)),
             roundTripTimeoutMs
         );
+        // Spawn / world visibility waits for ClientReady (see player syncSession).
+        socket.send(encode([ClientPacket.ClientReady]));
         socket.send(encode([ClientPacket.ChatMessage, "ci-smoke"]));
         socket.addEventListener("message", ({ data }) => {
             if (!(data instanceof ArrayBuffer)) return;
