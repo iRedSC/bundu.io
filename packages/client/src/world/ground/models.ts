@@ -1,9 +1,11 @@
 import type {
     GroundModelDef as PackGroundModelDef,
     OceanGroundModelDef,
+    SolidGroundModelDef,
 } from "@bundu/shared/ground_models";
 import {
     isOceanGroundModel as isOceanPackModel,
+    isSolidGroundModel as isSolidPackModel,
     parseHexColor,
 } from "@bundu/shared/ground_models";
 import { createOceanFill, createOceanGround } from "./ocean";
@@ -51,6 +53,13 @@ export function groundModel(id: string): GroundModelDef {
         throw new Error(`Unknown ground model "${id}"`);
     }
     return toClientModel(pack);
+}
+
+/** Pack solid model (includes optional footsteps toggle / trail FX). */
+export function solidGroundModel(id: string): SolidGroundModelDef | undefined {
+    const pack = packModels[id];
+    if (!pack || !isSolidPackModel(pack)) return undefined;
+    return pack;
 }
 
 export function isOceanGroundModel(id: string): boolean {

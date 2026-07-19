@@ -117,6 +117,13 @@ function validateCompiledTextures(
                 validate(texture, `${def.id}.variants.${variant}.${part}`);
             }
         }
+        if (
+            def.footsteps &&
+            typeof def.footsteps === "object" &&
+            def.footsteps.texture
+        ) {
+            validate(def.footsteps.texture, `${def.id}.footsteps.texture`);
+        }
     }
 }
 

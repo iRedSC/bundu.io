@@ -1,5 +1,6 @@
 id: bee
 extends: animal
+footsteps: false
 parts:
   body:
     sprite: bundu/entity/animal/bee/bee.svg

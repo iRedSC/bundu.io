@@ -190,6 +190,20 @@ one of these ids. Kinds:
 kind: solid
 color: "#2a462b"
 
+# optional move FX (solid only)
+footsteps: true            # surface toggle — print params live on actor models
+trail:                     # debris tinted from `color`, randomly jittered
+    amount: [2, 4]         # particle count per burst
+    speed: [40, 110]
+    lifetime: [280, 520]
+    size: [3, 7]
+    end_size: 1
+    spread: 1.1            # radians
+    friction: 3.5
+    gravity: 60
+    color_jitter: 0.18     # 0..1 darken/lighten
+    spacing: 14            # world px between bursts
+
 # ocean FX + nearshore bake (textures sanitized like entity models)
 kind: ocean
 color: "#1a5f8a"
@@ -203,6 +217,18 @@ textures:
 ```
 
 Ocean scroll/wake/splash tuning is pack-authored under `gameplay.yml` → `ocean:`.
+Land `footsteps: true` only enables prints; actor models define them:
+
+```yaml
+# assets/.../models/actors/animal.yml
+footsteps: true            # or false / { interval_ms, size, lifetime, alpha, fade_at, stride, texture }
+
+# bee.yml
+footsteps: false
+```
+
+`trail` kicks up land-colored particles across the mover's hitbox diameter.
+Both omit cleanly when unset.
 
 Model YAML files use an explicit `id` field (filename is for organization).
 Item models use `item/<item_id>` ids, with shared abstracts under `item/type/...`.

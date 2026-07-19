@@ -25,7 +25,7 @@ function angleDelta(from: number, to: number): number {
 
 /** A server-authoritative actor whose facing and idle motion are purely visual. */
 export class Animal extends GameObject {
-    private readonly typeId: string;
+    readonly modelId: string;
     private lastTarget = { x: 0, y: 0 };
     private facing = 0;
     private targetFacing = 0;
@@ -41,10 +41,10 @@ export class Animal extends GameObject {
         // Match server animal cadence (4 TPS). No coast — idle gaps used to
         // overshoot then rubber-band when the next wander packet arrived.
         super(id, position, 0, collisionRadius, TILE_SIZE * (scale ?? 1), 250, 0);
-        this.typeId = clientModelId(
+        this.modelId = clientModelId(
             clientRegistries().entity_type.location(typeId)
         );
-        this.applyModelDefinition(animalDef(this.typeId));
+        this.applyModelDefinition(animalDef(this.modelId));
         this.container.zIndex = 5;
         this.lastTarget = { x: position.x, y: position.y };
     }
@@ -66,7 +66,7 @@ export class Animal extends GameObject {
             child.destroy({ children: true });
         }
         this.animations.clear();
-        this.applyModelDefinition(animalDef(this.typeId));
+        this.applyModelDefinition(animalDef(this.modelId));
     }
 
     /** Turn toward a world-space direction (radians, 0 = east) — lerps in update. */

@@ -5,6 +5,9 @@
 
 export type GroundModelKind = "solid" | "ocean";
 
+/** Scalar or `[min, max]` — same shape as particle burst ranges. */
+export type GroundFxRange = number | readonly [min: number, max: number];
+
 export type OceanGroundTextures = {
     caustics: string;
     displace: string;
@@ -14,11 +17,31 @@ export type OceanGroundTextures = {
     sparkle: string;
 };
 
+/** Debris / dust kicked up while moving — tinted from the land color. */
+export type GroundTrailDef = {
+    /** World pixels between bursts. */
+    spacing: number;
+    amount: GroundFxRange;
+    speed: GroundFxRange;
+    lifetime: GroundFxRange;
+    size: GroundFxRange;
+    endSize: number;
+    /** Radians of directional spread. */
+    spread: number;
+    friction: number;
+    gravity: number;
+    /** Random darken/lighten of the land color (0..1). */
+    colorJitter: number;
+};
+
 export type SolidGroundModelDef = {
     id: string;
     kind: "solid";
     /** `#rrggbb` admin swatch + fill. */
     color: string;
+    /** When true, movers with model `footsteps` leave prints on this surface. */
+    footsteps?: boolean;
+    trail?: GroundTrailDef;
 };
 
 export type OceanGroundModelDef = {
@@ -33,6 +56,19 @@ export type GroundModelDef = SolidGroundModelDef | OceanGroundModelDef;
 export type GroundModelSet = Readonly<Record<string, GroundModelDef>>;
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
+
+const DEFAULT_TRAIL: GroundTrailDef = {
+    spacing: 14,
+    amount: [2, 4],
+    speed: [40, 110],
+    lifetime: [280, 520],
+    size: [3, 7],
+    endSize: 1,
+    spread: 1.1,
+    friction: 3.5,
+    gravity: 60,
+    colorJitter: 0.18,
+};
 
 function record(value: unknown, path: string): Record<string, unknown> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -60,6 +96,113 @@ function texturePath(value: unknown, path: string): string {
     return string(value, path);
 }
 
+function finiteNumber(value: unknown, path: string): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new Error(`${path}: expected a finite number`);
+    }
+    return value;
+}
+
+function positiveNumber(value: unknown, path: string): number {
+    const n = finiteNumber(value, path);
+    if (n <= 0) throw new Error(`${path}: must be > 0`);
+    return n;
+}
+
+function unitInterval(value: unknown, path: string): number {
+    const n = finiteNumber(value, path);
+    if (n < 0 || n > 1) throw new Error(`${path}: expected 0..1`);
+    return n;
+}
+
+function fxRange(value: unknown, path: string): GroundFxRange {
+    if (typeof value === "number") {
+        if (!Number.isFinite(value) || value < 0) {
+            throw new Error(`${path}: expected a non-negative number`);
+        }
+        return value;
+    }
+    if (!Array.isArray(value) || value.length !== 2) {
+        throw new Error(`${path}: expected a number or [min, max]`);
+    }
+    const [lo, hi] = value;
+    if (
+        typeof lo !== "number" ||
+        typeof hi !== "number" ||
+        !Number.isFinite(lo) ||
+        !Number.isFinite(hi) ||
+        lo < 0 ||
+        hi < lo
+    ) {
+        throw new Error(`${path}: expected 0 <= min <= max`);
+    }
+    return [lo, hi];
+}
+
+function optionalRange(
+    raw: Record<string, unknown>,
+    snake: string,
+    camel: string,
+    path: string,
+    fallback: GroundFxRange
+): GroundFxRange {
+    const value = raw[snake] ?? raw[camel];
+    return value === undefined ? fallback : fxRange(value, `${path}.${snake}`);
+}
+
+function optionalPositive(
+    raw: Record<string, unknown>,
+    snake: string,
+    camel: string,
+    path: string,
+    fallback: number
+): number {
+    const value = raw[snake] ?? raw[camel];
+    return value === undefined
+        ? fallback
+        : positiveNumber(value, `${path}.${snake}`);
+}
+
+function optionalUnit(
+    raw: Record<string, unknown>,
+    snake: string,
+    camel: string,
+    path: string,
+    fallback: number
+): number {
+    const value = raw[snake] ?? raw[camel];
+    return value === undefined
+        ? fallback
+        : unitInterval(value, `${path}.${snake}`);
+}
+
+function optionalFinite(
+    raw: Record<string, unknown>,
+    snake: string,
+    camel: string,
+    path: string,
+    fallback: number
+): number {
+    const value = raw[snake] ?? raw[camel];
+    return value === undefined
+        ? fallback
+        : finiteNumber(value, `${path}.${snake}`);
+}
+
+function optionalNonNegative(
+    raw: Record<string, unknown>,
+    snake: string,
+    camel: string,
+    path: string,
+    fallback: number
+): number {
+    const value = raw[snake] ?? raw[camel];
+    if (value === undefined) return fallback;
+    const n = finiteNumber(value, `${path}.${snake}`);
+    if (n < 0) throw new Error(`${path}.${snake}: expected >= 0`);
+    return n;
+}
+
 function parseOceanTextures(
     value: unknown,
     path: string
@@ -81,6 +224,79 @@ function parseOceanTextures(
     };
 }
 
+function parseFootstepsToggle(value: unknown, path: string): boolean {
+    if (typeof value !== "boolean") {
+        throw new Error(
+            `${path}: expected true/false (footstep params live on actor models)`
+        );
+    }
+    return value;
+}
+
+function parseTrail(value: unknown, path: string): GroundTrailDef {
+    const raw = record(value, path);
+    return {
+        spacing: optionalPositive(
+            raw,
+            "spacing",
+            "spacing",
+            path,
+            DEFAULT_TRAIL.spacing
+        ),
+        amount: optionalRange(
+            raw,
+            "amount",
+            "amount",
+            path,
+            DEFAULT_TRAIL.amount
+        ),
+        speed: optionalRange(raw, "speed", "speed", path, DEFAULT_TRAIL.speed),
+        lifetime: optionalRange(
+            raw,
+            "lifetime",
+            "lifetime",
+            path,
+            DEFAULT_TRAIL.lifetime
+        ),
+        size: optionalRange(raw, "size", "size", path, DEFAULT_TRAIL.size),
+        endSize: optionalPositive(
+            raw,
+            "end_size",
+            "endSize",
+            path,
+            DEFAULT_TRAIL.endSize
+        ),
+        spread: optionalPositive(
+            raw,
+            "spread",
+            "spread",
+            path,
+            DEFAULT_TRAIL.spread
+        ),
+        friction: optionalNonNegative(
+            raw,
+            "friction",
+            "friction",
+            path,
+            DEFAULT_TRAIL.friction
+        ),
+        gravity: optionalFinite(
+            raw,
+            "gravity",
+            "gravity",
+            path,
+            DEFAULT_TRAIL.gravity
+        ),
+        colorJitter: optionalUnit(
+            raw,
+            "color_jitter",
+            "colorJitter",
+            path,
+            DEFAULT_TRAIL.colorJitter
+        ),
+    };
+}
+
 /** Parse one ground-model document. `fallbackId` is the file stem. */
 export function parseGroundModelDef(
     value: unknown,
@@ -91,9 +307,28 @@ export function parseGroundModelDef(
     const id = raw.id !== undefined ? string(raw.id, `${path}.id`) : fallbackId;
     const kind = string(raw.kind, `${path}.kind`);
     if (kind === "solid") {
-        return { id, kind, color: color(raw.color, `${path}.color`) };
+        const def: SolidGroundModelDef = {
+            id,
+            kind,
+            color: color(raw.color, `${path}.color`),
+        };
+        if (raw.footsteps !== undefined) {
+            def.footsteps = parseFootstepsToggle(
+                raw.footsteps,
+                `${path}.footsteps`
+            );
+        }
+        if (raw.trail !== undefined) {
+            def.trail = parseTrail(raw.trail, `${path}.trail`);
+        }
+        return def;
     }
     if (kind === "ocean") {
+        if (raw.footsteps !== undefined || raw.trail !== undefined) {
+            throw new Error(
+                `${path}: footsteps/trail are only valid on solid ground models`
+            );
+        }
         return {
             id,
             kind,
@@ -125,6 +360,21 @@ export function isOceanGroundModel(def: GroundModelDef): def is OceanGroundModel
     return def.kind === "ocean";
 }
 
+export function isSolidGroundModel(def: GroundModelDef): def is SolidGroundModelDef {
+    return def.kind === "solid";
+}
+
 export function parseHexColor(hex: string): number {
     return Number.parseInt(hex.replace("#", ""), 16);
+}
+
+/** Randomly darken/lighten an `#rrggbb` / packed RGB by ±jitter. */
+export function jitterLandColor(rgb: number, jitter: number): number {
+    if (jitter <= 0) return rgb;
+    const factor = 1 + (Math.random() * 2 - 1) * jitter;
+    const channel = (shift: number) => {
+        const value = ((rgb >> shift) & 0xff) * factor;
+        return Math.max(0, Math.min(255, Math.round(value)));
+    };
+    return (channel(16) << 16) | (channel(8) << 8) | channel(0);
 }
