@@ -31,7 +31,7 @@ import {
     type GroundVisual,
     type ShoreSample,
 } from "./ground";
-import { parseHexColor } from "@bundu/shared/ground_models";
+import { parseHexColor, type SolidGroundFill } from "@bundu/shared/ground_models";
 import { createDecoration, type DecorationSprite } from "./decoration";
 import {
     radians,
@@ -885,17 +885,33 @@ export class World {
         const isOcean = (type: number) => this.oceanTypeIds.has(type);
         const colorOfType = (type: number) =>
             parseHexColor(groundModel(clientGroundType(type).model).color);
+        const fillOfType = (type: number): SolidGroundFill | undefined => {
+            const model = groundModel(clientGroundType(type).model);
+            return model.kind === "solid" ? model.fill : undefined;
+        };
         this.shoreSamples = collectShoreSamples(this.groundPatches, isOcean);
         this.landDistance.rebuild(this.groundPatches, isOcean, colorOfType);
         this.nearshoreFill.setOceanColor(this.oceanColor);
         this.nearshoreFill.paint(this.landDistance);
+        const inlandAt = (tx: number, ty: number) =>
+            this.landDistance.inlandAt(tx, ty);
+        for (const patch of this.groundPatches) {
+            patch.visual.paintLandFill?.(inlandAt);
+        }
         // Unbind before prepare destroys textures — Pixi crashes on null alphaMode
         // if sprites still reference destroyed sources.
         for (const patch of this.groundPatches) {
             patch.visual.clearLandSeam?.();
         }
         // Rebuild at crisp LOD; live play may drop via zoom buckets.
-        this.landSeamBaker.prepare(this.groundPatches, isOcean, colorOfType, 2);
+        this.landSeamBaker.prepare(
+            this.groundPatches,
+            isOcean,
+            colorOfType,
+            2,
+            fillOfType,
+            inlandAt
+        );
         this.landSeamFrame = 0;
     }
 

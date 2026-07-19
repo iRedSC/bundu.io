@@ -14,11 +14,16 @@ export type OceanGroundTextures = {
     sparkle: string;
 };
 
+/** Procedural solid-land fills (client bakes; optional on solid models). */
+export type SolidGroundFill = "sand_bands" | "forest_blobs" | "solid_blobs";
+
 export type SolidGroundModelDef = {
     id: string;
     kind: "solid";
     /** `#rrggbb` admin swatch + fill. */
     color: string;
+    /** Slight procedural texture; omit for flat tint. */
+    fill?: SolidGroundFill;
 };
 
 export type OceanGroundModelDef = {
@@ -60,6 +65,24 @@ function texturePath(value: unknown, path: string): string {
     return string(value, path);
 }
 
+function parseSolidFill(
+    value: unknown,
+    path: string
+): SolidGroundFill | undefined {
+    if (value === undefined) return undefined;
+    const fill = string(value, path);
+    if (
+        fill === "sand_bands" ||
+        fill === "forest_blobs" ||
+        fill === "solid_blobs"
+    ) {
+        return fill;
+    }
+    throw new Error(
+        `${path}: expected "sand_bands", "forest_blobs", or "solid_blobs"`
+    );
+}
+
 function parseOceanTextures(
     value: unknown,
     path: string
@@ -91,7 +114,10 @@ export function parseGroundModelDef(
     const id = raw.id !== undefined ? string(raw.id, `${path}.id`) : fallbackId;
     const kind = string(raw.kind, `${path}.kind`);
     if (kind === "solid") {
-        return { id, kind, color: color(raw.color, `${path}.color`) };
+        const fill = parseSolidFill(raw.fill, `${path}.fill`);
+        return fill
+            ? { id, kind, color: color(raw.color, `${path}.color`), fill }
+            : { id, kind, color: color(raw.color, `${path}.color`) };
     }
     if (kind === "ocean") {
         return {
