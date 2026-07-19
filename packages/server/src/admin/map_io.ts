@@ -36,8 +36,12 @@ import { groundWire } from "../systems/ground_wire.js";
 import { decorationWire } from "../systems/decoration_wire.js";
 import { clearEditorHistory } from "./history.js";
 
-const cacheRoot = path.resolve(import.meta.dir, "../../../../.cache");
-const defaultFilename = path.join(cacheRoot, "editor-map.yml");
+const mapsRoot = path.resolve(import.meta.dir, "../../../../maps");
+const defaultFilename = path.join(mapsRoot, "editor-map.yml");
+const legacyCacheFilename = path.resolve(
+    import.meta.dir,
+    "../../../../.cache/editor-map.yml"
+);
 
 type Trigger = <T extends keyof GameEventMap>(
     event: T,
@@ -46,18 +50,18 @@ type Trigger = <T extends keyof GameEventMap>(
 
 /**
  * Resolve the editor map write path.
- * Confined under `.cache/` — rejects `..` / absolute escapes.
+ * Confined under `maps/` — rejects `..` / absolute escapes.
  */
 export function editorMapPath(): string {
     const raw = process.env.BUNDU_EDITOR_MAP;
     if (!raw) return defaultFilename;
-    const resolved = path.resolve(cacheRoot, raw);
+    const resolved = path.resolve(mapsRoot, raw);
     if (
-        resolved !== cacheRoot &&
-        !resolved.startsWith(cacheRoot + path.sep)
+        resolved !== mapsRoot &&
+        !resolved.startsWith(mapsRoot + path.sep)
     ) {
         throw new Error(
-            `BUNDU_EDITOR_MAP must resolve under .cache/ (got ${raw})`
+            `BUNDU_EDITOR_MAP must resolve under maps/ (got ${raw})`
         );
     }
     return resolved;
@@ -255,11 +259,17 @@ function addBaseGround(world: World, typeRef: string): Ground {
 }
 
 /**
- * Load `.cache/editor-map.yml` when present; otherwise a blank ocean map.
+ * Load `maps/editor-map.yml` when present; otherwise a blank ocean map.
+ * Migrates a legacy `.cache/editor-map.yml` once if the new path is empty.
  * Safe to call once at boot on an empty world.
  */
 export function loadEditorMapOrBlank(world: World): void {
     const target = editorMapPath();
+    if (!fs.existsSync(target) && fs.existsSync(legacyCacheFilename)) {
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.copyFileSync(legacyCacheFilename, target);
+        console.info(`[map] migrated ${legacyCacheFilename} -> ${target}`);
+    }
     if (!fs.existsSync(target)) {
         loadBlankMap(world);
         console.info(`[map] no saved map at ${target}; loaded blank`);
