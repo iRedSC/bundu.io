@@ -40,10 +40,7 @@ jobs:
       - name: Validate packs
         run: bun run validate:packs
 
-      - name: Integration smoke test
-        run: bun run test:integration
-
-      - name: Test with coverage
+      - name: Unit tests with coverage
         run: bun test --coverage --coverage-reporter=lcov --coverage-reporter=text
 
       - name: Upload coverage
@@ -52,6 +49,9 @@ jobs:
           name: coverage
           path: coverage/lcov.info
           if-no-files-found: error
+
+      - name: Integration smoke test
+        run: bun run test:integration
 
       - name: Build
         run: bun run build

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { clientTime, serverTime } from "@client/globals";
+import { clientTime } from "@client/globals";
 
 describe("clientTime", () => {
   afterEach(() => {
@@ -20,7 +20,6 @@ describe("clientTime", () => {
     now.mockReturnValue(5_000);
     clientTime.synchronize(100);
     expect(clientTime.fromServer(750)).toBe(1_050);
-
   });
 
   test("resetServerSync allows a new connection to establish a fresh offset", () => {
@@ -32,9 +31,5 @@ describe("clientTime", () => {
     clientTime.synchronize(500);
 
     expect(clientTime.fromServer(600)).toBe(2_100);
-  });
-
-  test("keeps the deprecated serverTime export as the same clock instance", () => {
-    expect(serverTime).toBe(clientTime);
   });
 });

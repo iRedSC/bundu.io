@@ -75,6 +75,15 @@ describe("RecipeManager", () => {
     ).toEqual([{ recipeId: 10, resultItemId: 110, resultAmount: 1 }]);
   });
 
+  test("treats a zero inventory count as missing that ingredient", () => {
+    manager.updateRecipes({
+      recipes: [[10, 110, 1, [[1, 1]], []]],
+    });
+
+    expect(manager.filter(new Map([[1, 0]]), [])).toEqual([]);
+    expect(manager.filter(new Map(), [])).toEqual([]);
+  });
+
   test("requires all recipe flags and ignores unrelated flags and inventory", () => {
     manager.updateRecipes({
       recipes: [

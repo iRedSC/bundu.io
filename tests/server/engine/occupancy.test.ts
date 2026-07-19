@@ -84,6 +84,19 @@ describe("OccupancyGrid", () => {
     expect(grid.get(-1, 4, "structure")).toBeUndefined();
   });
 
+  test("releasing an unknown id is a no-op", () => {
+    grid.occupy(1, [{ x: 0, y: 0 }], "structure");
+    grid.release(99);
+
+    expect(grid.get(0, 0, "structure")).toBe(1);
+  });
+
+  test("empty footprints do not claim tiles", () => {
+    expect(grid.occupy(1, [], "structure")).toBe(true);
+    expect(grid.get(0, 0, "structure")).toBeUndefined();
+    expect(grid.canPlace([{ x: 0, y: 0 }], "structure")).toBe(true);
+  });
+
   test("different layers can share a tile", () => {
     expect(grid.occupy(1, [{ x: 4, y: 4 }], "floor")).toBe(true);
     expect(grid.occupy(2, [{ x: 4, y: 4 }], "structure")).toBe(true);

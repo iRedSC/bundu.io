@@ -47,12 +47,22 @@ describe("ReversableMap", () => {
 
     expect(map.delete("a")).toBe(true);
     expect(map.deletev(2)).toBe(true);
+    expect(map.delete("missing")).toBe(false);
+    expect(map.deletev(99)).toBe(false);
 
     expect(map.has("a")).toBe(false);
     expect(map.hasv(1)).toBe(false);
     expect(map.has("b")).toBe(false);
     expect(map.hasv(2)).toBe(false);
     expect([...map.entries()]).toEqual([["c", 3]]);
+  });
+
+  test("reassigning the same key and value is idempotent", () => {
+    map.set("a", 1);
+    expect(map.set("a", 1)).toBe(map);
+    expect(map.get("a")).toBe(1);
+    expect(map.getv(1)).toBe("a");
+    expect(map.size).toBe(1);
   });
 
   test("supports undefined keys and values with normal Map semantics", () => {

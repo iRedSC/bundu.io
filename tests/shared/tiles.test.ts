@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
+  deciToWorld,
   pointToTile,
   quantizeWorld,
   rotateOffset,
   tileCenterWorld,
   tileKey,
+  WORLD_TILES,
   worldFootprint,
   worldToDeci,
   worldToTile,
@@ -18,6 +20,7 @@ describe("world coordinate helpers", () => {
     expect(worldToDeci(10.5)).toBe(11);
     expect(worldToDeci(-10.5)).toBe(-10);
     expect(quantizeWorld(42.51)).toBe(43);
+    expect(quantizeWorld(42.51)).toBe(deciToWorld(worldToDeci(42.51)));
   });
 
   test("maps boundary positions to their containing tile", () => {
@@ -35,15 +38,16 @@ describe("world coordinate helpers", () => {
     expect(tileCenterWorld(-2)).toBe(-150);
   });
 
-  test("produces distinct keys for representative playable cells", () => {
-    const cells: TilePos[] = [
-      { x: 0, y: 0 },
-      { x: 1, y: 0 },
-      { x: 0, y: 1 },
-      { x: -1, y: 0 },
-      { x: 0, y: -1 },
-      { x: 199, y: 199 },
-    ];
+  test("produces distinct keys across a dense playable grid sample", () => {
+    const cells: TilePos[] = [];
+    for (let x = 0; x < WORLD_TILES; x += 7) {
+      for (let y = 0; y < WORLD_TILES; y += 11) {
+        cells.push({ x, y });
+      }
+    }
+    cells.push({ x: WORLD_TILES - 1, y: WORLD_TILES - 1 });
+    cells.push({ x: -1, y: 0 });
+    cells.push({ x: 0, y: -1 });
 
     expect(new Set(cells.map(({ x, y }) => tileKey(x, y))).size).toBe(
       cells.length,
