@@ -218,8 +218,8 @@ export class Player extends GameObject implements AnimContext {
             // Hat body is unpadded 100×100; default body uses authored spillover.
             this.helmet ? 0 : undefined
         );
-        // Body attach, identity pose — match body visual scale so the 200×200
-        // backpack lines up with spilled body art when no helmet is worn.
+        // Under-body slot, identity pose — match body visual scale so the
+        // 200×200 backpack lines up with spilled body art.
         if (this.backpack) {
             this.fillSlot("backpack", "backpack");
             const mounted = this.slotModels.get("backpack");
