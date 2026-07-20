@@ -81,12 +81,10 @@ export class NearshoreFill {
         this.maskSource.update();
     }
 
-    /** Drop all per-model FX masks (full world teardown only). */
+    /** Drop all per-model FX masks (session reset / destroy). */
     clearModelMasks(): void {
         for (const entry of this.modelMasks.values()) {
-            // destroy(false): keep BufferImageSource alive. Pixi's pooled
-            // MaskFilter BindGroup still listens to it (pixijs#11994).
-            entry.texture.destroy(false);
+            entry.texture.destroy(true);
         }
         this.modelMasks.clear();
     }
@@ -103,8 +101,7 @@ export class NearshoreFill {
         for (const id of [...this.modelMasks.keys()]) {
             if (modelIds.has(id)) continue;
             const entry = this.modelMasks.get(id);
-            // Same as clearModelMasks — never destroy(true) while AlphaMask may bind it.
-            entry?.texture.destroy(false);
+            entry?.texture.destroy(true);
             this.modelMasks.delete(id);
         }
 
