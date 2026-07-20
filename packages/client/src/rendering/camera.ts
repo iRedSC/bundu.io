@@ -109,7 +109,13 @@ export class Camera {
     }
 
     update() {
-        if (!this.target) return;
-        this.viewport.moveCenter(this.target.x, this.target.y);
+        const target = this.target;
+        if (!target) return;
+        // Destroyed Pixi containers null out transform — reading .x throws.
+        if ("destroyed" in target && target.destroyed) {
+            this.target = null;
+            return;
+        }
+        this.viewport.moveCenter(target.x, target.y);
     }
 }

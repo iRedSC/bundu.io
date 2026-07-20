@@ -718,6 +718,11 @@ export class World {
         this.clearLandFxState(id);
         const object = this.objects.get(id);
         if (object) {
+            // Death flush can delete the local avatar while we still follow it
+            // for the game-over delay — stop before the container is destroyed.
+            if (this.camera.target === object.container) {
+                this.camera.follow(null);
+            }
             this.objects.delete(object);
             object.dispose();
         }
