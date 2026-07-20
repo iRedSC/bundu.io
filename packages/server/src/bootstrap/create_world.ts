@@ -31,6 +31,7 @@ import { TemperatureSystem } from "../systems/temperature";
 import { ThirstSystem } from "../systems/thirst";
 import { AirSystem } from "../systems/air";
 import { AdminEditorSystem } from "../admin/editor";
+import { FreecamGhostSystem } from "../systems/freecam_ghost";
 
 export type ServerWorld = {
     world: World;
@@ -47,7 +48,10 @@ export function createWorld(): ServerWorld {
     const playerSystem = new PlayerSystem(world);
     const adminEditor = new AdminEditorSystem(world);
     const renderDistanceSystem = new RenderDistanceSystem(world);
+    const freecamGhostSystem = new FreecamGhostSystem(world);
     playerSystem.setRenderDistanceSystem(renderDistanceSystem);
+    playerSystem.setFreecamGhostSystem(freecamGhostSystem);
+    adminEditor.setFreecamGhostSystem(freecamGhostSystem);
     const serializer = new Serializer<ClientPacketMap>(ClientSchema);
     const receiver = new ServerPacketReceiver(serializer, ClientPacketGuards);
     setupPacketReceiving(receiver, playerSystem, adminEditor);
@@ -78,7 +82,8 @@ export function createWorld(): ServerWorld {
         .addSystem(new StructureSystem(world))
         .addSystem(new PointGeneratorSystem(world))
         .addSystem(anonOcclusionSystem)
-        .addSystem(renderDistanceSystem);
+        .addSystem(renderDistanceSystem)
+        .addSystem(freecamGhostSystem);
 
     return { world, playerSystem, renderDistanceSystem, receiver };
 }

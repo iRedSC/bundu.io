@@ -135,6 +135,12 @@ export function createFreecamControl(handlers: {
         handlers.onExitAt(x, y);
     };
 
+    const onPointerCancel = (event: PointerEvent) => {
+        if (pressId === null || event.pointerId !== pressId) return;
+        // Interrupted gesture — never treat as click-exit or drop-exit.
+        cancelDrag();
+    };
+
     iconRoot.onpointerdown = (event: {
         pointerId: number;
         clientX: number;
@@ -153,7 +159,7 @@ export function createFreecamControl(handlers: {
 
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
+    window.addEventListener("pointercancel", onPointerCancel);
     window.addEventListener("resize", layout);
     layout();
     syncVisibility();
@@ -190,7 +196,7 @@ export function createFreecamControl(handlers: {
         destroy() {
             window.removeEventListener("pointermove", onPointerMove);
             window.removeEventListener("pointerup", onPointerUp);
-            window.removeEventListener("pointercancel", onPointerUp);
+            window.removeEventListener("pointercancel", onPointerCancel);
             window.removeEventListener("resize", layout);
             cancelDrag();
             enterBtn.destroy();
