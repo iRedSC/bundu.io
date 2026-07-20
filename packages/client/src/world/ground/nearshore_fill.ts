@@ -81,9 +81,18 @@ export class NearshoreFill {
         this.maskSource.update();
     }
 
+    /** Drop all per-model FX masks (session reset / destroy). */
+    clearModelMasks(): void {
+        for (const entry of this.modelMasks.values()) {
+            entry.texture.destroy(true);
+        }
+        this.modelMasks.clear();
+    }
+
     /**
-     * FX masks for each water model: shared shore alpha on that model's tiles,
-     * zero elsewhere. Drops masks for models no longer present.
+     * FX masks for each water model: shared shore alpha on that model's water
+     * tiles plus land overshoot owned by the nearest water of that model.
+     * Drops masks for models no longer present.
      */
     syncModelMasks(
         modelIds: ReadonlySet<string>,
@@ -97,6 +106,46 @@ export class NearshoreFill {
         }
 
         const n = WORLD_TILES * WORLD_TILES;
+        const shared = this.maskPixels;
+        // Water tiles own themselves; land overshoot inherits nearest water model.
+        const owner: (string | undefined)[] = new Array(n);
+        const queue: number[] = [];
+        for (let i = 0; i < n; i++) {
+            const id = modelIdAt(i);
+            if (id === undefined || !modelIds.has(id)) continue;
+            owner[i] = id;
+            queue.push(i);
+        }
+        let qi = 0;
+        while (qi < queue.length) {
+            const i = queue[qi++]!;
+            const id = owner[i];
+            if (id === undefined) continue;
+            const tx = i % WORLD_TILES;
+            const ty = (i / WORLD_TILES) | 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = tx + dx;
+                    const ny = ty + dy;
+                    if (
+                        nx < 0 ||
+                        ny < 0 ||
+                        nx >= WORLD_TILES ||
+                        ny >= WORLD_TILES
+                    ) {
+                        continue;
+                    }
+                    const j = ny * WORLD_TILES + nx;
+                    if (owner[j] !== undefined) continue;
+                    if (modelIdAt(j) !== undefined) continue;
+                    if ((shared[j * 4 + 3] ?? 0) === 0) continue;
+                    owner[j] = id;
+                    queue.push(j);
+                }
+            }
+        }
+
         for (const modelId of modelIds) {
             let entry = this.modelMasks.get(modelId);
             if (!entry) {
@@ -118,10 +167,9 @@ export class NearshoreFill {
                 this.modelMasks.set(modelId, entry);
             }
             const { pixels, source } = entry;
-            const shared = this.maskPixels;
             pixels.fill(0);
             for (let i = 0; i < n; i++) {
-                if (modelIdAt(i) !== modelId) continue;
+                if (owner[i] !== modelId) continue;
                 const o = i * 4;
                 pixels[o] = shared[o] ?? 0;
                 pixels[o + 1] = shared[o + 1] ?? 0;
@@ -152,6 +200,7 @@ export function bindNearshoreSprite(
     state: NearshoreBindState
 ): void {
     if (state.source === map.source && state.map) return;
+    state.map?.destroy(false);
     state.source = map.source;
     state.map = new Texture({
         source: map.source,

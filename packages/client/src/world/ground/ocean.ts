@@ -456,8 +456,10 @@ export function createOceanGround(
         addWakeRipple,
         addSplashDisplacement,
         setShoreMask(texture: Texture) {
+            if (modelShoreMask === texture) return;
             modelShoreMask = texture;
             // Force rebind on next update when the bake source is replaced.
+            maskBind.map?.destroy(false);
             maskBind.source = undefined;
             maskBind.map = undefined;
         },

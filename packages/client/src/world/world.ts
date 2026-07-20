@@ -266,6 +266,7 @@ export class World {
         this.oceanTiles.fill(0);
         this.topGroundTypes.fill(0);
         this.shoreSamples = [];
+        this.nearshoreFill.clearModelMasks();
         this.landSeamBaker.reset();
         this.groundSynced = false;
         this.wakeIdleAt.clear();
