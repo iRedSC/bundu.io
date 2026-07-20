@@ -10,6 +10,8 @@ const DEV_CONFIG_RELOAD = process.env.BUNDU_DEBUG === "1";
 
 const LIVE_RELOAD_SCRIPT = `<script>(function(){var e=new EventSource("/__dev/live-reload");e.onmessage=function(){location.reload()};})();</script>`;
 
+type LangFile = { namespace: string; locale: string; filepath: string };
+
 type PackNamespaceRoots = {
     /** Texture roots by namespace; later packs override earlier ones. */
     textureRoots: ReadonlyMap<string, string[]>;
@@ -18,6 +20,8 @@ type PackNamespaceRoots = {
     gameplayFiles: readonly string[];
     /** Client stat_bars.yml paths; later packs override earlier ones. */
     statBarsFiles: readonly string[];
+    /** Client lang YAML files in pack/namespace order. */
+    langFiles: readonly LangFile[];
 };
 
 function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
@@ -25,8 +29,15 @@ function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
     const modelDirs: string[] = [];
     const gameplayFiles: string[] = [];
     const statBarsFiles: string[] = [];
+    const langFiles: LangFile[] = [];
     if (!fs.existsSync(packsRoot)) {
-        return { textureRoots, modelDirs, gameplayFiles, statBarsFiles };
+        return {
+            textureRoots,
+            modelDirs,
+            gameplayFiles,
+            statBarsFiles,
+            langFiles,
+        };
     }
 
     const packDirs = fs
@@ -48,6 +59,7 @@ function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
             const models = path.join(assetsRoot, namespace, "models");
             const gameplay = path.join(assetsRoot, namespace, "gameplay.yml");
             const statBars = path.join(assetsRoot, namespace, "stat_bars.yml");
+            const langRoot = path.join(assetsRoot, namespace, "lang");
             if (fs.existsSync(textures)) {
                 const roots = textureRoots.get(namespace) ?? [];
                 roots.push(textures);
@@ -56,12 +68,30 @@ function discoverPackAssetRoots(packsRoot: string): PackNamespaceRoots {
             if (fs.existsSync(models)) modelDirs.push(models);
             if (fs.existsSync(gameplay)) gameplayFiles.push(gameplay);
             if (fs.existsSync(statBars)) statBarsFiles.push(statBars);
+            if (fs.existsSync(langRoot)) {
+                for (const name of fs
+                    .readdirSync(langRoot)
+                    .filter((file) => /\.ya?ml$/i.test(file))
+                    .sort((left, right) => left.localeCompare(right))) {
+                    langFiles.push({
+                        namespace,
+                        locale: name.replace(/\.ya?ml$/i, "").toLowerCase(),
+                        filepath: path.join(langRoot, name),
+                    });
+                }
+            }
         }
     }
-    return { textureRoots, modelDirs, gameplayFiles, statBarsFiles };
+    return {
+        textureRoots,
+        modelDirs,
+        gameplayFiles,
+        statBarsFiles,
+        langFiles,
+    };
 }
 
-const { textureRoots, modelDirs, gameplayFiles, statBarsFiles } =
+const { textureRoots, modelDirs, gameplayFiles, statBarsFiles, langFiles } =
     discoverPackAssetRoots(PACKS_ROOT);
 
 type SseClient = {
@@ -169,6 +199,40 @@ function clientStatBarsJson(): Response {
     });
 }
 
+async function clientLangJson(): Promise<Response> {
+    if (langFiles.length === 0) {
+        return new Response("Missing client lang yml", { status: 404 });
+    }
+    const { flattenLangDocument, LANG_PAYLOAD_FORMAT, mergeLangStrings } =
+        await import("./packages/shared/src/lang");
+    const byLocale = new Map<string, Record<string, string>>();
+    for (const file of langFiles) {
+        const flattened = flattenLangDocument(
+            Bun.YAML.parse(fs.readFileSync(file.filepath, "utf8")),
+            file.namespace,
+            file.filepath
+        );
+        byLocale.set(
+            file.locale,
+            mergeLangStrings(byLocale.get(file.locale) ?? {}, flattened)
+        );
+    }
+    const locale = byLocale.has("en")
+        ? "en"
+        : [...byLocale.keys()].sort((a, b) => a.localeCompare(b))[0];
+    if (!locale) {
+        return new Response("Missing client lang yml", { status: 404 });
+    }
+    return Response.json(
+        {
+            format: LANG_PAYLOAD_FORMAT,
+            locale,
+            strings: byLocale.get(locale) ?? {},
+        },
+        { headers: { "Cache-Control": "no-store" } }
+    );
+}
+
 function resolveTexture(namespace: string, relative: string): string | undefined {
     const roots = textureRoots.get(namespace);
     if (!roots) return undefined;
@@ -225,6 +289,9 @@ if (DEV_CONFIG_RELOAD) {
     }
     for (const filepath of statBarsFiles) {
         watchYaml(path.dirname(filepath));
+    }
+    for (const file of langFiles) {
+        watchYaml(path.dirname(file.filepath));
     }
 
     // Build stamp from build.ts — survives atomic site/ directory swaps.
@@ -295,6 +362,14 @@ serve({
                 } catch (err) {
                     console.error("[static] failed to load client stat bars", err);
                     return new Response("Stat bars error", { status: 500 });
+                }
+            }
+            if (url.pathname === "/__dev/client-lang") {
+                try {
+                    return await clientLangJson();
+                } catch (err) {
+                    console.error("[static] failed to load client lang", err);
+                    return new Response("Lang error", { status: 500 });
                 }
             }
         }

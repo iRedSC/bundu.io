@@ -4,6 +4,12 @@ import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Container } from "pixi.js";
 import { colorLerp, lerp } from "@bundu/shared/transforms";
+import { clientRegistries } from "../configs/registries";
+import {
+    hideRegistryTooltip,
+    moveRegistryTooltip,
+    showRegistryTooltip,
+} from "./registry_tooltip";
 
 const CRAFTING_COLORS = {
     empty: 0x777777,
@@ -70,6 +76,7 @@ export class CraftingMenu {
     private rightClickCB?: Callback;
     private leftClickCB?: Callback;
     craftingRecipeId: number | null = null;
+    private hoverScreen: { x: number; y: number } | null = null;
 
     constructor(readonly grid: Grid) {}
 
@@ -94,11 +101,45 @@ export class CraftingMenu {
             const recipe = this.items[i];
             button.item = recipe?.resultItemId ?? null;
             button.rightclick = (_item, shift) => {
+                hideRegistryTooltip();
                 if (recipe) this.rightClickCB?.(recipe.recipeId, shift);
             };
             button.leftclick = (_item, shift) => {
+                hideRegistryTooltip();
                 if (recipe) this.leftClickCB?.(recipe.recipeId, shift);
             };
+            button.onHover = (hovering, ev) => {
+                if (!hovering || !recipe || !ev) {
+                    this.hoverScreen = null;
+                    hideRegistryTooltip();
+                    return;
+                }
+                this.hoverScreen = { x: ev.global.x, y: ev.global.y };
+                showRegistryTooltip(
+                    "item",
+                    clientRegistries().item.location(recipe.resultItemId),
+                    ev.global.x,
+                    ev.global.y
+                );
+            };
+            button.onHoverMove = (ev) => {
+                this.hoverScreen = { x: ev.global.x, y: ev.global.y };
+                if (!recipe) return;
+                moveRegistryTooltip(ev.global.x, ev.global.y);
+            };
+        }
+        // Inventory/flags refresh rebuilds buttons; restore tip if still hovering.
+        const hoverIndex = this.buttons.findIndex((button) => button.hovering);
+        const hovered = hoverIndex >= 0 ? this.items[hoverIndex] : undefined;
+        if (hovered && this.hoverScreen) {
+            showRegistryTooltip(
+                "item",
+                clientRegistries().item.location(hovered.resultItemId),
+                this.hoverScreen.x,
+                this.hoverScreen.y
+            );
+        } else if (hoverIndex < 0) {
+            hideRegistryTooltip();
         }
     }
 

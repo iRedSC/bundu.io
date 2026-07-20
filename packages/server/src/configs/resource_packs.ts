@@ -6,6 +6,12 @@ import type { ClientRegistryProjection } from "@bundu/shared/registry";
 import { parseClientGameplayConfig } from "@bundu/shared/client_gameplay";
 import { parseStatBarsConfig } from "@bundu/shared/stat_bars";
 import {
+    flattenLangDocument,
+    LANG_PAYLOAD_FORMAT,
+    mergeLangStrings,
+    type LangPayload,
+} from "@bundu/shared/lang";
+import {
     parseGroundModelSet,
     type GroundModelSet,
     isOceanGroundModel,
@@ -48,6 +54,7 @@ export type ResourcePackManifest = {
     registries: { hash: string; url: string };
     gameplay: { hash: string; url: string };
     statBars: { hash: string; url: string };
+    lang: { hash: string; url: string };
     assets: ResourceAsset[];
 };
 
@@ -152,6 +159,7 @@ export class ResourcePackService {
     readonly registriesJson: string;
     readonly gameplayJson: string;
     readonly statBarsJson: string;
+    readonly langJson: string;
     readonly compiledModels: CompiledModelDefs;
     private readonly servedAssets = new Map<string, ServedAsset>();
 
@@ -161,6 +169,7 @@ export class ResourcePackService {
         registriesJson: string,
         gameplayJson: string,
         statBarsJson: string,
+        langJson: string,
         compiledModels: CompiledModelDefs,
         servedAssets: Map<string, ServedAsset>
     ) {
@@ -169,6 +178,7 @@ export class ResourcePackService {
         this.registriesJson = registriesJson;
         this.gameplayJson = gameplayJson;
         this.statBarsJson = statBarsJson;
+        this.langJson = langJson;
         this.compiledModels = compiledModels;
         this.servedAssets = servedAssets;
     }
@@ -181,6 +191,8 @@ export class ResourcePackService {
             [];
         let clientGameplayRaw: unknown;
         let clientStatBarsRaw: unknown;
+        /** Locale → merged flat strings (later packs / namespaces override keys). */
+        const langByLocale = new Map<string, Record<string, string>>();
 
         for (const pack of packs.packs) {
             const assetsRoot = path.join(pack.directory, "assets");
@@ -206,6 +218,28 @@ export class ResourcePackService {
                     // Later packs replace the complete client stat bars document.
                     clientStatBarsRaw = Bun.YAML.parse(
                         fs.readFileSync(statBarsFile, "utf8")
+                    );
+                }
+
+                const langRoot = path.join(namespaceRoot, "lang");
+                for (const filename of files(langRoot).filter((name) =>
+                    /\.ya?ml$/i.test(name)
+                )) {
+                    const locale = path
+                        .basename(filename)
+                        .replace(/\.ya?ml$/i, "")
+                        .toLowerCase();
+                    const flattened = flattenLangDocument(
+                        Bun.YAML.parse(fs.readFileSync(filename, "utf8")),
+                        namespace,
+                        filename
+                    );
+                    langByLocale.set(
+                        locale,
+                        mergeLangStrings(
+                            langByLocale.get(locale) ?? {},
+                            flattened
+                        )
                     );
                 }
 
@@ -281,6 +315,21 @@ export class ResourcePackService {
         const gameplayJson = JSON.stringify(clientGameplayRaw);
         const statBarsJson = JSON.stringify(clientStatBarsRaw);
 
+        const defaultLocale = langByLocale.has("en")
+            ? "en"
+            : [...langByLocale.keys()].sort((a, b) => a.localeCompare(b))[0];
+        if (!defaultLocale) {
+            throw new Error(
+                "Resource packs: missing assets/<namespace>/lang/<locale>.yml"
+            );
+        }
+        const langPayload: LangPayload = {
+            format: LANG_PAYLOAD_FORMAT,
+            locale: defaultLocale,
+            strings: langByLocale.get(defaultLocale) ?? {},
+        };
+        const langJson = JSON.stringify(langPayload);
+
         const sanitized = await Promise.all(
             pendingTextures.map(({ logicalPath, bytes }) =>
                 sanitizePackTexture(logicalPath, bytes)
@@ -354,6 +403,7 @@ export class ResourcePackService {
         const registriesHash = hash(registriesJson);
         const gameplayHash = hash(gameplayJson);
         const statBarsHash = hash(statBarsJson);
+        const langHash = hash(langJson);
         const assets = [...servedAssets.values()]
             .map(({ bytes: _bytes, ...asset }) => asset)
             .sort((left, right) => left.path.localeCompare(right.path));
@@ -371,6 +421,7 @@ export class ResourcePackService {
                 registriesHash,
                 gameplayHash,
                 statBarsHash,
+                langHash,
                 assets,
             })
         );
@@ -387,12 +438,14 @@ export class ResourcePackService {
                 },
                 gameplay: { hash: gameplayHash, url: "/packs/gameplay.json" },
                 statBars: { hash: statBarsHash, url: "/packs/stat_bars.json" },
+                lang: { hash: langHash, url: "/packs/lang.json" },
                 assets,
             },
             modelsJson,
             registriesJson,
             gameplayJson,
             statBarsJson,
+            langJson,
             compiledModels,
             servedAssets
         );

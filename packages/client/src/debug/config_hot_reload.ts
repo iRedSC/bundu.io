@@ -8,6 +8,7 @@ import {
 } from "../models/defs";
 import { applyClientGameplay } from "../models/shadow";
 import { applyStatBars } from "../ui/stat_bars_config";
+import { applyLang } from "../lang/lang";
 
 function reapplyModelDefs(world: World) {
     for (const object of world.objects.all()) {
@@ -42,11 +43,13 @@ export function startConfigHotReload(world: World): () => void {
             do {
                 pending = false;
                 const timestamp = Date.now();
-                const [defsRes, gameplayRes, statBarsRes] = await Promise.all([
-                    fetch(`/__dev/model-defs?t=${timestamp}`),
-                    fetch(`/__dev/client-gameplay?t=${timestamp}`),
-                    fetch(`/__dev/client-stat-bars?t=${timestamp}`),
-                ]);
+                const [defsRes, gameplayRes, statBarsRes, langRes] =
+                    await Promise.all([
+                        fetch(`/__dev/model-defs?t=${timestamp}`),
+                        fetch(`/__dev/client-gameplay?t=${timestamp}`),
+                        fetch(`/__dev/client-stat-bars?t=${timestamp}`),
+                        fetch(`/__dev/client-lang?t=${timestamp}`),
+                    ]);
                 if (!defsRes.ok) {
                     console.warn(
                         "[config-hot-reload] model-defs fetch failed:",
@@ -77,6 +80,15 @@ export function startConfigHotReload(world: World): () => void {
                     console.warn(
                         "[config-hot-reload] client-stat-bars fetch failed:",
                         statBarsRes.status
+                    );
+                }
+                if (langRes.ok) {
+                    applyLang(await langRes.json());
+                    console.info("[config-hot-reload] client lang applied");
+                } else {
+                    console.warn(
+                        "[config-hot-reload] client-lang fetch failed:",
+                        langRes.status
                     );
                 }
             } while (pending);

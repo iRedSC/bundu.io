@@ -15,6 +15,12 @@ import {
     type EditorState,
     type PaletteEntry,
 } from "./state";
+import {
+    hideRegistryTooltip,
+    moveRegistryTooltip,
+    placeKindRegistry,
+    showRegistryTooltip,
+} from "../ui/registry_tooltip";
 
 const UI_FONT = "'Aoboshi One', sans-serif";
 
@@ -153,20 +159,37 @@ class PaletteSlot {
         this.button.addChild(this.background);
         this.button.addChild(this.disableSprite);
 
-        this.button.onpointerenter = () => {
+        this.button.onpointerenter = (ev: { global: { x: number; y: number } }) => {
             this.hovering = true;
+            this.showTip(ev.global.x, ev.global.y);
+        };
+        this.button.onpointermove = (ev: { global: { x: number; y: number } }) => {
+            if (!this.hovering) return;
+            moveRegistryTooltip(ev.global.x, ev.global.y);
         };
         this.button.onpointerleave = () => {
             this.hovering = false;
             this.down = false;
+            hideRegistryTooltip();
         };
         this.button.onpointerdown = (e: { stopPropagation(): void }) => {
             e.stopPropagation();
             this.down = true;
+            hideRegistryTooltip();
         };
         this.button.onpointerupoutside = () => {
             this.down = false;
         };
+    }
+
+    private showTip(screenX: number, screenY: number) {
+        if (!this.entry) {
+            hideRegistryTooltip();
+            return;
+        }
+        const registry = placeKindRegistry(this.entry.kind);
+        const location = clientRegistries()[registry].location(this.entry.id);
+        showRegistryTooltip(registry, location, screenX, screenY);
     }
 
     setEntry(entry: PaletteEntry | null) {
@@ -464,6 +487,7 @@ export function createPalette(
             );
         },
         destroy() {
+            hideRegistryTooltip();
             window.removeEventListener("resize", resize);
             for (const slot of slots) slot.destroy();
             container.destroy({ children: true });

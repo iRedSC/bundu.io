@@ -1,410 +1,787 @@
+# English language pack for bundu.
+# Keys flatten to: <registry>.bundu.<id>.<field>
+# (namespace comes from assets/<namespace>/lang/)
+
 item:
-    unknown_asset:
-        name: Unknown Asset
-        desc: An asset of unknown origin.
-
-    # Pickaxe
-    wood_pickaxe:
-        name: Wood Pickaxe
-        desc: A pickaxe made of wood.
-
-    stone_pickaxe:
-        name: Stone Pickaxe
-        desc: A pickaxe made of stone.
-
-    copper_pickaxe:
-        name: Copper Pickaxe
-        desc: A pickaxe made of copper.
-
-    silver_pickaxe:
-        name: Silver Pickaxe
-        desc: A pickaxe made of silver.
-
-    cobalt_pickaxe:
-        name: Cobalt Pickaxe
-        desc: A pickaxe made of cobalt.
-
-    # Special Tools
-    lumber_axe:
-        name: Lumber Axe
-        desc: Mine wood much faster.
-
-    spyglass:
-        name: Spyglass
-        desc: A handheld optical instrument used for viewing distant objects.
-
-    butcher_knife:
-        name: Butcher Knife
-        desc: Gather more resources from animals.
-
-    shovel:
-        name: Shovel
-        desc: Start digging?
-
-    # Sword
-    wood_sword:
-        name: Wood Sword
-        desc: A basic wooden sword.
-
-    stone_sword:
-        name: Stone Sword
-        desc: A sword made of stone.
-
-    copper_sword:
-        name: Copper Sword
-        desc: A sword made of copper.
-
-    silver_sword:
-        name: Silver Sword
-        desc: A sword made of silver.
-
-    cobalt_sword:
-        name: Cobalt Sword
-        desc: A sword made of cobalt.
-
-    iridium_sword:
-        name: Iridium Sword
-        desc: A sword made of iridium.
-
-    # Hammer
-    stone_hammer:
-        name: Stone Hammer
-        desc: A hammer made of stone.
-
-    copper_hammer:
-        name: Copper Hammer
-        desc: A hammer made of copper.
-
-    silver_hammer:
-        name: Silver Hammer
-        desc: A hammer made of silver.
-
-    cobalt_hammer:
-        name: Cobalt Hammer
-        desc: A hammer made of cobalt.
-
-    # Spear
-    stone_spear:
-        name: Stone Spear
-        desc: A spear made of stone.
-
-    copper_spear:
-        name: Copper Spear
-        desc: A spear made of copper.
-
-    silver_spear:
-        name: Silver Spear
-        desc: A spear made of silver.
-
-    cobalt_spear:
-        name: Cobalt Spear
-        desc: A spear made of cobalt.
-
-    tusk_spear:
-        name: Tusk Spear
-        desc: A spear made from a tusk.
-
-    # Helmet
-    wood_helmet:
-        name: Wood Helmet
-        desc: A helmet made of wood.
-
-    stone_helmet:
-        name: Stone Helmet
-        desc: A helmet made of stone.
-
-    copper_helmet:
-        name: Copper Helmet
-        desc: A helmet made of copper.
-
-    silver_helmet:
-        name: Silver Helmet
-        desc: A helmet made of silver.
-
-    cobalt_helmet:
-        name: Cobalt Helmet
-        desc: A helmet made of cobalt.
-
-    # Hat
-    earmuffs:
-        name: Earmuffs
-        desc: A little protection from the cold.
-
-    beanie:
-        name: Beanie
-        desc: Night-time is a breeze.
-
-    coat:
-        name: Coat
-        desc: Keeps you very warm.
-
-    # Special Items
-    book:
-        name: Book
-        desc: Craft Faster.
-
-    resource_book:
-        name: Resource Book
-        desc: Save basic resources when crafting.
-
-    time_book:
-        name: Time Book
-        desc: Craft even faster.
-
-    # Consumable
-    meat:
-        name: Meat
-        desc: Raw meat obtained from animals.
-
-    meat_cooked:
-        name: Cooked Meat
-        desc: Meat cooked over a fire.
-
-    blue_berry:
-        name: Blue Berry
-        desc: A small edible fruit.
-
-    red_berry:
-        name: Red Berry
-        desc: A small edible fruit.
-
-    honey:
-        name: Honey
-        desc: Sweet, sticky liquid produced by bees.
-
-    mango:
-        name: Mango
-        desc: A sweet and juicy tropical fruit.
-
-    miracle_fruit:
-        name: Miracle Fruit
-        desc: A fruit that alters the taste perception temporarily.
-
+    alligator_helmet:
+        name: Alligator Helmet
+        desc: Tough hide shaped into a helmet.
+    alligator_skin:
+        name: Alligator Skin
+        desc: The tough, leathery skin of an alligator.
+    anvil:
+        name: Anvil
+        desc: A heavy metal block on which metal objects are hammered and shaped.
+    backpack:
+        name: Backpack
+        desc: A bag with shoulder straps used for carrying items.
+    bananna:
+        name: Banana
+        desc: A ripe banana.
     bandage:
         name: Bandage
         desc: A strip of cloth used to bind a wound.
-
-
-    # * PLACEABLE
-
-    # Walls
-    friendly_wall:
-        name: Friendly Wall
-        desc: A wall that belongs to your faction.
-
-    wood_wall:
-        name: Wooden Wall
-        desc: A wall made of wood.
-
-    stone_wall:
-        name: Stone Wall
-        desc: A wall made of stone.
-
-    copper_wall:
-        name: Copper Wall
-        desc: A wall made of copper.
-
-    silver_wall:
-        name: Silver Wall
-        desc: A wall made of silver.
-
-    cobalt_wall:
-        name: Cobalt Wall
-        desc: A wall made of cobalt.
-
-    iridium_wall:
-        name: Iridium Wall
-        desc: A wall made of iridium.
-
-    # Spike
-    wood_spike:
-        name: Wooden Spike
-        desc: A spike made of wood.
-
-    stone_spike:
-        name: Stone Spike
-        desc: A spike made of stone.
-
-    copper_spike:
-        name: Copper Spike
-        desc: A spike made of copper.
-
-    silver_spike:
-        name: Silver Spike
-        desc: A spike made of silver.
-
-    cobalt_spike:
-        name: Cobalt Spike
-        desc: A spike made of cobalt.
-
-    iridium_spike:
-        name: Iridium Spike
-        desc: A spike made of iridium.
-
-    # Door
-    friendly_door:
-        name: Friendly Door
-        desc: A door that belongs to your faction.
-
-    door_open:
-        name: Open Door
-        desc: An open door.
-
-    wood_door:
-        name: Wooden Door
-        desc: A door made of wood.
-
-    stone_door:
-        name: Stone Door
-        desc: A door made of stone.
-
-    copper_door:
-        name: Copper Door
-        desc: A door made of copper.
-
-    silver_door:
-        name: Silver Door
-        desc: A door made of silver.
-
+    beanie:
+        name: Beanie
+        desc: Night-time is a breeze.
+    bear_fur:
+        name: Bear Fur
+        desc: The thick fur of a bear.
+    bird_foot:
+        name: Bird Foot
+        desc: The foot of a bird.
+    bird_skull:
+        name: Bird Skull
+        desc: The skull of a bird, often used for decorative purposes.
+    blue_berry:
+        name: Blue Berry
+        desc: A small edible fruit.
+    book:
+        name: Book
+        desc: Craft Faster.
+    bottle_empty:
+        name: Empty Bottle
+        desc: An empty bottle.
+    bottle_water:
+        name: Water Bottle
+        desc: A bottle filled with water.
+    butcher_knife:
+        name: Butcher Knife
+        desc: Gather more resources from animals.
+    canteen:
+        name: Canteen
+        desc: Holds water for longer trips.
+    cloth:
+        name: Cloth
+        desc: A flexible material made from weaving fibers.
+    coat:
+        name: Coat
+        desc: Keeps you very warm.
+    cobalt:
+        name: Cobalt
+        desc: A hard blue-grey metal.
     cobalt_door:
         name: Cobalt Door
         desc: A door made of cobalt.
-
+    cobalt_hammer:
+        name: Cobalt Hammer
+        desc: A hammer made of cobalt.
+    cobalt_helmet:
+        name: Cobalt Helmet
+        desc: A helmet made of cobalt.
+    cobalt_medallion:
+        name: Cobalt Medallion
+        desc: A cobalt medallion.
+    cobalt_pickaxe:
+        name: Cobalt Pickaxe
+        desc: A pickaxe made of cobalt.
+    cobalt_spear:
+        name: Cobalt Spear
+        desc: A spear made of cobalt.
+    cobalt_spike:
+        name: Cobalt Spike
+        desc: A spike made of cobalt.
+    cobalt_sword:
+        name: Cobalt Sword
+        desc: A sword made of cobalt.
+    cobalt_wall:
+        name: Cobalt Wall
+        desc: A wall made of cobalt.
+    copper:
+        name: Copper
+        desc: A soft reddish metal.
+    copper_door:
+        name: Copper Door
+        desc: A door made of copper.
+    copper_hammer:
+        name: Copper Hammer
+        desc: A hammer made of copper.
+    copper_helmet:
+        name: Copper Helmet
+        desc: A helmet made of copper.
+    copper_pickaxe:
+        name: Copper Pickaxe
+        desc: A pickaxe made of copper.
+    copper_spear:
+        name: Copper Spear
+        desc: A spear made of copper.
+    copper_spike:
+        name: Copper Spike
+        desc: A spike made of copper.
+    copper_sword:
+        name: Copper Sword
+        desc: A sword made of copper.
+    copper_wall:
+        name: Copper Wall
+        desc: A wall made of copper.
+    deer_hide:
+        name: Deer Hide
+        desc: The skin of a deer.
+    earmuffs:
+        name: Earmuffs
+        desc: A little protection from the cold.
+    elephant_tusk:
+        name: Elephant Tusk
+        desc: The elongated, protruding tooth of an elephant.
+    fire_big:
+        name: Big Fire
+        desc: A larger, more intense fire.
+    fire_pit:
+        name: Fire Pit
+        desc: A pit dug into the ground, usually containing a fire.
+    fire_small:
+        name: Small Fire
+        desc: A smaller, less intense fire.
+    fish_scale:
+        name: Fish Scale
+        desc: A scale from a fish.
+    honey:
+        name: Honey
+        desc: Sweet, sticky liquid produced by bees.
+    ice:
+        name: Ice
+        desc: Frozen water.
+    iridium:
+        name: Iridium
+        desc: A rare, durable metal.
     iridium_door:
         name: Iridium Door
         desc: A door made of iridium.
-
-    # Crafting
+    iridium_spike:
+        name: Iridium Spike
+        desc: A spike made of iridium.
+    iridium_sword:
+        name: Iridium Sword
+        desc: A sword made of iridium.
+    iridium_wall:
+        name: Iridium Wall
+        desc: A wall made of iridium.
+    komodo_dragon_eye:
+        name: Komodo Dragon Eye
+        desc: The eye of a Komodo dragon.
+    lumber_axe:
+        name: Lumber Axe
+        desc: Mine wood much faster.
+    mango:
+        name: Mango
+        desc: A sweet and juicy tropical fruit.
+    meat:
+        name: Meat
+        desc: Raw meat obtained from animals.
+    meat_cooked:
+        name: Cooked Meat
+        desc: Meat cooked over a fire.
+    miracle_fruit:
+        name: Miracle Fruit
+        desc: A fruit that alters the taste perception temporarily.
+    pinecone:
+        name: Pinecone
+        desc: The woody, conical fruit of a pine tree.
+    pitch:
+        name: Pitch
+        desc: A dark, sticky substance obtained from the distillation of tar or turpentine.
+    point_generator:
+        name: Point Generator
+        desc: Generates 2 points per second for its owner.
+    quick_silver_spike:
+        name: Quick Silver Spike
+        desc: A quickly constructed spike made of silver.
+    quick_silver_wall:
+        name: Quick Silver Wall
+        desc: A quickly built wall made of silver.
+    quick_stone_spike:
+        name: Quick Stone Spike
+        desc: A quickly constructed spike made of stone.
+    quick_stone_wall:
+        name: Quick Stone Wall
+        desc: A quickly built wall made of stone.
+    quick_wood_wall:
+        name: Quick Wood Wall
+        desc: A quickly built wall made of wood.
+    ram_wool:
+        name: Ram Wool
+        desc: The wool of a ram.
+    red_berry:
+        name: Red Berry
+        desc: A small edible fruit.
+    repair_hammer:
+        name: Repair Hammer
+        desc: A hammer used for repairing.
+    resource_book:
+        name: Resource Book
+        desc: Save basic resources when crafting.
+    ruby_medallion:
+        name: Ruby Medallion
+        desc: A ruby medallion.
+    sand:
+        name: Sand
+        desc: Loose grains from the shore.
+    scuba:
+        name: Scuba
+        desc: Breathe underwater.
+    shovel:
+        name: Shovel
+        desc: Start digging?
+    silver:
+        name: Silver
+        desc: A shiny grey metal.
+    silver_door:
+        name: Silver Door
+        desc: A door made of silver.
+    silver_hammer:
+        name: Silver Hammer
+        desc: A hammer made of silver.
+    silver_helmet:
+        name: Silver Helmet
+        desc: A helmet made of silver.
+    silver_pickaxe:
+        name: Silver Pickaxe
+        desc: A pickaxe made of silver.
+    silver_repair_hammer:
+        name: Silver Repair Hammer
+        desc: A silver hammer used for repairing.
+    silver_spear:
+        name: Silver Spear
+        desc: A spear made of silver.
+    silver_spike:
+        name: Silver Spike
+        desc: A spike made of silver.
+    silver_sword:
+        name: Silver Sword
+        desc: A sword made of silver.
+    silver_wall:
+        name: Silver Wall
+        desc: A wall made of silver.
+    stone:
+        name: Stone
+        desc: A common mineral.
+    stone_door:
+        name: Stone Door
+        desc: A door made of stone.
+    stone_hammer:
+        name: Stone Hammer
+        desc: A hammer made of stone.
+    stone_helmet:
+        name: Stone Helmet
+        desc: A helmet made of stone.
+    stone_pickaxe:
+        name: Stone Pickaxe
+        desc: A pickaxe made of stone.
+    stone_spear:
+        name: Stone Spear
+        desc: A spear made of stone.
+    stone_spike:
+        name: Stone Spike
+        desc: A spike made of stone.
+    stone_sword:
+        name: Stone Sword
+        desc: A sword made of stone.
+    stone_wall:
+        name: Stone Wall
+        desc: A wall made of stone.
+    tent:
+        name: Tent
+        desc: A portable shelter.
+    time_book:
+        name: Time Book
+        desc: Craft even faster.
+    tooth:
+        name: Tooth
+        desc: A hard, bonelike structure in the mouth.
+    tusk_spear:
+        name: Tusk Spear
+        desc: A spear made from a tusk.
+    wood:
+        name: Wood
+        desc: Basic building material.
+    wood_door:
+        name: Wooden Door
+        desc: A door made of wood.
+    wood_helmet:
+        name: Wood Helmet
+        desc: A helmet made of wood.
+    wood_pickaxe:
+        name: Wood Pickaxe
+        desc: A pickaxe made of wood.
+    wood_spike:
+        name: Wooden Spike
+        desc: A spike made of wood.
+    wood_sword:
+        name: Wood Sword
+        desc: A basic wooden sword.
+    wood_wall:
+        name: Wooden Wall
+        desc: A wall made of wood.
     workbench:
         name: Workbench
         desc: A bench used for working on various tasks.
 
-    fire_pit:
-        name: Fire Pit
-        desc: A pit dug into the ground, usually containing a fire.
-
+structure:
     anvil:
         name: Anvil
         desc: A heavy metal block on which metal objects are hammered and shaped.
-
-    fire_small:
-        name: Small Fire
-        desc: A smaller, less intense fire.
-
+    cobalt_door:
+        name: Cobalt Door
+        desc: A door made of cobalt.
+    cobalt_spike:
+        name: Cobalt Spike
+        desc: A spike made of cobalt.
+    cobalt_wall:
+        name: Cobalt Wall
+        desc: A wall made of cobalt.
+    copper_door:
+        name: Copper Door
+        desc: A door made of copper.
+    copper_spike:
+        name: Copper Spike
+        desc: A spike made of copper.
+    copper_wall:
+        name: Copper Wall
+        desc: A wall made of copper.
     fire_big:
         name: Big Fire
         desc: A larger, more intense fire.
-
+    fire_pit:
+        name: Fire Pit
+        desc: A pit dug into the ground, usually containing a fire.
+    fire_small:
+        name: Small Fire
+        desc: A smaller, less intense fire.
+    iridium_door:
+        name: Iridium Door
+        desc: A door made of iridium.
+    iridium_spike:
+        name: Iridium Spike
+        desc: A spike made of iridium.
+    iridium_wall:
+        name: Iridium Wall
+        desc: A wall made of iridium.
     point_generator:
         name: Point Generator
         desc: Generates 2 points per second for its owner.
-
-    # Quick buildings
-    quick_wood_wall:
-        name: Quick Wood Wall
-        desc: A quickly built wall made of wood.
-
-    quick_stone_wall:
-        name: Quick Stone Wall
-        desc: A quickly built wall made of stone.
-
-    quick_silver_wall:
-        name: Quick Silver Wall
-        desc: A quickly built wall made of silver.
-
-    quick_stone_spike:
-        name: Quick Stone Spike
-        desc: A quickly constructed spike made of stone.
-
     quick_silver_spike:
         name: Quick Silver Spike
         desc: A quickly constructed spike made of silver.
+    quick_silver_wall:
+        name: Quick Silver Wall
+        desc: A quickly built wall made of silver.
+    quick_stone_spike:
+        name: Quick Stone Spike
+        desc: A quickly constructed spike made of stone.
+    quick_stone_wall:
+        name: Quick Stone Wall
+        desc: A quickly built wall made of stone.
+    quick_wood_wall:
+        name: Quick Wood Wall
+        desc: A quickly built wall made of wood.
+    silver_door:
+        name: Silver Door
+        desc: A door made of silver.
+    silver_spike:
+        name: Silver Spike
+        desc: A spike made of silver.
+    silver_wall:
+        name: Silver Wall
+        desc: A wall made of silver.
+    stone_door:
+        name: Stone Door
+        desc: A door made of stone.
+    stone_spike:
+        name: Stone Spike
+        desc: A spike made of stone.
+    stone_wall:
+        name: Stone Wall
+        desc: A wall made of stone.
+    wood_door:
+        name: Wooden Door
+        desc: A door made of wood.
+    wood_spike:
+        name: Wooden Spike
+        desc: A spike made of wood.
+    wood_wall:
+        name: Wooden Wall
+        desc: A wall made of wood.
+    workbench:
+        name: Workbench
+        desc: A bench used for working on various tasks.
 
-    # * Map Objects
+resource:
+    alligator_dead:
+        name: Alligator
+        desc: Remains left behind.
+    bear_dead:
+        name: Bear
+        desc: Remains left behind.
+    bee_dead:
+        name: Bee
+        desc: Remains left behind.
+    cobalt:
+        name: Cobalt
+        desc: A cobalt.
+    copper:
+        name: Copper
+        desc: A copper.
+    deer_dead:
+        name: Deer
+        desc: Remains left behind.
+    elephant_dead:
+        name: Elephant
+        desc: Remains left behind.
+    fish_dead:
+        name: Fish
+        desc: Remains left behind.
+    forest_tree:
+        name: Forest Tree
+        desc: A forest tree.
+    hive_large:
+        name: Hive Large
+        desc: A hive large.
+    hive_medium:
+        name: Hive Medium
+        desc: A hive medium.
+    hive_small:
+        name: Hive Small
+        desc: A hive small.
+    komodo_dragon_dead:
+        name: Komodo Dragon
+        desc: Remains left behind.
+    pine_tree:
+        name: Pine Tree
+        desc: A pine tree.
+    pine_tree_snow:
+        name: Pine Tree Snow
+        desc: A pine tree snow.
+    player_dead:
+        name: Player
+        desc: Remains left behind.
+    queen_bee_dead:
+        name: Queen Bee
+        desc: Remains left behind.
+    raindeer_dead:
+        name: Raindeer
+        desc: Remains left behind.
+    ram_dead:
+        name: Ram
+        desc: Remains left behind.
+    savanah_tree:
+        name: Savanah Tree
+        desc: A savanah tree.
+    silver:
+        name: Silver
+        desc: A silver.
+    stone:
+        name: Stone
+        desc: A stone.
+    stone_barrier:
+        name: Stone Barrier
+        desc: A stone barrier.
 
-    pinecone:
-        name: Pinecone
-        desc: The woody, conical fruit of a pine tree.
+ground_type:
+    grass:
+        name: Grass
+        desc: Grass terrain.
+    island:
+        name: Island
+        desc: Island terrain.
+    mountain:
+        name: Mountain
+        desc: Mountain terrain.
+    ocean:
+        name: Ocean
+        desc: Ocean terrain.
+    pond:
+        name: Pond
+        desc: Small inland water with a short shore fade.
+    warm_ocean:
+        name: Warm Ocean
+        desc: Clearer, milder ocean water.
+    deep_ocean:
+        name: Deep Ocean
+        desc: Dark, cold ocean with stronger currents.
+    savannah:
+        name: Savannah
+        desc: Savannah terrain.
+    snow:
+        name: Snow
+        desc: Snow terrain.
 
-    pitch:
-        name: Pitch
-        desc: A dark, sticky substance obtained from the distillation of tar or turpentine.
-
-    cloth:
-        name: Cloth
-        desc: A flexible material made from weaving fibers.
-
-    tooth:
-        name: Tooth
-        desc: A hard, bonelike structure in the mouth.
-
-    backpack:
-        name: Backpack
-        desc: A bag with shoulder straps used for carrying items.
-
-    bird_skull:
-        name: Bird Skull
-        desc: The skull of a bird, often used for decorative purposes.
-
-    repair_hammer:
-        name: Repair Hammer
-        desc: A hammer used for repairing.
-
-    # * Animals
-
-
-
-    # Animal Items
-    bear_fur:
-        name: Bear Fur
-        desc: The thick fur of a bear.
-
-    deer_hide:
-        name: Deer Hide
-        desc: The skin of a deer.
-
-    ram_wool:
-        name: Ram Wool
-        desc: The wool of a ram.
-
-    elephant_tusk:
-        name: Elephant Tusk
-        desc: The elongated, protruding tooth of an elephant.
-
-    alligator_skin:
-        name: Alligator Skin
-        desc: The tough, leathery skin of an alligator.
-
-    komodo_dragon_eye:
-        name: Komodo Dragon Eye
-        desc: The eye of a Komodo dragon.
-
-    pinecone:
-        name: Pinecone
-        desc: The woody, conical fruit of a pine tree.
-
-    pitch:
-        name: Pitch
-        desc: A dark, sticky substance obtained from the distillation of tar or turpentine.
-
-    cloth:
-        name: Cloth
-        desc: A flexible material made from weaving fibers.
-
-    tooth:
-        name: Tooth
-        desc: A hard, bonelike structure in the mouth.
-
-    backpack:
-        name: Backpack
-        desc: A bag with shoulder straps used for carrying items.
-
-    repair_hammer:
-        name: Repair Hammer
-        desc: A hammer used for repairing.
-
-
-
+decoration:
+    acacia:
+        name: Acacia
+    acacia2:
+        name: Acacia2
+    acacia3:
+        name: Acacia3
+    beach:
+        name: Beach
+    beach_2:
+        name: Beach 2
+    beach_3:
+        name: Beach 3
+    beach_alt:
+        name: Beach Alt
+    beach_dark:
+        name: Beach Dark
+    beach_flower_0:
+        name: Beach Flower 0
+    beach_flower_1:
+        name: Beach Flower 1
+    beach_ground_circle_dark:
+        name: Beach Ground Circle Dark
+    beach_ground_circle_light:
+        name: Beach Ground Circle Light
+    beach_light:
+        name: Beach Light
+    beach_seaweed:
+        name: Beach Seaweed
+    beach_shell:
+        name: Beach Shell
+    beach_starfish:
+        name: Beach Starfish
+    berry_bush:
+        name: Berry Bush
+    berry_bush_overlay:
+        name: Berry Bush Overlay
+    blob_forest_0_alt:
+        name: Blob Forest 0 Alt
+    blob_forest_1_alt:
+        name: Blob Forest 1 Alt
+    blob_forest_2_alt:
+        name: Blob Forest 2 Alt
+    blob_forest_3_alt:
+        name: Blob Forest 3 Alt
+    blob_forest_4_alt:
+        name: Blob Forest 4 Alt
+    canopy1:
+        name: Canopy1
+    canopy2:
+        name: Canopy2
+    canopy3:
+        name: Canopy3
+    canopy_big:
+        name: Canopy Big
+    cave_ground:
+        name: Cave Ground
+    cave_ground_dark:
+        name: Cave Ground Dark
+    cave_ground_light:
+        name: Cave Ground Light
+    forest_blob_1:
+        name: Forest Blob 1
+    forest_blob_2:
+        name: Forest Blob 2
+    forest_blob_3:
+        name: Forest Blob 3
+    forest_blob_4:
+        name: Forest Blob 4
+    forest_blob_5:
+        name: Forest Blob 5
+    forest_blob_6:
+        name: Forest Blob 6
+    forest_dark:
+        name: Forest Dark
+    forest_flower1:
+        name: Forest Flower1
+    forest_flower2:
+        name: Forest Flower2
+    forest_flower3:
+        name: Forest Flower3
+    forest_flower_0:
+        name: Forest Flower 0
+    forest_flower_1:
+        name: Forest Flower 1
+    forest_flower_2:
+        name: Forest Flower 2
+    forest_ground_circle:
+        name: Forest Ground Circle
+    forest_ground_circle_dark:
+        name: Forest Ground Circle Dark
+    forest_ground_circle_light:
+        name: Forest Ground Circle Light
+    forest_leaf:
+        name: Forest Leaf
+    forest_leaf2:
+        name: Forest Leaf2
+    forest_leaf_0:
+        name: Forest Leaf 0
+    forest_leaf_1:
+        name: Forest Leaf 1
+    forest_light:
+        name: Forest Light
+    forest_rock1:
+        name: Forest Rock1
+    forest_rock2:
+        name: Forest Rock2
+    forest_rock_0:
+        name: Forest Rock 0
+    forest_rock_1:
+        name: Forest Rock 1
+    forest_stick:
+        name: Forest Stick
+    forest_tree_1_0:
+        name: Forest Tree 1 0
+    forest_tree_1_1:
+        name: Forest Tree 1 1
+    forest_tree_1_2:
+        name: Forest Tree 1 2
+    forest_tree_1_3:
+        name: Forest Tree 1 3
+    island:
+        name: Island
+    mango_tree1:
+        name: Mango Tree1
+    palm_tree:
+        name: Palm Tree
+    palm_tree_2:
+        name: Palm Tree 2
+    pine_tree:
+        name: Pine Tree
+    pine_tree_2:
+        name: Pine Tree 2
+    pine_tree_3:
+        name: Pine Tree 3
+    pine_tree_4:
+        name: Pine Tree 4
+    pine_tree_5:
+        name: Pine Tree 5
+    pine_tree_6:
+        name: Pine Tree 6
+    pine_tree_snow:
+        name: Pine Tree Snow
+    pond_forest:
+        name: Pond Forest
+    pond_savannah:
+        name: Pond Savannah
+    pond_winter:
+        name: Pond Winter
+    sand_blob_1:
+        name: Sand Blob 1
+    sand_ground_circle:
+        name: Sand Ground Circle
+    savannah:
+        name: Savannah
+    savannah2:
+        name: Savannah2
+    savannah3:
+        name: Savannah3
+    savannah4:
+        name: Savannah4
+    savannah5:
+        name: Savannah5
+    savannah6:
+        name: Savannah6
+    savannah7:
+        name: Savannah7
+    savannah_blob_1:
+        name: Savannah Blob 1
+    savannah_blob_2:
+        name: Savannah Blob 2
+    savannah_blob_3:
+        name: Savannah Blob 3
+    savannah_bush1:
+        name: Savannah Bush1
+    savannah_bush1_alt:
+        name: Savannah Bush1 Alt
+    savannah_bush2:
+        name: Savannah Bush2
+    savannah_dark:
+        name: Savannah Dark
+    savannah_flower_0:
+        name: Savannah Flower 0
+    savannah_flower_0_alt_2:
+        name: Savannah Flower 0 Alt 2
+    savannah_flower_1:
+        name: Savannah Flower 1
+    savannah_flower_1_alt_2:
+        name: Savannah Flower 1 Alt 2
+    savannah_grass1:
+        name: Savannah Grass1
+    savannah_grass2:
+        name: Savannah Grass2
+    savannah_grass3:
+        name: Savannah Grass3
+    savannah_grass4:
+        name: Savannah Grass4
+    savannah_grass_0:
+        name: Savannah Grass 0
+    savannah_grass_0_alt_2:
+        name: Savannah Grass 0 Alt 2
+    savannah_grass_1:
+        name: Savannah Grass 1
+    savannah_grass_1_alt_2:
+        name: Savannah Grass 1 Alt 2
+    savannah_grass_2:
+        name: Savannah Grass 2
+    savannah_grass_2_alt_2:
+        name: Savannah Grass 2 Alt 2
+    savannah_grass_3:
+        name: Savannah Grass 3
+    savannah_grass_3_alt_2:
+        name: Savannah Grass 3 Alt 2
+    savannah_ground_circle:
+        name: Savannah Ground Circle
+    savannah_ground_circle_dark:
+        name: Savannah Ground Circle Dark
+    savannah_ground_circle_light:
+        name: Savannah Ground Circle Light
+    savannah_hole:
+        name: Savannah Hole
+    savannah_hole_alt_2:
+        name: Savannah Hole Alt 2
+    savannah_light:
+        name: Savannah Light
+    savannah_tree1:
+        name: Savannah Tree1
+    savannah_tree2:
+        name: Savannah Tree2
+    snow_blob_1:
+        name: Snow Blob 1
+    snow_blob_2:
+        name: Snow Blob 2
+    snow_blob_3:
+        name: Snow Blob 3
+    water:
+        name: Water
+    water_alt_2:
+        name: Water Alt 2
+    water_corner:
+        name: Water Corner
+    water_corner_slant:
+        name: Water Corner Slant
+    water_edge:
+        name: Water Edge
+    water_edge_slant:
+        name: Water Edge Slant
+    water_edge_slant2:
+        name: Water Edge Slant2
+    water_edge_slant3:
+        name: Water Edge Slant3
+    water_lily_pad:
+        name: Water Lily Pad
+    water_slant:
+        name: Water Slant
+    water_slant2:
+        name: Water Slant2
+    water_slant3:
+        name: Water Slant3
+    water_slant4:
+        name: Water Slant4
+    water_texture:
+        name: Water Texture
+    water_texture2:
+        name: Water Texture2
+    water_u:
+        name: Water U
+    winter_dark:
+        name: Winter Dark
+    winter_ground_circle:
+        name: Winter Ground Circle
+    winter_ground_circle_dark:
+        name: Winter Ground Circle Dark
+    winter_ground_circle_light:
+        name: Winter Ground Circle Light
+    winter_light:
+        name: Winter Light
 
 menu:
     username_placeholder: username
