@@ -1,4 +1,4 @@
-import { Application, type Renderer } from "pixi.js";
+import { Application, Point, type Renderer } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
 import {
     receiver,
@@ -6,6 +6,7 @@ import {
     setupPacketReceiving,
 } from "./network/receiver";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
+import { percentOf } from "@bundu/shared/math";
 import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
@@ -18,6 +19,8 @@ import {
 import { AnimationManagers } from "./animation/animations";
 import { InputController } from "./input/controller";
 import { Player } from "./world/objects/player";
+import { GROUND_ITEM_SIZE } from "./world/objects/ground_item";
+import { ITEM_BUTTON_SIZE } from "./constants";
 import { GameSession } from "./session/game_session";
 import { clientTime } from "./globals";
 import { replaceCompiledModelDefs } from "./models/defs";
@@ -454,13 +457,12 @@ async function main() {
     gui.inventory.onCursor = (slot, mode) => {
         session.sendPacket(ClientPacket.CursorSlot, { slot, mode });
     };
-    gui.inventory.getDropTargetGlobal = () => {
-        const object = world.objects.get(world.user ?? -1);
-        if (!(object instanceof Player)) return null;
-        return viewport.toGlobal({
-            x: object.position.x + Math.cos(object.rotation) * 80,
-            y: object.position.y + Math.sin(object.rotation) * 80,
-        });
+    gui.inventory.onWorldDrop = (originGlobal, buttonScale) => {
+        const origin = viewport.toLocal(originGlobal);
+        const vpScale = Math.abs(viewport.scale.x) || 1;
+        const iconScreen = percentOf(90, ITEM_BUTTON_SIZE) * buttonScale;
+        const startScale = iconScreen / (GROUND_ITEM_SIZE * vpScale);
+        world.queueLocalDrop(new Point(origin.x, origin.y), startScale);
     };
     gui.craftingMenu.leftclick = (recipeId) => {
         const local = world.objects.get(world.user ?? -1);
