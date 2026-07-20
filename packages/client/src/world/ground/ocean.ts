@@ -2,6 +2,7 @@ import type { OceanGroundModelDef } from "@bundu/shared/ground_models";
 import { parseHexColor } from "@bundu/shared/ground_models";
 import { toSanitizedTexturePath } from "@bundu/shared/models/texture_paths";
 import {
+    BufferImageSource,
     Container,
     DisplacementFilter,
     type Rectangle,
@@ -12,10 +13,17 @@ import {
     TilingSprite,
 } from "pixi.js";
 import { getAsset } from "../../assets/load";
+import { TILE_SIZE } from "@bundu/shared/tiles";
 import {
     bindNearshoreSprite,
     type NearshoreBindState,
 } from "./nearshore_fill";
+import {
+    boxSdf,
+    coverage,
+    POND_SEAM_AMPLITUDE,
+    seamOffsetPond,
+} from "./land_seam";
 import { oceanFx, oceanTint } from "./ocean_fx";
 import { oceanFoam, oceanSparkle } from "./particles/foam";
 import {
@@ -42,6 +50,19 @@ function worldTile(overlay: number, scroll: number): number {
     return scroll - overlay;
 }
 
+function mixRgb(a: number, b: number, t: number): number {
+    const ar = (a >> 16) & 0xff;
+    const ag = (a >> 8) & 0xff;
+    const ab = a & 0xff;
+    const br = (b >> 16) & 0xff;
+    const bg = (b >> 8) & 0xff;
+    const bb = b & 0xff;
+    const r = (ar + (br - ar) * t + 0.5) | 0;
+    const g = (ag + (bg - ag) * t + 0.5) | 0;
+    const bl = (ab + (bb - ab) * t + 0.5) | 0;
+    return ((r << 16) | (g << 8) | bl) >>> 0;
+}
+
 /**
  * Shared viewport-scoped ocean effects. Ground patches render their opaque
  * color separately so the fading effects mask cannot create a coastline halo.
@@ -54,6 +75,12 @@ export function createOceanGround(
     const root = new Container();
     root.zIndex = zIndex;
     root.cullable = false;
+    const isPond = model.id === "pond";
+    /** Pond displace: tighter pattern, faster scroll, stronger filter. */
+    const pondDisplace = isPond
+        ? { strength: 1.75, scroll: 2.4, world: 0.4 }
+        : { strength: 1, scroll: 1, world: 1 };
+    const pondColor = parseHexColor(model.color);
 
     const causticsTex = tex(model.textures.caustics);
     const displaceTex = tex(model.textures.displace);
@@ -298,8 +325,12 @@ export function createOceanGround(
         swellSmall.alpha = swell.small.alpha;
 
         const texW = Math.max(1, displaceTex.width);
-        swellBig.tileScale.set((swell.big.world * scale) / texW);
-        swellSmall.tileScale.set((swell.small.world * scale) / texW);
+        swellBig.tileScale.set(
+            (swell.big.world * pondDisplace.world * scale) / texW
+        );
+        swellSmall.tileScale.set(
+            (swell.small.world * pondDisplace.world * scale) / texW
+        );
         swellBig.tilePosition.set(
             (scrollDx - overlayX) * scale,
             (scrollDy - overlayY) * scale
@@ -341,7 +372,10 @@ export function createOceanGround(
         mapSprite.width = overlayW;
         mapSprite.height = overlayH;
         const zoom = Math.hypot(fx.worldTransform.a, fx.worldTransform.b);
-        const strength = displaceStrength * Math.max(0.001, zoom);
+        const strength =
+            displaceStrength *
+            pondDisplace.strength *
+            Math.max(0.001, zoom);
         displaceFilter.scale.x = strength;
         displaceFilter.scale.y = strength;
         const padding = Math.ceil(strength + 8);
@@ -467,17 +501,32 @@ export function createOceanGround(
             const cfg = oceanFx;
             const { a, b } = cfg.caustics;
             const tint = model.causticTint;
-            causticsA.tint = oceanTint(tint?.a ?? a.tint);
-            causticsA.alpha = a.alpha;
+            let tintA = oceanTint(tint?.a ?? a.tint);
+            let tintB = oceanTint(tint?.b ?? b.tint);
+            let alphaA = a.alpha;
+            let alphaB = b.alpha;
+            if (isPond) {
+                // Pull additive overlays toward pond blue so they read on the fill.
+                tintA = mixRgb(tintA, pondColor, 0.45);
+                tintB = mixRgb(tintB, pondColor, 0.35);
+                alphaA *= 1.35;
+                alphaB *= 1.35;
+            }
+            causticsA.tint = tintA;
+            causticsA.alpha = alphaA;
             causticsA.tileScale.set(a.tileScale);
-            causticsB.tint = oceanTint(tint?.b ?? b.tint);
-            causticsB.alpha = b.alpha;
+            causticsB.tint = tintB;
+            causticsB.alpha = alphaB;
             causticsB.tileScale.set(b.tileScale);
 
             bindNearshoreSprite(
                 fxMask,
                 bounds,
-                modelShoreMask ?? ctx.shoreMask,
+                // Pond must not fall back to the shared shore mask — that bake
+                // still includes land overshoot around every water body.
+                isPond
+                    ? (modelShoreMask ?? Texture.EMPTY)
+                    : (modelShoreMask ?? ctx.shoreMask),
                 maskBind
             );
             if (!syncOverlay(ctx.view)) return;
@@ -492,10 +541,10 @@ export function createOceanGround(
             scrollAy += a.scroll.y * sec;
             scrollBx += b.scroll.x * sec;
             scrollBy += b.scroll.y * sec;
-            scrollDx += cfg.swell.big.scroll.x * sec;
-            scrollDy += cfg.swell.big.scroll.y * sec;
-            scrollD2x += cfg.swell.small.scroll.x * sec;
-            scrollD2y += cfg.swell.small.scroll.y * sec;
+            scrollDx += cfg.swell.big.scroll.x * pondDisplace.scroll * sec;
+            scrollDy += cfg.swell.big.scroll.y * pondDisplace.scroll * sec;
+            scrollD2x += cfg.swell.small.scroll.x * pondDisplace.scroll * sec;
+            scrollD2y += cfg.swell.small.scroll.y * pondDisplace.scroll * sec;
 
             causticsA.tilePosition.set(
                 worldTile(overlayX, scrollAx),
@@ -586,6 +635,21 @@ export function createOceanFill(
     bounds: Rectangle,
     zIndex: number
 ): GroundVisual {
+    if (model.id === "pond") {
+        const baked = bakeOrganicPondFill(parseHexColor(model.color), bounds);
+        const fill = new Sprite(baked.texture);
+        fill.position.set(baked.x, baked.y);
+        fill.width = baked.w;
+        fill.height = baked.h;
+        fill.zIndex = zIndex;
+        return {
+            container: fill,
+            destroy() {
+                baked.texture.destroy(true);
+            },
+        };
+    }
+
     const fill = new Sprite(Texture.WHITE);
     fill.tint = parseHexColor(model.color);
     fill.position.set(bounds.x, bounds.y);
@@ -599,5 +663,72 @@ export function createOceanFill(
         update(ctx) {
             bindNearshoreSprite(fill, bounds, ctx.shoreColor, bind);
         },
+    };
+}
+
+/** Pond fill texels per tile — matches land seam density enough for soft edges. */
+const POND_FILL_SUBDIV = 32;
+
+/**
+ * Solid pond blue with an organic edge the pond owns (land seams stay outer-AABB).
+ * Offset is mid-chaos but clamped so exterior islands cannot form.
+ */
+function bakeOrganicPondFill(
+    color: number,
+    bounds: Rectangle
+): { texture: Texture; x: number; y: number; w: number; h: number } {
+    const amp = POND_SEAM_AMPLITUDE;
+    const pad = Math.ceil(amp) + 1;
+    const patchX = bounds.x / TILE_SIZE;
+    const patchY = bounds.y / TILE_SIZE;
+    const patchW = bounds.width / TILE_SIZE;
+    const patchH = bounds.height / TILE_SIZE;
+    const x0 = patchX - pad;
+    const y0 = patchY - pad;
+    const tileW = patchW + pad * 2;
+    const tileH = patchH + pad * 2;
+    const subdiv = POND_FILL_SUBDIV;
+    const aa = 0.5 / subdiv;
+    const tw = Math.max(1, Math.ceil(tileW * subdiv));
+    const th = Math.max(1, Math.ceil(tileH * subdiv));
+    const pixels = new Uint8Array(tw * th * 4);
+    const lr = (color >> 16) & 0xff;
+    const lg = (color >> 8) & 0xff;
+    const lb = color & 0xff;
+
+    for (let sy = 0; sy < th; sy++) {
+        const py = y0 + (sy + 0.5) / subdiv;
+        for (let sx = 0; sx < tw; sx++) {
+            const px = x0 + (sx + 0.5) / subdiv;
+            const sdf = boxSdf(px, py, patchX, patchY, patchW, patchH);
+            // Hard limit: nothing beyond max wobble — prevents disconnected blobs.
+            if (sdf > amp + aa) continue;
+            const offset = seamOffsetPond(px, py);
+            const edge = sdf - Math.max(-amp, Math.min(amp, offset));
+            const cover = coverage(edge, aa);
+            if (cover <= 0) continue;
+            const o = (sy * tw + sx) * 4;
+            pixels[o] = (lr * cover + 0.5) | 0;
+            pixels[o + 1] = (lg * cover + 0.5) | 0;
+            pixels[o + 2] = (lb * cover + 0.5) | 0;
+            pixels[o + 3] = (cover * 255 + 0.5) | 0;
+        }
+    }
+
+    const source = new BufferImageSource({
+        width: tw,
+        height: th,
+        format: "rgba8unorm",
+        scaleMode: "linear",
+        addressMode: "clamp-to-edge",
+        alphaMode: "premultiplied-alpha",
+        resource: pixels,
+    });
+    return {
+        texture: new Texture({ source }),
+        x: x0 * TILE_SIZE,
+        y: y0 * TILE_SIZE,
+        w: tileW * TILE_SIZE,
+        h: tileH * TILE_SIZE,
     };
 }

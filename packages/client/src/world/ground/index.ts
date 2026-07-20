@@ -2,6 +2,8 @@ export {
     GROUND_Z_BASE,
     GROUND_Z_OCEAN,
     GROUND_Z_OCEAN_FILL,
+    GROUND_Z_POND,
+    GROUND_Z_POND_FILL,
     createGround,
     createOceanFillForType,
 } from "./create";

@@ -244,11 +244,12 @@ export class LandSeamBaker {
                     patch.w,
                     patch.h
                 );
-                // Deep interior is the inset fill — leave transparent. Tiny
-                // patches have no fill sprite, so paint the core opaque here.
+                // Deep interior is the inset fill — leave transparent. Overlap
+                // 1 tile into the inset so clamp-to-edge at the fill rim doesn't
+                // show as a hard AABB seam through sand_bands.
                 const tiny =
                     patch.w <= fillInset * 2 || patch.h <= fillInset * 2;
-                if (sdf <= -fillInset) {
+                if (sdf <= -(fillInset + 1)) {
                     if (!tiny) continue;
                     const [tr, tg, tb] = shadeLandFill(
                         lr,
@@ -317,6 +318,8 @@ function edgeChunkRects(
 ): Array<{ x0: number; y0: number; x1: number; y1: number }> {
     const pad = LAND_SEAM_PAD_TILES;
     const inset = LAND_SEAM_FILL_INSET_TILES;
+    // Bake 1 tile past the fill rim so the seam layer covers the join.
+    const band = inset + 1;
     const x0 = patch.x - pad;
     const y0 = patch.y - pad;
     const x1 = patch.x + patch.w + pad;
@@ -327,14 +330,14 @@ function edgeChunkRects(
     }
 
     return [
-        ...chunkRect(x0, y0, x1, patch.y + inset),
-        ...chunkRect(x0, patch.y + patch.h - inset, x1, y1),
-        ...chunkRect(x0, patch.y + inset, patch.x + inset, patch.y + patch.h - inset),
+        ...chunkRect(x0, y0, x1, patch.y + band),
+        ...chunkRect(x0, patch.y + patch.h - band, x1, y1),
+        ...chunkRect(x0, patch.y + band, patch.x + band, patch.y + patch.h - band),
         ...chunkRect(
-            patch.x + patch.w - inset,
-            patch.y + inset,
+            patch.x + patch.w - band,
+            patch.y + band,
             x1,
-            patch.y + patch.h - inset
+            patch.y + patch.h - band
         ),
     ];
 }
@@ -496,6 +499,25 @@ export function seamOffset(px: number, py: number): number {
     );
 }
 
+/**
+ * Pond edge: a bit more chaotic than a soft ellipse, but mid-freq only —
+ * high-freq speckles spawn disconnected blobs outside the authored rect.
+ */
+export const POND_SEAM_AMPLITUDE = LAND_SEAM_AMPLITUDE * 0.88;
+
+export function seamOffsetPond(px: number, py: number): number {
+    const wx = px + 0.7 * Math.sin(0.38 * py + 0.22 * px + 0.4);
+    const wy = py + 0.7 * Math.sin(0.34 * px - 0.28 * py + 1.3);
+    return (
+        POND_SEAM_AMPLITUDE *
+        (0.32 * Math.sin(1.15 * wx + 0.6 * wy) +
+            0.24 * Math.sin(0.82 * wx - 1.05 * wy + 1.5) +
+            0.18 * Math.sin(1.55 * (wx + wy) + 2.3) +
+            0.14 * Math.sin(0.55 * wx + 1.25 * wy + 0.9) +
+            0.12 * Math.sin(2.05 * wx - 1.35 * wy + 3.1))
+    );
+}
+
 export function boxSdf(
     px: number,
     py: number,
@@ -511,6 +533,10 @@ export function boxSdf(
     return Math.min(Math.max(qx, qy), 0) + Math.hypot(ox, oy);
 }
 
+/**
+ * True when this edge faces another land tile — apply organic wobble.
+ * Open ocean / pond stays a hard box edge (ponds own their own organic clip).
+ */
 export function facesLandLand(
     tx: number,
     ty: number,
@@ -535,7 +561,7 @@ export function facesLandLand(
             const dt = ty - patch.y;
             const db = patch.y + patch.h - 1 - ty;
             const m = Math.min(dl, dr, dt, db);
-            if (m > LAND_SEAM_FILL_INSET_TILES) return false;
+            if (m > LAND_SEAM_FILL_INSET_TILES + 1) return false;
             if (m === dl) checks.push([patch.x - 1, ty]);
             if (m === dr) checks.push([patch.x + patch.w, ty]);
             if (m === dt) checks.push([tx, patch.y - 1]);

@@ -93,10 +93,13 @@ export class NearshoreFill {
      * FX masks for each water model: shared shore alpha on that model's water
      * tiles plus land overshoot owned by the nearest water of that model.
      * Drops masks for models no longer present.
+     *
+     * @param noOvershoot Models that stay on water tiles only (e.g. pond).
      */
     syncModelMasks(
         modelIds: ReadonlySet<string>,
-        modelIdAt: (tileIndex: number) => string | undefined
+        modelIdAt: (tileIndex: number) => string | undefined,
+        noOvershoot?: ReadonlySet<string>
     ): ReadonlyMap<string, Texture> {
         for (const id of [...this.modelMasks.keys()]) {
             if (modelIds.has(id)) continue;
@@ -107,13 +110,56 @@ export class NearshoreFill {
 
         const n = WORLD_TILES * WORLD_TILES;
         const shared = this.maskPixels;
-        // Water tiles own themselves; land overshoot inherits nearest water model.
+        // Water tiles own themselves; land overshoot inherits nearest water model
+        // (skipped for noOvershoot models). Land in a noOvershoot shore ring stays
+        // unowned so ocean cannot wash caustics onto pond beaches.
         const owner: (string | undefined)[] = new Array(n);
-        const queue: number[] = [];
+        const blocked = new Uint8Array(n);
         for (let i = 0; i < n; i++) {
             const id = modelIdAt(i);
             if (id === undefined || !modelIds.has(id)) continue;
             owner[i] = id;
+        }
+        // Reserve land overshoot rings around noOvershoot water (pond) — do not
+        // assign them to anyone; ocean flood must not claim them.
+        if (noOvershoot && noOvershoot.size > 0) {
+            const reserve: number[] = [];
+            for (let i = 0; i < n; i++) {
+                const id = owner[i];
+                if (id !== undefined && noOvershoot.has(id)) reserve.push(i);
+            }
+            let ri = 0;
+            while (ri < reserve.length) {
+                const i = reserve[ri++]!;
+                const tx = i % WORLD_TILES;
+                const ty = (i / WORLD_TILES) | 0;
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const nx = tx + dx;
+                        const ny = ty + dy;
+                        if (
+                            nx < 0 ||
+                            ny < 0 ||
+                            nx >= WORLD_TILES ||
+                            ny >= WORLD_TILES
+                        ) {
+                            continue;
+                        }
+                        const j = ny * WORLD_TILES + nx;
+                        if (blocked[j]) continue;
+                        if (modelIdAt(j) !== undefined) continue;
+                        if ((shared[j * 4 + 3] ?? 0) === 0) continue;
+                        blocked[j] = 1;
+                        reserve.push(j);
+                    }
+                }
+            }
+        }
+        const queue: number[] = [];
+        for (let i = 0; i < n; i++) {
+            const id = owner[i];
+            if (id === undefined || noOvershoot?.has(id)) continue;
             queue.push(i);
         }
         let qi = 0;
@@ -138,6 +184,7 @@ export class NearshoreFill {
                     }
                     const j = ny * WORLD_TILES + nx;
                     if (owner[j] !== undefined) continue;
+                    if (blocked[j]) continue;
                     if (modelIdAt(j) !== undefined) continue;
                     if ((shared[j * 4 + 3] ?? 0) === 0) continue;
                     owner[j] = id;

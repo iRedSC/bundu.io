@@ -18,6 +18,17 @@ export const GROUND_Z_BASE = -1_000_000_000;
 export const GROUND_Z_OCEAN_FILL = GROUND_Z_BASE - 1;
 
 /**
+ * Pond solid fill — above land (inland ponds sit inside land AABBs). Organic
+ * edge is baked into the fill; land seams cannot reach interior pond holes.
+ */
+export const GROUND_Z_POND_FILL = -12;
+
+/**
+ * Pond FX (additive caustics) — above pond fill, below open-ocean FX.
+ */
+export const GROUND_Z_POND = -11;
+
+/**
  * Ocean FX above land so the fading shore mask can wash caustics onto beaches.
  * Below admin grid (-1) and entities (0+).
  */

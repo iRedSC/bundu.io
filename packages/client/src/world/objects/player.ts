@@ -99,6 +99,8 @@ export class Player extends GameObject implements AnimContext {
     /** 0 = hidden, 1 = fully shown. */
     private airFade = 0;
     private readonly airShakePhase = Math.random() * Math.PI * 2;
+    /** True while parented under ocean FX (DisplacementFilter offset). */
+    private airRingUnderFx = false;
 
     /** Client-side look prediction; snaps immediately (no lerp flicker). */
     predictLook(rotation: number): number {
@@ -196,7 +198,7 @@ export class Player extends GameObject implements AnimContext {
         );
         this.craftBar.position = this.position;
         const airR = this.collisionRadius * AIR_RING_RADIUS_SCALE;
-        const nudge = airR * AIR_RING_DISPLACE_NUDGE;
+        const nudge = this.airRingUnderFx ? airR * AIR_RING_DISPLACE_NUDGE : 0;
         this.airRing.position.set(
             this.position.x - nudge,
             this.position.y - nudge
@@ -211,6 +213,14 @@ export class Player extends GameObject implements AnimContext {
     setAir(value: number, max = this.airMax): void {
         this.airMax = Math.max(1, max);
         this.air = Math.min(this.airMax, Math.max(0, value));
+    }
+
+    /**
+     * Parent under ocean `fxLayer` (displace + shore mask) vs viewport sibling.
+     * Shore-mask fade only applies while under FX.
+     */
+    setAirRingUnderFx(under: boolean): void {
+        this.airRingUnderFx = under;
     }
 
     /** `duration > 0` starts the overhead channel; `0` clears it. */
