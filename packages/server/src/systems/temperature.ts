@@ -23,8 +23,7 @@ export class TemperatureSystem extends System<GameEventMap> {
     }
 
     override update(_time: number, delta: number, player: GameObject): void {
-        // Soft-park: disconnected players do not drift temperature.
-        if (!this.world.context.socketManager.getSocket(player.id)) return;
+        // Soft-disconnected bodies still drift — survival continues until reclaim or death.
         if (PlayerData.get(player)?.freecam) return;
 
         const attributes = player.get(Attributes);

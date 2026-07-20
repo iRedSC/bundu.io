@@ -19,7 +19,7 @@ export class AirSystem extends System<GameEventMap> {
     }
 
     override update(_time: number, delta: number, player: GameObject): void {
-        if (!this.world.context.socketManager.getSocket(player.id)) return;
+        // Soft-disconnected bodies still drown/refill — survival continues until reclaim or death.
         if (PlayerData.get(player)?.freecam) return;
 
         const attributes = player.get(Attributes);
