@@ -221,8 +221,9 @@ export class AdminInput {
 
     private handleKeyDown(event: KeyboardEvent) {
         if (!this.facade.isActive()) return;
-        const chat = document.querySelector<HTMLInputElement>("#chat-input");
-        if (chat === document.activeElement) return;
+        if (document.getElementById("chat-input") === document.activeElement) {
+            return;
+        }
 
         const mod = event.ctrlKey || event.metaKey;
         if (mod && (event.key === "z" || event.key === "Z")) {

@@ -39,6 +39,12 @@ export type PlayerData = {
     lastAttackTime?: number;
     crafting?: CraftingState;
     eating?: EatingState;
+    /**
+     * Operator level. `0` = no commands. Cheat phrase sets `4`.
+     * Accounts will own this later.
+     */
+    opLevel: number;
+    /** @deprecated Prefer `opLevel`; kept for freecam editor gate compat. */
     cheatsEnabled?: boolean;
     /** Soft-despawned spectator/editor camera; sim paused, hidden from peers. */
     freecam?: boolean;
@@ -68,6 +74,7 @@ export const PlayerData = Component.register<PlayerData>(() => ({
     score: 0,
     playerSkin: "base",
     moveDir: [0, 0],
+    opLevel: 0,
     selectedStructure: {
         id: -1,
         itemId: -1,
