@@ -1,0 +1,12 @@
+model: deep_ocean
+whenOccupied:
+  occupationType: center
+  "*":
+    flags:
+      - in_water
+    attributes:
+      movement.speed: { op: multiply, value: 0.5 }
+      attack.reach: { op: multiply, value: 0.6 }
+      air.oxygen: { op: add, value: -8 }
+      temperature.warmth: { op: add, value: -8 }
+      thirst.hydration: { op: add, value: 10 }
