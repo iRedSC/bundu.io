@@ -52,6 +52,17 @@
                 <button id="loading-back-button" type="button">Back to menu</button>
             </div>
         </div>
+        <div id="game-over" class="game-over hidden" role="dialog" aria-labelledby="game-over-message">
+            <img id="game-over-bg" class="game-over-bg" alt="" />
+            <div class="game-over-shade" aria-hidden="true"></div>
+            <div class="game-over-content">
+                <p id="game-over-message" class="game-over-message">You died</p>
+                <div class="game-over-actions">
+                    <button id="game-over-respawn" type="button">Respawn</button>
+                    <button id="game-over-menu" type="button">Menu</button>
+                </div>
+            </div>
+        </div>
         <div id="chat-hud" class="chat-hud hidden">
             <div id="chat-log" class="chat-log" aria-live="polite"></div>
             <div id="chat-compose" class="chat-compose hidden">

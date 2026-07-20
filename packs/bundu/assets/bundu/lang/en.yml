@@ -786,3 +786,6 @@ decoration:
 menu:
     username_placeholder: username
     play_button: Play
+    death_message: You died
+    respawn_button: Respawn
+    menu_button: Menu

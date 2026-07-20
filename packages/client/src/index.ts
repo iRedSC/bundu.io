@@ -37,6 +37,13 @@ import {
     showLoading,
     showLoadingError,
 } from "./ui/loading_screen";
+import {
+    gameOverMenuButton,
+    gameOverRespawnButton,
+    hideGameOver,
+    showGameOver,
+} from "./ui/game_over";
+import { captureFrameWithoutUi } from "./rendering/capture_frame";
 
 declare const __DEBUG__: boolean;
 
@@ -351,6 +358,10 @@ async function main() {
     };
     setupChatPacketReceiving(receiver, world, chat);
 
+    let deathFrame: string | null = null;
+    /** HUD / editor overlays excluded from the death-screen snapshot. */
+    const deathCaptureHide = [gui.container, tooltip.container];
+
     const session = new GameSession(receiver, {
         prepareConnection: prepareConnectionPacks,
         autoReconnect: true,
@@ -389,6 +400,8 @@ async function main() {
         },
         onConnected: () => {
             playButton.textContent = "Play";
+            hideGameOver();
+            deathFrame = null;
             setMenuVisible(false);
             chat.setVisible(true);
             void waitForWorldReady(world).then(({ ready, gen }) => {
@@ -405,13 +418,24 @@ async function main() {
             setMenuVisible(false);
             playButton.textContent = "Reconnecting…";
         },
-        onHardDisconnected: () => {
+        onBeforeDeath: () => {
+            deathFrame = captureFrameWithoutUi(app, deathCaptureHide);
+        },
+        onHardDisconnected: ({ died }) => {
             worldGateGeneration++;
             hideLoading();
             dropSessionId();
             playButton.textContent = "Play";
-            setMenuVisible(true);
             chat.setVisible(false);
+            if (died) {
+                setMenuVisible(false);
+                showGameOver(deathFrame);
+                deathFrame = null;
+                return;
+            }
+            hideGameOver();
+            deathFrame = null;
+            setMenuVisible(true);
             nameInput.focus();
         },
     });
@@ -423,6 +447,7 @@ async function main() {
         viewport
     );
     app.stage.addChild(editor.container);
+    deathCaptureHide.push(editor.container);
 
     const setFreecamUi = (enabled: boolean) => {
         hideTooltip();
@@ -444,7 +469,17 @@ async function main() {
     loadingBackButton.addEventListener("click", () => {
         worldGateGeneration++;
         hideLoading();
+        hideGameOver();
         setMenuVisible(true);
+    });
+    gameOverRespawnButton.addEventListener("click", () => {
+        hideGameOver();
+        session.connect();
+    });
+    gameOverMenuButton.addEventListener("click", () => {
+        hideGameOver();
+        setMenuVisible(true);
+        nameInput.focus();
     });
 
     // * Keyboard / mouse inputs

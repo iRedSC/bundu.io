@@ -1,4 +1,7 @@
-import { isHardSessionClose } from "@bundu/shared/session";
+import {
+    isHardSessionClose,
+    SESSION_ENDED_CLOSE,
+} from "@bundu/shared/session";
 import { decodePacketData } from "../network/decode";
 import type { SerializedPacketArray } from "../network/client_receiver";
 import { serializer } from "../network/serializer";
@@ -14,6 +17,12 @@ function isPacketArray(data: unknown): data is SerializedPacketArray {
     return Array.isArray(data) && typeof data[0] === "number";
 }
 
+export type HardDisconnectInfo = {
+    /** True when the server ended a live session (player death). */
+    died: boolean;
+    code?: number;
+};
+
 export type GameSessionHooks = {
     prepareConnection: () => Promise<void>;
     autoReconnect: boolean;
@@ -24,8 +33,13 @@ export type GameSessionHooks = {
     onConnected: () => void;
     /** Soft blip / supervised reload — keep game UI, reconnect with same token. */
     onSoftDisconnected: () => void;
+    /**
+     * Called before `resetLocalState` when a live session ends in death so the
+     * client can snapshot the world while it still exists.
+     */
+    onBeforeDeath?: () => void;
     /** Death, rejected reclaim, intentional leave — show menu, drop token. */
-    onHardDisconnected: () => void;
+    onHardDisconnected: (info: HardDisconnectInfo) => void;
 };
 
 /**
@@ -99,7 +113,7 @@ export class GameSession {
                 this.scheduleReconnect();
             } else {
                 this.hadSession = false;
-                this.hooks.onHardDisconnected();
+                this.hooks.onHardDisconnected({ died: false });
             }
             console.error("Connection preparation failed", error);
             return;
@@ -144,12 +158,16 @@ export class GameSession {
             this.hooks.setConnecting(false);
             if (this.socket !== next) return;
             this.socket = null;
-            this.hooks.resetLocalState();
 
             const hard = isHardSessionClose(ev.code);
+            const died = this.hadSession && ev.code === SESSION_ENDED_CLOSE;
+            if (died) this.hooks.onBeforeDeath?.();
+
+            this.hooks.resetLocalState();
+
             if (hard || !this.hadSession) {
                 this.hadSession = false;
-                this.hooks.onHardDisconnected();
+                this.hooks.onHardDisconnected({ died, code: ev.code });
                 return;
             }
 

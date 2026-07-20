@@ -352,3 +352,125 @@ button:disabled {
 .loading-actions button {
     margin-left: 0;
 }
+
+.game-over {
+    z-index: 5;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: all;
+    background: #0a0c0a;
+}
+
+.game-over.hidden {
+    display: none;
+}
+
+.game-over-bg {
+    position: absolute;
+    /* Oversized so rotate/zoom never shows edges. */
+    inset: -12%;
+    width: 124%;
+    height: 124%;
+    object-fit: cover;
+    transform-origin: center center;
+    filter: grayscale(0);
+    animation:
+        game-over-desaturate 2.8s ease-out forwards,
+        game-over-drift 36s linear forwards;
+}
+
+.game-over-bg:not([src]),
+.game-over-bg[src=""] {
+    display: none;
+}
+
+.game-over-shade {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(8, 10, 8, 0.35) 0%,
+        rgba(8, 10, 8, 0.72) 100%
+    );
+    animation: game-over-shade-in 1.2s ease-out forwards;
+}
+
+.game-over-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    text-align: center;
+    animation: game-over-content-in 0.7s ease-out 0.25s both;
+}
+
+.game-over-message {
+    font-family: "Aoboshi One", serif;
+    font-size: clamp(2rem, 6vw, 3.25rem);
+    color: #f2f0e4;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
+    letter-spacing: 0.02em;
+}
+
+.game-over-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.game-over-actions button {
+    margin-left: 0;
+    min-width: 7.5rem;
+    font-family: "Nunito", system-ui, sans-serif;
+    font-size: 1.05rem;
+    padding: 0.65rem 1.25rem;
+}
+
+#game-over-menu {
+    background-color: rgba(32, 40, 30, 0.9);
+    border: 1px solid rgba(242, 240, 228, 0.22);
+}
+
+@keyframes game-over-desaturate {
+    from {
+        filter: grayscale(0) brightness(1);
+    }
+    to {
+        filter: grayscale(1) brightness(0.85);
+    }
+}
+
+@keyframes game-over-drift {
+    from {
+        transform: scale(1) rotate(0deg);
+    }
+    to {
+        transform: scale(1.22) rotate(2.5deg);
+    }
+}
+
+@keyframes game-over-shade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes game-over-content-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.6rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
