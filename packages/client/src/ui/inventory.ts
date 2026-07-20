@@ -723,15 +723,14 @@ export class Inventory {
 
     resize() {
         const columns = Math.min(HOTBAR_COLUMNS, this.slotCount) || 1;
-        const rows = Math.ceil(this.slotCount / columns) || 1;
         const cell = ITEM_BUTTON_SIZE + percentOf(10, ITEM_BUTTON_SIZE);
+        // Bottom-anchor the first row only — extra rows grow upward in arrangeRows.
         this.container.position.set(
             percentOf(50, window.innerWidth) -
                 percentOf(50, cell * (columns - 1)),
             window.innerHeight -
                 ITEM_BUTTON_SIZE / 2 -
-                percentOf(10, ITEM_BUTTON_SIZE) -
-                cell * (rows - 1)
+                percentOf(10, ITEM_BUTTON_SIZE)
         );
     }
 }

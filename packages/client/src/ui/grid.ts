@@ -44,16 +44,21 @@ export class Grid {
         }
     }
 
-    /** Row-major layout with a fixed column count (hotbar / backpack rows). */
+    /**
+     * Row-major layout with a fixed column count (hotbar / backpack rows).
+     * Row 0 stays at y=0; later rows grow upward (negative y) so the bottom
+     * row and anything anchored to it (stat bars) do not move.
+     */
     arrangeRows(elements: GridElement[], columns: number) {
         const cols = Math.max(1, columns);
+        const cellH = this.spacingV + this.elementHeight;
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
             if (!element) continue;
             const col = i % cols;
             const row = Math.floor(i / cols);
             element.position.x = col * (this.spacingH + this.elementWidth);
-            element.position.y = row * (this.spacingV + this.elementHeight);
+            element.position.y = -row * cellH;
         }
     }
 }
