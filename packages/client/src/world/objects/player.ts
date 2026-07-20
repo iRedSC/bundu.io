@@ -213,13 +213,22 @@ export class Player extends GameObject implements AnimContext {
 
         this.fillSlot("mainhand", this.mainhand);
         this.fillSlot("offhand", this.offhand);
-        this.fillSlot("helmet", this.helmet);
-        if (this.backpack) this.fillSlot("backpack", "backpack");
         this.setBodyTexture(
             this.helmet ? BODY_WITHOUT_FEATURES : BODY_TEXTURE,
             // Hat body is unpadded 100×100; default body uses authored spillover.
             this.helmet ? 0 : undefined
         );
+        // Body attach, identity pose — match body visual scale so the 200×200
+        // backpack lines up with spilled body art when no helmet is worn.
+        if (this.backpack) {
+            this.fillSlot("backpack", "backpack");
+            const mounted = this.slotModels.get("backpack");
+            const body = this.parts.get("body");
+            if (mounted && body) {
+                mounted.container.scale.copyFrom(body.visual.scale);
+            }
+        }
+        this.fillSlot("helmet", this.helmet);
     }
 
     private setBodyTexture(texture: string, spillover?: number) {
