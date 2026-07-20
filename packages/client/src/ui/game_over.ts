@@ -1,7 +1,8 @@
 /**
- * Death / game-over overlay: captured world frame as a drifting B&W backdrop.
+ * Death / game-over overlay: world drifts under a fixed HUD capture.
  */
 
+import type { DeathCapture } from "../rendering/capture_frame";
 import { tOptional } from "../lang/lang";
 
 function element<T extends HTMLElement>(id: string): T {
@@ -18,7 +19,9 @@ function restartAnimation(el: HTMLElement): void {
 }
 
 const screen = element<HTMLElement>("game-over");
+const worldWrap = element<HTMLElement>("game-over-world");
 const bg = element<HTMLImageElement>("game-over-bg");
+const hud = element<HTMLImageElement>("game-over-hud");
 const shade = element<HTMLElement>("game-over-shade");
 const content = element<HTMLElement>("game-over-content");
 const message = element<HTMLElement>("game-over-message");
@@ -34,14 +37,18 @@ function applyCopy(): void {
     gameOverMenuButton.textContent = tOptional("menu.menu_button") ?? "Menu";
 }
 
-export function showGameOver(capture: string | null): void {
+function setImg(img: HTMLImageElement, src: string | null | undefined): void {
+    if (src) img.src = src;
+    else img.removeAttribute("src");
+}
+
+export function showGameOver(capture: DeathCapture | null): void {
     applyCopy();
-    if (capture) {
-        bg.src = capture;
-    } else {
-        bg.removeAttribute("src");
-    }
+    setImg(bg, capture?.world);
+    setImg(hud, capture?.ui);
+    restartAnimation(worldWrap);
     restartAnimation(bg);
+    restartAnimation(hud);
     restartAnimation(shade);
     restartAnimation(content);
     screen.classList.remove("hidden");
@@ -50,6 +57,7 @@ export function showGameOver(capture: string | null): void {
 export function hideGameOver(): void {
     screen.classList.add("hidden");
     bg.removeAttribute("src");
+    hud.removeAttribute("src");
 }
 
 export function isGameOverVisible(): boolean {

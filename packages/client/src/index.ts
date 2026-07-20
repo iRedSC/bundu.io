@@ -43,7 +43,10 @@ import {
     hideGameOver,
     showGameOver,
 } from "./ui/game_over";
-import { captureFrame } from "./rendering/capture_frame";
+import {
+    captureDeathLayers,
+    type DeathCapture,
+} from "./rendering/capture_frame";
 
 declare const __DEBUG__: boolean;
 
@@ -358,7 +361,9 @@ async function main() {
     };
     setupChatPacketReceiving(receiver, world, chat);
 
-    let deathFrame: string | null = null;
+    let deathFrame: DeathCapture | null = null;
+    /** Pixi HUD layers captured separately from the world for the death screen. */
+    const deathUiLayers = [gui.container, tooltip.container];
 
     const session = new GameSession(receiver, {
         prepareConnection: prepareConnectionPacks,
@@ -420,7 +425,7 @@ async function main() {
             world.beginDeathCinematic();
             // Let in-flight client FX (e.g. sword swing) finish before snapshot.
             await sleep(75);
-            deathFrame = captureFrame(app);
+            deathFrame = captureDeathLayers(app, [viewport], deathUiLayers);
         },
         onHardDisconnected: ({ died }) => {
             worldGateGeneration++;
@@ -448,6 +453,7 @@ async function main() {
         viewport
     );
     app.stage.addChild(editor.container);
+    deathUiLayers.push(editor.container);
 
     const setFreecamUi = (enabled: boolean) => {
         hideTooltip();
