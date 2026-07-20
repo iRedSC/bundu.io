@@ -96,7 +96,7 @@ export function lookupObjectDef(id: string): ObjectDef | undefined {
 
 /** Any concrete model (texture, assembled, or tile). */
 export function lookupModel(id: string): ModelDef | undefined {
-    const def = modelDefs.get(id) ?? modelDefs.get(`item/${id}`);
+    const def = modelDefs.get(id);
     if (!def || def.abstract) return undefined;
     return def;
 }
@@ -113,11 +113,11 @@ function publishModelDefs(
     next: CompiledModelDefs,
     nextAssets: ReadonlySet<string>
 ) {
-    const nextPlayer = requireAssembled(next, "player");
-    const nextStructure = requireAssembled(next, "structure");
-    const nextSingleTileNode = requireTile(next, "single_tile_node");
-    const nextPointGenerator = requireTile(next, "point_generator");
-    const nextTree = requireTile(next, "forest_tree");
+    const nextPlayer = requireAssembled(next, "entity_type:bundu:player");
+    const nextStructure = requireAssembled(next, "model:bundu:structure");
+    const nextSingleTileNode = requireTile(next, "model:bundu:single_tile_node");
+    const nextPointGenerator = requireTile(next, "structure:bundu:point_generator");
+    const nextTree = requireTile(next, "resource:bundu:forest_tree");
 
     assets = nextAssets;
     modelDefs = next;

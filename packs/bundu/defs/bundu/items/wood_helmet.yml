@@ -1,8 +1,8 @@
-id: item/wood_helmet
-extends: item/type/helmet
+id: item:bundu:wood_helmet
+extends: item_type:bundu:helmet
 texture: bundu/item/equipment/wood_helmet.svg
 ---
-type: helmet
+type: bundu:helmet
 level: 1
 stats:
     health: -10

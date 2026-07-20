@@ -1,3 +1,0 @@
-id: item/type/wall
-abstract: true
-extends: item/type/building

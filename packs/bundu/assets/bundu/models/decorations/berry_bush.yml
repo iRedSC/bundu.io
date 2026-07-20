@@ -1,4 +1,4 @@
-id: decoration/berry_bush
+id: decoration:bundu:berry_bush
 parts:
   main:
     sprite: bundu/decoration/forest/berry_bush.svg

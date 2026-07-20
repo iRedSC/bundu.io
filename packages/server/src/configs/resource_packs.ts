@@ -20,6 +20,7 @@ import {
     compileModelDefs,
     type CompiledModelDefs,
 } from "@bundu/shared/models/compile";
+import { modelIdFromModelsPath } from "@bundu/shared/models/ids";
 import type { CompiledModelsPayload } from "@bundu/shared/models/types";
 import {
     rewritePackTextureRefs,
@@ -271,21 +272,30 @@ export class ResourcePackService {
                 for (const filename of files(modelsRoot).filter((name) =>
                     /\.ya?ml$/i.test(name)
                 )) {
+                    const relative = path
+                        .relative(modelsRoot, filename)
+                        .replaceAll("\\", "/");
                     const document = rewritePackTextureRefs(
                         record(
                             Bun.YAML.parse(fs.readFileSync(filename, "utf8")),
                             filename
                         )
                     );
+                    const abstract = document.abstract === true;
+                    const derived = modelIdFromModelsPath(namespace, relative, {
+                        abstract,
+                    });
                     if ("id" in document) {
                         if (typeof document.id !== "string" || !document.id) {
                             throw new Error(
                                 `${filename}.id: expected a non-empty string`
                             );
                         }
+                        // Explicit id wins (e.g. nature/tree.yml → resource:bundu:forest_tree).
                         models[document.id] = document;
                     } else {
-                        Object.assign(models, document);
+                        document.id = derived;
+                        models[derived] = document;
                     }
                 }
 

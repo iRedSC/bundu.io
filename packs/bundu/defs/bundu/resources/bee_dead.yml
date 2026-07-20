@@ -1,6 +1,6 @@
 # @pack-gen model=models/corpses/bee_dead.yml
-id: bee_dead
-extends: corpse
+id: resource:bundu:bee_dead
+extends: model:bundu:corpse
 parts:
   body:
     sprite: bundu/entity/animal/bee/bee_dead.svg

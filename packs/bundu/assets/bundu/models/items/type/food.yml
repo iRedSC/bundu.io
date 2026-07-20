@@ -1,6 +1,6 @@
-id: item/type/food
+id: item_type:bundu:food
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     hand:
         rotation: -20

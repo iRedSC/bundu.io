@@ -1,3 +1,3 @@
-id: item/cobalt_door
-extends: item/type/door
+id: item:bundu:cobalt_door
+extends: item_type:bundu:door
 texture: bundu/structure/door/cobalt_door.png

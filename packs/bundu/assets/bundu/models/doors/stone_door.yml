@@ -1,5 +1,5 @@
-id: stone_door
-extends: door
+id: structure:bundu:stone_door
+extends: model:bundu:door
 defaultVariant: base
 variants:
   base:

@@ -1,8 +1,8 @@
-id: item/shovel
-extends: item/type/pickaxe
+id: item:bundu:shovel
+extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/shovel.svg
 ---
-type: shovel
+type: bundu:shovel
 whenMainHand:
     "*":
         attributes:

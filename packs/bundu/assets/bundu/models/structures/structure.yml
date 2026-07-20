@@ -1,5 +1,6 @@
-id: structure
-extends: rottable
+id: model:bundu:structure
+abstract: true
+extends: model:bundu:rottable
 parts:
   main:
     sprite: ""

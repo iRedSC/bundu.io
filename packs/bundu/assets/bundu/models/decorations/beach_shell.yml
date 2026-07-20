@@ -1,4 +1,4 @@
-id: decoration/beach_shell
+id: decoration:bundu:beach_shell
 parts:
   main:
     sprite: bundu/decoration/beach/beach_shell.svg

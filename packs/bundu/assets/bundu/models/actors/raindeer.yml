@@ -1,5 +1,5 @@
-id: raindeer
-extends: animal
+id: entity_type:bundu:raindeer
+extends: model:bundu:animal
 parts:
   body:
     sprite: bundu/entity/animal/reindeer/reindeer.svg

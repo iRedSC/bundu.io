@@ -1,6 +1,6 @@
-id: item/iridium_wall
-extends: item/type/wall
+id: item:bundu:iridium_wall
+extends: item_type:bundu:wall
 texture: bundu/structure/wall/iridium_wall.png
 ---
-type: building
+type: bundu:building
 places: iridium_wall

@@ -32,8 +32,8 @@ second doc = data (server):
 
 ```yaml
 # defs/bundu/items/pinecone.yml
-id: item/pinecone
-extends: item/type/none
+id: item:bundu:pinecone
+extends: item_type:bundu:none
 texture: bundu/item/material/pinecone.svg
 
 ---
@@ -42,8 +42,8 @@ texture: bundu/item/material/pinecone.svg
 
 ```yaml
 # defs/bundu/entities/bear.yml
-id: bear
-extends: animal
+id: entity_type:bundu:bear
+extends: model:bundu:animal
 parts:
   body:
     sprite: bundu/entity/animal/bear/bear.svg
@@ -67,6 +67,7 @@ Path → emit mapping:
 | `buildings/doors/X.yml` | `models/doors/X.yml` | `buildings/X.yml` |
 | `buildings/structures/X.yml` | `models/structures/X.yml` | `buildings/X.yml` |
 | `ground_types/X.yml` | `ground_models/X.yml` | `ground_types/X.yml` |
+| `item_types/X.yml` | `models/items/type/X.yml` | `item_types/X.yml` |
 | `models/**` | `models/**` (display-only) | — |
 | `recipes/**`, `loot_tables/**`, `tags/**` | — | same path under `data/` |
 | `client/**` | copied into `assets/` | — |
@@ -120,8 +121,10 @@ data/bundu/recipes/wood_wall.yml          -> bundu:wood_wall
 data/bundu/loot_tables/bear_dead.yml      -> bundu:bear_dead
 ```
 
-Shared item templates live in the single document `data/<namespace>/item_types.yml`
-(not a registry). Each item sets `type: sword` (etc.) to merge those defaults.
+Shared item templates live under `defs/<namespace>/item_types/<path>.yml`
+(generated to `data/.../item_types/` and optionally `assets/.../models/items/type/`).
+Items set `type: bundu:sword` (or bare `sword` in the same namespace) to merge those
+defaults. Visual abstracts use model ids like `item_type:bundu:sword`.
 
 Bare entry references resolve relative to the definition's namespace. Use an
 explicit ID to cross namespaces:
@@ -318,19 +321,29 @@ footsteps: false
 `trail` kicks up land-colored particles across the mover's hitbox diameter.
 Both omit cleanly when unset.
 
-Model YAML files use an explicit `id` field (filename is for organization).
-Item models use `item/<item_id>` ids, with shared abstracts under `item/type/...`.
-Decoration models use `decoration/<id>` so they never collide with resource/structure
-ids that share a bare name (for example `pine_tree`):
+Model ids are path-based: `kind:namespace:path` (parallel to gameplay registries).
+
+| Kind | Example | Typical source |
+|---|---|---|
+| `item` | `item:bundu:wood_sword` | `defs/.../items/wood_sword.yml` |
+| `item_type` | `item_type:bundu:sword` | `defs/.../item_types/sword.yml` |
+| `structure` | `structure:bundu:wood_wall` | `defs/.../buildings/walls/wood_wall.yml` |
+| `resource` | `resource:bundu:pine_tree` | `defs/.../resources/pine_tree.yml` |
+| `decoration` | `decoration:bundu:beach` | `defs/.../decorations/beach.yml` |
+| `entity_type` | `entity_type:bundu:bear` | `defs/.../entities/bear.yml` |
+| `model` | `model:bundu:animal` | shared abstracts under `defs/.../models/` |
+
+File path owns identity; an explicit `id:` field is only needed when it must differ
+from the path (rare). `extends` uses the same id form:
 
 ```yaml
-id: item/wood_sword
-extends: item/type/sword
+id: item:bundu:wood_sword
+extends: item_type:bundu:sword
 texture: bundu/item/tool/wood_sword.svg
 ```
 
 ```yaml
-id: decoration/beach
+id: decoration:bundu:beach
 parts:
   main:
     sprite: bundu/decoration/beach/beach.svg

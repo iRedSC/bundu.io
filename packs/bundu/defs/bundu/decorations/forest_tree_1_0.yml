@@ -1,4 +1,4 @@
-id: decoration/forest_tree_1_0
+id: decoration:bundu:forest_tree_1_0
 parts:
   main:
     sprite: bundu/decoration/forest/forest_tree_1_0.png

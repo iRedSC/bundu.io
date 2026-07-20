@@ -1,3 +1,3 @@
-id: item/island
-extends: item/type/none
+id: item:bundu:island
+extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg

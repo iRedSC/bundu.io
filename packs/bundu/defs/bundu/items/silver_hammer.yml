@@ -1,8 +1,8 @@
-id: item/silver_hammer
-extends: item/type/hammer
+id: item:bundu:silver_hammer
+extends: item_type:bundu:hammer
 texture: bundu/item/tool/silver_hammer.svg
 ---
-type: hammer
+type: bundu:hammer
 level: 4
 whenMainHand:
     "*":

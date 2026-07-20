@@ -1,4 +1,4 @@
-id: decoration/savannah_dark
+id: decoration:bundu:savannah_dark
 parts:
   main:
     sprite: bundu/decoration/savannah/savannah_dark.svg

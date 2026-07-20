@@ -1,3 +1,3 @@
-id: item/backpack
-extends: item/type/none
+id: item:bundu:backpack
+extends: item_type:bundu:none
 texture: bundu/item/equipment/backpack.svg

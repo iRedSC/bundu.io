@@ -1,6 +1,6 @@
-id: item/fire_small
-extends: item/type/building
+id: item:bundu:fire_small
+extends: item_type:bundu:building
 texture: bundu/structure/crafting/fire_small.svg
 ---
-type: building
+type: bundu:building
 places: fire_small

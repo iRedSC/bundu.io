@@ -1,7 +1,7 @@
-id: item/bandage
-extends: item/type/food
+id: item:bundu:bandage
+extends: item_type:bundu:food
 texture: bundu/item/food/bandage.svg
 ---
-type: food
+type: bundu:food
 stats:
     heal_ticks: 2

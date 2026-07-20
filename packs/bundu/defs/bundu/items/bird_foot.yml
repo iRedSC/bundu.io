@@ -1,8 +1,8 @@
-id: item/bird_foot
-extends: item/type/none
+id: item:bundu:bird_foot
+extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg
 ---
-type: book
+type: bundu:book
 function: off_hand
 whenOffHand:
     "*":

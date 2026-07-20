@@ -1,5 +1,5 @@
-id: item/iridium
-extends: item/type/none
+id: item:bundu:iridium
+extends: item_type:bundu:none
 texture: bundu/resource/iridium_ore.png
 ---
 {}

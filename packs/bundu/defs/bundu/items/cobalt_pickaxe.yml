@@ -1,8 +1,8 @@
-id: item/cobalt_pickaxe
-extends: item/type/pickaxe
+id: item:bundu:cobalt_pickaxe
+extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/cobalt_pickaxe.svg
 ---
-type: pickaxe
+type: bundu:pickaxe
 level: 5
 whenMainHand:
     "*":

@@ -1,7 +1,6 @@
-id: single_tile_node
+id: model:bundu:single_tile_node
 abstract: true
-extends: rottable
-
+extends: model:bundu:rottable
 tile:
   footprint:
     - "X"

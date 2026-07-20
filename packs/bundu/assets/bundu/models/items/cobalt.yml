@@ -1,5 +1,5 @@
-id: item/cobalt
-extends: item/type/none
+id: item:bundu:cobalt
+extends: item_type:bundu:none
 texture: bundu/resource/cobalt_ore.png
 displays:
     world:

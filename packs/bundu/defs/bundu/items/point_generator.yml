@@ -1,6 +1,6 @@
-id: item/point_generator
-extends: item/type/building
+id: item:bundu:point_generator
+extends: item_type:bundu:building
 texture: bundu/structure/crafting/point_generator.png
 ---
-type: building
+type: bundu:building
 places: point_generator

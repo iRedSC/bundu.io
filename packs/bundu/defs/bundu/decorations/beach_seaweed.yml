@@ -1,4 +1,4 @@
-id: decoration/beach_seaweed
+id: decoration:bundu:beach_seaweed
 parts:
   main:
     sprite: bundu/decoration/beach/beach_seaweed.svg

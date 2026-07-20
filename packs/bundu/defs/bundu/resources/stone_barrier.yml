@@ -1,5 +1,5 @@
-id: stone_barrier
-extends: single_tile_node
+id: resource:bundu:stone_barrier
+extends: model:bundu:single_tile_node
 defaultVariant: base
 variants:
   base:

@@ -1,5 +1,5 @@
-id: savanah_tree
-extends: single_tile_node
+id: resource:bundu:savanah_tree
+extends: model:bundu:single_tile_node
 defaultVariant: base
 variants:
   base:

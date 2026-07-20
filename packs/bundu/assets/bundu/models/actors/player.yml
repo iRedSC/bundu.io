@@ -1,5 +1,4 @@
-id: player
-
+id: entity_type:bundu:player
 footsteps:
     interval_ms: 250
     size: [35, 35]

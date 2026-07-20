@@ -1,9 +1,11 @@
-id: item/type/book
+id: item_type:bundu:book
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     hand:
         rotation: -20
         x: 0
         y: 0.15
         scale: 0.4
+---
+function: "off_hand"

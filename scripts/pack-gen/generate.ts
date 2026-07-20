@@ -29,6 +29,21 @@ function rel(from: string, filename: string): string {
     return path.relative(from, filename).replaceAll("\\", "/");
 }
 
+/** Single-doc item_types entry that is a visual abstract, not gameplay data. */
+function looksLikeItemTypeModel(yaml: string): boolean {
+    const parsed = Bun.YAML.parse(yaml);
+    const doc = Array.isArray(parsed) ? parsed[0] : parsed;
+    if (!doc || typeof doc !== "object" || Array.isArray(doc)) return false;
+    const record = doc as Record<string, unknown>;
+    return (
+        typeof record.id === "string" ||
+        record.abstract === true ||
+        record.displays !== undefined ||
+        record.parts !== undefined ||
+        typeof record.texture === "string"
+    );
+}
+
 function ensureSame(text: string): string {
     return text.endsWith("\n") ? text : `${text}\n`;
 }
@@ -106,8 +121,54 @@ function generateNamespace(
         planned.push({ filename, content: ensureSame(content) });
     };
 
+    // item_types/: display → models/items/type/, data → data/item_types/
+    const itemTypesRoot = path.join(defsNs, "item_types");
+    for (const filename of listYamlFiles(itemTypesRoot)) {
+        const stem = rel(itemTypesRoot, filename).replace(/\.ya?ml$/i, "");
+        if (stem.includes("/")) {
+            throw new Error(
+                `${filename}: item_types must be flat (no subfolders)`
+            );
+        }
+        const split = splitDefSource(readText(filename), filename);
+        const modelOut = path.join(
+            roots.assets,
+            namespace,
+            "models/items/type",
+            `${stem}.yml`
+        );
+        const dataOut = path.join(
+            roots.data,
+            namespace,
+            "item_types",
+            `${stem}.yml`
+        );
+
+        if (split.display !== null && split.data !== null) {
+            planWrite(modelOut, split.display);
+            planWrite(dataOut, split.data);
+        } else if (split.display !== null) {
+            planWrite(modelOut, split.display);
+        } else if (split.data !== null) {
+            // Single-doc: model-shaped (id/abstract/displays) → assets; else data.
+            if (looksLikeItemTypeModel(split.data)) {
+                planWrite(modelOut, split.data);
+            } else {
+                planWrite(dataOut, split.data);
+            }
+        } else {
+            throw new Error(`${filename}: empty item type`);
+        }
+    }
+
     for (const entry of fs.readdirSync(defsNs, { withFileTypes: true })) {
-        if (entry.name === "models" || entry.name === "client") continue;
+        if (
+            entry.name === "models" ||
+            entry.name === "client" ||
+            entry.name === "item_types"
+        ) {
+            continue;
+        }
 
         if (entry.isFile() && /\.ya?ml$/i.test(entry.name)) {
             const sourceFile = path.join(defsNs, entry.name);

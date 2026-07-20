@@ -1,5 +1,5 @@
-id: quick_silver_wall
-extends: wall
+id: structure:bundu:quick_silver_wall
+extends: model:bundu:wall
 defaultVariant: base
 variants:
   base:

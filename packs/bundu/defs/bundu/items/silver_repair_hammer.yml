@@ -1,8 +1,8 @@
-id: item/silver_repair_hammer
-extends: item/type/none
+id: item:bundu:silver_repair_hammer
+extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg
 ---
-type: wrench
+type: bundu:wrench
 whenMainHand:
     "*":
         attributes:

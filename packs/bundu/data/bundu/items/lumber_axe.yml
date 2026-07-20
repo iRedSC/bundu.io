@@ -1,4 +1,4 @@
-type: axe
+type: bundu:axe
 whenMainHand:
     "*":
         attributes:

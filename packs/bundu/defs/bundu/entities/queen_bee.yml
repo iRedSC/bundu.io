@@ -1,5 +1,5 @@
-id: queen_bee
-extends: animal
+id: entity_type:bundu:queen_bee
+extends: model:bundu:animal
 footsteps: false
 parts:
   body:

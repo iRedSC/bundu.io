@@ -1,4 +1,4 @@
-id: animal
+id: model:bundu:animal
 abstract: true
 
 footsteps: true

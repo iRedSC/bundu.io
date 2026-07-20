@@ -1,4 +1,4 @@
-id: decoration/cave_ground_dark
+id: decoration:bundu:cave_ground_dark
 parts:
   main:
     sprite: bundu/decoration/cave/cave_ground_dark.svg

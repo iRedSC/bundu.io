@@ -1,4 +1,4 @@
-type: helmet
+type: bundu:helmet
 level: 5
 whenHelmet:
     "*":

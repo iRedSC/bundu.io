@@ -12,7 +12,6 @@ import {
 } from "../configs/registries";
 import { mountSlotIcon } from "../models/mount";
 import { lookupModel } from "../models/defs";
-import { decorationModelId } from "../world/decoration";
 import { groundModel } from "../world/ground";
 import {
     categoryToKind,
@@ -20,6 +19,17 @@ import {
     type EditorState,
     type PaletteEntry,
 } from "./state";
+import type { ModelKind } from "@bundu/shared/models/ids";
+
+function paletteModelId(category: EditorCategory, location: string): string {
+    const kind: ModelKind =
+        category === "decorations"
+            ? "decoration"
+            : category === "resources"
+              ? "resource"
+              : "structure";
+    return clientModelId(kind, location);
+}
 import {
     hideRegistryTooltip,
     moveRegistryTooltip,
@@ -96,10 +106,7 @@ function listEntries(
             entries.push({
                 id,
                 kind,
-                location:
-                    category === "decorations"
-                        ? decorationModelId(location)
-                        : clientModelId(location),
+                location: paletteModelId(category, location),
             });
         }
     } else {
@@ -107,10 +114,7 @@ function listEntries(
             entries.push({
                 id,
                 kind,
-                location:
-                    category === "decorations"
-                        ? decorationModelId(location)
-                        : clientModelId(location),
+                location: paletteModelId(category, location),
             });
         }
     }

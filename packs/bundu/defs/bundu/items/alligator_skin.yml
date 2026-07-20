@@ -1,5 +1,5 @@
-id: item/alligator_skin
-extends: item/type/none
+id: item:bundu:alligator_skin
+extends: item_type:bundu:none
 texture: bundu/item/material/alligator_skin_alt_2.svg
 ---
 {}

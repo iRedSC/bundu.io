@@ -1,6 +1,6 @@
-id: item/quick_silver_spike
-extends: item/type/spike
+id: item:bundu:quick_silver_spike
+extends: item_type:bundu:spike
 texture: bundu/item/structure/spike/silver_spike.png
 ---
-type: building
+type: bundu:building
 places: quick_silver_spike

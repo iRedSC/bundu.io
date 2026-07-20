@@ -1,6 +1,6 @@
-id: item/copper_spike
-extends: item/type/spike
+id: item:bundu:copper_spike
+extends: item_type:bundu:spike
 texture: bundu/item/structure/spike/copper_spike.png
 ---
-type: building
+type: bundu:building
 places: copper_spike

@@ -1,8 +1,8 @@
-id: item/silver_pickaxe
-extends: item/type/pickaxe
+id: item:bundu:silver_pickaxe
+extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/silver_pickaxe.svg
 ---
-type: pickaxe
+type: bundu:pickaxe
 level: 4
 whenMainHand:
     "*":

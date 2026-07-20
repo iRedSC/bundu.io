@@ -1,5 +1,5 @@
-id: ram_dead
-extends: corpse
+id: resource:bundu:ram_dead
+extends: model:bundu:corpse
 parts:
   body:
     sprite: bundu/entity/animal/ram/ram_dead.svg

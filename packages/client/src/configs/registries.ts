@@ -4,6 +4,10 @@ import {
     type RegistryName,
     type Registry,
 } from "@bundu/shared/registry";
+import {
+    modelIdForLocation,
+    type ModelKind,
+} from "@bundu/shared/models/ids";
 import { replaceGroundModels } from "../world/ground/models";
 
 let current:
@@ -54,12 +58,15 @@ export function clientDecoration(decorationTypeId: number) {
     return decoration;
 }
 
-export function clientModelId(location: string): string {
-    return location.startsWith("bundu:") ? location.slice("bundu:".length) : location;
+/** Model id for a gameplay registry location (`item:bundu:wood_sword`). */
+export function clientModelId(kind: ModelKind, location: string): string {
+    return modelIdForLocation(kind, location);
 }
 
-/** Item visual id (`item/wood_wall`). Bare ids collide with structure models. */
 export function clientItemModelId(location: string): string {
-    const id = clientModelId(location);
-    return id.startsWith("item/") ? id : `item/${id}`;
+    return clientModelId("item", location);
+}
+
+export function decorationModelId(location: string): string {
+    return clientModelId("decoration", location);
 }

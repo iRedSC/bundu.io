@@ -1,8 +1,8 @@
-id: item/stone_helmet
-extends: item/type/helmet
+id: item:bundu:stone_helmet
+extends: item_type:bundu:helmet
 texture: bundu/item/equipment/stone_helmet.svg
 ---
-type: helmet
+type: bundu:helmet
 level: 2
 whenHelmet:
     "*":

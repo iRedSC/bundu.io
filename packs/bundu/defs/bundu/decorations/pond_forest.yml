@@ -1,4 +1,4 @@
-id: decoration/pond_forest
+id: decoration:bundu:pond_forest
 parts:
   main:
     sprite: bundu/decoration/water/pond_forest.svg

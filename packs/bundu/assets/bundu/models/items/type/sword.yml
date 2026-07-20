@@ -1,6 +1,6 @@
-id: item/type/sword
+id: item_type:bundu:sword
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     hand:
         rotation: 180

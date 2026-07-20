@@ -1,4 +1,4 @@
-id: decoration/beach_ground_circle_light
+id: decoration:bundu:beach_ground_circle_light
 parts:
   main:
     sprite: bundu/decoration/beach/beach_ground_circle_light.svg

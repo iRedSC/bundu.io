@@ -1,6 +1,6 @@
-id: item/cobalt_spike
-extends: item/type/spike
+id: item:bundu:cobalt_spike
+extends: item_type:bundu:spike
 texture: bundu/item/structure/spike/cobalt_spike.png
 ---
-type: building
+type: bundu:building
 places: cobalt_spike

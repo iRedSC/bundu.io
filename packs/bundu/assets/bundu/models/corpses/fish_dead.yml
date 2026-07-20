@@ -1,5 +1,5 @@
-id: fish_dead
-extends: corpse
+id: resource:bundu:fish_dead
+extends: model:bundu:corpse
 parts:
   body:
     sprite: bundu/entity/animal/fish/fish_dead.svg

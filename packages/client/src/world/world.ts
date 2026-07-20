@@ -665,7 +665,10 @@ export class World {
 
         const structure = new Structure(
             packet.id,
-            clientModelId(clientRegistries().resource.location(nodeType)),
+            clientModelId(
+                "resource",
+                clientRegistries().resource.location(nodeType)
+            ),
             deciPoint(packet.x, packet.y),
             packet.rotation,
             typeof collisionRadius === "number"
@@ -690,7 +693,10 @@ export class World {
 
         const structure = new Structure(
             packet.id,
-            clientModelId(clientRegistries().structure.location(nodeType)),
+            clientModelId(
+                "structure",
+                clientRegistries().structure.location(nodeType)
+            ),
             deciPoint(packet.x, packet.y),
             packet.rotation,
             FOOTPRINT_CIRCLE_RADIUS,
@@ -950,6 +956,7 @@ export class World {
             this.placementGhost = new Structure(
                 PLACEMENT_GHOST_RENDER_ID,
                 clientModelId(
+                    "structure",
                     clientRegistries().structure.location(placement.id)
                 ),
                 new Point(),

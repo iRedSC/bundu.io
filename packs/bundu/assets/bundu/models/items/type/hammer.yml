@@ -1,6 +1,6 @@
-id: item/type/hammer
+id: item_type:bundu:hammer
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     hand:
         rotation: -100

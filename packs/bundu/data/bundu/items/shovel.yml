@@ -1,4 +1,4 @@
-type: shovel
+type: bundu:shovel
 whenMainHand:
     "*":
         attributes:

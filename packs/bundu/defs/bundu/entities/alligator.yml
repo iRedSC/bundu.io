@@ -1,5 +1,5 @@
-id: alligator
-extends: animal
+id: entity_type:bundu:alligator
+extends: model:bundu:animal
 parts:
   body:
     sprite: bundu/entity/animal/alligator/alligator.svg

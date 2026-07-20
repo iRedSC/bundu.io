@@ -1,8 +1,8 @@
-id: item/cobalt_spear
-extends: item/type/spear
+id: item:bundu:cobalt_spear
+extends: item_type:bundu:spear
 texture: bundu/item/tool/cobalt_spear.svg
 ---
-type: spear
+type: bundu:spear
 level: 5
 whenMainHand:
     "*":

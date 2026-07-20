@@ -1,6 +1,6 @@
-id: item/iridium_door
-extends: item/type/door
+id: item:bundu:iridium_door
+extends: item_type:bundu:door
 texture: bundu/structure/door/iridium_door.png
 ---
-type: building
+type: bundu:building
 places: iridium_door

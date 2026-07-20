@@ -1,4 +1,4 @@
-id: decoration/pine_tree_snow
+id: decoration:bundu:pine_tree_snow
 parts:
   main:
     sprite: bundu/decoration/forest/pine_tree_snow.svg

@@ -1,8 +1,8 @@
-id: item/beanie
-extends: item/type/hat
+id: item:bundu:beanie
+extends: item_type:bundu:hat
 texture: bundu/item/equipment/beanie.svg
 ---
-type: hat
+type: bundu:hat
 whenHelmet:
     "*":
         attributes:

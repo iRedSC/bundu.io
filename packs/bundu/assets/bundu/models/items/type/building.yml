@@ -1,6 +1,6 @@
-id: item/type/building
+id: item_type:bundu:building
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     hand:
         rotation: -20

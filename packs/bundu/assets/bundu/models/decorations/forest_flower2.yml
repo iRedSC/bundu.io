@@ -1,4 +1,4 @@
-id: decoration/forest_flower2
+id: decoration:bundu:forest_flower2
 parts:
   main:
     sprite: bundu/decoration/forest/forest_flower2.svg

@@ -1,7 +1,7 @@
-id: item/blue_berry
-extends: item/type/food
+id: item:bundu:blue_berry
+extends: item_type:bundu:food
 texture: bundu/item/food/blue_berry.svg
 ---
-type: food
+type: bundu:food
 stats:
     hunger: 3

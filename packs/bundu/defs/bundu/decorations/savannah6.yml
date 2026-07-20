@@ -1,4 +1,4 @@
-id: decoration/savannah6
+id: decoration:bundu:savannah6
 parts:
   main:
     sprite: bundu/decoration/savannah/savannah6.svg

@@ -1,7 +1,6 @@
-id: fire
+id: model:bundu:fire
 abstract: true
-extends: single_tile_node
-
+extends: model:bundu:single_tile_node
 # skyUndo authors soft undo radius for the shared sky-undo bake.
 # Soft fire glow is particles.
 parts:

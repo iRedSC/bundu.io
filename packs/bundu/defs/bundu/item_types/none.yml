@@ -1,4 +1,4 @@
-id: item/type/none
+id: item_type:bundu:none
 abstract: true
 texture: bundu/misc/unknown_asset.svg
 displays:

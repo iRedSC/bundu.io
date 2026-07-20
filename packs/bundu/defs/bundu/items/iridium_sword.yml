@@ -1,8 +1,8 @@
-id: item/iridium_sword
-extends: item/type/sword
+id: item:bundu:iridium_sword
+extends: item_type:bundu:sword
 texture: bundu/item/tool/iridium_sword.svg
 ---
-type: sword
+type: bundu:sword
 level: 6
 whenMainHand:
     "*":

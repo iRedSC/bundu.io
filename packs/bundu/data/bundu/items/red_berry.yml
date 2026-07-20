@@ -1,4 +1,4 @@
-type: food
+type: bundu:food
 stats:
     hunger: 6
     health: -2

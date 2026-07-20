@@ -1,0 +1,17 @@
+id: item_type:bundu:food
+abstract: true
+extends: item_type:bundu:none
+displays:
+    hand:
+        rotation: -20
+        x: 0
+        y: 0.15
+        scale: 0.4
+---
+function: "off_hand"
+whenOffHand:
+    "*":
+        attributes:
+            "eating.movement_speed_multiplier":
+                op: "multiply"
+                value: 0.6

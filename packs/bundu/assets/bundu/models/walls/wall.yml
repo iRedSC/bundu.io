@@ -1,7 +1,6 @@
-id: wall
+id: model:bundu:wall
 abstract: true
-extends: single_tile_node
-
+extends: model:bundu:single_tile_node
 # Spike sits under the wall body (`main`). Toggle with `spiked` state.
 parts:
   spike:

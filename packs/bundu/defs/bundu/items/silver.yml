@@ -1,5 +1,5 @@
-id: item/silver
-extends: item/type/none
+id: item:bundu:silver
+extends: item_type:bundu:none
 texture: bundu/resource/silver_ore.png
 displays:
     world:

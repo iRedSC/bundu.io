@@ -1,5 +1,5 @@
-id: item/komodo_dragon_dead
-extends: item/type/none
+id: item:bundu:komodo_dragon_dead
+extends: item_type:bundu:none
 texture: bundu/entity/animal/komodo_dragon/komodo_dragon_dead.svg
 displays:
     world:

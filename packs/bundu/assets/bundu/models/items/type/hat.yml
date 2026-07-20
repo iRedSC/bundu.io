@@ -1,6 +1,6 @@
-id: item/type/hat
+id: item_type:bundu:hat
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     body:
         x: 0

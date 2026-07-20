@@ -1,9 +1,11 @@
-id: item/type/helmet
+id: item_type:bundu:helmet
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     body:
         x: 0
         y: 0
         rotation: 0
         scale: 1.4
+---
+function: "wear"

@@ -1,8 +1,8 @@
-id: item/scuba
-extends: item/type/none
+id: item:bundu:scuba
+extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg
 ---
-type: helmet
+type: bundu:helmet
 whenHelmet:
     "*":
         attributes:

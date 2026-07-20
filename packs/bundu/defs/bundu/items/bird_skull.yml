@@ -1,8 +1,8 @@
-id: item/bird_skull
-extends: item/type/book
+id: item:bundu:bird_skull
+extends: item_type:bundu:book
 texture: bundu/item/material/bird_skull.svg
 ---
-type: book
+type: bundu:book
 function: off_hand
 whenOffHand:
     "*":

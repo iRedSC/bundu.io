@@ -1,5 +1,5 @@
-id: item/bee_dead
-extends: item/type/none
+id: item:bundu:bee_dead
+extends: item_type:bundu:none
 texture: bundu/entity/animal/bee/bee_dead.svg
 displays:
     world:

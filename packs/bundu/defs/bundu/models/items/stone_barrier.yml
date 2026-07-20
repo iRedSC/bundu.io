@@ -1,5 +1,5 @@
-id: item/stone_barrier
-extends: item/type/none
+id: item:bundu:stone_barrier
+extends: item_type:bundu:none
 texture: bundu/structure/wall/stone_barrier.svg
 displays:
     world:

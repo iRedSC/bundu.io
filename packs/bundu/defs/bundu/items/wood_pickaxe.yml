@@ -1,8 +1,8 @@
-id: item/wood_pickaxe
-extends: item/type/pickaxe
+id: item:bundu:wood_pickaxe
+extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/wood_pickaxe.svg
 ---
-type: pickaxe
+type: bundu:pickaxe
 level: 1
 whenMainHand:
     "*":

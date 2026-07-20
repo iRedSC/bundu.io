@@ -1,5 +1,5 @@
-id: item/copper
-extends: item/type/none
+id: item:bundu:copper
+extends: item_type:bundu:none
 texture: bundu/resource/copper_ore.png
 displays:
     world:

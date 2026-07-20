@@ -1,9 +1,11 @@
-id: item/type/hat
+id: item_type:bundu:hat
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     body:
         x: 0
         y: 0
         rotation: 0
         scale: 1
+---
+function: "wear"

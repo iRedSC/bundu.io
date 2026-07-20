@@ -1,8 +1,8 @@
-id: item/butcher_knife
-extends: item/type/pickaxe
+id: item:bundu:butcher_knife
+extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/knife.svg
 ---
-type: knife
+type: bundu:knife
 whenMainHand:
     "*":
         attributes:

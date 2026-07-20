@@ -1,8 +1,8 @@
-id: item/miracle_fruit
-extends: item/type/food
+id: item:bundu:miracle_fruit
+extends: item_type:bundu:food
 texture: bundu/item/food/miracle_fruit.svg
 ---
-type: food
+type: bundu:food
 can_saturate: true
 stats:
     hunger: 35

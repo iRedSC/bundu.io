@@ -1,5 +1,5 @@
-id: item/tooth
-extends: item/type/none
+id: item:bundu:tooth
+extends: item_type:bundu:none
 texture: bundu/item/material/tooth.svg
 ---
 {}

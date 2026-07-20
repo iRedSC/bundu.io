@@ -1,5 +1,5 @@
-id: item/pine_tree
-extends: item/type/tree
+id: item:bundu:pine_tree
+extends: item_type:bundu:tree
 texture: bundu/decoration/forest/pine_tree.svg
 displays:
     world:

@@ -1,6 +1,6 @@
-id: item/type/helmet
+id: item_type:bundu:helmet
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     body:
         x: 0

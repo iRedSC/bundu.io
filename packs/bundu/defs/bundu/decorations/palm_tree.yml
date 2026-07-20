@@ -1,4 +1,4 @@
-id: decoration/palm_tree
+id: decoration:bundu:palm_tree
 parts:
   main:
     sprite: bundu/decoration/beach/palm_tree.svg

@@ -1,6 +1,6 @@
-id: item/silver_wall
-extends: item/type/wall
+id: item:bundu:silver_wall
+extends: item_type:bundu:wall
 texture: bundu/structure/wall/silver_wall.png
 ---
-type: building
+type: bundu:building
 places: silver_wall

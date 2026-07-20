@@ -1,6 +1,6 @@
 # @pack-gen model=models/corpses/player_dead.yml
-id: player_dead
-extends: corpse
+id: resource:bundu:player_dead
+extends: model:bundu:corpse
 parts:
     leftHand:
         parent: body

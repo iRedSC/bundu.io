@@ -1,4 +1,4 @@
-id: decoration/canopy1
+id: decoration:bundu:canopy1
 parts:
   main:
     sprite: bundu/decoration/forest/canopy1.svg

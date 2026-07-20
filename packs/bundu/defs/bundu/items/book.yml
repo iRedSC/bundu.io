@@ -1,8 +1,8 @@
-id: item/book
-extends: item/type/book
+id: item:bundu:book
+extends: item_type:bundu:book
 texture: bundu/item/book/book.svg
 ---
-type: book
+type: bundu:book
 whenOffHand:
     "*":
         flags:

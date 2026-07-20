@@ -1,4 +1,4 @@
-type: pickaxe
+type: bundu:pickaxe
 level: 2
 whenMainHand:
     "*":

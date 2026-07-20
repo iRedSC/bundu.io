@@ -1,4 +1,4 @@
-type: spear
+type: bundu:spear
 level: 5
 whenMainHand:
     "*":

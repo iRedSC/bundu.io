@@ -1,6 +1,6 @@
-id: item/type/tree
+id: item_type:bundu:tree
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     world:
         x: 0

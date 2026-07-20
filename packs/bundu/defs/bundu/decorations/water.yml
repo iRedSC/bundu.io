@@ -1,4 +1,4 @@
-id: decoration/water
+id: decoration:bundu:water
 parts:
   main:
     sprite: bundu/decoration/water/water.svg

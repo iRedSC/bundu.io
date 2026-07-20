@@ -1,9 +1,0 @@
-id: item/type/food
-abstract: true
-extends: item/type/none
-displays:
-    hand:
-        rotation: -20
-        x: 0
-        y: 0.15
-        scale: 0.4

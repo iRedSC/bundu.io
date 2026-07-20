@@ -1,6 +1,6 @@
-id: item/workbench
-extends: item/type/building
+id: item:bundu:workbench
+extends: item_type:bundu:building
 texture: bundu/structure/crafting/workbench.svg
 ---
-type: building
+type: bundu:building
 places: workbench

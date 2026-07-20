@@ -1,4 +1,4 @@
-id: decoration/beach_flower_1
+id: decoration:bundu:beach_flower_1
 parts:
   main:
     sprite: bundu/decoration/beach/beach_flower_1.svg

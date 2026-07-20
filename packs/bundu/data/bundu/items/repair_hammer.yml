@@ -1,4 +1,4 @@
-type: wrench
+type: bundu:wrench
 whenMainHand:
     "*":
         attributes:

@@ -1,5 +1,5 @@
-id: cobalt_door
-extends: door
+id: structure:bundu:cobalt_door
+extends: model:bundu:door
 defaultVariant: base
 variants:
   base:

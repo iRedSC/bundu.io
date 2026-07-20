@@ -1,5 +1,5 @@
-id: cobalt_wall
-extends: wall
+id: structure:bundu:cobalt_wall
+extends: model:bundu:wall
 defaultVariant: base
 variants:
   base:

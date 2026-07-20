@@ -1,3 +1,3 @@
-id: item/door_open
-extends: item/type/none
+id: item:bundu:door_open
+extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg

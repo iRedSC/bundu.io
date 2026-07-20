@@ -1,5 +1,5 @@
-id: item/stone
-extends: item/type/none
+id: item:bundu:stone
+extends: item_type:bundu:none
 texture: bundu/resource/stone_ore.png
 displays:
     world:

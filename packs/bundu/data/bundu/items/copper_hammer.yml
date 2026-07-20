@@ -1,4 +1,4 @@
-type: hammer
+type: bundu:hammer
 level: 3
 whenMainHand:
     "*":

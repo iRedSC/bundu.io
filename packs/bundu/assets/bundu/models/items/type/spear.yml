@@ -1,6 +1,6 @@
-id: item/type/spear
+id: item_type:bundu:spear
 abstract: true
-extends: item/type/none
+extends: item_type:bundu:none
 displays:
     hand:
         rotation: -135

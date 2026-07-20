@@ -1,3 +1,3 @@
-id: item/spyglass
-extends: item/type/none
+id: item:bundu:spyglass
+extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg

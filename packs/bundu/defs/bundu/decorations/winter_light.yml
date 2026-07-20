@@ -1,4 +1,4 @@
-id: decoration/winter_light
+id: decoration:bundu:winter_light
 parts:
   main:
     sprite: bundu/decoration/snow/winter_light.svg

@@ -1,8 +1,8 @@
-id: item/silver_helmet
-extends: item/type/helmet
+id: item:bundu:silver_helmet
+extends: item_type:bundu:helmet
 texture: bundu/item/equipment/silver_helmet.svg
 ---
-type: helmet
+type: bundu:helmet
 level: 4
 whenHelmet:
     "*":

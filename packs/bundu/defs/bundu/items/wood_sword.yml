@@ -1,8 +1,8 @@
-id: item/wood_sword
-extends: item/type/sword
+id: item:bundu:wood_sword
+extends: item_type:bundu:sword
 texture: bundu/item/tool/wood_sword.svg
 ---
-type: sword
+type: bundu:sword
 level: 1
 whenMainHand:
     "*":

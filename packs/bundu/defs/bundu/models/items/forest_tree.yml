@@ -1,7 +1,7 @@
-id: item/forest_tree
-extends: item/type/none
+id: item:bundu:forest_tree
+extends: item_type:bundu:none
 displays:
     icon:
-        model: forest_tree
+        model: resource:bundu:forest_tree
     inventory:
-        model: forest_tree
+        model: resource:bundu:forest_tree

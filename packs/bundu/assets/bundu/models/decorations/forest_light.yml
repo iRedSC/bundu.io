@@ -1,4 +1,4 @@
-id: decoration/forest_light
+id: decoration:bundu:forest_light
 parts:
   main:
     sprite: bundu/decoration/forest/forest_light.svg

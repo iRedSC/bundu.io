@@ -1,3 +1,3 @@
-id: item/savannah_ground_circle
-extends: item/type/none
+id: item:bundu:savannah_ground_circle
+extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg

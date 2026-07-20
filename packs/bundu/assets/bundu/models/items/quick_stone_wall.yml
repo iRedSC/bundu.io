@@ -1,3 +1,3 @@
-id: item/quick_stone_wall
-extends: item/type/wall
+id: item:bundu:quick_stone_wall
+extends: item_type:bundu:wall
 texture: bundu/structure/wall/stone_wall.png

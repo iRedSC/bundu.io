@@ -1,5 +1,5 @@
-id: copper_wall
-extends: wall
+id: structure:bundu:copper_wall
+extends: model:bundu:wall
 defaultVariant: base
 variants:
   base:

@@ -1,5 +1,5 @@
-id: hive_medium
-extends: single_tile_node
+id: resource:bundu:hive_medium
+extends: model:bundu:single_tile_node
 defaultVariant: base
 variants:
   base:

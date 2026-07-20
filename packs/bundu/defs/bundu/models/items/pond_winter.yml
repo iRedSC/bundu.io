@@ -1,3 +1,3 @@
-id: item/pond_winter
-extends: item/type/none
+id: item:bundu:pond_winter
+extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg

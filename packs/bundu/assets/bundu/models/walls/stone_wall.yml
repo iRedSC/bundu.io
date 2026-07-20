@@ -1,5 +1,5 @@
-id: stone_wall
-extends: wall
+id: structure:bundu:stone_wall
+extends: model:bundu:wall
 defaultVariant: base
 variants:
   base:

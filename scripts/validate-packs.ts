@@ -1,3 +1,4 @@
+import { modelIdForLocation } from "../packages/shared/src/models/ids";
 import { loadConfigs } from "../packages/server/src/configs/loaders/load";
 import {
     gameRegistries,
@@ -20,66 +21,81 @@ replaceCompiledModelDefs(
     resourcePacks.manifest.assets.map((asset) => asset.path)
 );
 
-function bareId(id: string): string {
-    const index = id.indexOf(":");
-    return index === -1 ? id : id.slice(index + 1);
-}
-
-function requireConcreteAssembledModel(id: string, kind: string): void {
-    const def = modelDefs.get(id);
+function requireConcreteAssembledModel(modelId: string, kind: string): void {
+    const def = modelDefs.get(modelId);
     if (!def || def.abstract || !modelHasParts(def)) {
         throw new Error(
-            `${kind} "${id}" needs its own concrete assembled model definition`
+            `${kind} "${modelId}" needs its own concrete assembled model definition`
         );
     }
 }
 
-function requireBuildingModel(id: string): void {
-    if (tileEntityDefs.get(id) || lookupObjectDef(id) || lookupModel(id)) {
+function requireBuildingModel(location: string): void {
+    const structureId = modelIdForLocation("structure", location);
+    const itemId = modelIdForLocation("item", location);
+    // Placeables may share the item display when no dedicated structure model exists
+    // (e.g. anvil/workbench); spikes often piggyback on wall models.
+    if (
+        tileEntityDefs.get(structureId) ||
+        lookupObjectDef(structureId) ||
+        lookupModel(structureId) ||
+        lookupModel(itemId)
+    ) {
         return;
     }
     throw new Error(
-        `Building "${id}" needs a tile, assembled, or display model definition`
+        `Building "${location}" needs a structure or item model (${structureId} / ${itemId})`
     );
 }
 
-function requireItemModel(id: string): void {
-    if (lookupModel(id) || lookupObjectDef(id) || lookupObjectDef(`item/${id}`)) {
+function requireItemModel(location: string): void {
+    const id = modelIdForLocation("item", location);
+    if (lookupModel(id) || lookupObjectDef(id)) {
         return;
     }
-    throw new Error(
-        `Item "${id}" needs a model definition (item/${id} or assembled)`
-    );
+    throw new Error(`Item "${location}" needs a model definition (${id})`);
 }
 
-function requireDecorationModel(id: string): void {
-    if (lookupObjectDef(`decoration/${id}`)) return;
+function requireDecorationModel(location: string): void {
+    const id = modelIdForLocation("decoration", location);
+    if (lookupObjectDef(id)) return;
     throw new Error(
-        `Decoration "${id}" needs a concrete assembled model (decoration/${id})`
+        `Decoration "${location}" needs a concrete assembled model (${id})`
     );
 }
 
 const sources = registrySources();
-const resourceIds = [...sources.resource.keys()].map(bareId);
-const entityIds = [...sources.entity_type.keys()].map(bareId);
-const buildingIds = [...sources.structure.keys()].map(bareId);
-const itemIds = [...sources.item.keys()].map(bareId);
-const decorationIds = [...sources.decoration.keys()].map(bareId);
+const resourceLocations = [...sources.resource.keys()];
+const entityLocations = [...sources.entity_type.keys()];
+const buildingLocations = [...sources.structure.keys()];
+const itemLocations = [...sources.item.keys()];
+const decorationLocations = [...sources.decoration.keys()];
 
-for (const id of [...resourceIds, "stone_barrier"]) {
-    requireConcreteAssembledModel(id, "Resource");
+for (const location of resourceLocations) {
+    requireConcreteAssembledModel(
+        modelIdForLocation("resource", location),
+        "Resource"
+    );
 }
-for (const id of entityIds) {
-    requireConcreteAssembledModel(id, "Entity");
+// Hardcoded barrier used by map tooling.
+requireConcreteAssembledModel(
+    modelIdForLocation("resource", "bundu:stone_barrier"),
+    "Resource"
+);
+for (const location of entityLocations) {
+    requireConcreteAssembledModel(
+        modelIdForLocation("entity_type", location),
+        "Entity"
+    );
 }
-for (const id of buildingIds) {
-    requireBuildingModel(id);
+for (const location of buildingLocations) {
+    requireBuildingModel(location);
 }
-for (const id of itemIds) {
-    requireItemModel(id);
+for (const location of itemLocations) {
+    requireItemModel(location);
 }
-for (const id of decorationIds) {
-    requireDecorationModel(id);
+for (const location of decorationLocations) {
+    requireDecorationModel(location);
 }
 
 const registryCounts = Object.entries(gameRegistries())

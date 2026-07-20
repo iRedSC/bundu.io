@@ -1,4 +1,4 @@
-id: decoration/beach_dark
+id: decoration:bundu:beach_dark
 parts:
   main:
     sprite: bundu/decoration/beach/beach_dark.svg

@@ -1,4 +1,4 @@
-id: decoration/snow_blob_2
+id: decoration:bundu:snow_blob_2
 parts:
   main:
     sprite: bundu/decoration/snow/snow_blob_2.svg

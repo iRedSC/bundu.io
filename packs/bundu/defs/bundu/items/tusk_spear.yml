@@ -1,8 +1,8 @@
-id: item/tusk_spear
-extends: item/type/spear
+id: item:bundu:tusk_spear
+extends: item_type:bundu:spear
 texture: bundu/item/tool/hunting_spear.svg
 ---
-type: spear
+type: bundu:spear
 level: 5
 whenMainHand:
     "*":

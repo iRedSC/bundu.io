@@ -1,5 +1,5 @@
-id: wood_wall
-extends: wall
+id: structure:bundu:wood_wall
+extends: model:bundu:wall
 defaultVariant: base
 variants:
   base:

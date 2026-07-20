@@ -1,5 +1,5 @@
-id: item/bottle_empty
-extends: item/type/none
+id: item:bundu:bottle_empty
+extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg
 ---
 {}

@@ -1,5 +1,5 @@
-id: item/time_book
-extends: item/type/book
+id: item:bundu:time_book
+extends: item_type:bundu:book
 texture: bundu/item/book/time_book.svg
 ---
-type: book
+type: bundu:book
