@@ -177,6 +177,10 @@ export class RenderDistanceSystem extends System<GameEventMap> {
     }
 
     override update(_time: number, _delta: number, object: GameObject): void {
+        // Kill mid-step leaves the viewer in this tick's system snapshot.
+        // Skip AOI so we don't LoadObject the corpse (newObject already skips).
+        if (!object.active) return;
+
         const visibleObjects = object.get(VisibleObjects);
         const { playerPacketManager, quadtree } = this.world.context;
         const data = PlayerData.get(object);

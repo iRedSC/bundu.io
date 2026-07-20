@@ -400,6 +400,27 @@ export class World {
      */
     beginDeathCinematic(): void {
         this.deathCinematic = true;
+        // Corpse may already be in-world if it loaded before the socket closed.
+        this.removeLocalPlayerCorpse();
+    }
+
+    /** Drop a `player_dead` resource sitting on the local avatar (death race). */
+    private removeLocalPlayerCorpse(): void {
+        if (this.user === undefined) return;
+        const local = this.objects.get(this.user);
+        if (!local) return;
+        const lx = local.container.x;
+        const ly = local.container.y;
+        const maxDistSq = (TILE_SIZE * 2) ** 2;
+        for (const object of [...this.objects.all()]) {
+            if (!(object instanceof Structure)) continue;
+            if (object.placeKind !== AdminPlaceKind.Resource) continue;
+            if (object.type !== "player_dead") continue;
+            const dx = object.container.x - lx;
+            const dy = object.container.y - ly;
+            if (dx * dx + dy * dy > maxDistSq) continue;
+            this.removeClientObject(object.id);
+        }
     }
 
     private attachLocalPlayer(player: GameObject) {
