@@ -23,8 +23,6 @@ const CHAT_SCREEN_PX = 12;
 const CHAT_OFFSET_PX = 28;
 const NAME_OFFSET_PX = 22;
 const CHAT_MESSAGE_DURATION = 5_000;
-/** Model is authored around one tile at identity scale. */
-const MODEL_BASE_PX = 100;
 const LABEL_FONT_PX = 40;
 
 /**
@@ -108,7 +106,10 @@ export class FreecamGhost extends GameObject {
     /** Keep silhouette / labels cursor-sized across zoom. */
     syncScreenScale(): void {
         const vp = Math.abs(this.getViewScale()) || 1;
-        const body = FREECAM_GHOST_SCREEN_PX / (MODEL_BASE_PX * vp);
+        // Player parts are unit-normalized (1 world unit at scale 1). Screen px =
+        // worldScale * vp, so worldScale = desiredPx / vp. Do NOT divide by
+        // TILE_SIZE — that made the silhouette a constant ~0.4px.
+        const body = FREECAM_GHOST_SCREEN_PX / vp;
         this.container.scale.set(body);
         this.name.scale.set(NAME_SCREEN_PX / (LABEL_FONT_PX * vp));
         this.chatMessage.scale.set(CHAT_SCREEN_PX / (LABEL_FONT_PX * vp));
