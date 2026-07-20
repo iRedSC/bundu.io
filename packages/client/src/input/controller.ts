@@ -13,6 +13,7 @@ import type { Player } from "../world/objects/player";
 import { KeyboardInputListener } from "./keyboard";
 import { MouseInputListener } from "./mouse";
 import { clientStructurePlacement } from "../configs/registries";
+import type { ChatController } from "../ui/chat";
 
 export type SendPacket = Socket["sendPacket"];
 
@@ -50,6 +51,8 @@ export class InputController {
     private readonly onPointerMove: (event: PointerEvent) => void;
     onToggleLeaderboard: () => void = () => {};
     onShowWorldHover: (show: boolean) => void = () => {};
+    /** Return true to consume the message (client-only command). */
+    onClientChatCommand: (message: string) => boolean = () => false;
 
     constructor(
         private readonly sendPacket: SendPacket,
@@ -72,6 +75,14 @@ export class InputController {
 
     closeChat() {
         this.keyboard.closeChat();
+    }
+
+    bindChat(chat: ChatController) {
+        this.keyboard.bindChat(chat);
+    }
+
+    get chatOpen(): boolean {
+        return this.keyboard.chatOpen;
     }
 
     /**
@@ -165,8 +176,7 @@ export class InputController {
     }
 
     private handleMoveInput(move: MoveAxes) {
-        const chat = document.querySelector<HTMLInputElement>("#chat-input");
-        if (chat === document.activeElement) return;
+        if (this.keyboard.chatOpen) return;
         if (this.facade.isFreecam()) {
             this.sendPacket(ClientPacket.Movement, {
                 direction: encodeMoveDirection(0, 0),
@@ -182,6 +192,7 @@ export class InputController {
     private handleSendChat(message: string) {
         const trimmed = message.trim();
         if (!trimmed) return;
+        if (this.onClientChatCommand(trimmed)) return;
         this.sendPacket(ClientPacket.ChatMessage, { message: trimmed });
     }
 

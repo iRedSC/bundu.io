@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
-import { WORLD_TILES } from "@bundu/shared/tiles";
+import { WORLD_TILES, type TileRot } from "@bundu/shared/tiles";
 import { Box, Vector } from "sat";
 import {
     AnimalData,
@@ -15,20 +15,34 @@ import {
     TileEntity,
     Type,
 } from "../components/base.js";
+import {
+    BuildingConfigs,
+    occupancyLayerForClass,
+} from "../configs/loaders/buildings.js";
 import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { gameRegistries } from "../configs/registries.js";
 import type { World } from "../engine";
+import { tryAddResource } from "../game_objects/add_resource.js";
 import { Decoration } from "../game_objects/decoration.js";
 import { Ground } from "../game_objects/ground.js";
 import { Resource } from "../game_objects/resource.js";
 import { Structure } from "../game_objects/structure.js";
+import {
+    makeTileEntity,
+    tileEntityPhysics,
+} from "../game_objects/tile_entity.js";
 import { GameEvent, type GameEventMap } from "../systems/event_map.js";
 import { groundWire } from "../systems/ground_wire.js";
 import { decorationWire } from "../systems/decoration_wire.js";
 import { clearEditorHistory } from "./history.js";
 
-const cacheRoot = path.resolve(import.meta.dir, "../../../../.cache");
-const defaultFilename = path.join(cacheRoot, "editor-map.yml");
+const mapsRoot = path.resolve(import.meta.dir, "../../../../maps");
+const editorFilename = path.join(mapsRoot, "editor-map.yml");
+const defaultMapFilename = path.join(mapsRoot, "default-map.yml");
+const legacyCacheFilename = path.resolve(
+    import.meta.dir,
+    "../../../../.cache/editor-map.yml"
+);
 
 type Trigger = <T extends keyof GameEventMap>(
     event: T,
@@ -37,21 +51,26 @@ type Trigger = <T extends keyof GameEventMap>(
 
 /**
  * Resolve the editor map write path.
- * Confined under `.cache/` — rejects `..` / absolute escapes.
+ * Confined under `maps/` — rejects `..` / absolute escapes.
  */
 export function editorMapPath(): string {
     const raw = process.env.BUNDU_EDITOR_MAP;
-    if (!raw) return defaultFilename;
-    const resolved = path.resolve(cacheRoot, raw);
+    if (!raw) return editorFilename;
+    const resolved = path.resolve(mapsRoot, raw);
     if (
-        resolved !== cacheRoot &&
-        !resolved.startsWith(cacheRoot + path.sep)
+        resolved !== mapsRoot &&
+        !resolved.startsWith(mapsRoot + path.sep)
     ) {
         throw new Error(
-            `BUNDU_EDITOR_MAP must resolve under .cache/ (got ${raw})`
+            `BUNDU_EDITOR_MAP must resolve under maps/ (got ${raw})`
         );
     }
     return resolved;
+}
+
+/** Tracked fallback map used when no freecam save exists. */
+export function defaultMapPath(): string {
+    return defaultMapFilename;
 }
 
 function shortLocation(location: string): string {
@@ -218,6 +237,257 @@ export function saveMapYaml(world: World): { yaml: string; path: string } {
     return { yaml, path: target };
 }
 
+/** Full-world ocean floor — the blank freecam starting state. */
+export function loadBlankMap(world: World): void {
+    addBaseGround(world, "ocean");
+}
+
+function addBaseGround(world: World, typeRef: string): Ground {
+    const registries = gameRegistries();
+    const typeId = registries.ground_type.resolve(typeRef, "bundu");
+    const config = GroundTypeConfigs.get(typeId);
+    const object = new Ground({
+        collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
+        type: typeId,
+        speedMultiplier: config.speed_multiplier,
+        createPacket() {
+            return [
+                this.type,
+                this.collider.pos.x,
+                this.collider.pos.y,
+                this.collider.w,
+                this.collider.h,
+            ];
+        },
+    });
+    world.addObject(object);
+    return object;
+}
+
+/**
+ * Load order: freecam `editor-map.yml` → tracked `default-map.yml` → blank ocean.
+ * Migrates a legacy `.cache/editor-map.yml` once if the editor path is empty.
+ * Safe to call once at boot on an empty world.
+ */
+export function loadEditorMapOrBlank(world: World): void {
+    const editor = editorMapPath();
+    if (!fs.existsSync(editor) && fs.existsSync(legacyCacheFilename)) {
+        fs.mkdirSync(path.dirname(editor), { recursive: true });
+        fs.copyFileSync(legacyCacheFilename, editor);
+        console.info(`[map] migrated ${legacyCacheFilename} -> ${editor}`);
+    }
+
+    const target = fs.existsSync(editor)
+        ? editor
+        : fs.existsSync(defaultMapFilename)
+          ? defaultMapFilename
+          : null;
+
+    if (!target) {
+        loadBlankMap(world);
+        console.info(
+            `[map] no editor or default map; loaded blank (looked for ${editor})`
+        );
+        return;
+    }
+
+    const yaml = fs.readFileSync(target, "utf8");
+    importMapYaml(world, yaml);
+    console.info(`[map] loaded ${target}`);
+}
+
+/** Populate an empty world from editor YAML (inverse of `exportMapYaml`). */
+export function importMapYaml(world: World, yaml: string): void {
+    const root = asRecord(Bun.YAML.parse(yaml), "map");
+    if (root.format !== 1) {
+        throw new Error(`map.format: unsupported ${String(root.format)}`);
+    }
+
+    const baseGround =
+        typeof root.base_ground === "string" && root.base_ground
+            ? root.base_ground
+            : "ocean";
+    addBaseGround(world, baseGround);
+
+    const groundRows = asArray(root.ground, "map.ground")
+        .map((raw, index) => {
+            const row = asRecord(raw, `map.ground[${index}]`);
+            return {
+                id: asNumber(row.id, `map.ground[${index}].id`),
+                type: asString(row.type, `map.ground[${index}].type`),
+                x: asNumber(row.x, `map.ground[${index}].x`),
+                y: asNumber(row.y, `map.ground[${index}].y`),
+                w: asNumber(row.w, `map.ground[${index}].w`),
+                h: asNumber(row.h, `map.ground[${index}].h`),
+            };
+        })
+        .sort((a, b) => a.id - b.id);
+
+    const registries = gameRegistries();
+
+    for (const row of groundRows) {
+        addGroundOverlay(world, row.type, row.x, row.y, row.w, row.h);
+    }
+
+    for (const [index, raw] of asArray(root.resources, "map.resources").entries()) {
+        const row = asRecord(raw, `map.resources[${index}]`);
+        const id = asString(row.id, `map.resources[${index}].id`);
+        const x = asNumber(row.x, `map.resources[${index}].x`);
+        const y = asNumber(row.y, `map.resources[${index}].y`);
+        const rot = asTileRot(row.rot, `map.resources[${index}].rot`);
+        const variant =
+            typeof row.variant === "string" && row.variant
+                ? row.variant
+                : "base";
+        const typeId = registries.resource.resolve(id, "bundu");
+        if (!tryAddResource(world, typeId, x, y, rot, variant)) {
+            console.warn(
+                `[map] skipped resource ${id} at ${x},${y} (placement blocked)`
+            );
+        }
+    }
+
+    for (const [index, raw] of asArray(
+        root.structures,
+        "map.structures"
+    ).entries()) {
+        const row = asRecord(raw, `map.structures[${index}]`);
+        const id = asString(row.id, `map.structures[${index}].id`);
+        const x = asNumber(row.x, `map.structures[${index}].x`);
+        const y = asNumber(row.y, `map.structures[${index}].y`);
+        const rot = asTileRot(row.rot, `map.structures[${index}].rot`);
+        const variant =
+            typeof row.variant === "string" && row.variant
+                ? row.variant
+                : "base";
+        const doorOpen =
+            typeof row.door_open === "boolean" ? row.door_open : false;
+        const spiked = row.spiked === true;
+        addStructure(world, id, x, y, rot, variant, doorOpen, spiked);
+    }
+
+    for (const [index, raw] of asArray(
+        root.decorations,
+        "map.decorations"
+    ).entries()) {
+        const row = asRecord(raw, `map.decorations[${index}]`);
+        const id = asString(row.id, `map.decorations[${index}].id`);
+        const x = asNumber(row.x, `map.decorations[${index}].x`);
+        const y = asNumber(row.y, `map.decorations[${index}].y`);
+        const rotation = asNumber(row.rot, `map.decorations[${index}].rot`);
+        const scale = asNumber(row.scale, `map.decorations[${index}].scale`);
+        world.addObject(
+            new Decoration({
+                type: registries.decoration.resolve(id, "bundu"),
+                x,
+                y,
+                rotation,
+                scale,
+            })
+        );
+    }
+}
+
+function addGroundOverlay(
+    world: World,
+    typeRef: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+): void {
+    if (isBaseGround(w, h)) return;
+    const typeId = gameRegistries().ground_type.resolve(typeRef, "bundu");
+    const config = GroundTypeConfigs.get(typeId);
+    world.addObject(
+        new Ground({
+            collider: new Box(new Vector(x, y), w, h),
+            type: typeId,
+            speedMultiplier: config.speed_multiplier,
+            createPacket() {
+                return [
+                    this.type,
+                    this.collider.pos.x,
+                    this.collider.pos.y,
+                    this.collider.w,
+                    this.collider.h,
+                ];
+            },
+        })
+    );
+}
+
+function addStructure(
+    world: World,
+    typeRef: string,
+    x: number,
+    y: number,
+    rot: TileRot,
+    variant: string,
+    doorOpen: boolean,
+    spiked: boolean
+): void {
+    const typeId = gameRegistries().structure.resolve(typeRef, "bundu");
+    const config = BuildingConfigs.get(typeId);
+    const origin = { x, y };
+    const tile = makeTileEntity(
+        origin,
+        rot,
+        config.placement.blocked,
+        occupancyLayerForClass(config.class)
+    );
+    const object = new Structure(
+        tileEntityPhysics(origin, rot),
+        { id: typeId, variant },
+        tile
+    );
+    if (spiked) object.add(new Spiked());
+    world.addObject(object);
+    const door = Door.get(object);
+    if (door && doorOpen) {
+        door.open = true;
+        // PositionSystem.enter occupies; open doors must release.
+        world.context.occupancy.release(object.id);
+    }
+}
+
+function asRecord(value: unknown, path: string): Record<string, unknown> {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(`${path}: expected an object`);
+    }
+    return value as Record<string, unknown>;
+}
+
+function asArray(value: unknown, path: string): unknown[] {
+    if (value === undefined || value === null) return [];
+    if (!Array.isArray(value)) {
+        throw new Error(`${path}: expected an array`);
+    }
+    return value;
+}
+
+function asString(value: unknown, path: string): string {
+    if (typeof value !== "string" || !value) {
+        throw new Error(`${path}: expected a non-empty string`);
+    }
+    return value;
+}
+
+function asNumber(value: unknown, path: string): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new Error(`${path}: expected a number`);
+    }
+    return value;
+}
+
+function asTileRot(value: unknown, path: string): TileRot {
+    const rot = asNumber(value, path);
+    if (!Number.isInteger(rot) || rot < 0 || rot > 3) {
+        throw new Error(`${path}: expected tile rotation 0..3`);
+    }
+    return rot as TileRot;
+}
+
 /**
  * Remove placeables and overlays; restore a full-world base ground floor.
  * Players are left alone. Clears admin undo history for every player.
@@ -265,25 +535,8 @@ export function wipeMap(
         }
     }
 
-    const registries = gameRegistries();
-    const oceanId = registries.ground_type.resolve("ocean", "bundu");
-    const config = GroundTypeConfigs.get(oceanId);
-    const object = new Ground({
-        collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
-        type: oceanId,
-        speedMultiplier: config.speed_multiplier,
-        createPacket() {
-            return [
-                this.type,
-                this.collider.pos.x,
-                this.collider.pos.y,
-                this.collider.w,
-                this.collider.h,
-            ];
-        },
-    });
-    world.addObject(object);
-    broadcastGround(groundWire(object));
+    const base = addBaseGround(world, "ocean");
+    broadcastGround(groundWire(base));
 
     for (const entry of world.objects.values()) {
         clearEditorHistory(entry.id);

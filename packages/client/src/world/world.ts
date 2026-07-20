@@ -216,6 +216,8 @@ export class World {
     private readonly decorations: DecorationSprite[] = [];
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
+    /** Local drop origins (world space) queued until DropItem arrives. */
+    private pendingLocalDrops: { origin: Point; startScale: number }[] = [];
 
     constructor(viewport: Viewport, pixiRenderer: Renderer) {
         this.viewport = viewport;
@@ -274,6 +276,7 @@ export class World {
         this.cursorWorld = undefined;
         this.showAllHover = false;
         this.pendingObjectStates.clear();
+        this.pendingLocalDrops.length = 0;
         this.user = undefined;
     }
 
@@ -671,6 +674,10 @@ export class World {
     };
 
     newGroundItem = (packet: LoadGroundItem) => {
+        const existing = this.objects.get(packet.id);
+        // Keep an in-flight drop animation instead of snapping to the land pose.
+        if (existing instanceof GroundItem && existing.isTraveling) return;
+
         this.removeClientObject(packet.id);
 
         const item = new GroundItem(
@@ -697,26 +704,44 @@ export class World {
         this.renderer.add(animal.id, ...animal.containers);
     };
 
+    /** Remember where the local player released a drop (world space + UI scale). */
+    queueLocalDrop(origin: Point, startScale: number) {
+        this.pendingLocalDrops.push({ origin, startScale });
+    }
+
     dropItem = (packet: ServerPacket.DropItem) => {
         const source = this.objects.get(packet.id);
         if (!source) return;
 
         const target = deciPoint(packet.x, packet.y);
+        const isLocal = packet.id === this.user;
         const existing = this.objects.get(packet.objectId);
+        const endRotation = source.rotation;
         const item =
             existing instanceof GroundItem
                 ? existing
                 : new GroundItem(
-                packet.objectId,
-                packet.itemId,
-                source.position.clone(),
-                source.rotation * (180 / Math.PI)
-            );
+                      packet.objectId,
+                      packet.itemId,
+                      isLocal ? target.clone() : source.position.clone(),
+                      endRotation * (180 / Math.PI)
+                  );
         if (!(existing instanceof GroundItem)) {
             this.objects.add(item);
             this.renderer.add(item.id, ...item.containers);
         }
-        item.popFrom(source.position.clone(), target);
+
+        if (isLocal) {
+            const pending = this.pendingLocalDrops.shift();
+            item.flyFrom(
+                pending?.origin ?? source.position.clone(),
+                target,
+                pending?.startScale ?? 0.65,
+                endRotation
+            );
+        } else {
+            item.popFrom(source.position.clone(), target);
+        }
         this.objects.updating.add(item);
     };
 
