@@ -67,6 +67,7 @@ function tokenClass(kind: CommandToken["kind"]): string {
     }
 }
 
+/** Canonical `namespace:path` ids only (commands never accept bare paths). */
 function registrySuggestionIds(
     registry: "item" | "entity_type"
 ): string[] {
@@ -75,8 +76,6 @@ function registrySuggestionIds(
         const reg = clientRegistries()[registry];
         for (const [location] of reg.entries()) {
             ids.push(location);
-            const sep = location.indexOf(":");
-            if (sep > 0) ids.push(location.slice(sep + 1));
         }
         if (registry === "entity_type") {
             for (const [tag] of reg.tagEntries()) {

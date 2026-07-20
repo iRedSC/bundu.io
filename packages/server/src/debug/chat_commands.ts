@@ -26,7 +26,8 @@ import { SERVER_DEBUG } from "./flag.js";
 function resolveItemId(value?: string): number | undefined {
     if (!value) return undefined;
     try {
-        return gameRegistries().item.resolve(value, "bundu");
+        // No default namespace — command items must be namespace:path.
+        return gameRegistries().item.resolve(value);
     } catch {
         return undefined;
     }
@@ -34,25 +35,25 @@ function resolveItemId(value?: string): number | undefined {
 
 const kits: Record<string, Record<string, number>> = {
     copper: {
-        copper_pickaxe: 1,
-        copper_sword: 1,
-        copper_helmet: 1,
+        "bundu:copper_pickaxe": 1,
+        "bundu:copper_sword": 1,
+        "bundu:copper_helmet": 1,
     },
     silver: {
-        silver_pickaxe: 1,
-        silver_sword: 1,
-        silver_helmet: 1,
+        "bundu:silver_pickaxe": 1,
+        "bundu:silver_sword": 1,
+        "bundu:silver_helmet": 1,
     },
     cobalt: {
-        cobalt_pickaxe: 1,
-        cobalt_sword: 1,
-        cobalt_helmet: 1,
+        "bundu:cobalt_pickaxe": 1,
+        "bundu:cobalt_sword": 1,
+        "bundu:cobalt_helmet": 1,
     },
     iridium: {
-        iridium_sword: 1,
-        iridium_wall: 10,
-        iridium_door: 5,
-        iridium_spike: 5,
+        "bundu:iridium_sword": 1,
+        "bundu:iridium_wall": 10,
+        "bundu:iridium_door": 5,
+        "bundu:iridium_spike": 5,
     },
 };
 

@@ -8,6 +8,7 @@ import {
     suggestSelector,
     type SelectorSuggestContext,
 } from "./entity_selector";
+import { resourceLocation } from "./registry";
 
 export type CommandArgTypeId =
     | "enum"
@@ -231,9 +232,19 @@ function parseArgValue(
             return typeof result === "string" ? { error: result } : result;
         }
         case "word":
-        case "item":
             if (!raw) return { error: `Missing ${arg.name}` };
             return raw;
+        case "item": {
+            if (!raw) return { error: `Missing ${arg.name}` };
+            try {
+                // Commands always use canonical namespace:path (no bare defaults).
+                return resourceLocation(raw, undefined, arg.name);
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : `Invalid ${arg.name}`;
+                return { error: message };
+            }
+        }
         case "selector": {
             if (!raw) return { error: `Missing ${arg.name}` };
             const parsed = parseSelector(raw);

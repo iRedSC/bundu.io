@@ -84,7 +84,10 @@ function shuffleInPlace<T>(items: T[]): void {
 export type ResolveSelectorOptions = {
     world: World;
     executor: GameObject;
-    /** Namespace for bare type ids (defaults to bundu). */
+    /**
+     * Namespace for bare type ids. Commands omit this so `type=` must be
+     * `namespace:path` (or `#namespace:path`). Pack loaders pass an owner ns.
+     */
     defaultNamespace?: string;
 };
 
@@ -105,10 +108,9 @@ export function resolveParsedSelector(
     selector: EntitySelector,
     options: ResolveSelectorOptions
 ): GameObject[] {
-    const ns = options.defaultNamespace ?? "bundu";
     const matchClauses = resolveMatchClauses(
         selector.clauses,
-        ns,
+        options.defaultNamespace,
         selector.raw
     );
     let found = candidatesForBase(

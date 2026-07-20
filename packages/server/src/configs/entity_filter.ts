@@ -34,7 +34,7 @@ function namespaceOf(ownerId: string): string {
 
 function resolveTypeValue(
     value: string,
-    defaultNamespace: string,
+    defaultNamespace: string | undefined,
     path: string
 ): Set<RegistryId<"entity_type">> {
     return new Set(
@@ -45,7 +45,7 @@ function resolveTypeValue(
 /** Resolve match clauses from a parsed selector/filter for runtime checks. */
 export function resolveMatchClauses(
     clauses: readonly SelectorClause[],
-    defaultNamespace: string,
+    defaultNamespace: string | undefined,
     path: string
 ): ResolvedMatchClause[] {
     const out: ResolvedMatchClause[] = [];

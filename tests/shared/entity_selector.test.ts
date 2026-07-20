@@ -237,16 +237,24 @@ describe("selectorLimit / selectorSort", () => {
 
 describe("command integration", () => {
   test("parseCommand accepts a give with selector, item, and count", () => {
-    const result = parseCommand("/give @a[flag=in_water] bottle_empty 1", giveRegistry);
+    const result = parseCommand(
+      "/give @a[flag=in_water] bundu:bottle_empty 1",
+      giveRegistry,
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error(result.message);
     expect(result.args.targets).toBeDefined();
-    expect(result.args.item).toBeDefined();
+    expect(result.args.item).toBe("bundu:bottle_empty");
     expect(result.args.count).toBeDefined();
   });
 
+  test("parseCommand rejects a bare item id without namespace", () => {
+    const result = parseCommand("/give @s bottle_empty", giveRegistry);
+    expect(result.ok).toBe(false);
+  });
+
   test("parseCommand rejects an invalid selector target", () => {
-    const result = parseCommand("/give @z bottle", giveRegistry);
+    const result = parseCommand("/give @z bundu:bottle_empty", giveRegistry);
     expect(result.ok).toBe(false);
   });
 
