@@ -14,8 +14,12 @@ hitboxLayer.label = "debug-hitbox-layer";
 hitboxLayer.zIndex = 1;
 hitboxLayer.eventMode = "none";
 hitboxLayer.sortableChildren = true;
+/** Off by default — enable via Debug tools or `/debug hitboxes`. */
+hitboxLayer.visible = false;
 
 debugContainer.addChild(hitboxLayer);
+
+const hitboxListeners = new Set<(visible: boolean) => void>();
 
 const ATTACK_HITBOX_MS = 200;
 
@@ -115,9 +119,20 @@ export function createObjectDebug(init: ObjectDebugInit): ObjectDebug {
 }
 
 export function setDebugHitboxesVisible(visible: boolean) {
+    if (hitboxLayer.visible === visible) return;
     hitboxLayer.visible = visible;
+    for (const listener of hitboxListeners) listener(visible);
 }
 
 export function isDebugHitboxesVisible() {
     return hitboxLayer.visible;
+}
+
+export function onDebugHitboxesVisibleChange(
+    listener: (visible: boolean) => void
+): () => void {
+    hitboxListeners.add(listener);
+    return () => {
+        hitboxListeners.delete(listener);
+    };
 }

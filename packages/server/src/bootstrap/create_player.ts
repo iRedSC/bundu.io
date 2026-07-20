@@ -58,6 +58,7 @@ export function createPlayer(
             playerSkin: getVariantName(skinId) ?? "base",
             pendingSpawn: true,
             clientReady: false,
+            opLevel: 0,
 
             moveDir: [0, 0],
             selectedStructure: {

@@ -1,14 +1,17 @@
-import { Application, type Renderer } from "pixi.js";
+import { Application, Point, type Renderer } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
 import {
     receiver,
+    setupChatPacketReceiving,
     setupGUIPacketReceiving,
     setupPacketReceiving,
 } from "./network/receiver";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
+import { percentOf } from "@bundu/shared/math";
 import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
+import { ChatController } from "./ui/chat";
 import { createAdminEditor } from "./admin/editor";
 import { initAssets } from "./assets/load";
 import {
@@ -18,6 +21,8 @@ import {
 import { AnimationManagers } from "./animation/animations";
 import { InputController } from "./input/controller";
 import { Player } from "./world/objects/player";
+import { GROUND_ITEM_SIZE } from "./world/objects/ground_item";
+import { ITEM_BUTTON_SIZE } from "./constants";
 import { GameSession } from "./session/game_session";
 import { clientTime } from "./globals";
 import { replaceCompiledModelDefs } from "./models/defs";
@@ -305,9 +310,13 @@ async function main() {
     app.stage.addChild(viewport);
 
     // Debug tools / overlay — omitted entirely from prod bundles.
+    let bindDebugChat:
+        | typeof import("./debug/tools").bindDebugChat
+        | undefined;
     if (__DEBUG__) {
-        const { mountClientDebug } = await import("./debug/tools");
-        mountClientDebug(viewport);
+        const debugTools = await import("./debug/tools");
+        debugTools.mountClientDebug(viewport);
+        bindDebugChat = debugTools.bindDebugChat;
         const { initDevtools } = await import("@pixi/devtools");
         await initDevtools({ app });
     }
@@ -326,6 +335,8 @@ async function main() {
     const gui = createUI();
     app.stage.addChild(gui.container);
     setupGUIPacketReceiving(receiver, gui);
+    const chat = new ChatController();
+    setupChatPacketReceiving(receiver, world, chat);
 
     const session = new GameSession(receiver, {
         prepareConnection: prepareConnectionPacks,
@@ -344,6 +355,7 @@ async function main() {
             gui.craftingMenu.items = [];
             gui.craftingMenu.update();
             gui.leaderboard.clear();
+            chat.setRegistry({ commands: [] });
             input.closeChat();
         },
         setConnecting: (connecting) => {
@@ -364,6 +376,7 @@ async function main() {
         onConnected: () => {
             playButton.textContent = "Play";
             setMenuVisible(false);
+            chat.setVisible(true);
             void waitForWorldReady(world).then(({ ready, gen }) => {
                 // Soft disconnect / back-to-menu bumps the gate; don't send stale ready.
                 if (!ready || gen !== worldGateGeneration) return;
@@ -384,6 +397,7 @@ async function main() {
             dropSessionId();
             playButton.textContent = "Play";
             setMenuVisible(true);
+            chat.setVisible(false);
             nameInput.focus();
         },
     });
@@ -437,6 +451,10 @@ async function main() {
         isPlacementAllowed: () => world.isPlacementAllowed(),
         isFreecam: () => world.camera.isFreecam(),
     });
+    input.bindChat(chat);
+    bindDebugChat?.(chat, (handler) => {
+        input.onClientChatCommand = handler;
+    });
     input.onToggleLeaderboard = () => gui.leaderboard.toggle();
     input.onShowWorldHover = (show) => world.setShowAllHover(show);
     world.onPlacementValidity = (allowed) => input.onPlacementValidity(allowed);
@@ -454,13 +472,12 @@ async function main() {
     gui.inventory.onCursor = (slot, mode) => {
         session.sendPacket(ClientPacket.CursorSlot, { slot, mode });
     };
-    gui.inventory.getDropTargetGlobal = () => {
-        const object = world.objects.get(world.user ?? -1);
-        if (!(object instanceof Player)) return null;
-        return viewport.toGlobal({
-            x: object.position.x + Math.cos(object.rotation) * 80,
-            y: object.position.y + Math.sin(object.rotation) * 80,
-        });
+    gui.inventory.onWorldDrop = (originGlobal, buttonScale) => {
+        const origin = viewport.toLocal(originGlobal);
+        const vpScale = Math.abs(viewport.scale.x) || 1;
+        const iconScreen = percentOf(90, ITEM_BUTTON_SIZE) * buttonScale;
+        const startScale = iconScreen / (GROUND_ITEM_SIZE * vpScale);
+        world.queueLocalDrop(new Point(origin.x, origin.y), startScale);
     };
     gui.craftingMenu.leftclick = (recipeId) => {
         const local = world.objects.get(world.user ?? -1);

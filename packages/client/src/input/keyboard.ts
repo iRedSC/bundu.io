@@ -3,6 +3,7 @@ import {
     axesFromPressedKeys,
     type MoveAxes,
 } from "@bundu/shared";
+import type { ChatController } from "../ui/chat";
 
 export class KeyboardInputListener {
     keybinds: Keystrokes;
@@ -15,10 +16,31 @@ export class KeyboardInputListener {
         right: false,
     };
 
+    private chat?: ChatController;
+
     /** Blocks browser focus-steal on Tab while playing. */
     private readonly onTabKeyDown = (event: KeyboardEvent) => {
         if (event.key !== "Tab" || this.chatOpen) return;
         event.preventDefault();
+    };
+
+    /** Open command compose with a leading `/`. */
+    private readonly onSlashKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) {
+            return;
+        }
+        if (this.chatOpen || !this.chat) return;
+        const active = document.activeElement;
+        if (
+            active instanceof HTMLInputElement ||
+            active instanceof HTMLTextAreaElement ||
+            (active instanceof HTMLElement && active.isContentEditable)
+        ) {
+            return;
+        }
+        event.preventDefault();
+        this.chatOpen = true;
+        this.chat.openCompose("/");
     };
 
     onMoveInput: (direction: MoveAxes) => void = () => {};
@@ -43,6 +65,7 @@ export class KeyboardInputListener {
 
         this.chatOpen = false;
         document.addEventListener("keydown", this.onTabKeyDown);
+        document.addEventListener("keydown", this.onSlashKeyDown);
 
         const emitMove = () => {
             this.onMoveInput(axesFromPressedKeys(this.pressed));
@@ -100,25 +123,19 @@ export class KeyboardInputListener {
                     return;
                 }
 
-                this.chatOpen = !this.chatOpen;
-                if (this.chatOpen === true) {
-                    document
-                        .querySelector(".chat-container")
-                        ?.classList.remove("hidden");
-                    document
-                        .querySelector<HTMLInputElement>("#chat-input")
-                        ?.focus();
+                if (!this.chat) return;
+
+                if (this.chatOpen) {
+                    // Tab cycles highlight; Enter accepts, or sends if already complete.
+                    if (this.chat.acceptSuggestion()) return;
+                    this.chatOpen = false;
+                    const message = this.chat.takeMessage();
+                    if (message) this.onSendChat(message);
                     return;
                 }
-                const chat =
-                    document.querySelector<HTMLInputElement>("#chat-input");
-                if (chat) {
-                    this.onSendChat(chat.value);
-                    chat.value = "";
-                }
-                document
-                    .querySelector(".chat-container")
-                    ?.classList.add("hidden");
+
+                this.chatOpen = true;
+                this.chat.openCompose();
             },
         });
         this.keybinds.bindKey("placement_rotate", {
@@ -136,18 +153,21 @@ export class KeyboardInputListener {
         });
     }
 
+    bindChat(chat: ChatController): void {
+        this.chat = chat;
+        chat.onComposeClosed = () => {
+            this.chatOpen = false;
+        };
+    }
+
     closeChat() {
         this.chatOpen = false;
-        const chat = document.querySelector<HTMLInputElement>("#chat-input");
-        if (chat) {
-            chat.value = "";
-            chat.blur();
-        }
-        document.querySelector(".chat-container")?.classList.add("hidden");
+        this.chat?.closeCompose();
     }
 
     destroy(): void {
         document.removeEventListener("keydown", this.onTabKeyDown);
+        document.removeEventListener("keydown", this.onSlashKeyDown);
         this.onShowWorldHover(false);
         this.keybinds.unbindEnvironment();
     }

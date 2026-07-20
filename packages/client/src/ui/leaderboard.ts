@@ -1,3 +1,4 @@
+import { UI_FONT } from "@client/assets/text";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Container, Graphics, Text } from "pixi.js";
 
@@ -12,7 +13,7 @@ type LeaderboardRow = {
 
 const titleStyle = {
     fill: 0xf6e5aa,
-    fontFamily: "Arial",
+    fontFamily: UI_FONT,
     fontSize: 16,
     fontWeight: "bold",
     letterSpacing: 1,
@@ -61,10 +62,10 @@ export class Leaderboard {
             if (!row) {
                 row = {
                     name: new Text({
-                        style: { fill: 0xeaf4f5, fontFamily: "Arial", fontSize: 15 },
+                        style: { fill: 0xeaf4f5, fontFamily: UI_FONT, fontSize: 15 },
                     }),
                     score: new Text({
-                        style: { fill: 0xf6e5aa, fontFamily: "Arial", fontSize: 15, fontWeight: "bold" },
+                        style: { fill: 0xf6e5aa, fontFamily: UI_FONT, fontSize: 15, fontWeight: "bold" },
                     }),
                 };
                 row.score.anchor.set(1, 0);

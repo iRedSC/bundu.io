@@ -52,3 +52,9 @@ export function clientDecoration(decorationTypeId: number) {
 export function clientModelId(location: string): string {
     return location.startsWith("bundu:") ? location.slice("bundu:".length) : location;
 }
+
+/** Item visual id (`item/wood_wall`). Bare ids collide with structure models. */
+export function clientItemModelId(location: string): string {
+    const id = clientModelId(location);
+    return id.startsWith("item/") ? id : `item/${id}`;
+}

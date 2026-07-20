@@ -34,6 +34,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 
 public/site
+public/site.tmp
+public/site.old
 
 # freecam-saved world map (local); default-map.yml is tracked
 maps/*

@@ -17,6 +17,7 @@ export * from "./attack_box";
 export * from "./range";
 export * from "./session";
 export * from "./registry";
+export * from "./command";
 export { ReversableMap } from "./reverseable_map";
 export {
     Serializer,
