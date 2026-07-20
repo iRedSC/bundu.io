@@ -247,10 +247,10 @@ export class ChatController {
 
     /**
      * Apply the highlighted insertable suggestion.
-     * Returns true when compose should stay open (suggestion applied).
-     * If already fully typed (or nothing to insert), returns false so Enter sends.
+     * Returns true when a suggestion was applied (compose stays open).
+     * Returns false when nothing is acceptible or the token is already complete.
      */
-    acceptSuggestion(): boolean {
+    private acceptSuggestion(): boolean {
         if (!this.suggestions.some((entry) => entry.insert)) return false;
         const current = this.suggestions[this.suggestIndex];
         if (!current?.insert) return false;
@@ -268,6 +268,12 @@ export class ChatController {
         if (event.key === "Escape") {
             event.preventDefault();
             this.closeCompose();
+            return;
+        }
+
+        // Space accepts when a suggestion can be applied; otherwise types a space.
+        if (event.key === " " || event.code === "Space") {
+            if (this.acceptSuggestion()) event.preventDefault();
             return;
         }
 
