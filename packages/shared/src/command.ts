@@ -3,7 +3,20 @@
  * Server attaches `run`; client hydrates the projection for UX only.
  */
 
-export type CommandArgTypeId = "enum" | "integer" | "float" | "word" | "item";
+import {
+    parseSelector,
+    suggestSelector,
+    type SelectorSuggestContext,
+} from "./entity_selector";
+import { resourceLocation } from "./registry";
+
+export type CommandArgTypeId =
+    | "enum"
+    | "integer"
+    | "float"
+    | "word"
+    | "item"
+    | "selector";
 
 export type CommandArgProjection = {
     name: string;
@@ -46,9 +59,9 @@ export type ParseFailure = {
 export type ParseResult = ParseSuccess | ParseFailure;
 
 export type SuggestContext = {
-    /** Item path suggestions (`copper_sword` or `bundu:copper_sword`). */
+    /** Item id suggestions (`bundu:copper_sword` — namespaced only). */
     itemIds?: readonly string[];
-};
+} & SelectorSuggestContext;
 
 /** One autocomplete row. Type-only rows have an empty `insert`. */
 export type CommandSuggestion = {
@@ -70,6 +83,8 @@ function argTypeToken(arg: CommandArgProjection): string {
             return `<${arg.name}>`;
         case "item":
             return "<item>";
+        case "selector":
+            return "<targets>";
         case "enum":
             return `<${arg.name}>`;
     }
@@ -217,9 +232,25 @@ function parseArgValue(
             return typeof result === "string" ? { error: result } : result;
         }
         case "word":
-        case "item":
             if (!raw) return { error: `Missing ${arg.name}` };
             return raw;
+        case "item": {
+            if (!raw) return { error: `Missing ${arg.name}` };
+            try {
+                // Commands always use canonical namespace:path (no bare defaults).
+                return resourceLocation(raw, undefined, arg.name);
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : `Invalid ${arg.name}`;
+                return { error: message };
+            }
+        }
+        case "selector": {
+            if (!raw) return { error: `Missing ${arg.name}` };
+            const parsed = parseSelector(raw);
+            if (!parsed.ok) return { error: parsed.message };
+            return raw;
+        }
     }
 }
 
@@ -253,6 +284,17 @@ function suggestionsForArg(
         case "float":
         case "word":
             return [{ insert: "", label: hint }];
+        case "selector": {
+            const suggestions = suggestSelector(partial, ctx);
+            if (suggestions.length === 0) {
+                return [{ insert: "", label: hint }];
+            }
+            return suggestions.map((entry) => ({
+                insert: entry.insert,
+                label: entry.label,
+                hint: entry.hint ?? hint,
+            }));
+        }
     }
 }
 
