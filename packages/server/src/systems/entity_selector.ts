@@ -18,29 +18,66 @@ import { subjectTypeIds } from "./entity_types.js";
 
 export type { ResolvedMatchClause };
 
+/**
+ * Match selector/filter clauses. Repeated positive `type`/`flag`/`name` keys
+ * OR together (Minecraft-style); negated keys and different keys AND.
+ */
 export function subjectMatchesClauses(
     subject: GameObject,
     clauses: readonly ResolvedMatchClause[]
 ): boolean {
-    for (const clause of clauses) {
-        if (clause.key === "type") {
-            const ids = subjectTypeIds(subject);
-            const hit = ids.some((id) =>
-                clause.ids.has(id as RegistryId<"entity_type">)
-            );
-            if (hit === clause.negate) return false;
-            continue;
+    const types = clauses.filter((c) => c.key === "type");
+    if (types.length > 0) {
+        const ids = subjectTypeIds(subject);
+        const positive = types.filter((c) => !c.negate);
+        const negative = types.filter((c) => c.negate);
+        if (
+            positive.length > 0 &&
+            !positive.some((c) =>
+                ids.some((id) => c.ids.has(id as RegistryId<"entity_type">))
+            )
+        ) {
+            return false;
         }
-        if (clause.key === "flag") {
-            const flags = Flags.get(subject);
-            const hit = !!flags?.has(clause.id);
-            if (hit === clause.negate) return false;
-            continue;
+        for (const c of negative) {
+            if (ids.some((id) => c.ids.has(id as RegistryId<"entity_type">))) {
+                return false;
+            }
         }
-        const name = PlayerData.get(subject)?.name;
-        const hit = name !== undefined && name === clause.value;
-        if (hit === clause.negate) return false;
     }
+
+    const flags = clauses.filter((c) => c.key === "flag");
+    if (flags.length > 0) {
+        const subjectFlags = Flags.get(subject);
+        const positive = flags.filter((c) => !c.negate);
+        const negative = flags.filter((c) => c.negate);
+        if (
+            positive.length > 0 &&
+            !positive.some((c) => !!subjectFlags?.has(c.id))
+        ) {
+            return false;
+        }
+        for (const c of negative) {
+            if (subjectFlags?.has(c.id)) return false;
+        }
+    }
+
+    const names = clauses.filter((c) => c.key === "name");
+    if (names.length > 0) {
+        const name = PlayerData.get(subject)?.name;
+        const positive = names.filter((c) => !c.negate);
+        const negative = names.filter((c) => c.negate);
+        if (
+            positive.length > 0 &&
+            !positive.some((c) => name !== undefined && name === c.value)
+        ) {
+            return false;
+        }
+        for (const c of negative) {
+            if (name !== undefined && name === c.value) return false;
+        }
+    }
+
     return true;
 }
 

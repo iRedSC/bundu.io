@@ -88,15 +88,6 @@ function isClauseKey(value: string): value is ClauseKey {
     return (CLAUSE_KEYS as readonly string[]).includes(value);
 }
 
-/** True when `raw` looks like a command selector or player-name target. */
-export function looksLikeSelector(raw: string): boolean {
-    if (!raw) return false;
-    if (raw.startsWith("@")) return true;
-    // Player names: no spaces, not an item-like path used as first give arg.
-    // Callers that need optional selectors should check startsWith("@") only.
-    return false;
-}
-
 /** Split `a=b,c=d` on commas that are not inside quotes (quotes unsupported → plain split). */
 function splitClauses(body: string): string[] {
     if (!body) return [];

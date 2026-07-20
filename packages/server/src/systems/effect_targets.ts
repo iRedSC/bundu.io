@@ -12,7 +12,7 @@ export function subjectMatchesTarget(
 ): boolean {
     if (target.all) return true;
 
-    // Compound filters (`type=…,flag=…`) — all clauses must match.
+    // Compound filters (`type=…,flag=…`); same-key positives OR, else AND.
     if (target.clauses.length > 0) {
         return subjectMatchesClauses(subject, target.clauses);
     }

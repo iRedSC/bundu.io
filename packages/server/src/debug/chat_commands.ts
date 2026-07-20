@@ -132,15 +132,20 @@ const COMMANDS: ServerCommand[] = [
             const value = Number(args.value);
             const duration =
                 args.duration !== undefined ? Number(args.duration) : undefined;
+            const applied: GameObject[] = [];
             for (const target of targets) {
                 const attrs = Attributes.get(target);
                 if (!attrs) continue;
                 attrs.set(type, "command", operation, value, duration, helpers.now);
+                applied.push(target);
+            }
+            if (applied.length === 0) {
+                throw new Error("No target with attributes");
             }
             return (
                 `Set ${type} ${operation} ${value}` +
                 (duration !== undefined ? ` for ${duration}ms` : "") +
-                ` on ${summarizeTargets(targets)}`
+                ` on ${summarizeTargets(applied)}`
             );
         },
     },
@@ -156,15 +161,15 @@ const COMMANDS: ServerCommand[] = [
             const targets = targetsOf(player, args, helpers);
             const type = args.type as StatType;
             const value = Number(args.value);
-            let applied = 0;
+            const applied: GameObject[] = [];
             for (const target of targets) {
                 const stats = Stats.get(target);
                 if (!stats) continue;
                 stats.set(type, { value });
-                applied++;
+                applied.push(target);
             }
-            if (applied === 0) throw new Error("No target with stats");
-            return `Set ${type} to ${value} on ${summarizeTargets(targets)}`;
+            if (applied.length === 0) throw new Error("No target with stats");
+            return `Set ${type} to ${value} on ${summarizeTargets(applied)}`;
         },
     },
     {
@@ -185,17 +190,19 @@ const COMMANDS: ServerCommand[] = [
         args: [arg("targets", "selector", { optional: true })],
         run(player, args, helpers) {
             const targets = targetsOf(player, args, helpers, "@s");
-            let applied = 0;
+            const applied: GameObject[] = [];
             for (const target of targets) {
                 const attrs = Attributes.get(target);
                 if (!attrs) continue;
                 attrs
                     .set("attack.speed", "godmode", "add", 100)
                     .set("attack.reach", "godmode", "add", 500);
-                applied++;
+                applied.push(target);
             }
-            if (applied === 0) throw new Error("No target with attributes");
-            return `Godmode enabled on ${summarizeTargets(targets)}`;
+            if (applied.length === 0) {
+                throw new Error("No target with attributes");
+            }
+            return `Godmode enabled on ${summarizeTargets(applied)}`;
         },
     },
     {
@@ -214,17 +221,17 @@ const COMMANDS: ServerCommand[] = [
             if (numericId === undefined || !(count > 0)) {
                 throw new Error(`Unknown item: ${item}`);
             }
-            let given = 0;
+            const applied: GameObject[] = [];
             for (const target of targets) {
                 const inv = Inventory.get(target);
                 if (!inv) continue;
                 receiveItem(target, numericId, count);
-                given++;
+                applied.push(target);
             }
-            if (given === 0) {
+            if (applied.length === 0) {
                 throw new Error("No target with inventory");
             }
-            return `Gave ${count}× ${item} to ${summarizeTargets(targets)}`;
+            return `Gave ${count}× ${item} to ${summarizeTargets(applied)}`;
         },
     },
     {
@@ -239,7 +246,7 @@ const COMMANDS: ServerCommand[] = [
             const kitId = String(args.kit);
             const kit = kits[kitId];
             if (!kit) throw new Error(`Unknown kit: ${kitId}`);
-            let given = 0;
+            const applied: GameObject[] = [];
             for (const target of targets) {
                 const inv = Inventory.get(target);
                 if (!inv) continue;
@@ -249,10 +256,10 @@ const COMMANDS: ServerCommand[] = [
                         receiveItem(target, numericId, count);
                     }
                 }
-                given++;
+                applied.push(target);
             }
-            if (given === 0) throw new Error("No target with inventory");
-            return `Gave kit ${kitId} to ${summarizeTargets(targets)}`;
+            if (applied.length === 0) throw new Error("No target with inventory");
+            return `Gave kit ${kitId} to ${summarizeTargets(applied)}`;
         },
     },
     {

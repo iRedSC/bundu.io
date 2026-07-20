@@ -28,8 +28,6 @@ export class Leaderboard {
         style: { ...titleStyle, fill: 0x9fb6bd, fontSize: 11 },
     });
     private readonly rows: LeaderboardRow[] = [];
-    /** Raw player names from the last leaderboard packet (for command suggest). */
-    private names: string[] = [];
 
     constructor() {
         this.title.position.set(PADDING, 12);
@@ -43,23 +41,16 @@ export class Leaderboard {
         this.container.visible = !this.container.visible;
     }
 
-    /** Player names for selector autocomplete. */
-    playerNames(): readonly string[] {
-        return this.names;
-    }
-
     clear() {
         for (const row of this.rows) {
             row.name.destroy();
             row.score.destroy();
         }
         this.rows.length = 0;
-        this.names = [];
         this.drawBackground(1);
     }
 
     update({ entries }: ServerPacket.Leaderboard) {
-        this.names = entries.map((entry) => entry.name);
         while (this.rows.length > entries.length) {
             const row = this.rows.pop();
             row?.name.destroy();

@@ -59,7 +59,7 @@ export type ParseFailure = {
 export type ParseResult = ParseSuccess | ParseFailure;
 
 export type SuggestContext = {
-    /** Item path suggestions (`copper_sword` or `bundu:copper_sword`). */
+    /** Item id suggestions (`bundu:copper_sword` — namespaced only). */
     itemIds?: readonly string[];
 } & SelectorSuggestContext;
 
