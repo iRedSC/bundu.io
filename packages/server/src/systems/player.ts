@@ -88,7 +88,7 @@ export class PlayerSystem extends System<GameEventMap> {
     }
 
     override update(time: number, _delta: number, player: GameObject): void {
-        // Soft-disconnected players stay alive but ignore sim intent / channels.
+        // Soft-disconnect parks intent/combat only — vitals still tick without a socket.
         if (!this.world.context.socketManager.getSocket(player.id)) return;
         const data = PlayerData.get(player);
         // Waiting for ClientReady, or freecam: body parked — no combat/move ticks.

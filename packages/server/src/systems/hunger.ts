@@ -16,8 +16,7 @@ export class HungerSystem extends System<GameEventMap> {
     }
 
     override update(_time: number, delta: number, player: GameObject): void {
-        // Soft-park: disconnected players do not drain hunger.
-        if (!this.world.context.socketManager.getSocket(player.id)) return;
+        // Soft-disconnected bodies still drain — survival continues until reclaim or death.
         if (PlayerData.get(player)?.freecam) return;
 
         const data = player.get(PlayerData);
