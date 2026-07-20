@@ -41,5 +41,6 @@ export function createServerContext(): ServerContext {
         playerPacketManager,
         socketManager: new SocketManager(),
         dayCycle: new DayCycle(),
+        pendingSessionEnds: [],
     };
 }
