@@ -320,7 +320,7 @@ export namespace ClientPacket {
          * Continuous degrees for decorations.
          */
         rotation: number;
-        /** Variant wire id (`variant_map`); ignored for ground/decoration. */
+        /** Variant wire id (from pack-autogen variant map); ignored for ground/decoration. */
         variant: number;
         /** Ground rect size in tiles (normalized); ignored for non-ground (use 1). */
         w: number;

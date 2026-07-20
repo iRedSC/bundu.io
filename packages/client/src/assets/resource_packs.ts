@@ -1,6 +1,10 @@
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
 import type { CompiledModelDefs } from "@bundu/shared/models/compile";
 import type { CompiledModelsPayload, ModelDef } from "@bundu/shared/models/types";
+import {
+    buildVariantMap,
+    setVariantMap,
+} from "@bundu/shared/variant_map";
 import { applyClientGameplay } from "../models/shadow";
 import { applyStatBars } from "../ui/stat_bars_config";
 import { applyLang } from "../lang/lang";
@@ -130,8 +134,32 @@ function parseCompiledModels(value: unknown): CompiledModelDefs {
         string,
         ModelDef
     >;
-    const payload = { format: 2 as const, defs } satisfies CompiledModelsPayload;
+    const variantMapping =
+        raw.variants !== undefined
+            ? parseVariantMapping(raw.variants, "model definitions.variants")
+            : buildVariantMap(Object.values(defs));
+    setVariantMap(variantMapping);
+    const payload = {
+        format: 2 as const,
+        defs,
+        variants: variantMapping,
+    } satisfies CompiledModelsPayload;
     return new Map(Object.entries(payload.defs));
+}
+
+function parseVariantMapping(
+    value: unknown,
+    path: string
+): Record<string, number> {
+    const raw = record(value, path);
+    const result: Record<string, number> = {};
+    for (const [name, id] of Object.entries(raw)) {
+        if (typeof id !== "number" || !Number.isInteger(id) || id < 0) {
+            throw new Error(`${path}.${name}: expected a non-negative integer`);
+        }
+        result[name] = id;
+    }
+    return result;
 }
 
 async function sha256(data: ArrayBuffer): Promise<string> {

@@ -431,6 +431,7 @@ export class AdminEditorSystem extends System<GameEventMap> {
             x: packet.x,
             y: packet.y,
             rotation: rot,
+            variant: resolveVariantName(packet.variant),
             resultTo: player,
             placedBy: player,
         });

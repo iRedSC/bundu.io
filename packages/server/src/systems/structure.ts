@@ -228,6 +228,7 @@ export class StructureSystem extends System<GameEventMap> {
         x,
         y,
         rotation,
+        variant,
         resultTo,
         placedBy,
     }: GameEvent.PlaceStructure): boolean {
@@ -236,7 +237,8 @@ export class StructureSystem extends System<GameEventMap> {
             x,
             y,
             rotation,
-            placedBy?.id
+            placedBy?.id,
+            variant
         );
         if (resultTo) {
             this.world.context.playerPacketManager.set(
@@ -258,7 +260,8 @@ export class StructureSystem extends System<GameEventMap> {
         x: number,
         y: number,
         rotation: number,
-        ownerId?: number
+        ownerId?: number,
+        variant?: string
     ): boolean {
         if (!Number.isInteger(x) || !Number.isInteger(y)) return false;
 
@@ -298,7 +301,7 @@ export class StructureSystem extends System<GameEventMap> {
         this.world.addObject(
             new Structure(
                 tileEntityPhysics(origin, rot),
-                { id: structureId },
+                variant ? { id: structureId, variant } : { id: structureId },
                 tile
             )
         );

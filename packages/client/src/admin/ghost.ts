@@ -33,6 +33,7 @@ const GROUND_GHOST_STROKE = 0xffffff;
 export type AdminGhostCursor = {
     tool: EditorTool;
     selected: PaletteEntry | null;
+    variant: string | null;
     rotation: TileRot;
     decorationRotation: number;
     decorationScale: number;
@@ -137,7 +138,8 @@ export class AdminGhost {
                       cursor.rotation
                   )
                 : { x: tx, y: ty };
-        const identity = `${selected.kind}:${selected.id}:${selected.location}:${cursor.rotation}`;
+        const variant = cursor.variant ?? undefined;
+        const identity = `${selected.kind}:${selected.id}:${selected.location}:${cursor.rotation}:${variant ?? ""}`;
         if (!this.structure || this.identity !== identity) {
             this.clearStructure();
             this.structure = new Structure(
@@ -150,7 +152,8 @@ export class AdminGhost {
                 cursor.rotation * 90,
                 FOOTPRINT_CIRCLE_RADIUS,
                 AnimationManagers.World,
-                TILE_SIZE
+                TILE_SIZE,
+                variant
             );
             this.structure.setGhostAppearance(GHOST_ALPHA, GHOST_TINT);
             this.structure.container.eventMode = "none";

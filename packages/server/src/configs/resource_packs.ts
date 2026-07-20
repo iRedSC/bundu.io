@@ -25,6 +25,10 @@ import {
     rewritePackTextureRefs,
     toSanitizedTexturePath,
 } from "@bundu/shared/models/texture_paths";
+import {
+    buildVariantMap,
+    setVariantMap,
+} from "@bundu/shared/variant_map";
 import { BuildingConfigs } from "./loaders/buildings";
 import { flagRegistry } from "./flag_registry";
 import { GroundTypeConfigs } from "./loaders/ground_types";
@@ -364,9 +368,13 @@ export class ResourcePackService {
         validateGroundModelTextures(groundModels, availableAssets);
         assertPackAssetBudget([...servedAssets.values()]);
 
+        const variantMapping = buildVariantMap(compiledModels.values());
+        setVariantMap(variantMapping);
+
         const payload: CompiledModelsPayload = {
             format: 2,
             defs: Object.fromEntries(compiledModels),
+            variants: variantMapping,
         };
         const modelsJson = JSON.stringify(payload);
         const registries = gameRegistries();
