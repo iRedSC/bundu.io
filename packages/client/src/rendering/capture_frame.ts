@@ -1,21 +1,61 @@
 /**
- * Capture the current Pixi frame as a JPEG data URL.
+ * Capture death-screen layers: world (drifts) and UI (stays put).
  */
 
-import type { Application } from "pixi.js";
+import { Rectangle, type Application, type Container } from "pixi.js";
 
-/** JPEG quality for death-screen snapshots — good enough for a drifting backdrop. */
-const CAPTURE_QUALITY = 0.85;
+/** JPEG quality for the world backdrop. */
+const WORLD_QUALITY = 0.85;
+
+export type DeathCapture = {
+    world: string | null;
+    ui: string | null;
+};
+
+function screenFrame(app: Application): Rectangle {
+    return new Rectangle(0, 0, app.screen.width, app.screen.height);
+}
 
 /**
- * Force a render and return a JPEG data URL of the canvas (world + HUD).
+ * Snapshot world and UI separately so the death screen can zoom/spin the
+ * world without transforming the HUD.
  */
-export function captureFrame(app: Application): string | null {
+export function captureDeathLayers(
+    app: Application,
+    worldRoots: readonly Container[],
+    uiRoots: readonly Container[]
+): DeathCapture {
+    const worldPrev = worldRoots.map((c) => c.visible);
+    const uiPrev = uiRoots.map((c) => c.visible);
+    let world: string | null = null;
+    let ui: string | null = null;
+
     try {
+        for (const c of uiRoots) c.visible = false;
+        for (const c of worldRoots) c.visible = true;
         app.render();
-        return app.canvas.toDataURL("image/jpeg", CAPTURE_QUALITY);
+        world = app.canvas.toDataURL("image/jpeg", WORLD_QUALITY);
+
+        for (const c of worldRoots) c.visible = false;
+        for (const c of uiRoots) c.visible = true;
+        // Extract to a transparent RT — main canvas was init opaque.
+        const uiCanvas = app.renderer.extract.canvas({
+            target: app.stage,
+            frame: screenFrame(app),
+            resolution: app.renderer.resolution,
+            clearColor: [0, 0, 0, 0],
+        });
+        ui = uiCanvas.toDataURL?.("image/png") ?? null;
     } catch (error) {
-        console.warn("Failed to capture death frame", error);
-        return null;
+        console.warn("Failed to capture death layers", error);
+    } finally {
+        worldRoots.forEach((c, i) => {
+            c.visible = worldPrev[i] ?? c.visible;
+        });
+        uiRoots.forEach((c, i) => {
+            c.visible = uiPrev[i] ?? c.visible;
+        });
     }
+
+    return { world, ui };
 }

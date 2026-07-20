@@ -366,23 +366,43 @@ button:disabled {
     display: none;
 }
 
-.game-over-bg {
+/* Spins continuously; child img zooms. Oversized so edges never show. */
+.game-over-world {
     position: absolute;
-    /* Oversized so rotate/zoom never shows edges. */
-    inset: -12%;
-    width: 124%;
-    height: 124%;
+    inset: -22%;
+    width: 144%;
+    height: 144%;
+    transform-origin: center center;
+    animation: game-over-spin 96s linear infinite;
+}
+
+.game-over-bg {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     transform-origin: center center;
     filter: grayscale(0);
     animation:
         game-over-desaturate 2.8s ease-out forwards,
-        game-over-drift 36s linear forwards;
+        game-over-zoom 48s ease-in-out infinite alternate;
 }
 
 .game-over-bg:not([src]),
-.game-over-bg[src=""] {
+.game-over-bg[src=""],
+.game-over-hud:not([src]),
+.game-over-hud[src=""] {
     display: none;
+}
+
+/* Frozen HUD layer — same pixels as capture, no transform. */
+.game-over-hud {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    pointer-events: none;
+    animation: game-over-desaturate 2.8s ease-out forwards;
 }
 
 .game-over-shade {
@@ -450,12 +470,21 @@ button:disabled {
     }
 }
 
-@keyframes game-over-drift {
+@keyframes game-over-spin {
     from {
-        transform: scale(1) rotate(0deg);
+        transform: rotate(0deg);
     }
     to {
-        transform: scale(1.22) rotate(2.5deg);
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes game-over-zoom {
+    from {
+        transform: scale(1);
+    }
+    to {
+        transform: scale(1.2);
     }
 }
 
