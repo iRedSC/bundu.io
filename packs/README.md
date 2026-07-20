@@ -36,7 +36,7 @@ data/bundu/resources/pine_tree.yml        -> bundu:pine_tree
 data/bundu/buildings/wood_wall.yml        -> bundu:wood_wall
 data/bundu/items/wood_sword.yml           -> bundu:wood_sword
 data/bundu/ground_types/grass.yml         -> bundu:grass
-# ground_type fields: speed_multiplier, model (client ground-visual id)
+# ground_type fields: model (client ground-visual id), optional overheat,
 # plus optional whenOccupied effect contexts.
 # Visuals (color/kind/textures) live in assets/<ns>/ground_models/<model>.yml
 data/bundu/decorations/beach.yml          -> bundu:beach

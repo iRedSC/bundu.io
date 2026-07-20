@@ -4,6 +4,7 @@ import {
     type Container,
 } from "pixi.js";
 import type { NumberRange, ParticleBurst } from "./types";
+import { sizeEnvelope } from "./size_envelope";
 
 type ActiveParticle = {
     view: Particle;
@@ -20,6 +21,8 @@ type ActiveParticle = {
     age: number;
     lifetime: number;
     startScale: number;
+    peakScale: number | undefined;
+    peakAt: number;
     endScale: number;
     sizeEndAt: number;
     startAlpha: number;
@@ -40,12 +43,17 @@ export class ParticleSystem {
     burst(options: ParticleBurst): void {
         const container = this.getContainer(options);
         const spread = options.spread ?? 0;
+        const texSize = Math.max(
+            options.texture.width,
+            options.texture.height
+        );
 
         for (let i = 0; i < options.count; i++) {
-            const direction = options.direction + random([-spread / 2, spread / 2]);
+            const direction =
+                options.direction + random([-spread / 2, spread / 2]);
             const speed = random(options.speed);
             const size = random(options.size);
-            const scale = size / Math.max(options.texture.width, options.texture.height);
+            const scale = size / texSize;
             const startAlpha = options.alpha ?? 1;
             const view = new Particle({
                 texture: options.texture,
@@ -76,9 +84,12 @@ export class ParticleSystem {
                 age: 0,
                 lifetime: random(options.lifetime),
                 startScale: scale,
-                endScale:
-                    (options.endSize ?? 0) /
-                    Math.max(options.texture.width, options.texture.height),
+                peakScale:
+                    options.peakSize !== undefined
+                        ? random(options.peakSize) / texSize
+                        : undefined,
+                peakAt: Math.min(1, Math.max(0, options.peakAt ?? 0.35)),
+                endScale: (options.endSize ?? 0) / texSize,
                 sizeEndAt: options.sizeEndAt ?? 1,
                 startAlpha,
                 alphaHold: Math.min(1, Math.max(0, options.alphaHold ?? 0)),
@@ -123,13 +134,14 @@ export class ParticleSystem {
                 particle.spin = 0;
             }
 
-            const sizeProgress = Math.min(
-                progress / Math.max(particle.sizeEndAt, Number.EPSILON),
-                1
+            const scale = sizeEnvelope(
+                progress,
+                particle.startScale,
+                particle.endScale,
+                particle.peakScale,
+                particle.peakAt,
+                particle.sizeEndAt
             );
-            const scale =
-                particle.startScale +
-                (particle.endScale - particle.startScale) * sizeProgress;
             particle.view.scaleX = scale;
             particle.view.scaleY = scale;
             const hold = particle.alphaHold;

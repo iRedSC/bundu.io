@@ -3,6 +3,7 @@ import {
     AttributeList,
     type AttributeType,
 } from "../components/attributes";
+import type { EffectAttribute } from "./loaders/effect_context.js";
 
 type Point = { x: number; y: number };
 type StatConfig = { value: number; min: number; max: number };
@@ -23,22 +24,37 @@ export type GameplayConfig = {
         stuckTimeoutMs: number;
     };
     hunger: {
-        drainPeriodMs: number;
         movingMultiplier: number;
         attackingMultiplier: number;
+        starvationDamage: number;
+    };
+    /** Shared interval: apply rate attrs once every this many ms. */
+    vitals: {
+        tickPeriodMs: number;
     };
     temperature: {
-        tickPeriodMs: number;
+        freezeDamage: number;
+        overheatDamage: number;
+    };
+    thirst: {
+        dehydrationDamage: number;
+    };
+    air: {
+        drownDamage: number;
     };
     dayCycle: {
         periods: {
             name: "morning" | "day" | "evening" | "night";
             durationMs: number;
-            ambientWarmth: number;
+            attributes: Partial<Record<AttributeType, EffectAttribute>>;
         }[];
         totalDurationMs: number;
     };
-    health: { regenIntervalMs: number; rottingDamageMultiplier: number };
+    health: {
+        regenIntervalMs: number;
+        rottingDamageMultiplier: number;
+        naturalLimit: number;
+    };
     spikes: {
         attackIntervalMs: number;
         animalDamageMultiplier: number;
@@ -90,6 +106,16 @@ function number(source: Record<string, unknown>, key: string, path: string): num
     return value;
 }
 
+function optionalNumber(
+    source: Record<string, unknown>,
+    key: string,
+    path: string,
+    fallback: number
+): number {
+    if (!(key in source) || source[key] === undefined) return fallback;
+    return number(source, key, path);
+}
+
 function string(source: Record<string, unknown>, key: string, path: string): string {
     const value = source[key];
     if (typeof value !== "string" || !value) {
@@ -130,6 +156,38 @@ function attributes(
     return values;
 }
 
+const ATTR_OPS = new Set(["add", "multiply"]);
+
+function effectAttributes(
+    value: unknown,
+    path: string
+): Partial<Record<AttributeType, EffectAttribute>> {
+    if (value === undefined) return {};
+    const raw = record(value, path);
+    const result: Partial<Record<AttributeType, EffectAttribute>> = {};
+    for (const [key, entry] of Object.entries(raw)) {
+        if (!AttributeList.includes(key as AttributeType)) {
+            throw new Error(`${path}: unknown attribute "${key}"`);
+        }
+        if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+            throw new Error(`${path}.${key}: expected { op, value }`);
+        }
+        const op = (entry as { op?: unknown }).op;
+        const num = (entry as { value?: unknown }).value;
+        if (typeof op !== "string" || !ATTR_OPS.has(op)) {
+            throw new Error(`${path}.${key}.op: expected add|multiply`);
+        }
+        if (typeof num !== "number" || !Number.isFinite(num)) {
+            throw new Error(`${path}.${key}.value: expected number`);
+        }
+        result[key as AttributeType] = {
+            op: op as "add" | "multiply",
+            value: num,
+        };
+    }
+    return result;
+}
+
 const DAY_PERIOD_NAMES = ["morning", "day", "evening", "night"] as const;
 type DayPeriodName = (typeof DAY_PERIOD_NAMES)[number];
 
@@ -160,7 +218,10 @@ function parseDayCycle(
         return {
             name,
             durationMs,
-            ambientWarmth: number(period, "ambient_warmth", periodPath),
+            attributes: effectAttributes(
+                period.attributes,
+                `${periodPath}.attributes`
+            ),
         };
     });
     return {
@@ -174,6 +235,8 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
     const animal = record(root.animal_ai, "gameplay.animal_ai");
     const hunger = record(root.hunger, "gameplay.hunger");
     const temperature = record(root.temperature, "gameplay.temperature");
+    const thirst = record(root.thirst, "gameplay.thirst");
+    const air = record(root.air, "gameplay.air");
     const dayCycle = record(root.day_cycle, "gameplay.day_cycle");
     const health = record(root.health, "gameplay.health");
     const spikes = record(root.spikes, "gameplay.spikes");
@@ -206,21 +269,56 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
             stuckTimeoutMs: number(animal, "stuck_timeout_ms", "gameplay.animal_ai"),
         },
         hunger: {
-            drainPeriodMs: number(hunger, "drain_period_ms", "gameplay.hunger"),
             movingMultiplier: number(hunger, "moving_multiplier", "gameplay.hunger"),
-            attackingMultiplier: number(hunger, "attacking_multiplier", "gameplay.hunger"),
+            attackingMultiplier: number(
+                hunger,
+                "attacking_multiplier",
+                "gameplay.hunger"
+            ),
+            starvationDamage: number(hunger, "starvation_damage", "gameplay.hunger"),
         },
+        vitals: (() => {
+            const vitals = record(root.vitals, "gameplay.vitals");
+            return {
+                tickPeriodMs: number(
+                    vitals,
+                    "tick_period_ms",
+                    "gameplay.vitals"
+                ),
+            };
+        })(),
         temperature: {
-            tickPeriodMs: number(
+            freezeDamage: number(temperature, "freeze_damage", "gameplay.temperature"),
+            overheatDamage: number(
                 temperature,
-                "tick_period_ms",
+                "overheat_damage",
                 "gameplay.temperature"
             ),
+        },
+        thirst: {
+            dehydrationDamage: number(
+                thirst,
+                "dehydration_damage",
+                "gameplay.thirst"
+            ),
+        },
+        air: {
+            drownDamage: number(air, "drown_damage", "gameplay.air"),
         },
         dayCycle: parseDayCycle(dayCycle),
         health: {
             regenIntervalMs: number(health, "regen_interval_ms", "gameplay.health"),
-            rottingDamageMultiplier: number(health, "rotting_damage_multiplier", "gameplay.health"),
+            rottingDamageMultiplier: number(
+                health,
+                "rotting_damage_multiplier",
+                "gameplay.health"
+            ),
+            naturalLimit: optionalNumber(
+                health,
+                "natural_limit",
+                "gameplay.health",
+                100
+            ),
         },
         spikes: {
             attackIntervalMs: number(spikes, "attack_interval_ms", "gameplay.spikes"),
@@ -256,9 +354,10 @@ export function parseGameplayConfig(value: unknown): GameplayConfig {
             ),
             initialHealth: number(player, "initial_health", "gameplay.player"),
             initialStats: {
-                hunger: stat("hunger"),
-                temperature: stat("temperature"),
-                water: stat("water"),
+                hunger: { ...stat("hunger") },
+                temperature: { ...stat("temperature") },
+                thirst: { ...stat("thirst") },
+                air: { ...stat("air") },
             },
             attackMovementMultiplier: number(player, "attack_movement_multiplier", "gameplay.player"),
             attackMovementDurationMs: number(player, "attack_movement_duration_ms", "gameplay.player"),

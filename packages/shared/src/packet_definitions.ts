@@ -77,6 +77,8 @@ export namespace ServerPacket {
         health: number;
         hunger: number;
         heat: number;
+        thirst: number;
+        air: number;
     };
     export type UpdateInventory = {
         items: ([itemId: number, count: number] | null)[];
@@ -132,7 +134,13 @@ export namespace ServerPacket {
     };
     export type BlockEvent = { id: number; stop: boolean };
     /** `strength` 0–10 scales client hit FX (wiggle / knockback / particles). */
-    export type HitEvent = { id: number; angle: number; strength: number };
+    /** `flash` — {@link import("./hit_flash").HitFlash} tint for living entities. */
+    export type HitEvent = {
+        id: number;
+        angle: number;
+        strength: number;
+        flash: number;
+    };
     export type CraftEvent = {
         id: number;
         duration: number;
@@ -408,7 +416,9 @@ export const ServerSchema: {
     [ServerPacket.LoadObject]: {
         fields: ["id", "type", "x", "y", "rotation", "data"],
     },
-    [ServerPacket.UpdateVitals]: { fields: ["health", "hunger", "heat"] },
+    [ServerPacket.UpdateVitals]: {
+        fields: ["health", "hunger", "heat", "thirst", "air"],
+    },
     [ServerPacket.UpdateInventory]: { fields: ["items", "cursor"] },
     [ServerPacket.UpdateEquipment]: {
         fields: ["id", "mainhand", "offhand", "helmet", "backpack"],
@@ -427,7 +437,7 @@ export const ServerSchema: {
         fields: ["id", "start", "length", "width"],
     },
     [ServerPacket.BlockEvent]: { fields: ["id", "stop"] },
-    [ServerPacket.HitEvent]: { fields: ["id", "angle", "strength"] },
+    [ServerPacket.HitEvent]: { fields: ["id", "angle", "strength", "flash"] },
     [ServerPacket.CraftEvent]: {
         fields: ["id", "duration", "recipeId", "itemId"],
     },

@@ -81,6 +81,7 @@ export class SpikeSystem extends System<GameEventMap> {
                 id: target.id,
                 angle: 0,
                 strength: 0,
+                flash: 0,
             });
         }
 
@@ -128,6 +129,7 @@ export class SpikeSystem extends System<GameEventMap> {
             id: source.id,
             angle: 0,
             strength: 0,
+            flash: 0,
         });
     }
 }

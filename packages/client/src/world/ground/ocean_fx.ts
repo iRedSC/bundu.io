@@ -41,6 +41,7 @@ export let oceanFx: OceanFxConfig = {
         sizeMin: 50,
         sizeMax: 88,
         sizeEnd: 12,
+        peakAt: 0.35,
     },
     particles: {
         foamIntervalMs: [180, 400],

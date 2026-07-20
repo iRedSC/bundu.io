@@ -2,6 +2,7 @@ import type { ClientRegistryProjection } from "@bundu/shared/registry";
 import type { CompiledModelDefs } from "@bundu/shared/models/compile";
 import type { CompiledModelsPayload, ModelDef } from "@bundu/shared/models/types";
 import { applyClientGameplay } from "../models/shadow";
+import { applyStatBars } from "../ui/stat_bars_config";
 
 export type ResourceAssetSource = {
     path: string;
@@ -27,6 +28,7 @@ type Manifest = {
     models: { hash: string; url: string };
     registries: { hash: string; url: string };
     gameplay: { hash: string; url: string };
+    statBars: { hash: string; url: string };
     assets: ManifestAsset[];
 };
 
@@ -57,6 +59,7 @@ function parseManifest(value: unknown): Manifest {
     const models = record(raw.models, "pack manifest.models");
     const registries = record(raw.registries, "pack manifest.registries");
     const gameplay = record(raw.gameplay, "pack manifest.gameplay");
+    const statBars = record(raw.statBars ?? raw.stat_bars, "pack manifest.statBars");
     if (!Array.isArray(raw.assets)) {
         throw new Error("pack manifest.assets: expected an array");
     }
@@ -89,6 +92,10 @@ function parseManifest(value: unknown): Manifest {
         gameplay: {
             hash: string(gameplay.hash, "pack manifest.gameplay.hash"),
             url: string(gameplay.url, "pack manifest.gameplay.url"),
+        },
+        statBars: {
+            hash: string(statBars.hash, "pack manifest.statBars.hash"),
+            url: string(statBars.url, "pack manifest.statBars.url"),
         },
         assets,
     };
@@ -199,6 +206,7 @@ async function materializePack(
     resolveModels: URL,
     resolveRegistries: URL,
     resolveGameplay: URL,
+    resolveStatBars: URL,
     resolveAsset: (path: string) => URL,
     /** Game-server assets are content-addressed with ?hash=; bundled files are not. */
     contentAddressed: boolean
@@ -206,16 +214,20 @@ async function materializePack(
     const modelsUrl = new URL(resolveModels);
     const registryUrl = new URL(resolveRegistries);
     const gameplayUrl = new URL(resolveGameplay);
+    const statBarsUrl = new URL(resolveStatBars);
     if (contentAddressed) {
         modelsUrl.searchParams.set("hash", manifest.models.hash);
         registryUrl.searchParams.set("hash", manifest.registries.hash);
         gameplayUrl.searchParams.set("hash", manifest.gameplay.hash);
+        statBarsUrl.searchParams.set("hash", manifest.statBars.hash);
     }
-    const [modelsData, registryData, gameplayData] = await Promise.all([
-        verified(modelsUrl, manifest.models.hash),
-        verified(registryUrl, manifest.registries.hash),
-        verified(gameplayUrl, manifest.gameplay.hash),
-    ]);
+    const [modelsData, registryData, gameplayData, statBarsData] =
+        await Promise.all([
+            verified(modelsUrl, manifest.models.hash),
+            verified(registryUrl, manifest.registries.hash),
+            verified(gameplayUrl, manifest.gameplay.hash),
+            verified(statBarsUrl, manifest.statBars.hash),
+        ]);
     const modelDefs = parseCompiledModels(
         JSON.parse(new TextDecoder().decode(modelsData))
     );
@@ -224,6 +236,7 @@ async function materializePack(
         "registry projection"
     ) as ClientRegistryProjection;
     applyClientGameplay(JSON.parse(new TextDecoder().decode(gameplayData)));
+    applyStatBars(JSON.parse(new TextDecoder().decode(statBarsData)));
 
     revokeObjectUrls();
     const assets = await Promise.all(
@@ -275,6 +288,7 @@ export async function loadResourcePacks(
                 bundledUrl(bundled.models.url),
                 bundledUrl(bundled.registries.url),
                 bundledUrl(bundled.gameplay.url),
+                bundledUrl(bundled.statBars.url),
                 bundledAssetUrl,
                 false
             );
@@ -291,6 +305,7 @@ export async function loadResourcePacks(
         packUrl(base, manifest.models.url),
         packUrl(base, manifest.registries.url),
         packUrl(base, manifest.gameplay.url),
+        packUrl(base, manifest.statBars.url),
         (path) => assetUrl(base, path),
         true
     );

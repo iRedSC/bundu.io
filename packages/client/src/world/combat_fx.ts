@@ -4,6 +4,7 @@ import {
     moveInDirection,
     radians,
 } from "@bundu/shared";
+import { hitFlashColor } from "@bundu/shared/hit_flash";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { debugAttackHitbox } from "../debug/attack_hitbox";
@@ -13,6 +14,7 @@ import type ObjectContainer from "./object_container";
 import type { ParticleSystem } from "../rendering/particles/particle_system";
 import { structureHit } from "../models/particles/structure_hit";
 import { hitFxFromStrength } from "../models/animations/hit";
+import { setHurtFlash } from "../models/animations/hurt";
 import { Structure } from "./objects/structure";
 
 /** Combat visual FX packet handlers — attack, block, hurt. */
@@ -52,11 +54,12 @@ export class CombatFx {
         object.setEating(duration);
     };
 
-    hurt = ({ id, angle, strength }: ServerPacket.HitEvent) => {
+    hurt = ({ id, angle, strength, flash }: ServerPacket.HitEvent) => {
         const object = this.objects.get(id);
         if (!object) return;
 
         if (!(object instanceof Structure)) {
+            setHurtFlash(hitFlashColor(flash ?? 0));
             object.trigger(ANIMATION.HURT, AnimationManagers.World, true);
             return;
         }

@@ -28,6 +28,8 @@ import { AnimalSystem } from "../systems/animal";
 import { HungerSystem } from "../systems/hunger";
 import { EffectContextSystem } from "../systems/effect_contexts";
 import { TemperatureSystem } from "../systems/temperature";
+import { ThirstSystem } from "../systems/thirst";
+import { AirSystem } from "../systems/air";
 import { AdminEditorSystem } from "../admin/editor";
 
 export type ServerWorld = {
@@ -63,6 +65,8 @@ export function createWorld(): ServerWorld {
         .addSystem(new HungerSystem(world))
         .addSystem(new EffectContextSystem(world))
         .addSystem(new TemperatureSystem(world))
+        .addSystem(new ThirstSystem(world))
+        .addSystem(new AirSystem(world))
         .addSystem(new AttackSystem(world))
         .addSystem(new SpikeSystem(world))
         .addSystem(new RottingSystem(world))

@@ -54,6 +54,11 @@ export type GroundVisual = {
     container: Container;
     /** Optional independently sorted layer (frontmost ocean refraction). */
     overlay?: Container;
+    /**
+     * Ocean displace + shore-mask FX container. Underwater overlays (air ring)
+     * parent here to share DisplacementFilter and the nearshore alpha mask.
+     */
+    fxLayer?: Container;
     update?(ctx: GroundUpdateContext): void;
     /**
      * Rebake textured inset fill (sand/forest) after shore distance rebuild.
@@ -79,7 +84,9 @@ export type GroundVisual = {
         worldY: number,
         now: number,
         direction: number,
-        speed: number
+        speed: number,
+        /** Multiplies particle count (1 = default). */
+        intensity?: number
     ): void;
 };
 

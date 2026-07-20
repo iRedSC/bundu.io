@@ -11,8 +11,17 @@ export type ParticleBurst = {
     spread?: number;
     speed: NumberRange;
     lifetime: NumberRange;
+    /** Birth size (world px). */
     size: NumberRange;
+    /**
+     * Optional mid-life peak size. When set, size grows start→peak then
+     * shrinks peak→endSize (see `peakAt` / `sizeEndAt`).
+     */
+    peakSize?: NumberRange;
+    /** Lifetime progress [0,1] when `peakSize` is reached. Default 0.35. */
+    peakAt?: number;
     endSize?: number;
+    /** Lifetime progress [0,1] when size reaches `endSize`. Default 1. */
     sizeEndAt?: number;
     /** Vertical acceleration (positive = down). */
     gravity?: number;

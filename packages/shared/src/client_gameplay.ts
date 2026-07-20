@@ -41,6 +41,11 @@ export type OceanFxConfig = {
         speedMax: number;
         sizeMin: number;
         sizeMax: number;
+        /** Optional mid-life peak; omit for linear size→sizeEnd. */
+        peakSizeMin?: number;
+        peakSizeMax?: number;
+        /** Lifetime progress [0,1] when peak is reached. */
+        peakAt: number;
         sizeEnd: number;
     };
     particles: {
@@ -283,6 +288,35 @@ function parseOcean(value: Record<string, unknown>): OceanFxConfig {
                     `${path}.splash: size_min must be <= size_max`
                 );
             }
+            const hasPeak =
+                splash.peak_size_min !== undefined ||
+                splash.peak_size_max !== undefined;
+            let peakSizeMin: number | undefined;
+            let peakSizeMax: number | undefined;
+            if (hasPeak) {
+                peakSizeMin = positive(
+                    splash,
+                    "peak_size_min",
+                    `${path}.splash`
+                );
+                peakSizeMax = positive(
+                    splash,
+                    "peak_size_max",
+                    `${path}.splash`
+                );
+                if (peakSizeMin > peakSizeMax) {
+                    throw new Error(
+                        `${path}.splash: peak_size_min must be <= peak_size_max`
+                    );
+                }
+            }
+            const peakAt =
+                splash.peak_at !== undefined
+                    ? number(splash, "peak_at", `${path}.splash`)
+                    : 0.35;
+            if (peakAt < 0 || peakAt > 1) {
+                throw new Error(`${path}.splash.peak_at: expected 0..1`);
+            }
             return {
                 max: positive(splash, "max", `${path}.splash`),
                 strength: positive(splash, "strength", `${path}.splash`),
@@ -292,6 +326,9 @@ function parseOcean(value: Record<string, unknown>): OceanFxConfig {
                 speedMax,
                 sizeMin,
                 sizeMax,
+                peakSizeMin,
+                peakSizeMax,
+                peakAt,
                 sizeEnd: positive(splash, "size_end", `${path}.splash`),
             };
         })(),

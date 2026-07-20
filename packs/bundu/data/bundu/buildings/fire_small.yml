@@ -8,6 +8,6 @@ whenNearby:
         attributes:
             temperature.warmth:
                 op: add
-                value: 15
+                value: 7
         flags:
             - near_fire
