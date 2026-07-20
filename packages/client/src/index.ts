@@ -419,6 +419,7 @@ async function main() {
             playButton.textContent = "Reconnecting…";
         },
         onBeforeDeath: async () => {
+            world.beginDeathCinematic();
             // Let in-flight client FX (e.g. sword swing) finish before snapshot.
             await sleep(75);
             deathFrame = captureFrameWithoutUi(app, deathCaptureHide);
