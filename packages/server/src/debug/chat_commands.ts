@@ -105,8 +105,9 @@ function targetsOf(
 }
 
 function summarizeTargets(targets: GameObject[]): string {
-    if (targets.length === 1) {
-        const name = PlayerData.get(targets[0]!)?.name;
+    const only = targets.length === 1 ? targets[0] : undefined;
+    if (only) {
+        const name = PlayerData.get(only)?.name;
         return name ? name : "1 target";
     }
     return `${targets.length} targets`;

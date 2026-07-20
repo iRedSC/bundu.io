@@ -73,9 +73,11 @@ function squaredDistance(a: GameObject, b: GameObject): number {
 function shuffleInPlace<T>(items: T[]): void {
     for (let i = items.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        const tmp = items[i]!;
-        items[i] = items[j]!;
-        items[j] = tmp;
+        const a = items[i];
+        const b = items[j];
+        if (a === undefined || b === undefined) continue;
+        items[i] = b;
+        items[j] = a;
     }
 }
 
