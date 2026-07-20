@@ -51,7 +51,7 @@ export function hurt(nodes: PartNode[]) {
             for (const filter of filters) filter.brightness(amount, false);
         } else {
             for (const [i, target] of targets.entries()) {
-                target.tint = colorLerp(tints[i]!, flash, a.t);
+                target.tint = colorLerp(tints[i] ?? 0xffffff, flash, a.t);
             }
         }
         if (a.keyframeEnded) a.next(400);

@@ -25,11 +25,14 @@ function gradientColors(
     ratio: number
 ): { base: number; overlay: number } {
     const t = clamp(ratio, 0, 1);
-    let lo = stops[0]!;
-    let hi = stops[stops.length - 1]!;
-    for (let i = 0; i < stops.length - 1; i++) {
-        const a = stops[i]!;
-        const b = stops[i + 1]!;
+    const first = stops[0];
+    if (!first) throw new Error("Stat bar gradient requires at least one stop");
+
+    let lo = first;
+    let hi = stops.at(-1) ?? first;
+    for (const [i, a] of stops.slice(0, -1).entries()) {
+        const b = stops[i + 1];
+        if (!b) continue;
         if (t >= a.at && t <= b.at) {
             lo = a;
             hi = b;

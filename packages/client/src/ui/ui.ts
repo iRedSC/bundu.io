@@ -61,8 +61,7 @@ export function createUI() {
     // Right-aligned: health nearest hotbar; extra bars grow leftward.
     const fromRight = [health, hunger, thirst, heat];
     const statContainer = new Container();
-    for (let i = 0; i < fromRight.length; i++) {
-        const bar = fromRight[i]!;
+    for (const [i, bar] of fromRight.entries()) {
         statContainer.addChild(bar.container);
         // i=0 at x=0 (rightmost); others step left.
         bar.container.position.set(-i * (BAR_W + BAR_GAP), 0);
