@@ -8,12 +8,15 @@ import {
     Spiked,
     TileEntity,
     Type,
+    VisualBounds,
 } from "../components/base.js";
 import { BuildingConfigs } from "../configs/loaders/buildings.js";
 import { GameObject } from "../engine";
 import { GameObjectData } from "@bundu/shared/object_types.js";
 import { deciPacketPos } from "./tile_entity.js";
 import { getVariantId } from "@bundu/shared/variant_map.js";
+import { gameRegistries } from "../configs/registries.js";
+import { rotatedModelBounds } from "../configs/model_bounds.js";
 
 let roofGroupLookup: ((entityId: number) => number | undefined) | undefined;
 
@@ -42,6 +45,12 @@ export class Structure extends GameObject {
             .add(new Type(type))
             .add(new TileEntity(tile))
             .add(new Health({ max: maxHealth, value: maxHealth, lastRegen: 0 }));
+        const location = gameRegistries().structure.location(type.id);
+        const bounds = rotatedModelBounds(
+            location.slice(location.indexOf(":") + 1),
+            tile.rot
+        );
+        if (bounds) this.add(new VisualBounds(bounds));
         if (config.class === "door") this.add(new Door());
     }
 

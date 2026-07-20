@@ -7,10 +7,12 @@ import {
     worldToTile,
     type TileRot,
 } from "@bundu/shared/tiles";
+import { structureOriginAtPoint } from "@bundu/shared/structure_placement";
 import { radians } from "@bundu/shared/transforms";
 import { AnimationManagers } from "../animation/animations";
 import {
     clientGroundType,
+    clientStructurePlacement,
 } from "../configs/registries";
 import { groundModel } from "../world/ground";
 import type { LayeredRenderer } from "../rendering/layered_renderer";
@@ -127,13 +129,24 @@ export class AdminGhost {
 
         this.clearGround();
         this.clearDecoration();
+        const origin =
+            selected.kind === AdminPlaceKind.Structure
+                ? structureOriginAtPoint(
+                      { x: tx, y: ty },
+                      clientStructurePlacement(selected.id).blocked,
+                      cursor.rotation
+                  )
+                : { x: tx, y: ty };
         const identity = `${selected.kind}:${selected.id}:${selected.location}:${cursor.rotation}`;
         if (!this.structure || this.identity !== identity) {
             this.clearStructure();
             this.structure = new Structure(
                 ADMIN_GHOST_ID,
                 selected.location,
-                new Point(tileCenterWorld(tx), tileCenterWorld(ty)),
+                new Point(
+                    tileCenterWorld(origin.x),
+                    tileCenterWorld(origin.y)
+                ),
                 cursor.rotation * 90,
                 FOOTPRINT_CIRCLE_RADIUS,
                 AnimationManagers.World,
@@ -145,7 +158,10 @@ export class AdminGhost {
             this.identity = identity;
         }
 
-        this.structure.position.set(tileCenterWorld(tx), tileCenterWorld(ty));
+        this.structure.position.set(
+            tileCenterWorld(origin.x),
+            tileCenterWorld(origin.y)
+        );
         this.structure.rotation = radians(cursor.rotation * 90);
         this.structure.syncWorldLayers();
     }

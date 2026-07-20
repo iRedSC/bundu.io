@@ -30,6 +30,7 @@ import { flagRegistry } from "./flag_registry";
 import { GroundTypeConfigs } from "./loaders/ground_types";
 import { DecorationConfigs } from "./loaders/decorations";
 import { gameRegistries, registryProjection } from "./registries";
+import { setModelBounds } from "./model_bounds";
 import {
     assertPackAssetBudget,
     sanitizePackTexture,
@@ -356,6 +357,7 @@ export class ResourcePackService {
         // Aggregate under one source key so per-id YAML maps compile as definitions
         // (same shape the client historically received as `{ stack }`).
         const compiledModels = compileModelDefs({ stack: models });
+        setModelBounds(compiledModels);
         const availableAssets = new Set(servedAssets.keys());
         validateCompiledTextures(compiledModels, availableAssets);
         const groundModels = parseGroundModelSet(groundModelDocs);

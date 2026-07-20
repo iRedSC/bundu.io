@@ -43,6 +43,19 @@ export const TileEntity = Component.register<TileEntity>(() => ({
     layer: "structure",
 }));
 
+export type VisualBounds = {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+};
+export const VisualBounds = Component.register<VisualBounds>(() => ({
+    minX: 0,
+    minY: 0,
+    maxX: 0,
+    maxY: 0,
+}));
+
 export type CalculateCollisions = Record<string, never>;
 export const CalculateCollisions = Component.register<CalculateCollisions>(
     () => ({})

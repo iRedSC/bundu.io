@@ -98,6 +98,21 @@ describe("structure placement geometry", () => {
       y: 20,
     });
   });
+
+  test("centers irregular footprints by bounds rather than cell density", () => {
+    const lShape = [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+      { x: 1, y: 2 },
+    ];
+
+    expect(footprintCenter(lShape, 0)).toEqual({ x: 0.5, y: 1 });
+    expect(structureOriginAtPoint({ x: 10, y: 20 }, lShape, 0)).toEqual({
+      x: 10,
+      y: 19,
+    });
+  });
 });
 
 describe("Range", () => {
