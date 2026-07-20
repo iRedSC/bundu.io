@@ -254,6 +254,15 @@ export class AdminEditorSystem extends System<GameEventMap> {
                     packet.h
                 );
                 if (!rect) return;
+                // 1x1 paint: don't stack a new patch on the same top land type.
+                if (
+                    rect.w === 1 &&
+                    rect.h === 1 &&
+                    topGroundAt(this.world, rect.x, rect.y)?.type ===
+                        packet.typeId
+                ) {
+                    return;
+                }
                 const created = this.placeGround(
                     packet.typeId,
                     rect.x,
