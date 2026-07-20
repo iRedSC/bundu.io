@@ -7,12 +7,14 @@ import {
     setupPacketReceiving,
 } from "./network/receiver";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
+import { WORLD_BOUNDS } from "@bundu/shared/tiles";
 import { percentOf } from "@bundu/shared/math";
 import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
 import { ChatController } from "./ui/chat";
 import { createTooltip, hideTooltip } from "./ui/tooltip";
+import { createFreecamControl } from "./ui/freecam_control";
 import { createAdminEditor } from "./admin/editor";
 import { initAssets } from "./assets/load";
 import {
@@ -455,11 +457,54 @@ async function main() {
     app.stage.addChild(editor.container);
     deathUiLayers.push(editor.container);
 
+    const clampWorld = (value: number) =>
+        Math.min(Math.max(value, 0), WORLD_BOUNDS);
+
+    const freecamControl = createFreecamControl({
+        onEnter: () => {
+            session.sendPacket(ClientPacket.ChatMessage, {
+                message: "/freecam",
+            });
+        },
+        onExit: () => {
+            session.sendPacket(ClientPacket.ChatMessage, {
+                message: "/freecam",
+            });
+        },
+        onExitAt: (screenX, screenY) => {
+            const worldPos = viewport.toLocal({ x: screenX, y: screenY });
+            const x = clampWorld(worldPos.x);
+            const y = clampWorld(worldPos.y);
+            const local = world.objects.get(world.user ?? -1);
+            if (local) {
+                // Keep follow on the drop point when FreecamMode arrives first.
+                local.positionStates.snap({ x, y });
+                local.container.position.set(x, y);
+            }
+            session.sendPacket(ClientPacket.ExitFreecamAt, { x, y });
+        },
+        isBlockedDrop: (screenX, screenY) =>
+            editor.containsPoint(screenX, screenY),
+    });
+    editor.setExternalUiHit((screenX, screenY) =>
+        freecamControl.containsPoint(screenX, screenY) ||
+        freecamControl.isDragging()
+    );
+    app.stage.addChild(freecamControl.container);
+
+    const refreshFreecamAvailability = () => {
+        freecamControl.setAvailable(chat.hasServerCommand("freecam"));
+        freecamControl.setInGame(session.isInGame());
+    };
+    chat.onRegistryChange = refreshFreecamAvailability;
+
     const setFreecamUi = (enabled: boolean) => {
         hideTooltip();
         world.setFreecamMode(enabled);
         gui.container.visible = !enabled;
         editor.setActive(enabled);
+        freecamControl.setFreecamActive(enabled);
+        refreshFreecamAvailability();
     };
 
     receiver.on(ServerPacket.FreecamMode, ({ enabled }) => {
@@ -583,6 +628,7 @@ async function main() {
         input.destroy();
         world.destroy();
         editor.destroy();
+        freecamControl.destroy();
         gui.destroy();
         tooltip.destroy();
         destroyViewport(viewport);
