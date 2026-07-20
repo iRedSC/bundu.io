@@ -60,6 +60,7 @@ import {
 import { CHEAT_PHRASE } from "../debug/flag.js";
 import { clearEditorHistory } from "../admin/history.js";
 import { clearAnimalsFrozenFor } from "../admin/state.js";
+import { canUseEditor } from "../admin/auth.js";
 import { PlaceMode } from "@bundu/shared/inventory";
 import { pointToTile, TILE_SIZE, WORLD_BOUNDS, worldToDeci } from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
@@ -896,6 +897,24 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!player) return;
         if (!PlayerData.get(player)?.clientReady) return;
         this.renderDistanceSystem?.setViewBounds(player, packet);
+    };
+
+    /** Exit freecam at a world point (drag-drop from the freecam player icon). */
+    exitFreecamAt = (
+        playerId: number,
+        { x, y }: ClientPacket.ExitFreecamAt
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player || !canUseEditor(player) || !this.renderDistanceSystem) {
+            return;
+        }
+        const physics = Physics.get(player);
+        if (!physics) return;
+        physics.position.x = Math.min(Math.max(x, 0), WORLD_BOUNDS);
+        physics.position.y = Math.min(Math.max(y, 0), WORLD_BOUNDS);
+        clearAnimalsFrozenFor(player.id);
+        clearEditorHistory(player.id);
+        this.renderDistanceSystem.exitFreecam(player);
     };
 
     private toggleFreecam(player: GameObject): void {

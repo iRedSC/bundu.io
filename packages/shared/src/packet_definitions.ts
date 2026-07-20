@@ -270,6 +270,8 @@ export const ClientPacket = {
     AdminWipeMap: 0x1b,
     /** Client finished local load (terrain, etc.) — server may spawn / loadView. */
     ClientReady: 0x1c,
+    /** Exit freecam and relocate the parked body to a world point. */
+    ExitFreecamAt: 0x1d,
 } as const;
 
 export namespace ClientPacket {
@@ -337,6 +339,8 @@ export namespace ClientPacket {
     export type AdminDownloadMap = Record<string, never>;
     export type AdminWipeMap = Record<string, never>;
     export type ClientReady = Record<string, never>;
+    /** World-space drop point for freecam exit-with-teleport. */
+    export type ExitFreecamAt = { x: number; y: number };
 }
 
 /** ID → payload map for server packets. */
@@ -400,6 +404,7 @@ export type ClientPacketMap = {
     [ClientPacket.AdminDownloadMap]: ClientPacket.AdminDownloadMap;
     [ClientPacket.AdminWipeMap]: ClientPacket.AdminWipeMap;
     [ClientPacket.ClientReady]: ClientPacket.ClientReady;
+    [ClientPacket.ExitFreecamAt]: ClientPacket.ExitFreecamAt;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -507,6 +512,7 @@ export const ClientSchema: {
     [ClientPacket.AdminDownloadMap]: { fields: [] },
     [ClientPacket.AdminWipeMap]: { fields: [] },
     [ClientPacket.ClientReady]: { fields: [] },
+    [ClientPacket.ExitFreecamAt]: { fields: ["x", "y"] },
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -706,4 +712,14 @@ export const ClientPacketGuards = {
         value: unknown
     ): value is ClientPacket.ClientReady =>
         isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.ExitFreecamAt]: (
+        value: unknown
+    ): value is ClientPacket.ExitFreecamAt =>
+        isRecord(value) &&
+        isFiniteNumber(value.x) &&
+        value.x >= 0 &&
+        value.x <= WORLD_BOUNDS &&
+        isFiniteNumber(value.y) &&
+        value.y >= 0 &&
+        value.y <= WORLD_BOUNDS,
 } satisfies PacketGuards<ClientPacketMap>;

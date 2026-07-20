@@ -24,6 +24,7 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.CraftItem, system.craftItem);
     receiver.on(ClientPacket.ViewBounds, system.viewBounds);
     receiver.on(ClientPacket.ClientReady, system.clientReady);
+    receiver.on(ClientPacket.ExitFreecamAt, system.exitFreecamAt);
     receiver.on(ClientPacket.AdminPlace, admin.adminPlace);
     receiver.on(ClientPacket.AdminDeleteAt, admin.adminDeleteAt);
     receiver.on(ClientPacket.AdminSetAnimalsFrozen, admin.adminSetAnimalsFrozen);
