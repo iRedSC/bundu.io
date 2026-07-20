@@ -147,6 +147,17 @@ type LoadGroundItem = Extract<
 type LoadAnimal = Extract<ServerPacket.LoadObject, { type: typeof GameObjectData.AnimalType }>;
 
 const PLACEMENT_GHOST_RENDER_ID = -11;
+
+/** Player death corpse resource (`bundu:player_dead`). */
+function isPlayerCorpseType(nodeType: LoadResource["data"][0]): boolean {
+    try {
+        return clientRegistries()
+            .resource.location(nodeType)
+            .endsWith(":player_dead");
+    } catch {
+        return false;
+    }
+}
 const GROUND_RENDER_ID = -10;
 const DECORATION_RENDER_ID = -9;
 const PLACEMENT_GHOST_TINT = 0xff5555;
@@ -222,6 +233,8 @@ export class World {
     private readonly decorations: DecorationSprite[] = [];
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
+    /** True after local death — keep avatar, skip corpse for the game-over capture. */
+    private deathCinematic = false;
     /** Local drop origins (world space) queued until DropItem arrives. */
     private pendingLocalDrops: { origin: Point; startScale: number }[] = [];
 
@@ -247,6 +260,10 @@ export class World {
     clear() {
         this.camera.setFreecam(false);
         this.camera.follow(null);
+        this.deathCinematic = false;
+
+        // Pull the air ring off ocean FX before objects / water are torn down.
+        this.detachLocalAirRingFromOcean();
 
         const ids = Array.from(this.objects.all(), (object) => object.id);
         for (const id of ids) this.removeClientObject(id);
@@ -254,7 +271,6 @@ export class World {
             this.disposeGroundVisual(patch.visual);
         }
         if (this.oceanVisuals.size > 0) {
-            this.detachLocalAirRingFromOcean();
             for (const visual of this.oceanVisuals.values()) {
                 this.disposeGroundVisual(visual);
             }
@@ -266,7 +282,9 @@ export class World {
         this.oceanTiles.fill(0);
         this.topGroundTypes.fill(0);
         this.shoreSamples = [];
-        this.nearshoreFill.clearModelMasks();
+        // Keep nearshore mask sources across sessions — destroying them while
+        // Pixi's pooled AlphaMask BindGroup still references them crashes on
+        // the next ocean render (respawn). syncModelMasks reuses entries.
         this.landSeamBaker.reset();
         this.groundSynced = false;
         this.wakeIdleAt.clear();
@@ -294,6 +312,7 @@ export class World {
 
     destroy(): void {
         this.clear();
+        this.nearshoreFill.clearModelMasks();
         this.particles.destroy();
         setActiveShadowLayer(undefined);
         this.shadows.destroy();
@@ -373,6 +392,14 @@ export class World {
 
     setShowAllHover(show: boolean) {
         this.showAllHover = show;
+    }
+
+    /**
+     * Session ended in death — ignore local delete / player corpse so the
+     * game-over snapshot still has the avatar (and combat FX).
+     */
+    beginDeathCinematic(): void {
+        this.deathCinematic = true;
     }
 
     private attachLocalPlayer(player: GameObject) {
@@ -600,6 +627,8 @@ export class World {
 
     newResource = (packet: LoadResource) => {
         const [nodeType, variantId, collisionRadius, scale] = packet.data;
+        // Dying client still receives the corpse packet — skip it for capture.
+        if (this.deathCinematic && isPlayerCorpseType(nodeType)) return;
         this.removeClientObject(packet.id);
 
         const structure = new Structure(
@@ -709,6 +738,11 @@ export class World {
 
     deleteObjects = ({ objects }: ServerPacket.DeleteObjects) => {
         for (const id of objects) {
+            // Self-delete means we died — keep the avatar for the death screen.
+            if (id === this.user) {
+                this.deathCinematic = true;
+                continue;
+            }
             this.removeClientObject(id);
         }
     };
@@ -718,6 +752,11 @@ export class World {
         this.clearLandFxState(id);
         const object = this.objects.get(id);
         if (object) {
+            // Death flush can delete the local avatar while we still follow it
+            // for the game-over delay — stop before the container is destroyed.
+            if (this.camera.target === object.container) {
+                this.camera.follow(null);
+            }
             this.objects.delete(object);
             object.dispose();
         }

@@ -6,7 +6,6 @@ import {
 } from "@bundu/shared/transforms";
 import { attackFacingRadians } from "@bundu/shared/attack_box";
 import { decodeMoveDirection } from "@bundu/shared/movement";
-import { SESSION_ENDED_CLOSE } from "@bundu/shared/session";
 import { type ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { HitFlash } from "@bundu/shared/hit_flash";
 import {
@@ -270,10 +269,13 @@ export class PlayerSystem extends System<GameEventMap> {
 
         this.spawnPlayerCorpse(position, rotation, scale, lootStacks);
 
-        const { socketManager } = this.world.context;
-        const socket = socketManager.getSocket(target.id);
-        socketManager.deleteClient(target.id);
-        socket?.close(SESSION_ENDED_CLOSE, "session ended");
+        // Defer hard-close until after this tick's packet flush so the dying
+        // client still receives final combat FX. Corpse / self-delete are not
+        // sent to them (see RenderDistanceSystem); client also ignores those.
+        const { socketManager, pendingSessionEnds } = this.world.context;
+        if (socketManager.getSocket(target.id)) {
+            pendingSessionEnds.push({ playerId: target.id });
+        }
     }
 
     private spawnPlayerCorpse(

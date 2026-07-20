@@ -1,4 +1,5 @@
 import { SERVER_TICK_MS } from "@bundu/shared";
+import { SESSION_ENDED_CLOSE } from "@bundu/shared/session";
 import type { World } from "../engine";
 import { PlayerData } from "../components/player";
 import { Leaderboard } from "../network/leaderboard";
@@ -9,8 +10,13 @@ type TickReceiver = {
 };
 
 export async function startTicker(world: World, receiver: TickReceiver) {
-    const { playerPacketManager, socketManager, worldPacketManager, dayCycle } =
-        world.context;
+    const {
+        playerPacketManager,
+        socketManager,
+        worldPacketManager,
+        dayCycle,
+        pendingSessionEnds,
+    } = world.context;
     const leaderboard = new Leaderboard();
 
     while (true) {
@@ -35,6 +41,16 @@ export async function startTicker(world: World, receiver: TickReceiver) {
         playerPacketManager.clear();
         worldPacketManager.clear();
         receiver.clear();
+
+        // Death closes after flush so the victim still gets this tick's packets.
+        if (pendingSessionEnds.length > 0) {
+            const ending = pendingSessionEnds.splice(0);
+            for (const { playerId } of ending) {
+                const socket = socketManager.getSocket(playerId);
+                socketManager.deleteClient(playerId);
+                socket?.close(SESSION_ENDED_CLOSE, "session ended");
+            }
+        }
 
         const elapsed = performance.now() - start;
         await Bun.sleep(Math.max(0, SERVER_TICK_MS - elapsed));

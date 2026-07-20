@@ -5,6 +5,11 @@ import type { Quadtree } from "./quadtree.js";
 import type { OccupancyGrid } from "./occupancy.js";
 import type { DayCycle } from "../network/day_cycle.js";
 
+/** Close after the tick flush so the dying client still gets final packets. */
+export type PendingSessionEnd = {
+    readonly playerId: number;
+};
+
 /** Per-world spatial index + net managers (not process-wide singletons). */
 export type ServerContext = {
     readonly quadtree: Quadtree;
@@ -13,4 +18,6 @@ export type ServerContext = {
     readonly playerPacketManager: PlayerPacketManager;
     readonly socketManager: SocketManager;
     readonly dayCycle: DayCycle;
+    /** Player ids to hard-close after this tick's outbound flush. */
+    readonly pendingSessionEnds: PendingSessionEnd[];
 };
