@@ -126,9 +126,54 @@ class StringReader {
     }
 }
 
-function filterPrefix(values: readonly string[], prefix: string): string[] {
-    const lower = prefix.toLowerCase();
-    return values.filter((value) => value.toLowerCase().startsWith(lower));
+/** True when every char of `query` appears in order in `value`. */
+function isSubsequence(value: string, query: string): boolean {
+    let qi = 0;
+    for (let i = 0; i < value.length && qi < query.length; i++) {
+        if (value[i] === query[qi]) qi++;
+    }
+    return qi === query.length;
+}
+
+/**
+ * Fuzzy rank for suggest filtering. Higher is better; undefined = no match.
+ * Prefers prefix, then substring (esp. after `_` / `:`), then subsequence.
+ */
+function fuzzyRank(value: string, query: string): number | undefined {
+    if (!query) return 0;
+    const v = value.toLowerCase();
+    const bare = v.includes(":") ? v.slice(v.indexOf(":") + 1) : v;
+    if (bare.startsWith(query) || v.startsWith(query)) {
+        return 3000 - bare.length;
+    }
+    const bareIdx = bare.indexOf(query);
+    const fullIdx = bareIdx >= 0 ? bareIdx : v.indexOf(query);
+    if (fullIdx >= 0) {
+        const at = bareIdx >= 0 ? bareIdx : fullIdx;
+        const hay = bareIdx >= 0 ? bare : v;
+        const boundary =
+            at === 0 || hay[at - 1] === "_" || hay[at - 1] === ":";
+        return (boundary ? 2000 : 1000) - at;
+    }
+    if (isSubsequence(bare, query) || isSubsequence(v, query)) {
+        return 100 - bare.length;
+    }
+    return undefined;
+}
+
+/** Fuzzy filter; empty query returns all values. Results ranked best-first. */
+function filterFuzzy(values: readonly string[], query: string): string[] {
+    const lower = query.toLowerCase();
+    if (!lower) return [...values];
+    const hits: { value: string; rank: number }[] = [];
+    for (const value of values) {
+        const rank = fuzzyRank(value, lower);
+        if (rank !== undefined) hits.push({ value, rank });
+    }
+    hits.sort(
+        (a, b) => b.rank - a.rank || a.value.localeCompare(b.value)
+    );
+    return hits.map((hit) => hit.value);
 }
 
 function parseNumberArg(
@@ -186,13 +231,13 @@ function suggestionsForArg(
     const hint = argTypeHint(arg);
     switch (arg.type) {
         case "enum":
-            return filterPrefix(arg.values ?? [], partial).map((value) => ({
+            return filterFuzzy(arg.values ?? [], partial).map((value) => ({
                 insert: value,
                 label: value,
                 hint,
             }));
         case "item": {
-            const items = filterPrefix(ctx.itemIds ?? [], partial)
+            const items = filterFuzzy(ctx.itemIds ?? [], partial)
                 .slice(0, 40)
                 .map((value) => ({
                     insert: value,
@@ -285,7 +330,7 @@ export function suggestCommand(
         (!before.slice(1).trimStart().includes(" ") && !before.endsWith(" "))
     ) {
         const partial = nameTok.value;
-        return filterPrefix(
+        return filterFuzzy(
             registry.commands.map((command) => command.name),
             partial
         ).flatMap((name) => {
