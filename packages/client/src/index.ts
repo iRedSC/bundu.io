@@ -418,7 +418,9 @@ async function main() {
             setMenuVisible(false);
             playButton.textContent = "Reconnecting…";
         },
-        onBeforeDeath: () => {
+        onBeforeDeath: async () => {
+            // Let in-flight client FX (e.g. sword swing) finish before snapshot.
+            await sleep(250);
             deathFrame = captureFrameWithoutUi(app, deathCaptureHide);
         },
         onHardDisconnected: ({ died }) => {

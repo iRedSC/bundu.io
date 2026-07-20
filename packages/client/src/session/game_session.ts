@@ -35,9 +35,9 @@ export type GameSessionHooks = {
     onSoftDisconnected: () => void;
     /**
      * Called before `resetLocalState` when a live session ends in death so the
-     * client can snapshot the world while it still exists.
+     * client can wait for local FX and snapshot the world while it still exists.
      */
-    onBeforeDeath?: () => void;
+    onBeforeDeath?: () => void | Promise<void>;
     /** Death, rejected reclaim, intentional leave — show menu, drop token. */
     onHardDisconnected: (info: HardDisconnectInfo) => void;
 };
@@ -161,13 +161,29 @@ export class GameSession {
 
             const hard = isHardSessionClose(ev.code);
             const died = this.hadSession && ev.code === SESSION_ENDED_CLOSE;
-            if (died) this.hooks.onBeforeDeath?.();
+
+            if (died) {
+                // Keep the world alive briefly so local FX (swings, etc.) finish,
+                // then snapshot and tear down. Generation cancels if Play reconnects.
+                const generation = this.generation;
+                void (async () => {
+                    await this.hooks.onBeforeDeath?.();
+                    if (this.destroyed || generation !== this.generation) return;
+                    this.hooks.resetLocalState();
+                    this.hadSession = false;
+                    this.hooks.onHardDisconnected({
+                        died: true,
+                        code: ev.code,
+                    });
+                })();
+                return;
+            }
 
             this.hooks.resetLocalState();
 
             if (hard || !this.hadSession) {
                 this.hadSession = false;
-                this.hooks.onHardDisconnected({ died, code: ev.code });
+                this.hooks.onHardDisconnected({ died: false, code: ev.code });
                 return;
             }
 
