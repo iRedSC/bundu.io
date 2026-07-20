@@ -19,7 +19,6 @@ import {
     BuildingConfigs,
     occupancyLayerForClass,
 } from "../configs/loaders/buildings.js";
-import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { gameRegistries } from "../configs/registries.js";
 import type { World } from "../engine";
 import { tryAddResource } from "../game_objects/add_resource.js";
@@ -245,11 +244,9 @@ export function loadBlankMap(world: World): void {
 function addBaseGround(world: World, typeRef: string): Ground {
     const registries = gameRegistries();
     const typeId = registries.ground_type.resolve(typeRef, "bundu");
-    const config = GroundTypeConfigs.get(typeId);
     const object = new Ground({
         collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
         type: typeId,
-        speedMultiplier: config.speed_multiplier,
         createPacket() {
             return [
                 this.type,
@@ -398,12 +395,10 @@ function addGroundOverlay(
 ): void {
     if (isBaseGround(w, h)) return;
     const typeId = gameRegistries().ground_type.resolve(typeRef, "bundu");
-    const config = GroundTypeConfigs.get(typeId);
     world.addObject(
         new Ground({
             collider: new Box(new Vector(x, y), w, h),
             type: typeId,
-            speedMultiplier: config.speed_multiplier,
             createPacket() {
                 return [
                     this.type,
