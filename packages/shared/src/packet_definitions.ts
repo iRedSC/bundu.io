@@ -270,6 +270,10 @@ export const ClientPacket = {
     AdminWipeMap: 0x1b,
     /** Client finished local load (terrain, etc.) — server may spawn / loadView. */
     ClientReady: 0x1c,
+    /** Freecam ghost cursor world position (throttled). */
+    FreecamCursor: 0x1d,
+    /** Freecam: show ghost to non-freecam players (default off). */
+    AdminSetGhostVisible: 0x1e,
 } as const;
 
 export namespace ClientPacket {
@@ -337,6 +341,9 @@ export namespace ClientPacket {
     export type AdminDownloadMap = Record<string, never>;
     export type AdminWipeMap = Record<string, never>;
     export type ClientReady = Record<string, never>;
+    /** World-space freecam pointer for the networked ghost cursor. */
+    export type FreecamCursor = { x: number; y: number };
+    export type AdminSetGhostVisible = { visible: boolean };
 }
 
 /** ID → payload map for server packets. */
@@ -400,6 +407,8 @@ export type ClientPacketMap = {
     [ClientPacket.AdminDownloadMap]: ClientPacket.AdminDownloadMap;
     [ClientPacket.AdminWipeMap]: ClientPacket.AdminWipeMap;
     [ClientPacket.ClientReady]: ClientPacket.ClientReady;
+    [ClientPacket.FreecamCursor]: ClientPacket.FreecamCursor;
+    [ClientPacket.AdminSetGhostVisible]: ClientPacket.AdminSetGhostVisible;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -507,6 +516,8 @@ export const ClientSchema: {
     [ClientPacket.AdminDownloadMap]: { fields: [] },
     [ClientPacket.AdminWipeMap]: { fields: [] },
     [ClientPacket.ClientReady]: { fields: [] },
+    [ClientPacket.FreecamCursor]: { fields: ["x", "y"] },
+    [ClientPacket.AdminSetGhostVisible]: { fields: ["visible"] },
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -706,4 +717,18 @@ export const ClientPacketGuards = {
         value: unknown
     ): value is ClientPacket.ClientReady =>
         isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.FreecamCursor]: (
+        value: unknown
+    ): value is ClientPacket.FreecamCursor =>
+        isRecord(value) &&
+        isFiniteNumber(value.x) &&
+        value.x >= 0 &&
+        value.x <= WORLD_BOUNDS &&
+        isFiniteNumber(value.y) &&
+        value.y >= 0 &&
+        value.y <= WORLD_BOUNDS,
+    [ClientPacket.AdminSetGhostVisible]: (
+        value: unknown
+    ): value is ClientPacket.AdminSetGhostVisible =>
+        isRecord(value) && isBoolean(value.visible),
 } satisfies PacketGuards<ClientPacketMap>;

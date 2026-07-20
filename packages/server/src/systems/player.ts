@@ -69,6 +69,7 @@ import { Circle, Vector } from "sat";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { syncFlags } from "../network/flags.js";
 import type { RenderDistanceSystem } from "./render_distance.js";
+import type { FreecamGhostSystem } from "./freecam_ghost.js";
 import { getAnonProxyId } from "./anon_occlusion.js";
 import { gameRegistries } from "../configs/registries.js";
 
@@ -77,6 +78,7 @@ import { gameRegistries } from "../configs/registries.js";
  */
 export class PlayerSystem extends System<GameEventMap> {
     private renderDistanceSystem?: RenderDistanceSystem;
+    private freecamGhostSystem?: FreecamGhostSystem;
 
     constructor(world: World) {
         super(world, [PlayerData, Physics]);
@@ -85,6 +87,10 @@ export class PlayerSystem extends System<GameEventMap> {
 
     setRenderDistanceSystem(system: RenderDistanceSystem): void {
         this.renderDistanceSystem = system;
+    }
+
+    setFreecamGhostSystem(system: FreecamGhostSystem): void {
+        this.freecamGhostSystem = system;
     }
 
     override update(time: number, _delta: number, player: GameObject): void {
@@ -161,6 +167,9 @@ export class PlayerSystem extends System<GameEventMap> {
         clearEphemeralPlayerIntent(data);
         clearAnimalsFrozenFor(player.id);
         clearEditorHistory(player.id);
+        if (data.freecam) {
+            this.freecamGhostSystem?.despawnFor(player.id);
+        }
     }
 
     /**
@@ -191,10 +200,14 @@ export class PlayerSystem extends System<GameEventMap> {
                 ServerPacket.FreecamMode,
                 { enabled: true }
             );
+            // Ghost was cleared on disconnect park — recreate for this session.
+            this.freecamGhostSystem?.spawnFor(player);
+            this.freecamGhostSystem?.reconcileViewer(player);
             return;
         }
 
         this.renderDistanceSystem?.loadView(player);
+        this.freecamGhostSystem?.reconcileViewer(player);
     };
 
     /**
@@ -264,6 +277,7 @@ export class PlayerSystem extends System<GameEventMap> {
         if (data) data.sessionId = undefined;
         clearAnimalsFrozenFor(target.id);
         clearEditorHistory(target.id);
+        this.freecamGhostSystem?.despawnFor(target.id);
         target.active = false;
         this.trigger(GameEvent.DeleteObject, { object: target });
 
@@ -878,6 +892,15 @@ export class PlayerSystem extends System<GameEventMap> {
             return;
         }
 
+        if (data?.freecam && this.freecamGhostSystem?.emitChat(player.id, message)) {
+            // Owner still gets a log line via their body id (no ghost on their client).
+            playerPacketManager.add(player.id, ServerPacket.ChatMessage, {
+                id: player.id,
+                message,
+            });
+            return;
+        }
+
         worldPacketManager.emit(ServerPacket.ChatMessage, {
             id: player.id,
             message,
@@ -898,12 +921,24 @@ export class PlayerSystem extends System<GameEventMap> {
         this.renderDistanceSystem?.setViewBounds(player, packet);
     };
 
+    freecamCursor = (
+        playerId: number,
+        { x, y }: ClientPacket.FreecamCursor
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const data = PlayerData.get(player);
+        if (!data?.freecam || !data.clientReady) return;
+        this.freecamGhostSystem?.setCursor(playerId, x, y);
+    };
+
     private toggleFreecam(player: GameObject): void {
         const data = PlayerData.get(player);
         if (!data || !this.renderDistanceSystem) return;
         if (data.freecam) {
             clearAnimalsFrozenFor(player.id);
             clearEditorHistory(player.id);
+            this.freecamGhostSystem?.despawnFor(player.id);
             this.renderDistanceSystem.exitFreecam(player);
             return;
         }
@@ -913,6 +948,8 @@ export class PlayerSystem extends System<GameEventMap> {
         if (attributes) clearEphemeralPlayerAttributeSources(attributes);
         clearEphemeralPlayerIntent(data);
         this.renderDistanceSystem.enterFreecam(player);
+        this.freecamGhostSystem?.spawnFor(player);
+        this.freecamGhostSystem?.reconcileViewer(player);
     }
 }
 

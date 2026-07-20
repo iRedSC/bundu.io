@@ -86,6 +86,13 @@ export function createAdminEditor(
             });
             refreshToolbar();
         },
+        onToggleGhostVisible: () => {
+            state.ghostVisible = !state.ghostVisible;
+            sendPacket(ClientPacket.AdminSetGhostVisible, {
+                visible: state.ghostVisible,
+            });
+            refreshToolbar();
+        },
         onKillAll: () => {
             sendPacket(ClientPacket.AdminKillAnimals, {});
         },
@@ -136,6 +143,7 @@ export function createAdminEditor(
                 input?.syncGhost();
             } else {
                 state.animalsFrozen = false;
+                state.ghostVisible = false;
                 input?.cancelStroke();
                 ghost.clear();
             }

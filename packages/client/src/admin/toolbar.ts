@@ -70,6 +70,7 @@ export function createToolbar(
         onToggleRandomRotation: () => void;
         onToggleGrid: () => void;
         onToggleFreeze: () => void;
+        onToggleGhostVisible: () => void;
         onKillAll: () => void;
         onSaveMap: () => void;
         onDownloadMap: () => void;
@@ -127,6 +128,12 @@ export function createToolbar(
             label: "Freeze",
             getActive: () => state.animalsFrozen,
             onClick: () => handlers.onToggleFreeze(),
+        },
+        {
+            id: "ghost-vis",
+            label: "Ghost",
+            getActive: () => state.ghostVisible,
+            onClick: () => handlers.onToggleGhostVisible(),
         },
         {
             id: "kill",

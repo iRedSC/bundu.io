@@ -23,10 +23,12 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.CursorSlot, system.cursorSlot);
     receiver.on(ClientPacket.CraftItem, system.craftItem);
     receiver.on(ClientPacket.ViewBounds, system.viewBounds);
+    receiver.on(ClientPacket.FreecamCursor, system.freecamCursor);
     receiver.on(ClientPacket.ClientReady, system.clientReady);
     receiver.on(ClientPacket.AdminPlace, admin.adminPlace);
     receiver.on(ClientPacket.AdminDeleteAt, admin.adminDeleteAt);
     receiver.on(ClientPacket.AdminSetAnimalsFrozen, admin.adminSetAnimalsFrozen);
+    receiver.on(ClientPacket.AdminSetGhostVisible, admin.adminSetGhostVisible);
     receiver.on(ClientPacket.AdminKillAnimals, admin.adminKillAnimals);
     receiver.on(ClientPacket.AdminStrokeBegin, admin.adminStrokeBegin);
     receiver.on(ClientPacket.AdminStrokeEnd, admin.adminStrokeEnd);

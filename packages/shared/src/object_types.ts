@@ -52,6 +52,17 @@ export namespace GameObjectData {
         scale: number
     ];
 
+    /**
+     * Freecam shared cursor — player silhouette at the editor pointer.
+     * Facing is derived by clients from movement (animal-style).
+     * `playerSkin` uses the same variant wire id as players (future cosmetics).
+     */
+    export const FreecamGhostType = 0x05;
+    export type FreecamGhostData = [
+        name: string,
+        playerSkin: nullish<number>,
+    ];
+
     /** Maps LoadObject.type → typed payload tuple. */
     export type ByType = {
         [PlayerType]: PlayerData;
@@ -59,5 +70,6 @@ export namespace GameObjectData {
         [StructureType]: StructureData;
         [GroundItemType]: GroundItemData;
         [AnimalType]: AnimalData;
+        [FreecamGhostType]: FreecamGhostData;
     };
 }

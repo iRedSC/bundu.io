@@ -83,6 +83,7 @@ export class AdminInput {
     private scaleDrag: { startY: number; startScale: number } | null = null;
     private lastTileKey = "";
     private lastWorldKey = "";
+    private lastCursorKey = "";
     private lastScreen = { x: 0, y: 0 };
 
     constructor(
@@ -138,6 +139,7 @@ export class AdminInput {
     syncGhost(): void {
         if (!this.facade.isActive()) {
             this.facade.ghost.clear();
+            this.lastCursorKey = "";
             return;
         }
         if (this.facade.isOverUi(this.lastScreen.x, this.lastScreen.y)) {
@@ -149,6 +151,7 @@ export class AdminInput {
             this.lastScreen.x,
             this.lastScreen.y
         );
+        this.sendFreecamCursor(world.x, world.y);
         const tx = clampTile(worldToTile(world.x));
         const ty = clampTile(worldToTile(world.y));
         this.facade.ghost.update({
@@ -174,6 +177,16 @@ export class AdminInput {
                       )
                     : null,
         });
+    }
+
+    /** Stream cursor world pos for the networked freecam ghost (throttled). */
+    private sendFreecamCursor(worldX: number, worldY: number): void {
+        const x = clampWorld(worldX);
+        const y = clampWorld(worldY);
+        const key = `${(x * 10) | 0},${(y * 10) | 0}`;
+        if (key === this.lastCursorKey) return;
+        this.lastCursorKey = key;
+        this.sendPacket(ClientPacket.FreecamCursor, { x, y });
     }
 
     private beginStroke(): void {
