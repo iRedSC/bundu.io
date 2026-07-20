@@ -99,8 +99,10 @@ export class Player extends GameObject implements AnimContext {
     /** 0 = hidden, 1 = fully shown. */
     private airFade = 0;
     private readonly airShakePhase = Math.random() * Math.PI * 2;
-    /** True while parented under ocean FX (DisplacementFilter offset). */
+    /** True while parented under water FX (DisplacementFilter offset). */
     private airRingUnderFx = false;
+    /** Matches waterDisplaceStrength for the FX stack the ring is under. */
+    private airRingDisplaceScale = 1;
 
     /** Client-side look prediction; snaps immediately (no lerp flicker). */
     predictLook(rotation: number): number {
@@ -198,7 +200,10 @@ export class Player extends GameObject implements AnimContext {
         );
         this.craftBar.position = this.position;
         const airR = this.collisionRadius * AIR_RING_RADIUS_SCALE;
-        const nudge = this.airRingUnderFx ? airR * AIR_RING_DISPLACE_NUDGE : 0;
+        // Counter-offset only while under water DisplacementFilter.
+        const nudge = this.airRingUnderFx
+            ? airR * AIR_RING_DISPLACE_NUDGE * this.airRingDisplaceScale
+            : 0;
         this.airRing.position.set(
             this.position.x - nudge,
             this.position.y - nudge
@@ -216,11 +221,12 @@ export class Player extends GameObject implements AnimContext {
     }
 
     /**
-     * Parent under ocean `fxLayer` (displace + shore mask) vs viewport sibling.
-     * Shore-mask fade only applies while under FX.
+     * Enable displace counter-nudge while parented under water FX.
+     * `displaceScale` matches that model's DisplacementFilter strength.
      */
-    setAirRingUnderFx(under: boolean): void {
+    setAirRingUnderFx(under: boolean, displaceScale = 1): void {
         this.airRingUnderFx = under;
+        this.airRingDisplaceScale = displaceScale;
     }
 
     /** `duration > 0` starts the overhead channel; `0` clears it. */

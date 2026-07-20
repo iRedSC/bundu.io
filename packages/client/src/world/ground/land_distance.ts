@@ -259,3 +259,118 @@ export class LandDistanceField {
         }
     }
 }
+
+/**
+ * Soften hard RGB edges where distinct water colors meet (ocean / warm / deep).
+ * `fadeTiles` is the blend distance into **each** side of a water↔water
+ * boundary (so 6 → up to 6 tiles of mix on both sides). Land / alpha untouched.
+ */
+export function softenWaterWaterEdges(
+    pixels: Uint8Array,
+    isWater: (tileIndex: number) => boolean,
+    fadeTiles: number
+): void {
+    if (fadeTiles <= 0) return;
+    const n = WORLD_TILES * WORLD_TILES;
+    const color = new Uint32Array(n);
+    const dist = new Float32Array(n);
+    const target = new Uint32Array(n);
+    const INF = 1e6;
+    dist.fill(INF);
+
+    for (let i = 0; i < n; i++) {
+        if (!isWater(i)) continue;
+        const o = i * 4;
+        color[i] =
+            ((pixels[o]! << 16) | (pixels[o + 1]! << 8) | pixels[o + 2]!) >>> 0;
+    }
+
+    const queue: number[] = [];
+    for (let ty = 0; ty < WORLD_TILES; ty++) {
+        for (let tx = 0; tx < WORLD_TILES; tx++) {
+            const i = ty * WORLD_TILES + tx;
+            if (!isWater(i)) continue;
+            const self = color[i]!;
+            let other: number | undefined;
+            for (let dy = -1; dy <= 1 && other === undefined; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = tx + dx;
+                    const ny = ty + dy;
+                    if (
+                        nx < 0 ||
+                        ny < 0 ||
+                        nx >= WORLD_TILES ||
+                        ny >= WORLD_TILES
+                    ) {
+                        continue;
+                    }
+                    const j = ny * WORLD_TILES + nx;
+                    if (!isWater(j)) continue;
+                    const c = color[j]!;
+                    if (c !== self) {
+                        other = c;
+                        break;
+                    }
+                }
+            }
+            if (other === undefined) continue;
+            dist[i] = 0;
+            target[i] = other;
+            queue.push(i);
+        }
+    }
+
+    let qi = 0;
+    while (qi < queue.length) {
+        const i = queue[qi++]!;
+        const d = dist[i]!;
+        if (d >= fadeTiles) continue;
+        const tx = i % WORLD_TILES;
+        const ty = (i / WORLD_TILES) | 0;
+        const tgt = target[i]!;
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const nx = tx + dx;
+                const ny = ty + dy;
+                if (
+                    nx < 0 ||
+                    ny < 0 ||
+                    nx >= WORLD_TILES ||
+                    ny >= WORLD_TILES
+                ) {
+                    continue;
+                }
+                const j = ny * WORLD_TILES + nx;
+                if (!isWater(j)) continue;
+                const step = dx !== 0 && dy !== 0 ? Math.SQRT2 : 1;
+                const next = d + step;
+                if (next >= dist[j]! || next > fadeTiles) continue;
+                dist[j] = next;
+                target[j] = tgt;
+                queue.push(j);
+            }
+        }
+    }
+
+    for (let i = 0; i < n; i++) {
+        if (!isWater(i)) continue;
+        const d = dist[i]!;
+        if (!(d < fadeTiles)) continue;
+        const o = i * 4;
+        const tgt = target[i]!;
+        const tr = (tgt >> 16) & 0xff;
+        const tg = (tgt >> 8) & 0xff;
+        const tb = tgt & 0xff;
+        const t = 1 - d / fadeTiles;
+        const s = t * t * (3 - 2 * t);
+        // Border (d≈0) mixes halfway; fadeTiles away stays authored.
+        const mix = s * 0.5;
+        pixels[o] = (pixels[o]! + (tr - pixels[o]!) * mix + 0.5) | 0;
+        pixels[o + 1] =
+            (pixels[o + 1]! + (tg - pixels[o + 1]!) * mix + 0.5) | 0;
+        pixels[o + 2] =
+            (pixels[o + 2]! + (tb - pixels[o + 2]!) * mix + 0.5) | 0;
+    }
+}

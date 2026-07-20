@@ -26,6 +26,9 @@ export type OceanCausticTint = {
 /** Default ocean→land color blend distance (tiles into water). */
 export const DEFAULT_OCEAN_FADE_TILES = 12;
 
+/** Soften hard edges where distinct water types meet (tiles into each side). */
+export const DEFAULT_WATER_WATER_FADE_TILES = 6;
+
 /** Debris / dust kicked up while moving — tinted from the land color. */
 export type GroundTrailDef = {
     /** World pixels between bursts. */

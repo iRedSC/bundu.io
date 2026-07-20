@@ -5,9 +5,15 @@ import {
     Texture,
     type TextureSource,
 } from "pixi.js";
-import { DEFAULT_OCEAN_FADE_TILES } from "@bundu/shared/ground_models";
+import {
+    DEFAULT_OCEAN_FADE_TILES,
+    DEFAULT_WATER_WATER_FADE_TILES,
+} from "@bundu/shared/ground_models";
 import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
-import type { LandDistanceField } from "./land_distance";
+import {
+    type LandDistanceField,
+    softenWaterWaterEdges,
+} from "./land_distance";
 
 /** Ocean→land color blend distance (tiles into ocean). Extra room vs SDF soften. */
 export const NEARSHORE_BLEND_TILES = DEFAULT_OCEAN_FADE_TILES;
@@ -33,6 +39,10 @@ export class NearshoreFill {
         WORLD_TILES * WORLD_TILES * 4
     );
     private readonly colorPixels = new Uint8Array(
+        WORLD_TILES * WORLD_TILES * 4
+    );
+    /** Authored water RGB before land→ocean shore bake (water↔water soften). */
+    private readonly waterColorScratch = new Uint8Array(
         WORLD_TILES * WORLD_TILES * 4
     );
     private readonly maskSource: BufferImageSource;
@@ -65,11 +75,46 @@ export class NearshoreFill {
     paint(
         field: LandDistanceField,
         oceanColorAt: (tileIndex: number) => number,
-        blendTilesAt: (tileIndex: number) => number
+        blendTilesAt: (tileIndex: number) => number,
+        /**
+         * Open-ocean tiles that participate in water↔water color soften.
+         * Exclude ponds so organic pond fills / pond FX stay untouched.
+         */
+        isOceanWaterAt: (tileIndex: number) => boolean
     ): void {
+        const scratch = this.waterColorScratch;
+        const n = WORLD_TILES * WORLD_TILES;
+        for (let i = 0; i < n; i++) {
+            const o = i * 4;
+            if (!isOceanWaterAt(i)) {
+                scratch[o] = 0;
+                scratch[o + 1] = 0;
+                scratch[o + 2] = 0;
+                scratch[o + 3] = 0;
+                continue;
+            }
+            const rgb = oceanColorAt(i);
+            scratch[o] = (rgb >> 16) & 0xff;
+            scratch[o + 1] = (rgb >> 8) & 0xff;
+            scratch[o + 2] = rgb & 0xff;
+            scratch[o + 3] = 255;
+        }
+        // Color-only soften between distinct ocean types — before land blend.
+        softenWaterWaterEdges(
+            scratch,
+            isOceanWaterAt,
+            DEFAULT_WATER_WATER_FADE_TILES
+        );
         field.writeShoreRgba(
             this.maskPixels,
-            oceanColorAt,
+            (i) => {
+                if (!isOceanWaterAt(i)) return oceanColorAt(i);
+                const o = i * 4;
+                const r = scratch[o] ?? 0;
+                const g = scratch[o + 1] ?? 0;
+                const b = scratch[o + 2] ?? 0;
+                return ((r << 16) | (g << 8) | b) >>> 0;
+            },
             blendTilesAt,
             NEARSHORE_OVERSHOOT_TILES
         );

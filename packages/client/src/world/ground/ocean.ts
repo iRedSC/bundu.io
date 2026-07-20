@@ -64,6 +64,14 @@ function mixRgb(a: number, b: number, t: number): number {
 }
 
 /**
+ * Multiplier on ocean DisplacementFilter scale (and air-ring counter-nudge).
+ * Pond refraction is stronger — keep createOceanGround in sync with this.
+ */
+export function waterDisplaceStrength(modelId: string): number {
+    return modelId === "pond" ? 1.75 : 1;
+}
+
+/**
  * Shared viewport-scoped ocean effects. Ground patches render their opaque
  * color separately so the fading effects mask cannot create a coastline halo.
  */
@@ -77,9 +85,10 @@ export function createOceanGround(
     root.cullable = false;
     const isPond = model.id === "pond";
     /** Pond displace: tighter pattern, faster scroll, stronger filter. */
+    const strength = waterDisplaceStrength(model.id);
     const pondDisplace = isPond
-        ? { strength: 1.75, scroll: 2.4, world: 0.4 }
-        : { strength: 1, scroll: 1, world: 1 };
+        ? { strength, scroll: 2.4, world: 0.4 }
+        : { strength, scroll: 1, world: 1 };
     const pondColor = parseHexColor(model.color);
 
     const causticsTex = tex(model.textures.caustics);

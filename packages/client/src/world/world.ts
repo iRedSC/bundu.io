@@ -30,10 +30,10 @@ import {
     LAND_SEAM_PER_TICK,
     LAND_SEAM_TICK_INTERVAL,
     NearshoreFill,
-    NEARSHORE_OVERSHOOT_TILES,
     oceanGroundModel,
     seamLodFromZoom,
     solidGroundModel,
+    waterDisplaceStrength,
     type GroundVisual,
     type SeamLod,
     type ShoreSample,
@@ -389,9 +389,9 @@ export class World {
     }
 
     /**
-     * Air ring lives inside ocean `fxLayer` so it shares DisplacementFilter
-     * and the nearshore alpha mask (fades out across the beach). Viewport
-     * siblings miss both.
+     * Air ring lives inside the water `fxLayer` underfoot so it shares that
+     * model's DisplacementFilter and shore mask. Off water: leave the parent
+     * alone (mask clips it) — don't jump to the viewport.
      */
     private syncLocalAirRingParent(): void {
         const local =
@@ -399,18 +399,55 @@ export class World {
         if (!(local instanceof Player)) return;
         const ring = local.airRing;
         ring.filters = null;
-        const fx = this.oceanVisualForAirRing(
+        const underfoot = this.oceanVisualAtWorld(
             local.position.x,
             local.position.y
-        )?.fxLayer;
+        );
+        const fx = underfoot?.fxLayer;
         if (fx) {
             if (ring.parent !== fx) fx.addChildAt(ring, 0);
             else if (fx.getChildIndex(ring) !== 0) fx.setChildIndex(ring, 0);
-            local.setAirRingUnderFx(true);
+            const modelId = this.waterModelIdAt(
+                local.position.x,
+                local.position.y
+            );
+            local.setAirRingUnderFx(
+                true,
+                waterDisplaceStrength(modelId ?? "ocean")
+            );
+            return;
+        }
+        // Still under a water FX from before — keep nudge scaled to that stack.
+        const parentScale = this.airRingParentDisplaceScale(ring);
+        if (parentScale > 0) {
+            local.setAirRingUnderFx(true, parentScale);
             return;
         }
         local.setAirRingUnderFx(false);
-        if (ring.parent !== this.viewport) this.viewport.addChild(ring);
+    }
+
+    /** Displace strength for the water FX currently parenting the air ring. */
+    private airRingParentDisplaceScale(ring: Container): number {
+        for (const [modelId, visual] of this.oceanVisuals) {
+            if (visual.fxLayer && ring.parent === visual.fxLayer) {
+                return waterDisplaceStrength(modelId);
+            }
+        }
+        return 0;
+    }
+
+    private waterModelIdAt(
+        worldX: number,
+        worldY: number
+    ): string | undefined {
+        const tx = (worldX / TILE_SIZE) | 0;
+        const ty = (worldY / TILE_SIZE) | 0;
+        if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
+            return undefined;
+        }
+        const type = this.topGroundTypes[ty * WORLD_TILES + tx]!;
+        if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
+        return clientGroundType(type).model;
     }
 
     /** Pull the ring off a water FX before that container is destroyed. */
@@ -439,65 +476,9 @@ export class World {
         worldX: number,
         worldY: number
     ): GroundVisual | undefined {
-        const tx = (worldX / TILE_SIZE) | 0;
-        const ty = (worldY / TILE_SIZE) | 0;
-        if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
-            return undefined;
-        }
-        const type = this.topGroundTypes[ty * WORLD_TILES + tx]!;
-        if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
-        return this.oceanVisuals.get(clientGroundType(type).model);
-    }
-
-    /**
-     * Water FX for the air ring: tile underfoot, or nearest water whose shore
-     * overshoot still covers this land pixel (so the mask can fade the ring).
-     */
-    private oceanVisualForAirRing(
-        worldX: number,
-        worldY: number
-    ): GroundVisual | undefined {
-        const under = this.oceanVisualAtWorld(worldX, worldY);
-        if (under) return under;
-
-        const tx = (worldX / TILE_SIZE) | 0;
-        const ty = (worldY / TILE_SIZE) | 0;
-        if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
-            return undefined;
-        }
-        const inland = this.landDistance.inlandAt(tx + 0.5, ty + 0.5);
-        if (inland <= 0 || inland > NEARSHORE_OVERSHOOT_TILES + 0.5) {
-            return undefined;
-        }
-
-        const radius = Math.ceil(NEARSHORE_OVERSHOOT_TILES) + 2;
-        let best: GroundVisual | undefined;
-        let bestDist = Infinity;
-        for (let dy = -radius; dy <= radius; dy++) {
-            for (let dx = -radius; dx <= radius; dx++) {
-                const nx = tx + dx;
-                const ny = ty + dy;
-                if (
-                    nx < 0 ||
-                    ny < 0 ||
-                    nx >= WORLD_TILES ||
-                    ny >= WORLD_TILES
-                ) {
-                    continue;
-                }
-                const type = this.topGroundTypes[ny * WORLD_TILES + nx]!;
-                if (type === 0 || !this.oceanTypeIds.has(type)) continue;
-                const dist = dx * dx + dy * dy;
-                if (dist >= bestDist) continue;
-                const visual = this.oceanVisuals.get(
-                    clientGroundType(type).model
-                );
-                if (!visual) continue;
-                bestDist = dist;
-                best = visual;
-            }
-        }
-        return best;
+        const modelId = this.waterModelIdAt(worldX, worldY);
+        if (!modelId) return undefined;
+        return this.oceanVisuals.get(modelId);
     }
 
     /**
@@ -1142,7 +1123,13 @@ export class World {
             (i) => colorByType.get(this.topGroundTypes[i]!) ?? this.oceanColor,
             (i) =>
                 fadeByType.get(this.topGroundTypes[i]!) ??
-                DEFAULT_OCEAN_FADE_TILES
+                DEFAULT_OCEAN_FADE_TILES,
+            // Ocean↔ocean color soften only — ponds keep organic fills / FX.
+            (i) => {
+                const type = this.topGroundTypes[i]!;
+                if (type === 0 || !this.oceanTypeIds.has(type)) return false;
+                return clientGroundType(type).model !== "pond";
+            }
         );
         const modelMasks = this.nearshoreFill.syncModelMasks(
             activeOceanModels,

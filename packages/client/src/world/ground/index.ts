@@ -33,6 +33,7 @@ export {
     solidGroundModel,
 } from "./models";
 export { applyOceanFx } from "./ocean_fx";
+export { waterDisplaceStrength } from "./ocean";
 export {
     NEARSHORE_BLEND_TILES,
     NEARSHORE_OVERSHOOT_TILES,
