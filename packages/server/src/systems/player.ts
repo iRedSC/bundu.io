@@ -270,7 +270,8 @@ export class PlayerSystem extends System<GameEventMap> {
         this.spawnPlayerCorpse(position, rotation, scale, lootStacks);
 
         // Defer hard-close until after this tick's packet flush so the dying
-        // client still receives final FX (attack/hit, corpse, vitals, etc.).
+        // client still receives final combat FX. Corpse / self-delete are not
+        // sent to them (see RenderDistanceSystem).
         const { socketManager, pendingSessionEnds } = this.world.context;
         if (socketManager.getSocket(target.id)) {
             pendingSessionEnds.push({ playerId: target.id });

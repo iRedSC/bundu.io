@@ -257,6 +257,8 @@ export class RenderDistanceSystem extends System<GameEventMap> {
             VisibleObjects,
         ]);
         for (const obj of objectsWithVisibleObjectsComponent) {
+            // Dying players stay in-world until next step — don't send them the corpse.
+            if (!obj.active) continue;
             const visibleObjects = obj.get(VisibleObjects);
             if (!visibleObjects) continue;
 
@@ -293,6 +295,8 @@ export class RenderDistanceSystem extends System<GameEventMap> {
         ]);
         for (const obj of objectsWithVisibleObjectsComponent) {
             if (!obj.get(VisibleObjects).visible.delete(object)) continue;
+            // Don't tell the deleted / dying viewer about their own removal.
+            if (obj === object || !obj.active) continue;
             deleteObjectsFromView(obj, [object], playerPacketManager);
         }
     }

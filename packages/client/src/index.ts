@@ -420,7 +420,7 @@ async function main() {
         },
         onBeforeDeath: async () => {
             // Let in-flight client FX (e.g. sword swing) finish before snapshot.
-            await sleep(250);
+            await sleep(75);
             deathFrame = captureFrameWithoutUi(app, deathCaptureHide);
         },
         onHardDisconnected: ({ died }) => {
