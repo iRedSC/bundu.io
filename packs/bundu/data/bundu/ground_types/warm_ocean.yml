@@ -1,0 +1,11 @@
+model: warm_ocean
+whenOccupied:
+  occupationType: center
+  "*":
+    flags:
+      - in_water
+    attributes:
+      movement.speed: { op: multiply, value: 0.85 }
+      attack.reach: { op: multiply, value: 0.85 }
+      air.oxygen: { op: add, value: -5 }
+      thirst.hydration: { op: add, value: 10 }
