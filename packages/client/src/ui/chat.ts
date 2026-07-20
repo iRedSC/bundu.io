@@ -90,6 +90,8 @@ export class ChatController {
     private draft = "";
     private suggestions: CommandSuggestion[] = [];
     private suggestIndex = 0;
+    /** True after Tab/arrows have filled a suggestion; list stays frozen until typing. */
+    private suggestBrowsing = false;
     private open = false;
     /** Dedupe anon-proxy double ChatMessage emits. */
     private lastPlayerLog: { key: string; at: number } | undefined;
@@ -178,6 +180,7 @@ export class ChatController {
         this.hud.log.classList.add("hidden");
         this.hud.suggest.replaceChildren();
         this.suggestions = [];
+        this.suggestBrowsing = false;
         this.refreshHighlight();
         if (wasOpen) this.onComposeClosed();
     }
@@ -195,6 +198,7 @@ export class ChatController {
         this.hud.log.classList.add("hidden");
         this.hud.suggest.replaceChildren();
         this.suggestions = [];
+        this.suggestBrowsing = false;
         this.refreshHighlight();
         return trimmed;
     }
@@ -245,35 +249,10 @@ export class ChatController {
         this.historyIndex = -1;
     }
 
-    /**
-     * Apply the highlighted insertable suggestion.
-     * Returns true when a suggestion was applied (compose stays open).
-     * Returns false when nothing is acceptible or the token is already complete.
-     */
-    private acceptSuggestion(): boolean {
-        if (!this.suggestions.some((entry) => entry.insert)) return false;
-        const current = this.suggestions[this.suggestIndex];
-        if (!current?.insert) return false;
-        const before = this.hud.input.value;
-        const beforeCursor =
-            this.hud.input.selectionStart ?? before.length;
-        this.applyCurrentSuggestion();
-        const after = this.hud.input.value;
-        const afterCursor = this.hud.input.selectionStart ?? after.length;
-        if (before === after && beforeCursor === afterCursor) return false;
-        return true;
-    }
-
     private onInputKeyDown(event: KeyboardEvent): void {
         if (event.key === "Escape") {
             event.preventDefault();
             this.closeCompose();
-            return;
-        }
-
-        // Space accepts when a suggestion can be applied; otherwise types a space.
-        if (event.key === " " || event.code === "Space") {
-            if (this.acceptSuggestion()) event.preventDefault();
             return;
         }
 
@@ -282,18 +261,18 @@ export class ChatController {
         if (event.key === "Tab") {
             event.preventDefault();
             if (!hasSuggest) return;
-            this.moveSuggest(event.shiftKey ? -1 : 1);
+            this.cycleSuggest(event.shiftKey ? -1 : 1);
             return;
         }
 
         if (hasSuggest && event.key === "ArrowDown") {
             event.preventDefault();
-            this.moveSuggest(1);
+            this.cycleSuggest(1);
             return;
         }
         if (hasSuggest && event.key === "ArrowUp") {
             event.preventDefault();
-            this.moveSuggest(-1);
+            this.cycleSuggest(-1);
             return;
         }
 
@@ -308,11 +287,20 @@ export class ChatController {
         }
     }
 
-    /** Move autocomplete highlight without filling the input. */
-    private moveSuggest(delta: number): void {
+    /**
+     * Cycle suggestions and fill the slot. First press fills the current highlight;
+     * further presses move then fill. Does not refilter — only typing does.
+     */
+    private cycleSuggest(delta: number): void {
         if (this.suggestions.length === 0) return;
         const count = this.suggestions.length;
-        this.suggestIndex = (this.suggestIndex + delta + count) % count;
+        if (this.suggestBrowsing) {
+            this.suggestIndex = (this.suggestIndex + delta + count) % count;
+        } else {
+            if (delta < 0) this.suggestIndex = count - 1;
+            this.suggestBrowsing = true;
+        }
+        this.applyCurrentSuggestion();
         this.renderSuggestList();
         this.scrollActiveSuggestIntoView();
     }
@@ -338,7 +326,7 @@ export class ChatController {
         this.refreshHighlight();
     }
 
-    private refreshSuggest(resetIndex = true): void {
+    private refreshSuggest(): void {
         const value = this.hud.input.value;
         const cursor = this.hud.input.selectionStart ?? value.length;
         this.suggestions = value.startsWith("/")
@@ -346,10 +334,8 @@ export class ChatController {
                   itemIds: itemSuggestionIds(),
               })
             : [];
-        if (resetIndex) this.suggestIndex = 0;
-        else if (this.suggestIndex >= this.suggestions.length) {
-            this.suggestIndex = Math.max(0, this.suggestions.length - 1);
-        }
+        this.suggestIndex = 0;
+        this.suggestBrowsing = false;
         this.renderSuggestList();
     }
 
@@ -376,7 +362,9 @@ export class ChatController {
             item.addEventListener("mousedown", (event) => {
                 event.preventDefault();
                 this.suggestIndex = index;
+                this.suggestBrowsing = true;
                 this.applyCurrentSuggestion();
+                this.renderSuggestList();
             });
             this.hud.suggest.appendChild(item);
         }
@@ -389,18 +377,15 @@ export class ChatController {
         }
     }
 
+    /** Fill the highlighted suggestion into the slot without refiltering. */
     private applyCurrentSuggestion(): void {
         const suggestion = this.suggestions[this.suggestIndex];
         if (!suggestion?.insert) return;
-        const cursor = this.hud.input.selectionStart ?? this.hud.input.value.length;
+        const cursor =
+            this.hud.input.selectionStart ?? this.hud.input.value.length;
         const next = applySuggestion(this.hud.input.value, cursor, suggestion);
         this.hud.input.value = next.value;
         this.hud.input.setSelectionRange(next.cursor, next.cursor);
-        const kept = suggestion.insert;
-        this.refreshSuggest(false);
-        const idx = this.suggestions.findIndex((entry) => entry.insert === kept);
-        this.suggestIndex = idx >= 0 ? idx : 0;
-        this.renderSuggestList();
         this.refreshHighlight();
     }
 
