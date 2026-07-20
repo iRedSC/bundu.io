@@ -248,13 +248,15 @@ export class World {
         this.camera.setFreecam(false);
         this.camera.follow(null);
 
+        // Pull the air ring off ocean FX before objects / water are torn down.
+        this.detachLocalAirRingFromOcean();
+
         const ids = Array.from(this.objects.all(), (object) => object.id);
         for (const id of ids) this.removeClientObject(id);
         for (const patch of this.groundPatches) {
             this.disposeGroundVisual(patch.visual);
         }
         if (this.oceanVisuals.size > 0) {
-            this.detachLocalAirRingFromOcean();
             for (const visual of this.oceanVisuals.values()) {
                 this.disposeGroundVisual(visual);
             }
@@ -266,7 +268,9 @@ export class World {
         this.oceanTiles.fill(0);
         this.topGroundTypes.fill(0);
         this.shoreSamples = [];
-        this.nearshoreFill.clearModelMasks();
+        // Keep nearshore mask sources across sessions — destroying them while
+        // Pixi's pooled AlphaMask BindGroup still references them crashes on
+        // the next ocean render (respawn). syncModelMasks reuses entries.
         this.landSeamBaker.reset();
         this.groundSynced = false;
         this.wakeIdleAt.clear();
@@ -294,6 +298,7 @@ export class World {
 
     destroy(): void {
         this.clear();
+        this.nearshoreFill.clearModelMasks();
         this.particles.destroy();
         setActiveShadowLayer(undefined);
         this.shadows.destroy();

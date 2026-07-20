@@ -577,6 +577,22 @@ export function createOceanGround(
                 }
             }
         },
+        destroy() {
+            // Unbind before destroy — pooled AlphaMaskPipe keeps the last
+            // MaskFilter BindGroup and crashes if the shore source dies first.
+            fx.mask = null;
+            fx.filters = null;
+            splashOverlay.filters = null;
+            maskBind.map?.destroy(false);
+            maskBind.map = undefined;
+            maskBind.source = undefined;
+            mapRt.destroy(true);
+            splashRt.destroy(true);
+            displaceFilter.destroy();
+            splashFilter.destroy();
+            root.destroy({ children: true });
+            splashOverlay.destroy({ children: true });
+        },
     };
 }
 
@@ -598,6 +614,12 @@ export function createOceanFill(
         container: fill,
         update(ctx) {
             bindNearshoreSprite(fill, bounds, ctx.shoreColor, bind);
+        },
+        destroy() {
+            bind.map?.destroy(false);
+            bind.map = undefined;
+            bind.source = undefined;
+            fill.destroy();
         },
     };
 }
