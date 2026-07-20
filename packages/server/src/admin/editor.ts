@@ -47,6 +47,7 @@ import {
 } from "./history.js";
 import { exportMapYaml, saveMapYaml, wipeMap } from "./map_io.js";
 import { setAnimalsFrozen } from "./state.js";
+import type { FreecamGhostSystem } from "../systems/freecam_ghost.js";
 
 function inWorldTiles(x: number, y: number): boolean {
     return x >= 0 && y >= 0 && x < WORLD_TILES && y < WORLD_TILES;
@@ -132,8 +133,14 @@ function topDecorationAt(
  * Kept out of PlayerSystem so admin code stays separable.
  */
 export class AdminEditorSystem extends System<GameEventMap> {
+    private freecamGhostSystem?: FreecamGhostSystem;
+
     constructor(world: World) {
         super(world, [], 0);
+    }
+
+    setFreecamGhostSystem(system: FreecamGhostSystem): void {
+        this.freecamGhostSystem = system;
     }
 
     private historyHost() {
@@ -375,6 +382,15 @@ export class AdminEditorSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player || !canUseEditor(player)) return;
         setAnimalsFrozen(playerId, frozen);
+    };
+
+    adminSetGhostVisible = (
+        playerId: number,
+        { visible }: ClientPacket.AdminSetGhostVisible
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player || !canUseEditor(player)) return;
+        this.freecamGhostSystem?.setVisibleToPlayers(playerId, visible);
     };
 
     adminKillAnimals = (playerId: number, _packet: ClientPacket.AdminKillAnimals) => {

@@ -135,6 +135,9 @@ export class ChatController {
         if (!visible) this.closeCompose();
     }
 
+    /** Fired after server/client command registries merge. */
+    onRegistryChange: () => void = () => {};
+
     setRegistry(registry: CommandRegistryProjection): void {
         this.serverRegistry = registry;
         this.rebuildRegistry();
@@ -144,6 +147,13 @@ export class ChatController {
     setClientRegistry(registry: CommandRegistryProjection): void {
         this.clientRegistry = registry;
         this.rebuildRegistry();
+    }
+
+    /** True when the server granted a named command (e.g. op-gated `/freecam`). */
+    hasServerCommand(name: string): boolean {
+        return this.serverRegistry.commands.some(
+            (command) => command.name === name
+        );
     }
 
     private rebuildRegistry(): void {
@@ -157,6 +167,7 @@ export class ChatController {
             this.refreshSuggest();
             this.refreshHighlight();
         }
+        this.onRegistryChange();
     }
 
     isOpen(): boolean {

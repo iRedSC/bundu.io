@@ -14,6 +14,11 @@ export type AdminEditor = {
     state: EditorState;
     setActive: (enabled: boolean) => void;
     isActive: () => boolean;
+    /** Extra screen-space UI that should block paint/delete (e.g. freecam icon). */
+    setExternalUiHit: (
+        hit: (screenX: number, screenY: number) => boolean
+    ) => void;
+    containsPoint: (screenX: number, screenY: number) => boolean;
     tick: (now?: number) => void;
     destroy: () => void;
 };
@@ -86,6 +91,13 @@ export function createAdminEditor(
             });
             refreshToolbar();
         },
+        onToggleGhostVisible: () => {
+            state.ghostVisible = !state.ghostVisible;
+            sendPacket(ClientPacket.AdminSetGhostVisible, {
+                visible: state.ghostVisible,
+            });
+            refreshToolbar();
+        },
         onKillAll: () => {
             sendPacket(ClientPacket.AdminKillAnimals, {});
         },
@@ -110,9 +122,13 @@ export function createAdminEditor(
     container.addChild(palette.container);
     container.addChild(toolbar.container);
 
+    let isExternalUi: (screenX: number, screenY: number) => boolean = () =>
+        false;
+
     const isOverUi = (screenX: number, screenY: number) =>
         (palette?.containsPoint(screenX, screenY) ?? false) ||
-        (toolbar?.containsPoint(screenX, screenY) ?? false);
+        (toolbar?.containsPoint(screenX, screenY) ?? false) ||
+        isExternalUi(screenX, screenY);
 
     input = new AdminInput(sendPacket, {
         isActive: () => active,
@@ -136,12 +152,24 @@ export function createAdminEditor(
                 input?.syncGhost();
             } else {
                 state.animalsFrozen = false;
+                state.ghostVisible = false;
                 input?.cancelStroke();
                 ghost.clear();
             }
             syncGrid();
         },
         isActive: () => active,
+        setExternalUiHit(hit) {
+            isExternalUi = hit;
+        },
+        containsPoint(screenX, screenY) {
+            if (!active) return false;
+            // Editor chrome only — external overlays (freecam icon) are separate.
+            return (
+                (palette?.containsPoint(screenX, screenY) ?? false) ||
+                (toolbar?.containsPoint(screenX, screenY) ?? false)
+            );
+        },
         tick(now?: number) {
             if (!active) return;
             palette?.tick(now);

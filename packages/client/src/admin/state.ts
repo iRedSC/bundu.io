@@ -30,6 +30,8 @@ export type EditorState = {
     randomVariant: boolean;
     randomRotation: boolean;
     animalsFrozen: boolean;
+    /** Show freecam ghost cursor to non-freecam players (default off). */
+    ghostVisible: boolean;
     showGrid: boolean;
     /** Tile rotation 0–3 (resources / structures). */
     rotation: TileRot;
@@ -52,6 +54,7 @@ export function createEditorState(): EditorState {
         randomVariant: false,
         randomRotation: false,
         animalsFrozen: false,
+        ghostVisible: false,
         showGrid: true,
         rotation: 0,
         decorationRotation: 0,

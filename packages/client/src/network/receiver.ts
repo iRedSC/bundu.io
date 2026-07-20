@@ -11,6 +11,7 @@ import type { ChatController } from "../ui/chat";
 import { AnimationManagers } from "../animation/animations";
 import { downloadMapYaml } from "../admin/map_export";
 import { Player } from "../world/objects/player";
+import { FreecamGhost } from "../world/objects/freecam_ghost";
 
 export const receiver = new ClientPacketReceiver(
     new Serializer<ServerPacketMap>(ServerSchema)
@@ -74,9 +75,13 @@ export function setupChatPacketReceiving(
 ) {
     receiver.on(ServerPacket.ChatMessage, (packet) => {
         world.chatMessage(packet);
-        const player = world.objects.get(packet.id);
+        const object = world.objects.get(packet.id);
         const name =
-            player instanceof Player ? player.name.text || "???" : "???";
+            object instanceof Player
+                ? object.name.text || "???"
+                : object instanceof FreecamGhost
+                  ? object.displayName || "???"
+                  : "???";
         chat.appendPlayerMessage(name, packet.message);
     });
     receiver.on(ServerPacket.CommandRegistry, ({ commands }) => {

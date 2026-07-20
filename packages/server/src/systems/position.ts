@@ -1,6 +1,7 @@
 import { WORLD_BOUNDS, worldToDeci, worldToTile } from "@bundu/shared/tiles";
 import type { BasicPoint } from "@bundu/shared";
 import { Physics, TileEntity } from "../components/base.js";
+import { FreecamGhostData } from "../components/freecam_ghost.js";
 import { PlayerData } from "../components/player.js";
 import { type GameObject, System, type World } from "../engine";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
@@ -38,6 +39,9 @@ export class PositionSystem extends System<GameEventMap> {
     override enter(object: GameObject) {
         const physics = Physics.get(object);
         if (!physics) return;
+
+        // Ghost cursors skip AOI / quadtree — FreecamGhostSystem owns delivery.
+        if (FreecamGhostData.get(object)) return;
 
         const tile = TileEntity.get(object);
         if (tile) {

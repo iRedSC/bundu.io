@@ -86,6 +86,7 @@ import {
 import { shadowStyle, type ShadowLight } from "../models/shadow";
 import { updateOcclusion } from "./occlusion";
 import { Animal } from "./objects/animal";
+import { FreecamGhost } from "./objects/freecam_ghost";
 import { clientTime } from "@client/globals";
 import { structurePlace } from "../models/particles/structure_place";
 
@@ -145,6 +146,10 @@ type LoadGroundItem = Extract<
     { type: typeof GameObjectData.GroundItemType }
 >;
 type LoadAnimal = Extract<ServerPacket.LoadObject, { type: typeof GameObjectData.AnimalType }>;
+type LoadFreecamGhost = Extract<
+    ServerPacket.LoadObject,
+    { type: typeof GameObjectData.FreecamGhostType }
+>;
 
 const PLACEMENT_GHOST_RENDER_ID = -11;
 
@@ -605,6 +610,9 @@ export class World {
             case GameObjectData.AnimalType:
                 this.newAnimal(packet);
                 break;
+            case GameObjectData.FreecamGhostType:
+                this.newFreecamGhost(packet);
+                break;
         }
     };
 
@@ -835,6 +843,22 @@ export class World {
         );
         this.objects.add(animal);
         this.renderer.add(animal.id, ...animal.containers);
+    };
+
+    newFreecamGhost = (packet: LoadFreecamGhost) => {
+        // Server never sends your own ghost (owner filtered in FreecamGhostSystem).
+        const [name, playerSkin] = packet.data;
+        this.removeClientObject(packet.id);
+        const nameText = new Text(name, TEXT_STYLE);
+        const ghost = new FreecamGhost(
+            packet.id,
+            nameText,
+            deciPoint(packet.x, packet.y),
+            getVariantName(playerSkin ?? undefined),
+            () => Math.abs(this.viewport.scale.x) || 1
+        );
+        this.objects.add(ghost);
+        this.renderer.add(ghost.id, ...ghost.containers);
     };
 
     /** Remember where the local player released a drop (world space + UI scale). */
@@ -1635,9 +1659,15 @@ export class World {
     }
 
     chatMessage = ({ id, message }: ServerPacket.ChatMessage) => {
-        const player = this.objects.get(id);
-        if (!(player instanceof Player)) return;
-        player.showChatMessage(message);
+        const object = this.objects.get(id);
+        if (object instanceof FreecamGhost) {
+            object.showChatMessage(message);
+            return;
+        }
+        if (!(object instanceof Player)) return;
+        // Freecam owner gets a body-id echo for the HUD log only.
+        if (id === this.user && this.camera.isFreecam()) return;
+        object.showChatMessage(message);
     };
 
     craftEvent = (
