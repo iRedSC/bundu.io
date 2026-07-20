@@ -18,6 +18,18 @@ export function emptySlots(count = HOTBAR_SIZE): (ItemStack | null)[] {
     return Array.from({ length: count }, () => null);
 }
 
+/** Hotbar size with optional backpack row. */
+export function slotCapacityFor(backpack: boolean): number {
+    return HOTBAR_SIZE + (backpack ? HOTBAR_SIZE : 0);
+}
+
+/** Grow inventory to at least `capacity` empty-padded slots. Never shrinks. */
+export function ensureSlotCapacity(inv: Inventory, capacity: number): void {
+    while (inv.slots.length < capacity) {
+        inv.slots.push(null);
+    }
+}
+
 export const Inventory = Component.register<Inventory>(() => ({
     slots: emptySlots(),
     selected: 0,

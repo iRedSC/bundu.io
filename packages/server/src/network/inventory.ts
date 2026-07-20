@@ -1,5 +1,12 @@
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { Inventory, toPacketCursor, toPacketItems } from "../components/inventory.js";
+import {
+    addItem,
+    ensureSlotCapacity,
+    Inventory,
+    slotCapacityFor,
+    toPacketCursor,
+    toPacketItems,
+} from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import type { GameObject, ServerContext } from "../engine";
@@ -22,6 +29,36 @@ const SLOT_CONTEXT: Record<
     offHand: "whenOffHand",
     helmet: "whenHelmet",
 };
+
+/** Unlock backpack state and grow inventory by one hotbar row. */
+export function grantBackpack(target: GameObject): boolean {
+    const data = PlayerData.get(target);
+    const inv = Inventory.get(target);
+    if (!data || !inv || data.backpack) return false;
+    data.backpack = true;
+    ensureSlotCapacity(inv, slotCapacityFor(true));
+    return true;
+}
+
+/**
+ * Give items to a player. Backpack items unlock capacity instead of entering
+ * inventory (and are never left as leftover stacks).
+ * Returns how many could not fit (0 for backpack grants).
+ */
+export function receiveItem(
+    target: GameObject,
+    itemId: number,
+    count: number
+): number {
+    if (count <= 0) return 0;
+    if (ItemConfigs.get(itemId).function === "backpack") {
+        grantBackpack(target);
+        return 0;
+    }
+    const inv = Inventory.get(target);
+    if (!inv) return count;
+    return addItem(inv, itemId, count);
+}
 
 /** Sync hotbar to the owning client. */
 export function emitInventory(

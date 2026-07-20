@@ -11,13 +11,14 @@ import {
     Attributes,
     type AttributeType,
 } from "../components/attributes.js";
-import { addItem, Inventory } from "../components/inventory.js";
+import { Inventory } from "../components/inventory.js";
 import { StatList, type StatType, Stats } from "../components/stats.js";
 import { PlayerData } from "../components/player.js";
 import type { GameObject } from "../engine";
 import type { PlayerPacketManager } from "../engine/network/packets/manager.js";
 import { gameRegistries } from "../configs/registries.js";
 import { TIME_OF_DAY_NAMES } from "../network/day_cycle.js";
+import { receiveItem } from "../network/inventory.js";
 import { SERVER_DEBUG } from "./flag.js";
 
 function resolveItemId(value?: string): number | undefined {
@@ -158,7 +159,7 @@ const COMMANDS: ServerCommand[] = [
             if (numericId === undefined || !inv || !(count > 0)) {
                 throw new Error(`Unknown item: ${item}`);
             }
-            addItem(inv, numericId, count);
+            receiveItem(player, numericId, count);
             return `Gave ${count}× ${item}`;
         },
     },
@@ -174,7 +175,7 @@ const COMMANDS: ServerCommand[] = [
             if (!inv) throw new Error("No inventory");
             for (const [itemId, count] of Object.entries(kit)) {
                 const numericId = resolveItemId(itemId);
-                if (numericId !== undefined) addItem(inv, numericId, count);
+                if (numericId !== undefined) receiveItem(player, numericId, count);
             }
             return `Gave kit ${kitId}`;
         },

@@ -18,11 +18,13 @@ import {
 import { Flags } from "../components/flags.js";
 import {
     Inventory,
-    canConsumeAndAdd,
     cursorSlot as applyCursorSlot,
+    ensureSlotCapacity,
+    hasItems,
     moveSlot as applyMoveSlot,
     removeItem,
-    tryConsumeAndAdd,
+    removeItems,
+    slotCapacityFor,
     type ItemStack,
 } from "../components/inventory.js";
 import {
@@ -43,6 +45,7 @@ import {
     clearMissingEquipment,
     emitEquipment,
     emitInventory,
+    receiveItem,
     selectEquipment,
 } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
@@ -226,6 +229,10 @@ export class PlayerSystem extends System<GameEventMap> {
         dayCycle.syncPlayer(player.id, playerPacketManager);
         emitVitals(player, playerPacketManager);
         syncFlags(player, playerPacketManager, true);
+        const inv = Inventory.get(player);
+        if (inv && data?.backpack) {
+            ensureSlotCapacity(inv, slotCapacityFor(true));
+        }
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
         emitCommandRegistry(
@@ -443,15 +450,10 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!recipe || !inv || !this.hasCraftingRequirements(player, recipe.flags)) {
             return;
         }
-        if (
-            !tryConsumeAndAdd(
-                inv,
-                recipe.ingredients,
-                recipe.resultItemId,
-                recipe.amount
-            )
-        ) {
-            return;
+        if (!removeItems(inv, recipe.ingredients)) return;
+        const remaining = receiveItem(player, recipe.resultItemId, recipe.amount);
+        if (remaining > 0) {
+            this.dropItem(player, recipe.resultItemId, remaining);
         }
 
         data.score += recipe.score;
@@ -475,15 +477,12 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!recipe) return;
 
         const inv = Inventory.get(player);
+        const result = ItemConfigs.get(recipe.resultItemId);
         if (
             !inv ||
             !this.hasCraftingRequirements(player, recipe.flags) ||
-            !canConsumeAndAdd(
-                inv,
-                recipe.ingredients,
-                recipe.resultItemId,
-                recipe.amount
-            )
+            !hasItems(inv, recipe.ingredients) ||
+            (result.function === "backpack" && data.backpack)
         ) {
             return;
         }
