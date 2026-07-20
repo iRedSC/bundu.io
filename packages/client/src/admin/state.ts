@@ -5,7 +5,8 @@ export type EditorCategory =
     | "ground"
     | "structures"
     | "decorations";
-export type EditorTool = "place" | "delete";
+/** Look = pan/view only; Place / Delete mutate the map. */
+export type EditorTool = "look" | "place" | "delete";
 /** Ground place brush: drag AABB, or paint one tile at a time. */
 export type GroundBrush = "rect" | "tile";
 
@@ -48,7 +49,7 @@ export function createEditorState(): EditorState {
         category: "resources",
         tagFilter: null,
         selected: null,
-        tool: "place",
+        tool: "look",
         drag: true,
         groundBrush: "rect",
         randomVariant: false,

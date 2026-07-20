@@ -82,6 +82,12 @@ export function createToolbar(
 
     const defs: ToolButton[] = [
         {
+            id: "look",
+            label: "Look",
+            getActive: () => state.tool === "look",
+            onClick: () => handlers.onTool("look"),
+        },
+        {
             id: "place",
             label: "Place",
             getActive: () => state.tool === "place",

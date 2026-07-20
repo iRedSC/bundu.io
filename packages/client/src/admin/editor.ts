@@ -6,6 +6,11 @@ import { createPalette, type PaletteHandle } from "./palette";
 import { createToolbar, type ToolbarHandle } from "./toolbar";
 import { AdminGhost } from "./ghost";
 import { AdminInput } from "./input";
+import {
+    applyEditorPrefs,
+    loadEditorPrefs,
+    saveEditorPrefs,
+} from "./prefs";
 import { createEditorState, type EditorState } from "./state";
 import { createTileGridOverlay } from "./tile_grid";
 
@@ -33,6 +38,7 @@ export function createAdminEditor(
     worldLayer: Container
 ): AdminEditor {
     const state = createEditorState();
+    applyEditorPrefs(state, loadEditorPrefs());
     const container = new Container();
     container.visible = false;
     container.eventMode = "static";
@@ -50,53 +56,55 @@ export function createAdminEditor(
         tileGrid.setVisible(active && state.showGrid);
     };
 
-    const refreshToolbar = () => {
+    const persistAndRefresh = () => {
+        saveEditorPrefs(state);
         toolbar?.refresh();
         input?.syncGhost();
     };
 
-    palette = createPalette(state, refreshToolbar);
+    palette = createPalette(state, persistAndRefresh);
     toolbar = createToolbar(state, {
         onTool: (tool) => {
             state.tool = tool;
-            refreshToolbar();
+            if (tool === "look") input?.cancelStroke();
+            persistAndRefresh();
         },
         onToggleDrag: () => {
             state.drag = !state.drag;
-            refreshToolbar();
+            persistAndRefresh();
         },
         onToggleGroundBrush: () => {
             state.groundBrush =
                 state.groundBrush === "rect" ? "tile" : "rect";
             input?.cancelStroke();
-            refreshToolbar();
+            persistAndRefresh();
         },
         onToggleRandomVariant: () => {
             state.randomVariant = !state.randomVariant;
-            refreshToolbar();
+            persistAndRefresh();
         },
         onToggleRandomRotation: () => {
             state.randomRotation = !state.randomRotation;
-            refreshToolbar();
+            persistAndRefresh();
         },
         onToggleGrid: () => {
             state.showGrid = !state.showGrid;
             syncGrid();
-            refreshToolbar();
+            persistAndRefresh();
         },
         onToggleFreeze: () => {
             state.animalsFrozen = !state.animalsFrozen;
             sendPacket(ClientPacket.AdminSetAnimalsFrozen, {
                 frozen: state.animalsFrozen,
             });
-            refreshToolbar();
+            persistAndRefresh();
         },
         onToggleGhostVisible: () => {
             state.ghostVisible = !state.ghostVisible;
             sendPacket(ClientPacket.AdminSetGhostVisible, {
                 visible: state.ghostVisible,
             });
-            refreshToolbar();
+            persistAndRefresh();
         },
         onKillAll: () => {
             sendPacket(ClientPacket.AdminKillAnimals, {});
@@ -147,12 +155,34 @@ export function createAdminEditor(
             active = enabled;
             container.visible = enabled;
             if (enabled) {
+                // Restore session prefs (Freeze / Ghost need re-send after exit).
+                applyEditorPrefs(state, loadEditorPrefs());
+                if (state.animalsFrozen) {
+                    sendPacket(ClientPacket.AdminSetAnimalsFrozen, {
+                        frozen: true,
+                    });
+                }
+                if (state.ghostVisible) {
+                    sendPacket(ClientPacket.AdminSetGhostVisible, {
+                        visible: true,
+                    });
+                }
                 palette?.rebuild();
                 toolbar?.refresh();
                 input?.syncGhost();
             } else {
-                state.animalsFrozen = false;
-                state.ghostVisible = false;
+                // Clear server-side freeze/ghost for this session exit, but keep
+                // preferred toggles in sessionStorage for the next freecam enter.
+                if (state.animalsFrozen) {
+                    sendPacket(ClientPacket.AdminSetAnimalsFrozen, {
+                        frozen: false,
+                    });
+                }
+                if (state.ghostVisible) {
+                    sendPacket(ClientPacket.AdminSetGhostVisible, {
+                        visible: false,
+                    });
+                }
                 input?.cancelStroke();
                 ghost.clear();
             }

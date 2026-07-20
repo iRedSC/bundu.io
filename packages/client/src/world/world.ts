@@ -333,6 +333,9 @@ export class World {
         for (const object of this.objects.all()) {
             if (object instanceof Structure) {
                 object.tickVisual(now);
+            } else if (object instanceof FreecamGhost) {
+                // Idle ghosts leave `updating`; still rescale on freecam zoom.
+                object.tickVisual();
             }
         }
         this.syncSkyUndo();

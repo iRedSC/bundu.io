@@ -88,7 +88,8 @@ export class FreecamGhost extends GameObject {
         const dx = position.x - this.lastTarget.x;
         const dy = position.y - this.lastTarget.y;
         if (Math.hypot(dx, dy) > 0.05) {
-            this.targetFacing = Math.atan2(dy, dx);
+            // Player art faces up at 0° — same offset as look / attackFacingRadians.
+            this.targetFacing = Math.atan2(dy, dx) - Math.PI / 2;
         }
         this.lastTarget = position;
         super.addPosition(position, now);
@@ -115,8 +116,8 @@ export class FreecamGhost extends GameObject {
         this.chatMessage.scale.set(CHAT_SCREEN_PX / (LABEL_FONT_PX * vp));
     }
 
-    override update(now = clientTime.now()): boolean {
-        const done = super.update(now);
+    /** Zoom-safe labels — called every world tick (idle ghosts leave `updating`). */
+    tickVisual(): void {
         this.syncScreenScale();
         const vp = Math.abs(this.getViewScale()) || 1;
         this.name.position.set(
@@ -127,6 +128,11 @@ export class FreecamGhost extends GameObject {
             this.position.x,
             this.position.y - CHAT_OFFSET_PX / vp
         );
+    }
+
+    override update(now = clientTime.now()): boolean {
+        const done = super.update(now);
+        this.tickVisual();
 
         const elapsed = Math.min(now - this.lastVisualAt, 20);
         this.facing = rotationLerp(

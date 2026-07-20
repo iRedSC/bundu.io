@@ -216,6 +216,7 @@ export class AdminInput {
         if (!this.facade.isActive()) return;
         if (!event.shiftKey) return;
         const state = this.facade.getState();
+        if (state.tool !== "place") return;
         if (state.selected?.kind !== AdminPlaceKind.Decoration) return;
         if (this.facade.isOverUi(event.clientX, event.clientY)) return;
 
@@ -260,6 +261,7 @@ export class AdminInput {
 
         if (event.key !== "r" && event.key !== "R") return;
         const state = this.facade.getState();
+        if (state.tool !== "place") return;
         // R stays snappy tile rotate for resources/structures — not decorations.
         if (state.selected?.kind === AdminPlaceKind.Decoration) return;
         event.preventDefault();
@@ -271,10 +273,19 @@ export class AdminInput {
         if (!this.facade.isActive()) return;
         this.lastScreen = { x: event.clientX, y: event.clientY };
 
+        const state = this.facade.getState();
+        // Look mode: move the networked cursor only — no place/delete/scale.
+        if (state.tool === "look") {
+            if (!this.facade.isOverUi(event.clientX, event.clientY)) {
+                this.syncGhost();
+            }
+            return;
+        }
+
         // Right-button drag scales decorations.
         if (event.button === 2) {
             if (this.facade.isOverUi(event.clientX, event.clientY)) return;
-            const state = this.facade.getState();
+            if (state.tool !== "place") return;
             if (state.selected?.kind !== AdminPlaceKind.Decoration) return;
             this.scaleDrag = {
                 startY: event.clientY,
@@ -289,7 +300,6 @@ export class AdminInput {
             return;
         }
 
-        const state = this.facade.getState();
         const world = this.facade.screenToWorld(event.clientX, event.clientY);
         const tx = clampTile(worldToTile(world.x));
         const ty = clampTile(worldToTile(world.y));
@@ -317,6 +327,7 @@ export class AdminInput {
             return;
         }
 
+        if (state.tool !== "delete") return;
         this.painting = true;
         this.groundDrag = null;
         this.lastTileKey = "";
@@ -353,8 +364,20 @@ export class AdminInput {
             return;
         }
 
+        const state = this.facade.getState();
+        if (state.tool === "look") {
+            this.painting = false;
+            this.groundDrag = null;
+            this.scaleDrag = null;
+            if (this.facade.isOverUi(event.clientX, event.clientY)) {
+                this.facade.ghost.clear();
+                return;
+            }
+            this.syncGhost();
+            return;
+        }
+
         if (this.scaleDrag) {
-            const state = this.facade.getState();
             const deltaY = this.scaleDrag.startY - event.clientY;
             state.decorationScale = Math.min(
                 DECOR_SCALE_MAX,
@@ -384,7 +407,6 @@ export class AdminInput {
         this.syncGhost();
 
         if (!this.painting) return;
-        const state = this.facade.getState();
         if (!state.drag) return;
         this.applyAtScreen(event.clientX, event.clientY, false);
     }
@@ -425,6 +447,7 @@ export class AdminInput {
 
     private applyAtScreen(screenX: number, screenY: number, isClick: boolean) {
         const state = this.facade.getState();
+        if (state.tool === "look") return;
         const world = this.facade.screenToWorld(screenX, screenY);
 
         if (state.tool === "delete") {
