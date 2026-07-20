@@ -126,8 +126,7 @@ export class KeyboardInputListener {
                 if (!this.chat) return;
 
                 if (this.chatOpen) {
-                    // Tab cycles highlight; Enter accepts, or sends if already complete.
-                    if (this.chat.acceptSuggestion()) return;
+                    // Space accepts suggestions; Enter always sends.
                     this.chatOpen = false;
                     const message = this.chat.takeMessage();
                     if (message) this.onSendChat(message);
