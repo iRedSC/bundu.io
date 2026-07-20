@@ -1,5 +1,5 @@
 /**
- * Death / game-over overlay: world drifts under a fixed HUD capture.
+ * Death / game-over overlay: world zooms under a fixed HUD capture.
  */
 
 import type { DeathCapture } from "../rendering/capture_frame";

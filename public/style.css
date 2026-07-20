@@ -366,25 +366,22 @@ button:disabled {
     display: none;
 }
 
-/* Spins continuously; child img zooms. Oversized so edges never show. */
+/* Oversized so zoom never shows edges. */
 .game-over-world {
     position: absolute;
-    inset: -22%;
-    width: 144%;
-    height: 144%;
+    inset: -12%;
+    width: 124%;
+    height: 124%;
     transform-origin: center center;
-    animation: game-over-spin 96s linear infinite;
+    animation: game-over-zoom 48s ease-in-out infinite alternate;
 }
 
 .game-over-bg {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform-origin: center center;
     filter: grayscale(0);
-    animation:
-        game-over-desaturate 2.8s ease-out forwards,
-        game-over-zoom 48s ease-in-out infinite alternate;
+    animation: game-over-desaturate 2.8s ease-out forwards;
 }
 
 .game-over-bg:not([src]),
@@ -467,15 +464,6 @@ button:disabled {
     }
     to {
         filter: grayscale(1) brightness(0.85);
-    }
-}
-
-@keyframes game-over-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
     }
 }
 

@@ -1,5 +1,5 @@
 /**
- * Capture death-screen layers: world (drifts) and UI (stays put).
+ * Capture death-screen layers: world (zooms) and UI (stays put).
  */
 
 import { Rectangle, type Application, type Container } from "pixi.js";
@@ -17,8 +17,8 @@ function screenFrame(app: Application): Rectangle {
 }
 
 /**
- * Snapshot world and UI separately so the death screen can zoom/spin the
- * world without transforming the HUD.
+ * Snapshot world and currently-visible UI separately so the death screen can
+ * zoom the world without transforming the HUD.
  */
 export function captureDeathLayers(
     app: Application,
@@ -37,7 +37,10 @@ export function captureDeathLayers(
         world = app.canvas.toDataURL("image/jpeg", WORLD_QUALITY);
 
         for (const c of worldRoots) c.visible = false;
-        for (const c of uiRoots) c.visible = true;
+        // Only layers that were on-screen (e.g. HUD xor freecam editor).
+        uiRoots.forEach((c, i) => {
+            c.visible = uiPrev[i] ?? false;
+        });
         // Extract to a transparent RT — main canvas was init opaque.
         const uiCanvas = app.renderer.extract.canvas({
             target: app.stage,
