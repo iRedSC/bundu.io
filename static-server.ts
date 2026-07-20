@@ -5,8 +5,10 @@ import fs from "node:fs";
 const PUBLIC_DIR = path.join(import.meta.dir, "public");
 const PACKS_ROOT = path.join(import.meta.dir, "packs");
 const PORT = Number(process.env.PORT ?? 3000);
-/** Dev-only model-definition hot reload. Never enabled in CI/prod images. */
+/** Dev-only model-definition hot reload + browser live-reload. Never in CI/prod. */
 const DEV_CONFIG_RELOAD = process.env.BUNDU_DEBUG === "1";
+
+const LIVE_RELOAD_SCRIPT = `<script>(function(){var e=new EventSource("/__dev/live-reload");e.onmessage=function(){location.reload()};})();</script>`;
 
 type PackNamespaceRoots = {
     /** Texture roots by namespace; later packs override earlier ones. */
@@ -66,24 +68,25 @@ type SseClient = {
     write: (chunk: string) => void;
 };
 
-const sseClients = new Set<SseClient>();
+const configClients = new Set<SseClient>();
+const liveReloadClients = new Set<SseClient>();
 
-function notifyConfigReload() {
+function notifySse(clients: Set<SseClient>, data: string, label: string) {
     let live = 0;
-    for (const client of [...sseClients]) {
+    for (const client of [...clients]) {
         try {
-            client.write("data: reload\n\n");
+            client.write(`data: ${data}\n\n`);
             live++;
         } catch {
-            sseClients.delete(client);
+            clients.delete(client);
         }
     }
     console.log(
-        `[static] notified ${live} client(s) (tracked ${sseClients.size})`
+        `[static] ${label}: notified ${live} client(s) (tracked ${clients.size})`
     );
 }
 
-function configReloadSse(): Response {
+function sseStream(clients: Set<SseClient>): Response {
     let client: SseClient | undefined;
     const stream = new ReadableStream({
         start(controller) {
@@ -91,13 +94,11 @@ function configReloadSse(): Response {
             client = {
                 write: (chunk) => controller.enqueue(encoder.encode(chunk)),
             };
-            sseClients.add(client);
+            clients.add(client);
             client.write(": connected\n\n");
         },
         cancel() {
-            if (client) {
-                sseClients.delete(client);
-            }
+            if (client) clients.delete(client);
         },
     });
 
@@ -188,15 +189,34 @@ function resolveTexture(namespace: string, relative: string): string | undefined
     return undefined;
 }
 
+function staticHeaders(): HeadersInit {
+    return DEV_CONFIG_RELOAD ? { "Cache-Control": "no-store" } : {};
+}
+
+async function serveHtml(filepath: string): Promise<Response> {
+    const html = await Bun.file(filepath).text();
+    const body = DEV_CONFIG_RELOAD
+        ? html.includes("</head>")
+            ? html.replace("</head>", `${LIVE_RELOAD_SCRIPT}</head>`)
+            : `${html}${LIVE_RELOAD_SCRIPT}`
+        : html;
+    return new Response(body, {
+        headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            ...staticHeaders(),
+        },
+    });
+}
+
 if (DEV_CONFIG_RELOAD) {
-    let debounce: Timer | undefined;
+    let configDebounce: Timer | undefined;
     const watchYaml = (directory: string) =>
         fs.watch(directory, { recursive: true }, (_event, filename) => {
             if (!filename || !/\.ya?ml$/i.test(filename)) return;
-            clearTimeout(debounce);
-            debounce = setTimeout(() => {
+            clearTimeout(configDebounce);
+            configDebounce = setTimeout(() => {
                 console.log(`[static] configs changed (${filename}) — hot-reload`);
-                notifyConfigReload();
+                notifySse(configClients, "reload", "config-reload");
             }, 100);
         });
     for (const directory of modelDirs) watchYaml(directory);
@@ -207,13 +227,30 @@ if (DEV_CONFIG_RELOAD) {
         watchYaml(path.dirname(filepath));
     }
 
+    // Build stamp from build.ts — survives atomic site/ directory swaps.
+    let liveDebounce: Timer | undefined;
+    fs.watch(PUBLIC_DIR, { recursive: true }, (_event, filename) => {
+        if (!filename) return;
+        const normalized = filename.toString().replaceAll("\\", "/");
+        if (normalized !== "site/.dev-reload" && !normalized.endsWith("/site/.dev-reload")) {
+            return;
+        }
+        clearTimeout(liveDebounce);
+        liveDebounce = setTimeout(() => {
+            console.log("[static] client build ready — live-reload");
+            notifySse(liveReloadClients, "reload", "live-reload");
+        }, 50);
+    });
+
     // Keep SSE connections alive past Bun's default idle timeout.
     setInterval(() => {
-        for (const client of [...sseClients]) {
-            try {
-                client.write(": ping\n\n");
-            } catch {
-                sseClients.delete(client);
+        for (const clients of [configClients, liveReloadClients]) {
+            for (const client of [...clients]) {
+                try {
+                    client.write(": ping\n\n");
+                } catch {
+                    clients.delete(client);
+                }
             }
         }
     }, 15_000);
@@ -231,7 +268,10 @@ serve({
 
         if (DEV_CONFIG_RELOAD) {
             if (url.pathname === "/__dev/config-reload") {
-                return configReloadSse();
+                return sseStream(configClients);
+            }
+            if (url.pathname === "/__dev/live-reload") {
+                return sseStream(liveReloadClients);
             }
             if (url.pathname === "/__dev/model-defs") {
                 try {
@@ -271,7 +311,9 @@ serve({
             const relative = assetPath.slice(slash + 1);
             const filepath = resolveTexture(namespace, relative);
             if (!filepath) return new Response("Not Found", { status: 404 });
-            return new Response(file(filepath));
+            return new Response(file(filepath), {
+                headers: staticHeaders(),
+            });
         }
 
         const filepath = path.join(PUBLIC_DIR, pathname);
@@ -281,8 +323,13 @@ serve({
 
         try {
             const stat = fs.statSync(filepath);
-            if (stat.isFile()) return new Response(file(filepath));
-            return new Response("Not Found", { status: 404 });
+            if (!stat.isFile()) return new Response("Not Found", { status: 404 });
+            if (path.extname(filepath).toLowerCase() === ".html") {
+                return serveHtml(filepath);
+            }
+            return new Response(file(filepath), {
+                headers: staticHeaders(),
+            });
         } catch {
             return new Response("Not Found", { status: 404 });
         }
@@ -294,4 +341,5 @@ if (DEV_CONFIG_RELOAD) {
     console.log(
         `[static] model definition hot-reload enabled (${modelDirs.length} pack namespace(s))`
     );
+    console.log("[static] client live-reload enabled");
 }

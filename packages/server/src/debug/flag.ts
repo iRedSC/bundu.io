@@ -2,7 +2,7 @@
 export const SERVER_DEBUG = process.env.BUNDU_DEBUG === "1";
 
 /**
- * Secret chat phrase that unlocks slash commands for one player.
- * Not required when `SERVER_DEBUG` is on — commands work immediately.
+ * Secret chat phrase that sets a player's `opLevel` to 4 (full commands).
+ * When `SERVER_DEBUG` is on, effective opLevel is already 4.
  */
 export const CHEAT_PHRASE = process.env.BUNDU_CHEAT_PHRASE;

@@ -6,7 +6,7 @@ import {
 } from "@bundu/shared";
 import {
     clientRegistries,
-    clientModelId,
+    clientItemModelId,
 } from "../../configs/registries";
 import { type Container, Graphics, type Point, Text } from "pixi.js";
 import GameObject from "../game_object";
@@ -342,7 +342,7 @@ export class Player extends GameObject implements AnimContext {
         const items = clientRegistries().item;
         const visual = (id?: number | null) =>
             typeof id === "number" && id >= 0
-                ? clientModelId(items.location(id))
+                ? clientItemModelId(items.location(id))
                 : "";
         this.mainhand = visual(equipment.mainhand);
         this.offhand = visual(equipment.offhand);
@@ -356,12 +356,22 @@ export class Player extends GameObject implements AnimContext {
 
         this.fillSlot("mainhand", this.mainhand);
         this.fillSlot("offhand", this.offhand);
-        this.fillSlot("helmet", this.helmet);
         this.setBodyTexture(
             this.helmet ? BODY_WITHOUT_FEATURES : BODY_TEXTURE,
             // Hat body is unpadded 100×100; default body uses authored spillover.
             this.helmet ? 0 : undefined
         );
+        // Under-body slot, identity pose — match body visual scale so the
+        // 200×200 backpack lines up with spilled body art.
+        if (this.backpack) {
+            this.fillSlot("backpack", "backpack");
+            const mounted = this.slotModels.get("backpack");
+            const body = this.parts.get("body");
+            if (mounted && body) {
+                mounted.container.scale.copyFrom(body.visual.scale);
+            }
+        }
+        this.fillSlot("helmet", this.helmet);
     }
 
     private setBodyTexture(texture: string, spillover?: number) {

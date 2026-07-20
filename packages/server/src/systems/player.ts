@@ -19,11 +19,13 @@ import {
 import { Flags } from "../components/flags.js";
 import {
     Inventory,
-    canConsumeAndAdd,
     cursorSlot as applyCursorSlot,
+    ensureSlotCapacity,
+    hasItems,
     moveSlot as applyMoveSlot,
     removeItem,
-    tryConsumeAndAdd,
+    removeItems,
+    slotCapacityFor,
     type ItemStack,
 } from "../components/inventory.js";
 import {
@@ -44,13 +46,19 @@ import {
     clearMissingEquipment,
     emitEquipment,
     emitInventory,
+    receiveItem,
     selectEquipment,
 } from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { groundWire } from "./ground_wire.js";
 import { decorationWire } from "./decoration_wire.js";
-import { tryHandleDebugChatCommand } from "../debug/chat_commands.js";
-import { CHEAT_PHRASE, SERVER_DEBUG } from "../debug/flag.js";
+import {
+    effectiveOpLevel,
+    emitCommandRegistry,
+    emitCommandResult,
+    tryHandleDebugChatCommand,
+} from "../debug/chat_commands.js";
+import { CHEAT_PHRASE } from "../debug/flag.js";
 import { clearEditorHistory } from "../admin/history.js";
 import { clearAnimalsFrozenFor } from "../admin/state.js";
 import { PlaceMode } from "@bundu/shared/inventory";
@@ -222,8 +230,17 @@ export class PlayerSystem extends System<GameEventMap> {
         dayCycle.syncPlayer(player.id, playerPacketManager);
         emitVitals(player, playerPacketManager);
         syncFlags(player, playerPacketManager, true);
+        const inv = Inventory.get(player);
+        if (inv && data?.backpack) {
+            ensureSlotCapacity(inv, slotCapacityFor(true));
+        }
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
+        emitCommandRegistry(
+            player.id,
+            effectiveOpLevel(data),
+            playerPacketManager
+        );
         if (data?.freecam) {
             playerPacketManager.set(player.id, ServerPacket.FreecamMode, {
                 enabled: true,
@@ -454,15 +471,10 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!recipe || !inv || !this.hasCraftingRequirements(player, recipe.flags)) {
             return;
         }
-        if (
-            !tryConsumeAndAdd(
-                inv,
-                recipe.ingredients,
-                recipe.resultItemId,
-                recipe.amount
-            )
-        ) {
-            return;
+        if (!removeItems(inv, recipe.ingredients)) return;
+        const remaining = receiveItem(player, recipe.resultItemId, recipe.amount);
+        if (remaining > 0) {
+            this.dropItem(player, recipe.resultItemId, remaining);
         }
 
         data.score += recipe.score;
@@ -486,15 +498,12 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!recipe) return;
 
         const inv = Inventory.get(player);
+        const result = ItemConfigs.get(recipe.resultItemId);
         if (
             !inv ||
             !this.hasCraftingRequirements(player, recipe.flags) ||
-            !canConsumeAndAdd(
-                inv,
-                recipe.ingredients,
-                recipe.resultItemId,
-                recipe.amount
-            )
+            !hasItems(inv, recipe.ingredients) ||
+            (result.function === "backpack" && data.backpack)
         ) {
             return;
         }
@@ -808,53 +817,71 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
 
+        const { playerPacketManager, worldPacketManager, dayCycle, socketManager } =
+            this.world.context;
+        const data = PlayerData.get(player);
+
         if (CHEAT_PHRASE && message === CHEAT_PHRASE) {
-            PlayerData.get(player).cheatsEnabled = true;
+            if (data) {
+                data.opLevel = 4;
+                data.cheatsEnabled = true;
+            }
+            const opLevel = effectiveOpLevel(data);
+            emitCommandRegistry(player.id, opLevel, playerPacketManager);
+            emitCommandResult(
+                player.id,
+                `Operator level set to ${opLevel}`,
+                true,
+                playerPacketManager
+            );
             return;
         }
 
-        const data = PlayerData.get(player);
-        if (
-            (data.cheatsEnabled || SERVER_DEBUG) &&
-            tryHandleDebugChatCommand(
-                player,
-                message,
-                (target) => {
-                    this.trigger(GameEvent.Kill, { object: target });
-                },
-                this.world.gameTime,
-                (period) => {
-                    const { dayCycle, playerPacketManager, socketManager } =
-                        this.world.context;
-                    const players = this.world
-                        .query([PlayerData])
-                        .filter((target) => socketManager.getSocket(target.id));
-                    return dayCycle.setPeriod(
-                        period,
-                        this.world.gameTime,
-                        players,
-                        playerPacketManager
-                    );
-                },
-                (target) => this.toggleFreecam(target)
-            )
-        ) {
-            const { playerPacketManager, worldPacketManager } =
-                this.world.context;
-            emitInventory(player, playerPacketManager);
-            clearMissingEquipment(player, this.world.context.playerPacketManager);
-            this.syncSelectedStructure(player);
-            this.clearStaleBlocking(player);
-            emitEquipment(player, worldPacketManager);
+        const command = tryHandleDebugChatCommand(player, message, {
+            onKill: (target) => {
+                this.trigger(GameEvent.Kill, { object: target });
+            },
+            now: this.world.gameTime,
+            onSetTime: (period) => {
+                const players = this.world
+                    .query([PlayerData])
+                    .filter((target) => socketManager.getSocket(target.id));
+                return dayCycle.setPeriod(
+                    period,
+                    this.world.gameTime,
+                    players,
+                    playerPacketManager
+                );
+            },
+            onFreecam: (target) => this.toggleFreecam(target),
+        });
+
+        if (command.handled) {
+            if (command.message !== undefined && command.ok !== undefined) {
+                emitCommandResult(
+                    player.id,
+                    command.message,
+                    command.ok,
+                    playerPacketManager
+                );
+            }
+            if (command.ok) {
+                emitInventory(player, playerPacketManager);
+                clearMissingEquipment(player, playerPacketManager);
+                this.syncSelectedStructure(player);
+                this.clearStaleBlocking(player);
+                emitEquipment(player, worldPacketManager);
+            }
             return;
         }
-        this.world.context.worldPacketManager.emit(ServerPacket.ChatMessage, {
+
+        worldPacketManager.emit(ServerPacket.ChatMessage, {
             id: player.id,
             message,
         });
         const proxyId = getAnonProxyId(player.id);
         if (proxyId !== undefined) {
-            this.world.context.worldPacketManager.emit(ServerPacket.ChatMessage, {
+            worldPacketManager.emit(ServerPacket.ChatMessage, {
                 id: proxyId,
                 message,
             });

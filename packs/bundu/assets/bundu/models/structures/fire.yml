@@ -8,6 +8,7 @@ parts:
   main:
     zIndex: 0
     spriteScale: 1.5
+    shadow: 0.35
   sky_undo:
     spriteScale: 14
     visible: false

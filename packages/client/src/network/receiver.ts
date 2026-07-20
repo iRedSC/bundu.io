@@ -7,8 +7,10 @@ import { ClientPacketReceiver } from "./client_receiver";
 import { Serializer } from "@bundu/shared";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
+import type { ChatController } from "../ui/chat";
 import { AnimationManagers } from "../animation/animations";
 import { downloadMapYaml } from "../admin/map_export";
+import { Player } from "../world/objects/player";
 
 export const receiver = new ClientPacketReceiver(
     new Serializer<ServerPacketMap>(ServerSchema)
@@ -45,7 +47,7 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.UnloadDecorations, world.unloadDecorations);
     receiver.on(ServerPacket.ClientConnectionInfo, world.clientConnectionInfo);
     receiver.on(ServerPacket.UpdateEquipment, world.updateEquipment);
-    receiver.on(ServerPacket.ChatMessage, world.chatMessage);
+    // ChatMessage → world bubbles; log wiring is in setupChatPacketReceiving.
     receiver.on(ServerPacket.SetSelectedStructure, world.selectStructure);
     receiver.on(
         ServerPacket.PlaceStructureResult,
@@ -62,6 +64,26 @@ export function setupPacketReceiving(
             return;
         }
         downloadMapYaml(yaml);
+    });
+}
+
+export function setupChatPacketReceiving(
+    receiver: ClientPacketReceiver,
+    world: World,
+    chat: ChatController
+) {
+    receiver.on(ServerPacket.ChatMessage, (packet) => {
+        world.chatMessage(packet);
+        const player = world.objects.get(packet.id);
+        const name =
+            player instanceof Player ? player.name.text || "???" : "???";
+        chat.appendPlayerMessage(name, packet.message);
+    });
+    receiver.on(ServerPacket.CommandRegistry, ({ commands }) => {
+        chat.setRegistry({ commands });
+    });
+    receiver.on(ServerPacket.CommandResult, ({ message, ok }) => {
+        chat.appendCommandResult(message, ok);
     });
 }
 

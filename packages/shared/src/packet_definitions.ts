@@ -5,6 +5,7 @@ import type {
 import { PlaceMode } from "./inventory";
 import type { PacketGuards } from "./network/serializer";
 import { WORLD_BOUNDS, WORLD_TILES } from "./tiles";
+import type { CommandProjection } from "./command";
 
 /**
  * Max ViewBounds edge length. Freecam min zoom (~0.05) on a large display can
@@ -52,6 +53,10 @@ export const ServerPacket = {
     UnloadDecorations: 0x20,
     /** Owning client's effective sourced flags (crafting + gameplay). */
     UpdateFlags: 0x21,
+    /** Commands the player may see/run (filtered by opLevel). */
+    CommandRegistry: 0x22,
+    /** Private command feedback for the executor. */
+    CommandResult: 0x23,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -203,6 +208,15 @@ export namespace ServerPacket {
     /** Effective flag ids currently granted to the receiving player. */
     export type UpdateFlags = {
         flags: number[];
+    };
+    /** Serializable command tree slice visible to this player. */
+    export type CommandRegistry = {
+        commands: CommandProjection[];
+    };
+    /** Private system line for command success/failure. */
+    export type CommandResult = {
+        message: string;
+        ok: boolean;
     };
 }
 
@@ -356,6 +370,8 @@ export type ServerPacketMap = {
     [ServerPacket.LoadDecorations]: ServerPacket.LoadDecorations;
     [ServerPacket.UnloadDecorations]: ServerPacket.UnloadDecorations;
     [ServerPacket.UpdateFlags]: ServerPacket.UpdateFlags;
+    [ServerPacket.CommandRegistry]: ServerPacket.CommandRegistry;
+    [ServerPacket.CommandResult]: ServerPacket.CommandResult;
 };
 
 /** ID → payload map for client packets. */
@@ -442,6 +458,8 @@ export const ServerSchema: {
     [ServerPacket.LoadDecorations]: { fields: ["decorations"] },
     [ServerPacket.UnloadDecorations]: { fields: ["decorations"] },
     [ServerPacket.UpdateFlags]: { fields: ["flags"] },
+    [ServerPacket.CommandRegistry]: { fields: ["commands"] },
+    [ServerPacket.CommandResult]: { fields: ["message", "ok"] },
 };
 
 export const ClientSchema: {

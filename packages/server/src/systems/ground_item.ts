@@ -1,8 +1,12 @@
 import { GroundItemData, Physics } from "../components/base.js";
-import { addItem, Inventory } from "../components/inventory.js";
+import { Inventory } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import { type GameObject, System, type World } from "../engine";
-import { emitInventory } from "../network/inventory.js";
+import {
+    emitEquipment,
+    emitInventory,
+    receiveItem,
+} from "../network/inventory.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { gameplayConfig } from "../configs/gameplay.js";
 
@@ -24,12 +28,14 @@ export class GroundItemSystem extends System<GameEventMap> {
             const y = playerPosition.y - position.y;
             if (x * x + y * y > pickupRadius * pickupRadius) continue;
 
-            const inventory = player.get(Inventory);
-            const remaining = addItem(inventory, data.itemId, data.amount);
+            const remaining = receiveItem(player, data.itemId, data.amount);
             if (remaining === data.amount) continue;
 
             data.amount = remaining;
-            emitInventory(player, this.world.context.playerPacketManager);
+            const { playerPacketManager, worldPacketManager } =
+                this.world.context;
+            emitInventory(player, playerPacketManager);
+            emitEquipment(player, worldPacketManager);
             if (remaining > 0) return;
 
             item.active = false;
