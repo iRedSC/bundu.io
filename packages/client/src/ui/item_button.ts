@@ -4,7 +4,7 @@ import { ITEM_BUTTON_SIZE } from "../constants";
 import { percentOf } from "@bundu/shared/math";
 import {
     clientRegistries,
-    clientModelId,
+    clientItemModelId,
 } from "../configs/registries";
 import { mountSlotIcon } from "../models/mount";
 import {
@@ -238,7 +238,7 @@ export class ItemButton {
             return;
         }
 
-        const name = clientModelId(clientRegistries().item.location(item));
+        const name = clientItemModelId(clientRegistries().item.location(item));
         this._item = item;
         this.itemDisplay.visible = true;
         this.clearIcon = mountSlotIcon(

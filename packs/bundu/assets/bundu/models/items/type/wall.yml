@@ -1,9 +1,3 @@
 id: item/type/wall
 abstract: true
-extends: item/type/none
-displays:
-    hand:
-        rotation: -20
-        x: 0
-        y: 0.2
-        scale: 0.45
+extends: item/type/building

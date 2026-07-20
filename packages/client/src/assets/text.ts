@@ -1,8 +1,10 @@
 import { TextStyle } from "pixi.js";
 
-const fontFamily = "'Aoboshi One', sans-serif";
+/** Shared game UI font (leaderboard, nametags, chat, HUD). */
+export const UI_FONT = "Arial";
+
 export const TEXT_STYLE = new TextStyle({
-    fontFamily: fontFamily,
+    fontFamily: UI_FONT,
     fill: "#ffffff",
     fontSize: 40,
 });
