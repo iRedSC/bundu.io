@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
-    "@figma/plugin-typings": "^1.117.0",
+    "@figma/plugin-typings": "^1.131.0",
     "typescript": "~7.0.2"
   }
 }
