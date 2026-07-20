@@ -26,6 +26,8 @@ export type GroundUpdateContext = {
     shore: readonly ShoreSample[];
     /** True when the topmost ground at this world pixel is an ocean model. */
     isOceanAt: (worldX: number, worldY: number) => boolean;
+    /** Ocean-kind ground model id under a world pixel, if any. */
+    waterModelAt?: (worldX: number, worldY: number) => string | undefined;
     /**
      * Tiles from nearest land (`0` on land). Built with shores on patch change;
      * O(1) lookup. Capped at 255.
@@ -71,6 +73,11 @@ export type GroundVisual = {
     clearLandSeam?(): void;
     /** Free GPU resources when the patch is unloaded. */
     destroy?(): void;
+    /**
+     * Ocean FX only — bind a per-model shore mask so distinct water types
+     * (ocean vs pond) do not share caustics across each other's tiles.
+     */
+    setShoreMask?(texture: Texture): void;
     /** Wake ripple at world position (ocean only). */
     addWakeRipple?(
         worldX: number,

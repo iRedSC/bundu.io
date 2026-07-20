@@ -80,6 +80,8 @@ export function createOceanGround(
     root.addChild(fxMask);
     fx.setMask({ mask: fxMask, channel: "alpha" });
     const maskBind: NearshoreBindState = {};
+    /** Per-model mask from World; falls back to the shared shore mask. */
+    let modelShoreMask: Texture | undefined;
 
     const causticsA = new TilingSprite({
         texture: causticsTex,
@@ -453,17 +455,31 @@ export function createOceanGround(
         fxLayer: fx,
         addWakeRipple,
         addSplashDisplacement,
+        setShoreMask(texture: Texture) {
+            if (modelShoreMask === texture) return;
+            modelShoreMask = texture;
+            // Force rebind on next update when the bake source is replaced.
+            maskBind.map?.destroy(false);
+            maskBind.source = undefined;
+            maskBind.map = undefined;
+        },
         update(ctx: GroundUpdateContext) {
             const cfg = oceanFx;
             const { a, b } = cfg.caustics;
-            causticsA.tint = oceanTint(a.tint);
+            const tint = model.causticTint;
+            causticsA.tint = oceanTint(tint?.a ?? a.tint);
             causticsA.alpha = a.alpha;
             causticsA.tileScale.set(a.tileScale);
-            causticsB.tint = oceanTint(b.tint);
+            causticsB.tint = oceanTint(tint?.b ?? b.tint);
             causticsB.alpha = b.alpha;
             causticsB.tileScale.set(b.tileScale);
 
-            bindNearshoreSprite(fxMask, bounds, ctx.shoreMask, maskBind);
+            bindNearshoreSprite(
+                fxMask,
+                bounds,
+                modelShoreMask ?? ctx.shoreMask,
+                maskBind
+            );
             if (!syncOverlay(ctx.view)) return;
 
             const area = overlayW * overlayH;
@@ -517,6 +533,10 @@ export function createOceanGround(
                 }
             }
 
+            const onThisWater = (x: number, y: number) =>
+                (ctx.waterModelAt?.(x, y) ??
+                    (ctx.isOceanAt(x, y) ? model.id : undefined)) === model.id;
+
             if (ctx.now >= nextFoamAt && visibleShores.length > 0) {
                 const [lo, hi] = foamIntervalMs;
                 nextFoamAt = ctx.now + lo + Math.random() * (hi - lo);
@@ -524,7 +544,14 @@ export function createOceanGround(
                     visibleShores[
                         Math.floor(Math.random() * visibleShores.length)
                     ];
-                if (sample) {
+                // Samples sit on the land lip — step into water to resolve model.
+                if (
+                    sample &&
+                    onThisWater(
+                        sample.x + sample.nx * 24,
+                        sample.y + sample.ny * 24
+                    )
+                ) {
                     ctx.emitParticles(
                         oceanFoam(
                             foamTex,
@@ -545,7 +572,7 @@ export function createOceanGround(
                 const sy =
                     ctx.view.minY +
                     Math.random() * (ctx.view.maxY - ctx.view.minY);
-                if (ctx.isOceanAt(sx, sy)) {
+                if (onThisWater(sx, sy)) {
                     ctx.emitParticles(oceanSparkle(sparkleTex, sx, sy));
                 }
             }
