@@ -28,7 +28,7 @@ async function rebuildClient(): Promise<void> {
     building = true;
     console.log("\n[dev] rebuilding client…");
     const ok = await buildClient();
-    if (ok) console.log("[dev] client ready — refresh the browser");
+    if (ok) console.log("[dev] client ready — browser will live-reload");
     building = false;
     if (rebuildQueued) {
         rebuildQueued = false;

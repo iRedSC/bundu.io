@@ -41,15 +41,23 @@ function applyPose(container: Container, display: ModelDisplay): void {
 
 /**
  * Pose overlay after fit-to-size (inventory / ground icons).
- * Scale is ignored — maxSize already chose the on-screen size; world display
- * scales (e.g. tree 1.6) must not inflate fitted icons.
+ * World display scales (e.g. tree 1.6) stay ignored so fitted ground icons
+ * don't inflate. Inventory/icon scale is applied relative to the fit.
  */
-function applyDisplayOverlay(container: Container, display: ModelDisplay): void {
+function applyDisplayOverlay(
+    container: Container,
+    display: ModelDisplay,
+    relativeScale = false
+): void {
     if (display.rotation !== undefined) {
         container.rotation = radians(display.rotation);
     }
     if (display.x !== undefined || display.y !== undefined) {
         container.position.set(display.x ?? 0, display.y ?? 0);
+    }
+    if (relativeScale && display.scale !== undefined) {
+        container.scale.x *= display.scale;
+        container.scale.y *= display.scale;
     }
 }
 
@@ -157,9 +165,15 @@ export function mountModel(
     // Missing display: still render model content with identity pose when fitting
     // (inventory fallback) or when the model has its own content.
     const pose = display ?? {};
+    const relativeScale =
+        displayName === "inventory" || displayName === "icon";
 
     const root = new Container();
     parent.addChild(root);
+
+    const applyFittedPose = () => applyDisplayOverlay(root, pose, relativeScale);
+    const applyMountPose = () =>
+        options.maxSize !== undefined ? applyFittedPose() : applyPose(root, pose);
 
     // Content resolution: display override → owning model texture/parts.
     if (pose.model) {
@@ -175,8 +189,7 @@ export function mountModel(
                 ...options,
                 shadows: options.shadows ?? options.maxSize === undefined,
             });
-            if (options.maxSize !== undefined) applyDisplayOverlay(root, pose);
-            else applyPose(root, pose);
+            applyMountPose();
             return {
                 container: root,
                 sprites: mounted.sprites,
@@ -185,8 +198,7 @@ export function mountModel(
         }
         if (nested.texture) {
             const mounted = mountTexture(nested.texture, root, options);
-            if (options.maxSize !== undefined) applyDisplayOverlay(root, pose);
-            else applyPose(root, pose);
+            applyMountPose();
             return {
                 container: root,
                 sprites: mounted.sprites,
@@ -204,8 +216,7 @@ export function mountModel(
     const texture = pose.texture ?? model.texture;
     if (texture) {
         const mounted = mountTexture(texture, root, options);
-        if (options.maxSize !== undefined) applyDisplayOverlay(root, pose);
-        else applyPose(root, pose);
+        applyMountPose();
         return {
             container: root,
             sprites: mounted.sprites,
@@ -220,8 +231,7 @@ export function mountModel(
             ...options,
             shadows: options.shadows ?? options.maxSize === undefined,
         });
-        if (options.maxSize !== undefined) applyDisplayOverlay(root, pose);
-        else applyPose(root, pose);
+        applyMountPose();
         return {
             container: root,
             sprites: mounted.sprites,

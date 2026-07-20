@@ -3,7 +3,10 @@ abstract: true
 extends: item/type/none
 displays:
     hand:
-        rotation: -75
-        x: -0.2
-        y: 0.15
+        rotation: 220
+        x: -0.125
+        y: 0.125
         scale: 0.6
+    inventory:
+        rotation: 45
+        scale: 1.25

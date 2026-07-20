@@ -112,7 +112,7 @@ button:disabled {
     align-items: stretch;
     gap: 0.35rem;
     pointer-events: none;
-    font-family: "Nunito", system-ui, sans-serif;
+    font-family: Arial, sans-serif;
 }
 
 .chat-log {
@@ -286,6 +286,11 @@ button:disabled {
 
 .chat-tok-text {
     color: #f2f0e4;
+}
+
+#chat-input,
+#name-input {
+    font-family: Arial, sans-serif;
 }
 
 .loading-overlay {

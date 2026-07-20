@@ -6,7 +6,7 @@ import {
 } from "@bundu/shared";
 import {
     clientRegistries,
-    clientModelId,
+    clientItemModelId,
 } from "../../configs/registries";
 import { type Container, Graphics, type Point, Text } from "pixi.js";
 import GameObject from "../game_object";
@@ -199,7 +199,7 @@ export class Player extends GameObject implements AnimContext {
         const items = clientRegistries().item;
         const visual = (id?: number | null) =>
             typeof id === "number" && id >= 0
-                ? clientModelId(items.location(id))
+                ? clientItemModelId(items.location(id))
                 : "";
         this.mainhand = visual(equipment.mainhand);
         this.offhand = visual(equipment.offhand);

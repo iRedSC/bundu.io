@@ -13,6 +13,9 @@ const markers = [
     "config-hot-reload",
     "startConfigHotReload",
     "__dev/config-reload",
+    // Browser live-reload after client rebuild (dev-only; injected by static-server)
+    "__dev/live-reload",
+    ".dev-reload",
 ];
 
 const files: string[] = [];
