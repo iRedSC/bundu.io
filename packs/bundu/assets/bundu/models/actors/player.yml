@@ -32,6 +32,12 @@ parts:
         shadow: 1
         spillover: 50
 
+    # Child of body so it follows body anims; behind the body sprite.
+    backpack:
+        parent: body
+        attach: true
+        zIndex: -1
+
 # Example:
 # variants:
 #   1:
@@ -47,6 +53,7 @@ slots:
         mirrorX: true
         scale: 1.8
     helmet: { part: body, display: body }
+    backpack: { part: backpack, display: body }
 
 animations:
     wave:

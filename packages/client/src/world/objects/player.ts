@@ -214,6 +214,7 @@ export class Player extends GameObject implements AnimContext {
         this.fillSlot("mainhand", this.mainhand);
         this.fillSlot("offhand", this.offhand);
         this.fillSlot("helmet", this.helmet);
+        if (this.backpack) this.fillSlot("backpack", "backpack");
         this.setBodyTexture(
             this.helmet ? BODY_WITHOUT_FEATURES : BODY_TEXTURE,
             // Hat body is unpadded 100×100; default body uses authored spillover.
