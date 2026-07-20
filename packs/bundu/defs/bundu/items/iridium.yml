@@ -1,0 +1,5 @@
+id: item/iridium
+extends: item/type/none
+texture: bundu/resource/iridium_ore.png
+---
+{}

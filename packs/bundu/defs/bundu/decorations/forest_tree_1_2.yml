@@ -1,0 +1,7 @@
+id: decoration/forest_tree_1_2
+parts:
+  main:
+    sprite: bundu/decoration/forest/forest_tree_1_2.png
+---
+size: 160
+z: 40

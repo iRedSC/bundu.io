@@ -1,0 +1,5 @@
+id: item/bear_fur
+extends: item/type/none
+texture: bundu/item/material/bear_fur.svg
+---
+{}

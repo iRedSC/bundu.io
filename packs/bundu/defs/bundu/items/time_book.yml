@@ -1,0 +1,5 @@
+id: item/time_book
+extends: item/type/book
+texture: bundu/item/book/time_book.svg
+---
+type: book

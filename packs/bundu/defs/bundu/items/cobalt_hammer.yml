@@ -1,0 +1,15 @@
+id: item/cobalt_hammer
+extends: item/type/hammer
+texture: bundu/item/tool/cobalt_hammer.svg
+---
+type: hammer
+level: 5
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 7
+            attack.damage.building:
+                op: add
+                value: 60

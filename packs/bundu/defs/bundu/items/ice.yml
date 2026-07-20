@@ -1,0 +1,5 @@
+id: item/ice
+extends: item/type/none
+texture: bundu/item/material/ice.svg
+---
+{}

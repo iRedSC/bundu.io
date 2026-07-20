@@ -1,0 +1,10 @@
+result:
+    item: shovel
+    amount: 1
+duration: 12000
+score: 150
+ingredients:
+    stone: 70
+    wood: 40
+requirements:
+    - near_crafting_table

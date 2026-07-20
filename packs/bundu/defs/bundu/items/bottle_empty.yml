@@ -1,0 +1,5 @@
+id: item/bottle_empty
+extends: item/type/none
+texture: bundu/misc/unknown_asset.svg
+---
+{}

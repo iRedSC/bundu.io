@@ -1,0 +1,9 @@
+id: item/miracle_fruit
+extends: item/type/food
+texture: bundu/item/food/miracle_fruit.svg
+---
+type: food
+can_saturate: true
+stats:
+    hunger: 35
+    health: -10

@@ -1,0 +1,8 @@
+result:
+    item: wood_wall
+    amount: 1
+duration: 2000
+score: 15
+ingredients:
+    wood: 25
+requirements: []

@@ -1,0 +1,14 @@
+# @pack-gen model=models/corpses/elephant_dead.yml
+id: elephant_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/elephant/elephant_dead.svg
+    spriteScale: 1.1
+---
+decay: 30
+destroy_on_empty: true
+multipliers:
+    knife: 2
+quantity: 9
+loot_table: elephant_dead

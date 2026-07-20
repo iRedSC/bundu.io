@@ -14,10 +14,86 @@ depends: [bundu]
 Set `BUNDU_PACK_ROOT` to load packs from another directory. Run
 `bun run validate:packs` after editing a pack.
 
+## Authoring with `defs/`
+
+Pack YAML is authored under `defs/<namespace>/`. `bun run pack:gen` splits those
+files into the runtime trees the server already loads:
+
+- `data/<namespace>/` — server gameplay
+- `assets/<namespace>/` — client models, ground models, lang, client gameplay
+
+Textures stay as real files under `assets/<namespace>/textures/` (not generated).
+`validate:packs` runs `pack:gen --check` first so generated YAML cannot drift.
+
+### Combined definitions
+
+Paired content uses a YAML document separator. First doc = display (assets),
+second doc = data (server):
+
+```yaml
+# defs/bundu/items/pinecone.yml
+id: item/pinecone
+extends: item/type/none
+texture: bundu/item/material/pinecone.svg
+
+---
+{}
+```
+
+```yaml
+# defs/bundu/entities/bear.yml
+id: bear
+extends: animal
+parts:
+  body:
+    sprite: bundu/entity/animal/bear/bear.svg
+    spriteScale: 2.5
+
+---
+health: 350
+behavior: hostile
+corpse: bear_dead
+```
+
+Path → emit mapping:
+
+| `defs/...` | display → | data → |
+|---|---|---|
+| `items/X.yml` | `assets/.../models/items/X.yml` | `data/.../items/X.yml` |
+| `entities/X.yml` | `models/actors/X.yml` | `entities/X.yml` |
+| `decorations/X.yml` | `models/decorations/X.yml` | `decorations/X.yml` |
+| `resources/X.yml` | `models/resources/X.yml` | `resources/X.yml` |
+| `buildings/walls/X.yml` | `models/walls/X.yml` | `buildings/X.yml` |
+| `buildings/doors/X.yml` | `models/doors/X.yml` | `buildings/X.yml` |
+| `buildings/structures/X.yml` | `models/structures/X.yml` | `buildings/X.yml` |
+| `ground_types/X.yml` | `ground_models/X.yml` | `ground_types/X.yml` |
+| `models/**` | `models/**` (display-only) | — |
+| `recipes/**`, `loot_tables/**`, `tags/**` | — | same path under `data/` |
+| `client/**` | copied into `assets/` | — |
+
+Single-doc files in a paired registry folder are data-only. Single-doc files under
+`models/` or `client/` are assets-only.
+
+When the model path is not the default for that registry, add a directive:
+
+```yaml
+# @pack-gen model=models/nature/tree.yml
+id: forest_tree
+# ...
+
+---
+score: 5
+loot_table: forest_tree
+```
+
+Shared abstracts stay under `defs/.../models/` and are referenced with `extends`
+from display halves (same as today’s model inheritance).
+
 ## Gameplay registries
 
-Gameplay definitions use canonical `namespace:path` IDs. The server currently
-loads these registries independently:
+Runtime paths below are under `data/` (generated from `defs/`). Gameplay
+definitions use canonical `namespace:path` IDs. The server currently loads these
+registries independently:
 
 - `item`
 - `structure`
@@ -166,7 +242,9 @@ resource quantity and harvest hit number do not advance.
 
 ## Assets
 
-Asset files use namespaced logical paths:
+Model / ground-model / lang / client gameplay YAML is generated from `defs/`
+into `assets/`. Textures are authored directly under `assets/`. Asset files use
+namespaced logical paths:
 
 ```text
 assets/bundu/textures/structure/wall/wood_wall.png

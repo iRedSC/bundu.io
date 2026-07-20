@@ -1,0 +1,7 @@
+id: decoration/beach_flower_1
+parts:
+  main:
+    sprite: bundu/decoration/beach/beach_flower_1.svg
+---
+size: 48
+z: 20

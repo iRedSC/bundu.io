@@ -1,0 +1,7 @@
+id: decoration/snow_blob_3
+parts:
+  main:
+    sprite: bundu/decoration/snow/snow_blob_3.svg
+---
+size: 280
+z: 1

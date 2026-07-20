@@ -1,0 +1,27 @@
+id: rottable
+abstract: true
+
+parts:
+  main:
+    shadow: 1
+
+animations:
+  hit:
+    preset: hit
+    parts: main
+  place:
+    preset: place
+    parts: main
+  rotting:
+    preset: rotting
+    parts: main
+
+states:
+  rotting:
+    default: false
+    values:
+      "true":
+        parts:
+          main:
+            saturation: 0
+        animations: [rotting]

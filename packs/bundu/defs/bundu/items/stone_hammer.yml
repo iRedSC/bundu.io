@@ -1,0 +1,15 @@
+id: item/stone_hammer
+extends: item/type/hammer
+texture: bundu/item/tool/stone_hammer.svg
+---
+type: hammer
+level: 2
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 4
+            attack.damage.building:
+                op: add
+                value: 30

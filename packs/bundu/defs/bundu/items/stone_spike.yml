@@ -1,0 +1,6 @@
+id: item/stone_spike
+extends: item/type/spike
+texture: bundu/item/structure/spike/stone_spike.png
+---
+type: building
+places: stone_spike

@@ -1,0 +1,7 @@
+id: decoration/forest_flower3
+parts:
+  main:
+    sprite: bundu/decoration/forest/forest_flower3.svg
+---
+size: 48
+z: 20

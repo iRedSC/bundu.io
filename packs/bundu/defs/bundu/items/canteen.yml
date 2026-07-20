@@ -1,0 +1,12 @@
+id: item/canteen
+extends: item/type/none
+texture: bundu/misc/unknown_asset.svg
+---
+type: book
+function: off_hand
+whenOffHand:
+    "*":
+        attributes:
+            thirst.hydration:
+                op: multiply
+                value: 0.75

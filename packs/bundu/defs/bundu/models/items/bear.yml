@@ -1,0 +1,3 @@
+id: item/bear
+extends: item/type/none
+texture: bundu/entity/animal/bear/bear.svg

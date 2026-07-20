@@ -1,0 +1,7 @@
+id: decoration/beach_ground_circle_dark
+parts:
+  main:
+    sprite: bundu/decoration/beach/beach_ground_circle_dark.svg
+---
+size: 120
+z: 0

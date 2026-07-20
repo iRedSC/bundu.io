@@ -1,0 +1,7 @@
+id: decoration/pine_tree_snow
+parts:
+  main:
+    sprite: bundu/decoration/forest/pine_tree_snow.svg
+---
+size: 160
+z: 40

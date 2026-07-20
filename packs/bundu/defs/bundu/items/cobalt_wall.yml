@@ -1,0 +1,6 @@
+id: item/cobalt_wall
+extends: item/type/wall
+texture: bundu/structure/wall/cobalt_wall.png
+---
+type: building
+places: cobalt_wall

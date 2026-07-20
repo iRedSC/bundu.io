@@ -1,0 +1,3 @@
+id: item/mango_tree1
+extends: item/type/none
+texture: bundu/decoration/forest/mango_tree1.svg

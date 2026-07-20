@@ -1,0 +1,11 @@
+id: item/lumber_axe
+extends: item/type/pickaxe
+texture: bundu/item/tool/hatchet.svg
+---
+type: axe
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 7

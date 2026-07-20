@@ -1,0 +1,5 @@
+id: item/cloth
+extends: item/type/none
+texture: bundu/item/material/cloth.svg
+---
+{}

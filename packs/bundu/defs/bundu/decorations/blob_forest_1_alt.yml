@@ -1,0 +1,7 @@
+id: decoration/blob_forest_1_alt
+parts:
+  main:
+    sprite: bundu/decoration/forest/blob_forest_1_alt.svg
+---
+size: 280
+z: 1

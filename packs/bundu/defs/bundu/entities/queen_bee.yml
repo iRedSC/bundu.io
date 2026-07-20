@@ -1,0 +1,25 @@
+id: queen_bee
+extends: animal
+footsteps: false
+parts:
+  body:
+    sprite: bundu/entity/animal/queen_bee/queen_bee.svg
+    spriteScale: 1
+animations:
+  idle:
+    data: { amplitude: 0.025 }
+---
+health: 250
+score: 500
+behavior: hostile
+detectionRange: 300
+loseSightRange: 450
+passiveSpeed: 10
+activeSpeed: 10
+attack_damage: 60
+scale: 1.6
+hasHome: true
+aggroSwitch: onHit
+aggroLevel: high
+corpse: queen_bee_dead
+spawn_count: 1

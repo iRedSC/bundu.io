@@ -1,0 +1,7 @@
+id: decoration/savannah_bush1
+parts:
+  main:
+    sprite: bundu/decoration/savannah/savannah_bush1.svg
+---
+size: 90
+z: 30

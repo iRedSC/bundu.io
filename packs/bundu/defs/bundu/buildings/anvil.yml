@@ -1,0 +1,7 @@
+class: building
+health: 1000
+whenNearby:
+    proximityDistance: 200
+    "*":
+        flags:
+            - near_anvil

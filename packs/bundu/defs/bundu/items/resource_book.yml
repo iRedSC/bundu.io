@@ -1,0 +1,5 @@
+id: item/resource_book
+extends: item/type/book
+texture: bundu/item/book/resource_book.svg
+---
+type: book

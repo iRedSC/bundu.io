@@ -1,0 +1,7 @@
+id: item/honey
+extends: item/type/food
+texture: bundu/item/food/honey.svg
+---
+type: food
+stats:
+    hunger: 7

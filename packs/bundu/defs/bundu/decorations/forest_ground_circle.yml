@@ -1,0 +1,7 @@
+id: decoration/forest_ground_circle
+parts:
+  main:
+    sprite: bundu/decoration/forest/forest_ground_circle.svg
+---
+size: 120
+z: 0

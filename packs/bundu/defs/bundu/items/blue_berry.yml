@@ -1,0 +1,7 @@
+id: item/blue_berry
+extends: item/type/food
+texture: bundu/item/food/blue_berry.svg
+---
+type: food
+stats:
+    hunger: 3

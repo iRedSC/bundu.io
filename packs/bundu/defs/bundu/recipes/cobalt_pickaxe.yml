@@ -1,0 +1,15 @@
+result:
+    item: cobalt_pickaxe
+    amount: 1
+duration: 25000
+score: 1500
+ingredients:
+    silver_pickaxe: 1
+    cobalt: 30
+    silver: 40
+    copper: 60
+    stone: 100
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil

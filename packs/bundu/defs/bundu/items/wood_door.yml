@@ -1,0 +1,6 @@
+id: item/wood_door
+extends: item/type/door
+texture: bundu/structure/door/wood_door.png
+---
+type: building
+places: wood_door

@@ -1,0 +1,7 @@
+id: decoration/beach_2
+parts:
+  main:
+    sprite: bundu/decoration/beach/beach_2.svg
+---
+size: 200
+z: 0

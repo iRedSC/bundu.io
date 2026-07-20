@@ -1,0 +1,12 @@
+id: item/type/pickaxe
+abstract: true
+extends: item/type/none
+displays:
+    hand:
+        rotation: 220
+        x: -0.125
+        y: 0.125
+        scale: 0.6
+    inventory:
+        rotation: 45
+        scale: 1.25

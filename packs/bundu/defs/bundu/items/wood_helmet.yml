@@ -1,0 +1,14 @@
+id: item/wood_helmet
+extends: item/type/helmet
+texture: bundu/item/equipment/wood_helmet.svg
+---
+type: helmet
+level: 1
+stats:
+    health: -10
+whenHelmet:
+    "*":
+        attributes:
+            health.defense:
+                op: add
+                value: 2

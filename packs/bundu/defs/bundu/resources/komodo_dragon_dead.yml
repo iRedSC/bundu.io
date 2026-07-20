@@ -1,0 +1,14 @@
+# @pack-gen model=models/corpses/komodo_dragon_dead.yml
+id: komodo_dragon_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/komodo_dragon/komodo_dragon_dead.svg
+    spriteScale: 3.125
+---
+decay: 30
+destroy_on_empty: true
+multipliers:
+    knife: 2
+quantity: 11
+loot_table: komodo_dragon_dead

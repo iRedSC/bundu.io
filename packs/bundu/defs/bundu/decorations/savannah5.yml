@@ -1,0 +1,7 @@
+id: decoration/savannah5
+parts:
+  main:
+    sprite: bundu/decoration/savannah/savannah5.svg
+---
+size: 200
+z: 0

@@ -1,0 +1,12 @@
+kind: solid
+color: "#dfe8ed"
+fill: forest_blobs
+footsteps: true
+---
+model: snow
+whenOccupied:
+  occupationType: center
+  "*":
+    attributes:
+      temperature.warmth: { op: add, value: -15 }
+      movement.speed: { op: multiply, value: 0.9 }

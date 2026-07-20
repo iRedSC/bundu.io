@@ -1,0 +1,5 @@
+id: item/ram_wool
+extends: item/type/none
+texture: bundu/item/material/ram_wool.svg
+---
+{}

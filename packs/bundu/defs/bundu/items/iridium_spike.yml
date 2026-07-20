@@ -1,0 +1,6 @@
+id: item/iridium_spike
+extends: item/type/spike
+texture: bundu/item/structure/spike/iridium_spike.png
+---
+type: building
+places: iridium_spike

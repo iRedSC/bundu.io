@@ -1,0 +1,24 @@
+id: bear
+extends: animal
+parts:
+  body:
+    sprite: bundu/entity/animal/bear/bear.svg
+    # Authored for scale 0.8 → net visual ≈ 200
+    spriteScale: 2.5
+---
+health: 350
+score: 500
+behavior: hostile
+detectionRange: 300
+loseSightRange: 450
+passiveSpeed: 7
+activeSpeed: 11
+attack_damage: 35
+scale: 0.8
+hasHome: true
+aggroSwitch: onHit
+aggroLevel: medium
+corpse: bear_dead
+spawn_count: 4
+aggroAt:
+    - "#bundu:walls"

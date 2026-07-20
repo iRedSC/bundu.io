@@ -1,0 +1,12 @@
+result:
+    item: butcher_knife
+    amount: 1
+duration: 15000
+score: 1500
+ingredients:
+    stone: 70
+    wood: 100
+    elephant_tusk: 2
+requirements:
+    - near_crafting_table
+    - near_anvil

@@ -1,0 +1,12 @@
+id: quick_wood_wall
+extends: wall
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/wall/wood_wall.png
+    spike: bundu/structure/spike/wood_spike.png
+---
+class: wall
+material: quick_wood
+tier: 1
+health: 100

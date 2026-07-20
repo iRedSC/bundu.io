@@ -1,0 +1,15 @@
+id: item/stone_sword
+extends: item/type/sword
+texture: bundu/item/tool/stone_sword.svg
+---
+type: sword
+level: 2
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 15
+            health.defense.blocking:
+                op: add
+                value: 3

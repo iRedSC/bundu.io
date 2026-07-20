@@ -1,0 +1,6 @@
+id: item/silver_spike
+extends: item/type/spike
+texture: bundu/item/structure/spike/silver_spike.png
+---
+type: building
+places: silver_spike

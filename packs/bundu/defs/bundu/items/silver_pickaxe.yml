@@ -1,0 +1,12 @@
+id: item/silver_pickaxe
+extends: item/type/pickaxe
+texture: bundu/item/tool/silver_pickaxe.svg
+---
+type: pickaxe
+level: 4
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 5

@@ -1,0 +1,7 @@
+id: decoration/palm_tree_2
+parts:
+  main:
+    sprite: bundu/decoration/beach/palm_tree_2.png
+---
+size: 160
+z: 40

@@ -1,0 +1,12 @@
+id: quick_silver_wall
+extends: wall
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/wall/silver_wall.png
+    spike: bundu/structure/spike/silver_spike.png
+---
+class: wall
+material: quick_silver
+tier: 3
+health: 500

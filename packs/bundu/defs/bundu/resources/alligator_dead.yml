@@ -1,0 +1,14 @@
+# @pack-gen model=models/corpses/alligator_dead.yml
+id: alligator_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/alligator/alligator_dead.svg
+    spriteScale: 2.5
+---
+decay: 30
+destroy_on_empty: true
+multipliers:
+    knife: 2
+quantity: 7
+loot_table: alligator_dead

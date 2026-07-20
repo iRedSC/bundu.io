@@ -1,0 +1,3 @@
+id: item/elephant_angry
+extends: item/type/none
+texture: bundu/entity/animal/elephant/elephant_angry.svg

@@ -1,0 +1,7 @@
+id: decoration/forest_leaf
+parts:
+  main:
+    sprite: bundu/decoration/forest/forest_leaf.svg
+---
+size: 48
+z: 20

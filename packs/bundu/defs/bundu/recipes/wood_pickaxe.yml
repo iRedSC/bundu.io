@@ -1,0 +1,8 @@
+result:
+    item: wood_pickaxe
+    amount: 1
+duration: 3000
+score: 50
+ingredients:
+    wood: 10
+requirements: []

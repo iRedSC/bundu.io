@@ -1,0 +1,7 @@
+id: decoration/water_lily_pad
+parts:
+  main:
+    sprite: bundu/decoration/water/water_lily_pad.svg
+---
+size: 48
+z: 20

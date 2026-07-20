@@ -1,0 +1,11 @@
+id: hive_large
+extends: single_tile_node
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/misc/hive_3.svg
+---
+destroy_on_empty: true
+score: 20
+quantity: 10
+loot_table: hive_large

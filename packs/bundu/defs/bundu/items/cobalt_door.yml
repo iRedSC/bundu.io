@@ -1,0 +1,6 @@
+id: item/cobalt_door
+extends: item/type/door
+texture: bundu/structure/door/cobalt_door.png
+---
+type: building
+places: cobalt_door

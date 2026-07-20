@@ -1,0 +1,13 @@
+id: item/book
+extends: item/type/book
+texture: bundu/item/book/book.svg
+---
+type: book
+whenOffHand:
+    "*":
+        flags:
+            - holding_book
+whenMainHand:
+    "*":
+        flags:
+            - holding_book

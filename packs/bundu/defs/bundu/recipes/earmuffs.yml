@@ -1,0 +1,10 @@
+result:
+    item: earmuffs
+    amount: 1
+duration: 6000
+score: 250
+ingredients:
+    bear_fur: 2
+    deer_hide: 3
+requirements:
+    - near_crafting_table

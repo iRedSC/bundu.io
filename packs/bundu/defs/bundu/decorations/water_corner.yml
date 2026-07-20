@@ -1,0 +1,7 @@
+id: decoration/water_corner
+parts:
+  main:
+    sprite: bundu/decoration/water/water_corner.svg
+---
+size: 200
+z: 0

@@ -1,0 +1,12 @@
+id: item/copper_pickaxe
+extends: item/type/pickaxe
+texture: bundu/item/tool/copper_pickaxe.svg
+---
+type: pickaxe
+level: 3
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 4

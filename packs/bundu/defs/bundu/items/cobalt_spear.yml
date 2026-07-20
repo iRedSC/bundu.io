@@ -1,0 +1,15 @@
+id: item/cobalt_spear
+extends: item/type/spear
+texture: bundu/item/tool/cobalt_spear.svg
+---
+type: spear
+level: 5
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 17
+            health.defense.blocking:
+                op: add
+                value: 3

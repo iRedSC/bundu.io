@@ -1,0 +1,5 @@
+id: item/pinecone
+extends: item/type/none
+texture: bundu/item/material/pinecone.svg
+---
+{}

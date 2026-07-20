@@ -1,0 +1,12 @@
+id: item/cobalt_medallion
+extends: item/type/none
+texture: bundu/misc/unknown_asset.svg
+---
+type: book
+function: off_hand
+whenOffHand:
+    "*":
+        attributes:
+            health.defense:
+                op: add
+                value: 2

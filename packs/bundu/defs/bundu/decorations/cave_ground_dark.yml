@@ -1,0 +1,7 @@
+id: decoration/cave_ground_dark
+parts:
+  main:
+    sprite: bundu/decoration/cave/cave_ground_dark.svg
+---
+size: 200
+z: 0

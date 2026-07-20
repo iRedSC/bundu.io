@@ -1,0 +1,7 @@
+id: decoration/forest_light
+parts:
+  main:
+    sprite: bundu/decoration/forest/forest_light.svg
+---
+size: 200
+z: 0

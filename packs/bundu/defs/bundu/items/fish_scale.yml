@@ -1,0 +1,5 @@
+id: item/fish_scale
+extends: item/type/none
+texture: bundu/misc/unknown_asset.svg
+---
+{}

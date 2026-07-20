@@ -1,0 +1,20 @@
+id: fire_big
+extends: fire
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/crafting/fire_big.svg
+---
+class: building
+solid: false
+health: 600
+whenNearby:
+    stack: max
+    proximityDistance: 200
+    "*":
+        attributes:
+            temperature.warmth:
+                op: add
+                value: 20
+        flags:
+            - near_fire

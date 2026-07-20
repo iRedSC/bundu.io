@@ -1,0 +1,6 @@
+id: item/copper_wall
+extends: item/type/wall
+texture: bundu/structure/wall/copper_wall.png
+---
+type: building
+places: copper_wall

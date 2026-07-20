@@ -1,0 +1,7 @@
+id: decoration/beach_dark
+parts:
+  main:
+    sprite: bundu/decoration/beach/beach_dark.svg
+---
+size: 200
+z: 0

@@ -1,0 +1,15 @@
+result:
+    item: cobalt_helmet
+    amount: 1
+duration: 50000
+score: 2500
+ingredients:
+    silver_helmet: 1
+    cobalt: 80
+    silver: 60
+    copper: 40
+    stone: 80
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil

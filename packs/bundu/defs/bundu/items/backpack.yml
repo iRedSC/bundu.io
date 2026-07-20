@@ -1,0 +1,5 @@
+id: item/backpack
+extends: item/type/none
+texture: bundu/item/equipment/backpack.svg
+---
+function: backpack

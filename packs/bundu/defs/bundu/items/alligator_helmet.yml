@@ -1,0 +1,13 @@
+id: item/alligator_helmet
+extends: item/type/none
+texture: bundu/misc/unknown_asset.svg
+---
+type: helmet
+whenHelmet:
+    "*":
+        attributes:
+            health.defense:
+                op: add
+                value: 5
+        flags:
+            - scuba

@@ -1,0 +1,14 @@
+# @pack-gen model=models/corpses/fish_dead.yml
+id: fish_dead
+extends: corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/fish/fish_dead.svg
+    spriteScale: 2.5
+---
+decay: 30
+destroy_on_empty: true
+multipliers:
+    knife: 2
+quantity: 2
+loot_table: fish_dead

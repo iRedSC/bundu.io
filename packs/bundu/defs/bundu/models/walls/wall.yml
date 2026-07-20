@@ -1,0 +1,34 @@
+id: wall
+abstract: true
+extends: single_tile_node
+
+# Spike sits under the wall body (`main`). Toggle with `spiked` state.
+parts:
+  spike:
+    zIndex: 9
+    visible: false
+    # Spike textures overhang the tile; wall body stays 1×1.
+    spillover: 25
+  main:
+    zIndex: 10
+    shadow: 1
+
+animations:
+  attack:
+    preset: spike_attack
+    parts: spike
+
+states:
+  spiked:
+    default: false
+    values:
+      "true":
+        parts:
+          spike:
+            visible: true
+  rotting:
+    values:
+      "true":
+        parts:
+          spike:
+            saturation: 0

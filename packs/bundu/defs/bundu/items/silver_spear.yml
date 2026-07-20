@@ -1,0 +1,15 @@
+id: item/silver_spear
+extends: item/type/spear
+texture: bundu/item/tool/silver_spear.svg
+---
+type: spear
+level: 4
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 14
+            health.defense.blocking:
+                op: add
+                value: 2

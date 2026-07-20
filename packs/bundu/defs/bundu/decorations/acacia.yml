@@ -1,0 +1,7 @@
+id: decoration/acacia
+parts:
+  main:
+    sprite: bundu/decoration/forest/acacia.svg
+---
+size: 160
+z: 40

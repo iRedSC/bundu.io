@@ -1,0 +1,14 @@
+id: item/repair_hammer
+extends: item/type/pickaxe
+texture: bundu/misc/unknown_asset.svg
+---
+type: wrench
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 4
+            attack.building.damage:
+                op: add
+                value: -50

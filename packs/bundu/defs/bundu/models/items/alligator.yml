@@ -1,0 +1,3 @@
+id: item/alligator
+extends: item/type/none
+texture: bundu/entity/animal/alligator/alligator.svg

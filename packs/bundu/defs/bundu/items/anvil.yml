@@ -1,0 +1,6 @@
+id: item/anvil
+extends: item/type/building
+texture: bundu/structure/crafting/anvil.svg
+---
+type: building
+places: anvil

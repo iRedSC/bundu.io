@@ -1,0 +1,62 @@
+id: door
+abstract: true
+extends: single_tile_node
+
+# Layer order: spike (optional) → wall base → door leaf (`main`).
+parts:
+    spike:
+        zIndex: 9
+        visible: false
+        # Spike textures overhang the tile; wall/door bodies stay 1×1.
+        spillover: 25
+    wall:
+        zIndex: 10
+        shadow: 1
+    main:
+        zIndex: 11
+        shadow: 1
+
+animations:
+    hit:
+        parts: [wall, main]
+    place:
+        parts: [wall, main]
+    rotting:
+        parts: [wall, main, spike]
+    attack:
+        preset: spike_attack
+        parts: spike
+
+states:
+    open:
+        default: false
+        values:
+            "true":
+                parts:
+                    main:
+                        zIndex: -1
+                        alpha: 0.6
+                        scale: 0.9
+                    wall:
+                        zIndex: 0
+                        alpha: 0.6
+                        scale: 0.9
+                    spike:
+                        zIndex: -2
+                        alpha: 0.4
+                        scale: 0.9
+    spiked:
+        default: false
+        values:
+            "true":
+                parts:
+                    spike:
+                        visible: true
+    rotting:
+        values:
+            "true":
+                parts:
+                    wall:
+                        saturation: 0
+                    spike:
+                        saturation: 0

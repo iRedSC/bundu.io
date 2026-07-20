@@ -1,0 +1,15 @@
+id: item/copper_hammer
+extends: item/type/hammer
+texture: bundu/item/tool/copper_hammer.svg
+---
+type: hammer
+level: 3
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 5
+            attack.damage.building:
+                op: add
+                value: 40

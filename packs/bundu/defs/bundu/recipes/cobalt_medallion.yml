@@ -1,0 +1,12 @@
+result:
+    item: cobalt_medallion
+    amount: 1
+duration: 17000
+score: 5000
+ingredients:
+    copper: 150
+    cobalt: 40
+requirements:
+    - near_fire
+    - near_anvil
+    - near_crafting_table

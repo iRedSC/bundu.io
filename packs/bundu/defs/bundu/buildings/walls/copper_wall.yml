@@ -1,0 +1,12 @@
+id: copper_wall
+extends: wall
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/wall/copper_wall.png
+    spike: bundu/structure/spike/copper_spike.png
+---
+class: wall
+material: copper
+tier: 3
+health: 4500

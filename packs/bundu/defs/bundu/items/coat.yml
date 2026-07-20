@@ -1,0 +1,11 @@
+id: item/coat
+extends: item/type/hat
+texture: bundu/item/equipment/coat.svg
+---
+type: hat
+whenHelmet:
+    "*":
+        attributes:
+            temperature.warmth:
+                op: add
+                value: 24

@@ -1,0 +1,7 @@
+id: decoration/winter_light
+parts:
+  main:
+    sprite: bundu/decoration/snow/winter_light.svg
+---
+size: 200
+z: 0

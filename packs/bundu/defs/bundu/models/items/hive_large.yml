@@ -1,0 +1,3 @@
+id: item/hive_large
+extends: item/type/none
+texture: bundu/structure/misc/hive_3.svg

@@ -1,0 +1,7 @@
+id: decoration/water_edge
+parts:
+  main:
+    sprite: bundu/decoration/water/water_edge.svg
+---
+size: 200
+z: 0
