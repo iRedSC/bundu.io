@@ -12,6 +12,12 @@ import {
     placeModeFromModifiers,
     type PlaceMode as PlaceModeType,
 } from "@bundu/shared/inventory";
+import { clientRegistries } from "../configs/registries";
+import {
+    hideRegistryTooltip,
+    moveRegistryTooltip,
+    showRegistryTooltip,
+} from "./registry_tooltip";
 
 type ItemStack = [id: number, amount: number];
 
@@ -216,10 +222,29 @@ export class Inventory {
         return this.isLocked?.() ?? false;
     }
 
+    private tipForSlot(slot: number, screenX: number, screenY: number) {
+        if (this.dragging || this.dragFrom !== null || this.cursor) {
+            hideRegistryTooltip();
+            return;
+        }
+        const itemId = this.slots[slot]?.[0] ?? this.buttons[slot]?.item;
+        if (itemId == null) {
+            hideRegistryTooltip();
+            return;
+        }
+        showRegistryTooltip(
+            "item",
+            clientRegistries().item.location(itemId),
+            screenX,
+            screenY
+        );
+    }
+
     private wireButton(button: InventoryButton, slot: number) {
         button.button.onpointerdown = (ev) => {
             if (this.locked()) return;
             this.lastPointer = { x: ev.clientX, y: ev.clientY };
+            hideRegistryTooltip();
             if (ev.button === 0) {
                 this.dragFrom = slot;
                 this.dragging = false;
@@ -231,14 +256,25 @@ export class Inventory {
             }
         };
 
-        button.button.onpointerenter = () => {
+        button.button.onpointerenter = (ev) => {
             button.hovering = true;
             this.hoverSlot = slot;
+            this.tipForSlot(slot, ev.global.x, ev.global.y);
+        };
+
+        button.button.onpointermove = (ev) => {
+            if (!button.hovering) return;
+            if (this.dragging || this.dragFrom !== null || this.cursor) {
+                hideRegistryTooltip();
+                return;
+            }
+            moveRegistryTooltip(ev.global.x, ev.global.y);
         };
 
         button.button.onpointerleave = () => {
             button.hovering = false;
             if (this.hoverSlot === slot) this.hoverSlot = null;
+            hideRegistryTooltip();
         };
 
         button.button.onpointerup = (ev) => {
@@ -277,6 +313,7 @@ export class Inventory {
 
             if (!this.dragging && dist2 >= DRAG_THRESHOLD * DRAG_THRESHOLD) {
                 this.dragging = true;
+                hideRegistryTooltip();
                 const stack = this.slots[this.dragFrom];
                 if (stack) {
                     this.dragStack = stack;
@@ -711,6 +748,7 @@ export class Inventory {
     }
 
     destroy(): void {
+        hideRegistryTooltip();
         window.removeEventListener("pointermove", this.onWindowPointerMove);
         window.removeEventListener("pointerup", this.onWindowPointerUp);
         for (const button of this.buttons) button.destroy();

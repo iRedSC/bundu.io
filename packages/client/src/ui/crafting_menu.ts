@@ -4,6 +4,12 @@ import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Container } from "pixi.js";
 import { colorLerp, lerp } from "@bundu/shared/transforms";
+import { clientRegistries } from "../configs/registries";
+import {
+    hideRegistryTooltip,
+    moveRegistryTooltip,
+    showRegistryTooltip,
+} from "./registry_tooltip";
 
 const CRAFTING_COLORS = {
     empty: 0x777777,
@@ -74,6 +80,7 @@ export class CraftingMenu {
     constructor(readonly grid: Grid) {}
 
     update() {
+        hideRegistryTooltip();
         if (this.buttons.length >= this.items.length) {
             const remove = this.buttons.length - this.items.length;
             this.buttons.splice(-remove, remove).forEach((button) => {
@@ -98,6 +105,22 @@ export class CraftingMenu {
             };
             button.leftclick = (_item, shift) => {
                 if (recipe) this.leftClickCB?.(recipe.recipeId, shift);
+            };
+            button.onHover = (hovering, ev) => {
+                if (!hovering || !recipe || !ev) {
+                    hideRegistryTooltip();
+                    return;
+                }
+                showRegistryTooltip(
+                    "item",
+                    clientRegistries().item.location(recipe.resultItemId),
+                    ev.global.x,
+                    ev.global.y
+                );
+            };
+            button.onHoverMove = (ev) => {
+                if (!recipe) return;
+                moveRegistryTooltip(ev.global.x, ev.global.y);
             };
         }
     }

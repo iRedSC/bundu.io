@@ -127,6 +127,12 @@ export class ItemButton {
 
     rightclick?: (item: number, shift: boolean) => void;
     leftclick?: (item: number, shift: boolean) => void;
+    /** Fired after `hovering` updates (tooltips, etc.). */
+    onHover?: (
+        hovering: boolean,
+        ev?: { global: { x: number; y: number } }
+    ) => void;
+    onHoverMove?: (ev: { global: { x: number; y: number } }) => void;
 
     /** @deprecated Prefer `itemDisplay` — kept for callers that still expect a sprite. */
     get itemSprite(): Container {
@@ -162,8 +168,13 @@ export class ItemButton {
         this.button.addChild(this.disableSprite);
         this.button.sortChildren();
 
-        this.button.onpointerenter = () => {
+        this.button.onpointerenter = (ev) => {
             this.hovering = true;
+            this.onHover?.(true, ev);
+        };
+
+        this.button.onpointermove = (ev) => {
+            if (this.hovering) this.onHoverMove?.(ev);
         };
 
         this.button.onpointerleave = () => {
@@ -171,6 +182,7 @@ export class ItemButton {
             if (this._touchDown) {
                 this.rightDown = true;
             }
+            this.onHover?.(false);
         };
 
         this.button.onpointerdown = (ev) => {
@@ -260,6 +272,7 @@ export class ItemButton {
         this.clearIcon?.();
         this.button.removeAllListeners();
         this.button.onpointerenter = null;
+        this.button.onpointermove = null;
         this.button.onpointerleave = null;
         this.button.onpointerdown = null;
         this.button.onpointerup = null;

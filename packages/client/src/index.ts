@@ -12,6 +12,7 @@ import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
 import { ChatController } from "./ui/chat";
+import { createTooltip, hideTooltip } from "./ui/tooltip";
 import { createAdminEditor } from "./admin/editor";
 import { initAssets } from "./assets/load";
 import {
@@ -333,7 +334,10 @@ async function main() {
 
     // * GUI
     const gui = createUI();
+    const tooltip = createTooltip();
+    app.stage.sortableChildren = true;
     app.stage.addChild(gui.container);
+    app.stage.addChild(tooltip.container);
     setupGUIPacketReceiving(receiver, gui, world);
     const chat = new ChatController();
     setupChatPacketReceiving(receiver, world, chat);
@@ -412,6 +416,7 @@ async function main() {
     app.stage.addChild(editor.container);
 
     const setFreecamUi = (enabled: boolean) => {
+        hideTooltip();
         world.setFreecamMode(enabled);
         gui.container.visible = !enabled;
         editor.setActive(enabled);

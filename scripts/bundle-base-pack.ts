@@ -49,10 +49,12 @@ const modelsPath = path.join(outdir, "models.json");
 const registriesPath = path.join(outdir, "registries.json");
 const gameplayPath = path.join(outdir, "gameplay.json");
 const statBarsPath = path.join(outdir, "stat_bars.json");
+const langPath = path.join(outdir, "lang.json");
 fs.writeFileSync(modelsPath, resourcePacks.modelsJson);
 fs.writeFileSync(registriesPath, resourcePacks.registriesJson);
 fs.writeFileSync(gameplayPath, resourcePacks.gameplayJson);
 fs.writeFileSync(statBarsPath, resourcePacks.statBarsJson);
+fs.writeFileSync(langPath, resourcePacks.langJson);
 
 const assetsRoot = path.join(outdir, "assets");
 for (const entry of resourcePacks.manifest.assets) {
@@ -84,6 +86,10 @@ const bundledManifest = {
     statBars: {
         hash: resourcePacks.manifest.statBars.hash,
         url: "stat_bars.json",
+    },
+    lang: {
+        hash: resourcePacks.manifest.lang.hash,
+        url: "lang.json",
     },
     assets: resourcePacks.manifest.assets,
 };
