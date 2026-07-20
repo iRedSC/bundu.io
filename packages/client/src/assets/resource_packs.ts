@@ -30,8 +30,15 @@ type Manifest = {
     registries: { hash: string; url: string };
     gameplay: { hash: string; url: string };
     statBars: { hash: string; url: string };
-    lang: { hash: string; url: string };
+    /** Optional so older format-2 servers without lang still load. */
+    lang?: { hash: string; url: string };
     assets: ManifestAsset[];
+};
+
+const EMPTY_LANG = {
+    format: 1 as const,
+    locale: "en",
+    strings: {} as Record<string, string>,
 };
 
 /** Same-origin sanitized bundu pack emitted by `scripts/bundle-base-pack.ts`. */
@@ -62,7 +69,7 @@ function parseManifest(value: unknown): Manifest {
     const registries = record(raw.registries, "pack manifest.registries");
     const gameplay = record(raw.gameplay, "pack manifest.gameplay");
     const statBars = record(raw.statBars ?? raw.stat_bars, "pack manifest.statBars");
-    const lang = record(raw.lang, "pack manifest.lang");
+    const langRaw = raw.lang;
     if (!Array.isArray(raw.assets)) {
         throw new Error("pack manifest.assets: expected an array");
     }
@@ -81,7 +88,7 @@ function parseManifest(value: unknown): Manifest {
             size: asset.size,
         };
     });
-    return {
+    const manifest: Manifest = {
         format: 2,
         fingerprint: string(raw.fingerprint, "pack manifest.fingerprint"),
         models: {
@@ -100,12 +107,16 @@ function parseManifest(value: unknown): Manifest {
             hash: string(statBars.hash, "pack manifest.statBars.hash"),
             url: string(statBars.url, "pack manifest.statBars.url"),
         },
-        lang: {
-            hash: string(lang.hash, "pack manifest.lang.hash"),
-            url: string(lang.url, "pack manifest.lang.url"),
-        },
         assets,
     };
+    if (langRaw !== undefined) {
+        const lang = record(langRaw, "pack manifest.lang");
+        manifest.lang = {
+            hash: string(lang.hash, "pack manifest.lang.hash"),
+            url: string(lang.url, "pack manifest.lang.url"),
+        };
+    }
+    return manifest;
 }
 
 function parseCompiledModels(value: unknown): CompiledModelDefs {
@@ -214,7 +225,7 @@ async function materializePack(
     resolveRegistries: URL,
     resolveGameplay: URL,
     resolveStatBars: URL,
-    resolveLang: URL,
+    resolveLang: URL | undefined,
     resolveAsset: (path: string) => URL,
     /** Game-server assets are content-addressed with ?hash=; bundled files are not. */
     contentAddressed: boolean
@@ -223,13 +234,16 @@ async function materializePack(
     const registryUrl = new URL(resolveRegistries);
     const gameplayUrl = new URL(resolveGameplay);
     const statBarsUrl = new URL(resolveStatBars);
-    const langUrl = new URL(resolveLang);
+    const langUrl =
+        resolveLang && manifest.lang ? new URL(resolveLang) : undefined;
     if (contentAddressed) {
         modelsUrl.searchParams.set("hash", manifest.models.hash);
         registryUrl.searchParams.set("hash", manifest.registries.hash);
         gameplayUrl.searchParams.set("hash", manifest.gameplay.hash);
         statBarsUrl.searchParams.set("hash", manifest.statBars.hash);
-        langUrl.searchParams.set("hash", manifest.lang.hash);
+        if (langUrl && manifest.lang) {
+            langUrl.searchParams.set("hash", manifest.lang.hash);
+        }
     }
     const [modelsData, registryData, gameplayData, statBarsData, langData] =
         await Promise.all([
@@ -237,7 +251,9 @@ async function materializePack(
             verified(registryUrl, manifest.registries.hash),
             verified(gameplayUrl, manifest.gameplay.hash),
             verified(statBarsUrl, manifest.statBars.hash),
-            verified(langUrl, manifest.lang.hash),
+            langUrl && manifest.lang
+                ? verified(langUrl, manifest.lang.hash)
+                : Promise.resolve(undefined),
         ]);
     const modelDefs = parseCompiledModels(
         JSON.parse(new TextDecoder().decode(modelsData))
@@ -248,7 +264,11 @@ async function materializePack(
     ) as ClientRegistryProjection;
     applyClientGameplay(JSON.parse(new TextDecoder().decode(gameplayData)));
     applyStatBars(JSON.parse(new TextDecoder().decode(statBarsData)));
-    applyLang(JSON.parse(new TextDecoder().decode(langData)));
+    if (langData) {
+        applyLang(JSON.parse(new TextDecoder().decode(langData)));
+    } else {
+        applyLang(EMPTY_LANG);
+    }
 
     revokeObjectUrls();
     const assets = await Promise.all(
@@ -301,7 +321,7 @@ export async function loadResourcePacks(
                 bundledUrl(bundled.registries.url),
                 bundledUrl(bundled.gameplay.url),
                 bundledUrl(bundled.statBars.url),
-                bundledUrl(bundled.lang.url),
+                bundled.lang ? bundledUrl(bundled.lang.url) : undefined,
                 bundledAssetUrl,
                 false
             );
@@ -319,7 +339,7 @@ export async function loadResourcePacks(
         packUrl(base, manifest.registries.url),
         packUrl(base, manifest.gameplay.url),
         packUrl(base, manifest.statBars.url),
-        packUrl(base, manifest.lang.url),
+        manifest.lang ? packUrl(base, manifest.lang.url) : undefined,
         (path) => assetUrl(base, path),
         true
     );

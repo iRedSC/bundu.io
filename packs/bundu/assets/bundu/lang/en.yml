@@ -489,6 +489,15 @@ ground_type:
     ocean:
         name: Ocean
         desc: Ocean terrain.
+    pond:
+        name: Pond
+        desc: Small inland water with a short shore fade.
+    warm_ocean:
+        name: Warm Ocean
+        desc: Clearer, milder ocean water.
+    deep_ocean:
+        name: Deep Ocean
+        desc: Dark, cold ocean with stronger currents.
     savannah:
         name: Savannah
         desc: Savannah terrain.

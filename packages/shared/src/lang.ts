@@ -91,8 +91,9 @@ export function flattenLangDocument(
             const entries = record(value, `${source}.${key}`);
             for (const [id, fields] of Object.entries(entries)) {
                 const idPath = id.replaceAll("/", ".");
+                // Shorthand `item.foo: "Bar"` → `item.ns.foo.name`
                 if (typeof fields === "string") {
-                    out[`${key}.${namespace}.${idPath}`] = fields;
+                    out[`${key}.${namespace}.${idPath}.name`] = fields;
                     continue;
                 }
                 flattenLeaf(

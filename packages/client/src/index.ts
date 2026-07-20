@@ -534,6 +534,7 @@ async function main() {
         world.destroy();
         editor.destroy();
         gui.destroy();
+        tooltip.destroy();
         destroyViewport(viewport);
         document.oncontextmenu = null;
         app.canvas.remove();

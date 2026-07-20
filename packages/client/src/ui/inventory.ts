@@ -223,7 +223,9 @@ export class Inventory {
     }
 
     private tipForSlot(slot: number, screenX: number, screenY: number) {
-        if (this.dragging || this.dragFrom !== null || this.cursor) {
+        // Only suppress while actually dragging / holding a cursor stack —
+        // `dragFrom` is set on pointerdown before the drag threshold.
+        if (this.dragging || this.cursor) {
             hideRegistryTooltip();
             return;
         }
@@ -264,7 +266,7 @@ export class Inventory {
 
         button.button.onpointermove = (ev) => {
             if (!button.hovering) return;
-            if (this.dragging || this.dragFrom !== null || this.cursor) {
+            if (this.dragging || this.cursor) {
                 hideRegistryTooltip();
                 return;
             }
@@ -677,6 +679,14 @@ export class Inventory {
         this.cursor = cursor ?? null;
         this.rebuildItemsMap();
         this.refreshSlotVisuals();
+
+        if (this.hoverSlot !== null) {
+            this.tipForSlot(
+                this.hoverSlot,
+                this.lastPointer.x,
+                this.lastPointer.y
+            );
+        }
 
         if (this.dragStack) {
             this.ghost.setStack(this.dragStack);
