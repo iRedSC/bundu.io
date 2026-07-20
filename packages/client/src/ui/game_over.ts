@@ -10,8 +10,17 @@ function element<T extends HTMLElement>(id: string): T {
     return node as T;
 }
 
+/** Restart a CSS animation on an element (e.g. after re-showing the overlay). */
+function restartAnimation(el: HTMLElement): void {
+    el.style.animation = "none";
+    void el.offsetWidth;
+    el.style.animation = "";
+}
+
 const screen = element<HTMLElement>("game-over");
 const bg = element<HTMLImageElement>("game-over-bg");
+const shade = element<HTMLElement>("game-over-shade");
+const content = element<HTMLElement>("game-over-content");
 const message = element<HTMLElement>("game-over-message");
 export const gameOverRespawnButton = element<HTMLButtonElement>(
     "game-over-respawn"
@@ -32,10 +41,9 @@ export function showGameOver(capture: string | null): void {
     } else {
         bg.removeAttribute("src");
     }
-    // Restart CSS animations when re-shown.
-    bg.style.animation = "none";
-    void bg.offsetWidth;
-    bg.style.animation = "";
+    restartAnimation(bg);
+    restartAnimation(shade);
+    restartAnimation(content);
     screen.classList.remove("hidden");
 }
 

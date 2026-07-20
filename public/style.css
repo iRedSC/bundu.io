@@ -393,7 +393,9 @@ button:disabled {
         rgba(8, 10, 8, 0.35) 0%,
         rgba(8, 10, 8, 0.72) 100%
     );
-    animation: game-over-shade-in 1.2s ease-out forwards;
+    opacity: 0;
+    /* Hold the raw cinematic, then ease the vignette in with the UI. */
+    animation: game-over-shade-in 1s ease-out 2s forwards;
 }
 
 .game-over-content {
@@ -406,7 +408,9 @@ button:disabled {
     gap: 1.25rem;
     padding: 1.5rem;
     text-align: center;
-    animation: game-over-content-in 0.7s ease-out 0.25s both;
+    opacity: 0;
+    pointer-events: none;
+    animation: game-over-content-in 0.9s ease-out 2s forwards;
 }
 
 .game-over-message {
@@ -467,10 +471,12 @@ button:disabled {
 @keyframes game-over-content-in {
     from {
         opacity: 0;
+        pointer-events: none;
         transform: translateY(0.6rem);
     }
     to {
         opacity: 1;
+        pointer-events: all;
         transform: translateY(0);
     }
 }
