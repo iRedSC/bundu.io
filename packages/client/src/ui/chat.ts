@@ -5,8 +5,9 @@ import {
     type CommandRegistryProjection,
     type CommandSuggestion,
     type CommandToken,
+    type SuggestContext,
 } from "@bundu/shared/command";
-import { clientRegistries } from "../configs/registries";
+import { clientFlagNames, clientRegistries } from "../configs/registries";
 
 const HISTORY_KEY = "bundu.chat_history";
 const HISTORY_LIMIT = 50;
@@ -66,13 +67,21 @@ function tokenClass(kind: CommandToken["kind"]): string {
     }
 }
 
-function itemSuggestionIds(): string[] {
+function registrySuggestionIds(
+    registry: "item" | "entity_type"
+): string[] {
     try {
         const ids: string[] = [];
-        for (const [location] of clientRegistries().item.entries()) {
+        const reg = clientRegistries()[registry];
+        for (const [location] of reg.entries()) {
             ids.push(location);
             const sep = location.indexOf(":");
             if (sep > 0) ids.push(location.slice(sep + 1));
+        }
+        if (registry === "entity_type") {
+            for (const [tag] of reg.tagEntries()) {
+                ids.push(tag);
+            }
         }
         return ids;
     } catch {
@@ -97,6 +106,8 @@ export class ChatController {
     private lastPlayerLog: { key: string; at: number } | undefined;
     /** Fired when compose closes without sending (e.g. Escape). */
     onComposeClosed: () => void = () => {};
+    /** Optional live player names for `@a[name=…]` / bare-name targets. */
+    playerNames: () => readonly string[] = () => [];
 
     constructor() {
         this.hud = {
@@ -326,13 +337,20 @@ export class ChatController {
         this.refreshHighlight();
     }
 
+    private suggestContext(): SuggestContext {
+        return {
+            itemIds: registrySuggestionIds("item"),
+            entityTypeIds: registrySuggestionIds("entity_type"),
+            flagNames: clientFlagNames(),
+            playerNames: this.playerNames(),
+        };
+    }
+
     private refreshSuggest(): void {
         const value = this.hud.input.value;
         const cursor = this.hud.input.selectionStart ?? value.length;
         this.suggestions = value.startsWith("/")
-            ? suggestCommand(value, cursor, this.registry, {
-                  itemIds: itemSuggestionIds(),
-              })
+            ? suggestCommand(value, cursor, this.registry, this.suggestContext())
             : [];
         this.suggestIndex = 0;
         this.suggestBrowsing = false;

@@ -31,6 +31,11 @@ export function clientRegistries(): {
     return current;
 }
 
+/** Flag name → id map from the last registry projection (may be empty). */
+export function clientFlagNames(): string[] {
+    return Object.keys(metadata?.flags ?? {});
+}
+
 export function clientStructurePlacement(structureId: number) {
     const placement = metadata?.structures[structureId];
     if (!placement) throw new Error(`Unknown structure placement ${structureId}`);

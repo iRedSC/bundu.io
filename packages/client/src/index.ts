@@ -336,6 +336,7 @@ async function main() {
     app.stage.addChild(gui.container);
     setupGUIPacketReceiving(receiver, gui, world);
     const chat = new ChatController();
+    chat.playerNames = () => gui.leaderboard.playerNames();
     setupChatPacketReceiving(receiver, world, chat);
 
     const session = new GameSession(receiver, {

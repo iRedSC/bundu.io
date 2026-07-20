@@ -838,6 +838,7 @@ export class PlayerSystem extends System<GameEventMap> {
         }
 
         const command = tryHandleDebugChatCommand(player, message, {
+            world: this.world,
             onKill: (target) => {
                 this.trigger(GameEvent.Kill, { object: target });
             },

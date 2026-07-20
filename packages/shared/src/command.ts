@@ -3,7 +3,19 @@
  * Server attaches `run`; client hydrates the projection for UX only.
  */
 
-export type CommandArgTypeId = "enum" | "integer" | "float" | "word" | "item";
+import {
+    parseSelector,
+    suggestSelector,
+    type SelectorSuggestContext,
+} from "./entity_selector";
+
+export type CommandArgTypeId =
+    | "enum"
+    | "integer"
+    | "float"
+    | "word"
+    | "item"
+    | "selector";
 
 export type CommandArgProjection = {
     name: string;
@@ -48,7 +60,7 @@ export type ParseResult = ParseSuccess | ParseFailure;
 export type SuggestContext = {
     /** Item path suggestions (`copper_sword` or `bundu:copper_sword`). */
     itemIds?: readonly string[];
-};
+} & SelectorSuggestContext;
 
 /** One autocomplete row. Type-only rows have an empty `insert`. */
 export type CommandSuggestion = {
@@ -70,6 +82,8 @@ function argTypeToken(arg: CommandArgProjection): string {
             return `<${arg.name}>`;
         case "item":
             return "<item>";
+        case "selector":
+            return "<targets>";
         case "enum":
             return `<${arg.name}>`;
     }
@@ -220,6 +234,12 @@ function parseArgValue(
         case "item":
             if (!raw) return { error: `Missing ${arg.name}` };
             return raw;
+        case "selector": {
+            if (!raw) return { error: `Missing ${arg.name}` };
+            const parsed = parseSelector(raw);
+            if (!parsed.ok) return { error: parsed.message };
+            return raw;
+        }
     }
 }
 
@@ -253,6 +273,17 @@ function suggestionsForArg(
         case "float":
         case "word":
             return [{ insert: "", label: hint }];
+        case "selector": {
+            const suggestions = suggestSelector(partial, ctx);
+            if (suggestions.length === 0) {
+                return [{ insert: "", label: hint }];
+            }
+            return suggestions.map((entry) => ({
+                insert: entry.insert,
+                label: entry.label,
+                hint: entry.hint ?? hint,
+            }));
+        }
     }
 }
 

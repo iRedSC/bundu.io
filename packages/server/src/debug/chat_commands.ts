@@ -15,10 +15,12 @@ import { Inventory } from "../components/inventory.js";
 import { StatList, type StatType, Stats } from "../components/stats.js";
 import { PlayerData } from "../components/player.js";
 import type { GameObject } from "../engine";
+import type { World } from "../engine/world.js";
 import type { PlayerPacketManager } from "../engine/network/packets/manager.js";
 import { gameRegistries } from "../configs/registries.js";
 import { TIME_OF_DAY_NAMES } from "../network/day_cycle.js";
 import { receiveItem } from "../network/inventory.js";
+import { resolveSelector } from "../systems/entity_selector.js";
 import { SERVER_DEBUG } from "./flag.js";
 
 function resolveItemId(value?: string): number | undefined {
@@ -55,7 +57,8 @@ const kits: Record<string, Record<string, number>> = {
 };
 
 type ExecHelpers = {
-    onKill: (player: GameObject) => void;
+    world: World;
+    onKill: (target: GameObject) => void;
     now?: number;
     onSetTime?: (period: string) => boolean;
     onFreecam?: (player: GameObject) => void;
@@ -84,28 +87,58 @@ function arg(
     return { name, type, ...extra };
 }
 
+function targetsOf(
+    player: GameObject,
+    args: Record<string, string | number>,
+    helpers: ExecHelpers,
+    fallback = "@s"
+): GameObject[] {
+    const raw = String(args.targets ?? fallback);
+    const found = resolveSelector(raw, {
+        world: helpers.world,
+        executor: player,
+    });
+    if (found.length === 0) {
+        throw new Error(`No entity was found matching ${raw}`);
+    }
+    return found;
+}
+
+function summarizeTargets(targets: GameObject[]): string {
+    if (targets.length === 1) {
+        const name = PlayerData.get(targets[0]!)?.name;
+        return name ? name : "1 target";
+    }
+    return `${targets.length} targets`;
+}
+
 const COMMANDS: ServerCommand[] = [
     {
         name: "attribute",
         opLevel: 4,
         args: [
+            arg("targets", "selector"),
             arg("type", "enum", { values: AttributeList }),
             arg("operation", "enum", { values: ["add", "multiply"] }),
             arg("value", "float"),
             arg("duration", "float", { optional: true, min: 0 }),
         ],
         run(player, args, helpers) {
+            const targets = targetsOf(player, args, helpers);
             const type = args.type as AttributeType;
             const operation = args.operation as "add" | "multiply";
             const value = Number(args.value);
             const duration =
                 args.duration !== undefined ? Number(args.duration) : undefined;
-            player
-                .get(Attributes)
-                .set(type, "command", operation, value, duration, helpers.now);
+            for (const target of targets) {
+                const attrs = Attributes.get(target);
+                if (!attrs) continue;
+                attrs.set(type, "command", operation, value, duration, helpers.now);
+            }
             return (
                 `Set ${type} ${operation} ${value}` +
-                (duration !== undefined ? ` for ${duration}ms` : "")
+                (duration !== undefined ? ` for ${duration}ms` : "") +
+                ` on ${summarizeTargets(targets)}`
             );
         },
     },
@@ -113,71 +146,111 @@ const COMMANDS: ServerCommand[] = [
         name: "stat",
         opLevel: 4,
         args: [
+            arg("targets", "selector"),
             arg("type", "enum", { values: StatList }),
             arg("value", "float"),
         ],
-        run(player, args) {
+        run(player, args, helpers) {
+            const targets = targetsOf(player, args, helpers);
             const type = args.type as StatType;
             const value = Number(args.value);
-            player.get(Stats).set(type, { value });
-            return `Set ${type} to ${value}`;
+            let applied = 0;
+            for (const target of targets) {
+                const stats = Stats.get(target);
+                if (!stats) continue;
+                stats.set(type, { value });
+                applied++;
+            }
+            if (applied === 0) throw new Error("No target with stats");
+            return `Set ${type} to ${value} on ${summarizeTargets(targets)}`;
         },
     },
     {
         name: "kill",
         opLevel: 4,
-        args: [],
-        run(player, _args, helpers) {
-            helpers.onKill(player);
-            return "Killed";
+        args: [arg("targets", "selector", { optional: true })],
+        run(player, args, helpers) {
+            const targets = targetsOf(player, args, helpers, "@s");
+            for (const target of targets) {
+                helpers.onKill(target);
+            }
+            return `Killed ${summarizeTargets(targets)}`;
         },
     },
     {
         name: "godmode",
         opLevel: 4,
-        args: [],
-        run(player) {
-            player
-                .get(Attributes)
-                .set("attack.speed", "godmode", "add", 100)
-                .set("attack.reach", "godmode", "add", 500);
-            return "Godmode enabled";
+        args: [arg("targets", "selector", { optional: true })],
+        run(player, args, helpers) {
+            const targets = targetsOf(player, args, helpers, "@s");
+            let applied = 0;
+            for (const target of targets) {
+                const attrs = Attributes.get(target);
+                if (!attrs) continue;
+                attrs
+                    .set("attack.speed", "godmode", "add", 100)
+                    .set("attack.reach", "godmode", "add", 500);
+                applied++;
+            }
+            if (applied === 0) throw new Error("No target with attributes");
+            return `Godmode enabled on ${summarizeTargets(targets)}`;
         },
     },
     {
         name: "give",
         opLevel: 4,
         args: [
+            arg("targets", "selector"),
             arg("item", "item"),
             arg("count", "integer", { optional: true, min: 1 }),
         ],
-        run(player, args) {
+        run(player, args, helpers) {
+            const targets = targetsOf(player, args, helpers);
             const item = String(args.item);
             const count = Number(args.count ?? 1);
             const numericId = resolveItemId(item);
-            const inv = Inventory.get(player);
-            if (numericId === undefined || !inv || !(count > 0)) {
+            if (numericId === undefined || !(count > 0)) {
                 throw new Error(`Unknown item: ${item}`);
             }
-            receiveItem(player, numericId, count);
-            return `Gave ${count}× ${item}`;
+            let given = 0;
+            for (const target of targets) {
+                const inv = Inventory.get(target);
+                if (!inv) continue;
+                receiveItem(target, numericId, count);
+                given++;
+            }
+            if (given === 0) {
+                throw new Error("No target with inventory");
+            }
+            return `Gave ${count}× ${item} to ${summarizeTargets(targets)}`;
         },
     },
     {
         name: "kit",
         opLevel: 4,
-        args: [arg("kit", "enum", { values: Object.keys(kits) })],
-        run(player, args) {
+        args: [
+            arg("targets", "selector"),
+            arg("kit", "enum", { values: Object.keys(kits) }),
+        ],
+        run(player, args, helpers) {
+            const targets = targetsOf(player, args, helpers);
             const kitId = String(args.kit);
             const kit = kits[kitId];
             if (!kit) throw new Error(`Unknown kit: ${kitId}`);
-            const inv = Inventory.get(player);
-            if (!inv) throw new Error("No inventory");
-            for (const [itemId, count] of Object.entries(kit)) {
-                const numericId = resolveItemId(itemId);
-                if (numericId !== undefined) receiveItem(player, numericId, count);
+            let given = 0;
+            for (const target of targets) {
+                const inv = Inventory.get(target);
+                if (!inv) continue;
+                for (const [itemId, count] of Object.entries(kit)) {
+                    const numericId = resolveItemId(itemId);
+                    if (numericId !== undefined) {
+                        receiveItem(target, numericId, count);
+                    }
+                }
+                given++;
             }
-            return `Gave kit ${kitId}`;
+            if (given === 0) throw new Error("No target with inventory");
+            return `Gave kit ${kitId} to ${summarizeTargets(targets)}`;
         },
     },
     {

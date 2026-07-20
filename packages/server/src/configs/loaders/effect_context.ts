@@ -1,4 +1,12 @@
+import {
+    isEntityFilterKey,
+    parseEntityFilter,
+} from "@bundu/shared/entity_selector";
 import type { RegistryId } from "@bundu/shared/registry";
+import {
+    resolveEntityFilterClauses,
+    type ResolvedMatchClause,
+} from "../entity_filter.js";
 import { flagRegistry } from "../flag_registry.js";
 import type { GameRegistries } from "../registries.js";
 import { type Hide, orHide, parseHide } from "./hide.js";
@@ -19,12 +27,19 @@ export type EffectPayload = {
     flags: number[];
 };
 
-/** One target selector entry after load (`*` or resolved entity types). */
+/**
+ * One target selector entry after load.
+ * - `*` → `all`
+ * - bare type / `#tag` → type clause
+ * - `type=…,flag=…` → resolved match clauses
+ */
 export type TargetEffect = {
     /** When true, matches every subject. */
     all: boolean;
-    /** Resolved entity_type ids when `all` is false. */
+    /** Resolved entity_type ids when using a bare type/tag key. */
     types: ReadonlySet<RegistryId<"entity_type">>;
+    /** Extra / compound filter clauses (`flag=`, negated `type=!`, …). */
+    clauses: readonly ResolvedMatchClause[];
     effects: EffectPayload;
 };
 
@@ -144,6 +159,8 @@ function defaultStack(name: ContextName): StackMode {
  *     attributes: ...
  *   player:
  *     hide: ...
+ *   "type=bundu:player,flag=in_water":
+ *     attributes: ...
  * ```
  */
 export function parseEffectContext(
@@ -207,7 +224,36 @@ export function parseEffectContext(
         if (RESERVED.has(key)) continue;
         const payload = parsePayload(value, `${path}.${key}`);
         if (key === "*") {
-            targets.push({ all: true, types: new Set(), effects: payload });
+            targets.push({
+                all: true,
+                types: new Set(),
+                clauses: [],
+                effects: payload,
+            });
+            continue;
+        }
+        if (isEntityFilterKey(key)) {
+            const parsed = parseEntityFilter(key);
+            if (!parsed.ok) {
+                throw new Error(`${path}.${key}: ${parsed.message}`);
+            }
+            // Register flag names so filters can mention flags before payloads do.
+            for (const clause of parsed.value.clauses) {
+                if (clause.key === "flag") {
+                    flagRegistry().register(clause.value, `${path}.${key}`);
+                }
+            }
+            const clauses = resolveEntityFilterClauses(
+                parsed.value.clauses,
+                ownerId,
+                `${path}.${key}`
+            );
+            targets.push({
+                all: false,
+                types: new Set(),
+                clauses,
+                effects: payload,
+            });
             continue;
         }
         const ids = registries.entity_type.resolveSet(
@@ -218,6 +264,7 @@ export function parseEffectContext(
         targets.push({
             all: false,
             types: new Set(ids),
+            clauses: [],
             effects: payload,
         });
     }
