@@ -1,4 +1,4 @@
-import { HitFlash } from "@bundu/shared/hit_flash";
+import type { HitFlash } from "@bundu/shared/hit_flash";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import type { GameObject, World } from "../engine";
 import { GameEvent } from "./event_map.js";

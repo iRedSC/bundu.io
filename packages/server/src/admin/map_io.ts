@@ -15,7 +15,6 @@ import {
     TileEntity,
     Type,
 } from "../components/base.js";
-import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { gameRegistries } from "../configs/registries.js";
 import type { World } from "../engine";
 import { Decoration } from "../game_objects/decoration.js";
@@ -267,7 +266,6 @@ export function wipeMap(
 
     const registries = gameRegistries();
     const oceanId = registries.ground_type.resolve("ocean", "bundu");
-    const config = GroundTypeConfigs.get(oceanId);
     const object = new Ground({
         collider: new Box(new Vector(0, 0), WORLD_TILES, WORLD_TILES),
         type: oceanId,

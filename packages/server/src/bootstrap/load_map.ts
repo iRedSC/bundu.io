@@ -15,14 +15,12 @@ import { GameEvent } from "../systems/event_map";
 import type { PlayerSystem } from "../systems/player";
 import { gameplayConfig } from "../configs/gameplay";
 import { gameRegistries } from "../configs/registries";
-import { GroundTypeConfigs } from "../configs/loaders/ground_types";
 
 /** Procedural test map + starter structure placement. */
 export function loadMap(world: World, playerSystem: PlayerSystem) {
     const worldgen = gameplayConfig().worldgen;
     const registries = gameRegistries();
     const groundType = registries.ground_type.resolve("ocean", "bundu");
-    const ground = GroundTypeConfigs.get(groundType);
     const barrier = registries.resource.resolve("stone_barrier", "bundu");
     const resourceTypes = registries.resource.resolveSet(
         worldgen.resources,

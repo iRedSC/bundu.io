@@ -60,7 +60,8 @@ export class StatsData {
     set(type: StatType, data: { value: number; min?: number; max?: number }) {
         // Always own the record — never alias caller objects (e.g. gameplay.yml
         // initial_stats), or drain permanently mutates spawn defaults.
-        const stat = (this.types[type] ??= { value: 0 });
+        this.types[type] ??= { value: 0 };
+        const stat = this.types[type];
         if (data.min !== undefined) stat.min = data.min;
         if (data.max !== undefined) stat.max = data.max;
         stat.value = clamp(data.value, stat.min ?? null, stat.max ?? null);

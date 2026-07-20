@@ -23,7 +23,6 @@ import {
     BuildingConfigs,
     occupancyLayerForClass,
 } from "../configs/loaders/buildings.js";
-import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
 import { DecorationConfigs } from "../configs/loaders/decorations.js";
 import { gameRegistries } from "../configs/registries.js";
 import type { GameObject, World } from "../engine";
@@ -448,7 +447,6 @@ export class AdminEditorSystem extends System<GameEventMap> {
         tw: number,
         th: number
     ): GameObject {
-        const config = GroundTypeConfigs.get(typeId);
         const object = new Ground({
             collider: new Box(new Vector(tx, ty), tw, th),
             type: typeId,
