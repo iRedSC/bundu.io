@@ -209,6 +209,12 @@ trail:                     # debris tinted from `color`, randomly jittered
 # ocean FX + nearshore bake (textures sanitized like entity models)
 kind: ocean
 color: "#1a5f8a"
+# optional — tiles of ocean→land color blend (default 12). Pond uses 2.
+fade_tiles: 12
+# optional — overrides gameplay.yml caustic tints for this model only
+caustic_tint:
+    a: "#366888"
+    b: "#8cc3e8"
 textures:
     caustics: bundu/effect/ocean_caustics.jpg
     displace: bundu/effect/ocean_displace.png
@@ -219,6 +225,8 @@ textures:
 ```
 
 Ocean scroll/wake/splash tuning is pack-authored under `gameplay.yml` → `ocean:`.
+Per-model `fade_tiles` / `caustic_tint` let variants (e.g. `pond`) share that FX
+motion while differing in shore blend length and caustic color.
 Land `footsteps: true` only enables prints; actor models define them:
 
 ```yaml

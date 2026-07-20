@@ -120,26 +120,17 @@ export class LandDistanceField {
 
     /**
      * Ocean fill bake:
-     * - RGB blends ocean→land on the water side (within blendTiles)
+     * - RGB blends ocean→land on the water side (within per-tile blendTiles)
      * - A stays opaque until the coastline, then fades into land (overshoot)
      */
     writeShoreRgba(
         out: Uint8Array,
-        oceanColor: number,
-        blendTiles: number,
+        oceanColorAt: (tileIndex: number) => number,
+        blendTilesAt: (tileIndex: number) => number,
         overshootTiles: number
     ): void {
         const { dist, color } = this;
-        const or = (oceanColor >> 16) & 0xff;
-        const og = (oceanColor >> 8) & 0xff;
-        const ob = oceanColor & 0xff;
         const invOver = overshootTiles > 0 ? 1 / overshootTiles : 0;
-        /**
-         * Exact land RGB for this many tiles of ocean + all land.
-         * Stops linear filtering from mixing leftover ocean blue into the
-         * overshoot band (that mix reads as the dark soft rim).
-         */
-        const landColorReach = 2;
 
         for (let i = 0; i < N; i++) {
             const sdf = dist[i]!;
@@ -148,6 +139,16 @@ export class LandDistanceField {
             const lr = (landRgb >> 16) & 0xff;
             const lg = (landRgb >> 8) & 0xff;
             const lb = landRgb & 0xff;
+            const oceanColor = oceanColorAt(i);
+            const or = (oceanColor >> 16) & 0xff;
+            const og = (oceanColor >> 8) & 0xff;
+            const ob = oceanColor & 0xff;
+            const blendTiles = blendTilesAt(i);
+            /**
+             * Exact land RGB near the shore. Shrinks when fade is short so a
+             * 2-tile blend still has room to mix into water color.
+             */
+            const landColorReach = Math.min(2, Math.max(0, blendTiles - 1));
 
             // Color: pure land near/over the shore; then blend out to ocean.
             if (sdf <= landColorReach) {
@@ -159,8 +160,8 @@ export class LandDistanceField {
                 out[o + 1] = og;
                 out[o + 2] = ob;
             } else {
-                const colorT =
-                    (sdf - landColorReach) / (blendTiles - landColorReach);
+                const span = blendTiles - landColorReach;
+                const colorT = span > 0 ? (sdf - landColorReach) / span : 1;
                 const s = colorT * colorT * (3 - 2 * colorT);
                 const oceanMix = s * s;
                 out[o] = (lr + (or - lr) * oceanMix + 0.5) | 0;

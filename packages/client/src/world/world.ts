@@ -27,13 +27,18 @@ import {
     LAND_SEAM_PER_TICK,
     LAND_SEAM_TICK_INTERVAL,
     NearshoreFill,
+    oceanGroundModel,
     seamLodFromZoom,
     solidGroundModel,
     type GroundVisual,
     type SeamLod,
     type ShoreSample,
 } from "./ground";
-import { parseHexColor, type SolidGroundFill } from "@bundu/shared/ground_models";
+import {
+    DEFAULT_OCEAN_FADE_TILES,
+    parseHexColor,
+    type SolidGroundFill,
+} from "@bundu/shared/ground_models";
 import type { ModelFootstepsDef } from "@bundu/shared/models/types";
 import { toSanitizedTexturePath } from "@bundu/shared/models/texture_paths";
 import { softCircleTexture } from "./ground/particles/circle";
@@ -182,7 +187,8 @@ export class World {
      * (higher id on top) — same contract as server `topGroundAt` and map YAML.
      */
     private readonly groundPatches: GroundPatch[] = [];
-    private oceanVisual?: GroundVisual;
+    /** One FX stack per ocean-kind ground model (ocean, pond, …). */
+    private readonly oceanVisuals = new Map<string, GroundVisual>();
     private shoreSamples: ShoreSample[] = [];
     private readonly landDistance = new LandDistanceField();
     private readonly nearshoreFill = new NearshoreFill();
@@ -194,7 +200,7 @@ export class World {
     private readonly oceanTiles = new Uint8Array(WORLD_TILES * WORLD_TILES);
     /** Topmost ground type id per tile (0 = empty). Registry ids start at 1. */
     private readonly topGroundTypes = new Uint16Array(WORLD_TILES * WORLD_TILES);
-    /** First ocean model color in the current stack (nearshore bake). */
+    /** Fallback water color when a tile's type is unknown. */
     private oceanColor = 0x1a5f8a;
     /** True after at least one LoadGround/UnloadGround sync this session. */
     private groundSynced = false;
@@ -247,12 +253,14 @@ export class World {
         for (const patch of this.groundPatches) {
             this.disposeGroundVisual(patch.visual);
         }
-        if (this.oceanVisual) {
+        if (this.oceanVisuals.size > 0) {
             this.detachLocalAirRingFromOcean();
-            this.disposeGroundVisual(this.oceanVisual);
+            for (const visual of this.oceanVisuals.values()) {
+                this.disposeGroundVisual(visual);
+            }
         }
         this.renderer.delete(GROUND_RENDER_ID);
-        this.oceanVisual = undefined;
+        this.oceanVisuals.clear();
         this.groundPatches.length = 0;
         this.oceanTypeIds.clear();
         this.oceanTiles.fill(0);
@@ -385,7 +393,10 @@ export class World {
         if (!(local instanceof Player)) return;
         const ring = local.airRing;
         ring.filters = null;
-        const fx = this.oceanVisual?.fxLayer;
+        const fx = this.oceanVisualAtWorld(
+            local.position.x,
+            local.position.y
+        )?.fxLayer;
         if (fx) {
             if (ring.parent !== fx) fx.addChildAt(ring, 0);
             else if (fx.getChildIndex(ring) !== 0) fx.setChildIndex(ring, 0);
@@ -394,14 +405,34 @@ export class World {
         if (ring.parent !== this.viewport) this.viewport.addChild(ring);
     }
 
-    /** Pull the ring off ocean FX before the ocean container is destroyed. */
+    /** Pull the ring off ocean FX before water containers are destroyed. */
     private detachLocalAirRingFromOcean(): void {
         const local =
             this.user !== undefined ? this.objects.get(this.user) : undefined;
         if (!(local instanceof Player)) return;
         const ring = local.airRing;
-        const fx = this.oceanVisual?.fxLayer;
-        if (fx && ring.parent === fx) this.viewport.addChild(ring);
+        for (const visual of this.oceanVisuals.values()) {
+            const fx = visual.fxLayer;
+            if (fx && ring.parent === fx) {
+                this.viewport.addChild(ring);
+                return;
+            }
+        }
+    }
+
+    /** FX stack for the ocean-kind model under a world pixel, if any. */
+    private oceanVisualAtWorld(
+        worldX: number,
+        worldY: number
+    ): GroundVisual | undefined {
+        const tx = (worldX / TILE_SIZE) | 0;
+        const ty = (worldY / TILE_SIZE) | 0;
+        if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
+            return undefined;
+        }
+        const type = this.topGroundTypes[ty * WORLD_TILES + tx]!;
+        if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
+        return this.oceanVisuals.get(clientGroundType(type).model);
     }
 
     /**
@@ -949,8 +980,10 @@ export class World {
     };
 
     private ensureOceanVisual(type: number): GroundVisual {
-        if (this.oceanVisual) return this.oceanVisual;
-        this.oceanVisual = createGround(
+        const modelId = clientGroundType(type).model;
+        const existing = this.oceanVisuals.get(modelId);
+        if (existing) return existing;
+        const visual = createGround(
             type,
             0,
             0,
@@ -958,19 +991,32 @@ export class World {
             WORLD_BOUNDS,
             GROUND_Z_OCEAN
         );
+        this.oceanVisuals.set(modelId, visual);
         this.renderer.add(
             GROUND_RENDER_ID,
-            this.oceanVisual.container,
-            ...(this.oceanVisual.overlay ? [this.oceanVisual.overlay] : [])
+            visual.container,
+            ...(visual.overlay ? [visual.overlay] : [])
         );
         this.syncLocalAirRingParent();
-        return this.oceanVisual;
+        return visual;
+    }
+
+    private disposeOceanVisual(modelId: string, visual: GroundVisual): void {
+        this.renderer.remove(GROUND_RENDER_ID, visual.container);
+        if (visual.overlay) {
+            this.renderer.remove(GROUND_RENDER_ID, visual.overlay);
+        }
+        this.disposeGroundVisual(visual);
+        this.oceanVisuals.delete(modelId);
     }
 
     private rebuildShoreSamples(): void {
         this.oceanTypeIds.clear();
         this.oceanTiles.fill(0);
         this.topGroundTypes.fill(0);
+        const colorByType = new Map<number, number>();
+        const fadeByType = new Map<number, number>();
+        const activeOceanModels = new Set<string>();
         let oceanColor: number | undefined;
         const byBottom = [...this.groundPatches].sort((a, b) => a.id - b.id);
         for (const patch of byBottom) {
@@ -978,7 +1024,12 @@ export class World {
             const ocean = isOceanGroundModel(modelId);
             if (ocean) {
                 this.oceanTypeIds.add(patch.type);
-                oceanColor ??= parseHexColor(groundModel(modelId).color);
+                activeOceanModels.add(modelId);
+                const model = oceanGroundModel(modelId);
+                const color = parseHexColor(model.color);
+                colorByType.set(patch.type, color);
+                fadeByType.set(patch.type, model.fadeTiles);
+                oceanColor ??= color;
             }
             const x1 = Math.max(0, patch.x);
             const y1 = Math.max(0, patch.y);
@@ -994,21 +1045,20 @@ export class World {
             }
         }
         if (oceanColor !== undefined) this.oceanColor = oceanColor;
-        if (this.oceanTypeIds.size === 0 && this.oceanVisual) {
+
+        if (this.oceanTypeIds.size === 0 && this.oceanVisuals.size > 0) {
             this.detachLocalAirRingFromOcean();
-            this.renderer.remove(
-                GROUND_RENDER_ID,
-                this.oceanVisual.container
-            );
-            if (this.oceanVisual.overlay) {
-                this.renderer.remove(
-                    GROUND_RENDER_ID,
-                    this.oceanVisual.overlay
-                );
+            for (const [modelId, visual] of [...this.oceanVisuals]) {
+                this.disposeOceanVisual(modelId, visual);
             }
-            this.disposeGroundVisual(this.oceanVisual);
-            this.oceanVisual = undefined;
+        } else {
+            for (const [modelId, visual] of [...this.oceanVisuals]) {
+                if (activeOceanModels.has(modelId)) continue;
+                this.detachLocalAirRingFromOcean();
+                this.disposeOceanVisual(modelId, visual);
+            }
         }
+
         const isOcean = (type: number) => this.oceanTypeIds.has(type);
         const colorOfType = (type: number) =>
             parseHexColor(groundModel(clientGroundType(type).model).color);
@@ -1018,8 +1068,25 @@ export class World {
         };
         this.shoreSamples = collectShoreSamples(this.groundPatches, isOcean);
         this.landDistance.rebuild(this.groundPatches, isOcean, colorOfType);
-        this.nearshoreFill.setOceanColor(this.oceanColor);
-        this.nearshoreFill.paint(this.landDistance);
+        this.nearshoreFill.paint(
+            this.landDistance,
+            (i) => colorByType.get(this.topGroundTypes[i]!) ?? this.oceanColor,
+            (i) =>
+                fadeByType.get(this.topGroundTypes[i]!) ??
+                DEFAULT_OCEAN_FADE_TILES
+        );
+        const modelMasks = this.nearshoreFill.syncModelMasks(
+            activeOceanModels,
+            (i) => {
+                const type = this.topGroundTypes[i]!;
+                if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
+                return clientGroundType(type).model;
+            }
+        );
+        for (const [modelId, visual] of this.oceanVisuals) {
+            const mask = modelMasks.get(modelId);
+            if (mask) visual.setShoreMask?.(mask);
+        }
         const inlandAt = (tx: number, ty: number) =>
             this.landDistance.inlandAt(tx, ty);
         for (const patch of this.groundPatches) {
@@ -1121,14 +1188,21 @@ export class World {
             }
             return oceanTiles[ty * WORLD_TILES + tx] === 1;
         };
-        const oceanVisualAt = (worldX: number, worldY: number) => {
-            return isOceanAt(worldX, worldY)
-                ? this.oceanVisual
-                : undefined;
-        };
+        const oceanVisualAt = (worldX: number, worldY: number) =>
+            this.oceanVisualAtWorld(worldX, worldY);
 
         this.spawnWakeRipples(deltaMS, now, isOceanAt, oceanVisualAt);
 
+        const waterModelAt = (worldX: number, worldY: number) => {
+            const tx = (worldX / TILE_SIZE) | 0;
+            const ty = (worldY / TILE_SIZE) | 0;
+            if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
+                return undefined;
+            }
+            const type = this.topGroundTypes[ty * WORLD_TILES + tx]!;
+            if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
+            return clientGroundType(type).model;
+        };
         const ctx = {
             deltaMS,
             now,
@@ -1142,13 +1216,15 @@ export class World {
             emitParticles: (burst: ParticleBurst) => this.particles.burst(burst),
             shore: this.shoreSamples,
             isOceanAt,
+            waterModelAt,
             landDistanceAt: (wx: number, wy: number) =>
                 this.landDistance.atWorld(wx, wy),
             shoreColor: this.nearshoreFill.colorTexture,
             shoreMask: this.nearshoreFill.maskTexture,
         };
-        this.oceanVisual?.update?.(ctx);
+        for (const visual of this.oceanVisuals.values()) visual.update?.(ctx);
         for (const patch of this.groundPatches) patch.visual.update?.(ctx);
+        this.syncLocalAirRingParent();
     }
 
     /**

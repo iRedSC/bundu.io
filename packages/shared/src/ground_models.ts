@@ -17,6 +17,15 @@ export type OceanGroundTextures = {
     sparkle: string;
 };
 
+/** Optional per-model caustic tints; omit to use `gameplay.yml` → `ocean.caustics`. */
+export type OceanCausticTint = {
+    a: string;
+    b: string;
+};
+
+/** Default ocean→land color blend distance (tiles into water). */
+export const DEFAULT_OCEAN_FADE_TILES = 12;
+
 /** Debris / dust kicked up while moving — tinted from the land color. */
 export type GroundTrailDef = {
     /** World pixels between bursts. */
@@ -53,6 +62,10 @@ export type OceanGroundModelDef = {
     id: string;
     kind: "ocean";
     color: string;
+    /** Ocean→land color blend distance in tiles (into water). */
+    fadeTiles: number;
+    /** Optional caustic layer tints; omit to use gameplay.yml. */
+    causticTint?: OceanCausticTint;
     textures: OceanGroundTextures;
 };
 
@@ -247,6 +260,17 @@ function parseOceanTextures(
     };
 }
 
+function parseCausticTint(
+    value: unknown,
+    path: string
+): OceanCausticTint {
+    const raw = record(value, path);
+    return {
+        a: color(raw.a, `${path}.a`),
+        b: color(raw.b, `${path}.b`),
+    };
+}
+
 function parseFootstepsToggle(value: unknown, path: string): boolean {
     if (typeof value !== "boolean") {
         throw new Error(
@@ -358,12 +382,25 @@ export function parseGroundModelDef(
                 `${path}: fill/footsteps/trail are only valid on solid ground models`
             );
         }
-        return {
+        const fadeTiles = optionalPositive(
+            raw,
+            "fade_tiles",
+            "fadeTiles",
+            path,
+            DEFAULT_OCEAN_FADE_TILES
+        );
+        const tintRaw = raw.caustic_tint ?? raw.causticTint;
+        const def: OceanGroundModelDef = {
             id,
             kind,
             color: color(raw.color, `${path}.color`),
+            fadeTiles,
             textures: parseOceanTextures(raw.textures, `${path}.textures`),
         };
+        if (tintRaw !== undefined) {
+            def.causticTint = parseCausticTint(tintRaw, `${path}.caustic_tint`);
+        }
+        return def;
     }
     throw new Error(`${path}.kind: expected "solid" or "ocean"`);
 }

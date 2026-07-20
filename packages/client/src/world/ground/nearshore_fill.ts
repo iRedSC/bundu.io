@@ -5,18 +5,28 @@ import {
     Texture,
     type TextureSource,
 } from "pixi.js";
+import { DEFAULT_OCEAN_FADE_TILES } from "@bundu/shared/ground_models";
 import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
 import type { LandDistanceField } from "./land_distance";
 
 /** Ocean→land color blend distance (tiles into ocean). Extra room vs SDF soften. */
-export const NEARSHORE_BLEND_TILES = 12;
+export const NEARSHORE_BLEND_TILES = DEFAULT_OCEAN_FADE_TILES;
 /** Alpha fade into land after crossing the shoreline (tiles). */
 export const NEARSHORE_OVERSHOOT_TILES = 2.5;
+
+type ModelMaskEntry = {
+    pixels: Uint8Array;
+    source: BufferImageSource;
+    texture: Texture;
+};
 
 /**
  * World-tile ocean bake split into opaque color and a separate effects mask.
  * Color alpha is always 255 — fading it mixes ocean blue into the coast.
  * Only the mask fades, and only caustics/FX sample that mask.
+ *
+ * Per-model FX masks keep shared shore alpha only on that water model's tiles
+ * so ocean + pond can coexist with distinct caustics.
  */
 export class NearshoreFill {
     private readonly maskPixels = new Uint8Array(
@@ -29,7 +39,7 @@ export class NearshoreFill {
     private readonly colorSource: BufferImageSource;
     readonly colorTexture: Texture;
     readonly maskTexture: Texture;
-    private oceanColor = 0x1a5f8a;
+    private readonly modelMasks = new Map<string, ModelMaskEntry>();
 
     constructor() {
         const sourceOptions = {
@@ -52,15 +62,15 @@ export class NearshoreFill {
         this.maskTexture = new Texture({ source: this.maskSource });
     }
 
-    setOceanColor(oceanColor: number): void {
-        this.oceanColor = oceanColor;
-    }
-
-    paint(field: LandDistanceField): void {
+    paint(
+        field: LandDistanceField,
+        oceanColorAt: (tileIndex: number) => number,
+        blendTilesAt: (tileIndex: number) => number
+    ): void {
         field.writeShoreRgba(
             this.maskPixels,
-            this.oceanColor,
-            NEARSHORE_BLEND_TILES,
+            oceanColorAt,
+            blendTilesAt,
             NEARSHORE_OVERSHOOT_TILES
         );
         this.colorPixels.set(this.maskPixels);
@@ -69,6 +79,63 @@ export class NearshoreFill {
         }
         this.colorSource.update();
         this.maskSource.update();
+    }
+
+    /**
+     * FX masks for each water model: shared shore alpha on that model's tiles,
+     * zero elsewhere. Drops masks for models no longer present.
+     */
+    syncModelMasks(
+        modelIds: ReadonlySet<string>,
+        modelIdAt: (tileIndex: number) => string | undefined
+    ): ReadonlyMap<string, Texture> {
+        for (const id of [...this.modelMasks.keys()]) {
+            if (modelIds.has(id)) continue;
+            const entry = this.modelMasks.get(id);
+            entry?.texture.destroy(true);
+            this.modelMasks.delete(id);
+        }
+
+        const n = WORLD_TILES * WORLD_TILES;
+        for (const modelId of modelIds) {
+            let entry = this.modelMasks.get(modelId);
+            if (!entry) {
+                const pixels = new Uint8Array(n * 4);
+                const source = new BufferImageSource({
+                    width: WORLD_TILES,
+                    height: WORLD_TILES,
+                    format: "rgba8unorm",
+                    scaleMode: "linear",
+                    addressMode: "clamp-to-edge",
+                    alphaMode: "no-premultiply-alpha",
+                    resource: pixels,
+                });
+                entry = {
+                    pixels,
+                    source,
+                    texture: new Texture({ source }),
+                };
+                this.modelMasks.set(modelId, entry);
+            }
+            const { pixels, source } = entry;
+            const shared = this.maskPixels;
+            pixels.fill(0);
+            for (let i = 0; i < n; i++) {
+                if (modelIdAt(i) !== modelId) continue;
+                const o = i * 4;
+                pixels[o] = shared[o] ?? 0;
+                pixels[o + 1] = shared[o + 1] ?? 0;
+                pixels[o + 2] = shared[o + 2] ?? 0;
+                pixels[o + 3] = shared[o + 3] ?? 0;
+            }
+            source.update();
+        }
+
+        const out = new Map<string, Texture>();
+        for (const [id, entry] of this.modelMasks) {
+            out.set(id, entry.texture);
+        }
+        return out;
     }
 }
 

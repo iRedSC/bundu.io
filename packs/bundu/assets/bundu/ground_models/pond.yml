@@ -1,0 +1,14 @@
+kind: ocean
+color: "#1e6fa0"
+# Short nearshore blend — ponds read as small inland water, not open sea.
+fade_tiles: 2
+caustic_tint:
+    a: "#1a6aaa"
+    b: "#5eb8ff"
+textures:
+    caustics: bundu/effect/pond_caustics.jpg
+    displace: bundu/effect/pond_displace.png
+    ripple_idle: bundu/effect/pond_ripple.png
+    ripple_move: bundu/effect/pond_ripple_move.png
+    foam: bundu/effect/pond_foam.svg
+    sparkle: bundu/effect/pond_sparkle.svg

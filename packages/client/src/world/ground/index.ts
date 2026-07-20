@@ -26,6 +26,7 @@ export {
     groundModel,
     isOceanGroundModel,
     listGroundModels,
+    oceanGroundModel,
     replaceGroundModels,
     solidGroundModel,
 } from "./models";
