@@ -16,7 +16,7 @@ if (
     !DEBUG ||
     !restoreDevCheckpoint(world, resourcePacks.manifest.registries.hash)
 ) {
-    loadMap(world, playerSystem);
+    loadMap(world);
 }
 
 const { socketManager } = world.context;

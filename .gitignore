@@ -36,3 +36,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 public/site
 public/site.tmp
 public/site.old
+
+# freecam-saved world map (local); default-map.yml is tracked
+maps/*
+!maps/default-map.yml
