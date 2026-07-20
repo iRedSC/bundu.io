@@ -1,5 +1,5 @@
 /**
- * Freecam admin editor — palette, toolbar, and place/delete tools.
+ * Freecam admin editor — palette, toolbar, and look/place/delete tools.
  * Mounted only while freecam is active; kept separate from gameplay HUD.
  */
 export { createAdminEditor, type AdminEditor } from "./editor";

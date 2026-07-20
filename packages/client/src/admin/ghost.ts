@@ -55,6 +55,11 @@ export class AdminGhost {
     constructor(private readonly renderer: LayeredRenderer) {}
 
     update(cursor: AdminGhostCursor): void {
+        if (cursor.tool === "look") {
+            this.clear();
+            return;
+        }
+
         if (cursor.tool === "delete") {
             this.clearPlace();
             this.updateDeleteOutline(cursor.deleteHover ?? null);
