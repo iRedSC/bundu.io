@@ -43,7 +43,7 @@ import {
     hideGameOver,
     showGameOver,
 } from "./ui/game_over";
-import { captureFrameWithoutUi } from "./rendering/capture_frame";
+import { captureFrame } from "./rendering/capture_frame";
 
 declare const __DEBUG__: boolean;
 
@@ -359,8 +359,6 @@ async function main() {
     setupChatPacketReceiving(receiver, world, chat);
 
     let deathFrame: string | null = null;
-    /** HUD / editor overlays excluded from the death-screen snapshot. */
-    const deathCaptureHide = [gui.container, tooltip.container];
 
     const session = new GameSession(receiver, {
         prepareConnection: prepareConnectionPacks,
@@ -422,7 +420,7 @@ async function main() {
             world.beginDeathCinematic();
             // Let in-flight client FX (e.g. sword swing) finish before snapshot.
             await sleep(75);
-            deathFrame = captureFrameWithoutUi(app, deathCaptureHide);
+            deathFrame = captureFrame(app);
         },
         onHardDisconnected: ({ died }) => {
             worldGateGeneration++;
@@ -450,7 +448,6 @@ async function main() {
         viewport
     );
     app.stage.addChild(editor.container);
-    deathCaptureHide.push(editor.container);
 
     const setFreecamUi = (enabled: boolean) => {
         hideTooltip();
