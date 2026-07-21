@@ -29,6 +29,8 @@ export type MountOptions = {
     /** Fit assembled/texture content into a square of this size (inventory/icon). */
     maxSize?: number;
     shadows?: boolean;
+    /** Texture variant name; falls back to model defaultVariant / part sprites. */
+    variant?: string;
 };
 
 function applyPose(container: Container, display: ModelDisplay): void {
@@ -100,8 +102,13 @@ function mountAssembled(
 ): MountedModel {
     const assembleOptions = { shadows: options.shadows ?? true } as const;
     const { parts } = isTileModel(def)
-        ? assembleTileEntity(def as TileEntityDef, parent, undefined, assembleOptions)
-        : assemble(def, parent, undefined, assembleOptions);
+        ? assembleTileEntity(
+              def as TileEntityDef,
+              parent,
+              options.variant,
+              assembleOptions
+          )
+        : assemble(def, parent, options.variant, assembleOptions);
     const sprites = [...parts.values()].map(({ visual }) => visual);
 
     if (options.maxSize !== undefined) {
@@ -260,7 +267,8 @@ export function mountModel(
 export function mountSlotIcon(
     modelId: string,
     parent: Container,
-    maxSize: number
+    maxSize: number,
+    variant?: string
 ): () => void {
     for (const child of [...parent.children]) {
         child.destroy({ children: true });
@@ -278,6 +286,7 @@ export function mountSlotIcon(
         maxSize,
         shadows: false,
         anchor: { x: 0.5, y: 0.5 },
+        variant,
     });
 
     if (!mounted) {

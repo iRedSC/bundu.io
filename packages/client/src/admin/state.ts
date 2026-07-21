@@ -21,6 +21,8 @@ export type EditorState = {
     /** Selected tag filter, or null for all entries in the category. */
     tagFilter: string | null;
     selected: PaletteEntry | null;
+    /** Variant name for the selected object; null when the model has none. */
+    selectedVariant: string | null;
     tool: EditorTool;
     drag: boolean;
     /**
@@ -49,6 +51,7 @@ export function createEditorState(): EditorState {
         category: "resources",
         tagFilter: null,
         selected: null,
+        selectedVariant: null,
         tool: "look",
         drag: true,
         groundBrush: "rect",

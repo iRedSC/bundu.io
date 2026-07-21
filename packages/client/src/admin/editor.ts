@@ -154,6 +154,7 @@ export function createAdminEditor(
         setActive(enabled: boolean) {
             active = enabled;
             container.visible = enabled;
+            palette?.setVisible(enabled);
             if (enabled) {
                 // Restore session prefs (Freeze / Ghost need re-send after exit).
                 applyEditorPrefs(state, loadEditorPrefs());

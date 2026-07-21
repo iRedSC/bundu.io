@@ -241,13 +241,14 @@ export type ObjectDef = ModelDef & {
 
 export type TileEntityDef = ObjectDef & {
     tile: TileGeometry;
-    variants: Record<string, Record<string, string>>;
 };
 
 /** Wire format for server-sanitized, compiled model definitions. */
 export type CompiledModelsPayload = {
     format: 2;
     defs: Record<string, ModelDef>;
+    /** Variant name → wire id, autogen from model `variants` keys. */
+    variants: Record<string, number>;
 };
 
 export function modelHasParts(def: ModelDef): boolean {

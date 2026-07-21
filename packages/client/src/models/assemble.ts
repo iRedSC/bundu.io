@@ -178,21 +178,13 @@ export function assembleTileEntity(
 ): AssembledObject {
     const { width, height } = def.tile.size;
     const { origin, spillover } = def.tile;
+    // Same as assemble: variant overrides when present, else part.sprite.
     const selectedVariant = variant ?? def.defaultVariant;
-    if (!selectedVariant) {
-        throw new Error(
-            `TileEntityDef "${def.id}": no variant or defaultVariant`
-        );
-    }
-    const sprites = def.variants[selectedVariant];
+    const sprites =
+        selectedVariant == null ? undefined : def.variants?.[selectedVariant];
     const contentWidth = width - spillover * 2;
     const contentHeight = height - spillover * 2;
 
-    if (!sprites) {
-        throw new Error(
-            `TileEntityDef "${def.id}": unknown variant "${selectedVariant}"`
-        );
-    }
     if (
         contentWidth <= 0 ||
         contentHeight <= 0 ||

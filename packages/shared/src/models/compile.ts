@@ -620,13 +620,10 @@ function compileDef(raw: RawDef): ModelDef {
     if (raw.tile === undefined) return base;
     const tile = compileFootprint(raw.tile, `${id}.tile`);
     const variants = base.variants ?? {};
-    if (!base.abstract && !base.defaultVariant) {
-        throw new Error(`${id}.defaultVariant: concrete definitions require a default variant`);
-    }
     if (base.defaultVariant && !variants[base.defaultVariant]) {
         throw new Error(`${id}.defaultVariant: unknown variant "${base.defaultVariant}"`);
     }
-    return { ...base, tile, variants };
+    return { ...base, tile };
 }
 
 export type CompiledModelDefs = ReadonlyMap<string, ModelDef>;

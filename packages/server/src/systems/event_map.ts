@@ -72,6 +72,8 @@ export namespace GameEvent {
         x: number;
         y: number;
         rotation: number;
+        /** Visual variant name; omit for default / part sprites. */
+        variant?: string;
         resultTo?: GameObject;
         placedBy?: GameObject;
     };

@@ -25,6 +25,10 @@ import {
     rewritePackTextureRefs,
     toSanitizedTexturePath,
 } from "@bundu/shared/models/texture_paths";
+import {
+    buildVariantMap,
+    setVariantMap,
+} from "@bundu/shared/variant_map";
 import { BuildingConfigs } from "./loaders/buildings";
 import { flagRegistry } from "./flag_registry";
 import { GroundTypeConfigs } from "./loaders/ground_types";
@@ -60,6 +64,13 @@ export type ResourcePackManifest = {
 };
 
 type ServedAsset = ResourceAsset & { bytes: Uint8Array };
+
+let loadedModels: CompiledModelDefs | undefined;
+
+export function modelSupportsVariant(id: string, variant: string): boolean {
+    if (variant === "base") return true;
+    return loadedModels?.get(id)?.variants?.[variant] !== undefined;
+}
 
 function hash(data: string | Uint8Array): string {
     return createHash("sha256").update(data).digest("hex");
@@ -358,15 +369,20 @@ export class ResourcePackService {
         // (same shape the client historically received as `{ stack }`).
         const compiledModels = compileModelDefs({ stack: models });
         setModelBounds(compiledModels);
+        loadedModels = compiledModels;
         const availableAssets = new Set(servedAssets.keys());
         validateCompiledTextures(compiledModels, availableAssets);
         const groundModels = parseGroundModelSet(groundModelDocs);
         validateGroundModelTextures(groundModels, availableAssets);
         assertPackAssetBudget([...servedAssets.values()]);
 
+        const variantMapping = buildVariantMap(compiledModels.values());
+        setVariantMap(variantMapping);
+
         const payload: CompiledModelsPayload = {
             format: 2,
             defs: Object.fromEntries(compiledModels),
+            variants: variantMapping,
         };
         const modelsJson = JSON.stringify(payload);
         const registries = gameRegistries();

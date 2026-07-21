@@ -11,10 +11,10 @@ import {
 } from "@bundu/shared";
 import {
     getVariantId,
-    listVariantNames,
 } from "@bundu/shared/variant_map";
 import { random } from "@bundu/shared/random";
 import type { SendPacket } from "../input/controller";
+import { lookupModel } from "../models/defs";
 import type { EditorDeleteHover } from "../world/world";
 import type { AdminGhost } from "./ghost";
 import { clientStructurePlacement } from "../configs/registries";
@@ -22,6 +22,7 @@ import {
     categoryToKind,
     cycleRotation,
     type EditorState,
+    type PaletteEntry,
 } from "./state";
 
 export type AdminInputFacade = {
@@ -164,6 +165,7 @@ export class AdminInput {
         this.facade.ghost.update({
             tool: state.tool,
             selected: state.selected,
+            variant: state.selectedVariant,
             rotation: state.rotation,
             decorationRotation: state.decorationRotation,
             decorationScale: state.decorationScale,
@@ -512,9 +514,7 @@ export class AdminInput {
         if (!state.drag && !isClick) return;
         this.lastTileKey = key;
 
-        const variantName = state.randomVariant
-            ? random.choice([...listVariantNames()])
-            : "base";
+        const variantName = resolvePlaceVariant(state, selected);
         let variant = 0;
         try {
             variant = getVariantId(variantName) ?? 0;
@@ -543,4 +543,23 @@ export class AdminInput {
             scale: 1,
         });
     }
+}
+
+function resolvePlaceVariant(
+    state: EditorState,
+    selected: PaletteEntry
+): string {
+    const def = lookupModel(selected.location);
+    const names = Object.keys(def?.variants ?? {}).sort((a, b) =>
+        a.localeCompare(b)
+    );
+    if (state.randomVariant && names.length > 0) {
+        return random.choice(names);
+    }
+    if (state.selectedVariant && names.includes(state.selectedVariant)) {
+        return state.selectedVariant;
+    }
+    return def?.defaultVariant && names.includes(def.defaultVariant)
+        ? def.defaultVariant
+        : "base";
 }
