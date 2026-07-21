@@ -538,7 +538,7 @@ values:
 # replace: true   # default false = append across packs
 ```
 
-Used for `aggroAt`, `placement.ground`, editor filters, worldgen lists, etc.
+Used for `aggroAt`, `placement.ground`, `spawn.ground`, editor filters, worldgen lists, etc.
 Singular refs (e.g. `corpse`) reject tags.
 
 ---
