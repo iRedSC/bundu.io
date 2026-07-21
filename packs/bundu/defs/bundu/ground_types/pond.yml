@@ -1,7 +1,15 @@
 kind: ocean
 color: "#1e6fa0"
-# Short nearshore blend — ponds read as small inland water, not open sea.
-fade_tiles: 2
+# Short nearshore — small ponds need blue in the middle, not a land-tint wash.
+fade_tiles: 1
+transition_tiles: 6
+edge: organic
+shore_overshoot: false
+surface_layer: true
+displacement:
+    strength: 1.75
+    scroll: 2.4
+    world_scale: 0.4
 caustic_tint:
     a: "#1a6aaa"
     b: "#5eb8ff"
