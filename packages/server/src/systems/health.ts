@@ -11,6 +11,7 @@ import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { HitFlash } from "@bundu/shared/hit_flash";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { gameplayConfig } from "../configs/gameplay.js";
+import { isCreativeGodmode } from "../creative/mode.js";
 
 export class HealthSystem extends System<GameEventMap> {
     constructor(world: World) {
@@ -25,6 +26,7 @@ export class HealthSystem extends System<GameEventMap> {
 
     override update(time: number, _delta: number, object: GameObject) {
         if (PlayerData.get(object)?.freecam) return;
+        if (isCreativeGodmode(object)) return;
         const health = object.get(Health);
         const attributes = object.get(Attributes);
         if (!attributes) return;
@@ -56,6 +58,7 @@ export class HealthSystem extends System<GameEventMap> {
     }
 
     hurt({ object: target, source, damage, hit }: GameEvent.Hurt) {
+        if (isCreativeGodmode(target)) return;
         const health = target.get(Health);
         const attributes = target.get(Attributes);
         const defense = attributes?.get("health.defense") ?? 0;

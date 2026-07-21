@@ -30,6 +30,7 @@ export type AdminEditor = {
 
 /**
  * Freecam map editor UI — replaces the game HUD while freecam is on.
+ * Implements the shared {@link ModeUi} surface (toolbar + sidebar chrome).
  */
 export function createAdminEditor(
     sendPacket: SendPacket,

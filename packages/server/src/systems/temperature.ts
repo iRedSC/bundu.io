@@ -12,6 +12,7 @@ import { gameplayConfig } from "../configs/gameplay.js";
 import { topGroundAt } from "./ground_at.js";
 import { applyVitalsTickDamage } from "./vitals_damage.js";
 import { takeVitalsTicks } from "./vitals_tick.js";
+import { isCreativeGodmode } from "../creative/mode.js";
 
 /**
  * Applies temperature.warmth once every vitals.tick_period_ms
@@ -25,6 +26,7 @@ export class TemperatureSystem extends System<GameEventMap> {
     override update(_time: number, delta: number, player: GameObject): void {
         // Soft-disconnected bodies still drift — survival continues until reclaim or death.
         if (PlayerData.get(player)?.freecam) return;
+        if (isCreativeGodmode(player)) return;
 
         const attributes = player.get(Attributes);
         const stats = player.get(Stats);

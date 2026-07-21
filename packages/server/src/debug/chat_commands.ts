@@ -63,6 +63,7 @@ type ExecHelpers = {
     now?: number;
     onSetTime?: (period: string) => boolean;
     onFreecam?: (player: GameObject) => void;
+    onCreative?: (player: GameObject) => void;
 };
 
 type ServerCommand = CommandProjection & {
@@ -282,6 +283,16 @@ const COMMANDS: ServerCommand[] = [
             helpers.onFreecam?.(player);
             const enabled = PlayerData.get(player)?.freecam === true;
             return enabled ? "Freecam enabled" : "Freecam disabled";
+        },
+    },
+    {
+        name: "creative",
+        opLevel: 4,
+        args: [],
+        run(player, _args, helpers) {
+            helpers.onCreative?.(player);
+            const enabled = PlayerData.get(player)?.creative === true;
+            return enabled ? "Creative mode enabled" : "Creative mode disabled";
         },
     },
 ];

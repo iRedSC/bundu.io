@@ -8,6 +8,7 @@ import { gameplayConfig } from "../configs/gameplay.js";
 import { applyVitalsTickDamage } from "./vitals_damage.js";
 import { HitFlash } from "@bundu/shared/hit_flash";
 import { takeVitalsTicks } from "./vitals_tick.js";
+import { isCreativeGodmode } from "../creative/mode.js";
 
 /**
  * Applies air.oxygen once every vitals.tick_period_ms while submerged.
@@ -21,6 +22,7 @@ export class AirSystem extends System<GameEventMap> {
     override update(_time: number, delta: number, player: GameObject): void {
         // Soft-disconnected bodies still drown/refill — survival continues until reclaim or death.
         if (PlayerData.get(player)?.freecam) return;
+        if (isCreativeGodmode(player)) return;
 
         const attributes = player.get(Attributes);
         const stats = player.get(Stats);

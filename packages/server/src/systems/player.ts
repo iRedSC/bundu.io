@@ -71,6 +71,7 @@ import { gameplayConfig } from "../configs/gameplay.js";
 import { syncFlags } from "../network/flags.js";
 import type { RenderDistanceSystem } from "./render_distance.js";
 import type { FreecamGhostSystem } from "./freecam_ghost.js";
+import type { CreativeModeSystem } from "../creative/mode.js";
 import { getAnonProxyId } from "./anon_occlusion.js";
 import { gameRegistries } from "../configs/registries.js";
 
@@ -80,6 +81,7 @@ import { gameRegistries } from "../configs/registries.js";
 export class PlayerSystem extends System<GameEventMap> {
     private renderDistanceSystem?: RenderDistanceSystem;
     private freecamGhostSystem?: FreecamGhostSystem;
+    private creativeModeSystem?: CreativeModeSystem;
 
     constructor(world: World) {
         super(world, [PlayerData, Physics]);
@@ -92,6 +94,10 @@ export class PlayerSystem extends System<GameEventMap> {
 
     setFreecamGhostSystem(system: FreecamGhostSystem): void {
         this.freecamGhostSystem = system;
+    }
+
+    setCreativeModeSystem(system: CreativeModeSystem): void {
+        this.creativeModeSystem = system;
     }
 
     override update(time: number, _delta: number, player: GameObject): void {
@@ -876,6 +882,7 @@ export class PlayerSystem extends System<GameEventMap> {
                 );
             },
             onFreecam: (target) => this.toggleFreecam(target),
+            onCreative: (target) => this.creativeModeSystem?.toggleCreative(target),
         });
 
         if (command.handled) {

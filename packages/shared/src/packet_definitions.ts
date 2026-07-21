@@ -57,6 +57,8 @@ export const ServerPacket = {
     CommandRegistry: 0x22,
     /** Private command feedback for the executor. */
     CommandResult: 0x23,
+    /** Creative mode toggled by `/creative` (item give + cheat toolbar). */
+    CreativeMode: 0x24,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -178,6 +180,14 @@ export namespace ServerPacket {
     /** Period index into the server day cycle (0=morning … 3=night). */
     export type SetTimeOfDay = { period: number };
     export type FreecamMode = { enabled: boolean };
+    /** Creative inventory/cheat mode (player stays in world; HUD stays up). */
+    export type CreativeMode = {
+        enabled: boolean;
+        godmode: boolean;
+        /** Multiplier: 0.5 | 1 | 2 | 4 */
+        speed: number;
+        instakill: boolean;
+    };
     export type UnloadGround = {
         groundData: GroundWire[];
     };
@@ -276,6 +286,14 @@ export const ClientPacket = {
     FreecamCursor: 0x1e,
     /** Freecam: show ghost to non-freecam players (default off). */
     AdminSetGhostVisible: 0x1f,
+    /** Creative: give an item stack to self. */
+    CreativeGive: 0x20,
+    /** Creative: freeze vitals / ignore damage. */
+    CreativeSetGodmode: 0x21,
+    /** Creative: movement speed multiplier index (0.5× / 1× / 2× / 4×). */
+    CreativeSetSpeed: 0x22,
+    /** Creative: massive attack.damage boost. */
+    CreativeSetInstakill: 0x23,
 } as const;
 
 export namespace ClientPacket {
@@ -348,6 +366,11 @@ export namespace ClientPacket {
     /** World-space freecam pointer for the networked ghost cursor. */
     export type FreecamCursor = { x: number; y: number };
     export type AdminSetGhostVisible = { visible: boolean };
+    export type CreativeGive = { itemId: number; count: number };
+    export type CreativeSetGodmode = { enabled: boolean };
+    /** One of 0.5, 1, 2, 4. */
+    export type CreativeSetSpeed = { speed: number };
+    export type CreativeSetInstakill = { enabled: boolean };
 }
 
 /** ID → payload map for server packets. */
@@ -383,6 +406,7 @@ export type ServerPacketMap = {
     [ServerPacket.UpdateFlags]: ServerPacket.UpdateFlags;
     [ServerPacket.CommandRegistry]: ServerPacket.CommandRegistry;
     [ServerPacket.CommandResult]: ServerPacket.CommandResult;
+    [ServerPacket.CreativeMode]: ServerPacket.CreativeMode;
 };
 
 /** ID → payload map for client packets. */
@@ -414,6 +438,10 @@ export type ClientPacketMap = {
     [ClientPacket.ExitFreecamAt]: ClientPacket.ExitFreecamAt;
     [ClientPacket.FreecamCursor]: ClientPacket.FreecamCursor;
     [ClientPacket.AdminSetGhostVisible]: ClientPacket.AdminSetGhostVisible;
+    [ClientPacket.CreativeGive]: ClientPacket.CreativeGive;
+    [ClientPacket.CreativeSetGodmode]: ClientPacket.CreativeSetGodmode;
+    [ClientPacket.CreativeSetSpeed]: ClientPacket.CreativeSetSpeed;
+    [ClientPacket.CreativeSetInstakill]: ClientPacket.CreativeSetInstakill;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -474,6 +502,9 @@ export const ServerSchema: {
     [ServerPacket.UpdateFlags]: { fields: ["flags"] },
     [ServerPacket.CommandRegistry]: { fields: ["commands"] },
     [ServerPacket.CommandResult]: { fields: ["message", "ok"] },
+    [ServerPacket.CreativeMode]: {
+        fields: ["enabled", "godmode", "speed", "instakill"],
+    },
 };
 
 export const ClientSchema: {
@@ -524,6 +555,10 @@ export const ClientSchema: {
     [ClientPacket.ExitFreecamAt]: { fields: ["x", "y"] },
     [ClientPacket.FreecamCursor]: { fields: ["x", "y"] },
     [ClientPacket.AdminSetGhostVisible]: { fields: ["visible"] },
+    [ClientPacket.CreativeGive]: { fields: ["itemId", "count"] },
+    [ClientPacket.CreativeSetGodmode]: { fields: ["enabled"] },
+    [ClientPacket.CreativeSetSpeed]: { fields: ["speed"] },
+    [ClientPacket.CreativeSetInstakill]: { fields: ["enabled"] },
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -747,4 +782,27 @@ export const ClientPacketGuards = {
         value: unknown
     ): value is ClientPacket.AdminSetGhostVisible =>
         isRecord(value) && isBoolean(value.visible),
+    [ClientPacket.CreativeGive]: (
+        value: unknown
+    ): value is ClientPacket.CreativeGive =>
+        isRecord(value) &&
+        isSafeInteger(value.itemId) &&
+        value.itemId >= 0 &&
+        isSafeInteger(value.count) &&
+        value.count >= 1 &&
+        value.count <= 999,
+    [ClientPacket.CreativeSetGodmode]: (
+        value: unknown
+    ): value is ClientPacket.CreativeSetGodmode =>
+        isRecord(value) && isBoolean(value.enabled),
+    [ClientPacket.CreativeSetSpeed]: (
+        value: unknown
+    ): value is ClientPacket.CreativeSetSpeed =>
+        isRecord(value) &&
+        isFiniteNumber(value.speed) &&
+        [0.5, 1, 2, 4].includes(value.speed),
+    [ClientPacket.CreativeSetInstakill]: (
+        value: unknown
+    ): value is ClientPacket.CreativeSetInstakill =>
+        isRecord(value) && isBoolean(value.enabled),
 } satisfies PacketGuards<ClientPacketMap>;

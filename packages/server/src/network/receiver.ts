@@ -1,12 +1,14 @@
 import { ClientPacket } from "@bundu/shared/packet_definitions";
 import type { ServerPacketReceiver } from "../engine";
 import type { AdminEditorSystem } from "../admin/editor";
+import type { CreativeModeSystem } from "../creative/mode";
 import type { PlayerSystem } from "../systems/player";
 
 export function setupPacketReceiving(
     receiver: ServerPacketReceiver,
     system: PlayerSystem,
-    admin: AdminEditorSystem
+    admin: AdminEditorSystem,
+    creative: CreativeModeSystem
 ) {
     receiver.on(ClientPacket.Attack, system.attack);
     receiver.on(ClientPacket.Block, system.block);
@@ -38,4 +40,8 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.AdminSaveMap, admin.adminSaveMap);
     receiver.on(ClientPacket.AdminDownloadMap, admin.adminDownloadMap);
     receiver.on(ClientPacket.AdminWipeMap, admin.adminWipeMap);
+    receiver.on(ClientPacket.CreativeGive, creative.creativeGive);
+    receiver.on(ClientPacket.CreativeSetGodmode, creative.creativeSetGodmode);
+    receiver.on(ClientPacket.CreativeSetSpeed, creative.creativeSetSpeed);
+    receiver.on(ClientPacket.CreativeSetInstakill, creative.creativeSetInstakill);
 }
