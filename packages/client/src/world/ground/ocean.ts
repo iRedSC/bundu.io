@@ -19,7 +19,6 @@ import {
 } from "./nearshore_fill";
 import { POND_SEAM_AMPLITUDE, seamOffsetPond } from "./land_seam";
 import {
-    bakeOrganicRect,
     bakeOrganicRectMask,
     ORGANIC_EDGE_SUBDIV,
     ORGANIC_EDGE_TEXTURE_MAX,
@@ -109,6 +108,8 @@ export function createOceanGround(
     };
     const materialColor = parseHexColor(model.color);
     let waterModelIds: ReadonlySet<string> = new Set([model.id]);
+    const organicFill = new Sprite(Texture.EMPTY);
+    if (hasOrganicEdge) root.addChild(organicFill);
 
     const causticsTex = tex(model.textures.caustics);
     const displaceTex = tex(model.textures.displace);
@@ -226,21 +227,26 @@ export function createOceanGround(
     anchoredDisplace.padding = 80;
     anchoredContent.filters = [anchoredDisplace];
     let organicMaskTexture: Texture | undefined;
+    let organicFillTexture: Texture | undefined;
 
     const setOrganicMaskBounds = (waterBounds: readonly Rectangle[]) => {
         if (!hasOrganicEdge) return;
         fxMask.texture = Texture.EMPTY;
         anchoredMask.texture = Texture.EMPTY;
-        organicMaskTexture?.destroy(false);
+        organicFill.texture = Texture.EMPTY;
+        organicMaskTexture?.destroy(true);
+        organicFillTexture?.destroy(true);
         organicMaskTexture = undefined;
+        organicFillTexture = undefined;
 
-        const baked = bakeOrganicRectMask(
-            waterBounds.map((waterBoundsPx) => ({
+        const bounds = waterBounds.map((waterBoundsPx) => ({
                 x: waterBoundsPx.x / TILE_SIZE,
                 y: waterBoundsPx.y / TILE_SIZE,
                 w: waterBoundsPx.width / TILE_SIZE,
                 h: waterBoundsPx.height / TILE_SIZE,
-            })),
+            }));
+        const baked = bakeOrganicRectMask(
+            bounds,
             { amplitude: POND_SEAM_AMPLITUDE, offset: seamOffsetPond },
             ORGANIC_EDGE_SUBDIV,
             ORGANIC_EDGE_TEXTURE_MAX,
@@ -248,7 +254,25 @@ export function createOceanGround(
             ORGANIC_FX_OVERSHOOT_TILES
         );
         if (!baked) return;
+        const fill = bakeOrganicRectMask(
+            bounds,
+            { amplitude: POND_SEAM_AMPLITUDE, offset: seamOffsetPond },
+            ORGANIC_EDGE_SUBDIV,
+            ORGANIC_EDGE_TEXTURE_MAX,
+            { x: 0, y: 0, w: WORLD_TILES, h: WORLD_TILES },
+            0,
+            materialColor
+        );
+        if (!fill) {
+            baked.texture.destroy(true);
+            return;
+        }
         organicMaskTexture = baked.texture;
+        organicFillTexture = fill.texture;
+        organicFill.texture = fill.texture;
+        organicFill.position.set(fill.x * TILE_SIZE, fill.y * TILE_SIZE);
+        organicFill.width = fill.w * TILE_SIZE;
+        organicFill.height = fill.h * TILE_SIZE;
         for (const maskSprite of [fxMask, anchoredMask]) {
             maskSprite.texture = baked.texture;
             maskSprite.position.set(
@@ -797,8 +821,10 @@ export function createOceanGround(
             anchoredMaskBind.map?.destroy(false);
             anchoredMaskBind.map = undefined;
             anchoredMaskBind.source = undefined;
-            organicMaskTexture?.destroy(false);
+            organicMaskTexture?.destroy(true);
             organicMaskTexture = undefined;
+            organicFillTexture?.destroy(true);
+            organicFillTexture = undefined;
             mapRt.destroy(true);
             anchoredMapRt.destroy(true);
             splashRt.destroy(true);
@@ -818,30 +844,9 @@ export function createOceanFill(
     zIndex: number
 ): GroundVisual {
     if (model.edge === "organic") {
-        const baked = bakeOrganicRect(
-            parseHexColor(model.color),
-            {
-                x: bounds.x / TILE_SIZE,
-                y: bounds.y / TILE_SIZE,
-                w: bounds.width / TILE_SIZE,
-                h: bounds.height / TILE_SIZE,
-            },
-            { amplitude: POND_SEAM_AMPLITUDE, offset: seamOffsetPond },
-            ORGANIC_EDGE_SUBDIV,
-            ORGANIC_EDGE_TEXTURE_MAX,
-            { x: 0, y: 0, w: WORLD_TILES, h: WORLD_TILES }
-        );
-        const fill = new Sprite(baked.texture);
-        fill.position.set(baked.x * TILE_SIZE, baked.y * TILE_SIZE);
-        fill.width = baked.w * TILE_SIZE;
-        fill.height = baked.h * TILE_SIZE;
+        const fill = new Container();
         fill.zIndex = zIndex;
-        return {
-            container: fill,
-            destroy() {
-                baked.texture.destroy(true);
-            },
-        };
+        return { container: fill };
     }
 
     const fill = new Sprite(Texture.WHITE);
