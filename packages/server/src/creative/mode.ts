@@ -124,14 +124,11 @@ export class CreativeModeSystem extends System<GameEventMap> {
         if (!data || !canUseCreative(player)) return;
 
         if (data.creative) {
-            data.creative = false;
-            data.creativeSpeed = 1;
-            data.creativeInstakill = false;
-            applyCreativeAttributes(player);
+            leaveCreative(player, data);
             const { playerPacketManager } = this.world.context;
             playerPacketManager.set(player.id, ServerPacket.CreativeMode, {
                 enabled: false,
-                godmode: data.godmode === true,
+                godmode: false,
                 speed: 1,
                 instakill: false,
             });
@@ -280,9 +277,20 @@ export class CreativeModeSystem extends System<GameEventMap> {
     override exit(player: GameObject): void {
         const data = PlayerData.get(player);
         if (!data?.creative) return;
-        data.creative = false;
-        data.creativeSpeed = 1;
-        data.creativeInstakill = false;
-        Attributes.get(player)?.clear(CREATIVE_ATTR);
+        leaveCreative(player, data);
     }
+}
+
+/** Drop creative cheats — including godmode — when leaving the mode. */
+function leaveCreative(
+    player: GameObject,
+    data: NonNullable<ReturnType<typeof PlayerData.get>>
+): void {
+    data.creative = false;
+    data.creativeSpeed = 1;
+    data.creativeInstakill = false;
+    data.godmode = false;
+    const attrs = Attributes.get(player);
+    attrs?.clear(CREATIVE_ATTR);
+    attrs?.clear("godmode");
 }

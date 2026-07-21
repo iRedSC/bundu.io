@@ -20,6 +20,7 @@ import {
     Type,
 } from "../components/base.js";
 import { Inventory } from "../components/inventory.js";
+import { FreecamGhostData } from "../components/freecam_ghost.js";
 import { PlayerData } from "../components/player.js";
 import { Attributes } from "../components/attributes.js";
 import { System, type GameObject, type World } from "../engine";
@@ -469,9 +470,13 @@ export class StructureSystem extends System<GameEventMap> {
         if (!config.solid) return true;
 
         const circle = new Circle(new Vector(), FOOTPRINT_CIRCLE_RADIUS);
+        // Freecam ghosts carry Physics for pose only — never block map edits.
         const dynamic = this.world
             .query([Physics])
-            .filter((object) => !TileEntity.get(object));
+            .filter(
+                (object) =>
+                    !TileEntity.get(object) && !FreecamGhostData.get(object)
+            );
         for (const { x, y } of occupied) {
             circle.pos.x = tileCenterWorld(x);
             circle.pos.y = tileCenterWorld(y);
