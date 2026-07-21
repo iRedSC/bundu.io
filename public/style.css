@@ -64,6 +64,7 @@ canvas {
 }
 
 input[type="text"],
+input[type="search"],
 button {
     padding: 10px;
     font-size: 16px;

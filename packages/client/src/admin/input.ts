@@ -244,7 +244,11 @@ export class AdminInput {
 
     private handleKeyDown(event: KeyboardEvent) {
         if (!this.facade.isActive()) return;
-        if (document.getElementById("chat-input") === document.activeElement) {
+        const active = document.activeElement;
+        if (
+            active instanceof HTMLInputElement ||
+            active instanceof HTMLTextAreaElement
+        ) {
             return;
         }
 

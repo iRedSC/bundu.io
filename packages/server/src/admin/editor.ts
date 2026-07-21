@@ -69,12 +69,13 @@ function resolveModelVariant(
     kind: "resource" | "structure",
     typeId: number,
     variantId: number
-): string | undefined {
+): string {
     const variant = resolveVariantName(variantId);
-    if (variant === undefined) return undefined;
+    // Freecam place must never soft-fail on cosmetic variants — fall back to base.
+    if (variant === undefined) return "base";
     return modelSupportsVariant(registryModelId(kind, typeId), variant)
         ? variant
-        : undefined;
+        : "base";
 }
 
 /** Normalize + clamp a ground rect to the world; null if empty after clamp. */
@@ -258,7 +259,6 @@ export class AdminEditorSystem extends System<GameEventMap> {
                     packet.typeId,
                     packet.variant
                 );
-                if (variant === undefined) return;
                 const created = tryAddResource(
                     this.world,
                     packet.typeId as RegistryId<"resource">,
@@ -443,7 +443,6 @@ export class AdminEditorSystem extends System<GameEventMap> {
             packet.typeId,
             packet.variant
         );
-        if (variant === undefined) return;
         const layer = occupancyLayerForClass(
             BuildingConfigs.get(packet.typeId).class
         );
