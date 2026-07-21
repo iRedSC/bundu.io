@@ -1,5 +1,5 @@
 extends: item_type:bundu:pickaxe
-texture: bundu/misc/unknown_asset.svg
+texture: bundu/item/tool/stone_wrench.svg
 ---
 type: bundu:wrench
 whenMainHand:

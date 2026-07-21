@@ -1,0 +1,14 @@
+extends: item_type:bundu:spear
+texture: bundu/item/tool/iridium_spear.svg
+---
+type: bundu:spear
+level: 6
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 20
+            health.defense.blocking:
+                op: add
+                value: 4

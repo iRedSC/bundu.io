@@ -1,0 +1,15 @@
+result:
+    item: iridium_hammer
+    amount: 1
+duration: 50000
+score: 3000
+ingredients:
+    cobalt_hammer: 1
+    iridium: 80
+    cobalt: 60
+    silver: 50
+    stone: 60
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil

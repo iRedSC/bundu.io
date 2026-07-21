@@ -1,13 +1,11 @@
 extends: item_type:bundu:helmet
-texture: bundu/item/equipment/wood_helmet.svg
+texture: bundu/item/equipment/iridium_helmet.svg
 ---
 type: bundu:helmet
-level: 1
-stats:
-    health: -10
+level: 6
 whenHelmet:
     "*":
         attributes:
             health.defense:
                 op: add
-                value: 2
+                value: 8

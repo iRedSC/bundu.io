@@ -1,9 +1,12 @@
 displays:
     hand:
-        rotation: -100
-        x: 0.1
-        y: 0.25
-        scale: 0.45
+        rotation: 180
+        x: 0
+        y: 0.2
+        scale: 0.6
+    inventory:
+        rotation: 45
+        scale: 1.25
 ---
 function: "main_hand"
 whenMainHand:

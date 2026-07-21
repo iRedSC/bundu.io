@@ -1,4 +1,5 @@
-texture: bundu/misc/unknown_asset.svg
+extends: item_type:bundu:pickaxe
+texture: bundu/item/tool/cobalt_wrench.svg
 ---
 type: bundu:wrench
 whenMainHand:
@@ -9,4 +10,4 @@ whenMainHand:
                 value: 4
             attack.building.damage:
                 op: add
-                value: -70
+                value: -50

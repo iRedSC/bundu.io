@@ -87,6 +87,9 @@ item:
     cobalt_wall:
         name: Cobalt Wall
         desc: A wall made of cobalt.
+    cobalt_wrench:
+        name: Cobalt Wrench
+        desc: A wrench made of cobalt.
     copper:
         name: Copper
         desc: A soft reddish metal.
@@ -147,6 +150,18 @@ item:
     iridium_door:
         name: Iridium Door
         desc: A door made of iridium.
+    iridium_hammer:
+        name: Iridium Hammer
+        desc: A hammer made of iridium.
+    iridium_helmet:
+        name: Iridium Helmet
+        desc: A helmet made of iridium.
+    iridium_pickaxe:
+        name: Iridium Pickaxe
+        desc: A pickaxe made of iridium.
+    iridium_spear:
+        name: Iridium Spear
+        desc: A spear made of iridium.
     iridium_spike:
         name: Iridium Spike
         desc: A spike made of iridium.
@@ -204,9 +219,6 @@ item:
     red_berry:
         name: Red Berry
         desc: A small edible fruit.
-    repair_hammer:
-        name: Repair Hammer
-        desc: A hammer used for repairing.
     resource_book:
         name: Resource Book
         desc: Save basic resources when crafting.
@@ -219,9 +231,6 @@ item:
     scuba:
         name: Scuba
         desc: Breathe underwater.
-    shovel:
-        name: Shovel
-        desc: Start digging?
     silver:
         name: Silver
         desc: A shiny grey metal.
@@ -237,9 +246,6 @@ item:
     silver_pickaxe:
         name: Silver Pickaxe
         desc: A pickaxe made of silver.
-    silver_repair_hammer:
-        name: Silver Repair Hammer
-        desc: A silver hammer used for repairing.
     silver_spear:
         name: Silver Spear
         desc: A spear made of silver.
@@ -267,6 +273,9 @@ item:
     stone_pickaxe:
         name: Stone Pickaxe
         desc: A pickaxe made of stone.
+    stone_shovel:
+        name: Stone Shovel
+        desc: Start digging?
     stone_spear:
         name: Stone Spear
         desc: A spear made of stone.
@@ -279,6 +288,9 @@ item:
     stone_wall:
         name: Stone Wall
         desc: A wall made of stone.
+    stone_wrench:
+        name: Stone Wrench
+        desc: A wrench used for repairing.
     tent:
         name: Tent
         desc: A portable shelter.
@@ -297,9 +309,6 @@ item:
     wood_door:
         name: Wooden Door
         desc: A door made of wood.
-    wood_helmet:
-        name: Wood Helmet
-        desc: A helmet made of wood.
     wood_pickaxe:
         name: Wood Pickaxe
         desc: A pickaxe made of wood.
