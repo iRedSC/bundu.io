@@ -65,6 +65,13 @@ export type ResourcePackManifest = {
 
 type ServedAsset = ResourceAsset & { bytes: Uint8Array };
 
+let loadedModels: CompiledModelDefs | undefined;
+
+export function modelSupportsVariant(id: string, variant: string): boolean {
+    if (variant === "base") return true;
+    return loadedModels?.get(id)?.variants?.[variant] !== undefined;
+}
+
 function hash(data: string | Uint8Array): string {
     return createHash("sha256").update(data).digest("hex");
 }
@@ -362,6 +369,7 @@ export class ResourcePackService {
         // (same shape the client historically received as `{ stack }`).
         const compiledModels = compileModelDefs({ stack: models });
         setModelBounds(compiledModels);
+        loadedModels = compiledModels;
         const availableAssets = new Set(servedAssets.keys());
         validateCompiledTextures(compiledModels, availableAssets);
         const groundModels = parseGroundModelSet(groundModelDocs);

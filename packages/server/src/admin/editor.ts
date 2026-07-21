@@ -48,9 +48,31 @@ import {
 import { exportMapYaml, saveMapYaml, wipeMap } from "./map_io.js";
 import { setAnimalsFrozen } from "./state.js";
 import type { FreecamGhostSystem } from "../systems/freecam_ghost.js";
+import { modelSupportsVariant } from "../configs/resource_packs.js";
 
 function inWorldTiles(x: number, y: number): boolean {
     return x >= 0 && y >= 0 && x < WORLD_TILES && y < WORLD_TILES;
+}
+
+function registryModelId(kind: "resource" | "structure", id: number): string {
+    const location =
+        kind === "resource"
+            ? gameRegistries().resource.location(id as RegistryId<"resource">)
+            : gameRegistries().structure.location(
+                  id as RegistryId<"structure">
+              );
+    return location.split(":", 2)[1] ?? "";
+}
+
+function resolveModelVariant(
+    kind: "resource" | "structure",
+    typeId: number,
+    variantId: number
+): string | undefined {
+    const variant = resolveVariantName(variantId);
+    return modelSupportsVariant(registryModelId(kind, typeId), variant)
+        ? variant
+        : undefined;
 }
 
 /** Normalize + clamp a ground rect to the world; null if empty after clamp. */
@@ -225,12 +247,16 @@ export class AdminEditorSystem extends System<GameEventMap> {
         if (!player || !canUseEditor(player)) return;
 
         const rot = packet.rotation as TileRot;
-        const variant = resolveVariantName(packet.variant);
-
         switch (packet.kind) {
             case AdminPlaceKind.Resource: {
                 if (!inWorldTiles(packet.x, packet.y)) return;
                 if (!registryHas("resource", packet.typeId)) return;
+                const variant = resolveModelVariant(
+                    "resource",
+                    packet.typeId,
+                    packet.variant
+                );
+                if (variant === undefined) return;
                 const created = tryAddResource(
                     this.world,
                     packet.typeId as RegistryId<"resource">,
@@ -410,6 +436,12 @@ export class AdminEditorSystem extends System<GameEventMap> {
         packet: ClientPacket.AdminPlace,
         rot: TileRot
     ): void {
+        const variant = resolveModelVariant(
+            "structure",
+            packet.typeId,
+            packet.variant
+        );
+        if (variant === undefined) return;
         const layer = occupancyLayerForClass(
             BuildingConfigs.get(packet.typeId).class
         );
@@ -431,7 +463,7 @@ export class AdminEditorSystem extends System<GameEventMap> {
             x: packet.x,
             y: packet.y,
             rotation: rot,
-            variant: resolveVariantName(packet.variant),
+            variant,
             resultTo: player,
             placedBy: player,
         });
