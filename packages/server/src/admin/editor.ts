@@ -70,6 +70,7 @@ function resolveModelVariant(
     variantId: number
 ): string | undefined {
     const variant = resolveVariantName(variantId);
+    if (variant === undefined) return undefined;
     return modelSupportsVariant(registryModelId(kind, typeId), variant)
         ? variant
         : undefined;
@@ -100,11 +101,11 @@ function clampGroundRect(
     return { x: x0, y: y0, w: nw, h: nh };
 }
 
-function resolveVariantName(variantId: number): string {
+function resolveVariantName(variantId: number): string | undefined {
     try {
-        return getVariantName(variantId) ?? "base";
+        return getVariantName(variantId);
     } catch {
-        return "base";
+        return undefined;
     }
 }
 

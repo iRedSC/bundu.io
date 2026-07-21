@@ -545,21 +545,21 @@ export class AdminInput {
     }
 }
 
-function modelVariantNames(entry: PaletteEntry): string[] {
-    const def = lookupModel(entry.location);
-    return Object.keys(def?.variants ?? {}).sort((a, b) => a.localeCompare(b));
-}
-
 function resolvePlaceVariant(
     state: EditorState,
     selected: PaletteEntry
 ): string {
-    const names = modelVariantNames(selected);
+    const def = lookupModel(selected.location);
+    const names = Object.keys(def?.variants ?? {}).sort((a, b) =>
+        a.localeCompare(b)
+    );
     if (state.randomVariant && names.length > 0) {
         return random.choice(names);
     }
     if (state.selectedVariant && names.includes(state.selectedVariant)) {
         return state.selectedVariant;
     }
-    return names[0] ?? "base";
+    return def?.defaultVariant && names.includes(def.defaultVariant)
+        ? def.defaultVariant
+        : "base";
 }

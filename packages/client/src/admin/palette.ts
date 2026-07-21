@@ -651,7 +651,10 @@ export function createPalette(
         }
     }
 
-    function syncSelectedVariant(variants: string[]) {
+    function syncSelectedVariant(
+        variants: string[],
+        defaultVariant: string | undefined
+    ) {
         if (variants.length === 0) {
             state.selectedVariant = null;
             return;
@@ -660,17 +663,21 @@ export function createPalette(
             state.selectedVariant === null ||
             !variants.includes(state.selectedVariant)
         ) {
-            state.selectedVariant = variants[0] ?? null;
+            state.selectedVariant =
+                (defaultVariant && variants.includes(defaultVariant)
+                    ? defaultVariant
+                    : variants[0]) ?? null;
         }
     }
 
     function selectObject(entry: PaletteEntry) {
         state.selected = entry;
         const variants = entryVariants(entry);
+        const defaultVariant = lookupModel(entry.location)?.defaultVariant;
         variantPage = 0;
         variantQuery = "";
         variantSearch.value = "";
-        syncSelectedVariant(variants);
+        syncSelectedVariant(variants, defaultVariant);
         rebuildGrids();
         onChange();
     }
@@ -735,7 +742,12 @@ export function createPalette(
         );
         if (filteredVariants.length === 0) variantPageCount = 1;
         variantPage = Math.min(variantPage, variantPageCount - 1);
-        syncSelectedVariant(variants);
+        syncSelectedVariant(
+            variants,
+            state.selected
+                ? lookupModel(state.selected.location)?.defaultVariant
+                : undefined
+        );
 
         const objectSlice = filteredEntries.slice(
             objectPage * objectPageSize,
@@ -877,9 +889,19 @@ export function createPalette(
             );
         if (!selectedStillVisible) {
             state.selected = allEntries[0] ?? null;
-            syncSelectedVariant(entryVariants(state.selected));
+            syncSelectedVariant(
+                entryVariants(state.selected),
+                state.selected
+                    ? lookupModel(state.selected.location)?.defaultVariant
+                    : undefined
+            );
         } else {
-            syncSelectedVariant(entryVariants(state.selected));
+            syncSelectedVariant(
+                entryVariants(state.selected),
+                state.selected
+                    ? lookupModel(state.selected.location)?.defaultVariant
+                    : undefined
+            );
         }
 
         rebuildGrids();
