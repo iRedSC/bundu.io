@@ -52,7 +52,7 @@ export function createEditorState(): EditorState {
         tagFilter: null,
         selected: null,
         selectedVariant: null,
-        tool: "look",
+        tool: "place",
         drag: true,
         groundBrush: "rect",
         randomVariant: false,

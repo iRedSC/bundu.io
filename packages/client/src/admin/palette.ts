@@ -2,6 +2,11 @@ import { AdminPlaceKind } from "@bundu/shared/packet_definitions";
 import type { Registry, RegistryName, TagLocation } from "@bundu/shared/registry";
 import { Container, Graphics, Text } from "pixi.js";
 import { percentOf } from "@bundu/shared/math";
+import {
+    modelId,
+    parseModelId,
+    type ModelKind,
+} from "@bundu/shared/models/ids";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory";
 import { tickItemButton, type ItemButtonColors } from "../ui/item_button";
@@ -19,7 +24,6 @@ import {
     type EditorState,
     type PaletteEntry,
 } from "./state";
-import type { ModelKind } from "@bundu/shared/models/ids";
 
 function paletteModelId(category: EditorCategory, location: string): string {
     const kind: ModelKind =
@@ -29,6 +33,23 @@ function paletteModelId(category: EditorCategory, location: string): string {
               ? "resource"
               : "structure";
     return clientModelId(kind, location);
+}
+
+/**
+ * Palette icons prefer the structure/resource model; data-only buildings
+ * (spikes, workbench, …) fall back to the matching item texture model.
+ */
+function paletteIconModelId(modelLocation: string): string {
+    if (lookupModel(modelLocation)) return modelLocation;
+    const parsed = parseModelId(modelLocation);
+    if (
+        parsed &&
+        (parsed.kind === "structure" || parsed.kind === "resource")
+    ) {
+        const itemId = modelId("item", parsed.namespace, parsed.path);
+        if (lookupModel(itemId)) return itemId;
+    }
+    return modelLocation;
 }
 import {
     hideRegistryTooltip,
@@ -59,7 +80,7 @@ const TAB_HEIGHT = 28;
 const TAB_GAP = 4;
 const EDGE_PAD = 10;
 const SLOT_STRIDE = ITEM_BUTTON_SIZE + SLOT_GAP;
-const PANEL_COLS = 3;
+const PANEL_COLS = 4;
 const PAGER_HEIGHT = 28;
 const SECTION_GAP = 12;
 const GRID_WIDTH = PANEL_COLS * SLOT_STRIDE - SLOT_GAP;
@@ -138,7 +159,9 @@ function entryVariants(entry: PaletteEntry | null): string[] {
 function fuzzyRank(value: string, query: string): number | undefined {
     if (!query) return 0;
     const v = value.toLowerCase();
-    const bare = v.includes(":") ? v.slice(v.indexOf(":") + 1) : v;
+    // Prefer the path segment of `kind:namespace:path` (e.g. wood_wall).
+    const parsed = parseModelId(v);
+    const bare = parsed?.path ?? (v.includes(":") ? v.slice(v.lastIndexOf(":") + 1) : v);
     if (bare.startsWith(query) || v.startsWith(query)) {
         return 3000 - bare.length;
     }
@@ -296,10 +319,14 @@ class PaletteSlot {
             return;
         }
 
-        this.clearIcon = mountSlotIcon(entry.location, this.itemDisplay, size);
+        this.clearIcon = mountSlotIcon(
+            paletteIconModelId(entry.location),
+            this.itemDisplay,
+            size
+        );
     }
 
-    setVariant(modelId: string, variant: string) {
+    setVariant(modelLocation: string, variant: string) {
         this.entry = null;
         this.variant = variant;
         this.clearIcon?.();
@@ -307,7 +334,12 @@ class PaletteSlot {
         this.itemDisplay.removeChildren();
         this.itemDisplay.visible = true;
         const size = percentOf(90, ITEM_BUTTON_SIZE);
-        this.clearIcon = mountSlotIcon(modelId, this.itemDisplay, size, variant);
+        this.clearIcon = mountSlotIcon(
+            paletteIconModelId(modelLocation),
+            this.itemDisplay,
+            size,
+            variant
+        );
     }
 
     tick(now?: number) {
@@ -393,7 +425,9 @@ function makePager(
         const safePage = Math.min(Math.max(0, page), safeCount - 1);
         label.text = `${safePage + 1}/${safeCount}`;
         const gap = 6;
-        prev.root.position.set(0, 0);
+        // Buttons are center-anchored; offset so the left edge sits at x=0
+        // (section already has EDGE_PAD from the screen).
+        prev.root.position.set(prev.width / 2, 0);
         label.position.set(prev.width + gap + label.width / 2, 0);
         next.root.position.set(
             prev.width + gap + label.width + gap + next.width / 2,
@@ -459,6 +493,8 @@ function createSearchInput(onChange: (query: string) => void): HTMLInputElement 
     Object.assign(input.style, {
         position: "fixed",
         zIndex: "30",
+        // body sets pointer-events:none; text inputs opt in via CSS, search must too.
+        pointerEvents: "auto",
         border: "1px solid #4a5a40",
         borderRadius: "4px",
         background: "#1a2218",
@@ -676,6 +712,8 @@ export function createPalette(
 
     function selectObject(entry: PaletteEntry) {
         state.selected = entry;
+        // Selecting something to place should leave Look mode.
+        if (state.tool === "look") state.tool = "place";
         const variants = entryVariants(entry);
         const defaultVariant = lookupModel(entry.location)?.defaultVariant;
         variantPage = 0;
