@@ -749,9 +749,10 @@ export class Inventory {
     hotbarRightEdge(): number {
         const columns = Math.min(HOTBAR_COLUMNS, this.buttons.length) || 1;
         const cell = ITEM_BUTTON_SIZE + percentOf(10, ITEM_BUTTON_SIZE);
+        // container.x is the center of column 0; last column is at +(columns-1)*cell.
         return (
             this.container.position.x +
-            percentOf(50, cell * (columns - 1)) +
+            cell * (columns - 1) +
             ITEM_BUTTON_SIZE / 2
         );
     }

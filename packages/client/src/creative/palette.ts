@@ -502,11 +502,18 @@ export function createCreativePalette(
                 }
                 if (ev.button !== 0) return;
                 slot.down = true;
+                pressDragging = false;
+                // Cursor held over a slot → void on release (inventory may also
+                // void via isVoidTarget). Do not arm a give for this press.
+                if (hooks.hasCursor()) {
+                    pressItemId = null;
+                    suppressNextGive = true;
+                    return;
+                }
                 pressItemId = entry.id;
                 pressShift = ev.shiftKey ?? false;
                 pressX = ev.clientX ?? 0;
                 pressY = ev.clientY ?? 0;
-                pressDragging = false;
                 suppressNextGive = false;
             };
 
@@ -517,23 +524,31 @@ export function createCreativePalette(
             }) => {
                 ev.stopPropagation();
                 if (ev.button === 2) {
+                    // Only act if this slot received the right-press (not a drop).
+                    if (!slot.rightDown) return;
+                    slot.rightDown = false;
                     // Holding a cursor over a slot voids instead of re-picking.
                     if (hooks.hasCursor()) {
                         voidCursor();
                     } else {
                         giveToCursor(entry.id, ev.shiftKey ?? false);
                     }
-                    slot.rightDown = false;
                     return;
                 }
                 if (ev.button !== 0) return;
+                const originatedHere = slot.down;
                 slot.down = false;
 
-                // Drag-pick already handled; or void drop onto sidebar.
+                // Drag-pick already handled; or void-armed press.
                 if (suppressNextGive || pressDragging) {
                     pressItemId = null;
                     pressDragging = false;
                     suppressNextGive = false;
+                    return;
+                }
+                // Drop from inventory / release over a foreign slot — never give.
+                if (!originatedHere || pressItemId === null) {
+                    pressItemId = null;
                     return;
                 }
                 if (hooks.hasCursor()) {
@@ -541,7 +556,7 @@ export function createCreativePalette(
                     pressItemId = null;
                     return;
                 }
-                give(entry.id, ev.shiftKey ?? false);
+                give(pressItemId, pressShift);
                 pressItemId = null;
             };
 

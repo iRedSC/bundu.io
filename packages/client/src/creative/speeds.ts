@@ -7,5 +7,5 @@ export function cycleCreativeSpeed(current: CreativeSpeed): CreativeSpeed {
 }
 
 export function formatSpeedLabel(speed: CreativeSpeed): string {
-    return `${speed}×`;
+    return `Speed ${speed}x`;
 }
