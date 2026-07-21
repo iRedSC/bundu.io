@@ -1296,8 +1296,14 @@ export class World {
             patch.visual.clearLandSeam?.();
         }
         // Rebuild at crisp LOD; freecam / zoom-out may drop via live ticks.
+        // Surface water (ponds) is transparent to seam occupancy so land↔land
+        // borders keep baking underneath — ponds still draw above and cover them.
         this.landSeamBaker.prepare(
-            this.groundPatches,
+            this.groundPatches.filter((patch) => {
+                if (!isOcean(patch.type)) return true;
+                return !oceanGroundModel(clientGroundType(patch.type).model)
+                    .surfaceLayer;
+            }),
             isOcean,
             colorOfType,
             2,
