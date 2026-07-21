@@ -21,16 +21,26 @@ export type CreativeEditor = ModeUi & {
     isSidebarHit: (screenX: number, screenY: number) => boolean;
 };
 
+export type CreativeEditorHooks = {
+    hasCursor: () => boolean;
+    /** Optimistic cursor pick for drag gestures. */
+    onPickedToCursor: (itemId: number, count: number) => void;
+};
+
 /**
  * Creative mode UI — item give sidebar + cheat toolbar.
  * Keeps the gameplay HUD; chrome hides while freecam is active.
  */
-export function createCreativeEditor(sendPacket: SendPacket): CreativeEditor {
+export function createCreativeEditor(
+    sendPacket: SendPacket,
+    hooks: CreativeEditorHooks
+): CreativeEditor {
     const state = createCreativeState();
     const container = new Container();
     container.visible = false;
     container.eventMode = "static";
-    container.zIndex = 90;
+    // Below gameplay HUD so the cursor ghost paints above the palette.
+    container.zIndex = 50;
 
     let active = false;
     let palette: CreativePaletteHandle | undefined;
@@ -41,7 +51,7 @@ export function createCreativeEditor(sendPacket: SendPacket): CreativeEditor {
         palette?.rebuild();
     };
 
-    palette = createCreativePalette(state, sendPacket);
+    palette = createCreativePalette(state, sendPacket, hooks);
     toolbar = createCreativeToolbar(state, sendPacket, persistRefresh);
     container.addChild(palette.container);
     container.addChild(toolbar.container);

@@ -358,20 +358,14 @@ function buildDropdown<S>(
     const laid: LaidOut & { close: () => void } = {
         root,
         width: header.getWidth(),
+        // Layout height stays the header only — open menu overlays below.
         height: header.height,
         refresh: () => {
             header.setLabel(`${def.label} ▾`);
             header.setActive(open);
             for (const opt of optionLays) opt.refresh();
             laid.width = layoutMenu();
-            // Include open menu in hit height for containsPoint via getBounds.
-            laid.height = open
-                ? header.height / 2 +
-                  optionLays.reduce(
-                      (sum, o) => sum + o.height + STACK_GAP,
-                      STACK_GAP
-                  )
-                : header.height;
+            laid.height = header.height;
         },
         setVisible: (visible) => {
             root.visible = visible;
@@ -507,9 +501,10 @@ export function createModeToolbar<S, T extends string = string>(
                     visibleChildren.reduce((sum, c) => sum + c.laid.height, 0) +
                     Math.max(0, visibleChildren.length - 1) * STACK_GAP;
 
-                let y = -height / 2;
+                // Top-down: first row shares the toolbar baseline; extras grow down.
+                let y = 0;
                 for (const child of visibleChildren) {
-                    child.laid.root.position.set(0, y + child.laid.height / 2);
+                    child.laid.root.position.set(0, y);
                     y += child.laid.height + STACK_GAP;
                 }
 
@@ -531,8 +526,10 @@ export function createModeToolbar<S, T extends string = string>(
         }
 
         const totalW = Math.max(0, x - GAP);
+        // Anchor the top row; multi-row stacks / open menus grow downward.
+        const topRowH = Math.max(BTN_H, SEGMENT_H + SEGMENT_INSET * 2);
         container.pivot.set(totalW / 2, 0);
-        container.position.set(window.innerWidth / 2, 28 + maxH / 2);
+        container.position.set(window.innerWidth / 2, 28 + topRowH / 2);
     }
 
     function onResize() {
