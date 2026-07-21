@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 
 const repoRoot = path.resolve(import.meta.dir, "..");
-const bunduPack = path.join(repoRoot, "packs", "bundu");
+const bunduPack = path.join(repoRoot, ".generated", "packs", "bundu");
 const outdir = path.resolve(
     repoRoot,
     process.argv[2] ?? "public/site/base-pack"
@@ -17,7 +17,7 @@ if (!fs.existsSync(path.join(bunduPack, "pack.yml"))) {
     throw new Error(`Missing base pack at ${bunduPack}`);
 }
 
-// Copy into an isolated root so overlay packs under ./packs are never bundled.
+// Copy into an isolated root so additional generated packs are never bundled.
 // (Dirent.isDirectory() is false for symlinks, so a link is not enough.)
 const packRoot = fs.mkdtempSync(path.join(os.tmpdir(), "bundu-base-pack-"));
 fs.cpSync(bunduPack, path.join(packRoot, "bundu"), { recursive: true });
