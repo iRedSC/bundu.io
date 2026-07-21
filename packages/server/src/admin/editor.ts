@@ -49,6 +49,7 @@ import { exportMapYaml, saveMapYaml, wipeMap } from "./map_io.js";
 import { setAnimalsFrozen } from "./state.js";
 import type { FreecamGhostSystem } from "../systems/freecam_ghost.js";
 import { modelSupportsVariant } from "../configs/resource_packs.js";
+import { modelIdForLocation } from "@bundu/shared/models/ids";
 
 function inWorldTiles(x: number, y: number): boolean {
     return x >= 0 && y >= 0 && x < WORLD_TILES && y < WORLD_TILES;
@@ -61,7 +62,7 @@ function registryModelId(kind: "resource" | "structure", id: number): string {
             : gameRegistries().structure.location(
                   id as RegistryId<"structure">
               );
-    return location.split(":", 2)[1] ?? "";
+    return modelIdForLocation(kind, location);
 }
 
 function resolveModelVariant(

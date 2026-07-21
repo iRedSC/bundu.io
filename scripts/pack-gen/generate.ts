@@ -189,7 +189,11 @@ function generateNamespace(
             continue;
         }
 
-        if (!entry.isDirectory()) continue;
+        if (!entry.isDirectory()) {
+            throw new Error(
+                `${path.join(defsNs, entry.name)}: unsupported definition entry`
+            );
+        }
         const dir = entry.name;
 
         if (isRegistryKind(dir)) {
@@ -254,7 +258,12 @@ function generateNamespace(
                     split.data
                 );
             }
+            continue;
         }
+
+        throw new Error(
+            `${path.join(defsNs, dir)}: unknown definition directory`
+        );
     }
 
     // Assets-only models: defs/<ns>/models/** → assets/<ns>/models/**
@@ -310,13 +319,15 @@ function generateNamespace(
         return { wrote, removed, unchanged: !dirty };
     }
 
+    const existing = managedYamlFiles(roots, namespace);
     const previous = new Map(
         planned.map((entry) => [
             entry.filename,
             fs.existsSync(entry.filename) ? readText(entry.filename) : null,
         ])
     );
-    removed.push(...clearManagedYaml(roots, namespace));
+    removed.push(...existing.filter((filename) => !plannedPaths.has(filename)));
+    clearManagedYaml(roots, namespace);
     for (const entry of planned) {
         writeText(entry.filename, entry.content);
         if (previous.get(entry.filename) !== entry.content) {
@@ -327,7 +338,7 @@ function generateNamespace(
     return {
         wrote,
         removed,
-        unchanged: wrote.length === 0,
+        unchanged: wrote.length === 0 && removed.length === 0,
     };
 }
 
