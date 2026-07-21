@@ -18,6 +18,7 @@ import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { isStructureFriendlyTo } from "./structure_friendly.js";
 import { footprintIntersectsCircle } from "./tile_entity_geometry.js";
+import { modelBoundsPadding } from "../configs/model_bounds.js";
 
 /**
  * Contact DPS and on-hit reflect for spiked walls/doors.
@@ -39,14 +40,15 @@ export class SpikeSystem extends System<GameEventMap> {
         const interval = gameplayConfig().spikes.attackIntervalMs;
         const range = Math.max(0, spike.attack_range ?? 0);
         const occupied = structure.get(TileEntity).occupied;
+        const queryPadding = SPATIAL_QUERY_PADDING + modelBoundsPadding();
 
         const nearby = this.world.query(
             [Physics, Health, Living],
             this.world.context.quadtree.query(
                 getSizedBounds(
                     physics.position,
-                    SPATIAL_QUERY_PADDING,
-                    SPATIAL_QUERY_PADDING
+                    queryPadding,
+                    queryPadding
                 )
             )
         );
