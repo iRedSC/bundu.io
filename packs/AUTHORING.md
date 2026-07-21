@@ -434,7 +434,8 @@ placement:
 | `aggroLevel` | `high` | `high` \| `medium` \| `low` |
 | `aggroAt` | `[]` | Structures/tags to attack without a player |
 | `corpse` | required | Resource id for the body |
-| `spawn_count` | `0` | Spawn budget |
+| `spawn_count` | `0` | Per-species worldgen budget (also needs `gameplay.worldgen.animals`) |
+| `spawn.ground` | `#bundu:buildable_ground` | Allowed ground types/tags (same resolve as `placement.ground`) |
 
 Player is a special entity def (`kind: player`) — not an `AnimalConfig`.
 

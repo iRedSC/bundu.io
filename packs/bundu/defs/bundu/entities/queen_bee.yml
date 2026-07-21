@@ -22,3 +22,5 @@ aggroSwitch: onHit
 aggroLevel: high
 corpse: queen_bee_dead
 spawn_count: 1
+spawn:
+    ground: ["#bundu:buildable_ground"]

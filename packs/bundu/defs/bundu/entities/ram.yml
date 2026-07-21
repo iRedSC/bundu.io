@@ -17,3 +17,5 @@ aggroSwitch: onHit
 aggroLevel: medium
 corpse: ram_dead
 spawn_count: 4
+spawn:
+    ground: ["#bundu:buildable_ground"]

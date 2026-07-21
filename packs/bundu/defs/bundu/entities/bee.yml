@@ -22,3 +22,5 @@ aggroSwitch: random
 aggroLevel: low
 corpse: bee_dead
 spawn_count: 8
+spawn:
+    ground: ["#bundu:buildable_ground"]

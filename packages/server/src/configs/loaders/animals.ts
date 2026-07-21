@@ -51,7 +51,15 @@ export type AnimalConfig = {
      */
     aggroAt: RegistryId<"structure">[];
     corpse: RegistryId<"resource">;
+    /** Per-species worldgen budget (species must also be in gameplay.worldgen.animals). */
     spawn_count: number;
+    /**
+     * Ground types/tags this animal may spawn on (resolved to numeric ids).
+     * Defaults to `#bundu:buildable_ground` — same gate as structure placement.
+     */
+    spawn: {
+        ground: readonly RegistryId<"ground_type">[];
+    };
 };
 
 export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("entity_type", {
@@ -73,4 +81,7 @@ export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("enti
     aggroAt: [],
     corpse: 0 as RegistryId<"resource">,
     spawn_count: 0,
+    spawn: {
+        ground: [],
+    },
 });

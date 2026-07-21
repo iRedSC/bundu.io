@@ -13,3 +13,6 @@ passiveSpeed: 11
 activeSpeed: 14
 scale: 0.6
 corpse: raindeer_dead
+spawn_count: 4
+spawn:
+    ground: [snow]

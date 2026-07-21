@@ -451,6 +451,9 @@ export function loadConfigs() {
             const raw = record as Partial<AnimalConfig> & {
                 aggroAt?: string[];
                 corpse?: string;
+                spawn?: {
+                    ground?: string[];
+                };
             };
             record.aggroAt = registries.structure.resolveSet(
                 raw.aggroAt ?? [],
@@ -466,6 +469,13 @@ export function loadConfigs() {
                     `${id}.corpse`
                 );
             }
+            record.spawn = {
+                ground: registries.ground_type.resolveSet(
+                    raw.spawn?.ground ?? ["#bundu:buildable_ground"],
+                    namespace(id),
+                    `${id}.spawn.ground`
+                ),
+            };
             return mergeObjects(record, undefined, fallback);
         }
     );

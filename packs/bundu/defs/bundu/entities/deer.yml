@@ -14,3 +14,5 @@ activeSpeed: 14
 scale: 0.6
 corpse: deer_dead
 spawn_count: 8
+spawn:
+    ground: ["#bundu:buildable_ground"]

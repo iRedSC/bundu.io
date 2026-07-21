@@ -19,5 +19,7 @@ aggroSwitch: onHit
 aggroLevel: medium
 corpse: bear_dead
 spawn_count: 4
+spawn:
+    ground: ["#bundu:buildable_ground"]
 aggroAt:
     - "#bundu:walls"

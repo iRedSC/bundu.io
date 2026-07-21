@@ -1,6 +1,7 @@
 import { ServerController } from "./engine";
 import { createWorld } from "./bootstrap/create_world";
 import { loadMap } from "./bootstrap/load_map";
+import { placeAnimals } from "./bootstrap/place_animals";
 import { createPlayer } from "./bootstrap/create_player";
 import { startTicker } from "./bootstrap/start_ticker";
 import { ResourcePackService } from "./configs/resource_packs";
@@ -17,6 +18,7 @@ if (
     !restoreDevCheckpoint(world, resourcePacks.manifest.registries.hash)
 ) {
     loadMap(world);
+    placeAnimals(world);
 }
 
 const { socketManager } = world.context;

@@ -20,3 +20,5 @@ aggroSwitch: random
 aggroLevel: low
 corpse: komodo_dragon_dead
 spawn_count: 3
+spawn:
+    ground: [island]

@@ -20,5 +20,7 @@ aggroSwitch: onHit
 aggroLevel: high
 corpse: alligator_dead
 spawn_count: 3
+spawn:
+    ground: ["#bundu:water"]
 aggroAt:
     - "#bundu:walls"
