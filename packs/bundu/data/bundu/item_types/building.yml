@@ -1,7 +1,0 @@
-function: "building"
-whenMainHand:
-    "*":
-        attributes:
-            "movement.speed":
-                op: "multiply"
-                value: 0.8

@@ -1,8 +1,0 @@
-type: bundu:pickaxe
-level: 4
-whenMainHand:
-    "*":
-        attributes:
-            attack.damage:
-                op: add
-                value: 5

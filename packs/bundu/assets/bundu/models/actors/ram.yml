@@ -1,5 +1,0 @@
-extends: model:bundu:animal
-parts:
-  body:
-    sprite: bundu/entity/animal/ram/ram.svg
-    spriteScale: 1.875

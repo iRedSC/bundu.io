@@ -121,11 +121,19 @@ export function modelIdFromModelsPath(
     }
     if (stem.startsWith("corpses/")) {
         const path = stem.slice("corpses/".length);
-        return modelId(abstract ? "model" : "resource", namespace, path);
+        return modelId(
+            abstract ? "model" : "resource",
+            namespace,
+            abstract ? stem : path
+        );
     }
     if (stem.startsWith("actors/")) {
         const path = stem.slice("actors/".length);
-        return modelId(abstract ? "model" : "entity_type", namespace, path);
+        return modelId(
+            abstract ? "model" : "entity_type",
+            namespace,
+            abstract ? stem : path
+        );
     }
     if (
         stem.startsWith("walls/") ||
@@ -133,7 +141,11 @@ export function modelIdFromModelsPath(
         stem.startsWith("structures/")
     ) {
         const path = stem.slice(stem.indexOf("/") + 1);
-        return modelId(abstract ? "model" : "structure", namespace, path);
+        return modelId(
+            abstract ? "model" : "structure",
+            namespace,
+            abstract ? stem : path
+        );
     }
     if (stem.startsWith("base/")) {
         return modelId("model", namespace, stem.slice("base/".length));

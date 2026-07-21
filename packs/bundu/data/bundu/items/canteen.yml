@@ -1,8 +1,0 @@
-type: bundu:book
-function: off_hand
-whenOffHand:
-    "*":
-        attributes:
-            thirst.hydration:
-                op: multiply
-                value: 0.75

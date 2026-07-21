@@ -114,7 +114,10 @@ function publishModelDefs(
     nextAssets: ReadonlySet<string>
 ) {
     const nextPlayer = requireAssembled(next, "entity_type:bundu:player");
-    const nextStructure = requireAssembled(next, "model:bundu:structure");
+    const nextStructure = requireAssembled(
+        next,
+        "model:bundu:structures/structure"
+    );
     const nextSingleTileNode = requireTile(next, "model:bundu:single_tile_node");
     const nextPointGenerator = requireTile(next, "structure:bundu:point_generator");
     const nextTree = requireTile(next, "resource:bundu:forest_tree");

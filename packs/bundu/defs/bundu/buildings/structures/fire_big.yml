@@ -1,8 +1,7 @@
-extends: model:bundu:fire
-defaultVariant: base
-variants:
-  base:
-    main: bundu/structure/crafting/fire_big.svg
+extends: model:bundu:structures/fire
+parts:
+    main:
+        sprite: bundu/structure/crafting/fire_big.svg
 ---
 class: building
 solid: false

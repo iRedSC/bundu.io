@@ -1,5 +1,0 @@
-extends: model:bundu:corpse
-parts:
-  body:
-    sprite: bundu/entity/animal/queen_bee/queen_bee_dead.svg
-    spriteScale: 1

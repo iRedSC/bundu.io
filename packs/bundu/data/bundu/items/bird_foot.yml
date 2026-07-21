@@ -1,8 +1,0 @@
-type: bundu:book
-function: off_hand
-whenOffHand:
-    "*":
-        attributes:
-            attack.damage.animal:
-                op: add
-                value: 15

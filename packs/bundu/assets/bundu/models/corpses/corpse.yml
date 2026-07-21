@@ -1,6 +1,0 @@
-abstract: true
-
-parts:
-  body:
-    # Match living animal pose (art faces -Y in local space).
-    rotation: -90

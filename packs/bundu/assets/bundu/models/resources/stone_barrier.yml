@@ -1,8 +1,0 @@
-extends: model:bundu:single_tile_node
-defaultVariant: base
-variants:
-  base:
-    main: bundu/structure/wall/stone_barrier.svg
-parts:
-  main:
-    spriteScale: 1.7

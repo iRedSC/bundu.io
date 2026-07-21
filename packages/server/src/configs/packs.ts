@@ -247,5 +247,8 @@ export class PackStack {
     }
 }
 
-const defaultRoot = path.resolve(import.meta.dir, "../../../../packs");
+const defaultRoot = path.resolve(
+    import.meta.dir,
+    "../../../../.generated/packs"
+);
 export const packs = new PackStack(process.env.BUNDU_PACK_ROOT ?? defaultRoot);

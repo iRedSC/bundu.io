@@ -1,9 +1,0 @@
-result:
-    item: tooth
-    amount: 4
-duration: 6000
-score: 20
-ingredients:
-    elephant_tusk: 1
-requirements:
-    - near_crafting_table

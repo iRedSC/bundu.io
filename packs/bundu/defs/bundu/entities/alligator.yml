@@ -1,4 +1,4 @@
-extends: model:bundu:animal
+extends: model:bundu:actors/animal
 parts:
   body:
     sprite: bundu/entity/animal/alligator/alligator.svg

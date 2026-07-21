@@ -1,6 +1,0 @@
-abstract: true
-extends: model:bundu:rottable
-parts:
-  main:
-    sprite: ""
-variants: {}

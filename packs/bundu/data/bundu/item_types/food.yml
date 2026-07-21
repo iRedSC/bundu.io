@@ -1,7 +1,0 @@
-function: "off_hand"
-whenOffHand:
-    "*":
-        attributes:
-            "eating.movement_speed_multiplier":
-                op: "multiply"
-                value: 0.6

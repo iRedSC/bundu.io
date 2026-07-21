@@ -1,9 +1,0 @@
-extends: model:bundu:single_tile_node
-defaultVariant: base
-variants:
-    base:
-        main: bundu/resource/copper_ore.png
-
-parts:
-    main:
-        spillover: 50

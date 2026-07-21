@@ -1,4 +1,4 @@
-extends: model:bundu:animal
+extends: model:bundu:actors/animal
 footsteps: false
 parts:
   body:

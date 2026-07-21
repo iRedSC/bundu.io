@@ -1,8 +1,9 @@
 # Packs
 
-`bundu` is the required base pack. Every directory in this folder with a
-`pack.yml` is discovered by the server. Dependencies load first; later packs
-override complete documents and individual registry entries.
+`bundu` is the required base pack. Directories here are authoring sources;
+`bun run pack:gen` mirrors runnable packs into `.generated/packs/`. The server
+loads that generated root. Dependencies load first; later packs override
+complete documents and individual registry entries.
 
 ```yaml
 id: example
@@ -19,14 +20,16 @@ see [AUTHORING.md](./AUTHORING.md).
 
 ## Authoring with `defs/`
 
-Pack YAML is authored under `defs/<namespace>/`. `bun run pack:gen` splits those
-files into the runtime trees the server already loads:
+Pack YAML and client files are authored under `defs/<namespace>/`. `bun run
+pack:gen` builds a disposable runtime mirror:
 
-- `data/<namespace>/` — server gameplay
-- `assets/<namespace>/` — client models, ground models, lang, client gameplay
+- `.generated/packs/<pack>/data/<namespace>/` — server gameplay
+- `.generated/packs/<pack>/assets/<namespace>/` — client models, textures,
+  ground models, lang, and client gameplay
 
-Textures stay as real files under `assets/<namespace>/textures/` (not generated).
-`validate:packs` runs `pack:gen --check` first so generated YAML cannot drift.
+Textures live under `defs/<namespace>/client/textures/` and are copied into the
+runtime mirror. `.generated/` is ignored; `validate:packs` regenerates it before
+validation.
 
 ### Combined definitions
 
@@ -43,7 +46,7 @@ texture: bundu/item/material/pinecone.svg
 
 ```yaml
 # defs/bundu/entities/bear.yml
-extends: model:bundu:animal
+extends: model:bundu:actors/animal
 parts:
   body:
     sprite: bundu/entity/animal/bear/bear.svg
@@ -92,7 +95,7 @@ from display halves (same as today’s model inheritance).
 
 ## Gameplay registries
 
-Runtime paths below are under `data/` (generated from `defs/`). Gameplay
+Runtime paths below are under generated `data/` (built from `defs/`). Gameplay
 definitions use canonical `namespace:path` IDs. The server currently loads these
 registries independently:
 
@@ -333,7 +336,7 @@ Model ids are path-based: `kind:namespace:path` (parallel to gameplay registries
 | `resource` | `resource:bundu:pine_tree` | `defs/.../resources/pine_tree.yml` |
 | `decoration` | `decoration:bundu:beach` | `defs/.../decorations/beach.yml` |
 | `entity_type` | `entity_type:bundu:bear` | `defs/.../entities/bear.yml` |
-| `model` | `model:bundu:animal` | shared abstracts under `defs/.../models/` |
+| `model` | `model:bundu:actors/animal` | shared abstracts under `defs/.../models/` |
 
 `extends` is optional. Items and item types default to `item_type:<ns>:none` when
 omitted — only set `extends` for a non-default parent:

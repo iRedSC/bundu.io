@@ -1,5 +1,0 @@
-extends: item_type:bundu:tree
-texture: bundu/decoration/forest/pine_tree.svg
-displays:
-    world:
-        scale: 1.6

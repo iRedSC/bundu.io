@@ -1,8 +1,0 @@
-type: fixed
-entries:
-    - item: meat
-      count: 6
-    - item: komodo_dragon_eye
-      count: 1
-    - item: tooth
-      count: 4

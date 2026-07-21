@@ -1,9 +1,0 @@
-kind: ocean
-color: "#0a2f4a"
-textures:
-    caustics: bundu/effect/ocean_caustics.jpg
-    displace: bundu/effect/ocean_displace.png
-    ripple_idle: bundu/effect/ocean_ripple.png
-    ripple_move: bundu/effect/ocean_ripple_move.png
-    foam: bundu/effect/ocean_foam.svg
-    sparkle: bundu/effect/ocean_sparkle.svg

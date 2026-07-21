@@ -1,9 +1,0 @@
-type: bundu:book
-whenOffHand:
-    "*":
-        flags:
-            - holding_book
-whenMainHand:
-    "*":
-        flags:
-            - holding_book

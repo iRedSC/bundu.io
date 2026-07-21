@@ -1,6 +1,0 @@
-decay: 30
-destroy_on_empty: true
-multipliers:
-    knife: 2
-quantity: 4
-loot_table: ram_dead

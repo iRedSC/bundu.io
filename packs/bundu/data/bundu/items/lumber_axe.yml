@@ -1,7 +1,0 @@
-type: bundu:axe
-whenMainHand:
-    "*":
-        attributes:
-            attack.damage:
-                op: add
-                value: 7

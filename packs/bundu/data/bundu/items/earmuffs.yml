@@ -1,7 +1,0 @@
-type: bundu:hat
-whenHelmet:
-    "*":
-        attributes:
-            temperature.warmth:
-                op: add
-                value: 7
