@@ -1,6 +1,7 @@
 export {
     CreativeModeSystem,
     canUseCreative,
+    creativeInventoryActive,
     isGodmode,
     isCreativeGodmode,
     emitCreativeState,
