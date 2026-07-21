@@ -13,14 +13,18 @@ export function footprintCenter(
 ): TilePos {
     if (blocked.length === 0) return { x: 0, y: 0 };
 
-    let x = 0;
-    let y = 0;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
     for (const cell of blocked) {
         const rotated = rotateOffset(cell.x, cell.y, rot);
-        x += rotated.x;
-        y += rotated.y;
+        minX = Math.min(minX, rotated.x);
+        minY = Math.min(minY, rotated.y);
+        maxX = Math.max(maxX, rotated.x);
+        maxY = Math.max(maxY, rotated.y);
     }
-    return { x: x / blocked.length, y: y / blocked.length };
+    return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
 }
 
 /** Place the footprint center on the cursor tile. */

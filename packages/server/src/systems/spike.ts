@@ -1,4 +1,3 @@
-import { Circle, testCircleCircle } from "sat";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import {
     AnimalData,
@@ -6,20 +5,20 @@ import {
     Living,
     Physics,
     Spiked,
+    TileEntity,
     Type,
 } from "../components/base.js";
 import {
     BuildingConfigs,
     spikeConfigForMaterial,
+    structureFootprintPadding,
 } from "../configs/loaders/buildings.js";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { type GameObject, System, type World } from "../engine";
 import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { isStructureFriendlyTo } from "./structure_friendly.js";
-
-/** Reused for contact tests so we don't allocate a Circle every tick per spike. */
-const attackHitbox = new Circle();
+import { footprintIntersectsCircle } from "./tile_entity_geometry.js";
 
 /**
  * Contact DPS and on-hit reflect for spiked walls/doors.
@@ -40,16 +39,17 @@ export class SpikeSystem extends System<GameEventMap> {
         const spiked = structure.get(Spiked);
         const interval = gameplayConfig().spikes.attackIntervalMs;
         const range = Math.max(0, spike.attack_range ?? 0);
-        attackHitbox.pos = physics.collider.pos;
-        attackHitbox.r = physics.collider.r + range;
+        const occupied = structure.get(TileEntity).occupied;
+        const queryPadding =
+            SPATIAL_QUERY_PADDING + structureFootprintPadding();
 
         const nearby = this.world.query(
             [Physics, Health, Living],
             this.world.context.quadtree.query(
                 getSizedBounds(
                     physics.position,
-                    SPATIAL_QUERY_PADDING,
-                    SPATIAL_QUERY_PADDING
+                    queryPadding,
+                    queryPadding
                 )
             )
         );
@@ -64,7 +64,13 @@ export class SpikeSystem extends System<GameEventMap> {
             ) {
                 continue;
             }
-            if (!testCircleCircle(attackHitbox, target.get(Physics).collider)) {
+            if (
+                !footprintIntersectsCircle(
+                    occupied,
+                    target.get(Physics).collider,
+                    range
+                )
+            ) {
                 continue;
             }
             const nextAt = spiked.nextHitAt.get(target.id) ?? 0;

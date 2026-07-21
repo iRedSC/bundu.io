@@ -1,6 +1,6 @@
 import type { OccupancyLayer } from "@bundu/shared/occupancy_layer";
 import type { RegistryId } from "@bundu/shared/registry";
-import type { TilePos } from "@bundu/shared/tiles";
+import { TILE_SIZE, type TilePos } from "@bundu/shared/tiles";
 import { ConfigLoader } from "./loader.js";
 import type { ContextBundle } from "./effect_context.js";
 import type { PlacementAllowDeny } from "./placement_allow.js";
@@ -52,6 +52,21 @@ export const BuildingConfigs = new ConfigLoader<"structure", BuildingConfig>(
         },
     }
 );
+
+/** Maximum origin-to-edge distance of any authored gameplay footprint. */
+export function structureFootprintPadding(): number {
+    let padding = TILE_SIZE / 2;
+    for (const config of BuildingConfigs.entries.values()) {
+        for (const tile of config.placement.blocked) {
+            padding = Math.max(
+                padding,
+                (Math.max(Math.abs(tile.x), Math.abs(tile.y)) + 0.5) *
+                    TILE_SIZE
+            );
+        }
+    }
+    return padding;
+}
 
 /** Spike building config for a wall/door material, if one exists. */
 export function spikeConfigForMaterial(

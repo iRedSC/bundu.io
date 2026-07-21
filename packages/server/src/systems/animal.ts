@@ -23,6 +23,8 @@ import {
     type Tile,
     type WorldPoint,
 } from "./animal_pathing.js";
+import { nearestFootprintPoint } from "./tile_entity_geometry.js";
+import { structureFootprintPadding } from "../configs/loaders/buildings.js";
 
 /** Min travel before we treat an update as progress (world units). */
 const PROGRESS_EPSILON = 1;
@@ -32,7 +34,11 @@ const REPATH_TARGET_TILES = 1;
 const WANDER_SAMPLES = 8;
 
 function playerDistance(animal: Physics, player: GameObject) {
-    const pos = player.get(Physics).position;
+    const tile = TileEntity.get(player);
+    const pos = tile
+        ? nearestFootprintPoint(tile.occupied, animal.position)
+        : player.get(Physics).position;
+    if (!pos) return Infinity;
     return Math.hypot(pos.x - animal.position.x, pos.y - animal.position.y);
 }
 
@@ -337,7 +343,11 @@ export class AnimalSystem extends System<GameEventMap> {
         const candidates = this.world.query(
             [TileEntity, Physics, Type, Health],
             this.world.context.quadtree.query(
-                getSizedBounds(physics.position, range, range)
+                getSizedBounds(
+                    physics.position,
+                    range + structureFootprintPadding(),
+                    range + structureFootprintPadding()
+                )
             )
         );
         let best: GameObject | undefined;
@@ -464,14 +474,19 @@ export class AnimalSystem extends System<GameEventMap> {
         const data = animal.get(AnimalData);
         const physics = animal.get(Physics);
         const other = target.get(Physics);
+        const targetPoint =
+            nearestFootprintPoint(
+                TileEntity.get(target)?.occupied ?? [],
+                physics.position
+            ) ?? other.position;
         const config = AnimalConfigs.get(animal.get(Type).id);
 
         data.state = "chase";
         data.targetId = target.id;
 
         const d = Math.hypot(
-            other.position.x - physics.position.x,
-            other.position.y - physics.position.y
+            targetPoint.x - physics.position.x,
+            targetPoint.y - physics.position.y
         );
         const reach = animal.get(Attributes).get("attack.reach");
         if (d <= reach) {
@@ -491,7 +506,7 @@ export class AnimalSystem extends System<GameEventMap> {
             return;
         }
 
-        const next = { x: other.position.x, y: other.position.y };
+        const next = { x: targetPoint.x, y: targetPoint.y };
         const destMoved =
             !data.destination ||
             Math.hypot(

@@ -6,12 +6,17 @@ import {
     radians,
     type BasicPoint,
 } from "@bundu/shared";
-import { AnimalData, Door, Physics, Rotting } from "../components/base.js";
+import { AnimalData, Door, Physics, Rotting, TileEntity } from "../components/base.js";
 import { type GameObject, System, type World } from "../engine";
 import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import SAT from "sat";
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
+import {
+    footprintIntersectsPolygon,
+    nearestFootprintPoint,
+} from "./tile_entity_geometry.js";
+import { structureFootprintPadding } from "../configs/loaders/buildings.js";
 
 function pointToVec(point: BasicPoint) {
     return new SAT.Vector(point.x, point.y);
@@ -44,7 +49,12 @@ export function testForIntersection(
     for (const other of collisionTest) {
         const physics = other.get(Physics);
         if (!physics) continue;
-        if (SAT.testPolygonCircle(polygon, physics.collider)) {
+        const tile = TileEntity.get(other);
+        if (
+            tile
+                ? footprintIntersectsPolygon(tile.occupied, polygon)
+                : SAT.testPolygonCircle(polygon, physics.collider)
+        ) {
             hitObjects.set(other.id, other);
         }
     }
@@ -61,10 +71,12 @@ export class AttackSystem extends System<GameEventMap> {
         const physics = Physics.get(source);
         if (!physics) return;
 
+        const queryPadding =
+            SPATIAL_QUERY_PADDING + structureFootprintPadding();
         const bounds = getSizedBounds(
             physics.position,
-            SPATIAL_QUERY_PADDING,
-            SPATIAL_QUERY_PADDING
+            queryPadding,
+            queryPadding
         );
 
         const nearby = this.world.query(
@@ -112,8 +124,13 @@ export class AttackSystem extends System<GameEventMap> {
         for (const object of hits.values()) {
             const targetPhysics = Physics.get(object);
             // Attack direction from the hit origin into the target (not attacker facing).
-            const angle = targetPhysics
-                ? lookToward(origin, targetPhysics.position)
+            const targetPoint =
+                nearestFootprintPoint(
+                    TileEntity.get(object)?.occupied ?? [],
+                    origin
+                ) ?? targetPhysics?.position;
+            const angle = targetPoint
+                ? lookToward(origin, targetPoint)
                 : facing;
             // Intact doors toggle; rotting doors take damage / claim via Hurt.
             if (Door.get(object) && !Rotting.get(object)) {

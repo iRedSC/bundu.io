@@ -1,5 +1,11 @@
 import type { ServerPacket } from "@bundu/shared/packet_definitions.js";
-import { Physics, ResourceData, TileEntity, Type } from "../components/base.js";
+import {
+    Physics,
+    ResourceData,
+    TileEntity,
+    Type,
+    VisualBounds,
+} from "../components/base.js";
 import { Attributes } from "../components/attributes.js";
 import { bindPhysicsScale } from "../components/physics_scale.js";
 import { ResourceConfigs } from "../configs/loaders/resources.js";
@@ -7,6 +13,8 @@ import { GameObject } from "../engine";
 import { GameObjectData } from "@bundu/shared/object_types.js";
 import { deciPacketPos } from "./tile_entity.js";
 import { getVariantId } from "@bundu/shared/variant_map.js";
+import { gameRegistries } from "../configs/registries.js";
+import { rotatedModelBounds } from "../configs/model_bounds.js";
 
 /**
  * A harvestable tile entity (resource node) or free-floating corpse.
@@ -37,6 +45,13 @@ export class Resource extends GameObject {
         if (tile) {
             tile.layer = "structure";
             this.add(new TileEntity(tile));
+            const location = gameRegistries().resource.location(type.id);
+            const bounds = rotatedModelBounds(
+                location.slice(location.indexOf(":") + 1),
+                tile.rot,
+                scale
+            );
+            if (bounds) this.add(new VisualBounds(bounds));
         }
     }
 

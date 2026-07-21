@@ -2,7 +2,13 @@ import {
     AdminPlaceKind,
     ClientPacket,
 } from "@bundu/shared/packet_definitions";
-import { WORLD_BOUNDS, WORLD_TILES, worldToTile, type TileRot } from "@bundu/shared/tiles";
+import {
+    structureOriginAtPoint,
+    WORLD_BOUNDS,
+    WORLD_TILES,
+    worldToTile,
+    type TileRot,
+} from "@bundu/shared";
 import {
     getVariantId,
     listVariantNames,
@@ -11,6 +17,7 @@ import { random } from "@bundu/shared/random";
 import type { SendPacket } from "../input/controller";
 import type { EditorDeleteHover } from "../world/world";
 import type { AdminGhost } from "./ghost";
+import { clientStructurePlacement } from "../configs/registries";
 import {
     categoryToKind,
     cycleRotation,
@@ -515,12 +522,21 @@ export class AdminInput {
             variant = 0;
         }
 
+        const rotation = this.placeRotation(state);
+        const origin =
+            selected.kind === AdminPlaceKind.Structure
+                ? structureOriginAtPoint(
+                      { x, y },
+                      clientStructurePlacement(selected.id).blocked,
+                      rotation
+                  )
+                : { x, y };
         this.sendPacket(ClientPacket.AdminPlace, {
             kind: selected.kind,
             typeId: selected.id,
-            x,
-            y,
-            rotation: this.placeRotation(state),
+            x: origin.x,
+            y: origin.y,
+            rotation,
             variant,
             w: 1,
             h: 1,

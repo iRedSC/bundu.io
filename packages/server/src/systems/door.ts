@@ -1,8 +1,8 @@
-import { testCircleCircle } from "sat";
 import { Door, Physics, TileEntity } from "../components/base.js";
 import { System, type GameObject, type World } from "../engine";
 import { syncStructureStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
+import { footprintIntersectsCircle } from "./tile_entity_geometry.js";
 
 /** Handles the collision and visible state of player-operated doors. */
 export class DoorSystem extends System<GameEventMap> {
@@ -35,10 +35,13 @@ export class DoorSystem extends System<GameEventMap> {
     }
 
     private isBlocked(door: GameObject): boolean {
-        const doorPhysics = door.get(Physics);
+        const occupied = door.get(TileEntity).occupied;
         return this.world.query([Physics]).some((object) => {
             if (object.id === door.id || TileEntity.get(object)) return false;
-            return testCircleCircle(doorPhysics.collider, object.get(Physics).collider);
+            return footprintIntersectsCircle(
+                occupied,
+                object.get(Physics).collider
+            );
         });
     }
 }

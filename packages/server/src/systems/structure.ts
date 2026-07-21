@@ -407,6 +407,9 @@ export class StructureSystem extends System<GameEventMap> {
         if (!tile || tile.ownerId !== placerId) return false;
         const current = BuildingConfigs.get(Type.get(occupant)?.id);
         if (current.class !== next.class) return false;
+        if (!sameFootprint(current.placement.blocked, next.placement.blocked)) {
+            return false;
+        }
         if (
             next.tier === undefined ||
             current.tier === undefined ||
@@ -553,6 +556,15 @@ export class StructureSystem extends System<GameEventMap> {
 function normalizeRotation(rotation: number): TileRot | undefined {
     if (!Number.isInteger(rotation)) return undefined;
     return (((rotation % 4) + 4) % 4) as TileRot;
+}
+
+function sameFootprint(
+    left: readonly TilePos[],
+    right: readonly TilePos[]
+): boolean {
+    if (left.length !== right.length) return false;
+    const cells = new Set(left.map(({ x, y }) => `${x},${y}`));
+    return right.every(({ x, y }) => cells.has(`${x},${y}`));
 }
 
 /** True when segment AB comes within `radius` of point C. */

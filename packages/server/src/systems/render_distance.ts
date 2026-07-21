@@ -1,4 +1,4 @@
-import { Physics, AnimalData } from "../components/base.js";
+import { Physics, AnimalData, VisualBounds } from "../components/base.js";
 import {
     System,
     type GameObject,
@@ -13,6 +13,7 @@ import { gameplayConfig } from "../configs/gameplay.js";
 import { PlayerData } from "../components/player.js";
 import { AnonProxy } from "../components/anon_proxy.js";
 import { isVisibleToViewer } from "./anon_occlusion.js";
+import { modelBoundsPadding } from "../configs/model_bounds.js";
 
 function getBodyRenderBounds(physics: Physics): Range {
     const distance = gameplayConfig().renderDistance;
@@ -47,6 +48,33 @@ function isMover(object: GameObject): boolean {
         PlayerData.get(object) !== undefined ||
         AnimalData.get(object) !== undefined ||
         AnonProxy.get(object) !== undefined
+    );
+}
+
+function intersectsView(bounds: Range, object: GameObject): boolean {
+    const physics = object.get(Physics);
+    const visual = VisualBounds.get(object);
+    if (!visual) return bounds.contains(physics.position);
+    return bounds.intersects(
+        new Range(
+            {
+                x: physics.position.x + visual.minX,
+                y: physics.position.y + visual.minY,
+            },
+            {
+                x: physics.position.x + visual.maxX,
+                y: physics.position.y + visual.maxY,
+            }
+        )
+    );
+}
+
+function paddedBounds(bounds: Range): Range {
+    const [min, max] = bounds.normalized;
+    const padding = modelBoundsPadding();
+    return new Range(
+        { x: min.x - padding, y: min.y - padding },
+        { x: max.x + padding, y: max.y + padding }
     );
 }
 
@@ -213,7 +241,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
 
         let objectsInRenderDistance = this.world.query(
             [Physics],
-            quadtree.query(renderBounds.normalized)
+            quadtree.query(paddedBounds(renderBounds).normalized)
         );
 
         if (data?.freecam && data.freecamView?.overview) {
@@ -222,8 +250,10 @@ export class RenderDistanceSystem extends System<GameEventMap> {
             );
         }
 
-        const filtered = objectsInRenderDistance.filter((candidate) =>
-            isVisibleToViewer(object, candidate, this.world)
+        const filtered = objectsInRenderDistance.filter(
+            (candidate) =>
+                intersectsView(renderBounds, candidate) &&
+                isVisibleToViewer(object, candidate, this.world)
         );
         if (!filtered.includes(object)) filtered.push(object);
 
@@ -280,7 +310,7 @@ export class RenderDistanceSystem extends System<GameEventMap> {
 
             if (!isVisibleToViewer(obj, object, this.world)) continue;
 
-            if (bounds.contains(objPhys.position)) {
+            if (intersectsView(bounds, object)) {
                 visibleObjects.visible.add(object);
                 loadObjectsIntoView(
                     obj,

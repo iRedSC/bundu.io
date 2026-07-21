@@ -7,6 +7,7 @@ import {
     type BuildingConfig,
     BuildingConfigs,
     defaultSolidForClass,
+    structureUpgradeGroup,
 } from "./buildings.js";
 import { type AnimalConfig, AnimalConfigs } from "./animals.js";
 import { type GroundTypeConfig, GroundTypeConfigs } from "./ground_types.js";
@@ -336,6 +337,18 @@ export function loadConfigs() {
             ) {
                 throw new Error(`${id}.placement.blocked: expected [x, y][]`);
             }
+            const blockedKeys = new Set(
+                blocked.map((cell) => `${cell[0]},${cell[1]}`)
+            );
+            if (blocked.length === 0) {
+                throw new Error(`${id}.placement.blocked: expected at least one tile`);
+            }
+            if (blockedKeys.size !== blocked.length) {
+                throw new Error(`${id}.placement.blocked: duplicate tile`);
+            }
+            if (!blockedKeys.has("0,0")) {
+                throw new Error(`${id}.placement.blocked: must include [0, 0]`);
+            }
             record.placement = {
                 blocked: blocked.map((cell) => {
                     const [x, y] = cell as [number, number];
@@ -350,6 +363,29 @@ export function loadConfigs() {
             return mergeObjects(record, undefined, fallback);
         }
     );
+    const upgradeFootprints = new Map<string, string>();
+    for (const [id, config] of BuildingConfigs.entries) {
+        if (
+            (config.class !== "wall" && config.class !== "door") ||
+            config.tier === undefined
+        ) {
+            continue;
+        }
+        const group = structureUpgradeGroup(config.material);
+        if (!group) continue;
+        const key = `${config.class}:${group}`;
+        const footprint = config.placement.blocked
+            .map(({ x, y }) => `${x},${y}`)
+            .sort()
+            .join(";");
+        const expected = upgradeFootprints.get(key);
+        if (expected !== undefined && expected !== footprint) {
+            throw new Error(
+                `${id}.placement.blocked: upgrades in ${key} must use the same footprint`
+            );
+        }
+        upgradeFootprints.set(key, footprint);
+    }
     GroundTypeConfigs.parse(
         groundTypeConfig as Record<string, Partial<GroundTypeConfig>>,
         (id, record, fallback) => {
