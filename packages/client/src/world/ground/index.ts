@@ -2,6 +2,7 @@ export {
     GROUND_Z_BASE,
     GROUND_Z_OCEAN,
     GROUND_Z_OCEAN_FILL,
+    GROUND_Z_SURFACE_WATER,
     createGround,
     createOceanFillForType,
 } from "./create";
@@ -31,6 +32,7 @@ export {
     solidGroundModel,
 } from "./models";
 export { applyOceanFx } from "./ocean_fx";
+export { waterFxProfileKey } from "./ocean";
 export {
     NEARSHORE_BLEND_TILES,
     NEARSHORE_OVERSHOOT_TILES,
