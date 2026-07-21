@@ -61,6 +61,9 @@ export type GroundVisual = {
      * parent here to share DisplacementFilter and the nearshore alpha mask.
      */
     fxLayer?: Container;
+    /** Center-relative displacement layer for world-anchored overlays. */
+    anchoredFxLayer?: Container;
+    setFxAnchor?(worldX: number, worldY: number): void;
     update?(ctx: GroundUpdateContext): void;
     /**
      * Rebake textured inset fill (sand/forest) after shore distance rebuild.
@@ -78,6 +81,10 @@ export type GroundVisual = {
      * (ocean vs pond) do not share caustics across each other's tiles.
      */
     setShoreMask?(texture: Texture): void;
+    /** Water model ids rendered by this compatible shared FX pass. */
+    setWaterModelIds?(modelIds: ReadonlySet<string>): void;
+    /** Authored patches used to build an organic FX mask. */
+    setWaterBounds?(bounds: readonly Rectangle[]): void;
     /** Wake ripple at world position (ocean only). */
     addWakeRipple?(
         worldX: number,

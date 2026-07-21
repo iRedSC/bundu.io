@@ -17,6 +17,9 @@ export const GROUND_Z_BASE = -1_000_000_000;
  */
 export const GROUND_Z_OCEAN_FILL = GROUND_Z_BASE - 1;
 
+/** Surface-water FX — above ground fills, below open-ocean shore FX. */
+export const GROUND_Z_SURFACE_WATER = -11;
+
 /**
  * Ocean FX above land so the fading shore mask can wash caustics onto beaches.
  * Below admin grid (-1) and entities (0+).

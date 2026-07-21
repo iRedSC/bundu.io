@@ -4,7 +4,7 @@ import { toSanitizedTexturePath } from "@bundu/shared/models/texture_paths";
 import {
     Container,
     DisplacementFilter,
-    type Rectangle,
+    Rectangle,
     type Renderer,
     RenderTexture,
     Sprite,
@@ -12,10 +12,19 @@ import {
     TilingSprite,
 } from "pixi.js";
 import { getAsset } from "../../assets/load";
+import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
 import {
     bindNearshoreSprite,
     type NearshoreBindState,
 } from "./nearshore_fill";
+import { POND_SEAM_AMPLITUDE, seamOffsetPond } from "./land_seam";
+import {
+    bakeOrganicRect,
+    bakeOrganicRectMask,
+    ORGANIC_EDGE_SUBDIV,
+    ORGANIC_EDGE_TEXTURE_MAX,
+} from "./organic_boundary";
+import { AnchoredDisplacementFilter } from "./anchored_displacement";
 import { oceanFx, oceanTint } from "./ocean_fx";
 import { oceanFoam, oceanSparkle } from "./particles/foam";
 import {
@@ -33,6 +42,10 @@ import type {
 const SPLASH_OVERLAY_Z = 1_000_000_000;
 /** Cap bake RT edge so huge views stay cheap. */
 const BAKE_RT_MAX = 1024;
+/** Let pond caustics clear the organic edge before disappearing. */
+const ORGANIC_FX_OVERSHOOT_TILES = 0.25;
+/** World-space radius sampled when stabilizing anchored displacement. */
+const ANCHORED_DISPLACE_SAMPLE_RADIUS = 64;
 
 function tex(path: string): Texture {
     return getAsset(toSanitizedTexturePath(path));
@@ -40,6 +53,39 @@ function tex(path: string): Texture {
 
 function worldTile(overlay: number, scroll: number): number {
     return scroll - overlay;
+}
+
+function mixRgb(a: number, b: number, t: number): number {
+    const ar = (a >> 16) & 0xff;
+    const ag = (a >> 8) & 0xff;
+    const ab = a & 0xff;
+    const br = (b >> 16) & 0xff;
+    const bg = (b >> 8) & 0xff;
+    const bb = b & 0xff;
+    const r = (ar + (br - ar) * t + 0.5) | 0;
+    const g = (ag + (bg - ag) * t + 0.5) | 0;
+    const bl = (ab + (bb - ab) * t + 0.5) | 0;
+    return ((r << 16) | (g << 8) | bl) >>> 0;
+}
+
+/** Compatible materials share one caustics/displacement render pass. */
+export function waterFxProfileKey(model: OceanGroundModelDef): string {
+    return JSON.stringify({
+        textures: model.textures,
+        tint: model.causticTint,
+        displacement: model.displacement,
+        shoreOvershoot: model.shoreOvershoot,
+        surfaceLayer: model.surfaceLayer,
+        organicColor: model.edge === "organic" ? model.color : undefined,
+    });
+}
+
+/**
+ * Multiplier on ocean DisplacementFilter scale (and air-ring counter-nudge).
+ * Pond refraction is stronger — keep createOceanGround in sync with this.
+ */
+export function waterDisplaceStrength(model: OceanGroundModelDef): number {
+    return model.displacement.strength;
 }
 
 /**
@@ -54,6 +100,15 @@ export function createOceanGround(
     const root = new Container();
     root.zIndex = zIndex;
     root.cullable = false;
+    const hasOrganicEdge = model.edge === "organic";
+    const strength = waterDisplaceStrength(model);
+    const displacement = {
+        strength,
+        scroll: model.displacement.scroll,
+        world: model.displacement.worldScale,
+    };
+    const materialColor = parseHexColor(model.color);
+    let waterModelIds: ReadonlySet<string> = new Set([model.id]);
 
     const causticsTex = tex(model.textures.caustics);
     const displaceTex = tex(model.textures.displace);
@@ -72,12 +127,17 @@ export function createOceanGround(
     const fx = new Container();
     root.addChild(fx);
 
-    /** Fade effects over shore; the opaque color fill remains outside this mask. */
-    const fxMask = new Sprite(Texture.WHITE);
-    fxMask.position.set(bounds.x, bounds.y);
-    fxMask.width = bounds.width;
-    fxMask.height = bounds.height;
+    /** Fade effects over the same boundary that owns the visible water fill. */
+    const fxMask = new Sprite(
+        hasOrganicEdge ? Texture.EMPTY : Texture.WHITE
+    );
+    if (!hasOrganicEdge) {
+        fxMask.position.set(bounds.x, bounds.y);
+        fxMask.width = bounds.width;
+        fxMask.height = bounds.height;
+    }
     root.addChild(fxMask);
+    // A Sprite selects Pixi's AlphaMask path; Container masks are stencil-only.
     fx.setMask({ mask: fxMask, channel: "alpha" });
     const maskBind: NearshoreBindState = {};
     /** Per-model mask from World; falls back to the shared shore mask. */
@@ -125,6 +185,17 @@ export function createOceanGround(
     mapSprite.renderable = false;
     root.addChild(mapSprite);
 
+    // The air ring should follow ambient swell, but not the sharp movement
+    // wakes emitted directly beneath it.
+    const anchoredMapRt = RenderTexture.create({
+        width: 64,
+        height: 64,
+        dynamic: true,
+    });
+    const anchoredMapSprite = new Sprite(anchoredMapRt);
+    anchoredMapSprite.renderable = false;
+    root.addChild(anchoredMapSprite);
+
     const displaceFilter = new DisplacementFilter({
         sprite: mapSprite,
         scale: oceanFx.displaceStrength,
@@ -132,6 +203,62 @@ export function createOceanGround(
         resolution: 0.75,
     });
     fx.filters = [displaceFilter];
+    // Keep displacement inside the shore-masked container so the water alpha
+    // is the final clip, including pixels moved by the filter.
+    const anchoredFx = new Container();
+    const anchoredContent = new Container();
+    anchoredFx.addChild(anchoredContent);
+    const anchoredMask = new Sprite(
+        hasOrganicEdge ? Texture.EMPTY : Texture.WHITE
+    );
+    if (!hasOrganicEdge) {
+        anchoredMask.position.set(bounds.x, bounds.y);
+        anchoredMask.width = bounds.width;
+        anchoredMask.height = bounds.height;
+    }
+    root.addChild(anchoredFx, anchoredMask);
+    anchoredFx.setMask({ mask: anchoredMask, channel: "alpha" });
+    const anchoredMaskBind: NearshoreBindState = {};
+    const anchoredDisplace = new AnchoredDisplacementFilter(
+        anchoredMapSprite,
+        oceanFx.displaceStrength * strength
+    );
+    anchoredDisplace.padding = 80;
+    anchoredContent.filters = [anchoredDisplace];
+    let organicMaskTexture: Texture | undefined;
+
+    const setOrganicMaskBounds = (waterBounds: readonly Rectangle[]) => {
+        if (!hasOrganicEdge) return;
+        fxMask.texture = Texture.EMPTY;
+        anchoredMask.texture = Texture.EMPTY;
+        organicMaskTexture?.destroy(false);
+        organicMaskTexture = undefined;
+
+        const baked = bakeOrganicRectMask(
+            waterBounds.map((waterBoundsPx) => ({
+                x: waterBoundsPx.x / TILE_SIZE,
+                y: waterBoundsPx.y / TILE_SIZE,
+                w: waterBoundsPx.width / TILE_SIZE,
+                h: waterBoundsPx.height / TILE_SIZE,
+            })),
+            { amplitude: POND_SEAM_AMPLITUDE, offset: seamOffsetPond },
+            ORGANIC_EDGE_SUBDIV,
+            ORGANIC_EDGE_TEXTURE_MAX,
+            { x: 0, y: 0, w: WORLD_TILES, h: WORLD_TILES },
+            ORGANIC_FX_OVERSHOOT_TILES
+        );
+        if (!baked) return;
+        organicMaskTexture = baked.texture;
+        for (const maskSprite of [fxMask, anchoredMask]) {
+            maskSprite.texture = baked.texture;
+            maskSprite.position.set(
+                baked.x * TILE_SIZE,
+                baked.y * TILE_SIZE
+            );
+            maskSprite.width = baked.w * TILE_SIZE;
+            maskSprite.height = baked.h * TILE_SIZE;
+        }
+    };
 
     type Wake = {
         x: number;
@@ -286,6 +413,9 @@ export function createOceanGround(
         if (mapRt.width !== rtW || mapRt.height !== rtH) {
             mapRt.resize(rtW, rtH);
         }
+        if (anchoredMapRt.width !== rtW || anchoredMapRt.height !== rtH) {
+            anchoredMapRt.resize(rtW, rtH);
+        }
         if (splashRt.width !== rtW || splashRt.height !== rtH) {
             splashRt.resize(rtW, rtH);
         }
@@ -298,8 +428,12 @@ export function createOceanGround(
         swellSmall.alpha = swell.small.alpha;
 
         const texW = Math.max(1, displaceTex.width);
-        swellBig.tileScale.set((swell.big.world * scale) / texW);
-        swellSmall.tileScale.set((swell.small.world * scale) / texW);
+        swellBig.tileScale.set(
+            (swell.big.world * displacement.world * scale) / texW
+        );
+        swellSmall.tileScale.set(
+            (swell.small.world * displacement.world * scale) / texW
+        );
         swellBig.tilePosition.set(
             (scrollDx - overlayX) * scale,
             (scrollDy - overlayY) * scale
@@ -310,6 +444,12 @@ export function createOceanGround(
         );
 
         for (const sprite of wakeSprites) sprite.visible = false;
+        renderer.render({
+            container: bake,
+            target: anchoredMapRt,
+            clear: true,
+            clearColor: { r: 0.5, g: 0.5, b: 0.5, a: 1 },
+        });
         for (let i = 0; i < wakes.length; i++) {
             const entry = wakes[i];
             if (!entry) continue;
@@ -340,13 +480,28 @@ export function createOceanGround(
         mapSprite.position.set(overlayX, overlayY);
         mapSprite.width = overlayW;
         mapSprite.height = overlayH;
+        anchoredMapSprite.texture = anchoredMapRt;
+        anchoredMapSprite.position.set(overlayX, overlayY);
+        anchoredMapSprite.width = overlayW;
+        anchoredMapSprite.height = overlayH;
         const zoom = Math.hypot(fx.worldTransform.a, fx.worldTransform.b);
-        const strength = displaceStrength * Math.max(0.001, zoom);
+        const strength =
+            displaceStrength *
+            displacement.strength *
+            Math.max(0.001, zoom);
         displaceFilter.scale.x = strength;
         displaceFilter.scale.y = strength;
+        anchoredDisplace.scale = strength;
         const padding = Math.ceil(strength + 8);
         if (Math.abs(padding - displaceFilter.padding) >= 2) {
             displaceFilter.padding = padding;
+        }
+        // Center-relative correction can span both sides of the displacement
+        // range. Keep the transparent input boundary comfortably beyond the
+        // ring instead of letting displaced samples reach the filter edge.
+        const anchoredPadding = Math.ceil(strength * 2 + 64);
+        if (Math.abs(anchoredPadding - anchoredDisplace.padding) >= 2) {
+            anchoredDisplace.padding = anchoredPadding;
         }
 
         for (const sprite of splashSprites) sprite.visible = false;
@@ -412,7 +567,8 @@ export function createOceanGround(
     };
 
     const syncOverlay = (view: GroundViewBounds) => {
-        const overshoot = oceanFx.displaceStrength + 40;
+        const overshoot =
+            oceanFx.displaceStrength * displacement.strength + 40;
         const x = Math.max(bounds.x, view.minX - overshoot);
         const y = Math.max(bounds.y, view.minY - overshoot);
         const right = Math.min(
@@ -427,6 +583,7 @@ export function createOceanGround(
         const h = Math.max(0, bottom - y);
         if (w < 1 || h < 1) {
             fx.visible = false;
+            anchoredFx.visible = false;
             splashOverlay.visible = false;
             overlayW = 0;
             return false;
@@ -445,6 +602,12 @@ export function createOceanGround(
             setOverlay(x, y, w, h);
         }
         fx.visible = true;
+        // An empty filtered container produces an opaque black intermediate in
+        // Pixi. The air ring is the only anchored child, so skip this pass while
+        // it is hidden instead of filtering an empty render texture.
+        anchoredFx.visible = anchoredContent.children.some(
+            (child) => child.visible && child.renderable && child.alpha > 0
+        );
         return true;
     };
 
@@ -453,6 +616,18 @@ export function createOceanGround(
         overlay: splashOverlay,
         /** Displace-filtered + shore-masked layer — parent underwater overlays here. */
         fxLayer: fx,
+        anchoredFxLayer: anchoredContent,
+        setFxAnchor(worldX, worldY) {
+            if (overlayW <= 0 || overlayH <= 0) return;
+            anchoredDisplace.anchorUv = {
+                x: Math.min(1, Math.max(0, (worldX - overlayX) / overlayW)),
+                y: Math.min(1, Math.max(0, (worldY - overlayY) / overlayH)),
+            };
+            anchoredDisplace.anchorStep = {
+                x: ANCHORED_DISPLACE_SAMPLE_RADIUS / overlayW,
+                y: ANCHORED_DISPLACE_SAMPLE_RADIUS / overlayH,
+            };
+        },
         addWakeRipple,
         addSplashDisplacement,
         setShoreMask(texture: Texture) {
@@ -463,23 +638,52 @@ export function createOceanGround(
             maskBind.source = undefined;
             maskBind.map = undefined;
         },
+        setWaterModelIds(modelIds) {
+            waterModelIds = modelIds;
+        },
+        setWaterBounds(waterBounds) {
+            setOrganicMaskBounds(waterBounds);
+        },
         update(ctx: GroundUpdateContext) {
             const cfg = oceanFx;
             const { a, b } = cfg.caustics;
             const tint = model.causticTint;
-            causticsA.tint = oceanTint(tint?.a ?? a.tint);
-            causticsA.alpha = a.alpha;
+            let tintA = oceanTint(tint?.a ?? a.tint);
+            let tintB = oceanTint(tint?.b ?? b.tint);
+            let alphaA = a.alpha;
+            let alphaB = b.alpha;
+            if (hasOrganicEdge) {
+                // Pull additive overlays toward pond blue so they read on the fill.
+                tintA = mixRgb(tintA, materialColor, 0.45);
+                tintB = mixRgb(tintB, materialColor, 0.35);
+                alphaA *= 1.35;
+                alphaB *= 1.35;
+            }
+            causticsA.tint = tintA;
+            causticsA.alpha = alphaA;
             causticsA.tileScale.set(a.tileScale);
-            causticsB.tint = oceanTint(tint?.b ?? b.tint);
-            causticsB.alpha = b.alpha;
+            causticsB.tint = tintB;
+            causticsB.alpha = alphaB;
             causticsB.tileScale.set(b.tileScale);
 
-            bindNearshoreSprite(
-                fxMask,
-                bounds,
-                modelShoreMask ?? ctx.shoreMask,
-                maskBind
-            );
+            if (!hasOrganicEdge) {
+                bindNearshoreSprite(
+                    fxMask,
+                    bounds,
+                    modelShoreMask ??
+                        (model.shoreOvershoot ? ctx.shoreMask : Texture.EMPTY),
+                    maskBind
+                );
+            }
+            if (!hasOrganicEdge) {
+                bindNearshoreSprite(
+                    anchoredMask,
+                    bounds,
+                    modelShoreMask ??
+                        (model.shoreOvershoot ? ctx.shoreMask : Texture.EMPTY),
+                    anchoredMaskBind
+                );
+            }
             if (!syncOverlay(ctx.view)) return;
 
             const area = overlayW * overlayH;
@@ -492,10 +696,10 @@ export function createOceanGround(
             scrollAy += a.scroll.y * sec;
             scrollBx += b.scroll.x * sec;
             scrollBy += b.scroll.y * sec;
-            scrollDx += cfg.swell.big.scroll.x * sec;
-            scrollDy += cfg.swell.big.scroll.y * sec;
-            scrollD2x += cfg.swell.small.scroll.x * sec;
-            scrollD2y += cfg.swell.small.scroll.y * sec;
+            scrollDx += cfg.swell.big.scroll.x * displacement.scroll * sec;
+            scrollDy += cfg.swell.big.scroll.y * displacement.scroll * sec;
+            scrollD2x += cfg.swell.small.scroll.x * displacement.scroll * sec;
+            scrollD2y += cfg.swell.small.scroll.y * displacement.scroll * sec;
 
             causticsA.tilePosition.set(
                 worldTile(overlayX, scrollAx),
@@ -534,8 +738,10 @@ export function createOceanGround(
             }
 
             const onThisWater = (x: number, y: number) =>
-                (ctx.waterModelAt?.(x, y) ??
-                    (ctx.isOceanAt(x, y) ? model.id : undefined)) === model.id;
+                waterModelIds.has(
+                    ctx.waterModelAt?.(x, y) ??
+                        (ctx.isOceanAt(x, y) ? model.id : "")
+                );
 
             if (ctx.now >= nextFoamAt && visibleShores.length > 0) {
                 const [lo, hi] = foamIntervalMs;
@@ -581,14 +787,23 @@ export function createOceanGround(
             // Unbind before destroy — pooled AlphaMaskPipe keeps the last
             // MaskFilter BindGroup and crashes if the shore source dies first.
             fx.mask = null;
+            anchoredFx.mask = null;
             fx.filters = null;
+            anchoredContent.filters = null;
             splashOverlay.filters = null;
             maskBind.map?.destroy(false);
             maskBind.map = undefined;
             maskBind.source = undefined;
+            anchoredMaskBind.map?.destroy(false);
+            anchoredMaskBind.map = undefined;
+            anchoredMaskBind.source = undefined;
+            organicMaskTexture?.destroy(false);
+            organicMaskTexture = undefined;
             mapRt.destroy(true);
+            anchoredMapRt.destroy(true);
             splashRt.destroy(true);
             displaceFilter.destroy();
+            anchoredDisplace.destroy();
             splashFilter.destroy();
             root.destroy({ children: true });
             splashOverlay.destroy({ children: true });
@@ -602,6 +817,33 @@ export function createOceanFill(
     bounds: Rectangle,
     zIndex: number
 ): GroundVisual {
+    if (model.edge === "organic") {
+        const baked = bakeOrganicRect(
+            parseHexColor(model.color),
+            {
+                x: bounds.x / TILE_SIZE,
+                y: bounds.y / TILE_SIZE,
+                w: bounds.width / TILE_SIZE,
+                h: bounds.height / TILE_SIZE,
+            },
+            { amplitude: POND_SEAM_AMPLITUDE, offset: seamOffsetPond },
+            ORGANIC_EDGE_SUBDIV,
+            ORGANIC_EDGE_TEXTURE_MAX,
+            { x: 0, y: 0, w: WORLD_TILES, h: WORLD_TILES }
+        );
+        const fill = new Sprite(baked.texture);
+        fill.position.set(baked.x * TILE_SIZE, baked.y * TILE_SIZE);
+        fill.width = baked.w * TILE_SIZE;
+        fill.height = baked.h * TILE_SIZE;
+        fill.zIndex = zIndex;
+        return {
+            container: fill,
+            destroy() {
+                baked.texture.destroy(true);
+            },
+        };
+    }
+
     const fill = new Sprite(Texture.WHITE);
     fill.tint = parseHexColor(model.color);
     fill.position.set(bounds.x, bounds.y);

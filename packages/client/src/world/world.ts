@@ -21,6 +21,8 @@ import {
     createOceanFillForType,
     GROUND_Z_BASE,
     GROUND_Z_OCEAN,
+    GROUND_Z_OCEAN_FILL,
+    GROUND_Z_SURFACE_WATER,
     groundModel,
     isOceanGroundModel,
     LandDistanceField,
@@ -31,12 +33,14 @@ import {
     oceanGroundModel,
     seamLodFromZoom,
     solidGroundModel,
+    waterFxProfileKey,
     type GroundVisual,
     type SeamLod,
     type ShoreSample,
 } from "./ground";
 import {
     DEFAULT_OCEAN_FADE_TILES,
+    DEFAULT_WATER_WATER_FADE_TILES,
     parseHexColor,
     type SolidGroundFill,
 } from "@bundu/shared/ground_models";
@@ -55,7 +59,14 @@ import { ANIMATION, AnimationManagers } from "../animation/animations";
 import { TEXT_STYLE } from "../assets/text";
 import { getAsset } from "../assets/load";
 import { animalDef, playerDef } from "../models/defs";
-import { Point, Text, type Renderer, type Texture } from "pixi.js";
+import {
+    Point,
+    Rectangle,
+    Text,
+    type Container,
+    type Renderer,
+    type Texture,
+} from "pixi.js";
 import type { Viewport } from "pixi-viewport";
 import { Camera } from "@client/rendering/camera";
 import { LayeredRenderer } from "@client/rendering/layered_renderer";
@@ -447,8 +458,9 @@ export class World {
     }
 
     /**
-     * Air ring lives inside ocean `fxLayer` so it shares DisplacementFilter
-     * and the nearshore alpha mask. Viewport siblings miss both.
+     * Air ring lives inside the water `fxLayer` underfoot so it shares that
+     * model's DisplacementFilter and shore mask. Off water: leave the parent
+     * alone (mask clips it) — don't jump to the viewport.
      */
     private syncLocalAirRingParent(): void {
         const local =
@@ -456,30 +468,57 @@ export class World {
         if (!(local instanceof Player)) return;
         const ring = local.airRing;
         ring.filters = null;
-        const fx = this.oceanVisualAtWorld(
+        const underfoot = this.oceanVisualAtWorld(
             local.position.x,
             local.position.y
-        )?.fxLayer;
+        );
+        const fx = underfoot?.anchoredFxLayer;
         if (fx) {
             if (ring.parent !== fx) fx.addChildAt(ring, 0);
             else if (fx.getChildIndex(ring) !== 0) fx.setChildIndex(ring, 0);
+            underfoot.setFxAnchor?.(local.position.x, local.position.y);
             return;
         }
-        if (ring.parent !== this.viewport) this.viewport.addChild(ring);
+        for (const visual of this.oceanVisuals.values()) {
+            if (ring.parent !== visual.anchoredFxLayer) continue;
+            visual.setFxAnchor?.(local.position.x, local.position.y);
+            break;
+        }
+        // Once the player leaves water, keep the ring in its last water layer.
+        // That layer's shore mask fades it out naturally on the way to land.
     }
 
-    /** Pull the ring off ocean FX before water containers are destroyed. */
-    private detachLocalAirRingFromOcean(): void {
+    private waterModelIdAt(
+        worldX: number,
+        worldY: number
+    ): string | undefined {
+        const tx = (worldX / TILE_SIZE) | 0;
+        const ty = (worldY / TILE_SIZE) | 0;
+        if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
+            return undefined;
+        }
+        const type = this.topGroundTypes[ty * WORLD_TILES + tx]!;
+        if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
+        return clientGroundType(type).model;
+    }
+
+    /** Pull the ring off a water FX before that container is destroyed. */
+    private detachLocalAirRingFromOcean(visual?: GroundVisual): void {
         const local =
             this.user !== undefined ? this.objects.get(this.user) : undefined;
         if (!(local instanceof Player)) return;
         const ring = local.airRing;
-        for (const visual of this.oceanVisuals.values()) {
-            const fx = visual.fxLayer;
-            if (fx && ring.parent === fx) {
-                this.viewport.addChild(ring);
-                return;
-            }
+        const detach = (fx: Container | undefined) => {
+            if (!fx || ring.parent !== fx) return false;
+            this.viewport.addChild(ring);
+            return true;
+        };
+        if (visual) {
+            detach(visual.anchoredFxLayer);
+            return;
+        }
+        for (const v of this.oceanVisuals.values()) {
+            if (detach(v.anchoredFxLayer)) return;
         }
     }
 
@@ -488,14 +527,11 @@ export class World {
         worldX: number,
         worldY: number
     ): GroundVisual | undefined {
-        const tx = (worldX / TILE_SIZE) | 0;
-        const ty = (worldY / TILE_SIZE) | 0;
-        if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
-            return undefined;
-        }
-        const type = this.topGroundTypes[ty * WORLD_TILES + tx]!;
-        if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
-        return this.oceanVisuals.get(clientGroundType(type).model);
+        const modelId = this.waterModelIdAt(worldX, worldY);
+        if (!modelId) return undefined;
+        return this.oceanVisuals.get(
+            waterFxProfileKey(oceanGroundModel(modelId))
+        );
     }
 
     /**
@@ -1044,7 +1080,10 @@ export class World {
                       x * TILE_SIZE,
                       y * TILE_SIZE,
                       w * TILE_SIZE,
-                      h * TILE_SIZE
+                      h * TILE_SIZE,
+                      oceanGroundModel(modelId).surfaceLayer
+                          ? GROUND_Z_BASE + id
+                          : GROUND_Z_OCEAN_FILL
                   )
                 : createGround(
                       type,
@@ -1082,17 +1121,22 @@ export class World {
 
     private ensureOceanVisual(type: number): GroundVisual {
         const modelId = clientGroundType(type).model;
-        const existing = this.oceanVisuals.get(modelId);
+        const model = oceanGroundModel(modelId);
+        const profileKey = waterFxProfileKey(model);
+        const existing = this.oceanVisuals.get(profileKey);
         if (existing) return existing;
+        const zIndex = model.surfaceLayer
+            ? GROUND_Z_SURFACE_WATER
+            : GROUND_Z_OCEAN;
         const visual = createGround(
             type,
             0,
             0,
             WORLD_BOUNDS,
             WORLD_BOUNDS,
-            GROUND_Z_OCEAN
+            zIndex
         );
-        this.oceanVisuals.set(modelId, visual);
+        this.oceanVisuals.set(profileKey, visual);
         this.renderer.add(
             GROUND_RENDER_ID,
             visual.container,
@@ -1102,13 +1146,13 @@ export class World {
         return visual;
     }
 
-    private disposeOceanVisual(modelId: string, visual: GroundVisual): void {
+    private disposeOceanVisual(profileKey: string, visual: GroundVisual): void {
         this.renderer.remove(GROUND_RENDER_ID, visual.container);
         if (visual.overlay) {
             this.renderer.remove(GROUND_RENDER_ID, visual.overlay);
         }
         this.disposeGroundVisual(visual);
-        this.oceanVisuals.delete(modelId);
+        this.oceanVisuals.delete(profileKey);
     }
 
     private rebuildShoreSamples(): void {
@@ -1117,7 +1161,8 @@ export class World {
         this.topGroundTypes.fill(0);
         const colorByType = new Map<number, number>();
         const fadeByType = new Map<number, number>();
-        const activeOceanModels = new Set<string>();
+        const modelsByFxProfile = new Map<string, Set<string>>();
+        const boundsByFxProfile = new Map<string, Rectangle[]>();
         let oceanColor: number | undefined;
         const byBottom = [...this.groundPatches].sort((a, b) => a.id - b.id);
         for (const patch of byBottom) {
@@ -1125,8 +1170,23 @@ export class World {
             const ocean = isOceanGroundModel(modelId);
             if (ocean) {
                 this.oceanTypeIds.add(patch.type);
-                activeOceanModels.add(modelId);
                 const model = oceanGroundModel(modelId);
+                const profileKey = waterFxProfileKey(model);
+                const profileModels =
+                    modelsByFxProfile.get(profileKey) ?? new Set<string>();
+                profileModels.add(modelId);
+                modelsByFxProfile.set(profileKey, profileModels);
+                const profileBounds =
+                    boundsByFxProfile.get(profileKey) ?? [];
+                profileBounds.push(
+                    new Rectangle(
+                        patch.x * TILE_SIZE,
+                        patch.y * TILE_SIZE,
+                        patch.w * TILE_SIZE,
+                        patch.h * TILE_SIZE
+                    )
+                );
+                boundsByFxProfile.set(profileKey, profileBounds);
                 const color = parseHexColor(model.color);
                 colorByType.set(patch.type, color);
                 fadeByType.set(patch.type, model.fadeTiles);
@@ -1149,14 +1209,14 @@ export class World {
 
         if (this.oceanTypeIds.size === 0 && this.oceanVisuals.size > 0) {
             this.detachLocalAirRingFromOcean();
-            for (const [modelId, visual] of [...this.oceanVisuals]) {
-                this.disposeOceanVisual(modelId, visual);
+            for (const [profileKey, visual] of [...this.oceanVisuals]) {
+                this.disposeOceanVisual(profileKey, visual);
             }
         } else {
-            for (const [modelId, visual] of [...this.oceanVisuals]) {
-                if (activeOceanModels.has(modelId)) continue;
-                this.detachLocalAirRingFromOcean();
-                this.disposeOceanVisual(modelId, visual);
+            for (const [profileKey, visual] of [...this.oceanVisuals]) {
+                if (modelsByFxProfile.has(profileKey)) continue;
+                this.detachLocalAirRingFromOcean(visual);
+                this.disposeOceanVisual(profileKey, visual);
             }
         }
 
@@ -1174,19 +1234,56 @@ export class World {
             (i) => colorByType.get(this.topGroundTypes[i]!) ?? this.oceanColor,
             (i) =>
                 fadeByType.get(this.topGroundTypes[i]!) ??
-                DEFAULT_OCEAN_FADE_TILES
+                DEFAULT_OCEAN_FADE_TILES,
+            // Every water material participates so rivers/ponds can meet the sea.
+            (i) => {
+                const type = this.topGroundTypes[i]!;
+                return type !== 0 && this.oceanTypeIds.has(type);
+            },
+            Math.max(
+                DEFAULT_WATER_WATER_FADE_TILES,
+                ...[...modelsByFxProfile.values()].flatMap((ids) =>
+                    [...ids].map(
+                        (id) => oceanGroundModel(id).transitionTiles
+                    )
+                )
+            )
         );
         const modelMasks = this.nearshoreFill.syncModelMasks(
-            activeOceanModels,
+            new Set(modelsByFxProfile.keys()),
             (i) => {
                 const type = this.topGroundTypes[i]!;
                 if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
-                return clientGroundType(type).model;
-            }
+                return waterFxProfileKey(
+                    oceanGroundModel(clientGroundType(type).model)
+                );
+            },
+            // Pond FX stays on water tiles — no beach wash / land overshoot.
+            new Set(
+                [...modelsByFxProfile].flatMap(([profileKey, ids]) =>
+                    [...ids].some(
+                        (id) => !oceanGroundModel(id).shoreOvershoot
+                    )
+                        ? [profileKey]
+                        : []
+                )
+            ),
+            (profileKey) =>
+                Math.max(
+                    ...[...(modelsByFxProfile.get(profileKey) ?? [])].map(
+                        (id) => oceanGroundModel(id).transitionTiles
+                    )
+                )
         );
-        for (const [modelId, visual] of this.oceanVisuals) {
-            const mask = modelMasks.get(modelId);
+        for (const [profileKey, visual] of this.oceanVisuals) {
+            const mask = modelMasks.get(profileKey);
             if (mask) visual.setShoreMask?.(mask);
+            visual.setWaterModelIds?.(
+                modelsByFxProfile.get(profileKey) ?? new Set()
+            );
+            visual.setWaterBounds?.(
+                boundsByFxProfile.get(profileKey) ?? []
+            );
         }
         const inlandAt = (tx: number, ty: number) =>
             this.landDistance.inlandAt(tx, ty);

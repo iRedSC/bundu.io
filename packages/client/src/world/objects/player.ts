@@ -61,7 +61,6 @@ const AIR_RING_FADE_LERP = 0.1;
  * Parent FX DisplacementFilter shifts the ring ~half a radius down+right;
  * counter-offset so it still reads centered on the player.
  */
-const AIR_RING_DISPLACE_NUDGE = 0.62;
 const AIR_DEFAULT_MAX = 100;
 
 export class Player extends GameObject implements AnimContext {
@@ -195,12 +194,7 @@ export class Player extends GameObject implements AnimContext {
             this.position.y + CHAT_MESSAGE_Y
         );
         this.craftBar.position = this.position;
-        const airR = this.collisionRadius * AIR_RING_RADIUS_SCALE;
-        const nudge = airR * AIR_RING_DISPLACE_NUDGE;
-        this.airRing.position.set(
-            this.position.x - nudge,
-            this.position.y - nudge
-        );
+        this.airRing.position.copyFrom(this.position);
         this.redrawCraftBar(now);
         const airAnimating = this.tickAirRing();
         // Stay in the updating set while the bar / air ring is animating.
@@ -212,7 +206,6 @@ export class Player extends GameObject implements AnimContext {
         this.airMax = Math.max(1, max);
         this.air = Math.min(this.airMax, Math.max(0, value));
     }
-
     /** `duration > 0` starts the overhead channel; `0` clears it. */
     setCraftProgress(duration: number, recipeId: number, startedAt: number) {
         if (duration <= 0) {

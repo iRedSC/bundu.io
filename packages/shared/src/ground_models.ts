@@ -26,6 +26,9 @@ export type OceanCausticTint = {
 /** Default ocean→land color blend distance (tiles into water). */
 export const DEFAULT_OCEAN_FADE_TILES = 12;
 
+/** Soften hard edges where distinct water types meet (tiles into each side). */
+export const DEFAULT_WATER_WATER_FADE_TILES = 6;
+
 /** Debris / dust kicked up while moving — tinted from the land color. */
 export type GroundTrailDef = {
     /** World pixels between bursts. */
@@ -64,6 +67,19 @@ export type OceanGroundModelDef = {
     color: string;
     /** Ocean→land color blend distance in tiles (into water). */
     fadeTiles: number;
+    /** Visual water↔water transition distance. */
+    transitionTiles: number;
+    /** Organic visual shoreline profile; authored tiles remain authoritative. */
+    edge?: "organic";
+    /** Whether FX may fade across the shoreline onto land. */
+    shoreOvershoot: boolean;
+    /** Render above containing land (inland water). */
+    surfaceLayer: boolean;
+    displacement: {
+        strength: number;
+        scroll: number;
+        worldScale: number;
+    };
     /** Optional caustic layer tints; omit to use gameplay.yml. */
     causticTint?: OceanCausticTint;
     textures: OceanGroundTextures;
@@ -98,6 +114,21 @@ function record(value: unknown, path: string): Record<string, unknown> {
 function string(value: unknown, path: string): string {
     if (typeof value !== "string" || !value) {
         throw new Error(`${path}: expected a non-empty string`);
+    }
+    return value;
+}
+
+function optionalBoolean(
+    raw: Record<string, unknown>,
+    snake: string,
+    camel: string,
+    path: string,
+    fallback: boolean
+): boolean {
+    const value = raw[snake] ?? raw[camel];
+    if (value === undefined) return fallback;
+    if (typeof value !== "boolean") {
+        throw new Error(`${path}.${snake}: expected a boolean`);
     }
     return value;
 }
@@ -390,13 +421,66 @@ export function parseGroundModelDef(
             DEFAULT_OCEAN_FADE_TILES
         );
         const tintRaw = raw.caustic_tint ?? raw.causticTint;
+        const edgeRaw = raw.edge;
+        if (edgeRaw !== undefined && edgeRaw !== "organic") {
+            throw new Error(`${path}.edge: expected "organic"`);
+        }
+        const displacementRaw = record(
+            raw.displacement ?? {},
+            `${path}.displacement`
+        );
         const def: OceanGroundModelDef = {
             id,
             kind,
             color: color(raw.color, `${path}.color`),
             fadeTiles,
+            transitionTiles: optionalPositive(
+                raw,
+                "transition_tiles",
+                "transitionTiles",
+                path,
+                DEFAULT_WATER_WATER_FADE_TILES
+            ),
+            shoreOvershoot: optionalBoolean(
+                raw,
+                "shore_overshoot",
+                "shoreOvershoot",
+                path,
+                true
+            ),
+            surfaceLayer: optionalBoolean(
+                raw,
+                "surface_layer",
+                "surfaceLayer",
+                path,
+                false
+            ),
+            displacement: {
+                strength: optionalPositive(
+                    displacementRaw,
+                    "strength",
+                    "strength",
+                    `${path}.displacement`,
+                    1
+                ),
+                scroll: optionalPositive(
+                    displacementRaw,
+                    "scroll",
+                    "scroll",
+                    `${path}.displacement`,
+                    1
+                ),
+                worldScale: optionalPositive(
+                    displacementRaw,
+                    "world_scale",
+                    "worldScale",
+                    `${path}.displacement`,
+                    1
+                ),
+            },
             textures: parseOceanTextures(raw.textures, `${path}.textures`),
         };
+        if (edgeRaw === "organic") def.edge = edgeRaw;
         if (tintRaw !== undefined) {
             def.causticTint = parseCausticTint(tintRaw, `${path}.caustic_tint`);
         }
