@@ -1,8 +1,0 @@
-type: fixed
-entries:
-    - item: meat
-      count: 4
-    - item: alligator_skin
-      count: 1
-    - item: tooth
-      count: 2

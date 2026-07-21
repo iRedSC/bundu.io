@@ -1,4 +1,0 @@
-texture: bundu/entity/animal/alligator/alligator_dead.svg
-displays:
-    world:
-        scale: 1

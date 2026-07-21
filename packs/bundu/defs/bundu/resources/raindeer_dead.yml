@@ -1,5 +1,5 @@
 # @pack-gen model=models/corpses/raindeer_dead.yml
-extends: model:bundu:corpse
+extends: model:bundu:corpses/corpse
 parts:
   body:
     sprite: bundu/entity/animal/reindeer/reindeer_dead.svg

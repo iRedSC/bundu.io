@@ -24,8 +24,11 @@ COPY --from=deps /app/packages/shared/package.json ./packages/shared/
 
 COPY packages/server ./packages/server
 COPY packages/shared ./packages/shared
+COPY scripts ./scripts
 COPY packs ./packs
 COPY tsconfig.json ./
+
+RUN bun run pack:gen
 
 EXPOSE 7777
 CMD ["bun", "run", "packages/server/src/index.ts"]

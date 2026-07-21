@@ -1,9 +1,0 @@
-extends: model:bundu:animal
-footsteps: false
-parts:
-  body:
-    sprite: bundu/entity/animal/queen_bee/queen_bee.svg
-    spriteScale: 1
-animations:
-  idle:
-    data: { amplitude: 0.025 }

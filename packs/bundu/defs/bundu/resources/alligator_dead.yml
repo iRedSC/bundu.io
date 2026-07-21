@@ -1,5 +1,5 @@
 # @pack-gen model=models/corpses/alligator_dead.yml
-extends: model:bundu:corpse
+extends: model:bundu:corpses/corpse
 parts:
   body:
     sprite: bundu/entity/animal/alligator/alligator_dead.svg

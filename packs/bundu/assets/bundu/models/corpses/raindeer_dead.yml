@@ -1,5 +1,0 @@
-extends: model:bundu:corpse
-parts:
-  body:
-    sprite: bundu/entity/animal/reindeer/reindeer_dead.svg
-    spriteScale: 3.335

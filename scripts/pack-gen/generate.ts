@@ -4,10 +4,10 @@ import {
     DATA_ONLY_DIRS,
     defaultModelPath,
     isRegistryKind,
+    listFiles,
     listYamlFiles,
     packRoots,
     readText,
-    rimrafYamlTree,
     splitDefSource,
     writeText,
     type RegistryKind,
@@ -49,6 +49,26 @@ function ensureSame(text: string): string {
     return text.endsWith("\n") ? text : `${text}\n`;
 }
 
+function contentEquals(
+    left: string | Uint8Array | null | undefined,
+    right: string | Uint8Array
+): boolean {
+    if (typeof left === "string" || typeof right === "string") {
+        return typeof left === "string" && left === right;
+    }
+    if (!left || left.byteLength !== right.byteLength) return false;
+    return left.every((byte, index) => byte === right[index]);
+}
+
+function sameContent(filename: string, content: string | Uint8Array): boolean {
+    if (!fs.existsSync(filename)) return false;
+    const current =
+        typeof content === "string"
+            ? readText(filename)
+            : fs.readFileSync(filename);
+    return contentEquals(current, content);
+}
+
 function modelEmitPath(
     registry: RegistryKind,
     stem: string,
@@ -70,39 +90,24 @@ function dataStemFrom(stem: string): string {
     return stem.includes("/") ? stem.slice(stem.lastIndexOf("/") + 1) : stem;
 }
 
-function managedYamlFiles(
+function managedFiles(
     roots: ReturnType<typeof packRoots>,
     namespace: string
 ): string[] {
     const files = [
-        ...listYamlFiles(path.join(roots.data, namespace)),
-        ...listYamlFiles(path.join(roots.assets, namespace, "models")),
-        ...listYamlFiles(path.join(roots.assets, namespace, "ground_models")),
-        ...listYamlFiles(path.join(roots.assets, namespace, "lang")),
+        ...listFiles(path.join(roots.data, namespace)),
+        ...listFiles(path.join(roots.assets, namespace)),
     ];
-    for (const name of ["gameplay.yml", "stat_bars.yml"]) {
-        const file = path.join(roots.assets, namespace, name);
-        if (fs.existsSync(file)) files.push(file);
-    }
     return files.sort((left, right) => left.localeCompare(right));
 }
 
-function clearManagedYaml(
+function clearManagedFiles(
     roots: ReturnType<typeof packRoots>,
     namespace: string
 ): string[] {
-    const removed = managedYamlFiles(roots, namespace);
-    for (const filename of removed) {
-        if (fs.existsSync(filename)) fs.unlinkSync(filename);
-    }
-    for (const root of [
-        path.join(roots.data, namespace),
-        path.join(roots.assets, namespace, "models"),
-        path.join(roots.assets, namespace, "ground_models"),
-        path.join(roots.assets, namespace, "lang"),
-    ]) {
-        rimrafYamlTree(root);
-    }
+    const removed = managedFiles(roots, namespace);
+    fs.rmSync(path.join(roots.data, namespace), { recursive: true, force: true });
+    fs.rmSync(path.join(roots.assets, namespace), { recursive: true, force: true });
     return removed;
 }
 
@@ -116,13 +121,16 @@ function generateNamespace(
     const wrote: string[] = [];
     const removed: string[] = [];
 
-    type Planned = { filename: string; content: string };
+    type Planned = { filename: string; content: string | Uint8Array };
     const planned: Planned[] = [];
-    const planWrite = (filename: string, content: string) => {
+    const planWrite = (filename: string, content: string | Uint8Array) => {
         if (planned.some((entry) => entry.filename === filename)) {
             throw new Error(`Multiple definitions generate ${filename}`);
         }
-        planned.push({ filename, content: ensureSame(content) });
+        planned.push({
+            filename,
+            content: typeof content === "string" ? ensureSame(content) : content,
+        });
     };
 
     // item_types/: display → models/items/type/, data → data/item_types/
@@ -283,8 +291,15 @@ function generateNamespace(
 
     // Client-only: defs/<ns>/client/** → assets/<ns>/**
     const clientRoot = path.join(defsNs, "client");
-    for (const filename of listYamlFiles(clientRoot)) {
+    for (const filename of listFiles(clientRoot)) {
         const relative = rel(clientRoot, filename);
+        if (!/\.ya?ml$/i.test(filename)) {
+            planWrite(
+                path.join(roots.assets, namespace, relative),
+                fs.readFileSync(filename)
+            );
+            continue;
+        }
         const split = splitDefSource(readText(filename), filename);
         if (split.display) {
             throw new Error(
@@ -302,14 +317,14 @@ function generateNamespace(
         for (const entry of planned) {
             if (
                 !fs.existsSync(entry.filename) ||
-                readText(entry.filename) !== entry.content
+                !sameContent(entry.filename, entry.content)
             ) {
                 dirty = true;
                 break;
             }
         }
         if (!dirty) {
-            for (const file of managedYamlFiles(roots, namespace)) {
+            for (const file of managedFiles(roots, namespace)) {
                 if (!plannedPaths.has(file)) {
                     dirty = true;
                     break;
@@ -319,18 +334,27 @@ function generateNamespace(
         return { wrote, removed, unchanged: !dirty };
     }
 
-    const existing = managedYamlFiles(roots, namespace);
+    const existing = managedFiles(roots, namespace);
     const previous = new Map(
         planned.map((entry) => [
             entry.filename,
-            fs.existsSync(entry.filename) ? readText(entry.filename) : null,
+            fs.existsSync(entry.filename)
+                ? typeof entry.content === "string"
+                    ? readText(entry.filename)
+                    : fs.readFileSync(entry.filename)
+                : null,
         ])
     );
     removed.push(...existing.filter((filename) => !plannedPaths.has(filename)));
-    clearManagedYaml(roots, namespace);
+    clearManagedFiles(roots, namespace);
     for (const entry of planned) {
-        writeText(entry.filename, entry.content);
-        if (previous.get(entry.filename) !== entry.content) {
+        if (typeof entry.content === "string") {
+            writeText(entry.filename, entry.content);
+        } else {
+            fs.mkdirSync(path.dirname(entry.filename), { recursive: true });
+            fs.writeFileSync(entry.filename, entry.content);
+        }
+        if (!contentEquals(previous.get(entry.filename), entry.content)) {
             wrote.push(entry.filename);
         }
     }
@@ -351,6 +375,17 @@ export function generatePack(options: GenerateOptions): GenerateResult {
     const wrote: string[] = [];
     const removed: string[] = [];
     let unchanged = true;
+
+    const sourceManifest = path.join(options.packRoot, "pack.yml");
+    const outputManifest = path.join(roots.output, "pack.yml");
+    const manifestContent = readText(sourceManifest);
+    if (!sameContent(outputManifest, manifestContent)) {
+        unchanged = false;
+        if (!options.check) {
+            writeText(outputManifest, manifestContent);
+            wrote.push(outputManifest);
+        }
+    }
 
     for (const entry of fs.readdirSync(roots.defs, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;

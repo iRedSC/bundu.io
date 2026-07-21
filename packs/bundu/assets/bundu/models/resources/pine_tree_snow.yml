@@ -1,8 +1,0 @@
-extends: model:bundu:single_tile_node
-defaultVariant: base
-variants:
-  base:
-    main: bundu/decoration/forest/pine_tree_snow.svg
-parts:
-  main:
-    shadow: 2

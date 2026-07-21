@@ -1,5 +1,0 @@
-extends: model:bundu:rottable
-tile:
-  footprint:
-    - "X"
-  spillover: 0

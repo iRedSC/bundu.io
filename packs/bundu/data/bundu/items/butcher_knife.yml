@@ -1,7 +1,0 @@
-type: bundu:knife
-whenMainHand:
-    "*":
-        attributes:
-            attack.damage:
-                op: add
-                value: 8

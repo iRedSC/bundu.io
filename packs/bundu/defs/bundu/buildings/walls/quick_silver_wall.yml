@@ -1,4 +1,4 @@
-extends: model:bundu:wall
+extends: model:bundu:walls/wall
 defaultVariant: base
 variants:
   base:

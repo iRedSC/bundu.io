@@ -1,5 +1,0 @@
-displays:
-    icon:
-        model: resource:bundu:forest_tree
-    inventory:
-        model: resource:bundu:forest_tree

@@ -1,5 +1,0 @@
-extends: model:bundu:fire
-defaultVariant: base
-variants:
-  base:
-    main: bundu/structure/crafting/fire_big.svg

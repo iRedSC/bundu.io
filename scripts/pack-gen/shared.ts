@@ -77,23 +77,6 @@ export function writeText(filename: string, text: string): void {
     fs.writeFileSync(filename, ensureTrailingNewline(text));
 }
 
-export function rimrafYamlTree(root: string): void {
-    if (!fs.existsSync(root)) return;
-    for (const filename of listYamlFiles(root)) {
-        fs.unlinkSync(filename);
-    }
-    // Remove empty directories bottom-up.
-    const dirs = listFiles(root)
-        .map((filename) => path.dirname(filename))
-        .concat(root)
-        .filter((dir, index, all) => all.indexOf(dir) === index)
-        .sort((left, right) => right.length - left.length);
-    for (const dir of dirs) {
-        if (!fs.existsSync(dir)) continue;
-        if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
-    }
-}
-
 export type PackGenDirective = {
     model?: string;
 };
@@ -217,6 +200,28 @@ export function isRegistryKind(value: string): value is RegistryKind {
 }
 
 export function packRoots(packRoot: string): {
+    defs: string;
+    data: string;
+    assets: string;
+    output: string;
+} {
+    const packsRoot = path.dirname(packRoot);
+    const output = path.join(
+        path.dirname(packsRoot),
+        ".generated",
+        path.basename(packsRoot),
+        path.basename(packRoot)
+    );
+    return {
+        defs: path.join(packRoot, "defs"),
+        data: path.join(output, "data"),
+        assets: path.join(output, "assets"),
+        output,
+    };
+}
+
+/** Pre-defs pack layout, retained only for the one-way migration command. */
+export function legacyPackRoots(packRoot: string): {
     defs: string;
     data: string;
     assets: string;

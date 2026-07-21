@@ -4,18 +4,18 @@ How to define content under `defs/<namespace>/`. For pack discovery, overlays,
 and sync protocol see [README.md](./README.md).
 
 ```bash
-bun run pack:gen          # defs/ → data/ + assets/
-bun run validate:packs    # includes pack:gen --check
+bun run pack:gen          # defs/ → .generated/packs/*/{data,assets}
+bun run validate:packs    # regenerates, then validates the runtime mirror
 ```
 
 ## Mental model
 
 | Side | What | Where |
 |---|---|---|
-| Display (first `---` doc) | Models, poses, sprites | → `assets/` |
-| Data (second `---` doc) | Gameplay | → `data/` |
+| Display (first `---` doc) | Models, poses, sprites | → generated `assets/` |
+| Data (second `---` doc) | Gameplay | → generated `data/` |
 | Recipes / loot / tags | Data-only files | `defs/.../recipes/`, `loot_tables/`, `tags/` |
-| Textures | Manual | `assets/<ns>/textures/` (not generated) |
+| Textures | Manual | `defs/<ns>/client/textures/` (copied to generated `assets/`) |
 
 Path owns identity. Don’t write `id:` unless it must differ from the file path.
 Items default `extends` to `item_type:<ns>:none` — only set `extends` for a
@@ -231,7 +231,7 @@ Corpse example:
 
 ```yaml
 # @pack-gen model=models/corpses/bear_dead.yml
-extends: model:bundu:corpse
+extends: model:bundu:corpses/corpse
 parts:
   body:
     sprite: bundu/entity/animal/bear/bear_dead.svg
@@ -281,7 +281,7 @@ or flat `buildings/` (spikes/benches often data-only).
 
 ```yaml
 # buildings/walls/wood_wall.yml
-extends: model:bundu:wall
+extends: model:bundu:walls/wall
 defaultVariant: base
 variants:
   base:
@@ -296,7 +296,7 @@ health: 2000
 
 ### Doors
 
-Same as walls with `class: door`, under `buildings/doors/`, `extends: model:bundu:door`.
+Same as walls with `class: door`, under `buildings/doors/`, `extends: model:bundu:doors/door`.
 
 ### Spikes
 
@@ -344,7 +344,7 @@ Roofs use the **roof** layer; client occlusion can hide them when inside.
 
 ```yaml
 # buildings/structures/fire_pit.yml
-extends: model:bundu:fire
+extends: model:bundu:structures/fire
 defaultVariant: base
 variants:
   base:
@@ -400,7 +400,7 @@ placement:
 ## Entities (animals)
 
 **Path:** `defs/<ns>/entities/<id>.yml`  
-**Model:** `entity_type:<ns>:<id>` (usually `extends: model:bundu:animal`)
+**Model:** `entity_type:<ns>:<id>` (usually `extends: model:bundu:actors/animal`)
 
 | Field | Default | Meaning |
 |---|---|---|

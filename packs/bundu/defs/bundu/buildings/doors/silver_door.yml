@@ -1,4 +1,4 @@
-extends: model:bundu:door
+extends: model:bundu:doors/door
 defaultVariant: base
 variants:
   base:

@@ -1,6 +1,0 @@
-class: spike
-material: wood
-tier: 1
-damage: 20
-on_hit_damage: 5
-attack_range: 25

@@ -5,7 +5,7 @@ import {
     defaultModelPath,
     joinDefSource,
     listYamlFiles,
-    packRoots,
+    legacyPackRoots,
     readText,
     writeText,
     type RegistryKind,
@@ -164,7 +164,7 @@ export type MigrateResult = {
 };
 
 export function migratePackToDefs(packRoot: string): MigrateResult {
-    const roots = packRoots(packRoot);
+    const roots = legacyPackRoots(packRoot);
     if (!fs.existsSync(roots.data)) {
         throw new Error(`${packRoot}: missing data/`);
     }

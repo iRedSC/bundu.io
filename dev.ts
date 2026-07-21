@@ -10,6 +10,15 @@ let shuttingDown = false;
 /** True while we intentionally killed the server to reload code. */
 let serverReload = false;
 
+async function generatePacks(): Promise<boolean> {
+    const proc = spawn({
+        cmd: ["bun", "run", "pack:gen"],
+        stdout: "inherit",
+        stderr: "inherit",
+    });
+    return (await proc.exited) === 0;
+}
+
 async function buildClient(): Promise<boolean> {
     const proc = spawn({
         cmd: ["bun", "run", "./build.ts"],
@@ -75,6 +84,9 @@ process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 console.log("[dev] building client…");
+if (!(await generatePacks())) {
+    process.exit(1);
+}
 if (!(await buildClient())) {
     process.exit(1);
 }
@@ -121,7 +133,8 @@ let serverDebounce: Timer | undefined;
 for (const target of ["packages/server", "packages/shared", "packs"]) {
     watchScoped(target, (source) => {
         clearTimeout(serverDebounce);
-        serverDebounce = setTimeout(() => {
+        serverDebounce = setTimeout(async () => {
+            if (source.startsWith("packs/") && !(await generatePacks())) return;
             requestServerReload(source);
         }, 150);
     });

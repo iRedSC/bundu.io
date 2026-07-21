@@ -1,5 +1,0 @@
-extends: model:bundu:single_tile_node
-defaultVariant: base
-variants:
-  base:
-    main: bundu/structure/misc/hive_2.svg

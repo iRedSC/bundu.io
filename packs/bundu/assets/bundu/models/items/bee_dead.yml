@@ -1,4 +1,0 @@
-texture: bundu/entity/animal/bee/bee_dead.svg
-displays:
-    world:
-        scale: 1

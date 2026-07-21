@@ -1,4 +1,0 @@
-texture: bundu/entity/animal/komodo_dragon/komodo_dragon_dead.svg
-displays:
-    world:
-        scale: 1

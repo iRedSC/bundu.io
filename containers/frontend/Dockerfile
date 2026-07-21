@@ -23,7 +23,7 @@ COPY packages ./packages
 COPY packs ./packs
 COPY public ./public
 
-RUN bun run build
+RUN bun run pack:gen && bun run ./build.ts
 
 FROM oven/bun:1.3.14-slim AS runtime
 WORKDIR /app
@@ -34,7 +34,6 @@ ENV BUNDU_DEBUG=0
 
 COPY --from=build /app/static-server.ts ./static-server.ts
 COPY --from=build /app/public ./public
-COPY --from=build /app/packs ./packs
 
 EXPOSE 3000
 CMD ["bun", "static-server.ts"]

@@ -1,8 +1,0 @@
-score: 30
-exclusive: true
-multipliers:
-    pickaxe: 1
-level: 4
-regen_speed: 17
-quantity: 20
-loot_table: cobalt

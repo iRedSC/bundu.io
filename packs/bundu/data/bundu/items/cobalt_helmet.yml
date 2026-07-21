@@ -1,8 +1,0 @@
-type: bundu:helmet
-level: 5
-whenHelmet:
-    "*":
-        attributes:
-            health.defense:
-                op: add
-                value: 7
