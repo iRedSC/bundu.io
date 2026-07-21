@@ -604,6 +604,12 @@ async function main() {
     gui.inventory.onSelect = (slot) => {
         session.sendPacket(ClientPacket.SelectItem, { slot });
     };
+    gui.inventory.creativeReplace = () => creative.isActive();
+    gui.inventory.isVoidTarget = (screenX, screenY) =>
+        creative.isSidebarHit(screenX, screenY);
+    gui.inventory.onVoid = (slot) => {
+        session.sendPacket(ClientPacket.CreativeVoid, { slot });
+    };
     gui.inventory.onMove = (from, to) => {
         session.sendPacket(ClientPacket.MoveSlot, { from, to });
     };

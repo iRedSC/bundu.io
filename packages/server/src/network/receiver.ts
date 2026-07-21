@@ -44,4 +44,8 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.CreativeSetGodmode, creative.creativeSetGodmode);
     receiver.on(ClientPacket.CreativeSetSpeed, creative.creativeSetSpeed);
     receiver.on(ClientPacket.CreativeSetInstakill, creative.creativeSetInstakill);
+    receiver.on(ClientPacket.CreativeGiveToCursor, creative.creativeGiveToCursor);
+    receiver.on(ClientPacket.CreativeVoid, creative.creativeVoid);
+    receiver.on(ClientPacket.CreativeClearInventory, creative.creativeClearInventory);
+    receiver.on(ClientPacket.CreativeGiveKit, creative.creativeGiveKit);
 }

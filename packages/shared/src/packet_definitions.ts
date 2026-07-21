@@ -294,6 +294,14 @@ export const ClientPacket = {
     CreativeSetSpeed: 0x22,
     /** Creative: massive attack.damage boost. */
     CreativeSetInstakill: 0x23,
+    /** Creative: put an item stack on the cursor (replaces cursor). */
+    CreativeGiveToCursor: 0x24,
+    /** Creative: destroy cursor (`slot === -1`) or an inventory slot. */
+    CreativeVoid: 0x25,
+    /** Creative: clear all inventory slots + cursor. */
+    CreativeClearInventory: 0x26,
+    /** Creative: grant a named kit into inventory. */
+    CreativeGiveKit: 0x27,
 } as const;
 
 export namespace ClientPacket {
@@ -371,6 +379,12 @@ export namespace ClientPacket {
     /** One of 0.5, 1, 2, 4. */
     export type CreativeSetSpeed = { speed: number };
     export type CreativeSetInstakill = { enabled: boolean };
+    export type CreativeGiveToCursor = { itemId: number; count: number };
+    /** `slot === -1` voids the cursor; otherwise voids that inventory slot. */
+    export type CreativeVoid = { slot: number };
+    export type CreativeClearInventory = Record<string, never>;
+    /** Kit id key from shared `KITS` (e.g. `"copper"`). */
+    export type CreativeGiveKit = { kitId: string };
 }
 
 /** ID → payload map for server packets. */
@@ -442,6 +456,10 @@ export type ClientPacketMap = {
     [ClientPacket.CreativeSetGodmode]: ClientPacket.CreativeSetGodmode;
     [ClientPacket.CreativeSetSpeed]: ClientPacket.CreativeSetSpeed;
     [ClientPacket.CreativeSetInstakill]: ClientPacket.CreativeSetInstakill;
+    [ClientPacket.CreativeGiveToCursor]: ClientPacket.CreativeGiveToCursor;
+    [ClientPacket.CreativeVoid]: ClientPacket.CreativeVoid;
+    [ClientPacket.CreativeClearInventory]: ClientPacket.CreativeClearInventory;
+    [ClientPacket.CreativeGiveKit]: ClientPacket.CreativeGiveKit;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -559,6 +577,10 @@ export const ClientSchema: {
     [ClientPacket.CreativeSetGodmode]: { fields: ["enabled"] },
     [ClientPacket.CreativeSetSpeed]: { fields: ["speed"] },
     [ClientPacket.CreativeSetInstakill]: { fields: ["enabled"] },
+    [ClientPacket.CreativeGiveToCursor]: { fields: ["itemId", "count"] },
+    [ClientPacket.CreativeVoid]: { fields: ["slot"] },
+    [ClientPacket.CreativeClearInventory]: { fields: [] },
+    [ClientPacket.CreativeGiveKit]: { fields: ["kitId"] },
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -805,4 +827,31 @@ export const ClientPacketGuards = {
         value: unknown
     ): value is ClientPacket.CreativeSetInstakill =>
         isRecord(value) && isBoolean(value.enabled),
+    [ClientPacket.CreativeGiveToCursor]: (
+        value: unknown
+    ): value is ClientPacket.CreativeGiveToCursor =>
+        isRecord(value) &&
+        isSafeInteger(value.itemId) &&
+        value.itemId >= 0 &&
+        isSafeInteger(value.count) &&
+        value.count >= 1 &&
+        value.count <= 999,
+    [ClientPacket.CreativeVoid]: (
+        value: unknown
+    ): value is ClientPacket.CreativeVoid =>
+        isRecord(value) &&
+        isSafeInteger(value.slot) &&
+        value.slot >= -1 &&
+        value.slot <= 64,
+    [ClientPacket.CreativeClearInventory]: (
+        value: unknown
+    ): value is ClientPacket.CreativeClearInventory =>
+        isRecord(value) && Object.keys(value).length === 0,
+    [ClientPacket.CreativeGiveKit]: (
+        value: unknown
+    ): value is ClientPacket.CreativeGiveKit =>
+        isRecord(value) &&
+        typeof value.kitId === "string" &&
+        value.kitId.length > 0 &&
+        value.kitId.length <= 32,
 } satisfies PacketGuards<ClientPacketMap>;

@@ -53,8 +53,11 @@ export type PlayerData = {
      * Independent of freecam (chrome hides under freecam UI).
      */
     creative?: boolean;
-    /** Creative godmode: vitals frozen and damage ignored. */
-    creativeGodmode?: boolean;
+    /**
+     * Godmode: vitals frozen and damage ignored.
+     * Toggled by `/godmode` or the creative toolbar.
+     */
+    godmode?: boolean;
     /** Creative movement speed multiplier (0.5 | 1 | 2 | 4). */
     creativeSpeed?: number;
     /** Creative instakill: large attack.damage add. */

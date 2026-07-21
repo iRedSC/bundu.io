@@ -17,6 +17,8 @@ export type CreativeEditor = ModeUi & {
     state: CreativeState;
     /** Apply authoritative server creative snapshot. */
     applyServerState: (packet: ServerPacket.CreativeMode) => void;
+    /** Sidebar hit-test for inventory void drops (screen coords). */
+    isSidebarHit: (screenX: number, screenY: number) => boolean;
 };
 
 /**
@@ -36,6 +38,7 @@ export function createCreativeEditor(sendPacket: SendPacket): CreativeEditor {
 
     const persistRefresh = () => {
         toolbar?.refresh();
+        palette?.rebuild();
     };
 
     palette = createCreativePalette(state, sendPacket);
@@ -62,6 +65,10 @@ export function createCreativeEditor(sendPacket: SendPacket): CreativeEditor {
                 (palette?.containsPoint(screenX, screenY) ?? false) ||
                 (toolbar?.containsPoint(screenX, screenY) ?? false)
             );
+        },
+        isSidebarHit(screenX, screenY) {
+            if (!active) return false;
+            return palette?.containsPoint(screenX, screenY) ?? false;
         },
         applyServerState(packet) {
             state.godmode = packet.godmode;

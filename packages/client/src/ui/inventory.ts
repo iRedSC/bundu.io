@@ -107,6 +107,8 @@ type WorldDropCB = (
     originGlobal: { x: number; y: number },
     buttonScale: number
 ) => void;
+/** Void cursor (`slot === -1`) or an inventory slot (creative sidebar drop). */
+type VoidCB = (slot: number) => void;
 
 type Fly = {
     view: InventoryButton;
@@ -128,6 +130,20 @@ export class Inventory {
     onSelect?: SelectCB;
     onMove?: MoveCB;
     onCursor?: CursorCB;
+    /**
+     * Creative: destroy cursor / slot instead of world-dropping.
+     * Called when a drop lands on `isVoidTarget`.
+     */
+    onVoid?: VoidCB;
+    /**
+     * Creative: screen-space hit test for the creative sidebar (void zone).
+     */
+    isVoidTarget?: (screenX: number, screenY: number) => boolean;
+    /**
+     * Creative: placing onto an occupied slot replaces (destroys) the old item
+     * instead of swapping it onto the cursor / source.
+     */
+    creativeReplace?: () => boolean;
     /** When true, pointer/drag/cursor handlers skip local mutations. */
     isLocked?: () => boolean;
     /**
@@ -336,16 +352,32 @@ export class Inventory {
         }
 
         if (ev.button === 2 && this.hoverSlot === null && this.cursor) {
-            this.handleCursorSlot(
-                -1,
-                placeModeFromModifiers(ev.shiftKey, ev.ctrlKey || ev.metaKey)
-            );
+            if (this.isVoidTarget?.(ev.clientX, ev.clientY)) {
+                this.voidCursorLocal();
+                this.onVoid?.(-1);
+            } else {
+                this.handleCursorSlot(
+                    -1,
+                    placeModeFromModifiers(
+                        ev.shiftKey,
+                        ev.ctrlKey || ev.metaKey
+                    )
+                );
+            }
         }
 
         if (ev.button === 0) {
             if (this.cursor && !this.dragging) {
-                const mode = ev.shiftKey ? PlaceMode.Half : PlaceMode.One;
-                this.handleCursorSlot(this.hoverSlot ?? -1, mode);
+                if (
+                    this.hoverSlot === null &&
+                    this.isVoidTarget?.(ev.clientX, ev.clientY)
+                ) {
+                    this.voidCursorLocal();
+                    this.onVoid?.(-1);
+                } else {
+                    const mode = ev.shiftKey ? PlaceMode.Half : PlaceMode.One;
+                    this.handleCursorSlot(this.hoverSlot ?? -1, mode);
+                }
                 this.clearDrag();
             } else if (this.dragFrom !== null) {
                 if (this.dragging) {
@@ -360,6 +392,16 @@ export class Inventory {
                         }
                         this.selectedSlot = from;
                         this.onSelect?.(from);
+                    } else if (
+                        this.hoverSlot === null &&
+                        this.isVoidTarget?.(ev.clientX, ev.clientY)
+                    ) {
+                        // Drag into creative sidebar → delete the source stack.
+                        this.slots[from] = null;
+                        this.buttons[from]?.setStack(null);
+                        this.rebuildItemsMap();
+                        this.syncGhostToCursor();
+                        this.onVoid?.(from);
                     } else {
                         const to = this.hoverSlot ?? -1;
                         this.finishDrag(from, to);
@@ -490,6 +532,16 @@ export class Inventory {
         }
 
         const toStack = this.slots[to] ?? null;
+        if (toStack && this.creativeReplace?.()) {
+            // Creative replace: destroy the occupied target.
+            this.slots[from] = null;
+            this.slots[to] = fromStack;
+            this.rebuildItemsMap();
+            this.buttons[from]?.setStack(null);
+            this.startFly(fromStack, ghostX, ghostY, ghostScale, "slot", to);
+            return;
+        }
+
         this.slots[from] = toStack;
         this.slots[to] = fromStack;
         this.rebuildItemsMap();
@@ -501,6 +553,12 @@ export class Inventory {
         } else {
             this.buttons[from]?.setStack(null);
         }
+    }
+
+    private voidCursorLocal() {
+        this.cursor = null;
+        this.rebuildItemsMap();
+        this.syncGhostToCursor();
     }
 
     /**
@@ -591,9 +649,21 @@ export class Inventory {
             return;
         }
 
-        // Different item → swap with crossed flies.
+        // Different item → swap, or creative replace (destroy target).
         const slotStack = target;
         const cursorStack = this.cursor;
+        if (this.creativeReplace?.()) {
+            this.slots[slot] = cursorStack;
+            this.cursor = null;
+            this.rebuildItemsMap();
+            this.ghost.button.visible = false;
+            this.buttons[slot]?.setStack(null);
+            this.startFly(cursorStack, fromX, fromY, fromScale, "slot", slot);
+            this.syncGhostToCursor();
+            this.onCursor?.(slot, mode);
+            return;
+        }
+
         this.slots[slot] = cursorStack;
         this.cursor = slotStack;
         this.rebuildItemsMap();

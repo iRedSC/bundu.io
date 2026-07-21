@@ -8,7 +8,7 @@ import { gameplayConfig } from "../configs/gameplay.js";
 import { applyVitalsTickDamage } from "./vitals_damage.js";
 import { HitFlash } from "@bundu/shared/hit_flash";
 import { takeVitalsTicks } from "./vitals_tick.js";
-import { isCreativeGodmode } from "../creative/mode.js";
+import { isGodmode } from "../creative/mode.js";
 
 /** Applies hunger.nourishment once every vitals.tick_period_ms. */
 export class HungerSystem extends System<GameEventMap> {
@@ -19,7 +19,7 @@ export class HungerSystem extends System<GameEventMap> {
     override update(_time: number, delta: number, player: GameObject): void {
         // Soft-disconnected bodies still drain — survival continues until reclaim or death.
         if (PlayerData.get(player)?.freecam) return;
-        if (isCreativeGodmode(player)) return;
+        if (isGodmode(player)) return;
 
         const data = player.get(PlayerData);
         const attributes = player.get(Attributes);

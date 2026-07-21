@@ -669,11 +669,12 @@ export class PlayerSystem extends System<GameEventMap> {
         this.clearEating(player);
         const inv = Inventory.get(player);
         if (!inv) return;
+        const creative = data.creative === true;
         const dropped =
             to === -1 && inv.slots[from]
                 ? { ...inv.slots[from] }
                 : undefined;
-        if (!applyMoveSlot(inv, from, to)) return;
+        if (!applyMoveSlot(inv, from, to, creative)) return;
         if (dropped) this.dropItem(player, dropped.id, dropped.count);
 
         clearMissingEquipment(player, this.world.context.playerPacketManager);
@@ -696,6 +697,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const inv = Inventory.get(player);
         if (!inv) return;
 
+        const creative = data.creative === true;
         const placeMode =
             mode === PlaceMode.Half || mode === PlaceMode.One
                 ? mode
@@ -712,7 +714,7 @@ export class PlayerSystem extends System<GameEventMap> {
                   )
                 : 0;
         const itemId = slot === -1 ? inv.cursor?.id : undefined;
-        if (!applyCursorSlot(inv, slot, placeMode)) return;
+        if (!applyCursorSlot(inv, slot, placeMode, creative)) return;
         if (itemId !== undefined && amount > 0) {
             this.dropItem(player, itemId, amount);
         }
@@ -883,6 +885,8 @@ export class PlayerSystem extends System<GameEventMap> {
             },
             onFreecam: (target) => this.toggleFreecam(target),
             onCreative: (target) => this.creativeModeSystem?.toggleCreative(target),
+            onGodmode: (target) =>
+                this.creativeModeSystem?.toggleGodmode(target) ?? false,
         });
 
         if (command.handled) {

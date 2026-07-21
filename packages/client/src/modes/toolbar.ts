@@ -45,10 +45,23 @@ export type ModeStackDef<S> = {
     visibleWhen?: VisibleWhen<S>;
 };
 
+export type ModeDropdownDef<S> = {
+    kind: "dropdown";
+    id: string;
+    label: string;
+    options: {
+        id: string;
+        label: string;
+        onClick: () => void;
+    }[];
+    visibleWhen?: VisibleWhen<S>;
+};
+
 export type ModeToolbarDef<S, T extends string = string> =
     | ModeButtonDef<S>
     | ModeSegmentedDef<S, T>
-    | ModeStackDef<S>;
+    | ModeStackDef<S>
+    | ModeDropdownDef<S>;
 
 type LaidOut = {
     root: Container;
@@ -282,6 +295,101 @@ function itemVisible<S>(def: ModeToolbarDef<S>, state: S): boolean {
     return def.visibleWhen?.(state) ?? true;
 }
 
+function buildDropdown<S>(
+    def: ModeDropdownDef<S>,
+    onAfterClick: () => void,
+    closeOthers: () => void
+): LaidOut & { close: () => void } {
+    const root = new Container();
+    root.eventMode = "static";
+    root.sortableChildren = true;
+
+    let open = false;
+    const menu = new Container();
+    menu.zIndex = 10;
+    menu.visible = false;
+    menu.eventMode = "static";
+
+    const header = makeToggleButton(`${def.label} ▾`, () => {
+        open = !open;
+        if (open) closeOthers();
+        menu.visible = open;
+        header.setActive(open);
+        onAfterClick();
+    });
+    header.root.zIndex = 1;
+    root.addChild(header.root);
+    root.addChild(menu);
+
+    const optionLays: LaidOut[] = def.options.map((opt) => {
+        const laid = buildButton(
+            {
+                kind: "button",
+                id: opt.id,
+                label: opt.label,
+                onClick: () => {
+                    opt.onClick();
+                    open = false;
+                    menu.visible = false;
+                    header.setActive(false);
+                },
+            },
+            onAfterClick
+        );
+        menu.addChild(laid.root);
+        return laid;
+    });
+
+    const layoutMenu = () => {
+        const width = Math.max(
+            header.getWidth(),
+            ...optionLays.map((o) => o.width),
+            BTN_MIN_W
+        );
+        let y = header.height / 2 + STACK_GAP;
+        for (const opt of optionLays) {
+            opt.root.position.set(0, y + opt.height / 2);
+            y += opt.height + STACK_GAP;
+        }
+        menu.position.set(0, 0);
+        return width;
+    };
+
+    const laid: LaidOut & { close: () => void } = {
+        root,
+        width: header.getWidth(),
+        height: header.height,
+        refresh: () => {
+            header.setLabel(`${def.label} ▾`);
+            header.setActive(open);
+            for (const opt of optionLays) opt.refresh();
+            laid.width = layoutMenu();
+            // Include open menu in hit height for containsPoint via getBounds.
+            laid.height = open
+                ? header.height / 2 +
+                  optionLays.reduce(
+                      (sum, o) => sum + o.height + STACK_GAP,
+                      STACK_GAP
+                  )
+                : header.height;
+        },
+        setVisible: (visible) => {
+            root.visible = visible;
+            if (!visible) {
+                open = false;
+                menu.visible = false;
+            }
+        },
+        close: () => {
+            open = false;
+            menu.visible = false;
+            header.setActive(false);
+        },
+    };
+    layoutMenu();
+    return laid;
+}
+
 export type ModeToolbarHandle = {
     container: Container;
     refresh: () => void;
@@ -304,6 +412,11 @@ export function createModeToolbar<S, T extends string = string>(
         def: ModeToolbarDef<S, T>;
         laid: LaidOut;
         stackChildren?: { def: ModeButtonDef<S>; laid: LaidOut }[];
+        closeDropdown?: () => void;
+    };
+
+    const closeAllDropdowns = () => {
+        for (const entry of entries) entry.closeDropdown?.();
     };
 
     const entries: Entry[] = defs.map((def) => {
@@ -316,6 +429,15 @@ export function createModeToolbar<S, T extends string = string>(
             const laid = buildSegmented(def, () => refresh());
             container.addChild(laid.root);
             return { def, laid };
+        }
+        if (def.kind === "dropdown") {
+            const laid = buildDropdown(def, () => refresh(), () => {
+                for (const entry of entries) {
+                    if (entry.def !== def) entry.closeDropdown?.();
+                }
+            });
+            container.addChild(laid.root);
+            return { def, laid, closeDropdown: () => laid.close() };
         }
 
         const root = new Container();
@@ -338,6 +460,21 @@ export function createModeToolbar<S, T extends string = string>(
         };
         return { def, laid, stackChildren };
     });
+
+    // Close dropdowns when clicking elsewhere.
+    const onDocPointerDown = (ev: PointerEvent) => {
+        const bounds = container.getBounds();
+        if (
+            ev.clientX < bounds.x - 8 ||
+            ev.clientX > bounds.x + bounds.width + 8 ||
+            ev.clientY < bounds.y - 8 ||
+            ev.clientY > bounds.y + bounds.height + 8
+        ) {
+            closeAllDropdowns();
+            refresh();
+        }
+    };
+    window.addEventListener("pointerdown", onDocPointerDown);
 
     function refresh() {
         let x = 0;
@@ -418,6 +555,7 @@ export function createModeToolbar<S, T extends string = string>(
         },
         destroy() {
             window.removeEventListener("resize", onResize);
+            window.removeEventListener("pointerdown", onDocPointerDown);
             container.destroy({ children: true });
         },
     };

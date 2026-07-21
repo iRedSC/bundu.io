@@ -1,4 +1,5 @@
 import { ClientPacket } from "@bundu/shared/packet_definitions";
+import { KIT_IDS } from "@bundu/shared/kits";
 import {
     createModeToolbar,
     type ModeToolbarDef,
@@ -57,6 +58,43 @@ export function createCreativeToolbar(
                     enabled: state.instakill,
                 });
                 onRefresh();
+            },
+        },
+        {
+            kind: "button",
+            id: "search-all",
+            label: "Search All",
+            getActive: () => state.searchAll,
+            onClick: () => {
+                state.searchAll = !state.searchAll;
+                onRefresh();
+            },
+        },
+        {
+            kind: "dropdown",
+            id: "kits",
+            label: "Kits",
+            options: KIT_IDS.map((kitId) => ({
+                id: kitId,
+                label: kitId[0]!.toUpperCase() + kitId.slice(1),
+                onClick: () => {
+                    sendPacket(ClientPacket.CreativeGiveKit, { kitId });
+                },
+            })),
+        },
+        {
+            kind: "button",
+            id: "clear",
+            label: "Clear Inv",
+            onClick: () => {
+                if (
+                    !window.confirm(
+                        "Clear your entire inventory and cursor?"
+                    )
+                ) {
+                    return;
+                }
+                sendPacket(ClientPacket.CreativeClearInventory, {});
             },
         },
     ];

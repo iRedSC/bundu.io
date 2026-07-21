@@ -217,11 +217,15 @@ function validSlot(inv: Inventory, slot: number): boolean {
     return slot >= 0 && slot < inv.slots.length;
 }
 
-/** Drag move/swap between slots, or drop all when `to === SLOT_OUTSIDE`. */
+/**
+ * Drag move/swap between slots, or drop all when `to === SLOT_OUTSIDE`.
+ * `replace` (creative): occupied target is destroyed instead of swapped.
+ */
 export function moveSlot(
     inv: Inventory,
     from: number,
-    to: number
+    to: number,
+    replace = false
 ): boolean {
     if (!validSlot(inv, from) || from === to) return false;
     const fromStack = inv.slots[from];
@@ -233,8 +237,14 @@ export function moveSlot(
     }
     if (!validSlot(inv, to)) return false;
 
-    // Occupied → swap positions (same item included). Empty → move.
     const toStack = inv.slots[to] ?? null;
+    if (replace && toStack) {
+        inv.slots[from] = null;
+        inv.slots[to] = fromStack;
+        return true;
+    }
+
+    // Occupied → swap positions (same item included). Empty → move.
     inv.slots[from] = toStack;
     inv.slots[to] = fromStack;
     return true;
@@ -245,13 +255,14 @@ export function moveSlot(
  * - empty cursor + slot → pick whole stack
  * - cursor + empty slot → place all/half/one
  * - cursor + same item → merge all/half/one (up to max stack)
- * - cursor + different item → swap
+ * - cursor + different item → swap (or replace when `replace`)
  * - slot === SLOT_OUTSIDE → drop from cursor by mode
  */
 export function cursorSlot(
     inv: Inventory,
     slot: number,
-    mode: PlaceMode
+    mode: PlaceMode,
+    replace = false
 ): boolean {
     if (slot === SLOT_OUTSIDE) {
         if (!inv.cursor) return false;
@@ -288,6 +299,13 @@ export function cursorSlot(
         target.count += add;
         inv.cursor.count -= add;
         if (inv.cursor.count <= 0) inv.cursor = null;
+        return true;
+    }
+
+    if (replace) {
+        // Creative: destroy the slot's item; place the whole cursor stack.
+        inv.slots[slot] = inv.cursor;
+        inv.cursor = null;
         return true;
     }
 

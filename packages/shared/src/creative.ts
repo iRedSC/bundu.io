@@ -1,18 +1,20 @@
 /**
  * Creative palette categories — mutually exclusive, priority order:
- * buildings → resources → equipment → materials.
+ * buildings → resources → food → equipment → materials.
  *
  * - buildings: items that place structures
  * - resources: inventory items whose location matches a world resource id
- *   (ore/stone-style harvest drops)
- * - equipment: wear / hold / backpack (food typed items stay materials)
- * - materials: crafting ingredients, food, and everything else
+ *   (and future placeable resource items)
+ * - food: typed as food
+ * - equipment: wear / hold / backpack
+ * - materials: crafting ingredients and everything else
  */
 export type CreativeCategory =
     | "materials"
     | "equipment"
     | "resources"
-    | "buildings";
+    | "buildings"
+    | "food";
 
 export type CreativeItemMeta = {
     function: string | null;
@@ -42,7 +44,7 @@ export function creativeCategoryFor(
         ? meta.type.slice(meta.type.indexOf(":") + 1)
         : meta.type;
     if (typeName === "food") {
-        return "materials";
+        return "food";
     }
     if (meta.function && EQUIP_FUNCTIONS.has(meta.function)) {
         return "equipment";

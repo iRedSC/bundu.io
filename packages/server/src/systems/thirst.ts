@@ -8,7 +8,7 @@ import { gameplayConfig } from "../configs/gameplay.js";
 import { applyVitalsTickDamage } from "./vitals_damage.js";
 import { HitFlash } from "@bundu/shared/hit_flash";
 import { takeVitalsTicks } from "./vitals_tick.js";
-import { isCreativeGodmode } from "../creative/mode.js";
+import { isGodmode } from "../creative/mode.js";
 
 /** Applies thirst.hydration once every vitals.tick_period_ms. */
 export class ThirstSystem extends System<GameEventMap> {
@@ -19,7 +19,7 @@ export class ThirstSystem extends System<GameEventMap> {
     override update(_time: number, delta: number, player: GameObject): void {
         // Soft-disconnected bodies still drain — survival continues until reclaim or death.
         if (PlayerData.get(player)?.freecam) return;
-        if (isCreativeGodmode(player)) return;
+        if (isGodmode(player)) return;
 
         const attributes = player.get(Attributes);
         const stats = player.get(Stats);

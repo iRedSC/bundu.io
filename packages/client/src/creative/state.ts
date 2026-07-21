@@ -4,13 +4,16 @@ export type CreativeCategory =
     | "materials"
     | "equipment"
     | "resources"
-    | "buildings";
+    | "buildings"
+    | "food";
 
 export type CreativeState = {
     category: CreativeCategory;
     godmode: boolean;
     speed: CreativeSpeed;
     instakill: boolean;
+    /** When true, search matches items across every category. */
+    searchAll: boolean;
 };
 
 export function createCreativeState(): CreativeState {
@@ -19,5 +22,6 @@ export function createCreativeState(): CreativeState {
         godmode: false,
         speed: 1,
         instakill: false,
+        searchAll: false,
     };
 }

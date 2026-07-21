@@ -6,7 +6,14 @@ import {
     ClientPacket,
     ServerPacket,
 } from "@bundu/shared/packet_definitions.js";
-import { emitInventory, receiveItem } from "../network/inventory.js";
+import { isKitId, KITS } from "@bundu/shared/kits";
+import {
+    clearMissingEquipment,
+    emitEquipment,
+    emitInventory,
+    receiveItem,
+} from "../network/inventory.js";
+import { ItemConfigs } from "../configs/loaders/items.js";
 import { gameRegistries } from "../configs/registries.js";
 import { SERVER_DEBUG } from "../debug/index.js";
 import type { GameEventMap } from "../systems/event_map.js";
@@ -24,9 +31,14 @@ export function canUseCreative(player: GameObject): boolean {
     return (data.opLevel ?? 0) >= 4 || data.cheatsEnabled === true || SERVER_DEBUG;
 }
 
+/** Vitals frozen + damage ignored (`/godmode` or creative toolbar). */
+export function isGodmode(player: GameObject): boolean {
+    return PlayerData.get(player)?.godmode === true;
+}
+
+/** @deprecated Use {@link isGodmode}. */
 export function isCreativeGodmode(player: GameObject): boolean {
-    const data = PlayerData.get(player);
-    return data?.creative === true && data.creativeGodmode === true;
+    return isGodmode(player);
 }
 
 function normalizeSpeed(speed: number): CreativeSpeed {
@@ -36,16 +48,13 @@ function normalizeSpeed(speed: number): CreativeSpeed {
     return 1;
 }
 
-function emitCreativeState(
-    player: GameObject,
-    world: World
-): void {
+export function emitCreativeState(player: GameObject, world: World): void {
     const data = PlayerData.get(player);
-    if (!data) return;
+    if (!data?.creative) return;
     const { playerPacketManager } = world.context;
     playerPacketManager.set(player.id, ServerPacket.CreativeMode, {
-        enabled: data.creative === true,
-        godmode: data.creativeGodmode === true,
+        enabled: true,
+        godmode: data.godmode === true,
         speed: normalizeSpeed(data.creativeSpeed ?? 1),
         instakill: data.creativeInstakill === true,
     });
@@ -75,6 +84,22 @@ function applyCreativeAttributes(player: GameObject): void {
     attrs.replace(CREATIVE_ATTR, next);
 }
 
+function knownItem(itemId: number): boolean {
+    try {
+        gameRegistries().item.location(itemId as never);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function syncInv(player: GameObject, world: World): void {
+    const { playerPacketManager, worldPacketManager } = world.context;
+    clearMissingEquipment(player, playerPacketManager);
+    emitInventory(player, playerPacketManager);
+    emitEquipment(player, worldPacketManager);
+}
+
 /**
  * Creative mode — item give + cheat toggles.
  * Kept parallel to AdminEditorSystem (freecam map tools).
@@ -90,20 +115,42 @@ export class CreativeModeSystem extends System<GameEventMap> {
 
         if (data.creative) {
             data.creative = false;
-            data.creativeGodmode = false;
             data.creativeSpeed = 1;
             data.creativeInstakill = false;
             applyCreativeAttributes(player);
-            emitCreativeState(player, this.world);
+            const { playerPacketManager } = this.world.context;
+            playerPacketManager.set(player.id, ServerPacket.CreativeMode, {
+                enabled: false,
+                godmode: data.godmode === true,
+                speed: 1,
+                instakill: false,
+            });
             return;
         }
 
         data.creative = true;
-        data.creativeGodmode = data.creativeGodmode ?? false;
         data.creativeSpeed = normalizeSpeed(data.creativeSpeed ?? 1);
         data.creativeInstakill = data.creativeInstakill ?? false;
         applyCreativeAttributes(player);
         emitCreativeState(player, this.world);
+    }
+
+    /** Toggle vitals-freeze godmode (also used by `/godmode`). */
+    setGodmode(player: GameObject, enabled: boolean): void {
+        const data = PlayerData.get(player);
+        if (!data) return;
+        data.godmode = enabled;
+        // Drop legacy attack-speed/reach modifiers from the old /godmode.
+        Attributes.get(player)?.clear("godmode");
+        if (data.creative) emitCreativeState(player, this.world);
+    }
+
+    toggleGodmode(player: GameObject): boolean {
+        const data = PlayerData.get(player);
+        if (!data) return false;
+        const next = !data.godmode;
+        this.setGodmode(player, next);
+        return next;
     }
 
     creativeGive = (
@@ -114,15 +161,85 @@ export class CreativeModeSystem extends System<GameEventMap> {
         if (!player) return;
         const data = PlayerData.get(player);
         if (!data?.creative || !canUseCreative(player)) return;
-        if (!Inventory.get(player)) return;
-        try {
-            gameRegistries().item.location(itemId as never);
-        } catch {
+        if (!Inventory.get(player) || !knownItem(itemId)) return;
+
+        receiveItem(player, itemId, count);
+        syncInv(player, this.world);
+    };
+
+    creativeGiveToCursor = (
+        playerId: number,
+        { itemId, count }: ClientPacket.CreativeGiveToCursor
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const data = PlayerData.get(player);
+        if (!data?.creative || !canUseCreative(player)) return;
+        const inv = Inventory.get(player);
+        if (!inv || !knownItem(itemId)) return;
+
+        if (ItemConfigs.get(itemId).function === "backpack") {
+            receiveItem(player, itemId, 1);
+            syncInv(player, this.world);
             return;
         }
 
-        receiveItem(player, itemId, count);
-        emitInventory(player, this.world.context.playerPacketManager);
+        inv.cursor = { id: itemId, count };
+        syncInv(player, this.world);
+    };
+
+    creativeVoid = (playerId: number, { slot }: ClientPacket.CreativeVoid) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const data = PlayerData.get(player);
+        if (!data?.creative || !canUseCreative(player)) return;
+        const inv = Inventory.get(player);
+        if (!inv) return;
+        if (slot === -1) {
+            if (!inv.cursor) return;
+            inv.cursor = null;
+        } else {
+            if (slot < 0 || slot >= inv.slots.length) return;
+            if (!inv.slots[slot]) return;
+            inv.slots[slot] = null;
+        }
+        syncInv(player, this.world);
+    };
+
+    creativeClearInventory = (
+        playerId: number,
+        _packet: ClientPacket.CreativeClearInventory
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const data = PlayerData.get(player);
+        if (!data?.creative || !canUseCreative(player)) return;
+        const inv = Inventory.get(player);
+        if (!inv) return;
+        for (let i = 0; i < inv.slots.length; i++) inv.slots[i] = null;
+        inv.cursor = null;
+        syncInv(player, this.world);
+    };
+
+    creativeGiveKit = (
+        playerId: number,
+        { kitId }: ClientPacket.CreativeGiveKit
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const data = PlayerData.get(player);
+        if (!data?.creative || !canUseCreative(player)) return;
+        if (!Inventory.get(player) || !isKitId(kitId)) return;
+        const kit = KITS[kitId]!;
+        for (const [itemLoc, count] of Object.entries(kit)) {
+            try {
+                const id = gameRegistries().item.resolve(itemLoc);
+                receiveItem(player, id, count);
+            } catch {
+                // skip unknown kit entries
+            }
+        }
+        syncInv(player, this.world);
     };
 
     creativeSetGodmode = (
@@ -133,8 +250,7 @@ export class CreativeModeSystem extends System<GameEventMap> {
         if (!player) return;
         const data = PlayerData.get(player);
         if (!data?.creative || !canUseCreative(player)) return;
-        data.creativeGodmode = enabled;
-        emitCreativeState(player, this.world);
+        this.setGodmode(player, enabled);
     };
 
     creativeSetSpeed = (
@@ -163,12 +279,10 @@ export class CreativeModeSystem extends System<GameEventMap> {
         emitCreativeState(player, this.world);
     };
 
-    /** Clear creative cheats when the player entity leaves (death / disconnect). */
     override exit(player: GameObject): void {
         const data = PlayerData.get(player);
         if (!data?.creative) return;
         data.creative = false;
-        data.creativeGodmode = false;
         data.creativeSpeed = 1;
         data.creativeInstakill = false;
         Attributes.get(player)?.clear(CREATIVE_ATTR);

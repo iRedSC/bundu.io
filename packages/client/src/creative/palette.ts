@@ -33,6 +33,7 @@ const TAB_LABELS: { id: CreativeCategory; label: string }[] = [
     { id: "equipment", label: "Equipment" },
     { id: "resources", label: "Resources" },
     { id: "buildings", label: "Buildings" },
+    { id: "food", label: "Food" },
 ];
 
 const SLOT_GAP = 8;
@@ -90,7 +91,7 @@ function fuzzyFilter(
 }
 
 function listCategoryItems(
-    category: CreativeCategory
+    category: CreativeCategory | "all"
 ): { id: number; location: string }[] {
     const registries = clientRegistries();
     const resourceLocations = new Set(
@@ -99,9 +100,8 @@ function listCategoryItems(
     const out: { id: number; location: string }[] = [];
     for (const [location, id] of registries.item.entries()) {
         const meta = clientItemMeta(id);
-        if (creativeCategoryFor(location, meta, resourceLocations) !== category) {
-            continue;
-        }
+        const cat = creativeCategoryFor(location, meta, resourceLocations);
+        if (category !== "all" && cat !== category) continue;
         out.push({ id, location });
     }
     out.sort((a, b) => a.location.localeCompare(b.location));
@@ -241,6 +241,7 @@ export function createCreativePalette(
         page = 0;
         rebuildGrid();
     });
+    searchInput.placeholder = "Search…";
 
     let searchQuery = "";
     let page = 0;
@@ -287,6 +288,14 @@ export function createCreativePalette(
         });
     };
 
+    const giveToCursor = (itemId: number, shift: boolean) => {
+        if (itemId < 0) return;
+        sendPacket(ClientPacket.CreativeGiveToCursor, {
+            itemId,
+            count: shift ? 10 : 1,
+        });
+    };
+
     const layoutChrome = () => {
         let x = 0;
         for (const { id, tab } of tabs) {
@@ -322,7 +331,14 @@ export function createCreativePalette(
         slots = [];
         grid.removeChildren();
 
-        filtered = fuzzyFilter(listCategoryItems(state.category), searchQuery);
+        const scope =
+            state.searchAll && searchQuery.trim()
+                ? "all"
+                : state.category;
+        searchInput.placeholder = state.searchAll
+            ? "Search all…"
+            : "Search…";
+        filtered = fuzzyFilter(listCategoryItems(scope), searchQuery);
         const perPage = PANEL_COLS * 6;
         pageCount = Math.max(1, Math.ceil(filtered.length / perPage));
         page = Math.min(page, pageCount - 1);
@@ -333,6 +349,31 @@ export function createCreativePalette(
             slot.item = entry.id;
             slot.button.cursor = "pointer";
             slot.leftclick = (_id, shift) => give(entry.id, shift);
+            slot.rightclick = (_id, shift) => giveToCursor(entry.id, shift);
+            // Keep inventory window handlers from treating palette clicks as
+            // outside drops / voids.
+            slot.button.onpointerdown = (ev: {
+                stopPropagation(): void;
+                button?: number;
+            }) => {
+                ev.stopPropagation();
+                if (ev.button === 2) slot.rightDown = true;
+                else slot.down = true;
+            };
+            slot.button.onpointerup = (ev: {
+                stopPropagation(): void;
+                button?: number;
+                shiftKey?: boolean;
+            }) => {
+                ev.stopPropagation();
+                if (ev.button === 2) {
+                    giveToCursor(entry.id, ev.shiftKey ?? false);
+                    slot.rightDown = false;
+                } else if (ev.button === 0) {
+                    give(entry.id, ev.shiftKey ?? false);
+                    slot.down = false;
+                }
+            };
             slot.onHover = (hovering, ev) => {
                 if (!hovering || !ev) {
                     hideRegistryTooltip();

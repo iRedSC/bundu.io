@@ -5,6 +5,7 @@ export {
     type ModeButtonDef,
     type ModeSegmentedDef,
     type ModeStackDef,
+    type ModeDropdownDef,
     type VisibleWhen,
 } from "./toolbar";
 export type { ModeUi } from "./types";
