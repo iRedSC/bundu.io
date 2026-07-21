@@ -558,7 +558,8 @@ async function main() {
         hideTooltip();
         freecamActive = enabled;
         world.setFreecamMode(enabled);
-        gui.container.visible = !enabled;
+        // Keep hotbar + vitals as a grayed ghost; hide craft / leaderboard.
+        gui.setFreecamDimmed(enabled);
         editor.setActive(enabled);
         freecamControl.setFreecamActive(enabled);
         syncCreativeChrome();

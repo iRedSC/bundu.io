@@ -146,6 +146,8 @@ export class Inventory {
     creativeReplace?: () => boolean;
     /** When true, pointer/drag/cursor handlers skip local mutations. */
     isLocked?: () => boolean;
+    /** Freecam: ignore pointer hit-tests so world clicks pass through the ghost HUD. */
+    private pointerMuted = false;
     /**
      * Local world drop — origin in global/stage space and current button scale.
      * The ground item animates from here; no UI fly.
@@ -190,6 +192,7 @@ export class Inventory {
                 const button = new InventoryButton();
                 button.sendEvents = false;
                 this.wireButton(button, this.buttons.length);
+                if (this.pointerMuted) button.button.eventMode = "none";
                 this.buttons.push(button);
                 this.container.addChild(button.button);
                 this.slots.push(null);
@@ -222,11 +225,26 @@ export class Inventory {
 
     /** True while over a slot, mid-drag, or holding a stack on the cursor. */
     get isInteracting(): boolean {
+        if (this.pointerMuted) return false;
         return (
             this.hoverSlot !== null ||
             this.dragFrom !== null ||
             this.cursor !== null
         );
+    }
+
+    /** Mute slot hit-testing (freecam ghost HUD) without hiding the bar. */
+    setPointerMuted(muted: boolean) {
+        this.pointerMuted = muted;
+        for (const button of this.buttons) {
+            button.button.eventMode = muted ? "none" : "static";
+            button.hovering = false;
+            button.down = false;
+            button.rightDown = false;
+        }
+        this.hoverSlot = null;
+        hideRegistryTooltip();
+        if (muted) this.clearDrag();
     }
 
     private setupOverlay(button: InventoryButton) {

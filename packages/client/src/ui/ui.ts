@@ -2,8 +2,9 @@
  * Arrange UI elements.
  */
 
-import { Container } from "pixi.js";
+import { ColorMatrixFilter, Container } from "pixi.js";
 import { percentOf } from "@bundu/shared/math";
+import { lerp } from "@bundu/shared/transforms";
 import { Grid } from "./grid";
 import { CraftingMenu, RecipeManager } from "./crafting_menu";
 import { Inventory } from "./inventory";
@@ -21,6 +22,12 @@ const HOTBAR_GAP = 8;
 /** Raise bottom-aligned bars a touch above the hotbar baseline. */
 const HOTBAR_LIFT = 12;
 
+/** Hotbar + vitals while freecam is active (still readable). */
+const FREECAM_HUD_ALPHA = 0.42;
+/** Further fade when the pointer is over them so the world peeks through. */
+const FREECAM_HUD_HOVER_ALPHA = 0.12;
+const FREECAM_HUD_ALPHA_LERP = 0.18;
+
 export type UI = {
     container: Container;
     inventory: Inventory;
@@ -31,6 +38,8 @@ export type UI = {
     heat: StatBar;
     thirst: StatBar;
     leaderboard: Leaderboard;
+    /** Gray + fade hotbar/vitals instead of hiding the whole HUD. */
+    setFreecamDimmed: (enabled: boolean) => void;
     tick: (now?: number) => void;
     destroy: () => void;
 };
@@ -94,7 +103,51 @@ export function createUI() {
     ui.addChild(craftingMenu.container);
     ui.addChild(leaderboard.container);
 
+    let freecamDimmed = false;
+    let pointerX = 0;
+    let pointerY = 0;
+    let savedLeaderboardVisible = true;
+    const invGray = new ColorMatrixFilter();
+    invGray.greyscale(1, false);
+    const statGray = new ColorMatrixFilter();
+    statGray.greyscale(1, false);
+
+    const dimRoots = [statContainer, inventory.container];
+
+    const onPointerMove = (ev: PointerEvent) => {
+        pointerX = ev.clientX;
+        pointerY = ev.clientY;
+    };
+
+    function pointerOverDimmedHud(): boolean {
+        for (const root of dimRoots) {
+            if (root.getBounds().containsPoint(pointerX, pointerY)) return true;
+        }
+        return false;
+    }
+
+    function setFreecamDimmed(enabled: boolean) {
+        freecamDimmed = enabled;
+        if (enabled) {
+            savedLeaderboardVisible = leaderboard.container.visible;
+            leaderboard.container.visible = false;
+            craftingMenu.container.visible = false;
+            inventory.container.filters = [invGray];
+            statContainer.filters = [statGray];
+            inventory.setPointerMuted(true);
+        } else {
+            leaderboard.container.visible = savedLeaderboardVisible;
+            craftingMenu.container.visible = true;
+            inventory.container.filters = null;
+            statContainer.filters = null;
+            inventory.container.alpha = 1;
+            statContainer.alpha = 1;
+            inventory.setPointerMuted(false);
+        }
+    }
+
     window.addEventListener("resize", resize);
+    window.addEventListener("pointermove", onPointerMove);
     resize();
 
     return {
@@ -107,9 +160,18 @@ export function createUI() {
         heat,
         thirst,
         leaderboard,
+        setFreecamDimmed,
         tick(now?: number) {
             // Inventory recenters when slots arrive — keep vitals glued to it.
             layoutVitals();
+            if (freecamDimmed) {
+                const target = pointerOverDimmedHud()
+                    ? FREECAM_HUD_HOVER_ALPHA
+                    : FREECAM_HUD_ALPHA;
+                for (const root of dimRoots) {
+                    root.alpha = lerp(root.alpha, target, FREECAM_HUD_ALPHA_LERP);
+                }
+            }
             health.tick();
             hunger.tick();
             thirst.tick();
@@ -119,6 +181,7 @@ export function createUI() {
         },
         destroy() {
             window.removeEventListener("resize", resize);
+            window.removeEventListener("pointermove", onPointerMove);
             inventory.destroy();
             for (const button of craftingMenu.buttons) button.destroy();
             craftingMenu.buttons.length = 0;
