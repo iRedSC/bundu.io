@@ -119,6 +119,9 @@ function generateNamespace(
     type Planned = { filename: string; content: string };
     const planned: Planned[] = [];
     const planWrite = (filename: string, content: string) => {
+        if (planned.some((entry) => entry.filename === filename)) {
+            throw new Error(`Multiple definitions generate ${filename}`);
+        }
         planned.push({ filename, content: ensureSame(content) });
     };
 
@@ -307,13 +310,18 @@ function generateNamespace(
         return { wrote, removed, unchanged: !dirty };
     }
 
+    const previous = new Map(
+        planned.map((entry) => [
+            entry.filename,
+            fs.existsSync(entry.filename) ? readText(entry.filename) : null,
+        ])
+    );
     removed.push(...clearManagedYaml(roots, namespace));
     for (const entry of planned) {
-        const prev = fs.existsSync(entry.filename)
-            ? readText(entry.filename)
-            : null;
         writeText(entry.filename, entry.content);
-        if (prev !== entry.content) wrote.push(entry.filename);
+        if (previous.get(entry.filename) !== entry.content) {
+            wrote.push(entry.filename);
+        }
     }
 
     return {

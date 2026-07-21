@@ -100,17 +100,24 @@ export type PackGenDirective = {
 
 export function parseDirectiveLine(line: string): PackGenDirective | null {
     const trimmed = line.trim();
-    if (!trimmed.startsWith(DIRECTIVE_PREFIX.trim()) && !trimmed.startsWith("# @pack-gen")) {
+    if (!trimmed.startsWith("# @pack-gen")) {
         return null;
     }
-    const body = trimmed.replace(/^#\s*@pack-gen\s+/, "");
+    const match = trimmed.match(/^#\s*@pack-gen(?:\s+(.*))?$/);
+    if (!match) throw new Error(`Malformed pack-gen directive: ${trimmed}`);
+    const body = match[1]?.trim() ?? "";
     const directive: PackGenDirective = {};
     for (const part of body.split(/\s+/).filter(Boolean)) {
         const eq = part.indexOf("=");
-        if (eq === -1) continue;
+        if (eq <= 0 || eq === part.length - 1) {
+            throw new Error(`Malformed pack-gen directive part: ${part}`);
+        }
         const key = part.slice(0, eq);
         const value = part.slice(eq + 1);
-        if (key === "model") directive.model = value;
+        if (key !== "model") {
+            throw new Error(`Unknown pack-gen directive key: ${key}`);
+        }
+        directive.model = value;
     }
     return directive;
 }

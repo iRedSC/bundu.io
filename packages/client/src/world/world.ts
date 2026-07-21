@@ -12,6 +12,7 @@ import {
     type ServerPacket,
 } from "@bundu/shared/packet_definitions";
 import { Player } from "./objects/player";
+import { modelIdForLocation } from "@bundu/shared/models/ids";
 import { Sky } from "./sky";
 import { SkyUndoLayer } from "./sky_undo_layer";
 import {
@@ -423,7 +424,12 @@ export class World {
         for (const object of [...this.objects.all()]) {
             if (!(object instanceof Structure)) continue;
             if (object.placeKind !== AdminPlaceKind.Resource) continue;
-            if (object.type !== "player_dead") continue;
+            if (
+                object.type !==
+                modelIdForLocation("resource", "bundu:player_dead")
+            ) {
+                continue;
+            }
             const dx = object.container.x - lx;
             const dy = object.container.y - ly;
             if (dx * dx + dy * dy > maxDistSq) continue;
