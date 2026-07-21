@@ -43,9 +43,13 @@ const TAB_GAP = 4;
 const EDGE_PAD = 10;
 const SLOT_STRIDE = ITEM_BUTTON_SIZE + SLOT_GAP;
 const PANEL_COLS = 4;
+/** Fixed grid footprint so the pager/search row does not jump on short pages. */
+const PANEL_ROWS = 6;
 const PAGER_HEIGHT = 28;
 const SECTION_GAP = 12;
 const GRID_WIDTH = PANEL_COLS * SLOT_STRIDE - SLOT_GAP;
+const GRID_HEIGHT = PANEL_ROWS * SLOT_STRIDE - SLOT_GAP;
+const PAGE_SIZE = PANEL_COLS * PANEL_ROWS;
 const DRAG_THRESHOLD = 8;
 
 function tagLabel(tag: TagLocation): string {
@@ -440,9 +444,7 @@ export function createCreativePalette(
         const top = EDGE_PAD + headerHeight() + SECTION_GAP;
         grid.position.set(EDGE_PAD + ITEM_BUTTON_SIZE / 2, top + ITEM_BUTTON_SIZE / 2);
 
-        const rows = Math.max(1, Math.ceil(slots.length / PANEL_COLS));
-        const gridH = rows * SLOT_STRIDE - SLOT_GAP;
-        const pagerY = top + gridH + SECTION_GAP + PAGER_HEIGHT / 2;
+        const pagerY = top + GRID_HEIGHT + SECTION_GAP + PAGER_HEIGHT / 2;
         pagerRoot.position.set(EDGE_PAD, pagerY);
         prevBtn.root.position.set(prevBtn.width / 2, 0);
         pageLabel.position.set(prevBtn.width + 6 + pageLabel.width / 2, 0);
@@ -477,10 +479,9 @@ export function createCreativePalette(
             listCategoryItems(scope, state.tagFilter),
             searchQuery
         );
-        const perPage = PANEL_COLS * 6;
-        pageCount = Math.max(1, Math.ceil(filtered.length / perPage));
+        pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
         page = Math.min(page, pageCount - 1);
-        const slice = filtered.slice(page * perPage, (page + 1) * perPage);
+        const slice = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
         slice.forEach((entry, i) => {
             const slot = new ItemButton();
@@ -627,9 +628,7 @@ export function createCreativePalette(
                 EDGE_PAD +
                 headerHeight() +
                 SECTION_GAP +
-                Math.max(1, Math.ceil(slots.length / PANEL_COLS) || 1) *
-                    SLOT_STRIDE -
-                SLOT_GAP +
+                GRID_HEIGHT +
                 SECTION_GAP;
             const searchBox =
                 screenX >= EDGE_PAD &&
