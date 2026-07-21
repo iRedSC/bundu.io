@@ -58,6 +58,20 @@ export function clientDecoration(decorationTypeId: number) {
     return decoration;
 }
 
+export function clientItemMeta(itemId: number): {
+    function: string | null;
+    type: string | null;
+    places: number | null;
+} {
+    return (
+        metadata?.items[itemId] ?? {
+            function: null,
+            type: null,
+            places: null,
+        }
+    );
+}
+
 /** Model id for a gameplay registry location (`item:bundu:wood_sword`). */
 export function clientModelId(kind: ModelKind, location: string): string {
     return modelIdForLocation(kind, location);

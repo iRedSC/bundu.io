@@ -54,6 +54,19 @@ export type ClientRegistryProjection = RegistrySetProjection & {
             ground: readonly number[];
         }
     >;
+    /**
+     * Item gameplay fields the client needs for creative palette grouping
+     * (and similar inventory chrome). Omitted keys use nullish defaults.
+     */
+    items: Record<
+        number,
+        {
+            function: string | null;
+            type: string | null;
+            /** Structure id when this item places a building; else null. */
+            places: number | null;
+        }
+    >;
     /** `model` is a client ground-visual id (not an entity ModelDef). */
     groundTypes: Record<number, { model: string }>;
     /**

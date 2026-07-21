@@ -16,6 +16,7 @@ import { ChatController } from "./ui/chat";
 import { createTooltip, hideTooltip } from "./ui/tooltip";
 import { createFreecamControl } from "./ui/freecam_control";
 import { createAdminEditor } from "./admin/editor";
+import { createCreativeControl, createCreativeEditor } from "./creative";
 import { initAssets } from "./assets/load";
 import {
     getResourcePackFingerprint,
@@ -457,6 +458,10 @@ async function main() {
     app.stage.addChild(editor.container);
     deathUiLayers.push(editor.container);
 
+    const creative = createCreativeEditor(session.sendPacket);
+    app.stage.addChild(creative.container);
+    deathUiLayers.push(creative.container);
+
     const clampWorld = (value: number) =>
         Math.min(Math.max(value, 0), WORLD_BOUNDS);
 
@@ -484,31 +489,63 @@ async function main() {
             session.sendPacket(ClientPacket.ExitFreecamAt, { x, y });
         },
         isBlockedDrop: (screenX, screenY) =>
-            editor.containsPoint(screenX, screenY),
+            editor.containsPoint(screenX, screenY) ||
+            creative.containsPoint(screenX, screenY),
     });
+
+    const creativeControl = createCreativeControl({
+        onToggle: () => {
+            session.sendPacket(ClientPacket.ChatMessage, {
+                message: "/creative",
+            });
+        },
+    });
+
     editor.setExternalUiHit((screenX, screenY) =>
         freecamControl.containsPoint(screenX, screenY) ||
-        freecamControl.isDragging()
+        freecamControl.isDragging() ||
+        creativeControl.containsPoint(screenX, screenY)
     );
     app.stage.addChild(freecamControl.container);
+    app.stage.addChild(creativeControl.container);
 
-    const refreshFreecamAvailability = () => {
+    let freecamActive = false;
+    let creativeWanted = false;
+
+    const refreshModeAvailability = () => {
         freecamControl.setAvailable(chat.hasServerCommand("freecam"));
         freecamControl.setInGame(session.isInGame());
+        creativeControl.setAvailable(chat.hasServerCommand("creative"));
+        creativeControl.setInGame(session.isInGame());
     };
-    chat.onRegistryChange = refreshFreecamAvailability;
+    chat.onRegistryChange = refreshModeAvailability;
+
+    const syncCreativeChrome = () => {
+        // Freecam owns the screen — park creative chrome until exit.
+        const show = creativeWanted && !freecamActive;
+        creative.setActive(show);
+        creativeControl.setCreativeActive(creativeWanted);
+        refreshModeAvailability();
+    };
 
     const setFreecamUi = (enabled: boolean) => {
         hideTooltip();
+        freecamActive = enabled;
         world.setFreecamMode(enabled);
         gui.container.visible = !enabled;
         editor.setActive(enabled);
         freecamControl.setFreecamActive(enabled);
-        refreshFreecamAvailability();
+        syncCreativeChrome();
     };
 
     receiver.on(ServerPacket.FreecamMode, ({ enabled }) => {
         setFreecamUi(enabled);
+    });
+
+    receiver.on(ServerPacket.CreativeMode, (packet) => {
+        creativeWanted = packet.enabled;
+        creative.applyServerState(packet);
+        syncCreativeChrome();
     });
 
     world.onViewBounds = (bounds) => {
@@ -567,6 +604,12 @@ async function main() {
     gui.inventory.onSelect = (slot) => {
         session.sendPacket(ClientPacket.SelectItem, { slot });
     };
+    gui.inventory.creativeReplace = () => creative.isActive();
+    gui.inventory.isVoidTarget = (screenX, screenY) =>
+        creative.isSidebarHit(screenX, screenY);
+    gui.inventory.onVoid = (slot) => {
+        session.sendPacket(ClientPacket.CreativeVoid, { slot });
+    };
     gui.inventory.onMove = (from, to) => {
         session.sendPacket(ClientPacket.MoveSlot, { from, to });
     };
@@ -614,6 +657,7 @@ async function main() {
         AnimationManagers.UI.update(now);
         gui.tick(now);
         editor.tick(now);
+        creative.tick?.(now);
         const local = world.objects.get(world.user ?? -1);
         gui.craftingMenu.craftingRecipeId =
             local instanceof Player ? local.craftingRecipeId : null;

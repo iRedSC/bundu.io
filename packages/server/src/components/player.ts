@@ -48,6 +48,20 @@ export type PlayerData = {
     cheatsEnabled?: boolean;
     /** Soft-despawned spectator/editor camera; sim paused, hidden from peers. */
     freecam?: boolean;
+    /**
+     * Creative mode: item give palette + cheat toolbar while still playing.
+     * Independent of freecam (chrome hides under freecam UI).
+     */
+    creative?: boolean;
+    /**
+     * Godmode: vitals frozen and damage ignored.
+     * Toggled by `/godmode` or the creative toolbar.
+     */
+    godmode?: boolean;
+    /** Creative movement speed multiplier (0.5 | 1 | 2 | 4). */
+    creativeSpeed?: number;
+    /** Creative instakill: large attack.damage add. */
+    creativeInstakill?: boolean;
     /** Last client screenspace AOI while freecam is active. */
     freecamView?: {
         minX: number;

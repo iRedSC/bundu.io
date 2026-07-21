@@ -6,6 +6,7 @@ import {
     type CommandRegistryProjection,
 } from "@bundu/shared/command";
 import { ServerPacket } from "@bundu/shared/packet_definitions";
+import { KITS } from "@bundu/shared/kits";
 import {
     AttributeList,
     Attributes,
@@ -33,36 +34,14 @@ function resolveItemId(value?: string): number | undefined {
     }
 }
 
-const kits: Record<string, Record<string, number>> = {
-    copper: {
-        "bundu:copper_pickaxe": 1,
-        "bundu:copper_sword": 1,
-        "bundu:copper_helmet": 1,
-    },
-    silver: {
-        "bundu:silver_pickaxe": 1,
-        "bundu:silver_sword": 1,
-        "bundu:silver_helmet": 1,
-    },
-    cobalt: {
-        "bundu:cobalt_pickaxe": 1,
-        "bundu:cobalt_sword": 1,
-        "bundu:cobalt_helmet": 1,
-    },
-    iridium: {
-        "bundu:iridium_sword": 1,
-        "bundu:iridium_wall": 10,
-        "bundu:iridium_door": 5,
-        "bundu:iridium_spike": 5,
-    },
-};
-
 type ExecHelpers = {
     world: World;
     onKill: (target: GameObject) => void;
     now?: number;
     onSetTime?: (period: string) => boolean;
     onFreecam?: (player: GameObject) => void;
+    onCreative?: (player: GameObject) => void;
+    onGodmode?: (player: GameObject) => boolean;
 };
 
 type ServerCommand = CommandProjection & {
@@ -189,20 +168,28 @@ const COMMANDS: ServerCommand[] = [
         opLevel: 4,
         args: [arg("targets", "selector", { optional: true })],
         run(player, args, helpers) {
+            if (!helpers.onGodmode) {
+                throw new Error("Godmode unavailable");
+            }
             const targets = targetsOf(player, args, helpers, "@s");
-            const applied: GameObject[] = [];
+            const enabled: GameObject[] = [];
+            const disabled: GameObject[] = [];
             for (const target of targets) {
-                const attrs = Attributes.get(target);
-                if (!attrs) continue;
-                attrs
-                    .set("attack.speed", "godmode", "add", 100)
-                    .set("attack.reach", "godmode", "add", 500);
-                applied.push(target);
+                if (!PlayerData.get(target)) continue;
+                const on = helpers.onGodmode(target);
+                (on ? enabled : disabled).push(target);
             }
-            if (applied.length === 0) {
-                throw new Error("No target with attributes");
+            if (enabled.length === 0 && disabled.length === 0) {
+                throw new Error("No target with player data");
             }
-            return `Godmode enabled on ${summarizeTargets(applied)}`;
+            const parts: string[] = [];
+            if (enabled.length) {
+                parts.push(`enabled on ${summarizeTargets(enabled)}`);
+            }
+            if (disabled.length) {
+                parts.push(`disabled on ${summarizeTargets(disabled)}`);
+            }
+            return `Godmode ${parts.join("; ")}`;
         },
     },
     {
@@ -239,12 +226,12 @@ const COMMANDS: ServerCommand[] = [
         opLevel: 4,
         args: [
             arg("targets", "selector"),
-            arg("kit", "enum", { values: Object.keys(kits) }),
+            arg("kit", "enum", { values: Object.keys(KITS) }),
         ],
         run(player, args, helpers) {
             const targets = targetsOf(player, args, helpers);
             const kitId = String(args.kit);
-            const kit = kits[kitId];
+            const kit = KITS[kitId];
             if (!kit) throw new Error(`Unknown kit: ${kitId}`);
             const applied: GameObject[] = [];
             for (const target of targets) {
@@ -282,6 +269,16 @@ const COMMANDS: ServerCommand[] = [
             helpers.onFreecam?.(player);
             const enabled = PlayerData.get(player)?.freecam === true;
             return enabled ? "Freecam enabled" : "Freecam disabled";
+        },
+    },
+    {
+        name: "creative",
+        opLevel: 4,
+        args: [],
+        run(player, _args, helpers) {
+            helpers.onCreative?.(player);
+            const enabled = PlayerData.get(player)?.creative === true;
+            return enabled ? "Creative mode enabled" : "Creative mode disabled";
         },
     },
 ];

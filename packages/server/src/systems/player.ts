@@ -71,6 +71,7 @@ import { gameplayConfig } from "../configs/gameplay.js";
 import { syncFlags } from "../network/flags.js";
 import type { RenderDistanceSystem } from "./render_distance.js";
 import type { FreecamGhostSystem } from "./freecam_ghost.js";
+import type { CreativeModeSystem } from "../creative/mode.js";
 import { getAnonProxyId } from "./anon_occlusion.js";
 import { gameRegistries } from "../configs/registries.js";
 
@@ -80,6 +81,7 @@ import { gameRegistries } from "../configs/registries.js";
 export class PlayerSystem extends System<GameEventMap> {
     private renderDistanceSystem?: RenderDistanceSystem;
     private freecamGhostSystem?: FreecamGhostSystem;
+    private creativeModeSystem?: CreativeModeSystem;
 
     constructor(world: World) {
         super(world, [PlayerData, Physics]);
@@ -92,6 +94,10 @@ export class PlayerSystem extends System<GameEventMap> {
 
     setFreecamGhostSystem(system: FreecamGhostSystem): void {
         this.freecamGhostSystem = system;
+    }
+
+    setCreativeModeSystem(system: CreativeModeSystem): void {
+        this.creativeModeSystem = system;
     }
 
     override update(time: number, _delta: number, player: GameObject): void {
@@ -663,11 +669,14 @@ export class PlayerSystem extends System<GameEventMap> {
         this.clearEating(player);
         const inv = Inventory.get(player);
         if (!inv) return;
+        // Match client: replace rules only while creative chrome is up (not freecam).
+        const creativeReplace =
+            data.creative === true && data.freecam !== true;
         const dropped =
             to === -1 && inv.slots[from]
                 ? { ...inv.slots[from] }
                 : undefined;
-        if (!applyMoveSlot(inv, from, to)) return;
+        if (!applyMoveSlot(inv, from, to, creativeReplace)) return;
         if (dropped) this.dropItem(player, dropped.id, dropped.count);
 
         clearMissingEquipment(player, this.world.context.playerPacketManager);
@@ -690,6 +699,9 @@ export class PlayerSystem extends System<GameEventMap> {
         const inv = Inventory.get(player);
         if (!inv) return;
 
+        // Match client: replace rules only while creative chrome is up (not freecam).
+        const creativeReplace =
+            data.creative === true && data.freecam !== true;
         const placeMode =
             mode === PlaceMode.Half || mode === PlaceMode.One
                 ? mode
@@ -706,7 +718,7 @@ export class PlayerSystem extends System<GameEventMap> {
                   )
                 : 0;
         const itemId = slot === -1 ? inv.cursor?.id : undefined;
-        if (!applyCursorSlot(inv, slot, placeMode)) return;
+        if (!applyCursorSlot(inv, slot, placeMode, creativeReplace)) return;
         if (itemId !== undefined && amount > 0) {
             this.dropItem(player, itemId, amount);
         }
@@ -876,6 +888,9 @@ export class PlayerSystem extends System<GameEventMap> {
                 );
             },
             onFreecam: (target) => this.toggleFreecam(target),
+            onCreative: (target) => this.creativeModeSystem?.toggleCreative(target),
+            onGodmode: (target) =>
+                this.creativeModeSystem?.toggleGodmode(target) ?? false,
         });
 
         if (command.handled) {

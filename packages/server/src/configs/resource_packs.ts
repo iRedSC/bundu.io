@@ -31,6 +31,7 @@ import {
     setVariantMap,
 } from "@bundu/shared/variant_map";
 import { BuildingConfigs } from "./loaders/buildings";
+import { ItemConfigs } from "./loaders/items";
 import { flagRegistry } from "./flag_registry";
 import { GroundTypeConfigs } from "./loaders/ground_types";
 import { DecorationConfigs } from "./loaders/decorations";
@@ -420,6 +421,16 @@ export class ResourcePackService {
                 [...BuildingConfigs.entries].map(([location, config]) => [
                     registries.structure.resolve(location),
                     config.placement,
+                ])
+            ),
+            items: Object.fromEntries(
+                [...ItemConfigs.entries].map(([location, config]) => [
+                    registries.item.resolve(location),
+                    {
+                        function: config.function,
+                        type: config.type,
+                        places: config.places,
+                    },
                 ])
             ),
             groundTypes: Object.fromEntries(
