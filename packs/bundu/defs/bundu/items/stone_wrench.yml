@@ -8,6 +8,6 @@ whenMainHand:
             attack.damage:
                 op: add
                 value: 4
-            attack.building.damage:
+            attack.damage.building:
                 op: add
                 value: -50

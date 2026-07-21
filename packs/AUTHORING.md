@@ -71,12 +71,17 @@ whenMainHand:
   "@s":
     attributes:
       attack.damage: { op: add, value: 13 }
+      attack.damage.building: { op: add, value: 30 }  # + parent attack.damage
       movement.speed: { op: multiply, value: 0.8 }
     flags: [holding_book]          # optional
 ```
 
-Ops: `add` \| `multiply`. Targets: `"@s"` / `"@a[…]"` selectors, entity ids,
-`#tags`, or legacy `type=`/`flag=` filter strings.
+Ops: `addBase` \| `add` \| `multiply` (fold: `(Σ addBase + Σ add) × Π multiply`).  
+Attribute paths form a tree: parent keys (e.g. `attack.damage`) also apply to children
+(`attack.damage.building`, `attack.damage.animal`) unless marked non-inheriting
+(`health.defense.blocking`). Unknown attribute keys fail pack load.  
+Targets: `"@s"` / `"@a[…]"` selectors, entity ids, `#tags`, or legacy
+`type=`/`flag=` filter strings.
 
 Selector filters: `type=`, `flag=`, `name=`, `mainhand=` / `offhand=` / `helmet=` /
 `hasitem=` (item id or `#tag`), `ground=` (ground type id or `#tag`),

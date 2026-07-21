@@ -6,6 +6,12 @@ import {
 } from "@bundu/shared/entity_selector";
 import type { RegistryId } from "@bundu/shared/registry";
 import {
+    AttributeOperationList,
+    isAttributeType,
+    type AttributeOperations,
+    type AttributeType,
+} from "../../components/attributes.js";
+import {
     resolveEntityFilterClauses,
     type ResolvedMatchClause,
 } from "../entity_filter.js";
@@ -17,14 +23,14 @@ export type StackMode = "replace" | "stack" | "max";
 export type OccupationType = "center" | "collider";
 
 export type EffectAttribute = {
-    op: "add" | "multiply";
+    op: AttributeOperations;
     value: number;
 };
 
 export type EffectPayload = {
     hide?: Hide;
-    /** Known keys apply at runtime; unknown keys are kept for forward-compat. */
-    attributes: Record<string, EffectAttribute>;
+    /** Known attribute paths only; unknown keys fail pack load. */
+    attributes: Partial<Record<AttributeType, EffectAttribute>>;
     /** Resolved flag ids granted while this context applies. */
     flags: number[];
 };
@@ -85,7 +91,7 @@ export const SPATIAL_CONTEXTS = [
 const RESERVED = new Set(["stack", "proximityDistance", "occupationType"]);
 const STACK_MODES = new Set<StackMode>(["replace", "stack", "max"]);
 const OCCUPATION_TYPES = new Set<OccupationType>(["center", "collider"]);
-const ATTR_OPS = new Set(["add", "multiply"]);
+const ATTR_OPS = new Set<string>(AttributeOperationList);
 
 export type ContextBundle = {
     whenMainHand?: EffectContext;
@@ -102,25 +108,30 @@ function namespace(id: string): string {
 function parseAttributes(
     raw: unknown,
     path: string
-): Record<string, EffectAttribute> {
+): Partial<Record<AttributeType, EffectAttribute>> {
     if (raw === undefined) return {};
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
         throw new Error(`${path}: expected object`);
     }
-    const result: Record<string, EffectAttribute> = {};
+    const result: Partial<Record<AttributeType, EffectAttribute>> = {};
     for (const [key, value] of Object.entries(raw)) {
+        if (!isAttributeType(key)) {
+            throw new Error(`${path}: unknown attribute "${key}"`);
+        }
         if (typeof value !== "object" || value === null || Array.isArray(value)) {
             throw new Error(`${path}.${key}: expected { op, value }`);
         }
         const op = (value as { op?: unknown }).op;
         const num = (value as { value?: unknown }).value;
         if (typeof op !== "string" || !ATTR_OPS.has(op)) {
-            throw new Error(`${path}.${key}.op: expected add|multiply`);
+            throw new Error(
+                `${path}.${key}.op: expected ${AttributeOperationList.join("|")}`
+            );
         }
         if (typeof num !== "number" || !Number.isFinite(num)) {
             throw new Error(`${path}.${key}.value: expected number`);
         }
-        result[key] = { op: op as "add" | "multiply", value: num };
+        result[key] = { op: op as AttributeOperations, value: num };
     }
     return result;
 }
@@ -356,7 +367,7 @@ export function matchingPayloads(
 
 export function mergeMatchingPayloads(payloads: readonly EffectPayload[]): EffectPayload {
     let hide: Hide | undefined;
-    let attributes: Record<string, EffectAttribute> = {};
+    let attributes: Partial<Record<AttributeType, EffectAttribute>> = {};
     const flags: number[] = [];
     const seen = new Set<number>();
     for (const payload of payloads) {

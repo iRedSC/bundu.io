@@ -16,7 +16,12 @@ export class Animal extends GameObject {
         const attributes = new Attributes();
         const baseRadius = TILE_SIZE / 2;
         // scale 1 → diameter = 1 tile (radius = TILE_SIZE / 2)
-        attributes.data.set("attack.reach", "base", "add", config.attack_reach);
+        attributes.data.set(
+            "attack.reach",
+            "base",
+            "addBase",
+            config.attack_reach
+        );
         attributes.data.addEventListener("physics.scale", (scale) => {
             attributes.data.set("attack.reach", "body", "add", baseRadius * scale);
         });
