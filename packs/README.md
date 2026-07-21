@@ -14,6 +14,9 @@ depends: [bundu]
 Set `BUNDU_PACK_ROOT` to load packs from another directory. Run
 `bun run validate:packs` after editing a pack.
 
+For a how-to on each content type (items, buildings, resources, recipes, …)
+see [AUTHORING.md](./AUTHORING.md).
+
 ## Authoring with `defs/`
 
 Pack YAML is authored under `defs/<namespace>/`. `bun run pack:gen` splits those

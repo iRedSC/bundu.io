@@ -558,6 +558,8 @@ export function loadConfigs() {
         for (const name of EQUIP_CONTEXTS) {
             merged[name] = record[name];
         }
+        // Runtime compares bare type paths (`food`, `pickaxe`) for eat/harvest.
+        merged.type = namespaced.slice(namespaced.indexOf(":") + 1);
         return merged;
     };
 

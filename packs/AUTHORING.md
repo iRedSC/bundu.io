@@ -1,155 +1,108 @@
-# Pack authoring catalog (`defs/`)
+# Pack authoring guide
 
-Author under `defs/<namespace>/`. Run `bun run pack:gen` to emit `data/` (server)
-and `assets/` (client). `bun run validate:packs` runs `pack:gen --check` first.
+How to define content under `defs/<namespace>/`. For pack discovery, overlays,
+and sync protocol see [README.md](./README.md).
 
-High-level discovery and sync live in [README.md](./README.md). This file is the
-field-level catalog: where defs live, minimal examples, loader fields, defaults,
-and client vs server ownership.
-
-## Combined defs (`---`)
-
-Paired registries use YAML document split:
-
-1. **First doc** → display (models / ground models)
-2. **Second doc** → data (server registries)
-
-```yaml
-# display
-extends: item_type:bundu:sword
-texture: bundu/item/tool/wood_sword.svg
-
----
-# data
-type: bundu:sword
-level: 1
+```bash
+bun run pack:gen          # defs/ → data/ + assets/
+bun run validate:packs    # includes pack:gen --check
 ```
 
-- Single-doc in a paired folder → **data-only** (no model emit).
-- Single-doc under `models/` or `client/` → **assets-only**.
-- Optional directive (before docs): `# @pack-gen model=models/nature/tree.yml`
-  overrides the default model output path.
-- **Do not** write redundant `id:` or `extends: item_type:<ns>:none` — path owns
-  identity; items/item_types default `extends` to `item_type:<ns>:none`.
+## Mental model
 
-### Path → emit mapping
-
-| `defs/<ns>/…` | display → `assets/<ns>/` | data → `data/<ns>/` |
+| Side | What | Where |
 |---|---|---|
-| `items/X.yml` | `models/items/X.yml` | `items/X.yml` |
-| `item_types/X.yml` | `models/items/type/X.yml` | `item_types/X.yml` |
-| `entities/X.yml` | `models/actors/X.yml` | `entities/X.yml` |
-| `decorations/X.yml` | `models/decorations/X.yml` | `decorations/X.yml` |
-| `resources/X.yml` | `models/resources/X.yml` (or `@pack-gen model=…`) | `resources/X.yml` |
-| `buildings/walls/X.yml` | `models/walls/X.yml` | `buildings/X.yml` |
-| `buildings/doors/X.yml` | `models/doors/X.yml` | `buildings/X.yml` |
-| `buildings/structures/X.yml` | `models/structures/X.yml` | `buildings/X.yml` |
-| `buildings/X.yml` (flat) | `models/structures/X.yml` if display present | `buildings/X.yml` |
-| `ground_types/X.yml` | `ground_models/X.yml` | `ground_types/X.yml` |
-| `models/**` | `models/**` | — |
-| `recipes/**`, `loot_tables/**`, `tags/**` | — | same relative path |
-| `client/**` | copied into `assets/<ns>/` | — |
-| `<ns>/gameplay.yml` (defs root) | — | `gameplay.yml` (**server**) |
+| Display (first `---` doc) | Models, poses, sprites | → `assets/` |
+| Data (second `---` doc) | Gameplay | → `data/` |
+| Recipes / loot / tags | Data-only files | `defs/.../recipes/`, `loot_tables/`, `tags/` |
+| Textures | Manual | `assets/<ns>/textures/` (not generated) |
 
-Nested building folders encode the models subfolder; the data stem is always the
-basename (`walls/wood_wall` → `data/.../buildings/wood_wall.yml`).
-
-### Model ids
-
-Path-derived: `kind:namespace:path` (see `@bundu/shared/models/ids`).
-
-| Kind | Example | Source |
-|---|---|---|
-| `item` | `item:bundu:wood_sword` | `items/wood_sword.yml` |
-| `item_type` | `item_type:bundu:sword` | `item_types/sword.yml` |
-| `structure` | `structure:bundu:wood_wall` | `buildings/walls/wood_wall.yml` |
-| `resource` | `resource:bundu:pine_tree` | `resources/pine_tree.yml` |
-| `decoration` | `decoration:bundu:beach` | `decorations/beach.yml` |
-| `entity_type` | `entity_type:bundu:bear` | `entities/bear.yml` |
-| `model` | `model:bundu:animal` | shared abstracts under `models/` |
-
-Inferred abstract paths: `models/items/type/**`, `models/base/**`. Elsewhere set
-`abstract: true` (e.g. `models/walls/wall.yml`).
-
-Gameplay registry ids remain `namespace:path` (e.g. `bundu:wood_wall`). Item and
-structure with the same path are **different** registries; link with `places`.
-
-Textures are **not** generated — author under `assets/<ns>/textures/`.
-
----
-
-## Shared: effect contexts (`when*`)
-
-Parsed in `packages/server/src/configs/loaders/effect_context.ts`.
-
-| Context | Allowed on | Default `stack` | Extra meta |
-|---|---|---|---|
-| `whenMainHand` | items (+ item_types merge) | `replace` | — |
-| `whenOffHand` | items (+ item_types) | `replace` | — |
-| `whenHelmet` | items (+ item_types) | `replace` | — |
-| `whenOccupied` | structures, resources, ground_types | `stack` | `occupationType`: `center` \| `collider` (default `center`) |
-| `whenNearby` | structures, resources | `stack` | **required** `proximityDistance` (world units / decitiles) |
-
-Equip contexts **cannot** use `stack: stack`. Spatial may use `replace` \| `stack` \| `max`.
-
-Target keys under a context:
-
-- `"*"` — all subjects
-- bare entity id / `#tag` — entity_type set
-- filter string e.g. `type=bundu:player,flag=in_water`
-
-Per-target payload:
+Path owns identity. Don’t write `id:` unless it must differ from the file path.
+Items default `extends` to `item_type:<ns>:none` — only set `extends` for a
+non-default parent.
 
 ```yaml
-hide:                    # optional identity scrub (client-relevant via anon)
-  full / name / skin / helmet / mainHand / offHand / backpack / leaderboard: bool
-attributes:
-  "<attr>": { op: add|multiply, value: number }
-flags: ["near_fire", ...]   # string names → runtime flag registry
-```
-
-Known server attributes (`AttributeList`):  
-`attack.damage`, `attack.speed`, `attack.origin`, `attack.reach`, `attack.sweep`,
-`movement.speed`, `physics.scale`, `placement.reach`,
-`health.max`, `health.regen_amount`, `health.defense`, `health.defense.blocking`,
-`hunger.*`, `eating.movement_speed_multiplier`,
-`temperature.*`, `thirst.*`, `air.*`.
-
-Unknown attribute keys are kept for forward-compat (e.g. pack-authored
-`attack.damage.building` / `attack.building.damage` on hammers/wrenches — not in
-`AttributeList` today).
-
-### Placement allow/deny (structures + resources)
-
-Optional lists; **omitted = allow all**, **empty array = allow none**, deny wins.
-
-| Field | Type |
-|---|---|
-| `allowedStructures` / `deniedStructures` | `string[]` → structure ids/tags |
-| `allowedRoofs` / `deniedRoofs` | `string[]` |
-| `allowedFloors` / `deniedFloors` | `string[]` |
-| `allowedResources` / `deniedResources` | `string[]` |
-
----
-
-## Items generally
-
-**Defs:** `defs/<ns>/items/<path>.yml`  
-**Registries:** `item:<ns>:<path>` (model), `item` gameplay id `<ns>:<path>`
-
-### Minimal examples
-
-Material (defaults to `item_type:<ns>:none`):
-
-```yaml
+# items/pinecone.yml — material with no special behavior
 texture: bundu/item/material/pinecone.svg
 ---
 {}
 ```
 
-Typed tool:
+**Recipes stay separate** from items (own registry ids, link via `result.item`).
+Multiple recipes may produce the same item.
+
+---
+
+## What’s in this guide
+
+**Items:** materials, swords, helmets/hats, food, books, tools, placeables  
+**World:** resources, buildings (walls/doors/spikes), floors, roofs, fires,
+crafting benches, point generators  
+**Also:** entities, decorations, ground, recipes, loot, tags, gameplay/lang,
+shared models
+
+---
+
+## Items
+
+**Path:** `defs/<ns>/items/<id>.yml`  
+**Gameplay id:** `<ns>:<id>` · **Model id:** `item:<ns>:<id>`
+
+### Common data fields
+
+| Field | Default | Meaning |
+|---|---|---|
+| `type` | `none` | Item-type template (`bundu:sword` or bare `sword`). Also the harvest tool key. |
+| `function` | from type | `main_hand` \| `off_hand` \| `wear` \| `building` \| `backpack` |
+| `level` | `0` | Tool level vs resource `level` |
+| `stats` | `{}` | Consumable deltas (`hunger`, `thirst`, `health`, …) |
+| `can_saturate` | `false` | Food may fill past normal hunger cap |
+| `eat_duration_ms` | `1000` | Eat channel length |
+| `places` | — | Structure id this item places |
+| `whenMainHand` / `whenOffHand` / `whenHelmet` | — | Effect contexts (attributes, flags, hide) |
+
+Author `type: bundu:food` (namespaced); runtime stores the bare path (`food`) for
+eat/harvest checks.
+
+### Effect contexts (items)
 
 ```yaml
+whenMainHand:
+  "*":
+    attributes:
+      attack.damage: { op: add, value: 13 }
+      movement.speed: { op: multiply, value: 0.8 }
+    flags: [holding_book]          # optional
+```
+
+Ops: `add` \| `multiply`. Targets: `"*"`, entity ids, `#tags`, or filter strings.
+
+### Display (item models)
+
+Usually just `texture` + optional `extends: item_type:bundu:<type>`.  
+Display slots: `hand`, `inventory`, `icon`, `body`, `world`.
+
+### Item types
+
+**Path:** `defs/<ns>/item_types/<name>.yml`  
+Shared defaults for many items. May be display-only, data-only, or both (`---`).
+
+| Type | Typical `function` | Used for |
+|---|---|---|
+| `none` | — | Materials, junk |
+| `sword` / `spear` / `pickaxe` / `axe` / `hammer` / `knife` / `shovel` / `wrench` | `main_hand` | Tools/weapons |
+| `helmet` / `hat` | `wear` | Head slot |
+| `food` | `off_hand` | Edibles |
+| `book` | `off_hand` | Utility held items |
+| `building` | `building` | Placeables |
+| `wall` / `door` / `spike` / `tree` | (display) | Visual abstracts for placeable/tree items |
+
+---
+
+### Swords
+
+```yaml
+# items/wood_sword.yml
 extends: item_type:bundu:sword
 texture: bundu/item/tool/wood_sword.svg
 ---
@@ -159,11 +112,66 @@ whenMainHand:
   "*":
     attributes:
       attack.damage: { op: add, value: 13 }
+      health.defense.blocking: { op: add, value: 2 }
 ```
 
-Placeable:
+Same pattern for spears (`type: bundu:spear`), hammers, knives, etc.  
+`level` matters when the item is also used as a harvest tool.
+
+### Helmets (and hats)
 
 ```yaml
+# items/wood_helmet.yml
+extends: item_type:bundu:helmet
+texture: bundu/item/equipment/wood_helmet.svg
+---
+type: bundu:helmet
+whenHelmet:
+  "*":
+    attributes:
+      health.defense: { op: add, value: 5 }
+```
+
+Hats use `type: bundu:hat` / `extends: item_type:bundu:hat` (same `wear` slot).
+Warmth gear often adds `temperature.*` attributes on `whenHelmet`.
+
+### Food
+
+```yaml
+# items/meat_cooked.yml
+extends: item_type:bundu:food
+texture: bundu/item/food/meat_cooked.svg
+---
+type: bundu:food
+stats:
+  hunger: 20
+# can_saturate: true
+# eat_duration_ms: 1500
+```
+
+Held in off-hand; eat interaction consumes one and applies `stats`.
+
+### Books
+
+```yaml
+# items/book.yml
+extends: item_type:bundu:book
+texture: bundu/item/book/book.svg
+---
+type: bundu:book
+whenOffHand:
+  "*":
+    flags: [holding_book]
+```
+
+`function: off_hand` from the type. Flags drive crafting requirements / UI.
+
+### Placeable items (walls, fires, benches, …)
+
+Always two defs: the **item** (inventory) and the **structure** (world).
+
+```yaml
+# items/wood_wall.yml
 extends: item_type:bundu:wall
 texture: bundu/structure/wall/wood_wall.png
 ---
@@ -171,113 +179,16 @@ type: bundu:building
 places: wood_wall
 ```
 
-### Data fields (`ItemConfig` + parse in `load.ts`)
-
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `type` | `string \| null` | `null` (loader treats missing as `"none"` for template merge) | Item-type template key (`bundu:sword` or bare `sword`). Merges that `item_types` data + contexts. Also used as harvest tool key (see Resources). |
-| `function` | `string \| null` | `null` (often from item_type) | Equip behavior: `main_hand`, `off_hand`, `wear`, `building`, `backpack` |
-| `level` | `number` | `0` | Tool level vs resource `level` when harvesting |
-| `stats` | `Record<string, number>` | `{}` | Consumable deltas (`hunger`, `thirst`, `health`, …). Merged with item_type `stats`. |
-| `unequip_delay` | `number` | `0` | Loader field (ms); unused widely in packs |
-| `can_saturate` | `boolean` | `false` | Food: allow hunger up to `player.hunger_saturation_limit` |
-| `eat_duration_ms` | `number` | `1000` | Eat channel time |
-| `places` | structure ref \| null | `null` | Placeable → structure id |
-| `whenMainHand` / `whenOffHand` / `whenHelmet` | effect contexts | — | Merged with item_type contexts |
-
-**Server.** Display half is **client** (model compile).
-
-`function` equip mapping (`inventory.ts`):
-
-| `function` | Slot |
-|---|---|
-| `wear` | helmet |
-| `main_hand` | mainHand |
-| `off_hand` | offHand |
-| `building` | mainHand (placement mode) |
-| `backpack` | backpack slot (special) |
-
-Eating requires `type === "food"` in current server checks while bundu defs use
-`type: bundu:food` — prefer documenting the authored form; fix server/bare-key
-alignment separately if needed.
-
-### Display / model side
-
-Typical item display: `texture`, optional `extends`, optional `displays` overrides
-(`hand`, `inventory`, `icon`, `body`, `world`). Parts/slots rare on items; used
-heavily on actors.
-
----
-
-## Item types (`item_types`)
-
-**Defs:** `defs/<ns>/item_types/<name>.yml` (flat only)  
-**Models:** `item_type:<ns>:<name>` → `assets/.../models/items/type/`  
-**Data:** `data/.../item_types/` (merged into items via `type:`)
-
-May be display-only, data-only, or paired. Single-doc heuristics: if it looks like
-a model (`texture` / `parts` / `displays` / `extends` / `abstract` / `id`) → assets;
-else → data.
-
-### Bundu item_types
-
-| Type | Display role | Data defaults |
-|---|---|---|
-| `none` | fallback texture + empty displays | (display-only) |
-| `sword` | hand/inventory poses | `function: main_hand` + attack attrs |
-| `spear` | long hand pose | `main_hand` + reach/origin |
-| `pickaxe` | hand/inventory | `main_hand` + reach |
-| `axe` | (often inherits pickaxe visuals on items) | `main_hand` + speed/reach |
-| `hammer` | hand pose | `main_hand` + reach |
-| `knife` / `shovel` / `wrench` | often no display doc | `main_hand` + reach |
-| `helmet` | `displays.body` scale 1.4 | `function: wear` |
-| `hat` | `displays.body` | `function: wear` |
-| `food` | hand pose | `function: off_hand` + eating slow |
-| `book` | hand pose | `function: off_hand` |
-| `building` | hand pose | `function: building` + move slow |
-| `wall` | `extends: item_type:bundu:building` | (display-only chain) |
-| `door` / `spike` | hand poses | (display-only; items set `type: bundu:building`) |
-| `tree` | `displays.world` scale | (display-only) |
-
-Items set **data** `type:` to merge gameplay defaults, and **display** `extends:`
-for visuals (can differ — e.g. shovel `extends: item_type:bundu:pickaxe` but
-`type: bundu:shovel`).
-
----
-
-## Items by specialization (bundu patterns)
-
-| Kind | Def path | `extends` (display) | `type` (data) | Notes |
-|---|---|---|---|---|
-| Sword | `items/*_sword.yml` | `item_type:bundu:sword` | `bundu:sword` | `level`, `whenMainHand` damage/block |
-| Helmet | `items/*_helmet.yml` | `item_type:bundu:helmet` | `bundu:helmet` | `whenHelmet` → `health.defense` |
-| Hat | `items/beanie.yml`, `coat.yml`, … | `item_type:bundu:hat` | `bundu:hat` | warmth via `whenHelmet` |
-| Food | `items/meat.yml`, berries, … | `item_type:bundu:food` | `bundu:food` | `stats.hunger` / `thirst` / `health`; optional `can_saturate` |
-| Book | `items/book.yml`, … | `item_type:bundu:book` | `bundu:book` | flags e.g. `holding_book` |
-| Pickaxe | `items/*_pickaxe.yml` | `item_type:bundu:pickaxe` | `bundu:pickaxe` | harvest key for ores/trees in bundu |
-| Spear | `items/*_spear.yml` | `item_type:bundu:spear` | `bundu:spear` | |
-| Hammer | `items/*_hammer.yml` | `item_type:bundu:hammer` | `bundu:hammer` | building damage attrs (forward-compat keys) |
-| Axe | `items/lumber_axe.yml` | often pickaxe visual | `bundu:axe` | |
-| Shovel / knife / wrench | respective items | often pickaxe visual | `bundu:shovel` / `knife` / `wrench` | corpses use `knife` multiplier |
-| Spike / door / wall items | `items/*_{spike,door,wall}.yml` | matching item_type | `bundu:building` + `places:` | |
-| Fires / benches / anvil / point_generator | `items/fire_*.yml`, `workbench.yml`, … | `item_type:bundu:building` | `bundu:building` + `places:` | |
-| Backpack | `items/backpack.yml` | default none | `function: backpack` | |
-| Materials | `items/wood.yml`, ores as items, … | default none | `{}` | |
-
-Food `stats` keys seen in packs: `hunger`, `thirst`, `health`, `heal_ticks`
-(`heal_ticks` / `poison_ticks` exist on `StatList`; food→stat wiring for ticks is
-thin — treat as authored intent).
+`places` points at `structure:<ns>:wood_wall`. Crafting is a separate recipe file.
 
 ---
 
 ## Resources
 
-**Defs:** `defs/<ns>/resources/<path>.yml`  
-**Registry:** `resource` / model `resource:<ns>:<path>` (unless `@pack-gen` + explicit model id)
+Harvestable world nodes: trees, ores, corpses, hives, barriers.
 
-### Minimal examples
-
-Ore:
+**Path:** `defs/<ns>/resources/<id>.yml`  
+**Model:** `resource:<ns>:<id>` (or `# @pack-gen model=…` for odd paths)
 
 ```yaml
 extends: model:bundu:single_tile_node
@@ -292,14 +203,31 @@ parts:
 score: 10
 exclusive: true
 multipliers:
-  pickaxe: 1
+  pickaxe: 1          # keys = bare item type paths
 level: 2
 regen_speed: 10
 quantity: 20
 loot_table: copper
 ```
 
-Corpse:
+| Field | Default | Meaning |
+|---|---|---|
+| `quantity` | `0` | Stock units |
+| `loot_table` | — | Loot table id (one harvest hit) |
+| `level` | `0` | Vs tool `level` |
+| `multipliers` | `{}` | Map of item type → amount scale (`pickaxe`, `knife`, …) |
+| `exclusive` | `false` | Tool type must appear in `multipliers` |
+| `regen_speed` | `0` | Seconds per +1 quantity |
+| `decay` | — | Seconds to despawn (corpses) |
+| `destroy_on_empty` | `false` | Remove node at 0 quantity |
+| `score` | `0` | Score on harvest |
+| `solid` | `true` | Blocks pathing |
+| `whenOccupied` / `whenNearby` | — | Spatial effect contexts |
+
+**Families in bundu:** trees (`pickaxe`, wood loot), ores (leveled `pickaxe`),
+corpses (`knife`, `decay`, `destroy_on_empty`), hives (honey), barriers (`{}`).
+
+Corpse example:
 
 ```yaml
 # @pack-gen model=models/corpses/bear_dead.yml
@@ -317,61 +245,42 @@ quantity: 4
 loot_table: bear_dead
 ```
 
-Hive / barrier: same resource schema; barrier may be `{}` data.
-
-### Data fields (`ResourceConfig`)
-
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `destroy_on_empty` | `boolean` | `false` | Remove when quantity hits 0 |
-| `score` | `number \| null` | `0` | Score on harvest/destroy |
-| `level` | `number` | `0` | Vs tool level; `-1` special-cases amount to multiplier only |
-| `exclusive` | `boolean` | `false` | If true, tool type must appear in `multipliers` |
-| `multipliers` | `Record<string, number>` | `{}` | Keys = item `type` strings (`pickaxe`, `knife`, …). Harvest amount ≈ `(toolLevel - level + 1) * multiplier` |
-| `decay` | `number \| null` | `null` | Seconds until despawn (corpses) |
-| `regen_speed` | `number` | `0` | Seconds per +1 quantity (`0` = no regen) |
-| `quantity` | non-neg int | `0` | Starting/max stock units |
-| `loot_table` | loot_table ref | — | YAML key; loader → `lootTable` id |
-| `solid` | `boolean` | `true` | Blocks movers on structure layer |
-| `whenOccupied` / `whenNearby` | spatial contexts | — | |
-| placement allow/deny | see above | — | |
-
-**Server** data; display **client**.
-
-### Bundu resource families
-
-| Family | Examples | Typical data |
-|---|---|---|
-| Trees | `pine_tree`, `forest_tree`, `savanah_tree`, `pine_tree_snow` | `exclusive`, `pickaxe` mult, regen, loot → wood |
-| Ores | `stone`, `copper`, `silver`, `cobalt` | leveled `pickaxe`, loot → material items |
-| Corpses | `*_dead`, `player_dead` | `decay`, `destroy_on_empty`, `knife` mult |
-| Hives | `hive_{small,medium,large}` | `destroy_on_empty`, honey loot |
-| Props | `stone_barrier` | often empty `{}` |
-
-`forest_tree` uses `# @pack-gen model=models/nature/tree.yml` and may set explicit
-`id: resource:bundu:forest_tree` when path ≠ identity.
-
 ---
 
-## Buildings / structures
+## Buildings (structures)
 
-**Defs:**
+**Gameplay path:** always `data/<ns>/buildings/<id>.yml`  
+**Author under:** `buildings/walls/`, `buildings/doors/`, `buildings/structures/`,
+or flat `buildings/` (spikes/benches often data-only).
 
-| Class / role | Typical def path | Model emit |
+| `class` | Layer | Solid default | Notes |
+|---|---|---|---|
+| `wall` | structure | solid | `material` + `tier` for upgrades / spikes |
+| `door` | structure | solid | Open state on model |
+| `spike` | structure | solid | `damage`, `on_hit_damage`, `attack_range` |
+| `building` | structure | solid | Fires, benches, anvil, point generators |
+| `floor` | floor | **not** solid | Supported; no bundu content yet |
+| `roof` | roof | **not** solid | Supported; occlusion systems exist |
+
+### Shared building fields
+
+| Field | Default | Meaning |
 |---|---|---|
-| Wall | `buildings/walls/<id>.yml` | `models/walls/` |
-| Door | `buildings/doors/<id>.yml` | `models/doors/` |
-| Spike | `buildings/<id>_spike.yml` (often **data-only**) | (none; art on wall/door variants) |
-| Generic building | `buildings/structures/<id>.yml` or flat `buildings/<id>.yml` | `models/structures/` |
-| Floor / roof | *supported by loader; **no bundu examples yet*** | same as structures / custom |
+| `class` | `building` | Occupancy + solid default |
+| `health` | `50` | |
+| `material` | — | Spike↔wall/door matching; `quick_*` upgrade group |
+| `tier` | — | Placeover rank within group |
+| `solid` | by class | Override e.g. fires `solid: false` |
+| `pointsPerSecond` | `0` | Point generator drip |
+| `damage` / `on_hit_damage` / `attack_range` | — | Spikes |
+| `placement.blocked` | `[[0,0]]` | Footprint tile offsets |
+| `placement.ground` | `#bundu:buildable_ground` | Allowed ground types/tags |
+| `whenNearby` / `whenOccupied` | — | Warmth, crafting flags, … |
 
-Gameplay registry: always `data/<ns>/buildings/<basename>.yml` → `structure:<ns>:<id>`.
-
-### Minimal examples
-
-Wall:
+### Walls
 
 ```yaml
+# buildings/walls/wood_wall.yml
 extends: model:bundu:wall
 defaultVariant: base
 variants:
@@ -385,9 +294,16 @@ tier: 1
 health: 2000
 ```
 
-Spike (data-only):
+### Doors
+
+Same as walls with `class: door`, under `buildings/doors/`, `extends: model:bundu:door`.
+
+### Spikes
+
+Usually **data-only** (art lives on the wall/door `spike` variant):
 
 ```yaml
+# buildings/wood_spike.yml
 class: spike
 material: wood
 tier: 1
@@ -396,9 +312,38 @@ on_hit_damage: 5
 attack_range: 25
 ```
 
-Fire:
+### Floors
+
+Loader-ready; no bundu defs yet. Intended shape:
 
 ```yaml
+# buildings/structures/wood_floor.yml  (suggested)
+extends: model:bundu:single_tile_node   # or a floor abstract
+# …parts / variants…
+---
+class: floor
+health: 500
+# solid defaults false
+```
+
+Floors use the **floor** occupancy layer (stack under structures).
+
+### Roofs
+
+```yaml
+# buildings/structures/thatch_roof.yml  (suggested)
+---
+class: roof
+health: 400
+# solid defaults false
+```
+
+Roofs use the **roof** layer; client occlusion can hide them when inside.
+
+### Fires
+
+```yaml
+# buildings/structures/fire_pit.yml
 extends: model:bundu:fire
 defaultVariant: base
 variants:
@@ -417,21 +362,30 @@ whenNearby:
     flags: [near_fire]
 ```
 
-Workbench / anvil (data-only today — **no structure model**; world art may be missing unless you add a display half):
+Item side: `type: bundu:building` + `places: fire_pit`.  
+Recipes often `requirements: [near_fire]`.
+
+### Crafting benches (workbench, anvil)
+
+Data-only structures today (add a display half if you want world art):
 
 ```yaml
+# buildings/workbench.yml
 class: building
 health: 800
 whenNearby:
   proximityDistance: 200
   "*":
-    flags: [near_crafting_table]  # anvil → near_anvil
+    flags: [near_crafting_table]
 ```
 
-Point generator (multi-tile):
+Anvil uses `flags: [near_anvil]`. Matching placeable items set `places: workbench`
+/ `places: anvil`.
+
+### Point generators
 
 ```yaml
-# display: extends single_tile_node + tile.footprint ascii …
+# buildings/structures/point_generator.yml — multi-tile display + …
 ---
 class: building
 health: 1000
@@ -441,179 +395,73 @@ placement:
   ground: ["#bundu:buildable_ground"]
 ```
 
-### Data fields (`BuildingConfig`)
-
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `class` | `building` \| `door` \| `spike` \| `wall` \| `floor` \| `roof` | `building` | Occupancy layer + solid default |
-| `health` | `number` | `50` | |
-| `pointsPerSecond` | `number` | `0` | Point generator score drip |
-| `material` | `string?` | — | Spike↔wall/door match; `quick_*` upgrade group |
-| `tier` | `number?` | — | Placeover rank within upgrade group |
-| `damage` | `number?` | — | Spike contact damage |
-| `on_hit_damage` | `number?` | — | Reflect when spiked structure hit |
-| `attack_range` | `number?` | — | Extra contact radius (world units) |
-| `solid` | `boolean` | wall/door/building/spike **true**; floor/roof **false** | Pathing / blockers |
-| `placement.blocked` | `[x,y][]` | `[[0,0]]` | Footprint offsets |
-| `placement.ground` | ground_type refs/tags | `["#bundu:buildable_ground"]` | Allowed ground |
-| spatial contexts + allow/deny | | | |
-
-**Server** data; display **client**.
-
-### Class specialization
-
-| Class | Layer | Solid default | Bundu usage |
-|---|---|---|---|
-| `wall` | structure | solid | materials + tiers; spike variant textures |
-| `door` | structure | solid | open state on model; same material/tier |
-| `spike` | structure | solid | damage fields; pairs by `material` |
-| `building` | structure | solid (override `solid: false` for fires) | fires, benches, anvil, point_generator |
-| `floor` | floor | not solid | loader-ready; no pack defs yet |
-| `roof` | roof | not solid | loader-ready; occlusion/hide systems exist |
-
-Recipe flags from nearby buildings: `near_fire`, `near_crafting_table`, `near_anvil`.
-
 ---
 
-## Entities / animals
+## Entities (animals)
 
-**Defs:** `defs/<ns>/entities/<path>.yml`  
-**Registry:** `entity_type` / model `entity_type:<ns>:<path>`  
-**Player** is special: display + `kind: player` data; **not** loaded into `AnimalConfigs`.
+**Path:** `defs/<ns>/entities/<id>.yml`  
+**Model:** `entity_type:<ns>:<id>` (usually `extends: model:bundu:animal`)
 
-### Minimal animal
+| Field | Default | Meaning |
+|---|---|---|
+| `behavior` | `passive` | `hostile` \| `neutral` \| `passive` \| `scared` |
+| `health` | `100` | |
+| `score` | `0` | |
+| `detectionRange` / `loseSightRange` | `300` / `450` | World units |
+| `passiveSpeed` / `activeSpeed` | `4` / `6` | Per 20 TPS tick |
+| `scale` | `1` | Size in tiles |
+| `hasHome` | `true` | Idle roam |
+| `wander_distance` | `300` | |
+| `attack_damage` / `attack_interval_ms` / `attack_reach` | `0` / `1000` / `65` | |
+| `aggroSwitch` | `never` | `never` \| `onHit` \| `random` |
+| `aggroLevel` | `high` | `high` \| `medium` \| `low` |
+| `aggroAt` | `[]` | Structures/tags to attack without a player |
+| `corpse` | required | Resource id for the body |
+| `spawn_count` | `0` | Spawn budget |
 
-```yaml
-extends: model:bundu:animal
-parts:
-  body:
-    sprite: bundu/entity/animal/bear/bear.svg
-    spriteScale: 2.5
----
-health: 350
-score: 500
-behavior: hostile
-detectionRange: 300
-loseSightRange: 450
-passiveSpeed: 7
-activeSpeed: 11
-attack_damage: 35
-scale: 0.8
-hasHome: true
-aggroSwitch: onHit
-aggroLevel: medium
-corpse: bear_dead
-spawn_count: 4
-aggroAt: ["#bundu:walls"]
-```
-
-### Data fields (`AnimalConfig`)
-
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `score` | `number` | `0` | |
-| `behavior` | `hostile` \| `neutral` \| `passive` \| `scared` | `passive` | Aggro / flee |
-| `health` | `number` | `100` | |
-| `detectionRange` | `number` | `300` | World units |
-| `loseSightRange` | `number` | `450` | |
-| `passiveSpeed` / `activeSpeed` | `number` | `4` / `6` | Per 20 TPS tick |
-| `scale` | `number` | `1` | Size in tiles (1 → diameter 1 tile) |
-| `hasHome` | `boolean` | `true` | Idle roam homeward+wander |
-| `wander_distance` | `number` | `300` | |
-| `attack_damage` | `number` | `0` | |
-| `attack_interval_ms` | `number` | `1000` | |
-| `attack_reach` | `number` | `65` | Past body radius |
-| `aggroSwitch` | `never` \| `onHit` \| `random` | `never` | |
-| `aggroLevel` | `high` \| `medium` \| `low` | `high` | |
-| `aggroAt` | structure refs/tags | `[]` | Attack structures w/o player target |
-| `corpse` | resource ref | required for animals | |
-| `spawn_count` | `number` | `0` | Worldgen / spawn budget |
-
-**Server** animal data; display **client** (`extends: model:bundu:animal`, parts,
-`footsteps`, animations).
+Player is a special entity def (`kind: player`) — not an `AnimalConfig`.
 
 ---
 
 ## Decorations
 
-**Defs:** `defs/<ns>/decorations/<path>.yml`
+Biome clutter. **Path:** `defs/<ns>/decorations/<id>.yml`
 
 ```yaml
 parts:
   main:
     sprite: bundu/decoration/beach/beach.svg
 ---
-size: 200
-z: 0
+size: 200    # default 80
+z: 0         # default 10 — paint order
 ```
-
-### Data fields (`DecorationConfig`)
-
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `size` | positive `number` | `80` | Base world size at scale 1 |
-| `z` | safe integer | `10` | Paint order |
-
-**Server** size/z; display **client**.
 
 ---
 
-## Ground types + ground models
+## Ground types
 
-**Defs:** `defs/<ns>/ground_types/<path>.yml`  
-Display half → `ground_models/` (**not** entity ModelDefs).  
-Data → `ground_types` registry.
+**Path:** `defs/<ns>/ground_types/<id>.yml`  
+Display → `ground_models/` (not entity models). Data → `ground_types`.
 
 ```yaml
 kind: solid
 color: "#2a462b"
-fill: forest_blobs
+fill: forest_blobs          # optional: sand_bands | forest_blobs | solid_blobs
 ---
-model: grass
+model: grass                # must match this ground model id
+# overheat: true
+# whenOccupied: { … flags: [in_water] … }
 ```
 
-Ocean + effects:
-
-```yaml
-kind: ocean
-color: "#1a5f8a"
-textures: { caustics, displace, ripple_idle, ripple_move, foam, sparkle: … }
----
-model: ocean
-whenOccupied:
-  occupationType: center
-  "*":
-    flags: [in_water]
-    attributes: { … }
-```
-
-### Data fields (`GroundTypeConfig`) — **server**
-
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `model` | non-empty string | `"grass"` | Client ground-model id |
-| `overheat` | `boolean` | `false` | Max-heat players take overheat damage |
-| `whenOccupied` | effect context | — | Only spatial context allowed here |
-
-### Display fields (ground model parse) — **client**
-
-**Solid:** `kind: solid`, `color` (`#rrggbb`), optional `fill` (`sand_bands` \|
-`forest_blobs` \| `solid_blobs`), optional `footsteps: true`, optional `trail: {…}`.
-
-**Ocean:** `kind: ocean`, `color`, `textures` (required set), optional
-`fade_tiles` (default 12), optional `caustic_tint: { a, b }`.
-
-Trail defaults (when partially specified): spacing 14, amount `[2,4]`, etc.
-(see `packages/shared/src/ground_models.ts`).
-
-Ocean motion tuning is **client** `gameplay.yml` → `ocean:` (not per ground type).
+Ocean models use `kind: ocean` + required `textures` (caustics, displace, ripples,
+foam, sparkle). Optional `fade_tiles`, `caustic_tint`. Motion tuning lives in
+**client** `gameplay.yml` → `ocean:`.
 
 ---
 
-## Recipes (separate defs)
+## Recipes (separate)
 
-**Defs:** `defs/<ns>/recipes/<path>.yml` → `data/.../recipes/` only  
-**Registry:** `recipe` — id independent of result item.
+**Path:** `defs/<ns>/recipes/<id>.yml` — own registry id, **not** the item name.
 
 ```yaml
 result:
@@ -624,28 +472,27 @@ score: 15
 ingredients:
   wood: 25
 requirements:
-  - near_crafting_table
+  - near_crafting_table    # flag names from nearby structures / contexts
 ```
 
-| Field | Type | Default / rules |
-|---|---|---|
-| `result.item` | item ref | required |
-| `result.amount` | positive int | `1` |
-| `duration` | non-neg number | `0` if omitted |
-| `score` | non-neg number | `0` |
-| `ingredients` | map item→positive int | required object (may be empty) |
-| `requirements` | `string[]` | flag names (`near_fire`, …) resolved after contexts register flags |
+| Field | Rules |
+|---|---|
+| `result.item` | Item ref (required) |
+| `result.amount` | Positive int, default `1` |
+| `duration` | ms, default `0` |
+| `score` | default `0` |
+| `ingredients` | Map of item → count |
+| `requirements` | Flag names (`near_fire`, `near_crafting_table`, `near_anvil`, …) |
 
-**Server** (authoritative); client gets packed recipe list.
+Two recipes may share the same `result.item` — use distinct file/ids.
 
 ---
 
 ## Loot tables
 
-**Defs:** `defs/<ns>/loot_tables/<path>.yml`  
-Referenced by resources as `loot_table: <id>`.
+**Path:** `defs/<ns>/loot_tables/<id>.yml` — referenced by `loot_table:` on resources.
 
-### Fixed
+**Fixed** (bundu’s style):
 
 ```yaml
 type: fixed
@@ -656,179 +503,78 @@ entries:
     count: 1
 ```
 
-One harvest hit yields one unit from the multiset (seeded). Count must be a single
-positive int (no ranges). Omitted `count` → `1`.
-
-### Pool
-
-```yaml
-type: pool
-pools:
-  - rolls: 1
-    entries:
-      - item: meat
-        weight: 3
-        count: { min: 1, max: 2 }
-```
-
-| Field | Rules |
-|---|---|
-| `rolls` | positive int, default 1 |
-| `weight` | positive int, default 1 |
-| `count` | int or `{ min, max }` inclusive |
-
-Bundu currently ships **fixed** tables only; pool is supported by the loader.
-
-**Server.**
+**Pool** (supported, unused in bundu): weighted entries, `rolls`, count ranges
+`{ min, max }`.
 
 ---
 
 ## Tags
 
-**Defs:** `defs/<ns>/tags/<registry>/<path>.yml` → `#<ns>:<path>`
+**Path:** `defs/<ns>/tags/<registry>/<id>.yml` → `#<ns>:<id>`
 
 ```yaml
 category: true
 values:
   - wood_wall
-  - "#other:extra"
+  - "#bundu:extra_walls"
+# replace: true   # default false = append across packs
 ```
 
-| Field | Type | Meaning |
-|---|---|---|
-| `values` | `string[]` | Entries and/or same-registry tags |
-| `replace` | `boolean` | Default false = append across packs |
-| `category` | `boolean` | Pack metadata flag used by bundu tags |
-
-Registries with tags in bundu: `structure`, `resource`, `ground_type`,
-`decoration`, `entity_type`.
-
-Singular refs (e.g. `corpse`) reject tags; set fields (`aggroAt`,
-`placement.ground`) accept them.
-
-**Server** (projected to client registries where needed).
+Used for `aggroAt`, `placement.ground`, editor filters, worldgen lists, etc.
+Singular refs (e.g. `corpse`) reject tags.
 
 ---
 
-## Server `gameplay.yml`
+## Server vs client config docs
 
-**Defs:** `defs/<ns>/gameplay.yml` → `data/<ns>/gameplay.yml`  
-Loaded via `packs.document("bundu", "gameplay")` — **server sim only**.
-
-Top-level groups (snake_case in YAML → camelCase in `GameplayConfig`):
-
-- `animal_ai` — think/path/aggro/wander/stuck timers
-- `hunger`, `vitals`, `temperature`, `thirst`, `air` — damage / tick period
-- `day_cycle.periods` — morning/day/evening/night durations + attribute mods
-- `health`, `spikes`, `rotting` (`claim_weapon` item ref)
-- `items` — pickup/drop radii
-- `render_distance`
-- `player` — spawn, collision, `base_attributes`, `initial_stats`, movement multipliers, hunger limits
-- `worldgen` — resource/animal lists (tags/ids), starter structure
+| File | Role |
+|---|---|
+| `defs/<ns>/gameplay.yml` | **Server** sim (vitals, day cycle, player defaults, worldgen, …) |
+| `defs/<ns>/client/gameplay.yml` | **Client** shadows + ocean FX |
+| `defs/<ns>/client/stat_bars.yml` | HUD bars |
+| `defs/<ns>/client/lang/<code>.yml` | Names / descriptions |
 
 ---
 
-## Client: `client/gameplay.yml`, `stat_bars.yml`, `lang/`
+## Shared model abstracts
 
-**Defs:** `defs/<ns>/client/**` → `assets/<ns>/**` (no `---`).
+Under `defs/<ns>/models/`:
 
-| File | Role | Ownership |
-|---|---|---|
-| `client/gameplay.yml` | Shadows + ocean FX | **Client-only** (`parseClientGameplayConfig`) |
-| `client/stat_bars.yml` | HUD bars: health, hunger, heat, thirst | **Client-only** |
-| `client/lang/<code>.yml` | Names/descriptions | **Client** (Minecraft-style nested keys) |
+| Path | Role |
+|---|---|
+| `base/rottable.yml`, `single_tile_node.yml` | Tile entity bases |
+| `actors/animal.yml` | Animal defaults + footsteps |
+| `walls/wall.yml`, `doors/door.yml` | Wall/door graphs (`abstract: true`) |
+| `structures/fire.yml` | Fire abstract |
+| `corpses/corpse.yml` | Dead pose |
 
-Stat bar fields per bar: `max`, `split`, `icon`, `colors` (`base`/`overlay`/`diff`/
-`flash_base`/`flash_overlay`), `shake`, optional `flash_below` / `flash_above` /
-`flash_below_ratio`, optional `gradient: [{ at, base, overlay }]`.
-
-Lang top-level groups in bundu: `item`, `structure`, `resource`, `ground_type`,
-`decoration`, `menu`, … Keys flatten with namespace from the assets folder.
+`item_types/` and `models/base/` are inferred abstract. Mixed folders still need
+`abstract: true` on templates.
 
 ---
 
-## Shared models (`defs/.../models/`)
+## Easy to forget
 
-Display-only abstracts / odd paths:
+Beyond “items / resources / buildings”:
 
-| Path | Model id pattern | Role |
-|---|---|---|
-| `models/base/rottable.yml`, `single_tile_node.yml` | `model:bundu:…` | Tile entity base |
-| `models/actors/animal.yml` | `model:bundu:animal` | Animal visual defaults + footsteps |
-| `models/walls/wall.yml`, `doors/door.yml` | `model:…` (abstract) | Wall/door graphs + spike/open states |
-| `models/structures/fire.yml`, `structure.yml` | abstracts | Fires / generic |
-| `models/corpses/corpse.yml` | abstract | Dead animal pose |
-| `models/items/*` | often legacy/shared | Misc; prefer paired registry defs |
-| `models/nature/tree.yml` | via `@pack-gen` + explicit `id` | Multi-tile forest tree |
-
-### Model authoring surface (`ModelDef` / compile)
-
-Common YAML: `extends`, `abstract`, `texture`, `parts`, `displays`, `variants`,
-`defaultVariant`, `slots`, `animations`, `states`, `tile` (footprint/spillover),
-`occlusion`, `alphaFadeMs`, `footsteps`.
-
-Part fields: `sprite`, `parent`, pose (`x/y/scale/rotation/zIndex/pivot`),
-`spriteScale`, `spillover`, `attach` / `attachAbove` / `attachAnchor`, `alpha`,
-`visible`, `blendMode`, `skyUndo`, `shadow`.
-
-Anim presets: `hurt`, `hit`, `place`, `wave`, `tree_sway`, `bob`, `lunge`,
-`attack`, `spike_attack`, `block`, `eat`, `rotting`, `fire_glow`.
-
-**Client** (compiled server-side into `models.json` for sync).
+1. **Item types** — templates separate from items  
+2. **Item ↔ structure split** for placeables (`places`)  
+3. **Doors, spikes, walls** as structure classes  
+4. **Floors & roofs** — supported, no bundu content yet  
+5. **Entities + corpses-as-resources**  
+6. **Decorations** and **ground types/models**  
+7. **Recipes & loot** as first-class ids (recipes ≠ item names)  
+8. **Tags**  
+9. **Two gameplay.yml files** (server vs client) + lang / stat bars  
+10. **Textures** directory (hand-authored)  
+11. **Backpacks**, flags on books/scuba/medallions, point generators  
 
 ---
 
-## What else is authored in packs?
+## New placeable checklist
 
-| Asset | Where | Notes |
-|---|---|---|
-| Textures | `assets/<ns>/textures/**` | Not from `defs/`; SVG/PNG referenced as `ns/...` |
-| Pack manifest | `pack.yml` | `id`, `format`, `version`, `depends` |
-| Maps | repo `maps/` (not pack defs) | World layouts outside this catalog |
-| Overlay packs | other `packs/<id>/` | Same `defs/` layout; later packs override by id |
-
----
-
-## Likely missing from a short mental list
-
-If you only think “Items, Swords, Helmets, Food, Books, Resources, Buildings,
-Floors, Roofs, Fires, Crafting benches”, you are also missing:
-
-1. **Item types** as separate templates (data + display), including `none`, tools, `wall`/`door`/`spike` visuals, `hat` vs `helmet`, `tree` world display  
-2. **Placeable item ↔ structure** split (`places`, dual registries)  
-3. **Doors, spikes, walls** as structure classes (not just “buildings”)  
-4. **Point generators**, **anvil** (flag `near_anvil`), workbench flags  
-5. **Entities/animals** + **corpses as resources**  
-6. **Decorations** (biome clutter)  
-7. **Ground types + ground models** (ocean/solid, overheat, footsteps/trail)  
-8. **Recipes** and **loot tables** as first-class ids  
-9. **Tags** (`#ns:path`)  
-10. **Server gameplay.yml** vs **client gameplay / stat_bars / lang**  
-11. **Shared model abstracts** under `models/`  
-12. **Floors & roofs** — loader/occupancy support, but **no bundu content yet**  
-13. **Backpacks**, medallions, scuba flags, books’ crafting flags  
-14. **Textures** directory (manual)  
-15. **Pool loot** (supported, unused in bundu)
-
----
-
-## Client vs server cheat sheet
-
-| Content | Server | Client |
-|---|---|---|
-| Item/structure/resource/entity/decoration/ground_type/recipe/loot/tag data | yes | curated projection only |
-| Model / ground_model YAML | compile/sanitize | render |
-| `defs/.../gameplay.yml` | sim | no |
-| `client/gameplay.yml` | serve only | shadows/ocean |
-| `stat_bars.yml`, `lang/` | serve | UI / text |
-| Textures | sanitize/re-encode | draw |
-
----
-
-## Quick checklist for a new placeable
-
-1. `items/foo.yml` — display texture + `type: bundu:building` + `places: foo`  
-2. `buildings/…/foo.yml` — `class` + health (+ contexts)  
-3. `recipes/foo.yml` — if craftable  
-4. `client/lang/en.yml` — `item.foo` / `structure.foo` names  
+1. `items/foo.yml` — texture + `type: bundu:building` + `places: foo`  
+2. `buildings/…/foo.yml` — `class` + health (+ `whenNearby` if needed)  
+3. `recipes/foo.yml` — if craftable (own id; `result.item: foo`)  
+4. `client/lang/en.yml` — `item.foo` / `structure.foo`  
 5. `bun run pack:gen` && `bun run validate:packs`
