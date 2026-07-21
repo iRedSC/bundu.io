@@ -12,6 +12,7 @@ export type OrganicBoundaryProfile = {
 
 export type OrganicRectBake = {
     texture: Texture;
+    fillTexture?: Texture;
     x: number;
     y: number;
     w: number;
@@ -127,7 +128,8 @@ export function bakeOrganicRectMask(
     maxTextureSize: number,
     clip: Rect,
     outerFade: number,
-    color = 0xffffff
+    color = 0xffffff,
+    fillColor?: number
 ): OrganicRectBake | undefined {
     if (bounds.length === 0) return undefined;
     const pad = Math.ceil(profile.amplitude) + 1;
@@ -152,6 +154,7 @@ export function bakeOrganicRectMask(
     const tw = Math.max(1, Math.ceil(w * subdiv));
     const th = Math.max(1, Math.ceil(h * subdiv));
     const pixels = new Uint8Array(tw * th * 4);
+    const fillPixels = fillColor === undefined ? undefined : new Uint8Array(pixels.length);
     const inside = new Uint8Array(tw * th);
     const occupied = new Uint8Array(
         Math.ceil(clip.w) * Math.ceil(clip.h)
@@ -184,6 +187,9 @@ export function bakeOrganicRectMask(
     const red = (color >> 16) & 0xff;
     const green = (color >> 8) & 0xff;
     const blue = color & 0xff;
+    const fillRed = fillColor === undefined ? 0 : (fillColor >> 16) & 0xff;
+    const fillGreen = fillColor === undefined ? 0 : (fillColor >> 8) & 0xff;
+    const fillBlue = fillColor === undefined ? 0 : fillColor & 0xff;
 
     for (let sy = 0; sy < th; sy++) {
         const py = y + (sy + 0.5) / subdiv;
@@ -211,6 +217,13 @@ export function bakeOrganicRectMask(
             pixels[o + 1] = (green * alpha + 0.5) | 0;
             pixels[o + 2] = (blue * alpha + 0.5) | 0;
             pixels[o + 3] = (alpha * 255 + 0.5) | 0;
+            if (fillPixels) {
+                const fillAlpha = coverage(edge, aa);
+                fillPixels[o] = (fillRed * fillAlpha + 0.5) | 0;
+                fillPixels[o + 1] = (fillGreen * fillAlpha + 0.5) | 0;
+                fillPixels[o + 2] = (fillBlue * fillAlpha + 0.5) | 0;
+                fillPixels[o + 3] = (fillAlpha * 255 + 0.5) | 0;
+            }
         }
     }
 
@@ -223,7 +236,20 @@ export function bakeOrganicRectMask(
         alphaMode: "premultiplied-alpha",
         resource: pixels,
     });
-    return { texture: new Texture({ source }), x, y, w, h };
+    const fillTexture = fillPixels
+        ? new Texture({
+              source: new BufferImageSource({
+                  width: tw,
+                  height: th,
+                  format: "rgba8unorm",
+                  scaleMode: "linear",
+                  addressMode: "clamp-to-edge",
+                  alphaMode: "premultiplied-alpha",
+                  resource: fillPixels,
+              }),
+          })
+        : undefined;
+    return { texture: new Texture({ source }), fillTexture, x, y, w, h };
 }
 
 function chamferDistance(

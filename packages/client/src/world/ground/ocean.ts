@@ -251,28 +251,17 @@ export function createOceanGround(
             ORGANIC_EDGE_SUBDIV,
             ORGANIC_EDGE_TEXTURE_MAX,
             { x: 0, y: 0, w: WORLD_TILES, h: WORLD_TILES },
-            ORGANIC_FX_OVERSHOOT_TILES
-        );
-        if (!baked) return;
-        const fill = bakeOrganicRectMask(
-            bounds,
-            { amplitude: POND_SEAM_AMPLITUDE, offset: seamOffsetPond },
-            ORGANIC_EDGE_SUBDIV,
-            ORGANIC_EDGE_TEXTURE_MAX,
-            { x: 0, y: 0, w: WORLD_TILES, h: WORLD_TILES },
-            0,
+            ORGANIC_FX_OVERSHOOT_TILES,
+            0xffffff,
             materialColor
         );
-        if (!fill) {
-            baked.texture.destroy(true);
-            return;
-        }
+        if (!baked?.fillTexture) return;
         organicMaskTexture = baked.texture;
-        organicFillTexture = fill.texture;
-        organicFill.texture = fill.texture;
-        organicFill.position.set(fill.x * TILE_SIZE, fill.y * TILE_SIZE);
-        organicFill.width = fill.w * TILE_SIZE;
-        organicFill.height = fill.h * TILE_SIZE;
+        organicFillTexture = baked.fillTexture;
+        organicFill.texture = baked.fillTexture;
+        organicFill.position.set(baked.x * TILE_SIZE, baked.y * TILE_SIZE);
+        organicFill.width = baked.w * TILE_SIZE;
+        organicFill.height = baked.h * TILE_SIZE;
         for (const maskSprite of [fxMask, anchoredMask]) {
             maskSprite.texture = baked.texture;
             maskSprite.position.set(
