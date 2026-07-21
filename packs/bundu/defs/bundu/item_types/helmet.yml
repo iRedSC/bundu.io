@@ -3,6 +3,8 @@ displays:
         x: 0
         y: 0
         rotation: 0
-        scale: 1.4
+        scale: 2
+    inventory:
+        scale: 1.75
 ---
 function: "wear"
