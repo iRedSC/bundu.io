@@ -1,0 +1,15 @@
+result:
+    item: iridium_helmet
+    amount: 1
+duration: 50000
+score: 3000
+ingredients:
+    cobalt_helmet: 1
+    iridium: 50
+    cobalt: 40
+    silver: 40
+    stone: 60
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil

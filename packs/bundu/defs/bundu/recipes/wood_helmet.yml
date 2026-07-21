@@ -1,8 +1,0 @@
-result:
-    item: wood_helmet
-    amount: 1
-duration: 10000
-score: 75
-ingredients:
-    wood: 50
-requirements: []

@@ -1,10 +1,10 @@
 extends: item_type:bundu:pickaxe
-texture: bundu/item/tool/butcher_knife.svg
+texture: bundu/item/tool/stone_shovel.svg
 ---
-type: bundu:knife
+type: bundu:shovel
 whenMainHand:
     "*":
         attributes:
             attack.damage:
                 op: add
-                value: 8
+                value: 3

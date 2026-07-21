@@ -1,0 +1,15 @@
+result:
+    item: iridium_pickaxe
+    amount: 1
+duration: 40000
+score: 2000
+ingredients:
+    cobalt_pickaxe: 1
+    iridium: 25
+    cobalt: 25
+    silver: 30
+    stone: 60
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil
