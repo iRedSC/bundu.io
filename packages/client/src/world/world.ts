@@ -1799,6 +1799,29 @@ export class World {
                     h: top.h * TILE_SIZE,
                 };
             }
+            case AdminPlaceKind.Animal: {
+                let best: Animal | undefined;
+                let bestDist = Infinity;
+                for (const object of this.objects.all()) {
+                    if (!(object instanceof Animal)) continue;
+                    const dx = object.position.x - worldX;
+                    const dy = object.position.y - worldY;
+                    const dist = dx * dx + dy * dy;
+                    const radius = Math.max(object.collisionRadius, TILE_SIZE / 2);
+                    if (dist > radius * radius) continue;
+                    if (dist < bestDist) {
+                        best = object;
+                        bestDist = dist;
+                    }
+                }
+                if (!best) return null;
+                return {
+                    kind: "circle",
+                    x: best.position.x,
+                    y: best.position.y,
+                    radius: Math.max(best.collisionRadius, TILE_SIZE / 2),
+                };
+            }
         }
     }
 

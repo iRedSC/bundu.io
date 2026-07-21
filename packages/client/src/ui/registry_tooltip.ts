@@ -13,6 +13,8 @@ export function placeKindRegistry(kind: AdminPlaceKind): RegistryName {
             return "ground_type";
         case AdminPlaceKind.Decoration:
             return "decoration";
+        case AdminPlaceKind.Animal:
+            return "entity_type";
     }
 }
 

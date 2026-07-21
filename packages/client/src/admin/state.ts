@@ -4,7 +4,8 @@ export type EditorCategory =
     | "resources"
     | "ground"
     | "structures"
-    | "decorations";
+    | "decorations"
+    | "animals";
 /** Look = pan/view only; Place / Delete mutate the map. */
 export type EditorTool = "look" | "place" | "delete";
 /** Ground place brush: drag AABB, or paint one tile at a time. */
@@ -76,6 +77,8 @@ export function categoryToKind(category: EditorCategory): AdminPlaceKind {
             return AdminPlaceKind.Structure;
         case "decorations":
             return AdminPlaceKind.Decoration;
+        case "animals":
+            return AdminPlaceKind.Animal;
     }
 }
 
