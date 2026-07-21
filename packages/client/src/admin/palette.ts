@@ -677,6 +677,7 @@ export function createPalette(
         variantPage = 0;
         variantQuery = "";
         variantSearch.value = "";
+        state.selectedVariant = null;
         syncSelectedVariant(variants, defaultVariant);
         rebuildGrids();
         onChange();
