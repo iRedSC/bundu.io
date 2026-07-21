@@ -24,7 +24,7 @@ import {
     type WorldPoint,
 } from "./animal_pathing.js";
 import { nearestFootprintPoint } from "./tile_entity_geometry.js";
-import { modelBoundsPadding } from "../configs/model_bounds.js";
+import { structureFootprintPadding } from "../configs/loaders/buildings.js";
 
 /** Min travel before we treat an update as progress (world units). */
 const PROGRESS_EPSILON = 1;
@@ -345,8 +345,8 @@ export class AnimalSystem extends System<GameEventMap> {
             this.world.context.quadtree.query(
                 getSizedBounds(
                     physics.position,
-                    range + modelBoundsPadding(),
-                    range + modelBoundsPadding()
+                    range + structureFootprintPadding(),
+                    range + structureFootprintPadding()
                 )
             )
         );

@@ -16,7 +16,7 @@ import {
     footprintIntersectsPolygon,
     nearestFootprintPoint,
 } from "./tile_entity_geometry.js";
-import { modelBoundsPadding } from "../configs/model_bounds.js";
+import { structureFootprintPadding } from "../configs/loaders/buildings.js";
 
 function pointToVec(point: BasicPoint) {
     return new SAT.Vector(point.x, point.y);
@@ -71,7 +71,8 @@ export class AttackSystem extends System<GameEventMap> {
         const physics = Physics.get(source);
         if (!physics) return;
 
-        const queryPadding = SPATIAL_QUERY_PADDING + modelBoundsPadding();
+        const queryPadding =
+            SPATIAL_QUERY_PADDING + structureFootprintPadding();
         const bounds = getSizedBounds(
             physics.position,
             queryPadding,
