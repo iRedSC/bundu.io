@@ -92,6 +92,11 @@ export class LandSeamBaker {
     private done = 0;
     private lod: SeamLod = 2;
 
+    /**
+     * Build land occupancy + chunk queue from patches.
+     * Omit surface-layer water (ponds) so they don't clear land under themselves —
+     * land↔land seams then continue underneath while the pond still draws above.
+     */
     prepare(
         patches: readonly GroundPatchRef[],
         isOceanType: (type: number) => boolean,
@@ -518,7 +523,8 @@ export function seamOffsetPond(px: number, py: number): number {
 
 /**
  * True when this edge faces another land tile — apply organic wobble.
- * Open ocean / pond stays a hard box edge (ponds own their own organic clip).
+ * Open ocean stays a hard box edge. Surface water is omitted from topLand so
+ * land↔land seams continue under ponds (ponds own their own organic clip).
  */
 export function facesLandLand(
     tx: number,
