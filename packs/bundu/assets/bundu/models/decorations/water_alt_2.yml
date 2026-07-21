@@ -1,4 +1,3 @@
-id: decoration/water_alt_2
 parts:
   main:
     sprite: bundu/decoration/water/water_alt_2.svg

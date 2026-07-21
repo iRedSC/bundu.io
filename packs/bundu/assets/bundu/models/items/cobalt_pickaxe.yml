@@ -1,3 +1,2 @@
-id: item/cobalt_pickaxe
-extends: item/type/pickaxe
+extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/cobalt_pickaxe.svg

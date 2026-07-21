@@ -1,0 +1,6 @@
+texture: bundu/resource/silver_ore.png
+displays:
+    world:
+        scale: 1.7
+---
+{}

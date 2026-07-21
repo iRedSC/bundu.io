@@ -1,0 +1,18 @@
+extends: model:bundu:single_tile_node
+defaultVariant: base
+variants:
+    base:
+        main: bundu/resource/copper_ore.png
+
+parts:
+    main:
+        spillover: 50
+---
+score: 10
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 2
+regen_speed: 10
+quantity: 20
+loot_table: copper

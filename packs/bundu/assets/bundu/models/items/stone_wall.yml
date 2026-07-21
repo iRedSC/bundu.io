@@ -1,3 +1,2 @@
-id: item/stone_wall
-extends: item/type/wall
+extends: item_type:bundu:wall
 texture: bundu/structure/wall/stone_wall.png

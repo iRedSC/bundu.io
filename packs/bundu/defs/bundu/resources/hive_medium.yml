@@ -1,0 +1,10 @@
+extends: model:bundu:single_tile_node
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/misc/hive_2.svg
+---
+destroy_on_empty: true
+score: 20
+quantity: 7
+loot_table: hive_medium

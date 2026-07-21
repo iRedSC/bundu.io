@@ -1,3 +1,2 @@
-id: item/wood_door
-extends: item/type/door
+extends: item_type:bundu:door
 texture: bundu/structure/door/wood_door.png

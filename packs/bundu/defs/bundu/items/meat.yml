@@ -1,0 +1,13 @@
+extends: item_type:bundu:food
+texture: bundu/item/food/meat.svg
+displays:
+    hand:
+        rotation: 100
+        scale: 0.6
+        y: 0.6
+        x: 0
+---
+type: bundu:food
+stats:
+    hunger: 10
+    health: -5

@@ -1,0 +1,19 @@
+extends: model:bundu:animal
+parts:
+  body:
+    sprite: bundu/entity/animal/ram/ram.svg
+    spriteScale: 1.875
+---
+health: 500
+score: 800
+behavior: neutral
+detectionRange: 300
+loseSightRange: 450
+passiveSpeed: 10
+activeSpeed: 13
+attack_damage: 45
+scale: 0.8
+aggroSwitch: onHit
+aggroLevel: medium
+corpse: ram_dead
+spawn_count: 4

@@ -1,0 +1,11 @@
+extends: item_type:bundu:helmet
+texture: bundu/item/equipment/copper_helmet.svg
+---
+type: bundu:helmet
+level: 3
+whenHelmet:
+    "*":
+        attributes:
+            health.defense:
+                op: add
+                value: 5

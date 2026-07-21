@@ -1,0 +1,11 @@
+result:
+    item: beanie
+    amount: 1
+duration: 12000
+score: 300
+ingredients:
+    bear_fur: 6
+    deer_hide: 2
+    cloth: 2
+requirements:
+    - near_crafting_table

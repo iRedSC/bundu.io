@@ -20,6 +20,7 @@ import {
     compileModelDefs,
     type CompiledModelDefs,
 } from "@bundu/shared/models/compile";
+import { modelIdFromModelsPath, isInferredAbstractPath, defaultModelExtends, parseModelId } from "@bundu/shared/models/ids";
 import type { CompiledModelsPayload } from "@bundu/shared/models/types";
 import {
     rewritePackTextureRefs,
@@ -271,22 +272,42 @@ export class ResourcePackService {
                 for (const filename of files(modelsRoot).filter((name) =>
                     /\.ya?ml$/i.test(name)
                 )) {
+                    const relative = path
+                        .relative(modelsRoot, filename)
+                        .replaceAll("\\", "/");
                     const document = rewritePackTextureRefs(
                         record(
                             Bun.YAML.parse(fs.readFileSync(filename, "utf8")),
                             filename
                         )
                     );
-                    if ("id" in document) {
-                        if (typeof document.id !== "string" || !document.id) {
-                            throw new Error(
-                                `${filename}.id: expected a non-empty string`
-                            );
-                        }
-                        models[document.id] = document;
-                    } else {
-                        Object.assign(models, document);
+                    const inferredAbstract = isInferredAbstractPath(relative);
+                    const abstract =
+                        inferredAbstract || document.abstract === true;
+                    const derived = modelIdFromModelsPath(namespace, relative, {
+                        abstract,
+                    });
+                    const authoredId =
+                        typeof document.id === "string" && document.id
+                            ? document.id
+                            : undefined;
+                    // Path owns identity; explicit id only for rare path mismatches
+                    // (e.g. nature/tree.yml → resource:bundu:forest_tree).
+                    const id = authoredId ?? derived;
+                    document.id = id;
+                    if (inferredAbstract) {
+                        document.abstract = true;
                     }
+                    const parts = parseModelId(id);
+                    if (parts && document.extends === undefined) {
+                        const fallback = defaultModelExtends(
+                            parts.kind,
+                            parts.namespace,
+                            parts.path
+                        );
+                        if (fallback) document.extends = fallback;
+                    }
+                    models[id] = document;
                 }
 
                 const groundModelsRoot = path.join(

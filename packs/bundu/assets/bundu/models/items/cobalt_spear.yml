@@ -1,3 +1,2 @@
-id: item/cobalt_spear
-extends: item/type/spear
+extends: item_type:bundu:spear
 texture: bundu/item/tool/cobalt_spear.svg

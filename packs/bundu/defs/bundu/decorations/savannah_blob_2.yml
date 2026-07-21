@@ -1,0 +1,6 @@
+parts:
+  main:
+    sprite: bundu/decoration/savannah/savannah_blob_2.svg
+---
+size: 280
+z: 1

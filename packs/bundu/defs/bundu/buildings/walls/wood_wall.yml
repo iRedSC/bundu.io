@@ -1,0 +1,11 @@
+extends: model:bundu:wall
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/wall/wood_wall.png
+    spike: bundu/structure/spike/wood_spike.png
+---
+class: wall
+material: wood
+tier: 1
+health: 2000

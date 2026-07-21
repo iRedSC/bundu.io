@@ -1,0 +1,13 @@
+# @pack-gen model=models/corpses/queen_bee_dead.yml
+extends: model:bundu:corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/queen_bee/queen_bee_dead.svg
+    spriteScale: 1
+---
+decay: 30
+destroy_on_empty: true
+multipliers:
+    knife: 2
+quantity: 2
+loot_table: queen_bee_dead

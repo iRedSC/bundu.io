@@ -1,3 +1,2 @@
-id: item/quick_stone_spike
-extends: item/type/spike
+extends: item_type:bundu:spike
 texture: bundu/item/structure/spike/stone_spike.png

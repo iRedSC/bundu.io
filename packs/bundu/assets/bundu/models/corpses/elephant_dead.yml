@@ -1,5 +1,4 @@
-id: elephant_dead
-extends: corpse
+extends: model:bundu:corpse
 parts:
   body:
     sprite: bundu/entity/animal/elephant/elephant_dead.svg

@@ -1,0 +1,11 @@
+extends: item_type:bundu:helmet
+texture: bundu/item/equipment/stone_helmet.svg
+---
+type: bundu:helmet
+level: 2
+whenHelmet:
+    "*":
+        attributes:
+            health.defense:
+                op: add
+                value: 3

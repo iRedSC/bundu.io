@@ -1,0 +1,9 @@
+# @pack-gen model=models/corpses/bee_dead.yml
+extends: model:bundu:corpse
+parts:
+  body:
+    sprite: bundu/entity/animal/bee/bee_dead.svg
+    spriteScale: 2.5
+---
+decay: 30
+destroy_on_empty: true

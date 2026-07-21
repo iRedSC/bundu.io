@@ -1,5 +1,4 @@
-id: bear
-extends: animal
+extends: model:bundu:animal
 parts:
   body:
     sprite: bundu/entity/animal/bear/bear.svg

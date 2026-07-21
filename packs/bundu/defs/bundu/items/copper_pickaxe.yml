@@ -1,0 +1,11 @@
+extends: item_type:bundu:pickaxe
+texture: bundu/item/tool/copper_pickaxe.svg
+---
+type: bundu:pickaxe
+level: 3
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 4

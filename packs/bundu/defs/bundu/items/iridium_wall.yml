@@ -1,0 +1,5 @@
+extends: item_type:bundu:wall
+texture: bundu/structure/wall/iridium_wall.png
+---
+type: bundu:building
+places: iridium_wall

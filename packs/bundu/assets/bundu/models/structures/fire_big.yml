@@ -1,5 +1,4 @@
-id: fire_big
-extends: fire
+extends: model:bundu:fire
 defaultVariant: base
 variants:
   base:

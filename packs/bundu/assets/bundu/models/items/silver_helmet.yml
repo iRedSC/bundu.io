@@ -1,3 +1,2 @@
-id: item/silver_helmet
-extends: item/type/helmet
+extends: item_type:bundu:helmet
 texture: bundu/item/equipment/silver_helmet.svg

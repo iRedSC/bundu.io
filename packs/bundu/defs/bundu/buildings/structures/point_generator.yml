@@ -1,0 +1,22 @@
+extends: model:bundu:single_tile_node
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/crafting/point_generator.png
+
+tile:
+  footprint:
+    - "X#"
+    - "##"
+---
+class: building
+health: 1000
+pointsPerSecond: 2
+placement:
+    blocked:
+        - [0, 0]
+        - [1, 0]
+        - [0, 1]
+        - [1, 1]
+    ground:
+        - "#bundu:buildable_ground"

@@ -1,4 +1,3 @@
-id: decoration/acacia
 parts:
   main:
     sprite: bundu/decoration/forest/acacia.svg

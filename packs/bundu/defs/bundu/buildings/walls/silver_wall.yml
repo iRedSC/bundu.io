@@ -1,0 +1,11 @@
+extends: model:bundu:wall
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/wall/silver_wall.png
+    spike: bundu/structure/spike/silver_spike.png
+---
+class: wall
+material: silver
+tier: 4
+health: 6000

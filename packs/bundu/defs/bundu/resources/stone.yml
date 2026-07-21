@@ -1,0 +1,19 @@
+extends: model:bundu:single_tile_node
+defaultVariant: base
+
+variants:
+    base:
+        main: bundu/resource/stone_ore.png
+
+parts:
+    main:
+        spillover: 50
+---
+score: 8
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 1
+regen_speed: 8
+quantity: 30
+loot_table: stone

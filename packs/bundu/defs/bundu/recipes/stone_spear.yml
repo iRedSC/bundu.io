@@ -1,0 +1,10 @@
+result:
+    item: stone_spear
+    amount: 1
+duration: 14000
+score: 250
+ingredients:
+    stone: 20
+    wood: 80
+requirements:
+    - near_crafting_table

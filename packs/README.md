@@ -14,10 +14,87 @@ depends: [bundu]
 Set `BUNDU_PACK_ROOT` to load packs from another directory. Run
 `bun run validate:packs` after editing a pack.
 
+For a how-to on each content type (items, buildings, resources, recipes, …)
+see [AUTHORING.md](./AUTHORING.md).
+
+## Authoring with `defs/`
+
+Pack YAML is authored under `defs/<namespace>/`. `bun run pack:gen` splits those
+files into the runtime trees the server already loads:
+
+- `data/<namespace>/` — server gameplay
+- `assets/<namespace>/` — client models, ground models, lang, client gameplay
+
+Textures stay as real files under `assets/<namespace>/textures/` (not generated).
+`validate:packs` runs `pack:gen --check` first so generated YAML cannot drift.
+
+### Combined definitions
+
+Paired content uses a YAML document separator. First doc = display (assets),
+second doc = data (server):
+
+```yaml
+# defs/bundu/items/pinecone.yml
+texture: bundu/item/material/pinecone.svg
+
+---
+{}
+```
+
+```yaml
+# defs/bundu/entities/bear.yml
+extends: model:bundu:animal
+parts:
+  body:
+    sprite: bundu/entity/animal/bear/bear.svg
+    spriteScale: 2.5
+
+---
+health: 350
+behavior: hostile
+corpse: bear_dead
+```
+
+Path → emit mapping:
+
+| `defs/...` | display → | data → |
+|---|---|---|
+| `items/X.yml` | `assets/.../models/items/X.yml` | `data/.../items/X.yml` |
+| `entities/X.yml` | `models/actors/X.yml` | `entities/X.yml` |
+| `decorations/X.yml` | `models/decorations/X.yml` | `decorations/X.yml` |
+| `resources/X.yml` | `models/resources/X.yml` | `resources/X.yml` |
+| `buildings/walls/X.yml` | `models/walls/X.yml` | `buildings/X.yml` |
+| `buildings/doors/X.yml` | `models/doors/X.yml` | `buildings/X.yml` |
+| `buildings/structures/X.yml` | `models/structures/X.yml` | `buildings/X.yml` |
+| `ground_types/X.yml` | `ground_models/X.yml` | `ground_types/X.yml` |
+| `item_types/X.yml` | `models/items/type/X.yml` | `item_types/X.yml` |
+| `models/**` | `models/**` (display-only) | — |
+| `recipes/**`, `loot_tables/**`, `tags/**` | — | same path under `data/` |
+| `client/**` | copied into `assets/` | — |
+
+Single-doc files in a paired registry folder are data-only. Single-doc files under
+`models/` or `client/` are assets-only.
+
+When the model path is not the default for that registry, add a directive:
+
+```yaml
+# @pack-gen model=models/nature/tree.yml
+id: forest_tree
+# ...
+
+---
+score: 5
+loot_table: forest_tree
+```
+
+Shared abstracts stay under `defs/.../models/` and are referenced with `extends`
+from display halves (same as today’s model inheritance).
+
 ## Gameplay registries
 
-Gameplay definitions use canonical `namespace:path` IDs. The server currently
-loads these registries independently:
+Runtime paths below are under `data/` (generated from `defs/`). Gameplay
+definitions use canonical `namespace:path` IDs. The server currently loads these
+registries independently:
 
 - `item`
 - `structure`
@@ -44,8 +121,10 @@ data/bundu/recipes/wood_wall.yml          -> bundu:wood_wall
 data/bundu/loot_tables/bear_dead.yml      -> bundu:bear_dead
 ```
 
-Shared item templates live in the single document `data/<namespace>/item_types.yml`
-(not a registry). Each item sets `type: sword` (etc.) to merge those defaults.
+Shared item templates live under `defs/<namespace>/item_types/<path>.yml`
+(generated to `data/.../item_types/` and optionally `assets/.../models/items/type/`).
+Items set `type: bundu:sword` (or bare `sword` in the same namespace) to merge those
+defaults. Visual abstracts use model ids like `item_type:bundu:sword`.
 
 Bare entry references resolve relative to the definition's namespace. Use an
 explicit ID to cross namespaces:
@@ -166,7 +245,9 @@ resource quantity and harvest hit number do not advance.
 
 ## Assets
 
-Asset files use namespaced logical paths:
+Model / ground-model / lang / client gameplay YAML is generated from `defs/`
+into `assets/`. Textures are authored directly under `assets/`. Asset files use
+namespaced logical paths:
 
 ```text
 assets/bundu/textures/structure/wall/wood_wall.png
@@ -240,24 +321,38 @@ footsteps: false
 `trail` kicks up land-colored particles across the mover's hitbox diameter.
 Both omit cleanly when unset.
 
-Model YAML files use an explicit `id` field (filename is for organization).
-Item models use `item/<item_id>` ids, with shared abstracts under `item/type/...`.
-Decoration models use `decoration/<id>` so they never collide with resource/structure
-ids that share a bare name (for example `pine_tree`):
+Model ids are path-based: `kind:namespace:path` (parallel to gameplay registries).
+**File path owns identity** — do not write `id:` unless it must differ from the path
+(rare; e.g. `models/nature/tree.yml` → `resource:bundu:forest_tree`).
+
+| Kind | Example | Typical source |
+|---|---|---|
+| `item` | `item:bundu:wood_sword` | `defs/.../items/wood_sword.yml` |
+| `item_type` | `item_type:bundu:sword` | `defs/.../item_types/sword.yml` |
+| `structure` | `structure:bundu:wood_wall` | `defs/.../buildings/walls/wood_wall.yml` |
+| `resource` | `resource:bundu:pine_tree` | `defs/.../resources/pine_tree.yml` |
+| `decoration` | `decoration:bundu:beach` | `defs/.../decorations/beach.yml` |
+| `entity_type` | `entity_type:bundu:bear` | `defs/.../entities/bear.yml` |
+| `model` | `model:bundu:animal` | shared abstracts under `defs/.../models/` |
+
+`extends` is optional. Items and item types default to `item_type:<ns>:none` when
+omitted — only set `extends` for a non-default parent:
 
 ```yaml
-id: item/wood_sword
-extends: item/type/sword
+# wood_sword.yml — only the non-default parent
+extends: item_type:bundu:sword
 texture: bundu/item/tool/wood_sword.svg
 ```
 
 ```yaml
-id: decoration/beach
+# beach decoration — no id, no extends
 parts:
   main:
     sprite: bundu/decoration/beach/beach.svg
 ```
 
+`item_types/` and `models/base/` are inferred abstract (templates, not placeable).
+In mixed folders, mark templates with `abstract: true` (e.g. `models/walls/wall.yml`).
 Definitions refer to textures as `bundu/structure/wall/wood_wall.png`. A later
 pack can replace an asset by providing the same namespace and relative path.
 Model definitions overlay by model ID in pack order.

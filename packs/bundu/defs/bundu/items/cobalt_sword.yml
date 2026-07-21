@@ -1,0 +1,14 @@
+extends: item_type:bundu:sword
+texture: bundu/item/tool/cobalt_sword.svg
+---
+type: bundu:sword
+level: 5
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 22
+            health.defense.blocking:
+                op: add
+                value: 5

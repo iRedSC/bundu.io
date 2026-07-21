@@ -12,6 +12,7 @@ import {
     type ServerPacket,
 } from "@bundu/shared/packet_definitions";
 import { Player } from "./objects/player";
+import { modelIdForLocation } from "@bundu/shared/models/ids";
 import { Sky } from "./sky";
 import { SkyUndoLayer } from "./sky_undo_layer";
 import {
@@ -423,7 +424,12 @@ export class World {
         for (const object of [...this.objects.all()]) {
             if (!(object instanceof Structure)) continue;
             if (object.placeKind !== AdminPlaceKind.Resource) continue;
-            if (object.type !== "player_dead") continue;
+            if (
+                object.type !==
+                modelIdForLocation("resource", "bundu:player_dead")
+            ) {
+                continue;
+            }
             const dx = object.container.x - lx;
             const dy = object.container.y - ly;
             if (dx * dx + dy * dy > maxDistSq) continue;
@@ -665,7 +671,10 @@ export class World {
 
         const structure = new Structure(
             packet.id,
-            clientModelId(clientRegistries().resource.location(nodeType)),
+            clientModelId(
+                "resource",
+                clientRegistries().resource.location(nodeType)
+            ),
             deciPoint(packet.x, packet.y),
             packet.rotation,
             typeof collisionRadius === "number"
@@ -690,7 +699,10 @@ export class World {
 
         const structure = new Structure(
             packet.id,
-            clientModelId(clientRegistries().structure.location(nodeType)),
+            clientModelId(
+                "structure",
+                clientRegistries().structure.location(nodeType)
+            ),
             deciPoint(packet.x, packet.y),
             packet.rotation,
             FOOTPRINT_CIRCLE_RADIUS,
@@ -950,6 +962,7 @@ export class World {
             this.placementGhost = new Structure(
                 PLACEMENT_GHOST_RENDER_ID,
                 clientModelId(
+                    "structure",
                     clientRegistries().structure.location(placement.id)
                 ),
                 new Point(),

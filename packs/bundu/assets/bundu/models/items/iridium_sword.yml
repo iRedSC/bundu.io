@@ -1,3 +1,2 @@
-id: item/iridium_sword
-extends: item/type/sword
+extends: item_type:bundu:sword
 texture: bundu/item/tool/iridium_sword.svg

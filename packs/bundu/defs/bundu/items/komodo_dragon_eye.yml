@@ -1,0 +1,7 @@
+extends: item_type:bundu:food
+texture: bundu/item/material/komodo_dragon_eye.svg
+---
+type: bundu:food
+stats:
+    hunger: 20
+    health: -35

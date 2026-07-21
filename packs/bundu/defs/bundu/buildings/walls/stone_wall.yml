@@ -1,0 +1,11 @@
+extends: model:bundu:wall
+defaultVariant: base
+variants:
+  base:
+    main: bundu/structure/wall/stone_wall.png
+    spike: bundu/structure/spike/stone_spike.png
+---
+class: wall
+material: stone
+tier: 2
+health: 3500

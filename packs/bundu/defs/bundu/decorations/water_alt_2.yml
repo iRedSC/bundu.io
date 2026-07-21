@@ -1,0 +1,6 @@
+parts:
+  main:
+    sprite: bundu/decoration/water/water_alt_2.svg
+---
+size: 80
+z: 10

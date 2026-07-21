@@ -1,0 +1,22 @@
+kind: ocean
+color: "#1a5f8a"
+textures:
+    caustics: bundu/effect/ocean_caustics.jpg
+    displace: bundu/effect/ocean_displace.png
+    ripple_idle: bundu/effect/ocean_ripple.png
+    ripple_move: bundu/effect/ocean_ripple_move.png
+    foam: bundu/effect/ocean_foam.svg
+    sparkle: bundu/effect/ocean_sparkle.svg
+---
+model: ocean
+whenOccupied:
+  occupationType: center
+  "*":
+    flags:
+      - in_water
+    attributes:
+      movement.speed: { op: multiply, value: 0.75 }
+      attack.reach: { op: multiply, value: 0.75 }
+      air.oxygen: { op: add, value: -5 }
+      temperature.warmth: { op: add, value: -3 }
+      thirst.hydration: { op: add, value: 10 }

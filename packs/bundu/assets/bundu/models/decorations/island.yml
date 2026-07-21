@@ -1,4 +1,3 @@
-id: decoration/island
 parts:
   main:
     sprite: bundu/decoration/beach/island.svg

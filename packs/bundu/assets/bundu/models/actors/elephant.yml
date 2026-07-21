@@ -1,5 +1,4 @@
-id: elephant
-extends: animal
+extends: model:bundu:animal
 parts:
   body:
     sprite: bundu/entity/animal/elephant/elephant.svg

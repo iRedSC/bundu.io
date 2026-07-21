@@ -1,0 +1,14 @@
+extends: item_type:bundu:sword
+texture: bundu/item/tool/copper_sword.svg
+---
+type: bundu:sword
+level: 3
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 17
+            health.defense.blocking:
+                op: add
+                value: 3

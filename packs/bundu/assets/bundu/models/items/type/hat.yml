@@ -1,6 +1,3 @@
-id: item/type/hat
-abstract: true
-extends: item/type/none
 displays:
     body:
         x: 0

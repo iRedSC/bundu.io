@@ -1,0 +1,12 @@
+extends: model:bundu:door
+defaultVariant: base
+variants:
+  base:
+    wall: bundu/structure/wall/copper_wall.png
+    main: bundu/structure/door/copper_door.png
+    spike: bundu/structure/spike/copper_spike.png
+---
+class: door
+material: copper
+tier: 3
+health: 4500

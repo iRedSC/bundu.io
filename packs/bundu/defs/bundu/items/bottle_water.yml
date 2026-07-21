@@ -1,0 +1,6 @@
+extends: item_type:bundu:food
+texture: bundu/item/food/bottle_water.svg
+---
+type: bundu:food
+stats:
+  thirst: 35

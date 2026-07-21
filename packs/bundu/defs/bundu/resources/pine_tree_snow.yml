@@ -1,0 +1,17 @@
+extends: model:bundu:single_tile_node
+defaultVariant: base
+variants:
+  base:
+    main: bundu/decoration/forest/pine_tree_snow.svg
+parts:
+  main:
+    shadow: 2
+---
+score: 5
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 0
+regen_speed: 5
+quantity: 30
+loot_table: pine_tree_snow

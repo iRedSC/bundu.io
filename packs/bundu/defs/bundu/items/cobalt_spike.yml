@@ -1,0 +1,5 @@
+extends: item_type:bundu:spike
+texture: bundu/item/structure/spike/cobalt_spike.png
+---
+type: bundu:building
+places: cobalt_spike

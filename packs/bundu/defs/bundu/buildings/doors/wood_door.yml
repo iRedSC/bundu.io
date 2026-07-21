@@ -1,0 +1,12 @@
+extends: model:bundu:door
+defaultVariant: base
+variants:
+  base:
+    wall: bundu/structure/wall/wood_wall.png
+    main: bundu/structure/door/wood_door.png
+    spike: bundu/structure/spike/wood_spike.png
+---
+class: door
+material: wood
+tier: 1
+health: 2000

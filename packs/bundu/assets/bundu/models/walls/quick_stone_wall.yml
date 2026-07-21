@@ -1,5 +1,4 @@
-id: quick_stone_wall
-extends: wall
+extends: model:bundu:wall
 defaultVariant: base
 variants:
   base:

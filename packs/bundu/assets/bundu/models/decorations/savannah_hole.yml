@@ -1,4 +1,3 @@
-id: decoration/savannah_hole
 parts:
   main:
     sprite: bundu/decoration/savannah/savannah_hole.svg

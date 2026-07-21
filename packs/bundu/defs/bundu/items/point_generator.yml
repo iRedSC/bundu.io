@@ -1,0 +1,5 @@
+extends: item_type:bundu:building
+texture: bundu/structure/crafting/point_generator.png
+---
+type: bundu:building
+places: point_generator

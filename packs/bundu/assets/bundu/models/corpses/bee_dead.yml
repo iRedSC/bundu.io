@@ -1,5 +1,4 @@
-id: bee_dead
-extends: corpse
+extends: model:bundu:corpse
 parts:
   body:
     sprite: bundu/entity/animal/bee/bee_dead.svg

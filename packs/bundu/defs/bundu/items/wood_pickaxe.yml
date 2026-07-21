@@ -1,0 +1,11 @@
+extends: item_type:bundu:pickaxe
+texture: bundu/item/tool/wood_pickaxe.svg
+---
+type: bundu:pickaxe
+level: 1
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 2

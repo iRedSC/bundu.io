@@ -1,3 +1,2 @@
-id: item/red_berry
-extends: item/type/food
+extends: item_type:bundu:food
 texture: bundu/item/food/red_berry.svg

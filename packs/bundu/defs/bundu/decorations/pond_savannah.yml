@@ -1,0 +1,6 @@
+parts:
+  main:
+    sprite: bundu/decoration/water/pond_savannah.svg
+---
+size: 400
+z: 2

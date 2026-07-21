@@ -1,6 +1,3 @@
-id: item/type/hammer
-abstract: true
-extends: item/type/none
 displays:
     hand:
         rotation: -100

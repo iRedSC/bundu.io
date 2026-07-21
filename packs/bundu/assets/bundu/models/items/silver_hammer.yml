@@ -1,3 +1,2 @@
-id: item/silver_hammer
-extends: item/type/hammer
+extends: item_type:bundu:hammer
 texture: bundu/item/tool/silver_hammer.svg

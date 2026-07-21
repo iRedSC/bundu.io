@@ -1,4 +1,3 @@
-id: decoration/forest_blob_2
 parts:
   main:
     sprite: bundu/decoration/forest/forest_blob_2.svg

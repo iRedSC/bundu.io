@@ -1,0 +1,5 @@
+extends: item_type:bundu:door
+texture: bundu/structure/door/copper_door.png
+---
+type: bundu:building
+places: copper_door

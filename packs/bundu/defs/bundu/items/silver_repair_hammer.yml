@@ -1,0 +1,12 @@
+texture: bundu/misc/unknown_asset.svg
+---
+type: bundu:wrench
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 4
+            attack.building.damage:
+                op: add
+                value: -70

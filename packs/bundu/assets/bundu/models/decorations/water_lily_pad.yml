@@ -1,4 +1,3 @@
-id: decoration/water_lily_pad
 parts:
   main:
     sprite: bundu/decoration/water/water_lily_pad.svg

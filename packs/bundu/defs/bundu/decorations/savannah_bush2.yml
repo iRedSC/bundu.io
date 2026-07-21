@@ -1,0 +1,6 @@
+parts:
+  main:
+    sprite: bundu/decoration/savannah/savannah_bush2.svg
+---
+size: 90
+z: 30

@@ -1,3 +1,2 @@
-id: item/stone_pickaxe
-extends: item/type/pickaxe
+extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/stone_pickaxe.svg

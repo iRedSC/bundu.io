@@ -1,0 +1,6 @@
+parts:
+  main:
+    sprite: bundu/decoration/beach/beach_shell.svg
+---
+size: 48
+z: 20

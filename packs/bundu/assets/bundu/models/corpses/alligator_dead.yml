@@ -1,5 +1,4 @@
-id: alligator_dead
-extends: corpse
+extends: model:bundu:corpse
 parts:
   body:
     sprite: bundu/entity/animal/alligator/alligator_dead.svg

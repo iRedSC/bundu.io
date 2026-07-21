@@ -281,9 +281,14 @@ export function loadConfigs() {
     >;
     const groundTypeConfig = records(sources.ground_type);
     const decorationConfig = records(sources.decoration);
-    const itemTypes = packs.records("bundu", "item_types") as Partial<
-        Record<string, Partial<ItemConfig>>
-    >;
+    // File-per-type under data/<ns>/item_types/<path>.yml → keys `ns:path` and bare path.
+    const itemTypes: Partial<Record<string, Partial<ItemConfig>>> = {};
+    for (const [location, sourced] of packs.registryDefinitions("item_types")) {
+        const value = sourced.value as Partial<ItemConfig>;
+        itemTypes[location] = value;
+        const bare = location.slice(location.indexOf(":") + 1);
+        itemTypes[bare] = value;
+    }
 
     loadLootTables(sources.loot_table);
     BuildingConfigs.parse(
@@ -521,7 +526,12 @@ export function loadConfigs() {
             places?: string;
         } & Record<string, unknown>;
         const typeKey = record.type ?? "none";
-        const typeRaw = itemTypeRaws[typeKey] ?? {};
+        const namespaced =
+            typeKey.includes(":")
+                ? typeKey
+                : `${namespace(id)}:${typeKey}`;
+        const typeRaw =
+            itemTypeRaws[namespaced] ?? itemTypeRaws[typeKey] ?? {};
         const typeRecord = typeRaw as Partial<ItemConfig>;
 
         record.stats = mergeObjects(typeRecord.stats, record.stats, {});
@@ -548,6 +558,8 @@ export function loadConfigs() {
         for (const name of EQUIP_CONTEXTS) {
             merged[name] = record[name];
         }
+        // Runtime compares bare type paths (`food`, `pickaxe`) for eat/harvest.
+        merged.type = namespaced.slice(namespaced.indexOf(":") + 1);
         return merged;
     };
 

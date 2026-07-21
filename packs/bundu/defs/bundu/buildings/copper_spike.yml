@@ -1,0 +1,6 @@
+class: spike
+material: copper
+tier: 3
+damage: 40
+on_hit_damage: 15
+attack_range: 25

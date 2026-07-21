@@ -1,3 +1,2 @@
-id: item/workbench
-extends: item/type/building
+extends: item_type:bundu:building
 texture: bundu/structure/crafting/workbench.svg

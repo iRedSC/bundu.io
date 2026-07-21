@@ -1,0 +1,10 @@
+extends: item_type:bundu:hat
+texture: bundu/item/equipment/beanie.svg
+---
+type: bundu:hat
+whenHelmet:
+    "*":
+        attributes:
+            temperature.warmth:
+                op: add
+                value: 12

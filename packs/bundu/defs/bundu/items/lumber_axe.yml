@@ -1,0 +1,10 @@
+extends: item_type:bundu:pickaxe
+texture: bundu/item/tool/hatchet.svg
+---
+type: bundu:axe
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 7

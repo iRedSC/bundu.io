@@ -1,4 +1,4 @@
-type: food
+type: bundu:food
 can_saturate: true
 stats:
     hunger: 35

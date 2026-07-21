@@ -1,0 +1,16 @@
+extends: model:bundu:animal
+parts:
+  body:
+    sprite: bundu/entity/animal/deer/deer.svg
+    spriteScale: 2.5
+---
+health: 100
+score: 250
+behavior: scared
+detectionRange: 300
+loseSightRange: 700
+passiveSpeed: 11
+activeSpeed: 14
+scale: 0.6
+corpse: deer_dead
+spawn_count: 8

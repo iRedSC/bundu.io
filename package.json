@@ -25,7 +25,9 @@
         "client": "bun run build && bun run serve-frontend",
         "typecheck": "tsc --noEmit && bun run --cwd packages/figma-plugin typecheck",
         "lint": "biome lint .",
-        "validate:packs": "bun run scripts/validate-packs.ts",
+        "pack:gen": "bun run scripts/pack-gen/cli-generate.ts",
+        "pack:gen:check": "bun run scripts/pack-gen/cli-generate.ts --check",
+        "validate:packs": "bun run pack:gen:check && bun run scripts/validate-packs.ts",
         "test": "bun test",
         "test:integration": "bun run scripts/ci/websocket-smoke.ts"
     }

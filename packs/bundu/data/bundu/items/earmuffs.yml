@@ -1,4 +1,4 @@
-type: hat
+type: bundu:hat
 whenHelmet:
     "*":
         attributes:

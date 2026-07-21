@@ -1,3 +1,2 @@
-id: item/copper_spike
-extends: item/type/spike
+extends: item_type:bundu:spike
 texture: bundu/item/structure/spike/copper_spike.png

@@ -1,0 +1,6 @@
+extends: item_type:bundu:food
+texture: bundu/item/food/bandage.svg
+---
+type: bundu:food
+stats:
+    heal_ticks: 2

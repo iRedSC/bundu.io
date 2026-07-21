@@ -1,0 +1,10 @@
+result:
+    item: quick_stone_wall
+    amount: 1
+duration: 2000
+score: 50
+ingredients:
+    quick_wood_wall: 1
+    stone: 20
+requirements:
+    - near_crafting_table

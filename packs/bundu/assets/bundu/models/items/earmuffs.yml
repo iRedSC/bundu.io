@@ -1,3 +1,2 @@
-id: item/earmuffs
-extends: item/type/hat
+extends: item_type:bundu:hat
 texture: bundu/item/equipment/earmuffs.svg

@@ -1,3 +1,1 @@
-id: item/fish_3
-extends: item/type/none
 texture: bundu/misc/unknown_asset.svg

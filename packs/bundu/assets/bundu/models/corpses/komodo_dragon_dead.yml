@@ -1,5 +1,4 @@
-id: komodo_dragon_dead
-extends: corpse
+extends: model:bundu:corpse
 parts:
   body:
     sprite: bundu/entity/animal/komodo_dragon/komodo_dragon_dead.svg

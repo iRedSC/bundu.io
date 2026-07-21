@@ -1,0 +1,6 @@
+type: fixed
+entries:
+    - item: meat
+      count: 3
+    - item: ram_wool
+      count: 1

@@ -1,0 +1,23 @@
+displays:
+    hand:
+        rotation: -100
+        x: 0.1
+        y: 0.25
+        scale: 0.45
+---
+function: "main_hand"
+whenMainHand:
+    "*":
+        attributes:
+            "movement.speed":
+                op: "multiply"
+                value: 0.8
+            "attack.reach":
+                op: "add"
+                value: 10
+            "attack.sweep":
+                op: "add"
+                value: 30
+            "attack.origin":
+                op: "add"
+                value: 15

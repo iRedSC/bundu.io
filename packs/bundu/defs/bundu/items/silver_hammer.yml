@@ -1,0 +1,14 @@
+extends: item_type:bundu:hammer
+texture: bundu/item/tool/silver_hammer.svg
+---
+type: bundu:hammer
+level: 4
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 6
+            attack.damage.building:
+                op: add
+                value: 50

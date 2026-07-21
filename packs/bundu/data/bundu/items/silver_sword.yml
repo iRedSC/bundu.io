@@ -1,4 +1,4 @@
-type: sword
+type: bundu:sword
 level: 4
 whenMainHand:
     "*":

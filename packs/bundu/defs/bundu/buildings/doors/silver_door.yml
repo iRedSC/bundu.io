@@ -1,0 +1,12 @@
+extends: model:bundu:door
+defaultVariant: base
+variants:
+  base:
+    wall: bundu/structure/wall/silver_wall.png
+    main: bundu/structure/door/silver_door.png
+    spike: bundu/structure/spike/silver_spike.png
+---
+class: door
+material: silver
+tier: 4
+health: 6000

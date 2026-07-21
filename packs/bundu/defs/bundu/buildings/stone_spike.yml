@@ -1,0 +1,6 @@
+class: spike
+material: stone
+tier: 2
+damage: 30
+on_hit_damage: 10
+attack_range: 25

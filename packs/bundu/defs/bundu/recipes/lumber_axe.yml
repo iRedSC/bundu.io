@@ -1,0 +1,16 @@
+result:
+    item: lumber_axe
+    amount: 1
+duration: 40000
+score: 3000
+ingredients:
+    silver_pickaxe: 1
+    cobalt: 40
+    silver: 40
+    copper: 60
+    stone: 100
+    wood: 200
+requirements:
+    - near_crafting_table
+    - near_fire
+    - near_anvil

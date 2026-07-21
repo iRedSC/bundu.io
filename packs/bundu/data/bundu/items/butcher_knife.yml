@@ -1,4 +1,4 @@
-type: knife
+type: bundu:knife
 whenMainHand:
     "*":
         attributes:

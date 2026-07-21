@@ -1,0 +1,16 @@
+result:
+    item: time_book
+    amount: 1
+duration: 40000
+score: 4000
+ingredients:
+    book: 1
+    cloth: 8
+    ram_wool: 12
+    bear_fur: 12
+    komodo_dragon_eye: 4
+    elephant_tusk: 2
+    wood: 200
+requirements:
+    - near_crafting_table
+    - near_fire

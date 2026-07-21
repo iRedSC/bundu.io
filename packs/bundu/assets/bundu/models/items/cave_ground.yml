@@ -1,3 +1,1 @@
-id: item/cave_ground
-extends: item/type/none
 texture: bundu/misc/unknown_asset.svg

@@ -1,0 +1,8 @@
+result:
+    item: quick_wood_wall
+    amount: 1
+duration: 1000
+score: 25
+ingredients:
+    wood: 20
+requirements: []

@@ -1,3 +1,2 @@
-id: item/stone_sword
-extends: item/type/sword
+extends: item_type:bundu:sword
 texture: bundu/item/tool/stone_sword.svg

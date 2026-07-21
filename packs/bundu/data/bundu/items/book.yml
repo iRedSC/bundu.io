@@ -1,4 +1,4 @@
-type: book
+type: bundu:book
 whenOffHand:
     "*":
         flags:

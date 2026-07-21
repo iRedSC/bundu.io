@@ -1,4 +1,3 @@
-id: decoration/savannah_ground_circle
 parts:
   main:
     sprite: bundu/decoration/savannah/savannah_ground_circle.svg

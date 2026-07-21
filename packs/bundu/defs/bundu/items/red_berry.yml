@@ -1,0 +1,7 @@
+extends: item_type:bundu:food
+texture: bundu/item/food/red_berry.svg
+---
+type: bundu:food
+stats:
+    hunger: 6
+    health: -2

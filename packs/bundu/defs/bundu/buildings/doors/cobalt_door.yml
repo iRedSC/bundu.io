@@ -1,0 +1,12 @@
+extends: model:bundu:door
+defaultVariant: base
+variants:
+  base:
+    wall: bundu/structure/wall/cobalt_wall.png
+    main: bundu/structure/door/cobalt_door.png
+    spike: bundu/structure/spike/cobalt_spike.png
+---
+class: door
+material: cobalt
+tier: 5
+health: 7500

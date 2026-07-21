@@ -1,3 +1,1 @@
-id: item/alligator_skin
-extends: item/type/none
 texture: bundu/item/material/alligator_skin_alt_2.svg

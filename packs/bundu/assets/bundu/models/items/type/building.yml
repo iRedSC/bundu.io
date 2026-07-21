@@ -1,6 +1,3 @@
-id: item/type/building
-abstract: true
-extends: item/type/none
 displays:
     hand:
         rotation: -20

@@ -1,0 +1,6 @@
+parts:
+  main:
+    sprite: bundu/decoration/savannah/savannah_hole.svg
+---
+size: 48
+z: 20

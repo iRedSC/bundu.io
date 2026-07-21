@@ -1,3 +1,1 @@
-id: item/deer_hide
-extends: item/type/none
 texture: bundu/item/material/deer_hide.svg

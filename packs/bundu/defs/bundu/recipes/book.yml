@@ -1,0 +1,11 @@
+result:
+    item: book
+    amount: 1
+duration: 7000
+score: 500
+ingredients:
+    deer_hide: 2
+    pitch: 2
+    bear_fur: 4
+requirements:
+    - near_crafting_table

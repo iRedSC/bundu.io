@@ -1,3 +1,2 @@
-id: item/anvil
-extends: item/type/building
+extends: item_type:bundu:building
 texture: bundu/structure/crafting/anvil.svg

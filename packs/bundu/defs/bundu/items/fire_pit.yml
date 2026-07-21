@@ -1,0 +1,5 @@
+extends: item_type:bundu:building
+texture: bundu/structure/crafting/fire_pit.svg
+---
+type: bundu:building
+places: fire_pit

@@ -1,0 +1,11 @@
+result:
+    item: quick_silver_spike
+    amount: 1
+duration: 7000
+score: 250
+ingredients:
+    silver: 30
+    tooth: 4
+requirements:
+    - near_crafting_table
+    - near_anvil

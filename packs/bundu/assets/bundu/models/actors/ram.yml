@@ -1,5 +1,4 @@
-id: ram
-extends: animal
+extends: model:bundu:animal
 parts:
   body:
     sprite: bundu/entity/animal/ram/ram.svg

@@ -42,6 +42,7 @@ export class Animal extends GameObject {
         // overshoot then rubber-band when the next wander packet arrived.
         super(id, position, 0, collisionRadius, TILE_SIZE * (scale ?? 1), 250, 0);
         this.modelId = clientModelId(
+            "entity_type",
             clientRegistries().entity_type.location(typeId)
         );
         this.applyModelDefinition(animalDef(this.modelId));

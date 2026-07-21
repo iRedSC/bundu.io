@@ -1,0 +1,12 @@
+result:
+    item: cloth
+    amount: 1
+duration: 2000
+score: 75
+ingredients:
+    pitch: 1
+    deer_hide: 1
+    wood: 10
+requirements:
+    - near_fire
+    - near_crafting_table

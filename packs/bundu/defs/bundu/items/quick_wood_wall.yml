@@ -1,0 +1,5 @@
+extends: item_type:bundu:wall
+texture: bundu/structure/wall/wood_wall.png
+---
+type: bundu:building
+places: quick_wood_wall

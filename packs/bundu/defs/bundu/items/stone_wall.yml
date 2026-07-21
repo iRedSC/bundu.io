@@ -1,0 +1,5 @@
+extends: item_type:bundu:wall
+texture: bundu/structure/wall/stone_wall.png
+---
+type: bundu:building
+places: stone_wall

@@ -1,0 +1,11 @@
+extends: item_type:bundu:helmet
+texture: bundu/item/equipment/cobalt_helmet.svg
+---
+type: bundu:helmet
+level: 5
+whenHelmet:
+    "*":
+        attributes:
+            health.defense:
+                op: add
+                value: 7

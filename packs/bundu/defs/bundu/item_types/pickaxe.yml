@@ -1,0 +1,23 @@
+displays:
+    hand:
+        rotation: 220
+        x: -0.125
+        y: 0.125
+        scale: 0.6
+    inventory:
+        rotation: 45
+        scale: 1.25
+---
+function: "main_hand"
+whenMainHand:
+    "*":
+        attributes:
+            "attack.reach":
+                op: "add"
+                value: 10
+            "attack.sweep":
+                op: "add"
+                value: 30
+            "attack.origin":
+                op: "add"
+                value: 15

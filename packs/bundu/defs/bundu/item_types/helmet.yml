@@ -1,0 +1,8 @@
+displays:
+    body:
+        x: 0
+        y: 0
+        rotation: 0
+        scale: 1.4
+---
+function: "wear"

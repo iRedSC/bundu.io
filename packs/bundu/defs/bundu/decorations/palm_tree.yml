@@ -1,0 +1,6 @@
+parts:
+  main:
+    sprite: bundu/decoration/beach/palm_tree.svg
+---
+size: 160
+z: 40

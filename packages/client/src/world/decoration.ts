@@ -3,8 +3,8 @@ import { radians } from "@bundu/shared/transforms";
 import { SpriteFactory } from "../assets/sprite_factory";
 import {
     clientDecoration,
-    clientModelId,
     clientRegistries,
+    decorationModelId,
 } from "../configs/registries";
 import { lookupObjectDef } from "../models/defs";
 
@@ -24,10 +24,7 @@ export type DecorationSprite = {
     container: Container;
 };
 
-/** Model id for a decoration registry location (`bundu:beach` → `decoration/beach`). */
-export function decorationModelId(location: string): string {
-    return `decoration/${clientModelId(location)}`;
-}
+export { decorationModelId };
 
 function textureForType(type: number): string {
     const location = clientRegistries().decoration.location(type);

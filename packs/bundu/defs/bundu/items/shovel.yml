@@ -1,0 +1,10 @@
+extends: item_type:bundu:pickaxe
+texture: bundu/item/tool/shovel.svg
+---
+type: bundu:shovel
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 3

@@ -1,5 +1,4 @@
-id: copper_door
-extends: door
+extends: model:bundu:door
 defaultVariant: base
 variants:
   base:

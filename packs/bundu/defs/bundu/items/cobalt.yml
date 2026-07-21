@@ -1,0 +1,6 @@
+texture: bundu/resource/cobalt_ore.png
+displays:
+    world:
+        scale: 2
+---
+{}

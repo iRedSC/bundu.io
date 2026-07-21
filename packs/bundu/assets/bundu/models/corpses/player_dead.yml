@@ -1,5 +1,4 @@
-id: player_dead
-extends: corpse
+extends: model:bundu:corpse
 parts:
     leftHand:
         parent: body

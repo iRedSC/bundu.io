@@ -1,3 +1,2 @@
-id: item/book
-extends: item/type/book
+extends: item_type:bundu:book
 texture: bundu/item/book/book.svg

@@ -1,0 +1,14 @@
+extends: item_type:bundu:spear
+texture: bundu/item/tool/hunting_spear.svg
+---
+type: bundu:spear
+level: 5
+whenMainHand:
+    "*":
+        attributes:
+            attack.damage:
+                op: add
+                value: 18
+            health.defense.blocking:
+                op: add
+                value: 5

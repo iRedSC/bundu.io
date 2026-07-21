@@ -1,0 +1,16 @@
+texture: bundu/misc/unknown_asset.svg
+---
+type: bundu:book
+function: off_hand
+whenOffHand:
+    "*":
+        attributes:
+            health.regen_amount:
+                op: add
+                value: 15
+            hunger.nourishment:
+                op: add
+                value: -1800
+            health.max:
+                op: multiply
+                value: 0.7

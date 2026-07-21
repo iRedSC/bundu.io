@@ -1,4 +1,3 @@
-id: decoration/sand_ground_circle
 parts:
   main:
     sprite: bundu/decoration/beach/sand_ground_circle.svg
