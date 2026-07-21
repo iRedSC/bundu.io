@@ -1,5 +1,3 @@
-id: item:bundu:tent
-extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg
 ---
 {}

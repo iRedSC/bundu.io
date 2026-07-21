@@ -1,3 +1,2 @@
-id: item:bundu:silver_spear
 extends: item_type:bundu:spear
 texture: bundu/item/tool/silver_spear.svg

@@ -1,4 +1,3 @@
-id: item:bundu:wood_pickaxe
 extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/wood_pickaxe.svg
 ---

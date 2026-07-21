@@ -1,4 +1,3 @@
-id: item:bundu:silver_spike
 extends: item_type:bundu:spike
 texture: bundu/item/structure/spike/silver_spike.png
 ---

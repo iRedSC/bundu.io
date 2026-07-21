@@ -1,4 +1,3 @@
-id: structure:bundu:stone_wall
 extends: model:bundu:wall
 defaultVariant: base
 variants:

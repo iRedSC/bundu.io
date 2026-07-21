@@ -1,3 +1,1 @@
-id: item:bundu:player_without_features
-extends: item_type:bundu:none
 texture: bundu/entity/player/player_without_features.svg

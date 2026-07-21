@@ -1,5 +1,4 @@
 # @pack-gen model=models/corpses/player_dead.yml
-id: resource:bundu:player_dead
 extends: model:bundu:corpse
 parts:
     leftHand:

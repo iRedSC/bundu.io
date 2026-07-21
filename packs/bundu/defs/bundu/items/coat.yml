@@ -1,4 +1,3 @@
-id: item:bundu:coat
 extends: item_type:bundu:hat
 texture: bundu/item/equipment/coat.svg
 ---

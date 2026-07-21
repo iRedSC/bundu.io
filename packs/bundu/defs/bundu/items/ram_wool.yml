@@ -1,5 +1,3 @@
-id: item:bundu:ram_wool
-extends: item_type:bundu:none
 texture: bundu/item/material/ram_wool.svg
 ---
 {}

@@ -1,4 +1,3 @@
-id: decoration:bundu:winter_ground_circle_dark
 parts:
   main:
     sprite: bundu/decoration/snow/winter_ground_circle_dark.svg

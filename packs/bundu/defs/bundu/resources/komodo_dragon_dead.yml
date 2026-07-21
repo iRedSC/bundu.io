@@ -1,5 +1,4 @@
 # @pack-gen model=models/corpses/komodo_dragon_dead.yml
-id: resource:bundu:komodo_dragon_dead
 extends: model:bundu:corpse
 parts:
   body:

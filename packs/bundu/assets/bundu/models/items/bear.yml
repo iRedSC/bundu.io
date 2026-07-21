@@ -1,3 +1,1 @@
-id: item:bundu:bear
-extends: item_type:bundu:none
 texture: bundu/entity/animal/bear/bear.svg

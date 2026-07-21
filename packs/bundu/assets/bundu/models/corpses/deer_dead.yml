@@ -1,4 +1,3 @@
-id: resource:bundu:deer_dead
 extends: model:bundu:corpse
 parts:
   body:

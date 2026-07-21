@@ -1,4 +1,3 @@
-id: resource:bundu:pine_tree
 extends: model:bundu:single_tile_node
 defaultVariant: base
 variants:

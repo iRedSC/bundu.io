@@ -1,4 +1,3 @@
-id: structure:bundu:quick_silver_wall
 extends: model:bundu:wall
 defaultVariant: base
 variants:

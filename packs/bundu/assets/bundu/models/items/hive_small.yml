@@ -1,3 +1,1 @@
-id: item:bundu:hive_small
-extends: item_type:bundu:none
 texture: bundu/structure/misc/hive_1.svg

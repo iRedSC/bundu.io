@@ -1,5 +1,4 @@
 # @pack-gen model=models/corpses/fish_dead.yml
-id: resource:bundu:fish_dead
 extends: model:bundu:corpse
 parts:
   body:

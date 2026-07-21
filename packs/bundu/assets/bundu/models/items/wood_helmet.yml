@@ -1,3 +1,2 @@
-id: item:bundu:wood_helmet
 extends: item_type:bundu:helmet
 texture: bundu/item/equipment/wood_helmet.svg

@@ -1,4 +1,3 @@
-id: item:bundu:bird_skull
 extends: item_type:bundu:book
 texture: bundu/item/material/bird_skull.svg
 ---

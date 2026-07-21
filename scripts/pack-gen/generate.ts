@@ -37,6 +37,7 @@ function looksLikeItemTypeModel(yaml: string): boolean {
     const record = doc as Record<string, unknown>;
     return (
         typeof record.id === "string" ||
+        typeof record.extends === "string" ||
         record.abstract === true ||
         record.displays !== undefined ||
         record.parts !== undefined ||

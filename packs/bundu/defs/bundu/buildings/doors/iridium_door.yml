@@ -1,4 +1,3 @@
-id: structure:bundu:iridium_door
 extends: model:bundu:door
 defaultVariant: base
 variants:

@@ -1,4 +1,3 @@
-id: resource:bundu:queen_bee_dead
 extends: model:bundu:corpse
 parts:
   body:

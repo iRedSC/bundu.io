@@ -1,4 +1,3 @@
-id: resource:bundu:player_dead
 extends: model:bundu:corpse
 parts:
     leftHand:

@@ -32,8 +32,6 @@ second doc = data (server):
 
 ```yaml
 # defs/bundu/items/pinecone.yml
-id: item:bundu:pinecone
-extends: item_type:bundu:none
 texture: bundu/item/material/pinecone.svg
 
 ---
@@ -42,7 +40,6 @@ texture: bundu/item/material/pinecone.svg
 
 ```yaml
 # defs/bundu/entities/bear.yml
-id: entity_type:bundu:bear
 extends: model:bundu:animal
 parts:
   body:
@@ -322,6 +319,8 @@ footsteps: false
 Both omit cleanly when unset.
 
 Model ids are path-based: `kind:namespace:path` (parallel to gameplay registries).
+**File path owns identity** — do not write `id:` unless it must differ from the path
+(rare; e.g. `models/nature/tree.yml` → `resource:bundu:forest_tree`).
 
 | Kind | Example | Typical source |
 |---|---|---|
@@ -333,22 +332,24 @@ Model ids are path-based: `kind:namespace:path` (parallel to gameplay registries
 | `entity_type` | `entity_type:bundu:bear` | `defs/.../entities/bear.yml` |
 | `model` | `model:bundu:animal` | shared abstracts under `defs/.../models/` |
 
-File path owns identity; an explicit `id:` field is only needed when it must differ
-from the path (rare). `extends` uses the same id form:
+`extends` is optional. Items and item types default to `item_type:<ns>:none` when
+omitted — only set `extends` for a non-default parent:
 
 ```yaml
-id: item:bundu:wood_sword
+# wood_sword.yml — only the non-default parent
 extends: item_type:bundu:sword
 texture: bundu/item/tool/wood_sword.svg
 ```
 
 ```yaml
-id: decoration:bundu:beach
+# beach decoration — no id, no extends
 parts:
   main:
     sprite: bundu/decoration/beach/beach.svg
 ```
 
+`item_types/` and `models/base/` are inferred abstract (templates, not placeable).
+In mixed folders, mark templates with `abstract: true` (e.g. `models/walls/wall.yml`).
 Definitions refer to textures as `bundu/structure/wall/wood_wall.png`. A later
 pack can replace an asset by providing the same namespace and relative path.
 Model definitions overlay by model ID in pack order.

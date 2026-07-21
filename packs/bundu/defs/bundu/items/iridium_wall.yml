@@ -1,4 +1,3 @@
-id: item:bundu:iridium_wall
 extends: item_type:bundu:wall
 texture: bundu/structure/wall/iridium_wall.png
 ---

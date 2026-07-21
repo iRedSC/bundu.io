@@ -1,4 +1,3 @@
-id: item:bundu:copper_helmet
 extends: item_type:bundu:helmet
 texture: bundu/item/equipment/copper_helmet.svg
 ---

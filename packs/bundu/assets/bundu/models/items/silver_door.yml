@@ -1,3 +1,2 @@
-id: item:bundu:silver_door
 extends: item_type:bundu:door
 texture: bundu/structure/door/silver_door.png

@@ -1,4 +1,3 @@
-id: decoration:bundu:canopy3
 parts:
   main:
     sprite: bundu/decoration/forest/canopy3.svg

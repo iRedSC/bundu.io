@@ -1,3 +1,2 @@
-id: item:bundu:cobalt_helmet
 extends: item_type:bundu:helmet
 texture: bundu/item/equipment/cobalt_helmet.svg

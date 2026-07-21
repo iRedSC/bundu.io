@@ -1,4 +1,3 @@
-id: structure:bundu:copper_wall
 extends: model:bundu:wall
 defaultVariant: base
 variants:

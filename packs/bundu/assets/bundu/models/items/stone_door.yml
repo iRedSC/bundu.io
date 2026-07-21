@@ -1,3 +1,2 @@
-id: item:bundu:stone_door
 extends: item_type:bundu:door
 texture: bundu/structure/door/stone_door.png

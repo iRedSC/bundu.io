@@ -1,3 +1,2 @@
-id: item:bundu:cobalt_wall
 extends: item_type:bundu:wall
 texture: bundu/structure/wall/cobalt_wall.png

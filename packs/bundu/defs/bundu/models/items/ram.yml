@@ -1,3 +1,1 @@
-id: item:bundu:ram
-extends: item_type:bundu:none
 texture: bundu/entity/animal/ram/ram.svg

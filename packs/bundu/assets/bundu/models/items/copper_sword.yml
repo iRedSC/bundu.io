@@ -1,3 +1,2 @@
-id: item:bundu:copper_sword
 extends: item_type:bundu:sword
 texture: bundu/item/tool/copper_sword.svg

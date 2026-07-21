@@ -1,4 +1,3 @@
-id: decoration:bundu:water_texture
 parts:
   main:
     sprite: bundu/decoration/water/water_texture.svg

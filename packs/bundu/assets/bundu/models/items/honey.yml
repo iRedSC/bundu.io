@@ -1,3 +1,2 @@
-id: item:bundu:honey
 extends: item_type:bundu:food
 texture: bundu/item/food/honey.svg

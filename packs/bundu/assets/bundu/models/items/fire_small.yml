@@ -1,3 +1,2 @@
-id: item:bundu:fire_small
 extends: item_type:bundu:building
 texture: bundu/structure/crafting/fire_small.svg

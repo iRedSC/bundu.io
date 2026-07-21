@@ -1,5 +1,4 @@
 # @pack-gen model=models/corpses/bear_dead.yml
-id: resource:bundu:bear_dead
 extends: model:bundu:corpse
 parts:
   body:

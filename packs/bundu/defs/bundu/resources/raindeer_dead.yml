@@ -1,5 +1,4 @@
 # @pack-gen model=models/corpses/raindeer_dead.yml
-id: resource:bundu:raindeer_dead
 extends: model:bundu:corpse
 parts:
   body:

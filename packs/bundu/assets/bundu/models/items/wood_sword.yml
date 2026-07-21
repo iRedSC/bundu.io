@@ -1,3 +1,2 @@
-id: item:bundu:wood_sword
 extends: item_type:bundu:sword
 texture: bundu/item/tool/wood_sword.svg

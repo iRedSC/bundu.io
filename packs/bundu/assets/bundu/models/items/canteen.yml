@@ -1,3 +1,1 @@
-id: item:bundu:canteen
-extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg

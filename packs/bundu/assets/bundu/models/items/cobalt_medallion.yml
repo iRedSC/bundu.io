@@ -1,3 +1,1 @@
-id: item:bundu:cobalt_medallion
-extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg

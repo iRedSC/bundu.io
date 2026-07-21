@@ -1,4 +1,3 @@
-id: model:bundu:door
 abstract: true
 extends: model:bundu:single_tile_node
 # Layer order: spike (optional) → wall base → door leaf (`main`).

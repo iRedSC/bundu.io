@@ -1,5 +1,3 @@
-id: model:bundu:single_tile_node
-abstract: true
 extends: model:bundu:rottable
 tile:
   footprint:

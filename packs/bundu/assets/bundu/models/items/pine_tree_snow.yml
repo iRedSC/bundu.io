@@ -1,3 +1,1 @@
-id: item:bundu:pine_tree_snow
-extends: item_type:bundu:none
 texture: bundu/decoration/forest/pine_tree_snow.svg

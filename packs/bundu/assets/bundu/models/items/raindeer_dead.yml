@@ -1,3 +1,1 @@
-id: item:bundu:raindeer_dead
-extends: item_type:bundu:none
 texture: bundu/entity/animal/reindeer/reindeer_dead.svg

@@ -1,4 +1,3 @@
-id: structure:bundu:fire_pit
 extends: model:bundu:fire
 defaultVariant: base
 variants:

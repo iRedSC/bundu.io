@@ -1,3 +1,1 @@
-id: item:bundu:elephant_angry
-extends: item_type:bundu:none
 texture: bundu/entity/animal/elephant/elephant_angry.svg

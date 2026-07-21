@@ -1,5 +1,3 @@
-id: item:bundu:elephant_dead
-extends: item_type:bundu:none
 texture: bundu/entity/animal/elephant/elephant_dead.svg
 displays:
     world:

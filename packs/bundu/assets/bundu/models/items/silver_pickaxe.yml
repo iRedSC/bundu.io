@@ -1,3 +1,2 @@
-id: item:bundu:silver_pickaxe
 extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/silver_pickaxe.svg

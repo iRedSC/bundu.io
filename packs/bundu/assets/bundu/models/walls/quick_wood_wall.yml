@@ -1,4 +1,3 @@
-id: structure:bundu:quick_wood_wall
 extends: model:bundu:wall
 defaultVariant: base
 variants:

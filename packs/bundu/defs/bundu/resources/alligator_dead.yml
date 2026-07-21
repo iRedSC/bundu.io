@@ -1,5 +1,4 @@
 # @pack-gen model=models/corpses/alligator_dead.yml
-id: resource:bundu:alligator_dead
 extends: model:bundu:corpse
 parts:
   body:

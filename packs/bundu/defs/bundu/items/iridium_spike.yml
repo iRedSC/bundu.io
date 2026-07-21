@@ -1,4 +1,3 @@
-id: item:bundu:iridium_spike
 extends: item_type:bundu:spike
 texture: bundu/item/structure/spike/iridium_spike.png
 ---

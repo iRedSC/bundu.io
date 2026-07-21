@@ -1,4 +1,3 @@
-id: decoration:bundu:forest_ground_circle_dark
 parts:
   main:
     sprite: bundu/decoration/forest/forest_ground_circle_dark.svg

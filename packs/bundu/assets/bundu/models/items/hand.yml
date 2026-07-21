@@ -1,3 +1,1 @@
-id: item:bundu:hand
-extends: item_type:bundu:none
 texture: bundu/entity/player/player_hand.svg

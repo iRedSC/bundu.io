@@ -1,3 +1,2 @@
-id: item:bundu:komodo_dragon_eye
 extends: item_type:bundu:food
 texture: bundu/item/material/komodo_dragon_eye.svg

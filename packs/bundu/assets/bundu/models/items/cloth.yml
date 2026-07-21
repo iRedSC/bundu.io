@@ -1,3 +1,1 @@
-id: item:bundu:cloth
-extends: item_type:bundu:none
 texture: bundu/item/material/cloth.svg

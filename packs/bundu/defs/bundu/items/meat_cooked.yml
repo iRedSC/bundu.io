@@ -1,4 +1,3 @@
-id: item:bundu:meat_cooked
 extends: item_type:bundu:food
 texture: bundu/item/food/meat_cooked.svg
 ---

@@ -1,5 +1,3 @@
-id: item:bundu:fish_scale
-extends: item_type:bundu:none
 texture: bundu/misc/unknown_asset.svg
 ---
 {}

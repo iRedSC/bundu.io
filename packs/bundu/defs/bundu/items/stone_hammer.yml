@@ -1,4 +1,3 @@
-id: item:bundu:stone_hammer
 extends: item_type:bundu:hammer
 texture: bundu/item/tool/stone_hammer.svg
 ---

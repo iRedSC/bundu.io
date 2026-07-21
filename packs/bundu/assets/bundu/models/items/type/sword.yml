@@ -1,6 +1,3 @@
-id: item_type:bundu:sword
-abstract: true
-extends: item_type:bundu:none
 displays:
     hand:
         rotation: 180

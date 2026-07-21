@@ -1,4 +1,3 @@
-id: item:bundu:butcher_knife
 extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/knife.svg
 ---

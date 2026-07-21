@@ -1,4 +1,3 @@
-id: entity_type:bundu:ram
 extends: model:bundu:animal
 parts:
   body:

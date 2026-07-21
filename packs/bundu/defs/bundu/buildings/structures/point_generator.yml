@@ -1,4 +1,3 @@
-id: structure:bundu:point_generator
 extends: model:bundu:single_tile_node
 defaultVariant: base
 variants:

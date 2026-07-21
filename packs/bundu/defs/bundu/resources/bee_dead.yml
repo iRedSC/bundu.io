@@ -1,5 +1,4 @@
 # @pack-gen model=models/corpses/bee_dead.yml
-id: resource:bundu:bee_dead
 extends: model:bundu:corpse
 parts:
   body:

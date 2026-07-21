@@ -1,3 +1,2 @@
-id: item:bundu:copper_hammer
 extends: item_type:bundu:hammer
 texture: bundu/item/tool/copper_hammer.svg

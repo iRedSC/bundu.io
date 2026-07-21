@@ -70,6 +70,27 @@ export function parseModelId(id: string): ModelIdParts | null {
 }
 
 /**
+ * Folders that are always visual templates (never placed directly).
+ * `abstract: true` is still allowed as an override in mixed folders
+ * (e.g. `models/walls/wall.yml`).
+ */
+export function isInferredAbstractPath(relativePath: string): boolean {
+    const stem = relativePath.replace(/\.ya?ml$/i, "").replaceAll("\\", "/");
+    return stem.startsWith("items/type/") || stem.startsWith("base/");
+}
+
+/** Default parent for item / item_type models when `extends` is omitted. */
+export function defaultModelExtends(
+    kind: ModelKind,
+    namespace: string,
+    path: string
+): string | undefined {
+    if (kind !== "item" && kind !== "item_type") return undefined;
+    if (path === "none") return undefined;
+    return modelId("item_type", namespace, "none");
+}
+
+/**
  * Derive a model id from an assets-relative models path.
  * `models/items/wood_sword.yml` → `item:bundu:wood_sword`
  * `models/items/type/sword.yml` → `item_type:bundu:sword`
@@ -83,7 +104,8 @@ export function modelIdFromModelsPath(
     options?: { abstract?: boolean }
 ): string {
     const stem = relativePath.replace(/\.ya?ml$/i, "").replaceAll("\\", "/");
-    const abstract = options?.abstract === true;
+    const abstract =
+        options?.abstract === true || isInferredAbstractPath(relativePath);
 
     if (stem.startsWith("items/type/")) {
         return modelId("item_type", namespace, stem.slice("items/type/".length));

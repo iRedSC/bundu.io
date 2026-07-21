@@ -1,3 +1,2 @@
-id: item:bundu:silver_sword
 extends: item_type:bundu:sword
 texture: bundu/item/tool/silver_sword.svg

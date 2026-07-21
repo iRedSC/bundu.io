@@ -1,3 +1,1 @@
-id: item:bundu:elephant_tusk
-extends: item_type:bundu:none
 texture: bundu/item/material/elephant_tusk.svg

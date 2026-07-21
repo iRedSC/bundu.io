@@ -1,3 +1,1 @@
-id: item_type:bundu:wall
-abstract: true
 extends: item_type:bundu:building

@@ -1,4 +1,3 @@
-id: item:bundu:cobalt_sword
 extends: item_type:bundu:sword
 texture: bundu/item/tool/cobalt_sword.svg
 ---

@@ -1,4 +1,3 @@
-id: item:bundu:copper_spear
 extends: item_type:bundu:spear
 texture: bundu/item/tool/copper_spear.svg
 ---

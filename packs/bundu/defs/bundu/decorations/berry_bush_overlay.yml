@@ -1,4 +1,3 @@
-id: decoration:bundu:berry_bush_overlay
 parts:
   main:
     sprite: bundu/decoration/forest/berry_bush_overlay.svg

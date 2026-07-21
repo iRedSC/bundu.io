@@ -1,5 +1,3 @@
-id: item:bundu:forest_tree
-extends: item_type:bundu:none
 displays:
     icon:
         model: resource:bundu:forest_tree

@@ -1,4 +1,3 @@
-id: item:bundu:shovel
 extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/shovel.svg
 ---

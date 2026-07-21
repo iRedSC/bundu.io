@@ -1,6 +1,3 @@
-id: model:bundu:rottable
-abstract: true
-
 parts:
   main:
     shadow: 1

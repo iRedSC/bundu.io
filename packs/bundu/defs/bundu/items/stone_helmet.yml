@@ -1,4 +1,3 @@
-id: item:bundu:stone_helmet
 extends: item_type:bundu:helmet
 texture: bundu/item/equipment/stone_helmet.svg
 ---

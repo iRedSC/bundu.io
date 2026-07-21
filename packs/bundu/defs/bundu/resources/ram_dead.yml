@@ -1,5 +1,4 @@
 # @pack-gen model=models/corpses/ram_dead.yml
-id: resource:bundu:ram_dead
 extends: model:bundu:corpse
 parts:
   body:

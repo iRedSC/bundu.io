@@ -1,3 +1,2 @@
-id: item:bundu:miracle_fruit
 extends: item_type:bundu:food
 texture: bundu/item/food/miracle_fruit.svg

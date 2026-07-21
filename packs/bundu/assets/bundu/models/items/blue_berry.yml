@@ -1,3 +1,2 @@
-id: item:bundu:blue_berry
 extends: item_type:bundu:food
 texture: bundu/item/food/blue_berry.svg

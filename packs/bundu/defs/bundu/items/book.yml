@@ -1,4 +1,3 @@
-id: item:bundu:book
 extends: item_type:bundu:book
 texture: bundu/item/book/book.svg
 ---

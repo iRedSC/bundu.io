@@ -1,5 +1,3 @@
-id: item:bundu:bear_fur
-extends: item_type:bundu:none
 texture: bundu/item/material/bear_fur.svg
 ---
 {}

@@ -1,6 +1,3 @@
-id: item_type:bundu:hat
-abstract: true
-extends: item_type:bundu:none
 displays:
     body:
         x: 0

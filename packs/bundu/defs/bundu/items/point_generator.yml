@@ -1,4 +1,3 @@
-id: item:bundu:point_generator
 extends: item_type:bundu:building
 texture: bundu/structure/crafting/point_generator.png
 ---

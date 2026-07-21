@@ -1,3 +1,1 @@
-id: item:bundu:mango_tree1
-extends: item_type:bundu:none
 texture: bundu/decoration/forest/mango_tree1.svg

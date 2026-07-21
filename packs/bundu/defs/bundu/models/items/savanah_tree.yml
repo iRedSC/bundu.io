@@ -1,3 +1,1 @@
-id: item:bundu:savanah_tree
-extends: item_type:bundu:none
 texture: bundu/decoration/savannah/savannah_tree1.svg

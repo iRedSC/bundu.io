@@ -1,4 +1,3 @@
-id: item:bundu:tusk_spear
 extends: item_type:bundu:spear
 texture: bundu/item/tool/hunting_spear.svg
 ---

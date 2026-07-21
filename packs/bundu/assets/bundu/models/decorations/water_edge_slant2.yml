@@ -1,4 +1,3 @@
-id: decoration:bundu:water_edge_slant2
 parts:
   main:
     sprite: bundu/decoration/water/water_edge_slant2.svg

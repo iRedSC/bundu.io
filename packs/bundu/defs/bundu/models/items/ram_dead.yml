@@ -1,5 +1,3 @@
-id: item:bundu:ram_dead
-extends: item_type:bundu:none
 texture: bundu/entity/animal/ram/ram_dead.svg
 displays:
     world:

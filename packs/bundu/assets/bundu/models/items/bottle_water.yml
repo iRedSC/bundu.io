@@ -1,3 +1,2 @@
-id: item:bundu:bottle_water
 extends: item_type:bundu:food
 texture: bundu/item/food/bottle_water.svg

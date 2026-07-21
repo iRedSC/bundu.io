@@ -1,4 +1,3 @@
-id: item:bundu:fire_pit
 extends: item_type:bundu:building
 texture: bundu/structure/crafting/fire_pit.svg
 ---
