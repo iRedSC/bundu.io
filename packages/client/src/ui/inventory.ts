@@ -167,6 +167,8 @@ export class Inventory {
     private hoverSlot: number | null = null;
     private selectedSlot = 0;
     private lastPointer = { x: 0, y: 0 };
+    /** Next ghost tick jumps to the pointer (no lerp from last drop). */
+    private snapGhost = false;
 
     constructor() {
         this.setupOverlay(this.ghost);
@@ -709,7 +711,53 @@ export class Inventory {
             this.container.addChild(this.ghost.button);
         } else {
             this.ghost.button.visible = false;
+            this.snapGhost = false;
         }
+    }
+
+    /** Next cursor sync jumps to the pointer (creative pick / no fly-in). */
+    armCursorSnap(): void {
+        this.snapGhost = true;
+    }
+
+    /**
+     * Optimistic creative pick — show the cursor immediately so a drag-release
+     * in the same gesture can place/void without waiting for the server round-trip.
+     */
+    adoptCursor(stack: [id: number, amount: number], snap = true): void {
+        this.cursor = stack;
+        this.rebuildItemsMap();
+        this.syncGhostToCursor();
+        if (snap) this.snapCursorGhostToPointer();
+    }
+
+    /** Jump the cursor ghost to the pointer immediately (no fly-in). */
+    snapCursorGhostToPointer(): void {
+        this.snapGhost = true;
+        if (!this.cursor) return;
+        const pointer = this.pointerLocal();
+        this.ghost.background.visible = false;
+        this.ghost.disableSprite.visible = false;
+        this.ghost.setStack(this.cursor);
+        this.ghost.button.visible = true;
+        this.ghost.button.position.set(pointer.x, pointer.y);
+        this.ghost.button.scale.set(1);
+        this.container.addChild(this.ghost.button);
+    }
+
+    /** Right edge of the hotbar in screen space (for mode-control stacking). */
+    hotbarRightEdge(): number {
+        const columns = Math.min(HOTBAR_COLUMNS, this.buttons.length) || 1;
+        const cell = ITEM_BUTTON_SIZE + percentOf(10, ITEM_BUTTON_SIZE);
+        return (
+            this.container.position.x +
+            percentOf(50, cell * (columns - 1)) +
+            ITEM_BUTTON_SIZE / 2
+        );
+    }
+
+    hotbarBaselineY(): number {
+        return this.container.position.y;
     }
 
     private rebuildItemsMap() {
@@ -767,6 +815,10 @@ export class Inventory {
         } else if (!this.flies.some((f) => f.mode === "pointer")) {
             // Don't snap the ghost while a swap-to-cursor fly is in progress.
             this.syncGhostToCursor();
+            // Creative pick arms snap so we don't lerp from the last drop point.
+            if (this.cursor && this.snapGhost) {
+                this.snapCursorGhostToPointer();
+            }
         }
         this.resize();
     }
@@ -781,18 +833,24 @@ export class Inventory {
 
         // Cursor / drag ghost follows the pointer.
         if (this.ghost.button.visible) {
-            this.ghost.button.position.x = lerp(
-                this.ghost.button.position.x,
-                pointer.x,
-                FLY_LERP
-            );
-            this.ghost.button.position.y = lerp(
-                this.ghost.button.position.y,
-                pointer.y,
-                FLY_LERP
-            );
-            const scale = lerp(this.ghost.button.scale.x, 1, FLY_LERP);
-            this.ghost.button.scale.set(scale);
+            if (this.snapGhost) {
+                this.ghost.button.position.set(pointer.x, pointer.y);
+                this.ghost.button.scale.set(1);
+                this.snapGhost = false;
+            } else {
+                this.ghost.button.position.x = lerp(
+                    this.ghost.button.position.x,
+                    pointer.x,
+                    FLY_LERP
+                );
+                this.ghost.button.position.y = lerp(
+                    this.ghost.button.position.y,
+                    pointer.y,
+                    FLY_LERP
+                );
+                const scale = lerp(this.ghost.button.scale.x, 1, FLY_LERP);
+                this.ghost.button.scale.set(scale);
+            }
         }
 
         // Flying swaps / slot settles.

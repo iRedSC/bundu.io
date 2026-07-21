@@ -3,30 +3,31 @@ import { SpriteFactory } from "../assets/sprite_factory";
 import { ITEM_BUTTON_SIZE } from "../constants";
 
 const UI_FONT = "'Aoboshi One', sans-serif";
-const MARGIN = 20;
 const DRAG_THRESHOLD = 8;
 const PLAYER_ICON = "bundu/entity/player/player.png";
-const ICON_SIZE = 44;
+const BTN = ITEM_BUTTON_SIZE;
+const GAP = 8;
 
 export type FreecamControl = {
     container: Container;
     setAvailable: (available: boolean) => void;
     setFreecamActive: (active: boolean) => void;
     setInGame: (inGame: boolean) => void;
+    /** Place the control at a screen-space center point. */
+    setAnchor: (x: number, y: number) => void;
     containsPoint: (screenX: number, screenY: number) => boolean;
     isDragging: () => boolean;
     destroy: () => void;
 };
 
 /**
- * Bottom-right freecam control for op-4 players.
- * Idle: enter button. Freecam: player icon — click exits, drag-drop relocates.
+ * Mode control for freecam — square button matching hotbar slot size.
+ * Idle: enter. Freecam: player icon — click exits, drag-drop relocates.
  */
 export function createFreecamControl(handlers: {
     onEnter: () => void;
     onExit: () => void;
     onExitAt: (screenX: number, screenY: number) => void;
-    /** True when release should not relocate (palette / toolbar / etc.). */
     isBlockedDrop: (screenX: number, screenY: number) => boolean;
 }): FreecamControl {
     const container = new Container();
@@ -37,8 +38,10 @@ export function createFreecamControl(handlers: {
     let available = false;
     let freecamActive = false;
     let inGame = false;
+    let anchorX = 0;
+    let anchorY = 0;
 
-    const enterBtn = makeEnterButton(() => {
+    const enterBtn = makeSquareButton("Cam", () => {
         if (!freecamActive) handlers.onEnter();
     });
     container.addChild(enterBtn.root);
@@ -48,19 +51,25 @@ export function createFreecamControl(handlers: {
     iconRoot.cursor = "grab";
     iconRoot.visible = false;
     const iconBg = new Graphics();
-    iconBg.roundRect(-ICON_SIZE / 2, -ICON_SIZE / 2, ICON_SIZE, ICON_SIZE, 8)
-        .fill({ color: 0x2e3428, alpha: 0.92 });
+    iconBg.roundRect(-BTN / 2, -BTN / 2, BTN, BTN, 8).fill({
+        color: 0x2e3428,
+        alpha: 0.92,
+    });
     const icon = SpriteFactory.build(PLAYER_ICON);
-    icon.width = ICON_SIZE * 0.78;
-    icon.height = ICON_SIZE * 0.78;
+    icon.width = BTN * 0.78;
+    icon.height = BTN * 0.78;
     icon.anchor.set(0.5);
     iconRoot.addChild(iconBg);
     iconRoot.addChild(icon);
+    iconRoot.hitArea = {
+        contains: (x: number, y: number) =>
+            x >= -BTN / 2 && x <= BTN / 2 && y >= -BTN / 2 && y <= BTN / 2,
+    };
     container.addChild(iconRoot);
 
     const ghost = SpriteFactory.build(PLAYER_ICON);
-    ghost.width = ICON_SIZE * 0.78;
-    ghost.height = ICON_SIZE * 0.78;
+    ghost.width = BTN * 0.78;
+    ghost.height = BTN * 0.78;
     ghost.anchor.set(0.5);
     ghost.visible = false;
     ghost.eventMode = "none";
@@ -84,10 +93,8 @@ export function createFreecamControl(handlers: {
     };
 
     const layout = () => {
-        const x = window.innerWidth - MARGIN - ITEM_BUTTON_SIZE / 2;
-        const y = window.innerHeight - MARGIN - ITEM_BUTTON_SIZE / 2;
-        enterBtn.root.position.set(x, y);
-        iconRoot.position.set(x, y);
+        enterBtn.root.position.set(anchorX, anchorY);
+        iconRoot.position.set(anchorX, anchorY);
     };
 
     const cancelDrag = () => {
@@ -137,7 +144,6 @@ export function createFreecamControl(handlers: {
 
     const onPointerCancel = (event: PointerEvent) => {
         if (pressId === null || event.pointerId !== pressId) return;
-        // Interrupted gesture — never treat as click-exit or drop-exit.
         cancelDrag();
     };
 
@@ -160,9 +166,6 @@ export function createFreecamControl(handlers: {
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
     window.addEventListener("pointercancel", onPointerCancel);
-    window.addEventListener("resize", layout);
-    layout();
-    syncVisibility();
 
     return {
         container,
@@ -178,6 +181,11 @@ export function createFreecamControl(handlers: {
         setInGame(next) {
             inGame = next;
             syncVisibility();
+        },
+        setAnchor(x, y) {
+            anchorX = x;
+            anchorY = y;
+            layout();
         },
         containsPoint(screenX, screenY) {
             if (!container.visible) return false;
@@ -197,7 +205,6 @@ export function createFreecamControl(handlers: {
             window.removeEventListener("pointermove", onPointerMove);
             window.removeEventListener("pointerup", onPointerUp);
             window.removeEventListener("pointercancel", onPointerCancel);
-            window.removeEventListener("resize", layout);
             cancelDrag();
             enterBtn.destroy();
             icon.destroy();
@@ -207,7 +214,7 @@ export function createFreecamControl(handlers: {
     };
 }
 
-function makeEnterButton(onClick: () => void): {
+function makeSquareButton(labelText: string, onClick: () => void): {
     root: Container;
     destroy: () => void;
 } {
@@ -216,20 +223,20 @@ function makeEnterButton(onClick: () => void): {
     root.cursor = "pointer";
 
     const bg = new Graphics();
+    bg.roundRect(-BTN / 2, -BTN / 2, BTN, BTN, 8).fill({
+        color: 0x2e3428,
+        alpha: 0.92,
+    });
     const text = new Text({
-        text: "Freecam",
-        style: { fontFamily: UI_FONT, fill: "#ffffff", fontSize: 14 },
+        text: labelText,
+        style: { fontFamily: UI_FONT, fill: "#ffffff", fontSize: 12 },
     });
     text.anchor.set(0.5);
     root.addChild(bg);
     root.addChild(text);
-
-    const w = Math.max(ITEM_BUTTON_SIZE + 16, text.width + 24);
-    const h = 36;
-    bg.roundRect(-w / 2, -h / 2, w, h, 6).fill({ color: 0x2e3428, alpha: 0.92 });
     root.hitArea = {
         contains: (x: number, y: number) =>
-            x >= -w / 2 && x <= w / 2 && y >= -h / 2 && y <= h / 2,
+            x >= -BTN / 2 && x <= BTN / 2 && y >= -BTN / 2 && y <= BTN / 2,
     };
 
     root.onpointerdown = (e: { stopPropagation(): void }) => e.stopPropagation();
@@ -246,3 +253,6 @@ function makeEnterButton(onClick: () => void): {
         },
     };
 }
+
+export const MODE_CONTROL_SIZE = BTN;
+export const MODE_CONTROL_GAP = GAP;

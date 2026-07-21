@@ -1,23 +1,22 @@
 import { Container, Graphics, Text } from "pixi.js";
+import { ITEM_BUTTON_SIZE } from "../constants";
 
 const UI_FONT = "'Aoboshi One', sans-serif";
-const MARGIN = 20;
-const BTN_W = 88;
-const BTN_H = 36;
+const BTN = ITEM_BUTTON_SIZE;
 
 export type CreativeControl = {
     container: Container;
     setAvailable: (available: boolean) => void;
     setCreativeActive: (active: boolean) => void;
     setInGame: (inGame: boolean) => void;
-    /** Keep clear of freecam control (stacked above it). */
-    setStackOffset: (offsetY: number) => void;
+    /** Place the control at a screen-space center point. */
+    setAnchor: (x: number, y: number) => void;
     containsPoint: (screenX: number, screenY: number) => boolean;
     destroy: () => void;
 };
 
 /**
- * Bottom-right creative toggle for op-4 players (above freecam control).
+ * Square creative toggle — same footprint as freecam / hotbar slots.
  */
 export function createCreativeControl(handlers: {
     onToggle: () => void;
@@ -30,15 +29,16 @@ export function createCreativeControl(handlers: {
     let available = false;
     let creativeActive = false;
     let inGame = false;
-    let stackOffset = 52;
+    let anchorX = 0;
+    let anchorY = 0;
 
     const root = new Container();
     root.eventMode = "static";
     root.cursor = "pointer";
     const bg = new Graphics();
     const label = new Text({
-        text: "Creative",
-        style: { fontFamily: UI_FONT, fill: "#ffffff", fontSize: 13 },
+        text: "Cre",
+        style: { fontFamily: UI_FONT, fill: "#ffffff", fontSize: 12 },
     });
     label.anchor.set(0.5);
     root.addChild(bg);
@@ -47,17 +47,18 @@ export function createCreativeControl(handlers: {
 
     const paint = () => {
         bg.clear();
-        bg.roundRect(-BTN_W / 2, -BTN_H / 2, BTN_W, BTN_H, 8).fill(
-            creativeActive ? 0x5a7a40 : 0x2e3428
-        );
-        label.text = creativeActive ? "Exit Crea" : "Creative";
+        bg.roundRect(-BTN / 2, -BTN / 2, BTN, BTN, 8).fill({
+            color: creativeActive ? 0x5a7a40 : 0x2e3428,
+            alpha: 0.92,
+        });
+        label.text = creativeActive ? "Exit" : "Cre";
         label.alpha = creativeActive ? 1 : 0.9;
         root.hitArea = {
             contains: (x: number, y: number) =>
-                x >= -BTN_W / 2 &&
-                x <= BTN_W / 2 &&
-                y >= -BTN_H / 2 &&
-                y <= BTN_H / 2,
+                x >= -BTN / 2 &&
+                x <= BTN / 2 &&
+                y >= -BTN / 2 &&
+                y <= BTN / 2,
         };
     };
     paint();
@@ -69,20 +70,14 @@ export function createCreativeControl(handlers: {
     };
 
     const layout = () => {
-        container.position.set(
-            window.innerWidth - MARGIN - BTN_W / 2,
-            window.innerHeight - MARGIN - BTN_H / 2 - stackOffset
-        );
+        container.position.set(0, 0);
+        root.position.set(anchorX, anchorY);
     };
 
     const syncVisibility = () => {
         container.visible = available && inGame;
         layout();
     };
-
-    const onResize = () => layout();
-    window.addEventListener("resize", onResize);
-    layout();
 
     return {
         container,
@@ -98,13 +93,14 @@ export function createCreativeControl(handlers: {
             inGame = next;
             syncVisibility();
         },
-        setStackOffset(offsetY) {
-            stackOffset = offsetY;
+        setAnchor(x, y) {
+            anchorX = x;
+            anchorY = y;
             layout();
         },
         containsPoint(screenX, screenY) {
             if (!container.visible) return false;
-            const bounds = container.getBounds();
+            const bounds = root.getBounds();
             return (
                 screenX >= bounds.x &&
                 screenX <= bounds.x + bounds.width &&
@@ -113,7 +109,6 @@ export function createCreativeControl(handlers: {
             );
         },
         destroy() {
-            window.removeEventListener("resize", onResize);
             container.destroy({ children: true });
         },
     };

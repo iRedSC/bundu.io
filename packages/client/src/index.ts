@@ -14,7 +14,11 @@ import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
 import { ChatController } from "./ui/chat";
 import { createTooltip, hideTooltip } from "./ui/tooltip";
-import { createFreecamControl } from "./ui/freecam_control";
+import {
+    createFreecamControl,
+    MODE_CONTROL_GAP,
+    MODE_CONTROL_SIZE,
+} from "./ui/freecam_control";
 import { createAdminEditor } from "./admin/editor";
 import { createCreativeControl, createCreativeEditor } from "./creative";
 import { initAssets } from "./assets/load";
@@ -349,6 +353,8 @@ async function main() {
     const gui = createUI();
     const tooltip = createTooltip();
     app.stage.sortableChildren = true;
+    // Above creative chrome so the cursor ghost paints over the palette.
+    gui.container.zIndex = 110;
     app.stage.addChild(gui.container);
     app.stage.addChild(tooltip.container);
     setupGUIPacketReceiving(receiver, gui, world);
@@ -458,7 +464,11 @@ async function main() {
     app.stage.addChild(editor.container);
     deathUiLayers.push(editor.container);
 
-    const creative = createCreativeEditor(session.sendPacket);
+    const creative = createCreativeEditor(session.sendPacket, {
+        hasCursor: () => gui.inventory.cursor !== null,
+        onPickedToCursor: (itemId, count) =>
+            gui.inventory.adoptCursor([itemId, count], true),
+    });
     app.stage.addChild(creative.container);
     deathUiLayers.push(creative.container);
 
@@ -509,6 +519,21 @@ async function main() {
     app.stage.addChild(freecamControl.container);
     app.stage.addChild(creativeControl.container);
 
+    /** Stack Cre / Cam as equal squares to the right of the hotbar. */
+    const layoutModeControls = () => {
+        const x =
+            gui.inventory.hotbarRightEdge() +
+            MODE_CONTROL_GAP +
+            MODE_CONTROL_SIZE / 2;
+        const baseY = gui.inventory.hotbarBaselineY();
+        // Freecam on the hotbar baseline; Creative stacked above it.
+        freecamControl.setAnchor(x, baseY);
+        creativeControl.setAnchor(
+            x,
+            baseY - MODE_CONTROL_SIZE - MODE_CONTROL_GAP
+        );
+    };
+
     let freecamActive = false;
     let creativeWanted = false;
 
@@ -517,6 +542,7 @@ async function main() {
         freecamControl.setInGame(session.isInGame());
         creativeControl.setAvailable(chat.hasServerCommand("creative"));
         creativeControl.setInGame(session.isInGame());
+        layoutModeControls();
     };
     chat.onRegistryChange = refreshModeAvailability;
 
@@ -656,6 +682,7 @@ async function main() {
         world.tick(Math.min(ticker.deltaMS, 50), now);
         AnimationManagers.UI.update(now);
         gui.tick(now);
+        layoutModeControls();
         editor.tick(now);
         creative.tick?.(now);
         const local = world.objects.get(world.user ?? -1);
