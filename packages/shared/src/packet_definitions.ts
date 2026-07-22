@@ -236,6 +236,7 @@ export const AdminPlaceKind = {
     Structure: 1,
     Ground: 2,
     Decoration: 3,
+    Animal: 4,
 } as const;
 export type AdminPlaceKind =
     (typeof AdminPlaceKind)[keyof typeof AdminPlaceKind];
@@ -337,16 +338,17 @@ export namespace ClientPacket {
         typeId: number;
         /**
          * Tile indices for resource/structure/ground.
-         * World units for decorations (free placement).
+         * World units for decorations/animals (free placement).
          */
         x: number;
         y: number;
         /**
          * Tile quarter-turns 0–3 for resource/structure.
          * Continuous degrees for decorations.
+         * Ignored for animals (use 0).
          */
         rotation: number;
-        /** Variant wire id (from pack-autogen variant map); ignored for ground/decoration. */
+        /** Variant wire id (from pack-autogen variant map); ignored for ground/decoration/animal. */
         variant: number;
         /** Ground rect size in tiles (normalized); ignored for non-ground (use 1). */
         w: number;
@@ -672,7 +674,8 @@ export const ClientPacketGuards = {
             value.kind !== AdminPlaceKind.Resource &&
             value.kind !== AdminPlaceKind.Structure &&
             value.kind !== AdminPlaceKind.Ground &&
-            value.kind !== AdminPlaceKind.Decoration
+            value.kind !== AdminPlaceKind.Decoration &&
+            value.kind !== AdminPlaceKind.Animal
         ) {
             return false;
         }
@@ -681,7 +684,10 @@ export const ClientPacketGuards = {
             return false;
         }
 
-        if (value.kind === AdminPlaceKind.Decoration) {
+        if (
+            value.kind === AdminPlaceKind.Decoration ||
+            value.kind === AdminPlaceKind.Animal
+        ) {
             return (
                 isFiniteNumber(value.x) &&
                 value.x >= 0 &&
@@ -739,7 +745,8 @@ export const ClientPacketGuards = {
         (value.kind === AdminPlaceKind.Resource ||
             value.kind === AdminPlaceKind.Structure ||
             value.kind === AdminPlaceKind.Ground ||
-            value.kind === AdminPlaceKind.Decoration),
+            value.kind === AdminPlaceKind.Decoration ||
+            value.kind === AdminPlaceKind.Animal),
     [ClientPacket.AdminSetAnimalsFrozen]: (
         value: unknown
     ): value is ClientPacket.AdminSetAnimalsFrozen =>

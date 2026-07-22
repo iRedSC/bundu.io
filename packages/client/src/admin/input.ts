@@ -75,6 +75,7 @@ function normalizeRect(drag: GroundDrag): {
  * Freecam editor pointer tools — place/delete with optional drag-spam.
  * Ground place: click-drag AABB (`rect` brush) or 1×1 paint (`tile` brush).
  * Decorations: free world place; Shift+wheel rotate; right-drag scale.
+ * Animals: free world place (no rotate/scale).
  */
 export class AdminInput {
     private readonly onPointerDown: (event: PointerEvent) => void;
@@ -275,8 +276,13 @@ export class AdminInput {
         if (event.key !== "r" && event.key !== "R") return;
         const state = this.facade.getState();
         if (state.tool !== "place") return;
-        // R stays snappy tile rotate for resources/structures — not decorations.
-        if (state.selected?.kind === AdminPlaceKind.Decoration) return;
+        // R stays snappy tile rotate for resources/structures — not decorations/animals.
+        if (
+            state.selected?.kind === AdminPlaceKind.Decoration ||
+            state.selected?.kind === AdminPlaceKind.Animal
+        ) {
+            return;
+        }
         event.preventDefault();
         state.rotation = cycleRotation(state.rotation);
         this.syncGhost();
@@ -494,6 +500,25 @@ export class AdminInput {
                 w: 1,
                 h: 1,
                 scale: state.decorationScale,
+            });
+            return;
+        }
+
+        if (selected.kind === AdminPlaceKind.Animal) {
+            const key = `${Math.round(world.x)},${Math.round(world.y)}`;
+            if (!isClick && key === this.lastWorldKey) return;
+            if (!state.drag && !isClick) return;
+            this.lastWorldKey = key;
+            this.sendPacket(ClientPacket.AdminPlace, {
+                kind: AdminPlaceKind.Animal,
+                typeId: selected.id,
+                x: clampWorld(world.x),
+                y: clampWorld(world.y),
+                rotation: 0,
+                variant: 0,
+                w: 1,
+                h: 1,
+                scale: 1,
             });
             return;
         }

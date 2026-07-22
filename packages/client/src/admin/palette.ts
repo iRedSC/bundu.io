@@ -31,8 +31,18 @@ function paletteModelId(category: EditorCategory, location: string): string {
             ? "decoration"
             : category === "resources"
               ? "resource"
-              : "structure";
+              : category === "animals"
+                ? "entity_type"
+                : "structure";
     return clientModelId(kind, location);
+}
+
+/** Player is an entity_type but not a freecam-spawnable animal. */
+function isPlayerEntity(location: string): boolean {
+    const bare = location.includes(":")
+        ? location.slice(location.indexOf(":") + 1)
+        : location;
+    return bare === "player";
 }
 
 /**
@@ -73,6 +83,7 @@ const TAB_LABELS: { id: EditorCategory; label: string }[] = [
     { id: "ground", label: "Ground" },
     { id: "structures", label: "Structures" },
     { id: "decorations", label: "Decorations" },
+    { id: "animals", label: "Animals" },
 ];
 
 const SLOT_GAP = 8;
@@ -96,6 +107,8 @@ function categoryRegistry(category: EditorCategory): Registry<RegistryName> {
             return registries.structure;
         case "decorations":
             return registries.decoration;
+        case "animals":
+            return registries.entity_type;
     }
 }
 
@@ -124,6 +137,7 @@ function listEntries(
     if (tagFilter) {
         for (const id of registry.resolveSet([tagFilter], undefined, "editor.tag")) {
             const location = registry.location(id);
+            if (category === "animals" && isPlayerEntity(location)) continue;
             entries.push({
                 id,
                 kind,
@@ -132,6 +146,7 @@ function listEntries(
         }
     } else {
         for (const [location, id] of registry.entries()) {
+            if (category === "animals" && isPlayerEntity(location)) continue;
             entries.push({
                 id,
                 kind,
@@ -148,7 +163,8 @@ function entryVariants(entry: PaletteEntry | null): string[] {
     if (!entry) return [];
     if (
         entry.kind === AdminPlaceKind.Ground ||
-        entry.kind === AdminPlaceKind.Decoration
+        entry.kind === AdminPlaceKind.Decoration ||
+        entry.kind === AdminPlaceKind.Animal
     ) {
         return [];
     }

@@ -18,6 +18,7 @@ import { groundModel } from "../world/ground";
 import type { LayeredRenderer } from "../rendering/layered_renderer";
 import type { EditorDeleteHover } from "../world/world";
 import { createDecoration } from "../world/decoration";
+import { Animal } from "../world/objects/animal";
 import { Structure } from "../world/objects/structure";
 import type { EditorTool, PaletteEntry } from "./state";
 
@@ -50,6 +51,7 @@ export type AdminGhostCursor = {
 export class AdminGhost {
     private structure?: Structure;
     private decoration?: Container;
+    private animal?: Animal;
     private ground?: Graphics;
     private groundSize = { w: 1, h: 1 };
     private deleteOutline?: Graphics;
@@ -82,6 +84,7 @@ export class AdminGhost {
         if (selected.kind === AdminPlaceKind.Ground) {
             this.clearStructure();
             this.clearDecoration();
+            this.clearAnimal();
             const rect = cursor.groundRect ?? { x: tx, y: ty, w: 1, h: 1 };
             const identity = `${selected.kind}:${selected.id}:${rect.w}x${rect.h}`;
             if (
@@ -104,6 +107,7 @@ export class AdminGhost {
         if (selected.kind === AdminPlaceKind.Decoration) {
             this.clearStructure();
             this.clearGround();
+            this.clearAnimal();
             const identity = `${selected.kind}:${selected.id}:${cursor.decorationScale}`;
             if (!this.decoration || this.identity !== identity) {
                 this.clearDecoration();
@@ -128,8 +132,35 @@ export class AdminGhost {
             return;
         }
 
+        if (selected.kind === AdminPlaceKind.Animal) {
+            this.clearStructure();
+            this.clearGround();
+            this.clearDecoration();
+            const identity = `${selected.kind}:${selected.id}`;
+            if (!this.animal || this.identity !== identity) {
+                this.clearAnimal();
+                this.animal = new Animal(
+                    ADMIN_GHOST_ID,
+                    selected.id,
+                    new Point(cursor.worldX, cursor.worldY),
+                    TILE_SIZE / 2,
+                    1
+                );
+                this.animal.container.alpha = GHOST_ALPHA;
+                this.animal.container.eventMode = "none";
+                this.animal.container.zIndex = OVERLAY_Z;
+                this.renderer.add(ADMIN_GHOST_ID, ...this.animal.containers);
+                this.identity = identity;
+            }
+            if (this.animal) {
+                this.animal.position.set(cursor.worldX, cursor.worldY);
+            }
+            return;
+        }
+
         this.clearGround();
         this.clearDecoration();
+        this.clearAnimal();
         const origin =
             selected.kind === AdminPlaceKind.Structure
                 ? structureOriginAtPoint(
@@ -179,6 +210,7 @@ export class AdminGhost {
         this.clearStructure();
         this.clearGround();
         this.clearDecoration();
+        this.clearAnimal();
         this.identity = "";
     }
 
@@ -247,6 +279,13 @@ export class AdminGhost {
         if (!this.decoration) return;
         this.renderer.delete(ADMIN_GHOST_ID);
         this.decoration = undefined;
+    }
+
+    private clearAnimal(): void {
+        if (!this.animal) return;
+        this.animal.dispose();
+        this.renderer.delete(ADMIN_GHOST_ID);
+        this.animal = undefined;
     }
 
     private clearGround(): void {

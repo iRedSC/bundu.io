@@ -6,16 +6,18 @@ import {
 import { OCCUPANCY_LAYERS_TOP_DOWN } from "@bundu/shared/occupancy_layer";
 import type { RegistryId } from "@bundu/shared/registry";
 import {
+    TILE_SIZE,
     WORLD_BOUNDS,
     WORLD_TILES,
     worldToTile,
     type TileRot,
 } from "@bundu/shared/tiles";
 import { getVariantName } from "@bundu/shared/variant_map";
-import { Box, Vector } from "sat";
+import { Box, Circle, Vector } from "sat";
 import {
     AnimalData,
     DecorationData,
+    Physics,
     Spiked,
 } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
@@ -23,11 +25,13 @@ import {
     BuildingConfigs,
     occupancyLayerForClass,
 } from "../configs/loaders/buildings.js";
+import { AnimalConfigs } from "../configs/loaders/animals.js";
 import { DecorationConfigs } from "../configs/loaders/decorations.js";
 import { gameRegistries } from "../configs/registries.js";
 import type { GameObject, World } from "../engine";
 import { System } from "../engine";
 import { tryAddResource } from "../game_objects/add_resource.js";
+import { Animal } from "../game_objects/animal.js";
 import { Decoration } from "../game_objects/decoration.js";
 import { Ground } from "../game_objects/ground.js";
 import { Resource } from "../game_objects/resource.js";
@@ -123,6 +127,18 @@ function registryHas(
     }
 }
 
+/** True when typeId is a loaded animal entity (excludes player). */
+function isPlaceableAnimal(typeId: number): boolean {
+    try {
+        const location = gameRegistries().entity_type.location(
+            typeId as RegistryId<"entity_type">
+        );
+        return AnimalConfigs.entries.has(location);
+    } catch {
+        return false;
+    }
+}
+
 function inWorld(x: number, y: number): boolean {
     return x >= 0 && y >= 0 && x <= WORLD_BOUNDS && y <= WORLD_BOUNDS;
 }
@@ -148,6 +164,26 @@ function topDecorationAt(
             best = object;
             bestZ = config.z;
             bestId = object.id;
+        }
+    }
+    return best;
+}
+
+/** Closest animal whose collision radius contains the world point. */
+function topAnimalAt(world: World, x: number, y: number): GameObject | null {
+    let best: GameObject | null = null;
+    let bestDist = Infinity;
+    for (const object of world.query([AnimalData, Physics])) {
+        if (!object.active) continue;
+        const physics = object.get(Physics);
+        const dx = physics.position.x - x;
+        const dy = physics.position.y - y;
+        const dist = dx * dx + dy * dy;
+        const radius = physics.collisionRadius;
+        if (dist > radius * radius) continue;
+        if (dist < bestDist) {
+            best = object;
+            bestDist = dist;
         }
     }
     return best;
@@ -327,6 +363,16 @@ export class AdminEditorSystem extends System<GameEventMap> {
                 }
                 return;
             }
+            case AdminPlaceKind.Animal: {
+                if (!inWorld(packet.x, packet.y)) return;
+                if (!isPlaceableAnimal(packet.typeId)) return;
+                const created = this.placeAnimal(packet.typeId, packet.x, packet.y);
+                const snapshot = trySnapshot(created);
+                if (snapshot) {
+                    recordMutation(playerId, { kind: "add", snapshot });
+                }
+                return;
+            }
         }
     };
 
@@ -395,6 +441,17 @@ export class AdminEditorSystem extends System<GameEventMap> {
                 const packet = groundWire(ground);
                 this.world.removeObject(ground);
                 this.broadcastUnloadGround(packet);
+                if (snapshot) {
+                    recordMutation(playerId, { kind: "remove", snapshot });
+                }
+                return;
+            }
+            case AdminPlaceKind.Animal: {
+                const animal = topAnimalAt(this.world, x, y);
+                if (!animal) return;
+                const snapshot = trySnapshot(animal);
+                animal.active = false;
+                this.trigger(GameEvent.DeleteObject, { object: animal });
                 if (snapshot) {
                     recordMutation(playerId, { kind: "remove", snapshot });
                 }
@@ -540,6 +597,20 @@ export class AdminEditorSystem extends System<GameEventMap> {
         });
         this.world.addObject(object);
         this.broadcastDecoration(decorationWire(object));
+        return object;
+    }
+
+    private placeAnimal(typeId: number, x: number, y: number): GameObject {
+        const position = new Vector(x, y);
+        const physics = {
+            position,
+            collider: new Circle(position, TILE_SIZE / 2),
+            collisionRadius: TILE_SIZE / 2,
+            speed: 0,
+            rotation: 0,
+        };
+        const object = new Animal({ id: typeId }, physics);
+        this.world.addObject(object);
         return object;
     }
 
