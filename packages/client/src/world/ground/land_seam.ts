@@ -22,10 +22,14 @@ export const LAND_SEAM_PAD_TILES = Math.ceil(LAND_SEAM_AMPLITUDE + 0.02);
  * corner bites) never reveal the hard rect. Seam band paints the ring.
  */
 export const LAND_SEAM_FILL_INSET_TILES = LAND_SEAM_PAD_TILES + 1;
-/** Land chunks to bake per live tick. */
+/** Land chunks to bake per live tick (join flush uses its own limit). */
 export const LAND_SEAM_PER_TICK = 1;
-/** Live play: only run a bake tick every N frames to avoid hitching. */
-export const LAND_SEAM_TICK_INTERVAL = 3;
+/**
+ * Live play / freecam-exit: only run a bake tick every N frames.
+ * Kept high so LOD upgrades and ground edits drip in without hitching;
+ * initial load bypasses this via `flushLandSeams`.
+ */
+export const LAND_SEAM_TICK_INTERVAL = 18;
 
 /**
  * Max tile edge of one seam chunk. Keeps crisp subdiv cheap:

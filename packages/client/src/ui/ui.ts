@@ -22,10 +22,10 @@ const HOTBAR_GAP = 8;
 /** Raise bottom-aligned bars a touch above the hotbar baseline. */
 const HOTBAR_LIFT = 12;
 
-/** Hotbar + vitals while freecam is active (still readable). */
-const FREECAM_HUD_ALPHA = 0.42;
-/** Further fade when the pointer is over them so the world peeks through. */
-const FREECAM_HUD_HOVER_ALPHA = 0.12;
+/** Hotbar + vitals while freecam is active (ghosted). */
+const FREECAM_HUD_ALPHA = 0.12;
+/** Pointer over them → fully vanish so the world is unobstructed. */
+const FREECAM_HUD_HOVER_ALPHA = 0;
 const FREECAM_HUD_ALPHA_LERP = 0.18;
 
 export type UI = {
@@ -106,7 +106,6 @@ export function createUI() {
     let freecamDimmed = false;
     let pointerX = 0;
     let pointerY = 0;
-    let savedLeaderboardVisible = true;
     const invGray = new ColorMatrixFilter();
     invGray.greyscale(1, false);
     const statGray = new ColorMatrixFilter();
@@ -129,15 +128,12 @@ export function createUI() {
     function setFreecamDimmed(enabled: boolean) {
         freecamDimmed = enabled;
         if (enabled) {
-            savedLeaderboardVisible = leaderboard.container.visible;
-            leaderboard.container.visible = false;
-            // Crafting visibility is owned by syncCreativeChrome (creative + freecam).
+            // Leaderboard stays available; crafting owned by syncCreativeChrome.
             craftingMenu.container.visible = false;
             inventory.container.filters = [invGray];
             statContainer.filters = [statGray];
             inventory.setPointerMuted(true);
         } else {
-            leaderboard.container.visible = savedLeaderboardVisible;
             // Do not force crafting visible — creative mode may still own that.
             inventory.container.filters = null;
             statContainer.filters = null;

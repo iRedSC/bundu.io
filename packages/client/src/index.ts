@@ -561,7 +561,7 @@ async function main() {
         hideTooltip();
         freecamActive = enabled;
         world.setFreecamMode(enabled);
-        // Keep hotbar + vitals as a grayed ghost; hide craft / leaderboard.
+        // Keep hotbar + vitals as a grayed ghost; park crafting only.
         gui.setFreecamDimmed(enabled);
         editor.setActive(enabled);
         freecamControl.setFreecamActive(enabled);
