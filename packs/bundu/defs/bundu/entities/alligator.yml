@@ -22,5 +22,9 @@ corpse: alligator_dead
 spawn_count: 3
 spawn:
     ground: ["#bundu:water"]
+movement:
+    avoid:
+        ground: ["#bundu:buildable_ground"]
+        strength: 6
 aggroAt:
     - "#bundu:walls"

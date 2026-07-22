@@ -22,3 +22,7 @@ corpse: komodo_dragon_dead
 spawn_count: 3
 spawn:
     ground: [island]
+movement:
+    avoid:
+        ground: ["#bundu:water"]
+        strength: 5

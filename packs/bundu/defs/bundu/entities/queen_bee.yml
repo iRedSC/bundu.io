@@ -24,3 +24,7 @@ corpse: queen_bee_dead
 spawn_count: 1
 spawn:
     ground: ["#bundu:buildable_ground"]
+movement:
+    avoid:
+        ground: ["#bundu:water"]
+        strength: 4

@@ -22,3 +22,7 @@ corpse: elephant_dead
 spawn_count: 2
 spawn:
     ground: [savannah]
+movement:
+    avoid:
+        ground: ["#bundu:water"]
+        strength: 10

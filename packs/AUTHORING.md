@@ -436,6 +436,21 @@ placement:
 | `corpse` | required | Resource id for the body |
 | `spawn_count` | `0` | Per-species worldgen budget (also needs `gameplay.worldgen.animals`) |
 | `spawn.ground` | `#bundu:buildable_ground` | Allowed ground types/tags (same resolve as `placement.ground`) |
+| `movement.avoid.ground` | `[]` | Ground types/tags to path around |
+| `movement.avoid.strength` | `8` | Soft A* step-cost addend (ignored when `hard`) |
+| `movement.avoid.hard` | `false` | Ban avoided tiles unless escaping |
+| `movement.allowEmergencyEscape` | `true` | Ignore avoid when stuck / no other path |
+
+Standing on avoided ground always bypasses avoid and seeks the nearest safe tile.
+
+```yaml
+movement:
+  avoid:
+    ground: ["#bundu:water"]
+    strength: 8          # soft detour
+    # hard: true         # never enter (unless already on it / emergency)
+  # allowEmergencyEscape: true
+```
 
 Player is a special entity def (`kind: player`) — not an `AnimalConfig`.
 

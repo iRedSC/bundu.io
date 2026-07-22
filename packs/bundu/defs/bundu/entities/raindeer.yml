@@ -16,3 +16,7 @@ corpse: raindeer_dead
 spawn_count: 4
 spawn:
     ground: [snow]
+movement:
+    avoid:
+        ground: ["#bundu:water"]
+        hard: true

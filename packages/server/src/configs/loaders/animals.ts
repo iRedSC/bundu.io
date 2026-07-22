@@ -5,6 +5,15 @@ export type AnimalBehavior = "hostile" | "neutral" | "passive" | "scared";
 export type AggroSwitch = "never" | "onHit" | "random";
 export type AggroLevel = "high" | "medium" | "low";
 
+/** Soft A* penalty / hard ban for ground types during pathing. */
+export type AnimalAvoidGround = {
+    ground: readonly RegistryId<"ground_type">[];
+    /** Soft step-cost addend on avoided tiles. Ignored when `hard` is true. */
+    strength: number;
+    /** When true, avoided tiles are non-expandable unless escaping. */
+    hard: boolean;
+};
+
 export type AnimalConfig = {
     score: number;
     behavior: AnimalBehavior;
@@ -60,6 +69,16 @@ export type AnimalConfig = {
     spawn: {
         ground: readonly RegistryId<"ground_type">[];
     };
+    /**
+     * Pathing bias. Soft `strength` detours around avoided ground; `hard`
+     * forbids it. Standing on avoided ground always bypasses and seeks the
+     * nearest safe tile. `allowEmergencyEscape` (default true) also ignores
+     * avoid when stuck / no other path.
+     */
+    movement: {
+        avoid: AnimalAvoidGround;
+        allowEmergencyEscape: boolean;
+    };
 };
 
 export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("entity_type", {
@@ -83,5 +102,13 @@ export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("enti
     spawn_count: 0,
     spawn: {
         ground: [],
+    },
+    movement: {
+        avoid: {
+            ground: [],
+            strength: 8,
+            hard: false,
+        },
+        allowEmergencyEscape: true,
     },
 });

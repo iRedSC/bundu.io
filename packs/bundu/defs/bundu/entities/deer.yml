@@ -16,3 +16,7 @@ corpse: deer_dead
 spawn_count: 8
 spawn:
     ground: ["#bundu:buildable_ground"]
+movement:
+    avoid:
+        ground: ["#bundu:water"]
+        strength: 8

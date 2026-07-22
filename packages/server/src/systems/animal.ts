@@ -2,7 +2,10 @@ import { attackFacingRadians, degrees, moveToward, radians } from "@bundu/shared
 import { tileCenterWorld, TILE_SIZE } from "@bundu/shared/tiles.js";
 import { random } from "@bundu/shared/random.js";
 import { AnimalData, Health, Physics, TileEntity, Type } from "../components/base.js";
-import { AnimalConfigs } from "../configs/loaders/animals.js";
+import {
+    AnimalConfigs,
+    type AnimalConfig,
+} from "../configs/loaders/animals.js";
 import { PlayerData } from "../components/player.js";
 import { Resource } from "../game_objects/resource.js";
 import { System, type GameObject, type World } from "../engine/index.js";
@@ -17,9 +20,12 @@ import {
     firstBlocker,
     footprintOverlaps,
     hasClearance,
+    nearestNonAvoidTile,
     pathTo,
     tileAt,
     tileCenters,
+    tileIsAvoided,
+    type PathGroundPolicy,
     type Tile,
     type WorldPoint,
 } from "./animal_pathing.js";
@@ -32,6 +38,18 @@ const PROGRESS_EPSILON = 1;
 const REPATH_TARGET_TILES = 1;
 /** Attempts to sample a walkable wander point. */
 const WANDER_SAMPLES = 8;
+
+function avoidSet(config: AnimalConfig): ReadonlySet<number> {
+    return new Set(config.movement.avoid.ground);
+}
+
+function onAvoidedGround(
+    world: World,
+    physics: Physics,
+    avoid: ReadonlySet<number>
+): boolean {
+    return tileIsAvoided(world, tileAt(physics.position), avoid);
+}
 
 function playerDistance(animal: Physics, player: GameObject) {
     const tile = TileEntity.get(player);
@@ -115,6 +133,54 @@ export class AnimalSystem extends System<GameEventMap> {
         if (data.path.length === 0) clearNav(data);
     }
 
+    private groundPolicy(
+        config: AnimalConfig,
+        physics: Physics,
+        emergency: boolean
+    ): PathGroundPolicy | undefined {
+        const avoid = avoidSet(config);
+        if (avoid.size === 0) return undefined;
+        const standingOnAvoid = onAvoidedGround(this.world, physics, avoid);
+        return {
+            avoid,
+            strength: config.movement.avoid.strength,
+            hard: config.movement.avoid.hard,
+            emergency: emergency || standingOnAvoid,
+        };
+    }
+
+    /**
+     * If standing on avoided ground and the current destination is missing or
+     * also avoided, aim at the nearest safe tile (always bypasses avoid).
+     */
+    private retargetOffAvoidedGround(
+        animal: GameObject,
+        config: AnimalConfig
+    ): void {
+        const avoid = avoidSet(config);
+        if (avoid.size === 0) return;
+        const data = animal.get(AnimalData);
+        const physics = animal.get(Physics);
+        if (!onAvoidedGround(this.world, physics, avoid)) return;
+
+        const dest = data.destination;
+        if (dest && !tileIsAvoided(this.world, tileAt(dest), avoid)) return;
+
+        const safe = nearestNonAvoidTile(
+            this.world,
+            tileAt(physics.position),
+            physics.collisionRadius,
+            avoid
+        );
+        if (!safe) return;
+        data.destination = {
+            x: tileCenterWorld(safe.x),
+            y: tileCenterWorld(safe.y),
+        };
+        data.path = [];
+        data.stuckSince = 0;
+    }
+
     /**
      * Build or validate a path to `target`. Returns `blocked` when the animal
      * should not try to step this frame (attacking / gave up).
@@ -128,6 +194,9 @@ export class AnimalSystem extends System<GameEventMap> {
         const physics = animal.get(Physics);
         const radius = physics.collisionRadius;
         const config = AnimalConfigs.get(animal.get(Type).id);
+        this.retargetOffAvoidedGround(animal, config);
+        const seek = data.destination ?? target;
+        const policy = this.groundPolicy(config, physics, false);
 
         // Drop a cached path if the next waypoint is no longer walkable.
         const nextWaypoint = data.path[0];
@@ -139,7 +208,8 @@ export class AnimalSystem extends System<GameEventMap> {
                 physics.position.y,
                 nextWaypoint.x,
                 nextWaypoint.y,
-                radius
+                radius,
+                policy
             )
         ) {
             data.path = [];
@@ -152,19 +222,49 @@ export class AnimalSystem extends System<GameEventMap> {
                 this.world,
                 physics.position.x,
                 physics.position.y,
-                target.x,
-                target.y,
-                radius
+                seek.x,
+                seek.y,
+                radius,
+                policy
             )
         ) {
             return "ok";
         }
 
         const start = tileAt(physics.position);
-        const goal = tileAt(target);
-        data.path = tileCenters(pathTo(this.world, start, goal, radius));
+        const goal = tileAt(seek);
+        data.path = tileCenters(
+            pathTo(this.world, start, goal, radius, policy)
+        );
 
         if (data.path.length > 0) return "ok";
+
+        // Stuck against avoid / no soft path — retry with emergency if allowed
+        // (also always allowed while already standing on avoided ground).
+        if (
+            policy &&
+            !policy.emergency &&
+            config.movement.allowEmergencyEscape
+        ) {
+            const emergencyPolicy = { ...policy, emergency: true };
+            data.path = tileCenters(
+                pathTo(this.world, start, goal, radius, emergencyPolicy)
+            );
+            if (data.path.length > 0) return "ok";
+            if (
+                hasClearance(
+                    this.world,
+                    physics.position.x,
+                    physics.position.y,
+                    seek.x,
+                    seek.y,
+                    radius,
+                    emergencyPolicy
+                )
+            ) {
+                return "ok";
+            }
+        }
 
         // Fully blocked while chasing — smash destructible obstacles.
         if (data.state === "chase" && config.attack_damage > 0) {
@@ -264,6 +364,7 @@ export class AnimalSystem extends System<GameEventMap> {
         const data = animal.get(AnimalData);
         const physics = animal.get(Physics);
         const config = AnimalConfigs.get(animal.get(Type).id);
+        this.retargetOffAvoidedGround(animal, config);
         const players = this.world.query(
             [PlayerData, Physics],
             this.world.context.quadtree.query(
@@ -424,7 +525,8 @@ export class AnimalSystem extends System<GameEventMap> {
                 physics,
                 physics.position.x,
                 physics.position.y,
-                config.wander_distance
+                config.wander_distance,
+                config
             );
             return;
         }
@@ -435,7 +537,8 @@ export class AnimalSystem extends System<GameEventMap> {
                 physics,
                 data.home.x,
                 data.home.y,
-                TILE_SIZE
+                TILE_SIZE,
+                config
             ) ?? { x: data.home.x, y: data.home.y };
             data.roamPhase = "wander";
         } else {
@@ -443,20 +546,24 @@ export class AnimalSystem extends System<GameEventMap> {
                 physics,
                 data.home.x,
                 data.home.y,
-                config.wander_distance
+                config.wander_distance,
+                config
             );
             data.roamPhase = "home";
         }
     }
 
-    /** Prefer open ground so wander doesn't aim into resource clumps. */
+    /** Prefer open, non-avoided ground so wander doesn't aim into clumps / water. */
     private pickWanderPoint(
         physics: Physics,
         originX: number,
         originY: number,
-        range: number
+        range: number,
+        config: AnimalConfig
     ): WorldPoint | undefined {
         const radius = physics.collisionRadius;
+        const avoid = avoidSet(config);
+        let softFallback: WorldPoint | undefined;
         for (let i = 0; i < WANDER_SAMPLES; i++) {
             const point = {
                 x: originX + random.integer(-range, range),
@@ -465,9 +572,15 @@ export class AnimalSystem extends System<GameEventMap> {
             if (footprintOverlaps(this.world, point.x, point.y, radius)) {
                 continue;
             }
+            const avoided = tileIsAvoided(this.world, tileAt(point), avoid);
+            if (avoided && config.movement.avoid.hard) continue;
+            if (avoided) {
+                softFallback ??= point;
+                continue;
+            }
             return point;
         }
-        return undefined;
+        return softFallback;
     }
 
     private chase(time: number, animal: GameObject, target: GameObject) {
@@ -548,10 +661,32 @@ export class AnimalSystem extends System<GameEventMap> {
         data.targetId = undefined;
         data.path = [];
         data.stuckSince = 0;
-        data.destination = {
+        const point = {
             x: physics.position.x + Math.cos(angle) * config.wander_distance,
             y: physics.position.y + Math.sin(angle) * config.wander_distance,
         };
+        const avoid = avoidSet(config);
+        if (
+            avoid.size > 0 &&
+            tileIsAvoided(this.world, tileAt(point), avoid) &&
+            config.movement.avoid.hard
+        ) {
+            // Hard avoid: flee toward nearest safe tile instead of into water.
+            const safe = nearestNonAvoidTile(
+                this.world,
+                tileAt(physics.position),
+                physics.collisionRadius,
+                avoid
+            );
+            data.destination = safe
+                ? {
+                      x: tileCenterWorld(safe.x),
+                      y: tileCenterWorld(safe.y),
+                  }
+                : point;
+            return;
+        }
+        data.destination = point;
     }
 
     private hurt = ({ object, source }: GameEvent.Hurt) => {

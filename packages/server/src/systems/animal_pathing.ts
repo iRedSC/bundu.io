@@ -10,6 +10,7 @@ import { isSolidTileEntity } from "../configs/loaders/placement_rules.js";
 import type { World } from "../engine/index.js";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { tilesOverlappingCircle } from "./position.js";
+import { groundTypeAt } from "./ground_index.js";
 
 function solidOccupantAt(
     world: World,
@@ -28,8 +29,51 @@ function solidOccupantAt(
 export type Tile = { x: number; y: number };
 export type WorldPoint = { x: number; y: number };
 
+/** Ground bias applied during A* / clearance checks. */
+export type PathGroundPolicy = {
+    avoid: ReadonlySet<number>;
+    /** Soft step-cost addend. Ignored when hard or emergency. */
+    strength: number;
+    /** Ban avoided tiles unless emergency / standing on avoid. */
+    hard: boolean;
+    /** Ignore avoid costs and hard bans for this search. */
+    emergency: boolean;
+};
+
 const key = (tile: Tile) => `${tile.x},${tile.y}`;
 const manhattan = (a: Tile, b: Tile) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+
+export function tileIsAvoided(
+    world: World,
+    tile: Tile,
+    avoid: ReadonlySet<number>
+): boolean {
+    if (avoid.size === 0) return false;
+    const type = groundTypeAt(world, tile.x, tile.y);
+    return type !== undefined && avoid.has(type);
+}
+
+function stepGroundCost(
+    world: World,
+    tile: Tile,
+    policy: PathGroundPolicy | undefined
+): number {
+    if (!policy || policy.emergency || policy.avoid.size === 0) return 1;
+    if (!tileIsAvoided(world, tile, policy.avoid)) return 1;
+    if (policy.hard) return 1; // hard tiles are skipped, not costed
+    return 1 + policy.strength;
+}
+
+function groundBlocks(
+    world: World,
+    tile: Tile,
+    policy: PathGroundPolicy | undefined
+): boolean {
+    if (!policy || policy.emergency || !policy.hard || policy.avoid.size === 0) {
+        return false;
+    }
+    return tileIsAvoided(world, tile, policy.avoid);
+}
 
 /** True if a circle overlaps any occupied tile footprint circle (matches CollisionSystem). */
 export function footprintOverlaps(
@@ -75,24 +119,24 @@ export function hasClearance(
     fromY: number,
     toX: number,
     toY: number,
-    radius: number
+    radius: number,
+    policy?: PathGroundPolicy
 ): boolean {
     const dist = Math.hypot(toX - fromX, toY - fromY);
-    if (dist < 1e-6) return !footprintOverlaps(world, fromX, fromY, radius);
+    if (dist < 1e-6) {
+        return (
+            !footprintOverlaps(world, fromX, fromY, radius) &&
+            !groundBlocks(world, tileAt({ x: fromX, y: fromY }), policy)
+        );
+    }
     const step = TILE_SIZE * gameplayConfig().animalAi.clearanceStepTiles;
     const steps = Math.max(1, Math.ceil(dist / step));
     for (let i = 0; i <= steps; i++) {
         const t = i / steps;
-        if (
-            footprintOverlaps(
-                world,
-                fromX + (toX - fromX) * t,
-                fromY + (toY - fromY) * t,
-                radius
-            )
-        ) {
-            return false;
-        }
+        const x = fromX + (toX - fromX) * t;
+        const y = fromY + (toY - fromY) * t;
+        if (footprintOverlaps(world, x, y, radius)) return false;
+        if (groundBlocks(world, tileAt({ x, y }), policy)) return false;
     }
     return true;
 }
@@ -101,7 +145,8 @@ function edgeClear(
     world: World,
     from: Tile,
     to: Tile,
-    radius: number
+    radius: number,
+    policy?: PathGroundPolicy
 ): boolean {
     return hasClearance(
         world,
@@ -109,7 +154,8 @@ function edgeClear(
         tileCenterWorld(from.y),
         tileCenterWorld(to.x),
         tileCenterWorld(to.y),
-        radius
+        radius,
+        policy
     );
 }
 
@@ -122,7 +168,8 @@ export function pathTo(
     world: World,
     start: Tile,
     goal: Tile,
-    radius: number
+    radius: number,
+    policy?: PathGroundPolicy
 ): Tile[] {
     const open: Tile[] = [start];
     const previous = new Map<string, Tile>();
@@ -174,15 +221,20 @@ export function pathTo(
             if (key(next) !== key(goal) && tileBlockedFor(world, next, radius)) {
                 continue;
             }
+            if (key(next) !== key(goal) && groundBlocks(world, next, policy)) {
+                continue;
+            }
             // Skip corner-cutting / mid-edge collisions between tile centers.
             if (
                 key(current) !== key(start) &&
                 key(next) !== key(goal) &&
-                !edgeClear(world, current, next, radius)
+                !edgeClear(world, current, next, radius, policy)
             ) {
                 continue;
             }
-            const nextCost = (cost.get(key(current)) ?? 0) + 1;
+            const nextCost =
+                (cost.get(key(current)) ?? 0) +
+                stepGroundCost(world, next, policy);
             if (nextCost >= (cost.get(key(next)) ?? Infinity)) continue;
             previous.set(key(next), current);
             cost.set(key(next), nextCost);
@@ -190,6 +242,52 @@ export function pathTo(
         }
     }
     return [];
+}
+
+/**
+ * BFS to the nearest tile whose top ground is not in `avoid`.
+ * Ignores ground bans (caller is already on avoided ground) but respects solids.
+ * Uses a wider budget than chase A* — open ocean can be far from land.
+ */
+export function nearestNonAvoidTile(
+    world: World,
+    start: Tile,
+    radius: number,
+    avoid: ReadonlySet<number>
+): Tile | undefined {
+    if (avoid.size === 0) return undefined;
+    if (!tileIsAvoided(world, start, avoid)) return start;
+
+    const open: Tile[] = [start];
+    const seen = new Set([key(start)]);
+    const limit = WORLD_TILES * WORLD_TILES;
+
+    while (open.length && seen.size < limit) {
+        const current = open.shift();
+        if (!current) break;
+        for (const next of [
+            { x: current.x + 1, y: current.y },
+            { x: current.x - 1, y: current.y },
+            { x: current.x, y: current.y + 1 },
+            { x: current.x, y: current.y - 1 },
+        ]) {
+            if (
+                next.x < 1 ||
+                next.y < 1 ||
+                next.x >= WORLD_TILES - 1 ||
+                next.y >= WORLD_TILES - 1
+            ) {
+                continue;
+            }
+            const k = key(next);
+            if (seen.has(k)) continue;
+            seen.add(k);
+            if (tileBlockedFor(world, next, radius)) continue;
+            if (!tileIsAvoided(world, next, avoid)) return next;
+            open.push(next);
+        }
+    }
+    return undefined;
 }
 
 /** First occupied tile on the grid line from → to (exclusive of start). */

@@ -454,6 +454,14 @@ export function loadConfigs() {
                 spawn?: {
                     ground?: string[];
                 };
+                movement?: {
+                    avoid?: {
+                        ground?: string[];
+                        strength?: unknown;
+                        hard?: unknown;
+                    };
+                    allowEmergencyEscape?: unknown;
+                };
             };
             record.aggroAt = registries.structure.resolveSet(
                 raw.aggroAt ?? [],
@@ -475,6 +483,51 @@ export function loadConfigs() {
                     namespace(id),
                     `${id}.spawn.ground`
                 ),
+            };
+            const avoidRaw = raw.movement?.avoid;
+            const avoidGround = registries.ground_type.resolveSet(
+                avoidRaw?.ground ?? [],
+                namespace(id),
+                `${id}.movement.avoid.ground`
+            );
+            let strength = fallback.movement.avoid.strength;
+            if (avoidRaw?.strength !== undefined) {
+                if (
+                    typeof avoidRaw.strength !== "number" ||
+                    !Number.isFinite(avoidRaw.strength) ||
+                    avoidRaw.strength < 0
+                ) {
+                    throw new Error(
+                        `${id}.movement.avoid.strength: expected a non-negative number`
+                    );
+                }
+                strength = avoidRaw.strength;
+            }
+            let hard = fallback.movement.avoid.hard;
+            if (avoidRaw?.hard !== undefined) {
+                if (typeof avoidRaw.hard !== "boolean") {
+                    throw new Error(
+                        `${id}.movement.avoid.hard: expected boolean`
+                    );
+                }
+                hard = avoidRaw.hard;
+            }
+            let allowEmergencyEscape = fallback.movement.allowEmergencyEscape;
+            if (raw.movement?.allowEmergencyEscape !== undefined) {
+                if (typeof raw.movement.allowEmergencyEscape !== "boolean") {
+                    throw new Error(
+                        `${id}.movement.allowEmergencyEscape: expected boolean`
+                    );
+                }
+                allowEmergencyEscape = raw.movement.allowEmergencyEscape;
+            }
+            record.movement = {
+                avoid: {
+                    ground: avoidGround,
+                    strength,
+                    hard,
+                },
+                allowEmergencyEscape,
             };
             return mergeObjects(record, undefined, fallback);
         }
