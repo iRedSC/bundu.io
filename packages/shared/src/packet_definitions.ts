@@ -4,14 +4,21 @@ import type {
 } from "./object_types";
 import { PlaceMode } from "./inventory";
 import type { PacketGuards } from "./network/serializer";
-import { WORLD_BOUNDS, WORLD_TILES } from "./tiles";
+import {
+    isValidWorldTiles,
+    MAX_WORLD_BOUNDS,
+    WORLD_BOUNDS,
+    WORLD_TILES,
+} from "./tiles";
 import type { CommandProjection } from "./command";
 
 /**
  * Max ViewBounds edge length. Freecam min zoom (~0.05) on a large display can
  * exceed 2× world size; keep headroom without accepting unbounded spam.
+ * Capped against {@link MAX_WORLD_BOUNDS} so the wire limit stays valid after
+ * runtime world-size changes.
  */
-export const FREECAM_MAX_VIEW_EXTENT = WORLD_BOUNDS * 5;
+export const FREECAM_MAX_VIEW_EXTENT = MAX_WORLD_BOUNDS * 5;
 
 /** Server → client packet IDs. */
 export const ServerPacket = {
@@ -59,6 +66,8 @@ export const ServerPacket = {
     CommandResult: 0x23,
     /** Creative mode toggled by `/creative` (item give + cheat toolbar). */
     CreativeMode: 0x24,
+    /** Authoritative playable world size in tiles (join + new/import map). */
+    SetWorldSize: 0x25,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -188,6 +197,8 @@ export namespace ServerPacket {
         speed: number;
         instakill: boolean;
     };
+    /** Square world edge length in tiles. */
+    export type SetWorldSize = { worldTiles: number };
     export type UnloadGround = {
         groundData: GroundWire[];
     };
@@ -277,8 +288,10 @@ export const ClientPacket = {
     AdminSaveMap: 0x19,
     /** Freecam editor: return map YAML for client download (no disk write). */
     AdminDownloadMap: 0x1a,
-    /** Freecam editor: wipe placeables; keeps a fresh base ground floor. */
-    AdminWipeMap: 0x1b,
+    /** Freecam editor: clear map and create a blank ocean world of `worldTiles`. */
+    AdminNewMap: 0x1b,
+    /** Freecam editor: clear map and load placeables from YAML. */
+    AdminImportMap: 0x28,
     /** Client finished local load (terrain, etc.) — server may spawn / loadView. */
     ClientReady: 0x1c,
     /** Exit freecam and relocate the parked body to a world point. */
@@ -369,7 +382,10 @@ export namespace ClientPacket {
     export type AdminRedo = Record<string, never>;
     export type AdminSaveMap = Record<string, never>;
     export type AdminDownloadMap = Record<string, never>;
-    export type AdminWipeMap = Record<string, never>;
+    /** Create a blank ocean map at the given square tile size. */
+    export type AdminNewMap = { worldTiles: number };
+    /** Replace the live map from editor YAML (clears existing placeables). */
+    export type AdminImportMap = { yaml: string };
     export type ClientReady = Record<string, never>;
     /** World-space drop point for freecam exit-with-teleport. */
     export type ExitFreecamAt = { x: number; y: number };
@@ -423,6 +439,7 @@ export type ServerPacketMap = {
     [ServerPacket.CommandRegistry]: ServerPacket.CommandRegistry;
     [ServerPacket.CommandResult]: ServerPacket.CommandResult;
     [ServerPacket.CreativeMode]: ServerPacket.CreativeMode;
+    [ServerPacket.SetWorldSize]: ServerPacket.SetWorldSize;
 };
 
 /** ID → payload map for client packets. */
@@ -449,7 +466,8 @@ export type ClientPacketMap = {
     [ClientPacket.AdminRedo]: ClientPacket.AdminRedo;
     [ClientPacket.AdminSaveMap]: ClientPacket.AdminSaveMap;
     [ClientPacket.AdminDownloadMap]: ClientPacket.AdminDownloadMap;
-    [ClientPacket.AdminWipeMap]: ClientPacket.AdminWipeMap;
+    [ClientPacket.AdminNewMap]: ClientPacket.AdminNewMap;
+    [ClientPacket.AdminImportMap]: ClientPacket.AdminImportMap;
     [ClientPacket.ClientReady]: ClientPacket.ClientReady;
     [ClientPacket.ExitFreecamAt]: ClientPacket.ExitFreecamAt;
     [ClientPacket.FreecamCursor]: ClientPacket.FreecamCursor;
@@ -525,6 +543,7 @@ export const ServerSchema: {
     [ServerPacket.CreativeMode]: {
         fields: ["enabled", "godmode", "speed", "instakill"],
     },
+    [ServerPacket.SetWorldSize]: { fields: ["worldTiles"] },
 };
 
 export const ClientSchema: {
@@ -570,7 +589,8 @@ export const ClientSchema: {
     [ClientPacket.AdminRedo]: { fields: [] },
     [ClientPacket.AdminSaveMap]: { fields: [] },
     [ClientPacket.AdminDownloadMap]: { fields: [] },
-    [ClientPacket.AdminWipeMap]: { fields: [] },
+    [ClientPacket.AdminNewMap]: { fields: ["worldTiles"] },
+    [ClientPacket.AdminImportMap]: { fields: ["yaml"] },
     [ClientPacket.ClientReady]: { fields: [] },
     [ClientPacket.ExitFreecamAt]: { fields: ["x", "y"] },
     [ClientPacket.FreecamCursor]: { fields: ["x", "y"] },
@@ -779,10 +799,19 @@ export const ClientPacketGuards = {
         value: unknown
     ): value is ClientPacket.AdminDownloadMap =>
         isRecord(value) && Object.keys(value).length === 0,
-    [ClientPacket.AdminWipeMap]: (
+    [ClientPacket.AdminNewMap]: (
         value: unknown
-    ): value is ClientPacket.AdminWipeMap =>
-        isRecord(value) && Object.keys(value).length === 0,
+    ): value is ClientPacket.AdminNewMap =>
+        isRecord(value) &&
+        isSafeInteger(value.worldTiles) &&
+        isValidWorldTiles(value.worldTiles),
+    [ClientPacket.AdminImportMap]: (
+        value: unknown
+    ): value is ClientPacket.AdminImportMap =>
+        isRecord(value) &&
+        typeof value.yaml === "string" &&
+        value.yaml.length > 0 &&
+        value.yaml.length <= 8_000_000,
     [ClientPacket.ClientReady]: (
         value: unknown
     ): value is ClientPacket.ClientReady =>

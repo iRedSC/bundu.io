@@ -27,13 +27,19 @@ export class Sky extends Graphics {
 
     constructor() {
         super();
-        this.rect(0, 0, WORLD_SIZE, WORLD_SIZE).fill(0xffffff);
+        this.redrawBounds();
         this.zIndex = 200;
         this.blendMode = "multiply";
         this.tint = PERIOD_COLORS[0];
         const initial = shadowOffsetForPeriod(0);
         shadowStyle.offsetX = initial.x;
         shadowStyle.offsetY = initial.y;
+    }
+
+    /** Rebuild the multiply overlay after a live world-size change. */
+    redrawBounds(): void {
+        this.clear();
+        this.rect(0, 0, WORLD_SIZE, WORLD_SIZE).fill(0xffffff);
     }
 
     setTime(period: number, manager: AnimationManager) {

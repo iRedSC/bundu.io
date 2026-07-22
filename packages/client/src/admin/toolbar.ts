@@ -30,7 +30,8 @@ export type ToolbarHandlers = {
     onKillAll: () => void;
     onSaveMap: () => void;
     onDownloadMap: () => void;
-    onWipeMap: () => void;
+    onImportMap: () => void;
+    onNewMap: () => void;
 };
 
 /** Freecam map-editor toolbar — thin config over the shared mode toolbar. */
@@ -151,13 +152,20 @@ export function createToolbar(
                     onClick: () => handlers.onDownloadMap(),
                     visibleWhen: always,
                 },
+                {
+                    kind: "button",
+                    id: "import-map",
+                    label: "Import",
+                    onClick: () => handlers.onImportMap(),
+                    visibleWhen: always,
+                },
             ],
         },
         {
             kind: "button",
-            id: "wipe-map",
-            label: "WIPE",
-            onClick: () => handlers.onWipeMap(),
+            id: "new-map",
+            label: "New Map",
+            onClick: () => handlers.onNewMap(),
             visibleWhen: always,
         },
     ];

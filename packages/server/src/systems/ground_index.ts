@@ -2,12 +2,12 @@ import { WORLD_TILES } from "@bundu/shared/tiles";
 import { GroundData } from "../components/base.js";
 import type { World } from "../engine";
 
-const CELL_COUNT = WORLD_TILES * WORLD_TILES;
 /** Sentinel: no ground covering this tile. */
 const EMPTY = -1;
 
 let cachedTypes: Int32Array | null = null;
 let cachedFingerprint = "";
+let cachedWorldTiles = 0;
 
 function fingerprint(world: World): string {
     let parts = "";
@@ -23,9 +23,15 @@ function fingerprint(world: World): string {
 /** Rebuild when ground patches change; O(grounds × area) — rare vs path queries. */
 function ensureIndex(world: World): Int32Array {
     const fp = fingerprint(world);
-    if (cachedTypes && fp === cachedFingerprint) return cachedTypes;
+    if (
+        cachedTypes &&
+        fp === cachedFingerprint &&
+        cachedWorldTiles === WORLD_TILES
+    ) {
+        return cachedTypes;
+    }
 
-    const types = new Int32Array(CELL_COUNT);
+    const types = new Int32Array(WORLD_TILES * WORLD_TILES);
     types.fill(EMPTY);
     const grounds = world
         .query([GroundData])
@@ -47,6 +53,7 @@ function ensureIndex(world: World): Int32Array {
     }
     cachedTypes = types;
     cachedFingerprint = fp;
+    cachedWorldTiles = WORLD_TILES;
     return types;
 }
 

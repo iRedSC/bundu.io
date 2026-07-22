@@ -35,41 +35,47 @@ type ModelMaskEntry = {
  * so ocean + pond can coexist with distinct caustics.
  */
 export class NearshoreFill {
-    private readonly maskPixels = new Uint8Array(
-        WORLD_TILES * WORLD_TILES * 4
-    );
-    private readonly colorPixels = new Uint8Array(
-        WORLD_TILES * WORLD_TILES * 4
-    );
+    private maskPixels = new Uint8Array(WORLD_TILES * WORLD_TILES * 4);
+    private colorPixels = new Uint8Array(WORLD_TILES * WORLD_TILES * 4);
     /** Authored water RGB before land→ocean shore bake (water↔water soften). */
-    private readonly waterColorScratch = new Uint8Array(
-        WORLD_TILES * WORLD_TILES * 4
-    );
-    private readonly maskSource: BufferImageSource;
-    private readonly colorSource: BufferImageSource;
+    private waterColorScratch = new Uint8Array(WORLD_TILES * WORLD_TILES * 4);
+    private maskSource: BufferImageSource;
+    private colorSource: BufferImageSource;
     readonly colorTexture: Texture;
     readonly maskTexture: Texture;
     private readonly modelMasks = new Map<string, ModelMaskEntry>();
+    private allocatedTiles = WORLD_TILES;
 
     constructor() {
-        const sourceOptions = {
-            width: WORLD_TILES,
-            height: WORLD_TILES,
-            format: "rgba8unorm",
-            scaleMode: "linear",
-            addressMode: "clamp-to-edge",
-            alphaMode: "no-premultiply-alpha",
-        } as const;
-        this.colorSource = new BufferImageSource({
-            ...sourceOptions,
-            resource: this.colorPixels,
-        });
-        this.maskSource = new BufferImageSource({
-            ...sourceOptions,
-            resource: this.maskPixels,
-        });
+        const { colorSource, maskSource } = createNearshoreSources(
+            this.colorPixels,
+            this.maskPixels
+        );
+        this.colorSource = colorSource;
+        this.maskSource = maskSource;
         this.colorTexture = new Texture({ source: this.colorSource });
         this.maskTexture = new Texture({ source: this.maskSource });
+    }
+
+    /** Reallocate shore bake buffers after {@link setWorldTiles}. */
+    resizeForWorld(): void {
+        if (this.allocatedTiles === WORLD_TILES) return;
+        this.clearModelMasks();
+        const bytes = WORLD_TILES * WORLD_TILES * 4;
+        this.maskPixels = new Uint8Array(bytes);
+        this.colorPixels = new Uint8Array(bytes);
+        this.waterColorScratch = new Uint8Array(bytes);
+        this.colorSource.destroy();
+        this.maskSource.destroy();
+        const { colorSource, maskSource } = createNearshoreSources(
+            this.colorPixels,
+            this.maskPixels
+        );
+        this.colorSource = colorSource;
+        this.maskSource = maskSource;
+        this.colorTexture.source = this.colorSource;
+        this.maskTexture.source = this.maskSource;
+        this.allocatedTiles = WORLD_TILES;
     }
 
     paint(
@@ -289,6 +295,30 @@ export class NearshoreFill {
         }
         return out;
     }
+}
+
+function createNearshoreSources(
+    colorPixels: Uint8Array,
+    maskPixels: Uint8Array
+): { colorSource: BufferImageSource; maskSource: BufferImageSource } {
+    const sourceOptions = {
+        width: WORLD_TILES,
+        height: WORLD_TILES,
+        format: "rgba8unorm",
+        scaleMode: "linear",
+        addressMode: "clamp-to-edge",
+        alphaMode: "no-premultiply-alpha",
+    } as const;
+    return {
+        colorSource: new BufferImageSource({
+            ...sourceOptions,
+            resource: colorPixels,
+        }),
+        maskSource: new BufferImageSource({
+            ...sourceOptions,
+            resource: maskPixels,
+        }),
+    };
 }
 
 function materialBlend(

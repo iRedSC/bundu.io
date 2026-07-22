@@ -66,6 +66,9 @@ export function setupPacketReceiving(
         }
         downloadMapYaml(yaml);
     });
+    receiver.on(ServerPacket.SetWorldSize, ({ worldTiles }) => {
+        world.setWorldSize(worldTiles);
+    });
 }
 
 export function setupChatPacketReceiving(

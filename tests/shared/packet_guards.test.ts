@@ -17,7 +17,6 @@ const EMPTY_PAYLOAD_PACKETS = [
   ClientPacket.AdminRedo,
   ClientPacket.AdminSaveMap,
   ClientPacket.AdminDownloadMap,
-  ClientPacket.AdminWipeMap,
   ClientPacket.ClientReady,
 ] as const;
 

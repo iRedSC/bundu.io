@@ -48,6 +48,13 @@ export class Quadtree {
     rebuild() {
         this.tree.rebuild(this.objects);
     }
+
+    /** Replace root bounds and reinsert every tracked object. */
+    resizeBounds(bounds: [BasicPoint, BasicPoint]) {
+        const maxObjects = this.tree.maxObjects;
+        this.tree = new InternalQuadtree(new Range(bounds[0], bounds[1]), maxObjects);
+        this.rebuild();
+    }
 }
 
 class InternalQuadtree {

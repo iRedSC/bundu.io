@@ -9,11 +9,46 @@ export const DECI_PER_TILE = 100;
 /** World units per decitile. */
 export const WORLD_PER_DECI = TILE_SIZE / DECI_PER_TILE;
 
-/** Playable world extent in tiles (square). */
-export const WORLD_TILES = 200;
+/** Default playable world extent in tiles (square). */
+export const DEFAULT_WORLD_TILES = 200;
 
-/** Playable world extent in world units. */
-export const WORLD_BOUNDS = WORLD_TILES * TILE_SIZE;
+/** Smallest world the editor may create / import. */
+export const MIN_WORLD_TILES = 16;
+
+/** Largest world the editor may create / import. */
+export const MAX_WORLD_TILES = 512;
+
+/** Playable world extent in tiles (square). Mutable via {@link setWorldTiles}. */
+export let WORLD_TILES = DEFAULT_WORLD_TILES;
+
+/** Playable world extent in world units. Tracks {@link WORLD_TILES}. */
+export let WORLD_BOUNDS = WORLD_TILES * TILE_SIZE;
+
+/** Absolute max world edge in world units (for wire caps). */
+export const MAX_WORLD_BOUNDS = MAX_WORLD_TILES * TILE_SIZE;
+
+/** True when `tiles` is an allowed editor world size. */
+export function isValidWorldTiles(tiles: number): boolean {
+    return (
+        Number.isInteger(tiles) &&
+        tiles >= MIN_WORLD_TILES &&
+        tiles <= MAX_WORLD_TILES
+    );
+}
+
+/**
+ * Update the live playable world size. Call only when clearing / loading a map
+ * so buffers and spatial indexes can be rebuilt together.
+ */
+export function setWorldTiles(tiles: number): void {
+    if (!isValidWorldTiles(tiles)) {
+        throw new Error(
+            `world tiles must be an integer in ${MIN_WORLD_TILES}..${MAX_WORLD_TILES} (got ${tiles})`
+        );
+    }
+    WORLD_TILES = tiles;
+    WORLD_BOUNDS = tiles * TILE_SIZE;
+}
 
 /** Player visual radius — touches tile edges when centered. */
 export const PLAYER_VISUAL_RADIUS = TILE_SIZE / 2;

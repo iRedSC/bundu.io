@@ -1,7 +1,5 @@
-import { WORLD_BOUNDS } from "@bundu/shared/tiles";
-
-/** Client sky/viewport extent — matches server playable bounds. */
-export const WORLD_SIZE = WORLD_BOUNDS;
+/** Client sky/viewport extent — live alias of playable bounds. */
+export { WORLD_BOUNDS as WORLD_SIZE } from "@bundu/shared/tiles";
 
 export const NIGHT_COLOR = 0x6850ff;
 export const EVENING_COLOR = 0xf5c95b;

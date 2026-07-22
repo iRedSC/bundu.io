@@ -39,7 +39,8 @@ export function setupPacketReceiving(
     receiver.on(ClientPacket.AdminRedo, admin.adminRedo);
     receiver.on(ClientPacket.AdminSaveMap, admin.adminSaveMap);
     receiver.on(ClientPacket.AdminDownloadMap, admin.adminDownloadMap);
-    receiver.on(ClientPacket.AdminWipeMap, admin.adminWipeMap);
+    receiver.on(ClientPacket.AdminNewMap, admin.adminNewMap);
+    receiver.on(ClientPacket.AdminImportMap, admin.adminImportMap);
     receiver.on(ClientPacket.CreativeGive, creative.creativeGive);
     receiver.on(ClientPacket.CreativeSetGodmode, creative.creativeSetGodmode);
     receiver.on(ClientPacket.CreativeSetSpeed, creative.creativeSetSpeed);

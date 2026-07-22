@@ -43,7 +43,6 @@ const SEAM_CHUNK_TILES = 32;
 const LOD_SUBDIV = [8, 32, ORGANIC_EDGE_SUBDIV] as const;
 export type SeamLod = 0 | 1 | 2;
 
-const TILE_N = WORLD_TILES * WORLD_TILES;
 
 export type LandSeamChunkBake = {
     /** Ground entity id. */
@@ -83,8 +82,8 @@ export function seamLodFromZoom(zoom: number, freecam = false): SeamLod {
  * Textured fills (sand/forest) shade here so color follows the organic edge.
  */
 export class LandSeamBaker {
-    private readonly topLand = new Uint8Array(TILE_N);
-    private readonly oceanDist = new Float32Array(TILE_N);
+    private topLand = new Uint8Array(WORLD_TILES * WORLD_TILES);
+    private oceanDist = new Float32Array(WORLD_TILES * WORLD_TILES);
     private landPatches: GroundPatchRef[] = [];
     private queue: SeamChunkJob[] = [];
     private colorOfType: (type: number) => number = () => 0;
@@ -95,6 +94,15 @@ export class LandSeamBaker {
     private total = 0;
     private done = 0;
     private lod: SeamLod = 2;
+
+    /** Reallocate tile buffers after {@link setWorldTiles}. */
+    resizeForWorld(): void {
+        const n = WORLD_TILES * WORLD_TILES;
+        if (this.topLand.length === n) return;
+        this.reset();
+        this.topLand = new Uint8Array(n);
+        this.oceanDist = new Float32Array(n);
+    }
 
     /**
      * Build land occupancy + chunk queue from patches.
@@ -451,7 +459,8 @@ function seamSubdiv(tileW: number, tileH: number, lod: SeamLod): number {
 function fillOceanDistance(topLand: Uint8Array, out: Float32Array): void {
     const INF = 1e6;
     out.fill(INF);
-    for (let i = 0; i < TILE_N; i++) {
+    const n = WORLD_TILES * WORLD_TILES;
+    for (let i = 0; i < n; i++) {
         if (!topLand[i]) out[i] = 0;
     }
     for (let ty = 0; ty < WORLD_TILES; ty++) {
