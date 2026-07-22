@@ -1,0 +1,12 @@
+{
+  "name": "Bundu Texture Export",
+  "id": "bundu-texture-export",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["http://localhost:4177", "http://127.0.0.1:4177"],
+    "reasoning": "Push exported SVG textures to the local pack companion running in the repo."
+  }
+}

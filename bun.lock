@@ -28,11 +28,21 @@
         "pixi.js": "^8.19.0",
       },
     },
-    "packages/figma-plugin": {
-      "name": "@bundu/figma-plugin",
+    "packages/figma-squircle-merge": {
+      "name": "@bundu/figma-squircle-merge",
       "version": "0.0.0",
       "devDependencies": {
         "@figma/plugin-typings": "^1.131.0",
+        "typescript": "~7.0.2",
+      },
+    },
+    "packages/figma-texture-export": {
+      "name": "@bundu/figma-texture-export",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@figma/plugin-typings": "^1.131.0",
+        "@types/bun": "^1.3.14",
+        "@types/node": "^24.10.1",
         "typescript": "~7.0.2",
       },
     },
@@ -120,7 +130,9 @@
 
     "@bundu/client": ["@bundu/client@workspace:packages/client"],
 
-    "@bundu/figma-plugin": ["@bundu/figma-plugin@workspace:packages/figma-plugin"],
+    "@bundu/figma-squircle-merge": ["@bundu/figma-squircle-merge@workspace:packages/figma-squircle-merge"],
+
+    "@bundu/figma-texture-export": ["@bundu/figma-texture-export@workspace:packages/figma-texture-export"],
 
     "@bundu/server": ["@bundu/server@workspace:packages/server"],
 
