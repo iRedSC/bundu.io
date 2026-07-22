@@ -1,14 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { ServerPacket } from "@bundu/shared/packet_definitions";
+import { ServerPacket } from "@bundu/shared/packet_definitions";
 import {
     DEFAULT_WORLD_TILES,
     isValidWorldTiles,
     MAX_WORLD_TILES,
     MIN_WORLD_TILES,
     setWorldTiles,
+    TILE_SIZE,
     WORLD_BOUNDS,
     WORLD_TILES,
+    worldToDeci,
     type TileRot,
 } from "@bundu/shared/tiles";
 import { Box, Vector } from "sat";
@@ -263,21 +265,27 @@ export function applyWorldSize(world: World, worldTiles: number): void {
         { x: WORLD_BOUNDS, y: WORLD_BOUNDS },
     ]);
     clearGroundIndex();
+    const { worldPacketManager } = world.context;
     for (const object of world.query([Physics])) {
         if (!object.active) continue;
         const physics = object.get(Physics);
-        physics.position.x = Math.min(
-            Math.max(physics.position.x, 0),
-            WORLD_BOUNDS
-        );
-        physics.position.y = Math.min(
-            Math.max(physics.position.y, 0),
-            WORLD_BOUNDS
-        );
+        const nextX = Math.min(Math.max(physics.position.x, 0), WORLD_BOUNDS);
+        const nextY = Math.min(Math.max(physics.position.y, 0), WORLD_BOUNDS);
+        const moved =
+            nextX !== physics.position.x || nextY !== physics.position.y;
+        physics.position.x = nextX;
+        physics.position.y = nextY;
         // Ghosts are not in the AOI quadtree.
         if (PlayerData.get(object) && !FreecamGhostData.get(object)) {
             world.context.quadtree.insert(object.id, physics.position);
         }
+        if (!moved || FreecamGhostData.get(object)) continue;
+        // Idle players otherwise keep stale client coords until they move.
+        worldPacketManager.set(ServerPacket.SetPosition, {
+            id: object.id,
+            x: worldToDeci(nextX),
+            y: worldToDeci(nextY),
+        });
     }
 }
 
@@ -359,94 +367,275 @@ export function worldTilesFromMapYaml(yaml: string): number {
     return worldTilesFromRoot(parseMapRoot(yaml));
 }
 
-/** Populate an empty world from editor YAML (inverse of `exportMapYaml`). */
-export function importMapYaml(world: World, yaml: string): void {
+type GroundRow = {
+    id: number;
+    type: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+};
+
+type TilePlaceRow = {
+    id: string;
+    typeId: number;
+    x: number;
+    y: number;
+    rot: TileRot;
+    variant: string;
+};
+
+type StructureRow = TilePlaceRow & {
+    doorOpen: boolean;
+    spiked: boolean;
+};
+
+type DecorationRow = {
+    id: string;
+    typeId: number;
+    x: number;
+    y: number;
+    rotation: number;
+    scale: number;
+};
+
+/** Fully validated map payload — safe to clear the live world before applying. */
+type MapPlan = {
+    worldTiles: number;
+    baseGround: string;
+    ground: GroundRow[];
+    resources: TilePlaceRow[];
+    structures: StructureRow[];
+    decorations: DecorationRow[];
+};
+
+function assertInWorldTiles(
+    x: number,
+    y: number,
+    worldTiles: number,
+    path: string
+): void {
+    if (
+        !Number.isInteger(x) ||
+        !Number.isInteger(y) ||
+        x < 0 ||
+        y < 0 ||
+        x >= worldTiles ||
+        y >= worldTiles
+    ) {
+        throw new Error(
+            `${path}: tile ${x},${y} outside 0..${worldTiles - 1}`
+        );
+    }
+}
+
+function assertInWorldBounds(
+    x: number,
+    y: number,
+    worldBounds: number,
+    path: string
+): void {
+    if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y) ||
+        x < 0 ||
+        y < 0 ||
+        x > worldBounds ||
+        y > worldBounds
+    ) {
+        throw new Error(
+            `${path}: position ${x},${y} outside 0..${worldBounds}`
+        );
+    }
+}
+
+/**
+ * Parse + resolve every registry id / bound before mutating the live world.
+ * Throws on unsupported format, unknown refs, or out-of-bounds placeables.
+ */
+function parseMapPlan(yaml: string): MapPlan {
     const root = parseMapRoot(yaml);
-    applyWorldSize(world, worldTilesFromRoot(root));
+    const worldTiles = worldTilesFromRoot(root);
+    const expectedBounds = worldTiles * TILE_SIZE;
+    const registries = gameRegistries();
 
     const baseGround =
         typeof root.base_ground === "string" && root.base_ground
             ? root.base_ground
             : "ocean";
-    addBaseGround(world, baseGround);
+    // Resolve early so a bad base_ground fails before clear.
+    registries.ground_type.resolve(baseGround, "bundu");
 
-    const groundRows = asArray(root.ground, "map.ground")
+    const ground = asArray(root.ground, "map.ground")
         .map((raw, index) => {
             const row = asRecord(raw, `map.ground[${index}]`);
+            const path = `map.ground[${index}]`;
+            const type = asString(row.type, `${path}.type`);
+            const x = asNumber(row.x, `${path}.x`);
+            const y = asNumber(row.y, `${path}.y`);
+            const w = asNumber(row.w, `${path}.w`);
+            const h = asNumber(row.h, `${path}.h`);
+            if (w <= 0 || h <= 0) {
+                throw new Error(`${path}: w/h must be positive`);
+            }
+            assertInWorldBounds(x, y, expectedBounds, `${path}`);
+            // Resolve before clear so unknown ground types never wipe the live map.
+            registries.ground_type.resolve(type, "bundu");
             return {
-                id: asNumber(row.id, `map.ground[${index}].id`),
-                type: asString(row.type, `map.ground[${index}].type`),
-                x: asNumber(row.x, `map.ground[${index}].x`),
-                y: asNumber(row.y, `map.ground[${index}].y`),
-                w: asNumber(row.w, `map.ground[${index}].w`),
-                h: asNumber(row.h, `map.ground[${index}].h`),
+                id: asNumber(row.id, `${path}.id`),
+                type,
+                x,
+                y,
+                w,
+                h,
             };
         })
         .sort((a, b) => a.id - b.id);
 
-    const registries = gameRegistries();
-
-    for (const row of groundRows) {
-        addGroundOverlay(world, row.type, row.x, row.y, row.w, row.h);
-    }
-
-    for (const [index, raw] of asArray(root.resources, "map.resources").entries()) {
-        const row = asRecord(raw, `map.resources[${index}]`);
-        const id = asString(row.id, `map.resources[${index}].id`);
-        const x = asNumber(row.x, `map.resources[${index}].x`);
-        const y = asNumber(row.y, `map.resources[${index}].y`);
-        const rot = asTileRot(row.rot, `map.resources[${index}].rot`);
+    const resources: TilePlaceRow[] = [];
+    for (const [index, raw] of asArray(
+        root.resources,
+        "map.resources"
+    ).entries()) {
+        const path = `map.resources[${index}]`;
+        const row = asRecord(raw, path);
+        const id = asString(row.id, `${path}.id`);
+        const x = asNumber(row.x, `${path}.x`);
+        const y = asNumber(row.y, `${path}.y`);
+        assertInWorldTiles(x, y, worldTiles, path);
+        const rot = asTileRot(row.rot, `${path}.rot`);
         const variant =
             typeof row.variant === "string" && row.variant
                 ? row.variant
                 : "base";
-        const typeId = registries.resource.resolve(id, "bundu");
-        if (!tryAddResource(world, typeId, x, y, rot, variant)) {
-            console.warn(
-                `[map] skipped resource ${id} at ${x},${y} (placement blocked)`
-            );
-        }
+        resources.push({
+            id,
+            typeId: registries.resource.resolve(id, "bundu"),
+            x,
+            y,
+            rot,
+            variant,
+        });
     }
 
+    const structures: StructureRow[] = [];
     for (const [index, raw] of asArray(
         root.structures,
         "map.structures"
     ).entries()) {
-        const row = asRecord(raw, `map.structures[${index}]`);
-        const id = asString(row.id, `map.structures[${index}].id`);
-        const x = asNumber(row.x, `map.structures[${index}].x`);
-        const y = asNumber(row.y, `map.structures[${index}].y`);
-        const rot = asTileRot(row.rot, `map.structures[${index}].rot`);
+        const path = `map.structures[${index}]`;
+        const row = asRecord(raw, path);
+        const id = asString(row.id, `${path}.id`);
+        const x = asNumber(row.x, `${path}.x`);
+        const y = asNumber(row.y, `${path}.y`);
+        assertInWorldTiles(x, y, worldTiles, path);
+        const rot = asTileRot(row.rot, `${path}.rot`);
         const variant =
             typeof row.variant === "string" && row.variant
                 ? row.variant
                 : "base";
-        const doorOpen =
-            typeof row.door_open === "boolean" ? row.door_open : false;
-        const spiked = row.spiked === true;
-        addStructure(world, id, x, y, rot, variant, doorOpen, spiked);
+        const typeId = registries.structure.resolve(id, "bundu");
+        // Ensure building config exists before clear.
+        BuildingConfigs.get(typeId);
+        structures.push({
+            id,
+            typeId,
+            x,
+            y,
+            rot,
+            variant,
+            doorOpen:
+                typeof row.door_open === "boolean" ? row.door_open : false,
+            spiked: row.spiked === true,
+        });
     }
 
+    const decorations: DecorationRow[] = [];
     for (const [index, raw] of asArray(
         root.decorations,
         "map.decorations"
     ).entries()) {
-        const row = asRecord(raw, `map.decorations[${index}]`);
-        const id = asString(row.id, `map.decorations[${index}].id`);
-        const x = asNumber(row.x, `map.decorations[${index}].x`);
-        const y = asNumber(row.y, `map.decorations[${index}].y`);
-        const rotation = asNumber(row.rot, `map.decorations[${index}].rot`);
-        const scale = asNumber(row.scale, `map.decorations[${index}].scale`);
+        const path = `map.decorations[${index}]`;
+        const row = asRecord(raw, path);
+        const id = asString(row.id, `${path}.id`);
+        const x = asNumber(row.x, `${path}.x`);
+        const y = asNumber(row.y, `${path}.y`);
+        assertInWorldBounds(x, y, expectedBounds, path);
+        decorations.push({
+            id,
+            typeId: registries.decoration.resolve(id, "bundu"),
+            x,
+            y,
+            rotation: asNumber(row.rot, `${path}.rot`),
+            scale: asNumber(row.scale, `${path}.scale`),
+        });
+    }
+
+    return {
+        worldTiles,
+        baseGround,
+        ground,
+        resources,
+        structures,
+        decorations,
+    };
+}
+
+function applyMapContents(world: World, plan: MapPlan): void {
+    addBaseGround(world, plan.baseGround);
+
+    for (const row of plan.ground) {
+        addGroundOverlay(world, row.type, row.x, row.y, row.w, row.h);
+    }
+
+    for (const row of plan.resources) {
+        if (
+            !tryAddResource(
+                world,
+                row.typeId,
+                row.x,
+                row.y,
+                row.rot,
+                row.variant
+            )
+        ) {
+            console.warn(
+                `[map] skipped resource ${row.id} at ${row.x},${row.y} (placement blocked)`
+            );
+        }
+    }
+
+    for (const row of plan.structures) {
+        addStructure(
+            world,
+            row.id,
+            row.x,
+            row.y,
+            row.rot,
+            row.variant,
+            row.doorOpen,
+            row.spiked
+        );
+    }
+
+    for (const row of plan.decorations) {
         world.addObject(
             new Decoration({
-                type: registries.decoration.resolve(id, "bundu"),
-                x,
-                y,
-                rotation,
-                scale,
+                type: row.typeId,
+                x: row.x,
+                y: row.y,
+                rotation: row.rotation,
+                scale: row.scale,
             })
         );
     }
+}
+
+/** Populate an empty world from editor YAML (inverse of `exportMapYaml`). */
+export function importMapYaml(world: World, yaml: string): void {
+    const plan = parseMapPlan(yaml);
+    applyWorldSize(world, plan.worldTiles);
+    applyMapContents(world, plan);
 }
 
 function addGroundOverlay(
@@ -634,12 +823,12 @@ export function importMapLive(
     trigger: Trigger,
     broadcasts: MapClearBroadcasts
 ): void {
-    const root = parseMapRoot(yaml);
-    const worldTiles = worldTilesFromRoot(root);
+    // Validate/resolve fully before clearing so a bad file never wipes the live map.
+    const plan = parseMapPlan(yaml);
     clearMapContents(world, trigger, broadcasts);
-    // importMapYaml applies size + base ground + placeables.
-    importMapYaml(world, yaml);
-    broadcasts.broadcastWorldSize(worldTiles);
+    applyWorldSize(world, plan.worldTiles);
+    broadcasts.broadcastWorldSize(plan.worldTiles);
+    applyMapContents(world, plan);
 
     for (const object of [...world.query([GroundData])]) {
         if (!object.active) continue;
