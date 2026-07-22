@@ -131,13 +131,14 @@ export function createUI() {
         if (enabled) {
             savedLeaderboardVisible = leaderboard.container.visible;
             leaderboard.container.visible = false;
+            // Crafting visibility is owned by syncCreativeChrome (creative + freecam).
             craftingMenu.container.visible = false;
             inventory.container.filters = [invGray];
             statContainer.filters = [statGray];
             inventory.setPointerMuted(true);
         } else {
             leaderboard.container.visible = savedLeaderboardVisible;
-            craftingMenu.container.visible = true;
+            // Do not force crafting visible — creative mode may still own that.
             inventory.container.filters = null;
             statContainer.filters = null;
             inventory.container.alpha = 1;

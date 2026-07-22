@@ -140,10 +140,13 @@ export class Inventory {
      */
     isVoidTarget?: (screenX: number, screenY: number) => boolean;
     /**
-     * Creative: placing onto an occupied slot replaces (destroys) the old item
-     * instead of swapping it onto the cursor / source.
+     * Creative: placing a *creative-palette* cursor onto an occupied slot
+     * replaces (destroys) the old item instead of swapping. Inventory↔inventory
+     * moves always swap — see `cursorFromCreative`.
      */
     creativeReplace?: () => boolean;
+    /** True while the held cursor stack was picked from the creative palette. */
+    private cursorFromCreative = false;
     /** When true, pointer/drag/cursor handlers skip local mutations. */
     isLocked?: () => boolean;
     /** Freecam: ignore pointer hit-tests so world clicks pass through the ghost HUD. */
@@ -551,17 +554,9 @@ export class Inventory {
             return;
         }
 
+        // Inventory↔inventory drag always swaps — creative replace only applies
+        // when placing a palette-originated cursor (handleCursorSlot).
         const toStack = this.slots[to] ?? null;
-        if (toStack && this.creativeReplace?.()) {
-            // Creative replace: destroy the occupied target.
-            this.slots[from] = null;
-            this.slots[to] = fromStack;
-            this.rebuildItemsMap();
-            this.buttons[from]?.setStack(null);
-            this.startFly(fromStack, ghostX, ghostY, ghostScale, "slot", to);
-            return;
-        }
-
         this.slots[from] = toStack;
         this.slots[to] = fromStack;
         this.rebuildItemsMap();
@@ -577,6 +572,7 @@ export class Inventory {
 
     private voidCursorLocal() {
         this.cursor = null;
+        this.cursorFromCreative = false;
         this.rebuildItemsMap();
         this.syncGhostToCursor();
     }
@@ -597,6 +593,7 @@ export class Inventory {
             this.liftFromSlot(slot, stack);
             this.slots[slot] = null;
             this.cursor = stack;
+            this.cursorFromCreative = false;
             this.rebuildItemsMap();
             this.onCursor?.(slot, mode);
             return;
@@ -606,6 +603,7 @@ export class Inventory {
         if (slot < 0) {
             const take = amountForMode(this.cursor[1], mode);
             this.cursor = this.shrinkCursor(take);
+            if (!this.cursor) this.cursorFromCreative = false;
             this.rebuildItemsMap();
             this.emitWorldDrop(
                 this.ghost.button.visible
@@ -636,6 +634,7 @@ export class Inventory {
             const placed: ItemStack = [this.cursor[0], take];
             this.slots[slot] = placed;
             this.cursor = this.shrinkCursor(take);
+            if (!this.cursor) this.cursorFromCreative = false;
             this.rebuildItemsMap();
             this.startFly(placed, fromX, fromY, fromScale, "slot", slot);
             this.syncGhostToCursor();
@@ -658,6 +657,7 @@ export class Inventory {
             const flying: ItemStack = [this.cursor[0], add];
             this.slots[slot] = [target[0], target[1] + add];
             this.cursor = this.shrinkCursor(add);
+            if (!this.cursor) this.cursorFromCreative = false;
             this.rebuildItemsMap();
             // Keep existing stack visible; fly is just the added amount.
             this.startFly(flying, fromX, fromY, fromScale, "slot", slot, false);
@@ -669,12 +669,13 @@ export class Inventory {
             return;
         }
 
-        // Different item → swap, or creative replace (destroy target).
+        // Different item → swap, or creative-palette replace (destroy target).
         const slotStack = target;
         const cursorStack = this.cursor;
-        if (this.creativeReplace?.()) {
+        if (this.cursorFromCreative && this.creativeReplace?.()) {
             this.slots[slot] = cursorStack;
             this.cursor = null;
+            this.cursorFromCreative = false;
             this.rebuildItemsMap();
             this.ghost.button.visible = false;
             this.buttons[slot]?.setStack(null);
@@ -686,6 +687,7 @@ export class Inventory {
 
         this.slots[slot] = cursorStack;
         this.cursor = slotStack;
+        this.cursorFromCreative = false;
         this.rebuildItemsMap();
 
         this.ghost.button.visible = false;
@@ -744,6 +746,7 @@ export class Inventory {
      */
     adoptCursor(stack: [id: number, amount: number], snap = true): void {
         this.cursor = stack;
+        this.cursorFromCreative = true;
         this.rebuildItemsMap();
         this.syncGhostToCursor();
         if (snap) this.snapCursorGhostToPointer();
@@ -814,6 +817,9 @@ export class Inventory {
             this.slots[i] = stack;
         }
         this.cursor = cursor ?? null;
+        // Server sync does not carry palette-origin; keep the local flag while a
+        // cursor remains, and clear it when the cursor is gone.
+        if (!this.cursor) this.cursorFromCreative = false;
         this.rebuildItemsMap();
         this.refreshSlotVisuals();
 
