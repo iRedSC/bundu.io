@@ -4,15 +4,15 @@ variants:
   base:
     main: bundu/decoration/forest/pine_tree.svg
   var2:
-    main: bundu/decoration/forest/pine_tree2.svg
+    main: bundu/decoration/forest/pine_tree_2.svg
   var3:
-    main: bundu/decoration/forest/pine_tree3.svg
+    main: bundu/decoration/forest/pine_tree_3.svg
   var4:
-    main: bundu/decoration/forest/pine_tree4.svg
+    main: bundu/decoration/forest/pine_tree_4.svg
   var5:
-    main: bundu/decoration/forest/pine_tree5.svg
+    main: bundu/decoration/forest/pine_tree_5.svg
   var6:
-    main: bundu/decoration/forest/pine_tree6.svg
+    main: bundu/decoration/forest/pine_tree_6.svg
   snow:
     main: bundu/decoration/forest/pine_tree_snow.svg
 parts:
