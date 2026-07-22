@@ -669,14 +669,13 @@ export class PlayerSystem extends System<GameEventMap> {
         this.clearEating(player);
         const inv = Inventory.get(player);
         if (!inv) return;
-        // Match client: replace rules only while creative chrome is up (not freecam).
-        const creativeReplace =
-            data.creative === true && data.freecam !== true;
+        // Inventory↔inventory moves always swap. Creative replace only applies
+        // when placing a palette-originated cursor (see cursorSlot).
         const dropped =
             to === -1 && inv.slots[from]
                 ? { ...inv.slots[from] }
                 : undefined;
-        if (!applyMoveSlot(inv, from, to, creativeReplace)) return;
+        if (!applyMoveSlot(inv, from, to, false)) return;
         if (dropped) this.dropItem(player, dropped.id, dropped.count);
 
         clearMissingEquipment(player, this.world.context.playerPacketManager);
@@ -699,9 +698,11 @@ export class PlayerSystem extends System<GameEventMap> {
         const inv = Inventory.get(player);
         if (!inv) return;
 
-        // Match client: replace rules only while creative chrome is up (not freecam).
+        // Replace only for creative-palette cursors while chrome is up.
         const creativeReplace =
-            data.creative === true && data.freecam !== true;
+            data.creative === true &&
+            data.freecam !== true &&
+            inv.cursorCreative === true;
         const placeMode =
             mode === PlaceMode.Half || mode === PlaceMode.One
                 ? mode

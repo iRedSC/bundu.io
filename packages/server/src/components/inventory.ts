@@ -7,6 +7,12 @@ export type Inventory = {
     slots: (ItemStack | null)[];
     selected: number;
     cursor: ItemStack | null;
+    /**
+     * True when `cursor` was spawned from the creative palette
+     * (`CreativeGiveToCursor`). Inventory picks clear this. When set, placing
+     * onto an occupied slot may replace (destroy) instead of swap.
+     */
+    cursorCreative?: boolean;
 };
 
 export const HOTBAR_SIZE = 10;
@@ -34,7 +40,14 @@ export const Inventory = Component.register<Inventory>(() => ({
     slots: emptySlots(),
     selected: 0,
     cursor: null,
+    cursorCreative: false,
 }));
+
+/** Clear the held cursor and its creative-origin flag. */
+function clearCursor(inv: Inventory): void {
+    inv.cursor = null;
+    inv.cursorCreative = false;
+}
 
 export function toPacketItems(
     inv: Inventory
@@ -219,7 +232,8 @@ function validSlot(inv: Inventory, slot: number): boolean {
 
 /**
  * Drag move/swap between slots, or drop all when `to === SLOT_OUTSIDE`.
- * `replace` (creative): occupied target is destroyed instead of swapped.
+ * `replace` destroys an occupied target instead of swapping — callers should
+ * only pass true for creative-palette flows; inventory↔inventory stays false.
  */
 export function moveSlot(
     inv: Inventory,
@@ -268,7 +282,7 @@ export function cursorSlot(
         if (!inv.cursor) return false;
         const take = amountForMode(inv.cursor.count, mode);
         inv.cursor.count -= take;
-        if (inv.cursor.count <= 0) inv.cursor = null;
+        if (inv.cursor.count <= 0) clearCursor(inv);
         return true;
     }
 
@@ -277,7 +291,9 @@ export function cursorSlot(
     if (!inv.cursor) {
         const stack = inv.slots[slot];
         if (!stack) return false;
+        // Picked from inventory — never creative-replace with this cursor.
         inv.cursor = stack;
+        inv.cursorCreative = false;
         inv.slots[slot] = null;
         return true;
     }
@@ -287,7 +303,7 @@ export function cursorSlot(
         const take = amountForMode(inv.cursor.count, mode);
         inv.slots[slot] = { id: inv.cursor.id, count: take };
         inv.cursor.count -= take;
-        if (inv.cursor.count <= 0) inv.cursor = null;
+        if (inv.cursor.count <= 0) clearCursor(inv);
         return true;
     }
 
@@ -298,18 +314,20 @@ export function cursorSlot(
         if (add <= 0) return false;
         target.count += add;
         inv.cursor.count -= add;
-        if (inv.cursor.count <= 0) inv.cursor = null;
+        if (inv.cursor.count <= 0) clearCursor(inv);
         return true;
     }
 
     if (replace) {
-        // Creative: destroy the slot's item; place the whole cursor stack.
+        // Creative palette cursor: destroy the slot's item; place the stack.
         inv.slots[slot] = inv.cursor;
-        inv.cursor = null;
+        clearCursor(inv);
         return true;
     }
 
     inv.slots[slot] = inv.cursor;
+    // Swapped item came from inventory.
     inv.cursor = target;
+    inv.cursorCreative = false;
     return true;
 }

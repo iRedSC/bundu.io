@@ -551,6 +551,9 @@ async function main() {
         const show = creativeWanted && !freecamActive;
         creative.setActive(show);
         creativeControl.setCreativeActive(creativeWanted);
+        // Crafting is survival-only; hide in creative and freecam.
+        gui.craftingMenu.container.visible =
+            !creativeWanted && !freecamActive;
         refreshModeAvailability();
     };
 

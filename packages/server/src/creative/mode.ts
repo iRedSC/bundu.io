@@ -188,6 +188,7 @@ export class CreativeModeSystem extends System<GameEventMap> {
         }
 
         inv.cursor = { id: itemId, count };
+        inv.cursorCreative = true;
         syncInv(player, this.world);
     };
 
@@ -199,6 +200,7 @@ export class CreativeModeSystem extends System<GameEventMap> {
         if (slot === -1) {
             if (!inv.cursor) return;
             inv.cursor = null;
+            inv.cursorCreative = false;
         } else {
             if (slot < 0 || slot >= inv.slots.length) return;
             if (!inv.slots[slot]) return;
@@ -217,6 +219,7 @@ export class CreativeModeSystem extends System<GameEventMap> {
         if (!inv) return;
         for (let i = 0; i < inv.slots.length; i++) inv.slots[i] = null;
         inv.cursor = null;
+        inv.cursorCreative = false;
         syncInv(player, this.world);
     };
 
