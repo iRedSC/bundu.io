@@ -17,6 +17,8 @@ export type GroundViewBounds = {
 export type GroundUpdateContext = {
     deltaMS: number;
     now: number;
+    /** Sky day-cycle index: 0 morning … 3 night. */
+    dayPeriod: number;
     view: GroundViewBounds;
     /** Pixi renderer — ocean wakes bake a faded displace map each frame. */
     renderer: Renderer;

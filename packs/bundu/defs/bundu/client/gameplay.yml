@@ -65,3 +65,64 @@ ocean:
     heavy_area: 7840000
     # Skip ambient particles past this view area (world²).
     particle_max_area: 36000000
+
+# Biome / tree ambience. Ground models own emitters; this owns globals + leaves.
+ambient_particles:
+    particle_max_area: 36000000
+    wind: { x: 20, y: 3 }
+    period_rates:
+        morning:
+            water_sparkle: 2.2
+        day:
+            water_sparkle: 1
+        evening:
+            water_sparkle: 2.2
+        night:
+            water_sparkle: 0.35
+    leaves:
+        forest:
+            decoration_tag: "#bundu:leaves_forest"
+            resource_tag: "#bundu:leaves_forest"
+            interval_ms: [800, 1600]
+            size: [5, 12]
+            alpha: [0.42, 0.16]
+            lifetime: [2200, 4000]
+            speed: [12, 36]
+            gravity: 16
+            tint: "#6b8f3c"
+            alpha_fade_in: 0.22
+            alpha_hold: 0.55
+            spin: [-2.4, 2.4]
+            spawn_radius: 30
+            z_index: 8
+        pine:
+            decoration_tag: "#bundu:leaves_pine"
+            resource_tag: "#bundu:leaves_pine"
+            interval_ms: [1100, 2100]
+            size: [3, 8]
+            alpha: [0.35, 0.12]
+            lifetime: [2000, 3600]
+            speed: [10, 30]
+            gravity: 12
+            tint: "#3f5c38"
+            alpha_fade_in: 0.2
+            alpha_hold: 0.55
+            spin: [-3, 3]
+            spawn_radius: 24
+            z_index: 8
+        savannah:
+            decoration_tag: "#bundu:leaves_savannah"
+            resource_tag: "#bundu:leaves_savannah"
+            interval_ms: [1000, 2000]
+            size: [4, 10]
+            alpha: [0.38, 0.14]
+            lifetime: [2000, 3800]
+            speed: [14, 40]
+            gravity: 14
+            tint: "#b89a4e"
+            alpha_fade_in: 0.2
+            alpha_hold: 0.55
+            spin: [-2.2, 2.2]
+            spawn_radius: 28
+            z_index: 8
+

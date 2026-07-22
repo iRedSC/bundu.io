@@ -33,11 +33,17 @@ export type ParticleBurst = {
     spinFriction?: number;
     spinEndAt?: number;
     tint?: number;
-    /** Start alpha. Defaults to 1. */
+    /** Start alpha (peak after fade-in). Defaults to 1. */
     alpha?: number;
+    /**
+     * Lifetime progress [0,1] when fade-in completes.
+     * `0` / omit = start at full alpha; `0.2` = ease 0→alpha over the first 20%.
+     */
+    alphaFadeIn?: number;
     /**
      * Lifetime progress [0,1] before alpha begins fading to 0.
      * `0` = fade from spawn (default); `0.5` = hold then fade in the second half.
+     * Clamped to be >= `alphaFadeIn`.
      */
     alphaHold?: number;
     blendMode?: "normal" | "add" | "screen";

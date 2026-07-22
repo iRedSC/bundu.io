@@ -46,6 +46,45 @@ export type GroundTrailDef = {
     colorJitter: number;
 };
 
+export const GROUND_AMBIENT_PERIODS = [
+    "morning",
+    "day",
+    "evening",
+    "night",
+] as const;
+export type GroundAmbientPeriod = (typeof GROUND_AMBIENT_PERIODS)[number];
+
+/**
+ * Continuous biome ambience (dust, snow, steam, fireflies…).
+ * Size/alpha ranges are sampled with the same `t` so bigger can mean fainter.
+ */
+export type GroundAmbientEmitterDef = {
+    intervalMs: readonly [min: number, max: number];
+    /** Omit = all periods. */
+    periods?: readonly GroundAmbientPeriod[];
+    count: GroundFxRange;
+    size: GroundFxRange;
+    /** Peak alpha; pair-sampled with `size` (author high→low for big=faint). */
+    alpha: GroundFxRange;
+    lifetime: GroundFxRange;
+    speed: GroundFxRange;
+    /** Radians; omit to use global wind heading. */
+    direction?: number;
+    spread: number;
+    friction: number;
+    gravity: number;
+    /** Added on top of global wind.x. */
+    gravityX: number;
+    endSize: number;
+    /** `#rrggbb`; omit = white. */
+    tint?: string;
+    blendMode: "normal" | "add" | "screen";
+    alphaFadeIn: number;
+    alphaHold: number;
+    spin: GroundFxRange;
+    zIndex?: number;
+};
+
 /** Procedural solid-land fills (client bakes; optional on solid models). */
 export type SolidGroundFill = "sand_bands" | "forest_blobs" | "solid_blobs";
 
@@ -59,6 +98,8 @@ export type SolidGroundModelDef = {
     /** When true, movers with model `footsteps` leave prints on this surface. */
     footsteps?: boolean;
     trail?: GroundTrailDef;
+    /** Named continuous emitters keyed for pack tuning (dust, snow, …). */
+    ambient?: Readonly<Record<string, GroundAmbientEmitterDef>>;
 };
 
 export type OceanGroundModelDef = {
@@ -186,6 +227,31 @@ function fxRange(value: unknown, path: string): GroundFxRange {
         throw new Error(`${path}: expected 0 <= min <= max`);
     }
     return [lo, hi];
+}
+
+/** Like `fxRange`, but allows descending pairs (e.g. alpha big→faint). */
+function fxRangeOriented(value: unknown, path: string): GroundFxRange {
+    if (typeof value === "number") {
+        if (!Number.isFinite(value) || value < 0) {
+            throw new Error(`${path}: expected a non-negative number`);
+        }
+        return value;
+    }
+    if (!Array.isArray(value) || value.length !== 2) {
+        throw new Error(`${path}: expected a number or [a, b]`);
+    }
+    const [a, b] = value;
+    if (
+        typeof a !== "number" ||
+        typeof b !== "number" ||
+        !Number.isFinite(a) ||
+        !Number.isFinite(b) ||
+        a < 0 ||
+        b < 0
+    ) {
+        throw new Error(`${path}: expected non-negative numbers`);
+    }
+    return [a, b];
 }
 
 function optionalRange(
@@ -375,6 +441,225 @@ function parseTrail(value: unknown, path: string): GroundTrailDef {
     };
 }
 
+const DEFAULT_AMBIENT: GroundAmbientEmitterDef = {
+    intervalMs: [400, 900],
+    count: 1,
+    size: [3, 10],
+    alpha: [0.16, 0.04],
+    lifetime: [1200, 2400],
+    speed: [16, 48],
+    spread: Math.PI * 2,
+    friction: 0.35,
+    gravity: 0,
+    gravityX: 0,
+    endSize: 0,
+    blendMode: "normal",
+    alphaFadeIn: 0.15,
+    alphaHold: 0.55,
+    spin: 0,
+};
+
+function intervalMs(value: unknown, path: string): [number, number] {
+    if (!Array.isArray(value) || value.length !== 2) {
+        throw new Error(`${path}: expected [min, max]`);
+    }
+    const [lo, hi] = value;
+    if (
+        typeof lo !== "number" ||
+        typeof hi !== "number" ||
+        !Number.isFinite(lo) ||
+        !Number.isFinite(hi) ||
+        lo < 0 ||
+        hi < lo
+    ) {
+        throw new Error(`${path}: expected 0 <= min <= max`);
+    }
+    return [lo, hi];
+}
+
+function parseAmbientPeriods(
+    value: unknown,
+    path: string
+): readonly GroundAmbientPeriod[] | undefined {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value) || value.length === 0) {
+        throw new Error(`${path}: expected a non-empty period list`);
+    }
+    const out: GroundAmbientPeriod[] = [];
+    for (const [index, entry] of value.entries()) {
+        if (
+            typeof entry !== "string" ||
+            !(GROUND_AMBIENT_PERIODS as readonly string[]).includes(entry)
+        ) {
+            throw new Error(
+                `${path}[${index}]: expected one of ${GROUND_AMBIENT_PERIODS.join(", ")}`
+            );
+        }
+        out.push(entry as GroundAmbientPeriod);
+    }
+    return out;
+}
+
+function parseBlendMode(
+    value: unknown,
+    path: string
+): GroundAmbientEmitterDef["blendMode"] {
+    if (value === undefined) return DEFAULT_AMBIENT.blendMode;
+    if (value === "normal" || value === "add" || value === "screen") return value;
+    throw new Error(`${path}: expected "normal", "add", or "screen"`);
+}
+
+function parseAmbientEmitter(
+    value: unknown,
+    path: string
+): GroundAmbientEmitterDef {
+    const raw = record(value, path);
+    const alphaFadeIn = optionalUnit(
+        raw,
+        "alpha_fade_in",
+        "alphaFadeIn",
+        path,
+        DEFAULT_AMBIENT.alphaFadeIn
+    );
+    const alphaHold = optionalUnit(
+        raw,
+        "alpha_hold",
+        "alphaHold",
+        path,
+        DEFAULT_AMBIENT.alphaHold
+    );
+    if (alphaHold < alphaFadeIn) {
+        throw new Error(`${path}.alpha_hold: must be >= alpha_fade_in`);
+    }
+    const tintRaw = raw.tint;
+    const directionRaw = raw.direction;
+    const zRaw = raw.z_index ?? raw.zIndex;
+    const def: GroundAmbientEmitterDef = {
+        intervalMs:
+            raw.interval_ms !== undefined || raw.intervalMs !== undefined
+                ? intervalMs(
+                      raw.interval_ms ?? raw.intervalMs,
+                      `${path}.interval_ms`
+                  )
+                : DEFAULT_AMBIENT.intervalMs,
+        count: optionalRange(raw, "count", "count", path, DEFAULT_AMBIENT.count),
+        size: optionalRange(raw, "size", "size", path, DEFAULT_AMBIENT.size),
+        alpha: (() => {
+            const value = raw.alpha;
+            return value === undefined
+                ? DEFAULT_AMBIENT.alpha
+                : fxRangeOriented(value, `${path}.alpha`);
+        })(),
+        lifetime: optionalRange(
+            raw,
+            "lifetime",
+            "lifetime",
+            path,
+            DEFAULT_AMBIENT.lifetime
+        ),
+        speed: optionalRange(raw, "speed", "speed", path, DEFAULT_AMBIENT.speed),
+        spread: optionalPositive(
+            raw,
+            "spread",
+            "spread",
+            path,
+            DEFAULT_AMBIENT.spread
+        ),
+        friction: optionalNonNegative(
+            raw,
+            "friction",
+            "friction",
+            path,
+            DEFAULT_AMBIENT.friction
+        ),
+        gravity: optionalFinite(
+            raw,
+            "gravity",
+            "gravity",
+            path,
+            DEFAULT_AMBIENT.gravity
+        ),
+        gravityX: optionalFinite(
+            raw,
+            "gravity_x",
+            "gravityX",
+            path,
+            DEFAULT_AMBIENT.gravityX
+        ),
+        endSize: optionalNonNegative(
+            raw,
+            "end_size",
+            "endSize",
+            path,
+            DEFAULT_AMBIENT.endSize
+        ),
+        blendMode: parseBlendMode(raw.blend_mode ?? raw.blendMode, `${path}.blend_mode`),
+        alphaFadeIn,
+        alphaHold,
+        spin: optionalSignedRange(
+            raw,
+            "spin",
+            "spin",
+            path,
+            DEFAULT_AMBIENT.spin
+        ),
+    };
+    const periods = parseAmbientPeriods(raw.periods, `${path}.periods`);
+    if (periods) def.periods = periods;
+    if (tintRaw !== undefined) def.tint = color(tintRaw, `${path}.tint`);
+    if (directionRaw !== undefined) {
+        def.direction = finiteNumber(directionRaw, `${path}.direction`);
+    }
+    if (zRaw !== undefined) {
+        def.zIndex = finiteNumber(zRaw, `${path}.z_index`);
+    }
+    return def;
+}
+
+function optionalSignedRange(
+    raw: Record<string, unknown>,
+    snake: string,
+    camel: string,
+    path: string,
+    fallback: GroundFxRange
+): GroundFxRange {
+    const value = raw[snake] ?? raw[camel];
+    if (value === undefined) return fallback;
+    if (typeof value === "number") {
+        if (!Number.isFinite(value)) {
+            throw new Error(`${path}.${snake}: expected a finite number`);
+        }
+        return value;
+    }
+    if (!Array.isArray(value) || value.length !== 2) {
+        throw new Error(`${path}.${snake}: expected a number or [min, max]`);
+    }
+    const [lo, hi] = value;
+    if (
+        typeof lo !== "number" ||
+        typeof hi !== "number" ||
+        !Number.isFinite(lo) ||
+        !Number.isFinite(hi) ||
+        hi < lo
+    ) {
+        throw new Error(`${path}.${snake}: expected min <= max`);
+    }
+    return [lo, hi];
+}
+
+function parseAmbientMap(
+    value: unknown,
+    path: string
+): Readonly<Record<string, GroundAmbientEmitterDef>> {
+    const raw = record(value, path);
+    const out: Record<string, GroundAmbientEmitterDef> = {};
+    for (const [name, entry] of Object.entries(raw)) {
+        if (!name) throw new Error(`${path}: empty emitter name`);
+        out[name] = parseAmbientEmitter(entry, `${path}.${name}`);
+    }
+    return out;
+}
+
 /** Parse one ground-model document. `fallbackId` is the file stem. */
 export function parseGroundModelDef(
     value: unknown,
@@ -401,16 +686,20 @@ export function parseGroundModelDef(
         if (raw.trail !== undefined) {
             def.trail = parseTrail(raw.trail, `${path}.trail`);
         }
+        if (raw.ambient !== undefined) {
+            def.ambient = parseAmbientMap(raw.ambient, `${path}.ambient`);
+        }
         return def;
     }
     if (kind === "ocean") {
         if (
             raw.footsteps !== undefined ||
             raw.trail !== undefined ||
+            raw.ambient !== undefined ||
             raw.fill !== undefined
         ) {
             throw new Error(
-                `${path}: fill/footsteps/trail are only valid on solid ground models`
+                `${path}: fill/footsteps/trail/ambient are only valid on solid ground models`
             );
         }
         const fadeTiles = optionalPositive(

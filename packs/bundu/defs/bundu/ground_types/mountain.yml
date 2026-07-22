@@ -1,6 +1,20 @@
 kind: solid
 color: "#6a6e68"
 fill: solid_blobs
+ambient:
+    snow:
+        # Same idea as winter, lower density.
+        interval_ms: [550, 1200]
+        size: [2, 11]
+        alpha: [0.16, 0.03]
+        lifetime: [1400, 2800]
+        speed: [16, 48]
+        gravity: 14
+        gravity_x: 3
+        friction: 0.18
+        tint: "#e8eef2"
+        alpha_fade_in: 0.1
+        alpha_hold: 0.55
 ---
 model: mountain
 whenOccupied:

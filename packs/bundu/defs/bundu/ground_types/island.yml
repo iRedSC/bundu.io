@@ -13,5 +13,20 @@ trail:
     gravity: 90
     color_jitter: 0.22
     spacing: 12
+ambient:
+    steam:
+        interval_ms: [700, 1400]
+        size: [90, 220]
+        alpha: [0.045, 0.012]
+        lifetime: [2800, 4800]
+        speed: [4, 14]
+        gravity: -4
+        gravity_x: 2
+        friction: 0.2
+        tint: "#ffffff"
+        blend_mode: screen
+        alpha_fade_in: 0.25
+        alpha_hold: 0.45
+        end_size: 120
 ---
 model: island
