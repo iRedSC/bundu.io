@@ -4,7 +4,7 @@ texture: bundu/item/tool/silver_sword.svg
 type: bundu:sword
 level: 4
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             attack.damage:
                 op: add

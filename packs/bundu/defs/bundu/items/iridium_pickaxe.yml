@@ -4,7 +4,7 @@ texture: bundu/item/tool/iridium_pickaxe.svg
 type: bundu:pickaxe
 level: 6
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             attack.damage:
                 op: add

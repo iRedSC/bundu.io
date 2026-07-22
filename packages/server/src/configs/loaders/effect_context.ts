@@ -1,6 +1,8 @@
 import {
     isEntityFilterKey,
     parseEntityFilter,
+    parseSelector,
+    type SelectorBase,
 } from "@bundu/shared/entity_selector";
 import type { RegistryId } from "@bundu/shared/registry";
 import {
@@ -30,18 +32,32 @@ export type EffectPayload = {
 /**
  * One target selector entry after load.
  * - `*` → `all`
+ * - `@s` / `@a[distance=…]` → base + clauses
  * - bare type / `#tag` → type clause
- * - `type=…,flag=…` → resolved match clauses
+ * - legacy `type=…,flag=…` → resolved match clauses
  */
 export type TargetEffect = {
     /** When true, matches every subject. */
     all: boolean;
+    /** `@s` / `@a` / … when the key was a selector. */
+    base?: SelectorBase;
     /** Resolved entity_type ids when using a bare type/tag key. */
     types: ReadonlySet<RegistryId<"entity_type">>;
-    /** Extra / compound filter clauses (`flag=`, negated `type=!`, …). */
+    /** Extra / compound filter clauses (`flag=`, `distance=`, …). */
     clauses: readonly ResolvedMatchClause[];
     effects: EffectPayload;
 };
+
+function registerFilterFlags(
+    clauses: { key: string; value?: string }[],
+    path: string
+): void {
+    for (const clause of clauses) {
+        if (clause.key === "flag" && clause.value !== undefined) {
+            flagRegistry().register(clause.value, path);
+        }
+    }
+}
 
 export type EffectContext = {
     stack: StackMode;
@@ -155,11 +171,11 @@ function defaultStack(name: ContextName): StackMode {
  * whenNearby:
  *   stack: max
  *   proximityDistance: 200
- *   "*":
+ *   "@a":
  *     attributes: ...
  *   player:
  *     hide: ...
- *   "type=bundu:player,flag=in_water":
+ *   "@s[flag=in_water]":
  *     attributes: ...
  * ```
  */
@@ -232,17 +248,54 @@ export function parseEffectContext(
             });
             continue;
         }
+        if (key.startsWith("@")) {
+            const parsed = parseSelector(key);
+            if (!parsed.ok) {
+                throw new Error(`${path}.${key}: ${parsed.message}`);
+            }
+            for (const clause of parsed.value.clauses) {
+                if (clause.key === "limit" || clause.key === "sort") {
+                    throw new Error(
+                        `${path}.${key}: ${clause.key} is not valid in effect target selectors`
+                    );
+                }
+            }
+            registerFilterFlags(
+                parsed.value.clauses.map((clause) =>
+                    clause.key === "flag"
+                        ? { key: "flag", value: clause.value }
+                        : { key: clause.key }
+                ),
+                `${path}.${key}`
+            );
+            const clauses = resolveEntityFilterClauses(
+                parsed.value.clauses,
+                ownerId,
+                `${path}.${key}`
+            );
+            targets.push({
+                all: false,
+                base: parsed.value.base,
+                types: new Set(),
+                clauses,
+                effects: payload,
+            });
+            continue;
+        }
         if (isEntityFilterKey(key)) {
             const parsed = parseEntityFilter(key);
             if (!parsed.ok) {
                 throw new Error(`${path}.${key}: ${parsed.message}`);
             }
             // Register flag names so filters can mention flags before payloads do.
-            for (const clause of parsed.value.clauses) {
-                if (clause.key === "flag") {
-                    flagRegistry().register(clause.value, `${path}.${key}`);
-                }
-            }
+            registerFilterFlags(
+                parsed.value.clauses.map((clause) =>
+                    clause.key === "flag"
+                        ? { key: "flag", value: clause.value }
+                        : { key: clause.key }
+                ),
+                `${path}.${key}`
+            );
             const clauses = resolveEntityFilterClauses(
                 parsed.value.clauses,
                 ownerId,

@@ -20,9 +20,24 @@ import type { World } from "../engine/world.js";
 import type { PlayerPacketManager } from "../engine/network/packets/manager.js";
 import { gameRegistries } from "../configs/registries.js";
 import { TIME_OF_DAY_NAMES } from "../network/day_cycle.js";
-import { receiveItem } from "../network/inventory.js";
+import {
+    clearMissingEquipment,
+    emitEquipment,
+    emitInventory,
+    receiveItem,
+} from "../network/inventory.js";
 import { resolveSelector } from "../systems/entity_selector.js";
 import { SERVER_DEBUG } from "./flag.js";
+
+/** Push inventory + equipment to every target that received items. */
+function syncInventories(targets: readonly GameObject[], world: World): void {
+    const { playerPacketManager, worldPacketManager } = world.context;
+    for (const target of targets) {
+        clearMissingEquipment(target, playerPacketManager);
+        emitInventory(target, playerPacketManager);
+        emitEquipment(target, worldPacketManager);
+    }
+}
 
 function resolveItemId(value?: string): number | undefined {
     if (!value) return undefined;
@@ -218,6 +233,8 @@ const COMMANDS: ServerCommand[] = [
             if (applied.length === 0) {
                 throw new Error("No target with inventory");
             }
+            // player.ts only syncs the executor — @a/@p must refresh every target.
+            syncInventories(applied, helpers.world);
             return `Gave ${count}× ${item} to ${summarizeTargets(applied)}`;
         },
     },
@@ -246,6 +263,7 @@ const COMMANDS: ServerCommand[] = [
                 applied.push(target);
             }
             if (applied.length === 0) throw new Error("No target with inventory");
+            syncInventories(applied, helpers.world);
             return `Gave kit ${kitId} to ${summarizeTargets(applied)}`;
         },
     },

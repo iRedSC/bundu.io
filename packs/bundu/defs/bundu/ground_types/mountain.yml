@@ -19,7 +19,7 @@ ambient:
 model: mountain
 whenOccupied:
   occupationType: center
-  "*":
+  "@a":
     attributes:
       temperature.warmth: { op: add, value: -10 }
       movement.speed: { op: multiply, value: 0.85 }

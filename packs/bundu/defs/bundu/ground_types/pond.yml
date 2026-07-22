@@ -24,7 +24,7 @@ textures:
 model: pond
 whenOccupied:
   occupationType: center
-  "*":
+  "@a":
     flags:
       - in_water
     attributes:

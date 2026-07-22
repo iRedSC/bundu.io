@@ -42,7 +42,7 @@ export function resolveEffectiveHide(
         const context = ItemConfigs.get(itemId)[contextName];
         if (!context) continue;
         const payload = payloadForSubject(context, (t) =>
-            subjectMatchesTarget(player, t)
+            subjectMatchesTarget(player, t, { world, executor: player })
         );
         hide = orHide(hide, payload.hide);
     }

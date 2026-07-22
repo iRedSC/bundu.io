@@ -11,7 +11,7 @@ textures:
 model: warm_ocean
 whenOccupied:
   occupationType: center
-  "*":
+  "@a":
     flags:
       - in_water
     attributes:

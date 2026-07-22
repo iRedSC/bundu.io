@@ -3,7 +3,7 @@ texture: bundu/misc/unknown_asset.svg
 type: bundu:book
 function: off_hand
 whenOffHand:
-    "*":
+    "@s":
         attributes:
             attack.damage.animal:
                 op: add

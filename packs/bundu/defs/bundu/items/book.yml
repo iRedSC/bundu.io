@@ -3,10 +3,10 @@ texture: bundu/item/book/book.svg
 ---
 type: bundu:book
 whenOffHand:
-    "*":
+    "@s":
         flags:
             - holding_book
 whenMainHand:
-    "*":
+    "@s":
         flags:
             - holding_book

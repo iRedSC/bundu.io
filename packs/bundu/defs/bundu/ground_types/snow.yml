@@ -19,7 +19,7 @@ ambient:
 model: snow
 whenOccupied:
   occupationType: center
-  "*":
+  "@a":
     attributes:
       temperature.warmth: { op: add, value: -15 }
       movement.speed: { op: multiply, value: 0.9 }

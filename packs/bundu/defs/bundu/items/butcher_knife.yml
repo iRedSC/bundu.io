@@ -3,7 +3,7 @@ texture: bundu/item/tool/butcher_knife.svg
 ---
 type: bundu:knife
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             attack.damage:
                 op: add

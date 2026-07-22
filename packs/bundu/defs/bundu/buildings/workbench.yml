@@ -2,6 +2,6 @@ class: building
 health: 800
 whenNearby:
     proximityDistance: 200
-    "*":
+    "@a":
         flags:
             - near_crafting_table

@@ -2,7 +2,8 @@
  * Minecraft-style entity selectors shared by commands and pack effect targets.
  *
  * Command form: `@a[flag=in_water,type=bundu:player,limit=1,sort=nearest]`
- * YAML filter form (no @-base): `type=bundu:player,flag=in_water`
+ * Effect target form: `@s`, `@a[distance=0.2..10]`, `@s[flag=near_fire]`
+ * Legacy YAML filter form (no @-base): `type=bundu:player,flag=in_water`
  * Bare YAML type keys (`player`, `#living`) are handled by the pack loader.
  */
 
@@ -10,10 +11,24 @@ export type SelectorBase = "s" | "p" | "a" | "e" | "r";
 
 export type SelectorSort = "nearest" | "furthest" | "random" | "arbitrary";
 
+/** Inclusive tile-distance range (`distance=0.2..10`, `..5`, `3..`, or exact `3`). */
+export type DistanceRange = {
+    min: number;
+    max: number;
+};
+
 export type SelectorClause =
     | { key: "type"; negate: boolean; value: string }
     | { key: "flag"; negate: boolean; value: string }
     | { key: "name"; negate: boolean; value: string }
+    | { key: "mainhand"; negate: boolean; value: string }
+    | { key: "offhand"; negate: boolean; value: string }
+    | { key: "helmet"; negate: boolean; value: string }
+    | { key: "hasitem"; negate: boolean; value: string }
+    | { key: "ground"; negate: boolean; value: string }
+    | { key: "time"; negate: boolean; value: string }
+    | { key: "connected"; negate: boolean; value: boolean }
+    | { key: "distance"; negate: boolean; range: DistanceRange }
     | { key: "limit"; value: number }
     | { key: "sort"; value: SelectorSort };
 
@@ -39,6 +54,9 @@ export type SelectorSuggestContext = {
     flagNames?: readonly string[];
     entityTypeIds?: readonly string[];
     playerNames?: readonly string[];
+    itemIds?: readonly string[];
+    groundTypeIds?: readonly string[];
+    timeNames?: readonly string[];
 };
 
 export type SelectorSuggestion = {
@@ -65,16 +83,59 @@ const SORT_VALUES: readonly SelectorSort[] = [
     "arbitrary",
 ];
 
-const CLAUSE_KEYS = ["type", "flag", "name", "limit", "sort"] as const;
+const CLAUSE_KEYS = [
+    "type",
+    "flag",
+    "name",
+    "mainhand",
+    "offhand",
+    "helmet",
+    "hasitem",
+    "ground",
+    "time",
+    "connected",
+    "distance",
+    "limit",
+    "sort",
+] as const;
 type ClauseKey = (typeof CLAUSE_KEYS)[number];
 
 const CLAUSE_HINTS: Record<ClauseKey, string> = {
     type: "entity type or #tag",
     flag: "effective flag",
     name: "player name",
+    mainhand: "item id or #tag",
+    offhand: "item id or #tag",
+    helmet: "item id or #tag",
+    hasitem: "item id or #tag in inventory",
+    ground: "ground type id or #tag",
+    time: "morning|day|evening|night",
+    connected: "true|false (has socket)",
+    distance: "tiles (N, N.., ..N, N..M)",
     limit: "max matches",
     sort: "nearest|furthest|random|arbitrary",
 };
+
+function parseBooleanValue(
+    raw: string,
+    path: string,
+    key: string
+): boolean | ParseErr {
+    const lower = raw.toLowerCase();
+    if (lower === "true") return true;
+    if (lower === "false") return false;
+    return {
+        ok: false,
+        message: `${path}: ${key} must be true|false`,
+    };
+}
+
+const ITEM_CLAUSE_KEYS = new Set<ClauseKey>([
+    "mainhand",
+    "offhand",
+    "helmet",
+    "hasitem",
+]);
 
 function isSelectorBase(value: string): value is SelectorBase {
     return (BASES as readonly string[]).includes(value);
@@ -92,6 +153,48 @@ function isClauseKey(value: string): value is ClauseKey {
 function splitClauses(body: string): string[] {
     if (!body) return [];
     return body.split(",").map((part) => part.trim());
+}
+
+function parseFiniteNumber(raw: string, path: string, label: string): number | ParseErr {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) {
+        return { ok: false, message: `${path}: ${label} must be a finite number` };
+    }
+    if (n < 0) {
+        return { ok: false, message: `${path}: ${label} cannot be negative` };
+    }
+    return n;
+}
+
+/** Parse Minecraft-style distance ranges in tiles. */
+export function parseDistanceRange(
+    raw: string,
+    path: string
+): ParseOk<DistanceRange> | ParseErr {
+    if (!raw.includes("..")) {
+        const n = parseFiniteNumber(raw, path, "distance");
+        if (typeof n !== "number") return n;
+        return { ok: true, value: { min: n, max: n } };
+    }
+    const sep = raw.indexOf("..");
+    const loRaw = raw.slice(0, sep).trim();
+    const hiRaw = raw.slice(sep + 2).trim();
+    let min = 0;
+    let max = Number.POSITIVE_INFINITY;
+    if (loRaw) {
+        const lo = parseFiniteNumber(loRaw, path, "distance min");
+        if (typeof lo !== "number") return lo;
+        min = lo;
+    }
+    if (hiRaw) {
+        const hi = parseFiniteNumber(hiRaw, path, "distance max");
+        if (typeof hi !== "number") return hi;
+        max = hi;
+    }
+    if (min > max) {
+        return { ok: false, message: `${path}: distance min cannot exceed max` };
+    }
+    return { ok: true, value: { min, max } };
 }
 
 function parseClause(raw: string, path: string): SelectorClause | ParseErr {
@@ -144,9 +247,27 @@ function parseClause(raw: string, path: string): SelectorClause | ParseErr {
         }
     }
 
+    if (key === "distance") {
+        const range = parseDistanceRange(value, path);
+        if (!range.ok) return range;
+        return { key: "distance", negate, range: range.value };
+    }
+
+    if (key === "connected") {
+        const bool = parseBooleanValue(value, path, "connected");
+        if (typeof bool !== "boolean") return bool;
+        return { key: "connected", negate, value: bool };
+    }
+
     if (key === "type") return { key: "type", negate, value };
     if (key === "flag") return { key: "flag", negate, value };
-    return { key: "name", negate, value };
+    if (key === "name") return { key: "name", negate, value };
+    if (key === "ground") return { key: "ground", negate, value };
+    if (key === "time") return { key: "time", negate, value };
+    if (ITEM_CLAUSE_KEYS.has(key)) {
+        return { key: key as "mainhand" | "offhand" | "helmet" | "hasitem", negate, value };
+    }
+    return { ok: false, message: `${path}: unhandled selector key "${key}"` };
 }
 
 function parseClauseList(
@@ -156,6 +277,8 @@ function parseClauseList(
     const clauses: SelectorClause[] = [];
     let sawLimit = false;
     let sawSort = false;
+    let sawDistance = false;
+    let sawConnected = false;
     for (const part of splitClauses(body)) {
         if (!part) {
             return { ok: false, message: `${path}: empty selector clause` };
@@ -174,6 +297,18 @@ function parseClauseList(
                 return { ok: false, message: `${path}: duplicate sort` };
             }
             sawSort = true;
+        }
+        if (clause.key === "distance") {
+            if (sawDistance) {
+                return { ok: false, message: `${path}: duplicate distance` };
+            }
+            sawDistance = true;
+        }
+        if (clause.key === "connected") {
+            if (sawConnected) {
+                return { ok: false, message: `${path}: duplicate connected` };
+            }
+            sawConnected = true;
         }
         clauses.push(clause);
     }
@@ -386,7 +521,15 @@ function suggestClauseKeys(
 ): SelectorSuggestion[] {
     const used = usedKeys(open.completed);
     const keys = CLAUSE_KEYS.filter((key) => {
-        if (used.has(key) && (key === "limit" || key === "sort")) return false;
+        if (
+            used.has(key) &&
+            (key === "limit" ||
+                key === "sort" ||
+                key === "distance" ||
+                key === "connected")
+        ) {
+            return false;
+        }
         return true;
     });
     return filterFuzzy(keys, partialKey).map((key) => {
@@ -437,6 +580,33 @@ function suggestClauseValues(
         }));
     }
 
+    if (key === "distance") {
+        const defaults = ["..5", "..10", "0.2..10", "1..", "5"];
+        const values = partialValue
+            ? defaults.filter((v) => v.startsWith(partialValue))
+            : defaults;
+        if (partialValue && !values.includes(partialValue)) {
+            values.unshift(partialValue);
+        }
+        return values.map((value) => ({
+            insert: build(value, true),
+            label: build(value, true),
+            hint: "distance",
+        }));
+    }
+
+    if (key === "connected") {
+        const defaults = ["true", "false"];
+        const values = partialValue
+            ? defaults.filter((v) => v.startsWith(partialValue.toLowerCase()))
+            : defaults;
+        return values.map((value) => ({
+            insert: build(value, true),
+            label: build(value, true),
+            hint: "connected",
+        }));
+    }
+
     let pool: readonly string[] = [];
     let hint = CLAUSE_HINTS[key];
     if (key === "flag") {
@@ -448,6 +618,15 @@ function suggestClauseValues(
     } else if (key === "name") {
         pool = ctx.playerNames ?? [];
         hint = "name";
+    } else if (ITEM_CLAUSE_KEYS.has(key)) {
+        pool = ctx.itemIds ?? [];
+        hint = key;
+    } else if (key === "ground") {
+        pool = ctx.groundTypeIds ?? [];
+        hint = "ground";
+    } else if (key === "time") {
+        pool = ctx.timeNames ?? ["morning", "day", "evening", "night"];
+        hint = "time";
     }
 
     const matches = filterFuzzy(pool, partialValue).slice(0, 40);

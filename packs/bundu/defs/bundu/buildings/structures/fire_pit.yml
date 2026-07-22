@@ -9,7 +9,7 @@ health: 1000
 whenNearby:
     stack: max
     proximityDistance: 200
-    "*":
+    "@a":
         attributes:
             temperature.warmth:
                 op: add

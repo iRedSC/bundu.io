@@ -4,7 +4,7 @@ texture: bundu/item/tool/silver_spear.svg
 type: bundu:spear
 level: 4
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             attack.damage:
                 op: add

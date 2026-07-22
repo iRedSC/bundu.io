@@ -1,6 +1,6 @@
 function: "main_hand"
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             "attack.reach":
                 op: "add"
