@@ -9,7 +9,11 @@ COPY packages/figma-plugin/package.json ./packages/figma-plugin/
 COPY packages/server/package.json ./packages/server/
 COPY packages/shared/package.json ./packages/shared/
 
-RUN bun install --frozen-lockfile
+# Skip client/figma (and root devDependencies) for the server image.
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile --production \
+      --filter '@bundu/server' \
+      --filter '@bundu/shared'
 
 FROM oven/bun:1.3.14-slim AS runtime
 WORKDIR /app
@@ -18,9 +22,8 @@ ENV WS_PORT=7777
 
 COPY --from=deps /app/package.json /app/bun.lock ./
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/client/package.json ./packages/client/
-COPY --from=deps /app/packages/server/package.json ./packages/server/
-COPY --from=deps /app/packages/shared/package.json ./packages/shared/
+COPY --from=deps /app/packages/server ./packages/server
+COPY --from=deps /app/packages/shared ./packages/shared
 
 COPY packages/server ./packages/server
 COPY packages/shared ./packages/shared
@@ -28,7 +31,8 @@ COPY scripts ./scripts
 COPY packs ./packs
 COPY tsconfig.json ./
 
-RUN bun run pack:gen
+RUN --mount=type=cache,target=/app/.cache \
+    bun run pack:gen
 
 EXPOSE 7777
 CMD ["bun", "run", "packages/server/src/index.ts"]

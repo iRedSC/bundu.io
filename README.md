@@ -62,4 +62,4 @@ GAME_WS_URL=wss://game.example.com docker compose build frontend
 | `bun run lint`           | Biome lint (incl. package boundaries) |
 | `bun test`               | Unit tests                            |
 
-This project uses [Bun](https://bun.com) v1.3.0.
+This project uses [Bun](https://bun.com) v1.3.14.
