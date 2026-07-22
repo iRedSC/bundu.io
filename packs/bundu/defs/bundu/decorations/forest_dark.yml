@@ -1,6 +1,0 @@
-parts:
-  main:
-    sprite: bundu/decoration/forest/forest_dark.svg
----
-size: 200
-z: 0
