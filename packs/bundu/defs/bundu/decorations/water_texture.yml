@@ -1,6 +1,0 @@
-parts:
-  main:
-    sprite: bundu/decoration/water/water_texture.svg
----
-size: 200
-z: 0

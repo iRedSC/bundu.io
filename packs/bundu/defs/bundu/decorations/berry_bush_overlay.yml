@@ -1,6 +1,0 @@
-parts:
-  main:
-    sprite: bundu/decoration/forest/berry_bush_overlay.svg
----
-size: 90
-z: 30

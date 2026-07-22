@@ -1,6 +1,0 @@
-parts:
-  main:
-    sprite: bundu/decoration/water/pond_forest.svg
----
-size: 400
-z: 2
