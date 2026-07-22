@@ -6,6 +6,13 @@ variants:
 parts:
   main:
     shadow: 2
+
+tile:
+    footprint:
+        - "###"
+        - "#X#"
+        - "###"
+    spillover: 0
 ---
 score: 5
 exclusive: true
