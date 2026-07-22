@@ -9,12 +9,10 @@ COPY packages/figma-plugin/package.json ./packages/figma-plugin/
 COPY packages/server/package.json ./packages/server/
 COPY packages/shared/package.json ./packages/shared/
 
-# Only install workspaces needed to build the client (sanitize uses server).
+# Full install: client build needs workspaces; docs need root vitepress/vue.
+# Runtime stage only copies public/ + static-server, so build deps stay here.
 RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile --production \
-      --filter '@bundu/client' \
-      --filter '@bundu/server' \
-      --filter '@bundu/shared'
+    bun install --frozen-lockfile
 
 FROM deps AS build
 ARG GAME_WS_URL=ws://localhost:7777
@@ -28,11 +26,13 @@ COPY packages/shared ./packages/shared
 COPY packages/server ./packages/server
 COPY packages/client ./packages/client
 COPY packs ./packs
+COPY docs ./docs
 COPY public ./public
 
 # Reuse sanitized pack asset cache across builds when the BuildKit cache hits.
+# Emits public/site (game) and public/docs (VitePress).
 RUN --mount=type=cache,target=/app/.cache \
-    bun run pack:gen && bun run ./build.ts
+    bun run build:frontend
 
 FROM oven/bun:1.3.14-slim AS runtime
 WORKDIR /app

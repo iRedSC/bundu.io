@@ -10,14 +10,19 @@ node_modules
 
 # build output (produced in image)
 public/site
+public/docs
 dist
 out
 coverage
+docs/.vitepress/dist
+docs/.vitepress/cache
 
-# docs / audits not needed in images
-*.md
-rework-audit.html
+# root / misc markdown not needed in images (keep docs/** for VitePress)
+README.md
 AGENTS.md
+terms.md
+testing-philosophy.md
+rework-audit.html
 
 # env / caches
 .env

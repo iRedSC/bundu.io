@@ -257,6 +257,32 @@ function staticHeaders(): HeadersInit {
     return DEV_CONFIG_RELOAD ? { "Cache-Control": "no-store" } : {};
 }
 
+/** Resolve a public URL path to a file. Supports VitePress cleanUrls. */
+function resolvePublicFile(pathname: string): string | null | "forbidden" {
+    const candidates: string[] = [];
+    if (pathname.endsWith("/")) {
+        candidates.push(`${pathname}index.html`);
+    } else {
+        candidates.push(pathname);
+        if (path.extname(pathname) === "") {
+            candidates.push(`${pathname}.html`, `${pathname}/index.html`);
+        }
+    }
+
+    for (const candidate of candidates) {
+        const filepath = path.join(PUBLIC_DIR, candidate);
+        if (filepath !== PUBLIC_DIR && !filepath.startsWith(`${PUBLIC_DIR}${path.sep}`)) {
+            return "forbidden";
+        }
+        try {
+            if (fs.statSync(filepath).isFile()) return filepath;
+        } catch {
+            // try next candidate
+        }
+    }
+    return null;
+}
+
 async function serveHtml(filepath: string): Promise<Response> {
     const html = await Bun.file(filepath).text();
     const body = DEV_CONFIG_RELOAD
@@ -374,12 +400,8 @@ serve({
             }
         }
 
-        const pathname = url.pathname.endsWith("/")
-            ? `${url.pathname}index.html`
-            : url.pathname;
-
-        if (pathname.startsWith("/assets/")) {
-            const assetPath = pathname.slice("/assets/".length);
+        if (url.pathname.startsWith("/assets/")) {
+            const assetPath = url.pathname.slice("/assets/".length);
             const slash = assetPath.indexOf("/");
             if (slash <= 0) return new Response("Not Found", { status: 404 });
             const namespace = assetPath.slice(0, slash);
@@ -391,27 +413,24 @@ serve({
             });
         }
 
-        const filepath = path.join(PUBLIC_DIR, pathname);
-        if (filepath !== PUBLIC_DIR && !filepath.startsWith(`${PUBLIC_DIR}${path.sep}`)) {
+        const filepath = resolvePublicFile(url.pathname);
+        if (filepath === "forbidden") {
             return new Response("Forbidden", { status: 403 });
         }
-
-        try {
-            const stat = fs.statSync(filepath);
-            if (!stat.isFile()) return new Response("Not Found", { status: 404 });
-            if (path.extname(filepath).toLowerCase() === ".html") {
-                return serveHtml(filepath);
-            }
-            return new Response(file(filepath), {
-                headers: staticHeaders(),
-            });
-        } catch {
+        if (!filepath) {
             return new Response("Not Found", { status: 404 });
         }
+        if (path.extname(filepath).toLowerCase() === ".html") {
+            return serveHtml(filepath);
+        }
+        return new Response(file(filepath), {
+            headers: staticHeaders(),
+        });
     },
 });
 
 console.log(`Client running at http://localhost:${PORT}/site/`);
+console.log(`Docs running at http://localhost:${PORT}/docs/`);
 if (DEV_CONFIG_RELOAD) {
     console.log(
         `[static] model definition hot-reload enabled (${modelDirs.length} pack namespace(s))`

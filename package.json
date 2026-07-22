@@ -19,6 +19,7 @@
         "dev": "bun run ./dev.ts",
         "server": "bun run pack:gen && bun run packages/server/src/index.ts",
         "build": "bun run pack:gen && bun run ./build.ts",
+        "build:frontend": "bun run pack:gen && bun run ./build.ts && bun run docs:build",
         "build:debug": "bun run pack:gen && BUNDU_DEBUG=1 bun run ./build.ts",
         "bundle:base-pack": "bun run pack:gen && bun ./scripts/bundle-base-pack.ts",
         "check-prod-debug": "bun run ./scripts/check-prod-debug.ts",
