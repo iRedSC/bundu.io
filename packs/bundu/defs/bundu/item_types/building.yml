@@ -7,7 +7,7 @@ displays:
 ---
 function: "building"
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             "movement.speed":
                 op: "multiply"

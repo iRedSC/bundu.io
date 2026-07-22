@@ -12,7 +12,7 @@ displays:
 ---
 function: "main_hand"
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             "movement.speed":
                 op: "multiply"

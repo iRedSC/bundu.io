@@ -4,7 +4,7 @@ texture: bundu/item/material/bird_skull.svg
 type: bundu:book
 function: off_hand
 whenOffHand:
-    "*":
+    "@s":
         attributes:
             attack.damage:
                 op: add

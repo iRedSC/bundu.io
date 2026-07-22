@@ -4,7 +4,7 @@ texture: bundu/item/equipment/silver_helmet.svg
 type: bundu:helmet
 level: 4
 whenHelmet:
-    "*":
+    "@s":
         attributes:
             health.defense:
                 op: add

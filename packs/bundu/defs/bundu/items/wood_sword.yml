@@ -4,7 +4,7 @@ texture: bundu/item/tool/wood_sword.svg
 type: bundu:sword
 level: 1
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             attack.damage:
                 op: add

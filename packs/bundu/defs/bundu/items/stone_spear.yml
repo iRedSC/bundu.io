@@ -4,7 +4,7 @@ texture: bundu/item/tool/stone_spear.svg
 type: bundu:spear
 level: 2
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             attack.damage:
                 op: add

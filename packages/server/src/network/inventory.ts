@@ -134,7 +134,7 @@ function setSlot(
         return;
     }
     const payload = payloadForSubject(context, (t) =>
-        subjectMatchesTarget(target, t)
+        subjectMatchesTarget(target, t, { executor: target })
     );
     if (payloadIsEmpty(payload)) {
         clearContextSource(target, contextName);

@@ -3,28 +3,100 @@ import {
     selectorLimit,
     selectorSort,
     type EntitySelector,
+    type SelectorBase,
 } from "@bundu/shared/entity_selector";
 import type { RegistryId } from "@bundu/shared/registry";
+import { TILE_SIZE, worldToTile } from "@bundu/shared/tiles";
 import { Living, Physics } from "../components/base.js";
 import { Flags } from "../components/flags.js";
+import { Inventory } from "../components/inventory.js";
 import { PlayerData } from "../components/player.js";
 import {
     resolveMatchClauses,
+    type ResolvedItemClause,
     type ResolvedMatchClause,
 } from "../configs/entity_filter.js";
 import type { GameObject } from "../engine";
 import type { World } from "../engine/world.js";
+import { topGroundAt } from "./ground_at.js";
 import { subjectTypeIds } from "./entity_types.js";
 
 export type { ResolvedMatchClause };
 
+export type MatchContext = {
+    world?: World;
+    /** Selector executor / effect source (for `@s` and `distance=`). */
+    executor?: GameObject;
+};
+
+function inventoryHasAny(
+    subject: GameObject,
+    ids: ReadonlySet<RegistryId<"item">>
+): boolean {
+    const inv = Inventory.get(subject);
+    if (!inv) return false;
+    for (const stack of inv.slots) {
+        if (stack && ids.has(stack.id as RegistryId<"item">)) return true;
+    }
+    return false;
+}
+
+function equippedId(
+    subject: GameObject,
+    slot: "mainHand" | "offHand" | "helmet"
+): number | undefined {
+    return PlayerData.get(subject)?.[slot];
+}
+
+function itemClauses(
+    clauses: readonly ResolvedMatchClause[],
+    key: ResolvedItemClause["key"]
+): ResolvedItemClause[] {
+    return clauses.filter((c): c is ResolvedItemClause => c.key === key);
+}
+
+function matchItemSlot(
+    clauses: readonly ResolvedMatchClause[],
+    key: "mainhand" | "offhand" | "helmet",
+    equipped: number | undefined
+): boolean {
+    const group = itemClauses(clauses, key);
+    if (group.length === 0) return true;
+    const positive = group.filter((c) => !c.negate);
+    const negative = group.filter((c) => c.negate);
+    if (positive.length > 0) {
+        if (
+            equipped === undefined ||
+            !positive.some((c) => c.ids.has(equipped as RegistryId<"item">))
+        ) {
+            return false;
+        }
+    }
+    if (equipped !== undefined) {
+        for (const c of negative) {
+            if (c.ids.has(equipped as RegistryId<"item">)) return false;
+        }
+    }
+    return true;
+}
+
+function tileDistance(a: GameObject, b: GameObject): number | undefined {
+    const pa = Physics.get(a)?.position;
+    const pb = Physics.get(b)?.position;
+    if (!pa || !pb) return undefined;
+    const dx = pa.x - pb.x;
+    const dy = pa.y - pb.y;
+    return Math.hypot(dx, dy) / TILE_SIZE;
+}
+
 /**
- * Match selector/filter clauses. Repeated positive `type`/`flag`/`name` keys
- * OR together (Minecraft-style); negated keys and different keys AND.
+ * Match selector/filter clauses. Repeated positive same-key clauses OR
+ * together (Minecraft-style); negated keys and different keys AND.
  */
 export function subjectMatchesClauses(
     subject: GameObject,
-    clauses: readonly ResolvedMatchClause[]
+    clauses: readonly ResolvedMatchClause[],
+    ctx: MatchContext = {}
 ): boolean {
     const types = clauses.filter((c) => c.key === "type");
     if (types.length > 0) {
@@ -78,7 +150,116 @@ export function subjectMatchesClauses(
         }
     }
 
+    if (
+        !matchItemSlot(clauses, "mainhand", equippedId(subject, "mainHand")) ||
+        !matchItemSlot(clauses, "offhand", equippedId(subject, "offHand")) ||
+        !matchItemSlot(clauses, "helmet", equippedId(subject, "helmet"))
+    ) {
+        return false;
+    }
+
+    const hasItems = itemClauses(clauses, "hasitem");
+    if (hasItems.length > 0) {
+        const positive = hasItems.filter((c) => !c.negate);
+        const negative = hasItems.filter((c) => c.negate);
+        if (
+            positive.length > 0 &&
+            !positive.some((c) => inventoryHasAny(subject, c.ids))
+        ) {
+            return false;
+        }
+        for (const c of negative) {
+            if (inventoryHasAny(subject, c.ids)) return false;
+        }
+    }
+
+    const grounds = clauses.filter((c) => c.key === "ground");
+    if (grounds.length > 0) {
+        const physics = Physics.get(subject);
+        const world = ctx.world;
+        if (!physics || !world) return false;
+        const top = topGroundAt(
+            world,
+            worldToTile(physics.position.x),
+            worldToTile(physics.position.y)
+        );
+        const present = top !== undefined;
+        const positive = grounds.filter((c) => !c.negate);
+        const negative = grounds.filter((c) => c.negate);
+        if (
+            positive.length > 0 &&
+            (!present ||
+                !positive.some((c) =>
+                    c.ids.has(top.type as RegistryId<"ground_type">)
+                ))
+        ) {
+            return false;
+        }
+        if (present) {
+            for (const c of negative) {
+                if (c.ids.has(top.type as RegistryId<"ground_type">)) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    const times = clauses.filter((c) => c.key === "time");
+    if (times.length > 0) {
+        const world = ctx.world;
+        if (!world) return false;
+        const current = world.context.dayCycle.periodName;
+        const positive = times.filter((c) => !c.negate);
+        const negative = times.filter((c) => c.negate);
+        if (
+            positive.length > 0 &&
+            !positive.some((c) => c.value === current)
+        ) {
+            return false;
+        }
+        for (const c of negative) {
+            if (c.value === current) return false;
+        }
+    }
+
+    const distances = clauses.filter((c) => c.key === "distance");
+    if (distances.length > 0) {
+        const executor = ctx.executor;
+        if (!executor) return false;
+        const dist = tileDistance(subject, executor);
+        if (dist === undefined) return false;
+        const inRange = (range: {
+            min: number;
+            max: number;
+        }): boolean => dist >= range.min && dist <= range.max;
+        const positive = distances.filter((c) => !c.negate);
+        const negative = distances.filter((c) => c.negate);
+        if (positive.length > 0 && !positive.some((c) => inRange(c.range))) {
+            return false;
+        }
+        for (const c of negative) {
+            if (inRange(c.range)) return false;
+        }
+    }
+
     return true;
+}
+
+export function subjectMatchesBase(
+    subject: GameObject,
+    base: SelectorBase,
+    executor: GameObject | undefined
+): boolean {
+    switch (base) {
+        case "s":
+            return executor !== undefined && subject === executor;
+        case "a":
+        case "p":
+        case "r":
+            return PlayerData.get(subject) !== undefined;
+        case "e":
+            return Living.get(subject) !== undefined;
+    }
 }
 
 function candidatesForBase(
@@ -150,11 +331,15 @@ export function resolveParsedSelector(
         options.defaultNamespace,
         selector.raw
     );
+    const matchCtx: MatchContext = {
+        world: options.world,
+        executor: options.executor,
+    };
     let found = candidatesForBase(
         options.world,
         selector.base,
         options.executor
-    ).filter((obj) => subjectMatchesClauses(obj, matchClauses));
+    ).filter((obj) => subjectMatchesClauses(obj, matchClauses, matchCtx));
 
     const sort = selectorSort(selector);
     if (sort === "nearest" || sort === "furthest") {

@@ -3,7 +3,7 @@ texture: bundu/item/equipment/beanie.svg
 ---
 type: bundu:hat
 whenHelmet:
-    "*":
+    "@s":
         attributes:
             temperature.warmth:
                 op: add

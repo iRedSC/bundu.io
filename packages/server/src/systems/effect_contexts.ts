@@ -1,18 +1,22 @@
-import { worldToTile } from "@bundu/shared/tiles";
+import { TILE_SIZE, worldToTile } from "@bundu/shared/tiles";
 import { Attributes } from "../components/attributes.js";
 import { Physics, ResourceData, TileEntity, Type } from "../components/base.js";
 import { Flags } from "../components/flags.js";
 import { PlayerData } from "../components/player.js";
 import { BuildingConfigs } from "../configs/loaders/buildings.js";
+import { distanceClauseMaxTiles } from "../configs/entity_filter.js";
 import type {
     EffectContext,
     EffectPayload,
+    EquipContextName,
 } from "../configs/loaders/effect_context.js";
 import { contextHasEffects } from "../configs/loaders/effect_context.js";
 import type { Hide } from "../configs/loaders/hide.js";
 import { orHide } from "../configs/loaders/hide.js";
 import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
+import { ItemConfigs } from "../configs/loaders/items.js";
 import { ResourceConfigs } from "../configs/loaders/resources.js";
+import { gameplayConfig } from "../configs/gameplay.js";
 import { System, type GameObject, type World } from "../engine";
 import { syncFlags, clearFlagSync } from "../network/flags.js";
 import type { GameEventMap } from "./event_map.js";
@@ -23,7 +27,10 @@ import {
     payloadForSubject,
     payloadIsEmpty,
 } from "./effect_apply.js";
-import { subjectMatchesTarget } from "./effect_targets.js";
+import {
+    subjectMatchesTarget,
+    targetCanAffectOthers,
+} from "./effect_targets.js";
 import { topGroundAt } from "./ground_at.js";
 import { getSizedBounds } from "./position.js";
 
@@ -33,7 +40,16 @@ type Applied = {
 
 const appliedBySubject = new Map<number, Applied>();
 
+const EQUIP_SLOTS = [
+    ["mainHand", "whenMainHand"],
+    ["offHand", "whenOffHand"],
+    ["helmet", "whenHelmet"],
+] as const satisfies ReadonlyArray<
+    readonly ["mainHand" | "offHand" | "helmet", EquipContextName]
+>;
+
 let cachedMaxProximity: number | undefined;
+let cachedMaxEquipEmanation: number | undefined;
 
 /** Largest authored whenNearby distance (decitiles / world units). */
 function maxProximityDistance(): number {
@@ -49,6 +65,45 @@ function maxProximityDistance(): number {
     }
     cachedMaxProximity = max;
     return max;
+}
+
+/**
+ * Scan radius for equip selectors that target other entities.
+ * World units. 0 = nothing authored; falls back to render distance when
+ * an unbounded `@a` (no finite distance max) is present.
+ */
+function maxEquipEmanationDistance(): number {
+    if (cachedMaxEquipEmanation !== undefined) return cachedMaxEquipEmanation;
+    let maxTiles = 0;
+    let unbounded = false;
+    for (const config of ItemConfigs.entries.values()) {
+        for (const contextName of [
+            "whenMainHand",
+            "whenOffHand",
+            "whenHelmet",
+        ] as const) {
+            const context = config[contextName];
+            if (!context) continue;
+            for (const target of context.targets) {
+                if (!targetCanAffectOthers(target)) continue;
+                const tiles = distanceClauseMaxTiles(target.clauses);
+                if (tiles === undefined) {
+                    unbounded = true;
+                    break;
+                }
+                if (tiles > maxTiles) maxTiles = tiles;
+            }
+            if (unbounded) break;
+        }
+        if (unbounded) break;
+    }
+    if (unbounded) {
+        const rd = gameplayConfig().renderDistance;
+        cachedMaxEquipEmanation = Math.max(rd.x, rd.y);
+    } else {
+        cachedMaxEquipEmanation = maxTiles * TILE_SIZE;
+    }
+    return cachedMaxEquipEmanation;
 }
 
 function getApplied(id: number): Applied {
@@ -128,7 +183,7 @@ export class EffectContextSystem extends System<GameEventMap> {
             syncFlags(subject, this.world.context.playerPacketManager);
             return;
         }
-        this.syncSpatial(subject);
+        this.syncEffects(subject);
         syncFlags(subject, this.world.context.playerPacketManager);
     }
 
@@ -148,7 +203,7 @@ export class EffectContextSystem extends System<GameEventMap> {
         appliedBySubject.delete(subject.id);
     }
 
-    private syncSpatial(subject: GameObject): void {
+    private syncEffects(subject: GameObject): void {
         const desired = new Set<string>();
         const maxContribs: EffectPayload[] = [];
 
@@ -185,7 +240,10 @@ export class EffectContextSystem extends System<GameEventMap> {
             if (!nearbyMatch(subject, source, context)) continue;
 
             const payload = payloadForSubject(context, (t) =>
-                subjectMatchesTarget(subject, t)
+                subjectMatchesTarget(subject, t, {
+                    world: this.world,
+                    executor: source,
+                })
             );
             if (payloadIsEmpty(payload)) continue;
 
@@ -215,6 +273,8 @@ export class EffectContextSystem extends System<GameEventMap> {
             clearContextSource(subject, "whenNearby");
         }
 
+        this.syncEquip(subject, physics, desired);
+
         const applied = getApplied(subject.id);
         for (const sourceId of applied.sources) {
             if (!desired.has(sourceId)) {
@@ -222,6 +282,81 @@ export class EffectContextSystem extends System<GameEventMap> {
             }
         }
         applied.sources = desired;
+    }
+
+    /**
+     * Re-evaluate own gear (so `time=` / `ground=` stay live) and apply
+     * emanating `@a[distance=…]` effects from nearby holders.
+     */
+    private syncEquip(
+        subject: GameObject,
+        physics: Physics,
+        desired: Set<string>
+    ): void {
+        const data = PlayerData.get(subject);
+        if (!data) return;
+
+        // Self gear: re-evaluate so time=/ground= stay live. Managed by inventory
+        // equip/unequip too — do not put bare whenMainHand ids into `desired`, or
+        // freecam clearAll would unequip-attribute wipe (legacy setSlot behavior).
+        const selfCtx = { world: this.world, executor: subject };
+        for (const [slot, contextName] of EQUIP_SLOTS) {
+            const itemId = data[slot];
+            if (itemId === undefined) {
+                clearContextSource(subject, contextName);
+                continue;
+            }
+            const context = ItemConfigs.get(itemId)[contextName];
+            if (!context || !contextHasEffects(context)) {
+                clearContextSource(subject, contextName);
+                continue;
+            }
+            const payload = payloadForSubject(context, (t) =>
+                subjectMatchesTarget(subject, t, selfCtx)
+            );
+            if (payloadIsEmpty(payload)) {
+                clearContextSource(subject, contextName);
+            } else {
+                applyContextEffects(subject, contextName, context, payload);
+            }
+        }
+
+        const range = maxEquipEmanationDistance();
+        if (range <= 0) return;
+
+        const holders = this.world.query(
+            [PlayerData, Physics],
+            this.world.context.quadtree.query(
+                getSizedBounds(physics.position, range, range)
+            )
+        );
+        for (const holder of holders) {
+            if (holder === subject) continue;
+            const holderData = PlayerData.get(holder);
+            if (!holderData) continue;
+            const matchCtx = { world: this.world, executor: holder };
+            for (const [slot, contextName] of EQUIP_SLOTS) {
+                const itemId = holderData[slot];
+                if (itemId === undefined) continue;
+                const context = ItemConfigs.get(itemId)[contextName];
+                if (!context || !contextHasEffects(context)) continue;
+                if (!context.targets.some(targetCanAffectOthers)) continue;
+
+                const payload = payloadForSubject(context, (t) =>
+                    subjectMatchesTarget(subject, t, matchCtx)
+                );
+                if (payloadIsEmpty(payload)) continue;
+
+                const sourceKey = `${contextName}:player:${holder.id}`;
+                const sourceId = applyContextEffects(
+                    subject,
+                    sourceKey,
+                    { ...context, stack: "replace" },
+                    payload
+                );
+                if (sourceId) desired.add(sourceId);
+            }
+        }
     }
 
     private considerOccupied(
@@ -235,7 +370,10 @@ export class EffectContextSystem extends System<GameEventMap> {
         if (!occupiedMatch(subject, source, context)) return;
 
         const payload = payloadForSubject(context, (t) =>
-            subjectMatchesTarget(subject, t)
+            subjectMatchesTarget(subject, t, {
+                world: this.world,
+                executor: source,
+            })
         );
         if (context.stack === "max") {
             const sourceId = applyMaxEffects(
@@ -268,8 +406,12 @@ export class EffectContextSystem extends System<GameEventMap> {
         if (!context || !contextHasEffects(context)) return;
 
         // Ground occupation is always "center" (standing on the tile).
+        // Executor is the subject (standing on their own tile).
         const payload = payloadForSubject(context, (t) =>
-            subjectMatchesTarget(subject, t)
+            subjectMatchesTarget(subject, t, {
+                world: this.world,
+                executor: subject,
+            })
         );
         if (payloadIsEmpty(payload)) return;
 
@@ -311,7 +453,7 @@ export function resolveSpatialHide(
         if (!context) continue;
         if (!occupiedMatch(subject, source, context)) continue;
         const payload = payloadForSubject(context, (t) =>
-            subjectMatchesTarget(subject, t)
+            subjectMatchesTarget(subject, t, { world, executor: source })
         );
         hide = orHide(hide, payload.hide);
     }
@@ -321,7 +463,7 @@ export function resolveSpatialHide(
         const context = GroundTypeConfigs.get(top.type).whenOccupied;
         if (context) {
             const payload = payloadForSubject(context, (t) =>
-                subjectMatchesTarget(subject, t)
+                subjectMatchesTarget(subject, t, { world, executor: subject })
             );
             hide = orHide(hide, payload.hide);
         }
@@ -342,7 +484,7 @@ export function resolveSpatialHide(
         if (!context) continue;
         if (!nearbyMatch(subject, source, context)) continue;
         const payload = payloadForSubject(context, (t) =>
-            subjectMatchesTarget(subject, t)
+            subjectMatchesTarget(subject, t, { world, executor: source })
         );
         hide = orHide(hide, payload.hide);
     }

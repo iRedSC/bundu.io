@@ -3,7 +3,7 @@ texture: bundu/item/tool/cobalt_wrench.svg
 ---
 type: bundu:wrench
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             attack.damage:
                 op: add

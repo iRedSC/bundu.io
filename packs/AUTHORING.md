@@ -68,14 +68,29 @@ eat/harvest checks.
 
 ```yaml
 whenMainHand:
-  "*":
+  "@s":
     attributes:
       attack.damage: { op: add, value: 13 }
       movement.speed: { op: multiply, value: 0.8 }
     flags: [holding_book]          # optional
 ```
 
-Ops: `add` \| `multiply`. Targets: `"*"`, entity ids, `#tags`, or filter strings.
+Ops: `add` \| `multiply`. Targets: `"@s"` / `"@a[…]"` selectors, entity ids,
+`#tags`, or legacy `type=`/`flag=` filter strings.
+
+Selector filters: `type=`, `flag=`, `name=`, `mainhand=` / `offhand=` / `helmet=` /
+`hasitem=` (item id or `#tag`), `ground=` (ground type id or `#tag`),
+`time=` (`morning`/`day`/`evening`/`night`), `distance=` (tiles: `N`, `N..`,
+`..N`, `N..M`). Example — aura on everyone else within 10 tiles:
+
+```yaml
+whenMainHand:
+  "@s":
+    attributes:
+      attack.damage: { op: add, value: 13 }
+  "@a[distance=0.2..10]":
+    flags: [near_banner]
+```
 
 ### Display (item models)
 
@@ -109,7 +124,7 @@ texture: bundu/item/tool/wood_sword.svg
 type: bundu:sword
 level: 1
 whenMainHand:
-  "*":
+  "@s":
     attributes:
       attack.damage: { op: add, value: 13 }
       health.defense.blocking: { op: add, value: 2 }
@@ -127,7 +142,7 @@ texture: bundu/item/equipment/wood_helmet.svg
 ---
 type: bundu:helmet
 whenHelmet:
-  "*":
+  "@s":
     attributes:
       health.defense: { op: add, value: 5 }
 ```
@@ -160,7 +175,7 @@ texture: bundu/item/book/book.svg
 ---
 type: bundu:book
 whenOffHand:
-  "*":
+  "@s":
     flags: [holding_book]
 ```
 
@@ -356,7 +371,7 @@ health: 1000
 whenNearby:
   stack: max
   proximityDistance: 200
-  "*":
+  "@a":
     attributes:
       temperature.warmth: { op: add, value: 35 }
     flags: [near_fire]
@@ -375,7 +390,7 @@ class: building
 health: 800
 whenNearby:
   proximityDistance: 200
-  "*":
+  "@a":
     flags: [near_crafting_table]
 ```
 

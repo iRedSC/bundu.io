@@ -4,7 +4,7 @@ texture: bundu/item/tool/copper_hammer.svg
 type: bundu:hammer
 level: 3
 whenMainHand:
-    "*":
+    "@s":
         attributes:
             attack.damage:
                 op: add

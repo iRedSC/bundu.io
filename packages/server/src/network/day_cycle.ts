@@ -16,7 +16,7 @@ export const TIME_OF_DAY_NAMES = [
 ] as const;
 export type TimeOfDayName = (typeof TIME_OF_DAY_NAMES)[number];
 
-function isTimeOfDayName(value: string): value is TimeOfDayName {
+export function isTimeOfDayName(value: string): value is TimeOfDayName {
     return (TIME_OF_DAY_NAMES as readonly string[]).includes(value);
 }
 
@@ -26,6 +26,17 @@ export class DayCycle {
     /** Shifts gameplay clock so `/settime` can jump periods without freezing the cycle. */
     private offsetMs = 0;
     private recipients = new Set<number>();
+
+    /** Current period index (0 = morning). */
+    get periodIndex(): number {
+        return this.period;
+    }
+
+    /** Current `/settime` period name. */
+    get periodName(): TimeOfDayName {
+        const name = gameplayConfig().dayCycle.periods[this.period]?.name;
+        return name ?? "morning";
+    }
 
     /** Resolve period index from gameplay clock. */
     periodAt(gameTime: number): number {
