@@ -150,22 +150,23 @@ function pickYamlFile(): Promise<File | null> {
         input.type = "file";
         input.accept = ".yml,.yaml,text/yaml,text/plain";
         input.style.display = "none";
-        const cleanup = () => {
+        let settled = false;
+        const finish = (file: File | null) => {
+            if (settled) return;
+            settled = true;
             input.remove();
+            resolve(file);
         };
         input.addEventListener("change", () => {
-            const file = input.files?.[0] ?? null;
-            cleanup();
-            resolve(file);
+            finish(input.files?.[0] ?? null);
         });
         // Cancel is not reliably reported; treat focus-return without a file as cancel.
         window.addEventListener(
             "focus",
             () => {
                 window.setTimeout(() => {
-                    if (!input.isConnected) return;
-                    cleanup();
-                    resolve(null);
+                    if (settled) return;
+                    finish(null);
                 }, 400);
             },
             { once: true }
