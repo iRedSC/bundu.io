@@ -262,6 +262,13 @@ export function subjectMatchesBase(
     }
 }
 
+function connectedPlayers(world: World): GameObject[] {
+    const { socketManager } = world.context;
+    return world
+        .query([PlayerData])
+        .filter((player) => socketManager.getSocket(player.id) !== undefined);
+}
+
 function candidatesForBase(
     world: World,
     base: EntitySelector["base"],
@@ -273,7 +280,9 @@ function candidatesForBase(
         case "a":
         case "p":
         case "r":
-            return world.query([PlayerData]);
+            // Soft-disconnected bodies linger in the world; commands should only
+            // target players who still have a socket (Minecraft-style "online").
+            return connectedPlayers(world);
         case "e":
             return world.query([Living]);
     }
