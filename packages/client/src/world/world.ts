@@ -4,6 +4,8 @@ import {
     WORLD_BOUNDS,
     WORLD_TILES,
     deciToWorld,
+    isValidWorldTiles,
+    setWorldTiles,
     worldToTile,
 } from "@bundu/shared/tiles";
 import {
@@ -107,7 +109,9 @@ import { structurePlace } from "../models/particles/structure_place";
  * Unload movers only when freecam can see most of the map.
  * (~80% of world half-extent — far beyond play render distance.)
  */
-const FREECAM_OVERVIEW_HALF = WORLD_BOUNDS * 0.4;
+function freecamOverviewHalf(): number {
+    return WORLD_BOUNDS * 0.4;
+}
 
 type GroundPatch = {
     id: number;
@@ -226,9 +230,9 @@ export class World {
     private landSeamFrame = 0;
     private oceanTypeIds = new Set<number>();
     /** Topmost-patch ocean mask (1 = ocean). Empty tiles stay 0. */
-    private readonly oceanTiles = new Uint8Array(WORLD_TILES * WORLD_TILES);
+    private oceanTiles = new Uint8Array(WORLD_TILES * WORLD_TILES);
     /** Topmost ground type id per tile (0 = empty). Registry ids start at 1. */
-    private readonly topGroundTypes = new Uint16Array(WORLD_TILES * WORLD_TILES);
+    private topGroundTypes = new Uint16Array(WORLD_TILES * WORLD_TILES);
     /** Fallback water color when a tile's type is unknown. */
     private oceanColor = 0x1a5f8a;
     /** True after at least one LoadGround/UnloadGround sync this session. */
@@ -252,6 +256,8 @@ export class World {
     private readonly ambientParticles = new AmbientParticles();
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
+    /** Fired after {@link setWorldSize} changes the live playable edge. */
+    onWorldSizeChanged?: () => void;
     /** True after local death — keep avatar, skip corpse for the game-over capture. */
     private deathCinematic = false;
     /** Local drop origins (world space) queued until DropItem arrives. */
@@ -274,6 +280,34 @@ export class World {
         this.viewport.addChild(this.sky);
         this.viewport.addChild(this.skyUndo.sprite);
         this.viewport.sortChildren();
+    }
+
+    /**
+     * Apply authoritative world size from the server. Safe to call repeatedly;
+     * reallocates ground buffers when the edge length changes.
+     */
+    setWorldSize(worldTiles: number): void {
+        if (!isValidWorldTiles(worldTiles)) return;
+        const changed = worldTiles !== WORLD_TILES;
+        setWorldTiles(worldTiles);
+        this.viewport.worldWidth = WORLD_BOUNDS;
+        this.viewport.worldHeight = WORLD_BOUNDS;
+        this.sky.redrawBounds();
+        if (!changed && this.oceanTiles.length === WORLD_TILES * WORLD_TILES) {
+            return;
+        }
+        const n = WORLD_TILES * WORLD_TILES;
+        this.oceanTiles = new Uint8Array(n);
+        this.topGroundTypes = new Uint16Array(n);
+        this.landDistance.resizeForWorld();
+        this.nearshoreFill.resizeForWorld();
+        this.landSeamBaker.resizeForWorld();
+        if (this.oceanVisuals.size > 0) {
+            for (const [key, visual] of [...this.oceanVisuals]) {
+                this.disposeOceanVisual(key, visual);
+            }
+        }
+        this.onWorldSizeChanged?.();
     }
 
     clear() {
@@ -593,7 +627,8 @@ export class World {
             minY,
             maxX,
             maxY,
-            overview: halfX > FREECAM_OVERVIEW_HALF || halfY > FREECAM_OVERVIEW_HALF,
+            overview:
+                halfX > freecamOverviewHalf() || halfY > freecamOverviewHalf(),
         };
     }
 

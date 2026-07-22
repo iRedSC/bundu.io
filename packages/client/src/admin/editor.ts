@@ -6,6 +6,7 @@ import { createPalette, type PaletteHandle } from "./palette";
 import { createToolbar, type ToolbarHandle } from "./toolbar";
 import { AdminGhost } from "./ghost";
 import { AdminInput } from "./input";
+import { promptImportMap, promptNewMap } from "./map_dialogs";
 import {
     applyEditorPrefs,
     loadEditorPrefs,
@@ -116,20 +117,28 @@ export function createAdminEditor(
         onDownloadMap: () => {
             sendPacket(ClientPacket.AdminDownloadMap, {});
         },
-        onWipeMap: () => {
-                if (
-                !window.confirm(
-                    "Wipe the entire map?\n\nThis removes all ground overlays, decorations, resources, structures, animals, and items, then restores an ocean base. It cannot be undone."
-                )
-            ) {
-                return;
-            }
-            sendPacket(ClientPacket.AdminWipeMap, {});
+        onImportMap: () => {
+            void promptImportMap().then((yaml) => {
+                if (yaml === null) return;
+                sendPacket(ClientPacket.AdminImportMap, { yaml });
+            });
+        },
+        onNewMap: () => {
+            void promptNewMap().then((result) => {
+                if (!result) return;
+                sendPacket(ClientPacket.AdminNewMap, {
+                    worldTiles: result.worldTiles,
+                });
+            });
         },
     });
 
     container.addChild(palette.container);
     container.addChild(toolbar.container);
+
+    world.onWorldSizeChanged = () => {
+        tileGrid.rebuild();
+    };
 
     let isExternalUi: (screenX: number, screenY: number) => boolean = () =>
         false;
@@ -207,6 +216,9 @@ export function createAdminEditor(
             palette?.tick(now);
         },
         destroy() {
+            if (world.onWorldSizeChanged) {
+                world.onWorldSizeChanged = undefined;
+            }
             input?.destroy();
             ghost.clear();
             tileGrid.destroy();

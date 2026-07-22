@@ -1,7 +1,6 @@
 import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
 import type { GroundPatchRef } from "./shore";
 
-const N = WORLD_TILES * WORLD_TILES;
 const INF = 1e6;
 const ORTHO = 1;
 const DIAG = Math.SQRT2;
@@ -16,13 +15,25 @@ export const LAND_DISTANCE_MAX = 255;
  * Positive = ocean (from land), negative = into land (from ocean).
  */
 export class LandDistanceField {
-    private readonly dist = new Float32Array(N);
-    private readonly land = new Uint8Array(N);
+    private dist = new Float32Array(WORLD_TILES * WORLD_TILES);
+    private land = new Uint8Array(WORLD_TILES * WORLD_TILES);
     /** Land RGB — self on land, nearest land on ocean. */
-    private readonly color = new Uint32Array(N);
-    private readonly scratch = new Float32Array(N);
-    private readonly scratch2 = new Float32Array(N);
-    private readonly smoothBuf = new Float32Array(N);
+    private color = new Uint32Array(WORLD_TILES * WORLD_TILES);
+    private scratch = new Float32Array(WORLD_TILES * WORLD_TILES);
+    private scratch2 = new Float32Array(WORLD_TILES * WORLD_TILES);
+    private smoothBuf = new Float32Array(WORLD_TILES * WORLD_TILES);
+
+    /** Reallocate tile buffers after {@link setWorldTiles}. */
+    resizeForWorld(): void {
+        const n = WORLD_TILES * WORLD_TILES;
+        if (this.dist.length === n) return;
+        this.dist = new Float32Array(n);
+        this.land = new Uint8Array(n);
+        this.color = new Uint32Array(n);
+        this.scratch = new Float32Array(n);
+        this.scratch2 = new Float32Array(n);
+        this.smoothBuf = new Float32Array(n);
+    }
 
     /** Tiles from nearest land. `0` on land; capped at {@link LAND_DISTANCE_MAX}. */
     atTile(tx: number, ty: number): number {
@@ -93,21 +104,22 @@ export class LandDistanceField {
             }
         }
 
+        const n = WORLD_TILES * WORLD_TILES;
         scratch.fill(INF);
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             if (land[i]) scratch[i] = 0;
         }
         this.chamfer(scratch, /*intoOcean*/ true);
         this.smooth(scratch, /*oceanOnly*/ true);
 
         scratch2.fill(INF);
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             if (!land[i]) scratch2[i] = 0;
         }
         this.chamfer(scratch2, /*intoOcean*/ false);
         this.smooth(scratch2, /*oceanOnly*/ false);
 
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             if (land[i]) {
                 const d = scratch2[i]!;
                 dist[i] = -(d > LAND_DISTANCE_MAX ? LAND_DISTANCE_MAX : d);
@@ -131,8 +143,9 @@ export class LandDistanceField {
     ): void {
         const { dist, color } = this;
         const invOver = overshootTiles > 0 ? 1 / overshootTiles : 0;
+        const n = WORLD_TILES * WORLD_TILES;
 
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             const sdf = dist[i]!;
             const o = i * 4;
             const landRgb = color[i]!;

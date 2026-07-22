@@ -49,7 +49,12 @@ import {
     trySnapshot,
     undoStroke,
 } from "./history.js";
-import { exportMapYaml, saveMapYaml, wipeMap } from "./map_io.js";
+import {
+    exportMapYaml,
+    importMapLive,
+    newMap,
+    saveMapYaml,
+} from "./map_io.js";
 import { setAnimalsFrozen } from "./state.js";
 import type { FreecamGhostSystem } from "../systems/freecam_ghost.js";
 import { modelSupportsVariant } from "../configs/resource_packs.js";
@@ -268,17 +273,45 @@ export class AdminEditorSystem extends System<GameEventMap> {
         );
     };
 
-    adminWipeMap = (playerId: number, _packet: ClientPacket.AdminWipeMap) => {
+    adminNewMap = (playerId: number, packet: ClientPacket.AdminNewMap) => {
         const player = this.world.getObject(playerId);
         if (!player || !canUseEditor(player)) return;
-        wipeMap(
-            this.world,
-            this.trigger,
-            (packet) => this.broadcastGround(packet),
-            (packet) => this.broadcastUnloadGround(packet),
-            (packet) => this.broadcastDecoration(packet),
-            (packet) => this.broadcastUnloadDecoration(packet)
-        );
+        try {
+            newMap(this.world, packet.worldTiles, this.trigger, {
+                broadcastGround: (wire) => this.broadcastGround(wire),
+                broadcastUnloadGround: (wire) =>
+                    this.broadcastUnloadGround(wire),
+                broadcastDecoration: (wire) => this.broadcastDecoration(wire),
+                broadcastUnloadDecoration: (wire) =>
+                    this.broadcastUnloadDecoration(wire),
+                broadcastWorldSize: (worldTiles) =>
+                    this.broadcastWorldSize(worldTiles),
+            });
+        } catch (error) {
+            console.warn("[admin] new map failed:", error);
+        }
+    };
+
+    adminImportMap = (
+        playerId: number,
+        packet: ClientPacket.AdminImportMap
+    ) => {
+        const player = this.world.getObject(playerId);
+        if (!player || !canUseEditor(player)) return;
+        try {
+            importMapLive(this.world, packet.yaml, this.trigger, {
+                broadcastGround: (wire) => this.broadcastGround(wire),
+                broadcastUnloadGround: (wire) =>
+                    this.broadcastUnloadGround(wire),
+                broadcastDecoration: (wire) => this.broadcastDecoration(wire),
+                broadcastUnloadDecoration: (wire) =>
+                    this.broadcastUnloadDecoration(wire),
+                broadcastWorldSize: (worldTiles) =>
+                    this.broadcastWorldSize(worldTiles),
+            });
+        } catch (error) {
+            console.warn("[admin] import map failed:", error);
+        }
     };
 
     adminPlace = (playerId: number, packet: ClientPacket.AdminPlace) => {
@@ -654,6 +687,16 @@ export class AdminEditorSystem extends System<GameEventMap> {
             if (!socketManager.getSocket(viewer.id)) continue;
             playerPacketManager.add(viewer.id, id, {
                 decorations: [packet],
+            });
+        }
+    }
+
+    private broadcastWorldSize(worldTiles: number) {
+        const { playerPacketManager, socketManager } = this.world.context;
+        for (const viewer of this.world.query([PlayerData])) {
+            if (!socketManager.getSocket(viewer.id)) continue;
+            playerPacketManager.set(viewer.id, ServerPacket.SetWorldSize, {
+                worldTiles,
             });
         }
     }

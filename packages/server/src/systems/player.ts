@@ -62,7 +62,13 @@ import { clearEditorHistory } from "../admin/history.js";
 import { clearAnimalsFrozenFor } from "../admin/state.js";
 import { canUseEditor } from "../admin/auth.js";
 import { PlaceMode } from "@bundu/shared/inventory";
-import { pointToTile, TILE_SIZE, WORLD_BOUNDS, worldToDeci } from "@bundu/shared/tiles";
+import {
+    pointToTile,
+    TILE_SIZE,
+    WORLD_BOUNDS,
+    WORLD_TILES,
+    worldToDeci,
+} from "@bundu/shared/tiles";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { GroundItem } from "../game_objects/ground_item.js";
 import { Resource } from "../game_objects/resource.js";
@@ -238,6 +244,9 @@ export class PlayerSystem extends System<GameEventMap> {
             this.world.context;
         playerPacketManager.set(player.id, ServerPacket.ClientConnectionInfo, {
             playerId: player.id,
+        });
+        playerPacketManager.set(player.id, ServerPacket.SetWorldSize, {
+            worldTiles: WORLD_TILES,
         });
         playerPacketManager.set(player.id, ServerPacket.LoadGround, {
             groundData: packets,
