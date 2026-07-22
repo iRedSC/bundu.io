@@ -1,5 +1,10 @@
+import type { GroundFxRange } from "./ground_models";
+
 /** Pack-authored client gameplay (`assets/<ns>/gameplay.yml`). */
 export type DayPeriodOffset = { x: number; y: number };
+
+export const DAY_PERIOD_NAMES = ["morning", "day", "evening", "night"] as const;
+export type DayPeriodName = (typeof DAY_PERIOD_NAMES)[number];
 
 export type Scroll2 = { x: number; y: number };
 
@@ -59,6 +64,60 @@ export type OceanFxConfig = {
     particleMaxArea: number;
 };
 
+/** Period → named rate multipliers (e.g. water_sparkle). */
+export type AmbientPeriodRates = Readonly<Record<string, number>>;
+
+/**
+ * Leaf preset — trees come from pack tags (`decoration_tag` / `resource_tag`).
+ * Multiple presets = multiple leaf types.
+ */
+export type AmbientLeafPreset = {
+    /** Decoration registry tag, e.g. `#bundu:leaves_forest`. */
+    decorationTag?: string;
+    /** Resource registry tag for harvestable trees. */
+    resourceTag?: string;
+    intervalMs: readonly [min: number, max: number];
+    /** Omit = all periods. */
+    periods?: readonly DayPeriodName[];
+    count: GroundFxRange;
+    size: GroundFxRange;
+    alpha: GroundFxRange;
+    lifetime: GroundFxRange;
+    speed: GroundFxRange;
+    spread: number;
+    friction: number;
+    gravity: number;
+    gravityX: number;
+    endSize: number;
+    tint: string;
+    blendMode: "normal" | "add" | "screen";
+    alphaFadeIn: number;
+    alphaHold: number;
+    spin: GroundFxRange;
+    /** Spawn jitter radius around the tree (world px). */
+    spawnRadius: number;
+    zIndex?: number;
+};
+
+export type AmbientParticlesConfig = {
+    /** Skip ambience past this view area (world²). */
+    particleMaxArea: number;
+    /** Global blow bias added to emitter gravityX / gravity. */
+    wind: { x: number; y: number };
+    /**
+     * Per-period rate multipliers for named channels.
+     * `water_sparkle` shortens ocean sparkle intervals (higher = more).
+     */
+    periodRates: {
+        morning: AmbientPeriodRates;
+        day: AmbientPeriodRates;
+        evening: AmbientPeriodRates;
+        night: AmbientPeriodRates;
+    };
+    /** Named leaf types keyed for pack tuning. */
+    leaves: Readonly<Record<string, AmbientLeafPreset>>;
+};
+
 export type ClientGameplayConfig = {
     shadows: {
         alpha: number;
@@ -80,10 +139,8 @@ export type ClientGameplayConfig = {
         };
     };
     ocean: OceanFxConfig;
+    ambient: AmbientParticlesConfig;
 };
-
-const DAY_PERIOD_NAMES = ["morning", "day", "evening", "night"] as const;
-type DayPeriodName = (typeof DAY_PERIOD_NAMES)[number];
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -352,10 +409,379 @@ function parseOcean(value: Record<string, unknown>): OceanFxConfig {
     };
 }
 
+const DEFAULT_LEAF: Omit<
+    AmbientLeafPreset,
+    "decorationTag" | "resourceTag" | "tint" | "periods" | "zIndex"
+> = {
+    intervalMs: [900, 1800],
+    count: 1,
+    size: [5, 12],
+    alpha: [0.4, 0.18],
+    lifetime: [2200, 4000],
+    speed: [10, 34],
+    spread: 0.9,
+    friction: 0.45,
+    gravity: 14,
+    gravityX: 0,
+    endSize: 2,
+    blendMode: "normal",
+    alphaFadeIn: 0.2,
+    alphaHold: 0.55,
+    spin: [-2.2, 2.2],
+    spawnRadius: 28,
+};
+
+function fxRange(value: unknown, path: string): GroundFxRange {
+    if (typeof value === "number") {
+        if (!Number.isFinite(value) || value < 0) {
+            throw new Error(`${path}: expected a non-negative number`);
+        }
+        return value;
+    }
+    if (!Array.isArray(value) || value.length !== 2) {
+        throw new Error(`${path}: expected a number or [min, max]`);
+    }
+    const [lo, hi] = value;
+    if (
+        typeof lo !== "number" ||
+        typeof hi !== "number" ||
+        !Number.isFinite(lo) ||
+        !Number.isFinite(hi) ||
+        lo < 0 ||
+        hi < lo
+    ) {
+        throw new Error(`${path}: expected 0 <= min <= max`);
+    }
+    return [lo, hi];
+}
+
+function fxRangeOriented(value: unknown, path: string): GroundFxRange {
+    if (typeof value === "number") {
+        if (!Number.isFinite(value) || value < 0) {
+            throw new Error(`${path}: expected a non-negative number`);
+        }
+        return value;
+    }
+    if (!Array.isArray(value) || value.length !== 2) {
+        throw new Error(`${path}: expected a number or [a, b]`);
+    }
+    const [a, b] = value;
+    if (
+        typeof a !== "number" ||
+        typeof b !== "number" ||
+        !Number.isFinite(a) ||
+        !Number.isFinite(b) ||
+        a < 0 ||
+        b < 0
+    ) {
+        throw new Error(`${path}: expected non-negative numbers`);
+    }
+    return [a, b];
+}
+
+function signedRange(value: unknown, path: string): GroundFxRange {
+    if (typeof value === "number") {
+        if (!Number.isFinite(value)) {
+            throw new Error(`${path}: expected a finite number`);
+        }
+        return value;
+    }
+    if (!Array.isArray(value) || value.length !== 2) {
+        throw new Error(`${path}: expected a number or [min, max]`);
+    }
+    const [lo, hi] = value;
+    if (
+        typeof lo !== "number" ||
+        typeof hi !== "number" ||
+        !Number.isFinite(lo) ||
+        !Number.isFinite(hi) ||
+        hi < lo
+    ) {
+        throw new Error(`${path}: expected min <= max`);
+    }
+    return [lo, hi];
+}
+
+function optionalFxRange(
+    raw: Record<string, unknown>,
+    snake: string,
+    camel: string,
+    path: string,
+    fallback: GroundFxRange
+): GroundFxRange {
+    const value = raw[snake] ?? raw[camel];
+    return value === undefined ? fallback : fxRange(value, `${path}.${snake}`);
+}
+
+function optionalNumber(
+    raw: Record<string, unknown>,
+    snake: string,
+    camel: string,
+    path: string,
+    fallback: number
+): number {
+    const value = raw[snake] ?? raw[camel];
+    if (value === undefined) return fallback;
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new Error(`${path}.${snake}: expected a finite number`);
+    }
+    return value;
+}
+
+function parsePeriods(
+    value: unknown,
+    path: string
+): readonly DayPeriodName[] | undefined {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value) || value.length === 0) {
+        throw new Error(`${path}: expected a non-empty period list`);
+    }
+    const out: DayPeriodName[] = [];
+    for (const [index, entry] of value.entries()) {
+        if (
+            typeof entry !== "string" ||
+            !(DAY_PERIOD_NAMES as readonly string[]).includes(entry)
+        ) {
+            throw new Error(
+                `${path}[${index}]: expected one of ${DAY_PERIOD_NAMES.join(", ")}`
+            );
+        }
+        out.push(entry as DayPeriodName);
+    }
+    return out;
+}
+
+function parsePeriodRates(
+    value: unknown,
+    path: string
+): AmbientPeriodRates {
+    if (value === undefined) return {};
+    const raw = record(value, path);
+    const out: Record<string, number> = {};
+    for (const [key, rate] of Object.entries(raw)) {
+        if (typeof rate !== "number" || !Number.isFinite(rate) || rate < 0) {
+            throw new Error(`${path}.${key}: expected a non-negative number`);
+        }
+        out[key] = rate;
+    }
+    return out;
+}
+
+function parseLeafPreset(value: unknown, path: string): AmbientLeafPreset {
+    const raw = record(value, path);
+    const decorationTag = raw.decoration_tag ?? raw.decorationTag;
+    const resourceTag = raw.resource_tag ?? raw.resourceTag;
+    if (decorationTag === undefined && resourceTag === undefined) {
+        throw new Error(
+            `${path}: expected decoration_tag and/or resource_tag`
+        );
+    }
+    if (decorationTag !== undefined && typeof decorationTag !== "string") {
+        throw new Error(`${path}.decoration_tag: expected a string`);
+    }
+    if (resourceTag !== undefined && typeof resourceTag !== "string") {
+        throw new Error(`${path}.resource_tag: expected a string`);
+    }
+    const alphaFadeIn =
+        raw.alpha_fade_in !== undefined || raw.alphaFadeIn !== undefined
+            ? number(
+                  raw,
+                  "alpha_fade_in" in raw ? "alpha_fade_in" : "alphaFadeIn",
+                  path
+              )
+            : DEFAULT_LEAF.alphaFadeIn;
+    const alphaHold =
+        raw.alpha_hold !== undefined || raw.alphaHold !== undefined
+            ? number(
+                  raw,
+                  "alpha_hold" in raw ? "alpha_hold" : "alphaHold",
+                  path
+              )
+            : DEFAULT_LEAF.alphaHold;
+    if (alphaFadeIn < 0 || alphaFadeIn > 1) {
+        throw new Error(`${path}.alpha_fade_in: expected 0..1`);
+    }
+    if (alphaHold < 0 || alphaHold > 1) {
+        throw new Error(`${path}.alpha_hold: expected 0..1`);
+    }
+    if (alphaHold < alphaFadeIn) {
+        throw new Error(`${path}.alpha_hold: must be >= alpha_fade_in`);
+    }
+    const blendRaw = raw.blend_mode ?? raw.blendMode;
+    let blendMode: AmbientLeafPreset["blendMode"] = DEFAULT_LEAF.blendMode;
+    if (blendRaw !== undefined) {
+        if (blendRaw === "normal" || blendRaw === "add" || blendRaw === "screen") {
+            blendMode = blendRaw;
+        } else {
+            throw new Error(`${path}.blend_mode: expected normal|add|screen`);
+        }
+    }
+    const tint = hexColor(raw.tint ?? "#6b8f3c", `${path}.tint`);
+    const alphaRaw = raw.alpha;
+    const def: AmbientLeafPreset = {
+        intervalMs: intervalMs(
+            raw.interval_ms ?? raw.intervalMs ?? DEFAULT_LEAF.intervalMs,
+            `${path}.interval_ms`
+        ),
+        count: optionalFxRange(
+            raw,
+            "count",
+            "count",
+            path,
+            DEFAULT_LEAF.count
+        ),
+        size: optionalFxRange(raw, "size", "size", path, DEFAULT_LEAF.size),
+        alpha:
+            alphaRaw === undefined
+                ? DEFAULT_LEAF.alpha
+                : fxRangeOriented(alphaRaw, `${path}.alpha`),
+        lifetime: optionalFxRange(
+            raw,
+            "lifetime",
+            "lifetime",
+            path,
+            DEFAULT_LEAF.lifetime
+        ),
+        speed: optionalFxRange(raw, "speed", "speed", path, DEFAULT_LEAF.speed),
+        spread: optionalNumber(
+            raw,
+            "spread",
+            "spread",
+            path,
+            DEFAULT_LEAF.spread
+        ),
+        friction: optionalNumber(
+            raw,
+            "friction",
+            "friction",
+            path,
+            DEFAULT_LEAF.friction
+        ),
+        gravity: optionalNumber(
+            raw,
+            "gravity",
+            "gravity",
+            path,
+            DEFAULT_LEAF.gravity
+        ),
+        gravityX: optionalNumber(
+            raw,
+            "gravity_x",
+            "gravityX",
+            path,
+            DEFAULT_LEAF.gravityX
+        ),
+        endSize: optionalNumber(
+            raw,
+            "end_size",
+            "endSize",
+            path,
+            DEFAULT_LEAF.endSize
+        ),
+        tint,
+        blendMode,
+        alphaFadeIn,
+        alphaHold,
+        spin:
+            raw.spin === undefined
+                ? DEFAULT_LEAF.spin
+                : signedRange(raw.spin, `${path}.spin`),
+        spawnRadius: optionalNumber(
+            raw,
+            "spawn_radius",
+            "spawnRadius",
+            path,
+            DEFAULT_LEAF.spawnRadius
+        ),
+    };
+    if (typeof decorationTag === "string") def.decorationTag = decorationTag;
+    if (typeof resourceTag === "string") def.resourceTag = resourceTag;
+    const periods = parsePeriods(raw.periods, `${path}.periods`);
+    if (periods) def.periods = periods;
+    const zRaw = raw.z_index ?? raw.zIndex;
+    if (zRaw !== undefined) {
+        if (typeof zRaw !== "number" || !Number.isFinite(zRaw)) {
+            throw new Error(`${path}.z_index: expected a finite number`);
+        }
+        def.zIndex = zRaw;
+    }
+    return def;
+}
+
+const DEFAULT_AMBIENT: AmbientParticlesConfig = {
+    particleMaxArea: 36_000_000,
+    wind: { x: 18, y: 2 },
+    periodRates: {
+        morning: {},
+        day: {},
+        evening: {},
+        night: {},
+    },
+    leaves: {},
+};
+
+function parseAmbient(value: unknown): AmbientParticlesConfig {
+    const path = "client_gameplay.ambient_particles";
+    const raw = record(value, path);
+    const windRaw = record(raw.wind ?? { x: 18, y: 2 }, `${path}.wind`);
+    const ratesRaw = record(
+        raw.period_rates ?? raw.periodRates ?? {},
+        `${path}.period_rates`
+    );
+    const leavesRaw = record(raw.leaves ?? {}, `${path}.leaves`);
+    const leaves: Record<string, AmbientLeafPreset> = {};
+    for (const [name, entry] of Object.entries(leavesRaw)) {
+        if (!name) throw new Error(`${path}.leaves: empty preset name`);
+        leaves[name] = parseLeafPreset(entry, `${path}.leaves.${name}`);
+    }
+    const periodRates = {
+        morning: parsePeriodRates(ratesRaw.morning, `${path}.period_rates.morning`),
+        day: parsePeriodRates(ratesRaw.day, `${path}.period_rates.day`),
+        evening: parsePeriodRates(
+            ratesRaw.evening,
+            `${path}.period_rates.evening`
+        ),
+        night: parsePeriodRates(ratesRaw.night, `${path}.period_rates.night`),
+    };
+    const maxAreaRaw = raw.particle_max_area ?? raw.particleMaxArea;
+    return {
+        particleMaxArea:
+            maxAreaRaw === undefined
+                ? DEFAULT_AMBIENT.particleMaxArea
+                : positive(
+                      { particle_max_area: maxAreaRaw },
+                      "particle_max_area",
+                      path
+                  ),
+        wind: {
+            x: number(windRaw, "x", `${path}.wind`),
+            y: number(windRaw, "y", `${path}.wind`),
+        },
+        periodRates,
+        leaves,
+    };
+}
+
 export function parseClientGameplayConfig(value: unknown): ClientGameplayConfig {
     const root = record(value, "client_gameplay");
     return {
         shadows: parseShadows(record(root.shadows, "client_gameplay.shadows")),
         ocean: parseOcean(record(root.ocean, "client_gameplay.ocean")),
+        ambient:
+            root.ambient_particles !== undefined ||
+            root.ambientParticles !== undefined
+                ? parseAmbient(root.ambient_particles ?? root.ambientParticles)
+                : DEFAULT_AMBIENT,
     };
+}
+
+/** Period index → rate multiplier for a named ambient channel (default 1). */
+export function ambientPeriodRate(
+    config: AmbientParticlesConfig,
+    period: number,
+    channel: string
+): number {
+    const name = DAY_PERIOD_NAMES[period];
+    if (!name) return 1;
+    return config.periodRates[name][channel] ?? 1;
 }

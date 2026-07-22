@@ -63,6 +63,15 @@ export function solidGroundModel(id: string): SolidGroundModelDef | undefined {
     return pack;
 }
 
+/** All pack solid models (for ambient emitter discovery). */
+export function allSolidGroundModels(): readonly SolidGroundModelDef[] {
+    const out: SolidGroundModelDef[] = [];
+    for (const pack of Object.values(packModels)) {
+        if (isSolidPackModel(pack)) out.push(pack);
+    }
+    return out;
+}
+
 export function isOceanGroundModel(id: string): boolean {
     const pack = packModels[id];
     return pack !== undefined && isOceanPackModel(pack);

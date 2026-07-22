@@ -7,6 +7,19 @@ trail:
     size: [2, 6]
     color_jitter: 0.16
     spacing: 16
+ambient:
+    dust:
+        interval_ms: [280, 700]
+        size: [2, 16]
+        # Paired with size — bigger = more faint.
+        alpha: [0.2, 0.035]
+        lifetime: [1400, 2800]
+        speed: [18, 55]
+        gravity_x: 6
+        friction: 0.25
+        tint: "#d2b87a"
+        alpha_fade_in: 0.12
+        alpha_hold: 0.5
 ---
 model: savannah
 overheat: true

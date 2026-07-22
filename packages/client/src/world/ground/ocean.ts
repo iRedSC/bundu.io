@@ -24,6 +24,7 @@ import {
     ORGANIC_EDGE_TEXTURE_MAX,
 } from "./organic_boundary";
 import { AnchoredDisplacementFilter } from "./anchored_displacement";
+import { ambientRate } from "./ambient_fx";
 import { oceanFx, oceanTint } from "./ocean_fx";
 import { oceanFoam, oceanSparkle } from "./particles/foam";
 import {
@@ -784,7 +785,12 @@ export function createOceanGround(
 
             if (ctx.now >= nextSparkleAt) {
                 const [lo, hi] = sparkleIntervalMs;
-                nextSparkleAt = ctx.now + lo + Math.random() * (hi - lo);
+                const rate = Math.max(
+                    0.05,
+                    ambientRate(ctx.dayPeriod, "water_sparkle")
+                );
+                nextSparkleAt =
+                    ctx.now + (lo + Math.random() * (hi - lo)) / rate;
                 const sx =
                     ctx.view.minX +
                     Math.random() * (ctx.view.maxX - ctx.view.minX);

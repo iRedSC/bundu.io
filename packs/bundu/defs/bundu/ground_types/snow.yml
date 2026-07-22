@@ -2,6 +2,19 @@ kind: solid
 color: "#dfe8ed"
 fill: forest_blobs
 footsteps: true
+ambient:
+    snow:
+        interval_ms: [220, 520]
+        size: [2, 14]
+        alpha: [0.22, 0.04]
+        lifetime: [1600, 3200]
+        speed: [20, 60]
+        gravity: 18
+        gravity_x: 4
+        friction: 0.15
+        tint: "#f4f8fb"
+        alpha_fade_in: 0.1
+        alpha_hold: 0.55
 ---
 model: snow
 whenOccupied:

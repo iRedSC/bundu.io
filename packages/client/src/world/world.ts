@@ -46,6 +46,7 @@ import {
 } from "@bundu/shared/ground_models";
 import type { ModelFootstepsDef } from "@bundu/shared/models/types";
 import { toSanitizedTexturePath } from "@bundu/shared/models/texture_paths";
+import { AmbientParticles } from "./ground/particles/ambient";
 import { softCircleTexture } from "./ground/particles/circle";
 import { landFootstep } from "./ground/particles/footsteps";
 import { landTrailBursts } from "./ground/particles/trail";
@@ -248,6 +249,7 @@ export class World {
     private readonly landFxTrailTravel = new Map<number, number>();
     private readonly landFxFootStep = new Map<number, number>();
     private readonly decorations: DecorationSprite[] = [];
+    private readonly ambientParticles = new AmbientParticles();
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
     /** True after local death — keep avatar, skip corpse for the game-over capture. */
@@ -1380,9 +1382,36 @@ export class World {
     private updateGroundVisuals(deltaMS: number, now: number): void {
         this.spawnLandMoveFx(now);
 
+        const bounds = this.viewport.getVisibleBounds();
+        const view = {
+            minX: bounds.x,
+            minY: bounds.y,
+            maxX: bounds.x + bounds.width,
+            maxY: bounds.y + bounds.height,
+        };
+        const dayPeriod = this.sky.currentCycle;
+        const solidModelAt = (worldX: number, worldY: number) => {
+            const tx = (worldX / TILE_SIZE) | 0;
+            const ty = (worldY / TILE_SIZE) | 0;
+            if (tx < 0 || ty < 0 || tx >= WORLD_TILES || ty >= WORLD_TILES) {
+                return undefined;
+            }
+            const type = this.topGroundTypes[ty * WORLD_TILES + tx]!;
+            if (type === 0 || this.oceanTypeIds.has(type)) return undefined;
+            return clientGroundType(type).model;
+        };
+        this.ambientParticles.update({
+            now,
+            dayPeriod,
+            view,
+            solidModelAt,
+            decorations: this.decorations,
+            objects: this.objects.all(),
+            emitParticles: (burst) => this.particles.burst(burst),
+        });
+
         if (this.oceanTypeIds.size === 0) return;
 
-        const bounds = this.viewport.getVisibleBounds();
         const oceanTiles = this.oceanTiles;
         const isOceanAt = (worldX: number, worldY: number) => {
             const tx = (worldX / TILE_SIZE) | 0;
@@ -1410,12 +1439,8 @@ export class World {
         const ctx = {
             deltaMS,
             now,
-            view: {
-                minX: bounds.x,
-                minY: bounds.y,
-                maxX: bounds.x + bounds.width,
-                maxY: bounds.y + bounds.height,
-            },
+            dayPeriod,
+            view,
             renderer: this.pixi,
             emitParticles: (burst: ParticleBurst) => this.particles.burst(burst),
             shore: this.shoreSamples,

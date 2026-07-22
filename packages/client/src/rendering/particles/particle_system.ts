@@ -26,6 +26,7 @@ type ActiveParticle = {
     endScale: number;
     sizeEndAt: number;
     startAlpha: number;
+    alphaFadeIn: number;
     alphaHold: number;
 };
 
@@ -55,6 +56,14 @@ export class ParticleSystem {
             const size = random(options.size);
             const scale = size / texSize;
             const startAlpha = options.alpha ?? 1;
+            const alphaFadeIn = Math.min(
+                1,
+                Math.max(0, options.alphaFadeIn ?? 0)
+            );
+            const alphaHold = Math.min(
+                1,
+                Math.max(alphaFadeIn, options.alphaHold ?? 0)
+            );
             const view = new Particle({
                 texture: options.texture,
                 x: options.x,
@@ -65,7 +74,7 @@ export class ParticleSystem {
                 scaleX: scale,
                 scaleY: scale,
                 tint: options.tint ?? 0xffffff,
-                alpha: startAlpha,
+                alpha: alphaFadeIn > 0 ? 0 : startAlpha,
             });
 
             container.addParticle(view);
@@ -92,7 +101,8 @@ export class ParticleSystem {
                 endScale: (options.endSize ?? 0) / texSize,
                 sizeEndAt: options.sizeEndAt ?? 1,
                 startAlpha,
-                alphaHold: Math.min(1, Math.max(0, options.alphaHold ?? 0)),
+                alphaFadeIn,
+                alphaHold,
             });
         }
     }
@@ -144,12 +154,17 @@ export class ParticleSystem {
             );
             particle.view.scaleX = scale;
             particle.view.scaleY = scale;
+            const fadeIn = particle.alphaFadeIn;
             const hold = particle.alphaHold;
-            const fade =
-                hold >= 1
-                    ? 0
-                    : Math.max(0, (progress - hold) / (1 - hold));
-            particle.view.alpha = particle.startAlpha * (1 - fade);
+            let alphaMult: number;
+            if (progress < fadeIn) {
+                alphaMult = fadeIn <= 0 ? 1 : progress / fadeIn;
+            } else if (progress <= hold || hold >= 1) {
+                alphaMult = 1;
+            } else {
+                alphaMult = Math.max(0, (1 - progress) / (1 - hold));
+            }
+            particle.view.alpha = particle.startAlpha * alphaMult;
         }
     }
 
