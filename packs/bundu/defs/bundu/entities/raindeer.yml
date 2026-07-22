@@ -4,19 +4,13 @@ parts:
     sprite: bundu/entity/animal/reindeer/reindeer.svg
     spriteScale: 3.335
 ---
+type: bundu:scared
 health: 175
 score: 500
-behavior: scared
-detectionRange: 300
-loseSightRange: 700
-passiveSpeed: 11
-activeSpeed: 14
-scale: 0.6
 corpse: raindeer_dead
 spawn_count: 4
 spawn:
     ground: [snow]
 movement:
     avoid:
-        ground: ["#bundu:water"]
         hard: true

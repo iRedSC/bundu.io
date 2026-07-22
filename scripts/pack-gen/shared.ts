@@ -25,6 +25,7 @@ export const DATA_ONLY_DIRS = [
     "recipes",
     "loot_tables",
     "tags",
+    "animal_types",
 ] as const;
 
 /** Default assets-relative model path for a paired registry stem. */

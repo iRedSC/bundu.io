@@ -15,6 +15,11 @@ export type AnimalAvoidGround = {
 };
 
 export type AnimalConfig = {
+    /**
+     * Bare animal-type path (`land`, `scared`, …) after load — same role as
+     * item `type`. Null when the entity omitted `type:`.
+     */
+    type: string | null;
     score: number;
     behavior: AnimalBehavior;
     health: number;
@@ -82,6 +87,7 @@ export type AnimalConfig = {
 };
 
 export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("entity_type", {
+    type: null,
     score: 0,
     behavior: "passive",
     health: 100,

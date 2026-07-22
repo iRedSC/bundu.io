@@ -8,10 +8,10 @@ animations:
   idle:
     data: { amplitude: 0.025 }
 ---
+type: bundu:land
 health: 250
 score: 500
 behavior: hostile
-detectionRange: 300
 loseSightRange: 450
 passiveSpeed: 10
 activeSpeed: 10
@@ -22,9 +22,6 @@ aggroSwitch: onHit
 aggroLevel: high
 corpse: queen_bee_dead
 spawn_count: 1
-spawn:
-    ground: ["#bundu:buildable_ground"]
 movement:
     avoid:
-        ground: ["#bundu:water"]
         strength: 4

@@ -71,6 +71,7 @@ Path → emit mapping:
 | `buildings/structures/X.yml` | `models/structures/X.yml` | `buildings/X.yml` |
 | `ground_types/X.yml` | `ground_models/X.yml` | `ground_types/X.yml` |
 | `item_types/X.yml` | `models/items/type/X.yml` | `item_types/X.yml` |
+| `animal_types/X.yml` | — | `animal_types/X.yml` |
 | `models/**` | `models/**` (display-only) | — |
 | `recipes/**`, `loot_tables/**`, `tags/**` | — | same path under `data/` |
 | `client/**` | copied into `assets/` | — |
@@ -128,6 +129,10 @@ Shared item templates live under `defs/<namespace>/item_types/<path>.yml`
 (generated to `data/.../item_types/` and optionally `assets/.../models/items/type/`).
 Items set `type: bundu:sword` (or bare `sword` in the same namespace) to merge those
 defaults. Visual abstracts use model ids like `item_type:bundu:sword`.
+
+Shared animal templates live under `defs/<namespace>/animal_types/<path>.yml`
+(data-only → `data/.../animal_types/`). Entities set `type: bundu:land` the same
+way; display inheritance stays on `extends: model:bundu:actors/animal`.
 
 Bare entry references resolve relative to the definition's namespace. Use an
 explicit ID to cross namespaces:

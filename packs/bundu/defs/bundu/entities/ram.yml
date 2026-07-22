@@ -4,10 +4,10 @@ parts:
     sprite: bundu/entity/animal/ram/ram.svg
     spriteScale: 1.875
 ---
+type: bundu:land
 health: 500
 score: 800
 behavior: neutral
-detectionRange: 300
 loseSightRange: 450
 passiveSpeed: 10
 activeSpeed: 13
@@ -17,9 +17,6 @@ aggroSwitch: onHit
 aggroLevel: medium
 corpse: ram_dead
 spawn_count: 4
-spawn:
-    ground: ["#bundu:buildable_ground"]
 movement:
     avoid:
-        ground: ["#bundu:water"]
         strength: 6

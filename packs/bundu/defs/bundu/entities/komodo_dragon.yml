@@ -7,10 +7,10 @@ animations:
   idle:
     data: { amplitude: 0.01 }
 ---
+type: bundu:land
 health: 800
 score: 2000
 behavior: hostile
-detectionRange: 300
 loseSightRange: 700
 passiveSpeed: 9
 activeSpeed: 11
@@ -24,5 +24,4 @@ spawn:
     ground: [island]
 movement:
     avoid:
-        ground: ["#bundu:water"]
         strength: 5

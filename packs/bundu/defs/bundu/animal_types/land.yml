@@ -1,0 +1,7 @@
+# Shared land fauna: buildable spawn + soft water avoid.
+detectionRange: 300
+spawn:
+    ground: ["#bundu:buildable_ground"]
+movement:
+    avoid:
+        ground: ["#bundu:water"]
