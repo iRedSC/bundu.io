@@ -1,6 +1,6 @@
 import {
-    AttributeList,
     Attributes,
+    isAttributeType,
     type AttributeType,
     type AttributesData,
 } from "../components/attributes.js";
@@ -17,8 +17,6 @@ import {
     matchingPayloads,
 } from "../configs/loaders/effect_context.js";
 import type { GameObject } from "../engine";
-
-const KNOWN = new Set<string>(AttributeList);
 
 /** Deterministic source id for a context contribution. */
 export function effectSourceId(
@@ -39,14 +37,14 @@ export function effectSourceId(
 export function applyAttributes(
     attributes: AttributesData,
     sourceId: string,
-    attrs: Record<string, EffectAttribute>
+    attrs: Partial<Record<AttributeType, EffectAttribute>> | Record<string, EffectAttribute>
 ): void {
     const next: Partial<
-        Record<AttributeType, { operation: "add" | "multiply"; value: number }>
+        Record<AttributeType, { operation: EffectAttribute["op"]; value: number }>
     > = {};
     for (const [type, attr] of Object.entries(attrs)) {
-        if (!KNOWN.has(type) || !attr) continue;
-        next[type as AttributeType] = { operation: attr.op, value: attr.value };
+        if (!attr || !isAttributeType(type)) continue;
+        next[type] = { operation: attr.op, value: attr.value };
     }
     attributes.replace(sourceId, next);
 }
@@ -131,11 +129,11 @@ export function applyMaxEffects(
     contextName: string,
     contributions: readonly EffectPayload[]
 ): string | undefined {
-    const merged: Record<string, EffectAttribute> = {};
+    const merged: Partial<Record<AttributeType, EffectAttribute>> = {};
     const flagSet = new Set<number>();
     for (const payload of contributions) {
         for (const [type, attr] of Object.entries(payload.attributes)) {
-            if (!attr) continue;
+            if (!attr || !isAttributeType(type)) continue;
             const prev = merged[type];
             if (!prev || attr.value > prev.value) {
                 merged[type] = attr;

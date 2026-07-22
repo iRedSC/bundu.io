@@ -12,7 +12,7 @@ export function bindPhysicsScale(
     scale = 1,
     baseRadius = physics.collisionRadius
 ) {
-    attributes.set("physics.scale", "base", "add", scale);
+    attributes.set("physics.scale", "base", "addBase", scale);
     const apply = (value: number) => {
         physics.collisionRadius = baseRadius * value;
         physics.collider.r = physics.collisionRadius;

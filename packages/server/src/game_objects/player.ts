@@ -34,7 +34,7 @@ export class Player extends GameObject {
             attributes.data.set(
                 attribute as AttributeType,
                 "base",
-                "add",
+                "addBase",
                 value
             );
         }

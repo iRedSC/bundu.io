@@ -1,6 +1,7 @@
 import type { StatType } from "../components/stats";
 import {
     AttributeList,
+    AttributeOperationList,
     type AttributeType,
 } from "../components/attributes";
 import type { EffectAttribute } from "./loaders/effect_context.js";
@@ -156,8 +157,6 @@ function attributes(
     return values;
 }
 
-const ATTR_OPS = new Set(["add", "multiply"]);
-
 function effectAttributes(
     value: unknown,
     path: string
@@ -174,14 +173,21 @@ function effectAttributes(
         }
         const op = (entry as { op?: unknown }).op;
         const num = (entry as { value?: unknown }).value;
-        if (typeof op !== "string" || !ATTR_OPS.has(op)) {
-            throw new Error(`${path}.${key}.op: expected add|multiply`);
+        if (
+            typeof op !== "string" ||
+            !AttributeOperationList.includes(
+                op as (typeof AttributeOperationList)[number]
+            )
+        ) {
+            throw new Error(
+                `${path}.${key}.op: expected ${AttributeOperationList.join("|")}`
+            );
         }
         if (typeof num !== "number" || !Number.isFinite(num)) {
             throw new Error(`${path}.${key}.value: expected number`);
         }
         result[key as AttributeType] = {
-            op: op as "add" | "multiply",
+            op: op as EffectAttribute["op"],
             value: num,
         };
     }

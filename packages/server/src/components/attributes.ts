@@ -1,7 +1,14 @@
 import { Component } from "../engine";
 
+/**
+ * Flat registry of attribute paths. Dot segments form a tree for inheritance:
+ * `attack.damage` contributes to `attack.damage.building`, etc.
+ * Nodes in {@link NON_INHERITING_ATTRIBUTES} resolve only their own modifiers.
+ */
 export const AttributeList = [
     "attack.damage",
+    "attack.damage.building",
+    "attack.damage.animal",
     "attack.speed",
     "attack.origin",
     "attack.reach",
@@ -40,9 +47,52 @@ export const AttributeList = [
     "air.cancel_regen_below",
     "air.cancel_regen_above",
 ] as const;
+
 export type AttributeType = (typeof AttributeList)[number];
 
-export type AttributeOperations = "add" | "multiply";
+export const AttributeOperationList = ["addBase", "add", "multiply"] as const;
+export type AttributeOperations = (typeof AttributeOperationList)[number];
+
+/** Damage channel suffix under `attack.damage` (pack / resolve). */
+export type AttackDamageChannel = "building" | "animal";
+
+const ATTRIBUTE_SET = new Set<string>(AttributeList);
+
+/** Children that do not fold parent modifiers into their resolved value. */
+const NON_INHERITING_ATTRIBUTES = new Set<AttributeType>([
+    "health.defense.blocking",
+]);
+
+export function isAttributeType(key: string): key is AttributeType {
+    return ATTRIBUTE_SET.has(key);
+}
+
+export function attributeInherits(type: AttributeType): boolean {
+    return !NON_INHERITING_ATTRIBUTES.has(type);
+}
+
+/**
+ * Ancestor paths (root → leaf) that contribute to `type`.
+ * Missing intermediate segments are skipped; non-inheriting leaves are self-only.
+ */
+export function attributeInheritChain(type: AttributeType): AttributeType[] {
+    if (!attributeInherits(type)) return [type];
+    const parts = type.split(".");
+    const chain: AttributeType[] = [];
+    for (let i = 1; i <= parts.length; i++) {
+        const path = parts.slice(0, i).join(".");
+        if (isAttributeType(path)) chain.push(path);
+    }
+    return chain.length > 0 ? chain : [type];
+}
+
+/** Registered descendants of `type` that inherit through it (for listeners). */
+export function attributeDescendants(type: AttributeType): AttributeType[] {
+    const prefix = `${type}.`;
+    return AttributeList.filter(
+        (path) => path.startsWith(prefix) && attributeInherits(path)
+    );
+}
 
 type AttributeCallback = (value: number) => void;
 
@@ -53,11 +103,19 @@ type AttributeModifier = {
     expires?: number;
 };
 
+export type AttributeModifierInput = {
+    operation: AttributeOperations;
+    value: number;
+};
+
 /**
  * Container for arbitrary attributes.
  *
  * Timed modifiers expire against `world.gameTime` (via {@link expire} / {@link now}),
  * not wall-clock `Date.now()`.
+ *
+ * Resolution: for each path in the inherit chain (ancestor → self), apply
+ * `(base + Σ addBase + Σ add) × Π multiply` with source ids sorted stably.
  */
 export class AttributesData {
     types: Partial<Record<AttributeType, Record<string, AttributeModifier>>>;
@@ -79,6 +137,13 @@ export class AttributesData {
         for (const callback of callbacks.values()) callback(value);
     }
 
+    private notifyTree(type: AttributeType): void {
+        this.notify(type);
+        for (const child of attributeDescendants(type)) {
+            this.notify(child);
+        }
+    }
+
     /**
      * Remove attribute modifiers.
      * @param id id to remove from all attributes
@@ -89,14 +154,14 @@ export class AttributesData {
             const modType = this.types[type];
             if (!modType || !(id in modType)) return;
             delete modType[id];
-            this.notify(type);
+            this.notifyTree(type);
             return;
         }
         for (const name of Object.keys(this.types) as AttributeType[]) {
             const record = this.types[name];
             if (!record || !(id in record)) continue;
             delete record[id];
-            this.notify(name);
+            this.notifyTree(name);
         }
     }
 
@@ -106,9 +171,7 @@ export class AttributesData {
      */
     replace(
         id: string,
-        attrs: Partial<
-            Record<AttributeType, { operation: "add" | "multiply"; value: number }>
-        >
+        attrs: Partial<Record<AttributeType, AttributeModifierInput>>
     ): void {
         const keep = new Set(Object.keys(attrs) as AttributeType[]);
         for (const name of Object.keys(this.types) as AttributeType[]) {
@@ -116,11 +179,11 @@ export class AttributesData {
             const record = this.types[name];
             if (!record || !(id in record)) continue;
             delete record[id];
-            this.notify(name);
+            this.notifyTree(name);
         }
         for (const [type, attr] of Object.entries(attrs) as [
             AttributeType,
-            { operation: "add" | "multiply"; value: number },
+            AttributeModifierInput,
         ][]) {
             this.set(type, id, attr.operation, attr.value);
         }
@@ -145,44 +208,69 @@ export class AttributesData {
                     changed = true;
                 }
             }
-            if (changed) this.notify(type);
+            if (changed) this.notifyTree(type);
         }
     }
 
-    /**
-     * Retrieve an attribute type calculated based on all of the modifiers.
-     * Expired modifiers (vs {@link now}) are skipped until {@link expire} removes them.
-     * @param type Attribute type to retrieve
-     * @param base optional base value to calculate from
-     * @returns calculated attribute based on all modifiers
-     */
-    get(type: AttributeType, base?: number): number {
-        base = base ?? 0;
+    private foldPath(type: AttributeType, base: number): number {
         const modType = this.types[type];
         if (modType === undefined) return base;
 
+        const addBase: number[] = [];
         const add: number[] = [];
         const multiply: number[] = [];
-        for (const modifier of Object.values(modType)) {
+        const sourceIds = Object.keys(modType).sort();
+        for (const sourceId of sourceIds) {
+            const modifier = modType[sourceId];
+            if (!modifier) continue;
             if (
                 modifier.expires !== undefined &&
                 modifier.expires <= this.now
             ) {
                 continue;
             }
-            if (modifier.operation === "add") {
+            if (modifier.operation === "addBase") {
+                addBase.push(modifier.value);
+            } else if (modifier.operation === "add") {
                 add.push(modifier.value);
-                continue;
+            } else {
+                multiply.push(modifier.value);
             }
-            multiply.push(modifier.value);
         }
-        for (const value of add) {
-            base += value;
+        let value = base;
+        for (const amount of addBase) value += amount;
+        for (const amount of add) value += amount;
+        for (const amount of multiply) value *= amount;
+        return value;
+    }
+
+    /**
+     * Retrieve an attribute type calculated based on all of the modifiers.
+     * Walks the inherit chain (ancestor → self) unless the leaf is non-inheriting.
+     * Expired modifiers (vs {@link now}) are skipped until {@link expire} removes them.
+     * @param type Attribute type to retrieve
+     * @param base optional base value to calculate from
+     * @returns calculated attribute based on all modifiers
+     */
+    get(type: AttributeType, base?: number): number {
+        let value = base ?? 0;
+        for (const path of attributeInheritChain(type)) {
+            value = this.foldPath(path, value);
         }
-        for (const value of multiply) {
-            base *= value;
+        return value;
+    }
+
+    /**
+     * Resolve `type`, optionally under a child channel
+     * (e.g. `resolve("attack.damage", "building")` → `attack.damage.building`).
+     */
+    resolve(type: AttributeType, channel?: string): number {
+        if (channel === undefined || channel === "") return this.get(type);
+        const path = `${type}.${channel}`;
+        if (!isAttributeType(path)) {
+            throw new Error(`Unknown attribute channel "${path}"`);
         }
-        return base;
+        return this.get(path);
     }
 
     /**
@@ -197,7 +285,7 @@ export class AttributesData {
     set(
         type: AttributeType,
         id: string,
-        operation: "add" | "multiply",
+        operation: AttributeOperations,
         value: number,
         duration?: number,
         now?: number
@@ -219,7 +307,7 @@ export class AttributesData {
         if (expires !== undefined) modifier.expires = expires;
         modifiers[id] = modifier;
 
-        this.notify(type);
+        this.notifyTree(type);
         return this;
     }
 

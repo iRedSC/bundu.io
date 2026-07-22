@@ -9,7 +9,9 @@ import { ServerPacket } from "@bundu/shared/packet_definitions";
 import { KITS } from "@bundu/shared/kits";
 import {
     AttributeList,
+    AttributeOperationList,
     Attributes,
+    type AttributeOperations,
     type AttributeType,
 } from "../components/attributes.js";
 import { Inventory } from "../components/inventory.js";
@@ -115,14 +117,14 @@ const COMMANDS: ServerCommand[] = [
         args: [
             arg("targets", "selector"),
             arg("type", "enum", { values: AttributeList }),
-            arg("operation", "enum", { values: ["add", "multiply"] }),
+            arg("operation", "enum", { values: AttributeOperationList }),
             arg("value", "float"),
             arg("duration", "float", { optional: true, min: 0 }),
         ],
         run(player, args, helpers) {
             const targets = targetsOf(player, args, helpers);
             const type = args.type as AttributeType;
-            const operation = args.operation as "add" | "multiply";
+            const operation = args.operation as AttributeOperations;
             const value = Number(args.value);
             const duration =
                 args.duration !== undefined ? Number(args.duration) : undefined;

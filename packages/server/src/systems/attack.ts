@@ -6,7 +6,12 @@ import {
     radians,
     type BasicPoint,
 } from "@bundu/shared";
+import {
+    Attributes,
+    type AttackDamageChannel,
+} from "../components/attributes.js";
 import { AnimalData, Door, Physics, Rotting, TileEntity } from "../components/base.js";
+import { PlayerData } from "../components/player.js";
 import { type GameObject, System, type World } from "../engine";
 import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
 import SAT from "sat";
@@ -17,6 +22,27 @@ import {
     nearestFootprintPoint,
 } from "./tile_entity_geometry.js";
 import { structureFootprintPadding } from "../configs/loaders/buildings.js";
+
+/** Target channel under `attack.damage` for typed combat resolve. */
+export function attackDamageChannel(
+    target: GameObject
+): AttackDamageChannel | undefined {
+    if (TileEntity.get(target)) return "building";
+    if (AnimalData.get(target)) return "animal";
+    return undefined;
+}
+
+function resolveAttackDamage(
+    source: GameObject,
+    target: GameObject,
+    fallback: number | undefined
+): number {
+    const attrs = Attributes.get(source);
+    if (attrs && PlayerData.get(source)) {
+        return attrs.resolve("attack.damage", attackDamageChannel(target));
+    }
+    return fallback ?? 0;
+}
 
 function pointToVec(point: BasicPoint) {
     return new SAT.Vector(point.x, point.y);
@@ -147,7 +173,7 @@ export class AttackSystem extends System<GameEventMap> {
             this.trigger(GameEvent.Hurt, {
                 object,
                 source,
-                damage,
+                damage: resolveAttackDamage(source, object, damage),
                 weapon,
                 hit,
             });
