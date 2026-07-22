@@ -3,10 +3,19 @@ defaultVariant: base
 variants:
   base:
     main: bundu/decoration/forest/pine_tree.svg
+  snow:
+    main: bundu/decoration/forest/pine_tree_snow.svg
 parts:
   main:
-    spriteScale: 1.6
     shadow: 2
+    spillover: 50
+
+tile:
+    footprint:
+        - "###"
+        - "#X#"
+        - "###"
+    spillover: 0
 ---
 score: 5
 exclusive: true
