@@ -61,5 +61,9 @@ GAME_WS_URL=wss://game.example.com docker compose build frontend
 | `bun run typecheck`      | `tsc --noEmit`                        |
 | `bun run lint`           | Biome lint (incl. package boundaries) |
 | `bun test`               | Unit tests                            |
+| `bun run docs:dev`       | VitePress docs site (local)           |
+| `bun run docs:build`     | Build docs → `docs/.vitepress/dist`   |
+
+Docs live under [`docs/`](./docs/) (gameplay + pack authoring). Ops notes are in `docs/ops/` and are not part of the site.
 
 This project uses [Bun](https://bun.com) v1.3.14.

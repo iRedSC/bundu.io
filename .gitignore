@@ -38,6 +38,10 @@ public/site
 public/site.tmp
 public/site.old
 
+# vitepress
+docs/.vitepress/dist
+docs/.vitepress/cache
+
 # freecam-saved world map (local); default-map.yml is tracked
 maps/*
 !maps/default-map.yml
