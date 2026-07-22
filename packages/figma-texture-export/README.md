@@ -33,4 +33,4 @@ bun run --cwd packages/figma-texture-export build
 3. In Figma desktop: **Plugins → Development → Import plugin from manifest…** → `packages/figma-texture-export/manifest.json`.
 4. Run **Bundu Texture Export**, set namespace (default `bundu`), **Preview**, then **Push**.
 
-The companion listens on `http://127.0.0.1:4177` and only accepts local requests.
+The companion binds to `127.0.0.1:4177` and only allows browser CORS from the Figma plugin sandbox (`Origin: null`).

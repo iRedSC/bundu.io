@@ -98,8 +98,8 @@ const UI = `
     try {
       const response = await fetch(origin + "/health");
       if (!response.ok) throw new Error("Companion returned " + response.status);
-      const body = await response.json();
-      setCompanion(true, "Companion ready" + (body.repoRoot ? " → " + body.repoRoot : ""));
+      await response.json();
+      setCompanion(true, "Companion ready on " + origin);
     } catch {
       setCompanion(false, "Companion offline. Run: bun run figma:textures");
     }

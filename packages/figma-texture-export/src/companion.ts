@@ -18,18 +18,26 @@ type PushBody = {
 
 const repoRoot = resolve(import.meta.dir, "../../..");
 
+/** Figma plugin UI runs in a sandboxed iframe (`Origin: null`). Reject any other browser origin. */
+const ALLOWED_BROWSER_ORIGINS = new Set(["null"]);
+
 const server = Bun.serve({
     port: COMPANION_PORT,
     hostname: "127.0.0.1",
     async fetch(request) {
-        const headers = corsHeaders(request);
+        const origin = request.headers.get("Origin");
+        if (origin !== null && !ALLOWED_BROWSER_ORIGINS.has(origin)) {
+            return Response.json({ error: "Origin not allowed." }, { status: 403 });
+        }
+
+        const headers = corsHeaders(origin);
         if (request.method === "OPTIONS") {
             return new Response(null, { status: 204, headers });
         }
 
         const url = new URL(request.url);
         if (request.method === "GET" && url.pathname === "/health") {
-            return Response.json({ ok: true, repoRoot }, { headers });
+            return Response.json({ ok: true }, { headers });
         }
 
         if (request.method === "POST" && url.pathname === "/push") {
@@ -50,14 +58,16 @@ const server = Bun.serve({
 console.log(`Bundu texture companion listening on http://127.0.0.1:${server.port}`);
 console.log(`Writing into ${repoRoot}/packs/<namespace>/defs/<namespace>/client/textures`);
 
-function corsHeaders(request: Request): HeadersInit {
-    const origin = request.headers.get("Origin") ?? "*";
-    return {
-        "Access-Control-Allow-Origin": origin,
+function corsHeaders(origin: string | null): HeadersInit {
+    const headers: Record<string, string> = {
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
         Vary: "Origin",
     };
+    if (origin !== null && ALLOWED_BROWSER_ORIGINS.has(origin)) {
+        headers["Access-Control-Allow-Origin"] = origin;
+    }
+    return headers;
 }
 
 async function pushFiles(body: PushBody): Promise<{ written: string[]; overwritten: string[] }> {
