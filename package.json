@@ -8,7 +8,9 @@
         "@msgpack/msgpack": "^3.1.3",
         "@types/bun": "^1.3.14",
         "@types/sat": "^0.0.35",
-        "sat": "^0.9.0"
+        "sat": "^0.9.0",
+        "vitepress": "^1.6.4",
+        "vue": "^3.5.40"
     },
     "peerDependencies": {
         "typescript": "~5.9.3"
@@ -17,6 +19,7 @@
         "dev": "bun run ./dev.ts",
         "server": "bun run pack:gen && bun run packages/server/src/index.ts",
         "build": "bun run pack:gen && bun run ./build.ts",
+        "build:frontend": "bun run pack:gen && bun run ./build.ts && bun run docs:build",
         "build:debug": "bun run pack:gen && BUNDU_DEBUG=1 bun run ./build.ts",
         "bundle:base-pack": "bun run pack:gen && bun ./scripts/bundle-base-pack.ts",
         "check-prod-debug": "bun run ./scripts/check-prod-debug.ts",
@@ -29,6 +32,9 @@
         "pack:gen:check": "bun run scripts/pack-gen/cli-generate.ts --check",
         "validate:packs": "bun run pack:gen && bun run scripts/validate-packs.ts",
         "test": "bun test",
-        "test:integration": "bun run pack:gen && bun run scripts/ci/websocket-smoke.ts"
+        "test:integration": "bun run pack:gen && bun run scripts/ci/websocket-smoke.ts",
+        "docs:dev": "vitepress dev docs",
+        "docs:build": "vitepress build docs",
+        "docs:preview": "vitepress preview docs"
     }
 }

@@ -1,0 +1,48 @@
+:root {
+	--vp-c-brand-1: #2f6b4f;
+	--vp-c-brand-2: #3d8a64;
+	--vp-c-brand-3: #256347;
+	--vp-c-brand-soft: rgba(47, 107, 79, 0.12);
+}
+
+.catalog {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+	gap: 0.85rem;
+	margin: 1.25rem 0 1.75rem;
+}
+
+.catalog-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.9rem 0.65rem 0.75rem;
+	text-align: center;
+	border: 1px solid var(--vp-c-divider);
+	border-radius: 10px;
+	background: var(--vp-c-bg-soft);
+}
+
+.catalog-card img {
+	width: 64px;
+	height: 64px;
+	object-fit: contain;
+	image-rendering: pixelated;
+}
+
+.catalog-card strong {
+	font-size: 0.92rem;
+	line-height: 1.2;
+}
+
+.catalog-card code {
+	font-size: 0.72rem;
+}
+
+.catalog-card p {
+	margin: 0;
+	font-size: 0.8rem;
+	line-height: 1.35;
+	color: var(--vp-c-text-2);
+}
