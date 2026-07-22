@@ -49,6 +49,12 @@ export type ResolvedDistanceClause = {
     range: DistanceRange;
 };
 
+export type ResolvedConnectedClause = {
+    key: "connected";
+    negate: boolean;
+    value: boolean;
+};
+
 /** Clauses that can be matched against a single subject (no limit/sort). */
 export type ResolvedMatchClause =
     | ResolvedTypeClause
@@ -57,7 +63,8 @@ export type ResolvedMatchClause =
     | ResolvedItemClause
     | ResolvedGroundClause
     | ResolvedTimeClause
-    | ResolvedDistanceClause;
+    | ResolvedDistanceClause
+    | ResolvedConnectedClause;
 
 function namespaceOf(ownerId: string): string {
     const sep = ownerId.indexOf(":");
@@ -163,6 +170,14 @@ export function resolveMatchClauses(
                 key: "distance",
                 negate: clause.negate,
                 range: clause.range,
+            });
+            continue;
+        }
+        if (clause.key === "connected") {
+            out.push({
+                key: "connected",
+                negate: clause.negate,
+                value: clause.value,
             });
         }
     }

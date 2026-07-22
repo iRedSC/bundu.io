@@ -242,6 +242,18 @@ export function subjectMatchesClauses(
         }
     }
 
+    const connected = clauses.filter((c) => c.key === "connected");
+    if (connected.length > 0) {
+        const world = ctx.world;
+        if (!world) return false;
+        const isConnected =
+            world.context.socketManager.getSocket(subject.id) !== undefined;
+        for (const c of connected) {
+            const hit = isConnected === c.value;
+            if (hit === c.negate) return false;
+        }
+    }
+
     return true;
 }
 
@@ -262,13 +274,6 @@ export function subjectMatchesBase(
     }
 }
 
-function connectedPlayers(world: World): GameObject[] {
-    const { socketManager } = world.context;
-    return world
-        .query([PlayerData])
-        .filter((player) => socketManager.getSocket(player.id) !== undefined);
-}
-
 function candidatesForBase(
     world: World,
     base: EntitySelector["base"],
@@ -280,9 +285,9 @@ function candidatesForBase(
         case "a":
         case "p":
         case "r":
-            // Soft-disconnected bodies linger in the world; commands should only
-            // target players who still have a socket (Minecraft-style "online").
-            return connectedPlayers(world);
+            // All player bodies (including soft-disconnected). Use
+            // `connected=true` to restrict to socket-connected players.
+            return world.query([PlayerData]);
         case "e":
             return world.query([Living]);
     }

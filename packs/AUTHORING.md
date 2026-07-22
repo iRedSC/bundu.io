@@ -80,8 +80,10 @@ Ops: `add` \| `multiply`. Targets: `"@s"` / `"@a[…]"` selectors, entity ids,
 
 Selector filters: `type=`, `flag=`, `name=`, `mainhand=` / `offhand=` / `helmet=` /
 `hasitem=` (item id or `#tag`), `ground=` (ground type id or `#tag`),
-`time=` (`morning`/`day`/`evening`/`night`), `distance=` (tiles: `N`, `N..`,
-`..N`, `N..M`). Example — aura on everyone else within 10 tiles:
+`time=` (`morning`/`day`/`evening`/`night`), `connected=` (`true`/`false`),
+`distance=` (tiles: `N`, `N..`, `..N`, `N..M`). `@a` matches all player bodies;
+use `@a[connected=true]` for online-only. Example — aura on everyone else within
+10 tiles:
 
 ```yaml
 whenMainHand:

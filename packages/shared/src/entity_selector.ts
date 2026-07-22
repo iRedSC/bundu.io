@@ -27,6 +27,7 @@ export type SelectorClause =
     | { key: "hasitem"; negate: boolean; value: string }
     | { key: "ground"; negate: boolean; value: string }
     | { key: "time"; negate: boolean; value: string }
+    | { key: "connected"; negate: boolean; value: boolean }
     | { key: "distance"; negate: boolean; range: DistanceRange }
     | { key: "limit"; value: number }
     | { key: "sort"; value: SelectorSort };
@@ -92,6 +93,7 @@ const CLAUSE_KEYS = [
     "hasitem",
     "ground",
     "time",
+    "connected",
     "distance",
     "limit",
     "sort",
@@ -108,10 +110,25 @@ const CLAUSE_HINTS: Record<ClauseKey, string> = {
     hasitem: "item id or #tag in inventory",
     ground: "ground type id or #tag",
     time: "morning|day|evening|night",
+    connected: "true|false (has socket)",
     distance: "tiles (N, N.., ..N, N..M)",
     limit: "max matches",
     sort: "nearest|furthest|random|arbitrary",
 };
+
+function parseBooleanValue(
+    raw: string,
+    path: string,
+    key: string
+): boolean | ParseErr {
+    const lower = raw.toLowerCase();
+    if (lower === "true") return true;
+    if (lower === "false") return false;
+    return {
+        ok: false,
+        message: `${path}: ${key} must be true|false`,
+    };
+}
 
 const ITEM_CLAUSE_KEYS = new Set<ClauseKey>([
     "mainhand",
@@ -236,6 +253,12 @@ function parseClause(raw: string, path: string): SelectorClause | ParseErr {
         return { key: "distance", negate, range: range.value };
     }
 
+    if (key === "connected") {
+        const bool = parseBooleanValue(value, path, "connected");
+        if (typeof bool !== "boolean") return bool;
+        return { key: "connected", negate, value: bool };
+    }
+
     if (key === "type") return { key: "type", negate, value };
     if (key === "flag") return { key: "flag", negate, value };
     if (key === "name") return { key: "name", negate, value };
@@ -255,6 +278,7 @@ function parseClauseList(
     let sawLimit = false;
     let sawSort = false;
     let sawDistance = false;
+    let sawConnected = false;
     for (const part of splitClauses(body)) {
         if (!part) {
             return { ok: false, message: `${path}: empty selector clause` };
@@ -279,6 +303,12 @@ function parseClauseList(
                 return { ok: false, message: `${path}: duplicate distance` };
             }
             sawDistance = true;
+        }
+        if (clause.key === "connected") {
+            if (sawConnected) {
+                return { ok: false, message: `${path}: duplicate connected` };
+            }
+            sawConnected = true;
         }
         clauses.push(clause);
     }
@@ -493,7 +523,10 @@ function suggestClauseKeys(
     const keys = CLAUSE_KEYS.filter((key) => {
         if (
             used.has(key) &&
-            (key === "limit" || key === "sort" || key === "distance")
+            (key === "limit" ||
+                key === "sort" ||
+                key === "distance" ||
+                key === "connected")
         ) {
             return false;
         }
@@ -559,6 +592,18 @@ function suggestClauseValues(
             insert: build(value, true),
             label: build(value, true),
             hint: "distance",
+        }));
+    }
+
+    if (key === "connected") {
+        const defaults = ["true", "false"];
+        const values = partialValue
+            ? defaults.filter((v) => v.startsWith(partialValue.toLowerCase()))
+            : defaults;
+        return values.map((value) => ({
+            insert: build(value, true),
+            label: build(value, true),
+            hint: "connected",
         }));
     }
 
