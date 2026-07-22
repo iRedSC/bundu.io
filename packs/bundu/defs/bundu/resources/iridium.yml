@@ -2,17 +2,17 @@ extends: model:bundu:single_tile_node
 defaultVariant: base
 variants:
     base:
-        main: bundu/resource/cobalt_ore.png
+        main: bundu/resource/iridium_ore.png
 
 parts:
     main:
         spillover: 50
 ---
-score: 30
+score: 40
 exclusive: true
 multipliers:
     pickaxe: 1
-level: 4
-regen_speed: 17
+level: 5
+regen_speed: 10
 quantity: 30
-loot_table: cobalt
+loot_table: iridium
