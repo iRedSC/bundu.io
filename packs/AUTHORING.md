@@ -419,8 +419,13 @@ placement:
 **Path:** `defs/<ns>/entities/<id>.yml`  
 **Model:** `entity_type:<ns>:<id>` (usually `extends: model:bundu:actors/animal`)
 
+Shared gameplay defaults live under **`animal_types/`** (same role as `item_types/`
+for items). Author `type: bundu:land` on the entity data half; nested
+`spawn` / `movement.avoid` fields coalesce per-key (entity overrides type).
+
 | Field | Default | Meaning |
 |---|---|---|
+| `type` | — | Animal-type template (`land`, `scared`, `aquatic`, …) |
 | `behavior` | `passive` | `hostile` \| `neutral` \| `passive` \| `scared` |
 | `health` | `100` | |
 | `score` | `0` | |
@@ -434,7 +439,51 @@ placement:
 | `aggroLevel` | `high` | `high` \| `medium` \| `low` |
 | `aggroAt` | `[]` | Structures/tags to attack without a player |
 | `corpse` | required | Resource id for the body |
-| `spawn_count` | `0` | Spawn budget |
+| `spawn_count` | `0` | Per-species worldgen budget (also needs `gameplay.worldgen.animals`) |
+| `spawn.ground` | `#bundu:buildable_ground` | Allowed ground types/tags (same resolve as `placement.ground`) |
+| `movement.avoid.ground` | `[]` | Ground types/tags to path around |
+| `movement.avoid.strength` | `8` | Soft A* step-cost addend (ignored when `hard`) |
+| `movement.avoid.hard` | `false` | Ban avoided tiles unless escaping |
+| `movement.allowEmergencyEscape` | `true` | Ignore avoid when stuck / no other path |
+
+Standing on avoided ground always bypasses avoid and seeks the nearest safe tile.
+
+### Animal types
+
+**Path:** `defs/<ns>/animal_types/<name>.yml` (data-only)
+
+| Type | Typical use |
+|---|---|
+| `land` | Buildable spawn + soft water avoid |
+| `scared` | Prey family (deer / raindeer speeds + avoid) |
+| `aquatic` | Water spawn + avoid buildable ground |
+
+```yaml
+# entities/deer.yml
+extends: model:bundu:actors/animal
+parts:
+  body:
+    sprite: bundu/entity/animal/deer/deer.svg
+    spriteScale: 2.5
+---
+type: bundu:scared
+health: 100
+score: 250
+corpse: deer_dead
+spawn_count: 8
+```
+
+```yaml
+# entities/raindeer.yml — override biome + hard avoid
+type: bundu:scared
+spawn:
+  ground: [snow]
+movement:
+  avoid:
+    hard: true   # keep type's avoid.ground
+```
+
+Display inheritance stays on the model half (`extends: model:bundu:actors/animal`).
 
 Player is a special entity def (`kind: player`) — not an `AnimalConfig`.
 
@@ -537,7 +586,7 @@ values:
 # replace: true   # default false = append across packs
 ```
 
-Used for `aggroAt`, `placement.ground`, editor filters, worldgen lists, etc.
+Used for `aggroAt`, `placement.ground`, `spawn.ground`, editor filters, worldgen lists, etc.
 Singular refs (e.g. `corpse`) reject tags.
 
 ---
@@ -575,11 +624,12 @@ Under `defs/<ns>/models/`:
 Beyond “items / resources / buildings”:
 
 1. **Item types** — templates separate from items  
-2. **Item ↔ structure split** for placeables (`places`)  
-3. **Doors, spikes, walls** as structure classes  
-4. **Floors & roofs** — supported, no bundu content yet  
-5. **Entities + corpses-as-resources**  
-6. **Decorations** and **ground types/models**  
+2. **Animal types** — templates separate from entities (`type: bundu:land`)  
+3. **Item ↔ structure split** for placeables (`places`)  
+4. **Doors, spikes, walls** as structure classes  
+5. **Floors & roofs** — supported, no bundu content yet  
+6. **Entities + corpses-as-resources**  
+7. **Decorations** and **ground types/models**  
 7. **Recipes & loot** as first-class ids (recipes ≠ item names)  
 8. **Tags**  
 9. **Two gameplay.yml files** (server vs client) + lang / stat bars  

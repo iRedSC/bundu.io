@@ -1,0 +1,7 @@
+# Water-bound fauna (alligators, etc.).
+detectionRange: 300
+spawn:
+    ground: ["#bundu:water"]
+movement:
+    avoid:
+        ground: ["#bundu:buildable_ground"]

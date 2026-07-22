@@ -445,28 +445,152 @@ export function loadConfigs() {
             return true;
         })
     );
+    // File-per-type under data/<ns>/animal_types/<path>.yml → keys `ns:path` and bare path.
+    const animalTypeRaws: Record<string, Record<string, unknown>> = {};
+    for (const [location, sourced] of packs.registryDefinitions(
+        "animal_types"
+    )) {
+        const value = asObject(sourced.value) ?? {};
+        animalTypeRaws[location] = value;
+        const bare = location.slice(location.indexOf(":") + 1);
+        animalTypeRaws[bare] = value;
+    }
+
     AnimalConfigs.parse(
         animalsOnly as Record<string, Partial<AnimalConfig>>,
         (id, record, fallback) => {
-            const raw = record as Partial<AnimalConfig> & {
+            type AnimalYaml = {
+                type?: string;
                 aggroAt?: string[];
                 corpse?: string;
+                spawn?: { ground?: string[] };
+                movement?: {
+                    avoid?: {
+                        ground?: string[];
+                        strength?: unknown;
+                        hard?: unknown;
+                    };
+                    allowEmergencyEscape?: unknown;
+                };
             };
-            record.aggroAt = registries.structure.resolveSet(
-                raw.aggroAt ?? [],
+
+            const entityRaw = record as Partial<AnimalConfig> & AnimalYaml;
+            const typeKey = entityRaw.type;
+            let typeRaw: AnimalYaml = {};
+            let bareType: string | null = null;
+            if (typeKey !== undefined && typeKey !== null) {
+                if (typeof typeKey !== "string" || !typeKey) {
+                    throw new Error(`${id}.type: expected a non-empty string`);
+                }
+                const namespaced = typeKey.includes(":")
+                    ? typeKey
+                    : `${namespace(id)}:${typeKey}`;
+                bareType = namespaced.slice(namespaced.indexOf(":") + 1);
+                const found =
+                    animalTypeRaws[namespaced] ?? animalTypeRaws[bareType];
+                if (!found) {
+                    throw new Error(
+                        `${id}.type: unknown animal type "${typeKey}"`
+                    );
+                }
+                typeRaw = found as AnimalYaml;
+            }
+
+            // Shallow-merge type → entity for scalars; nested spawn/movement below.
+            const merged = mergeObjects(
+                typeRaw as Partial<AnimalConfig>,
+                record,
+                fallback
+            );
+
+            const aggroAt = entityRaw.aggroAt ?? typeRaw.aggroAt ?? [];
+            merged.aggroAt = registries.structure.resolveSet(
+                aggroAt,
                 namespace(id),
                 `${id}.aggroAt`
             ) as RegistryId<"structure">[];
-            if (raw.corpse) {
-                record.corpse = resolve(
+
+            const corpseRef = entityRaw.corpse ?? typeRaw.corpse;
+            if (corpseRef) {
+                merged.corpse = resolve(
                     registries,
                     "resource",
-                    raw.corpse,
+                    corpseRef,
                     id,
                     `${id}.corpse`
                 );
             }
-            return mergeObjects(record, undefined, fallback);
+
+            const spawnGround =
+                entityRaw.spawn?.ground ??
+                typeRaw.spawn?.ground ??
+                ["#bundu:buildable_ground"];
+            merged.spawn = {
+                ground: registries.ground_type.resolveSet(
+                    spawnGround,
+                    namespace(id),
+                    `${id}.spawn.ground`
+                ),
+            };
+
+            const avoidGround =
+                entityRaw.movement?.avoid?.ground ??
+                typeRaw.movement?.avoid?.ground ??
+                [];
+            const strengthRaw =
+                entityRaw.movement?.avoid?.strength ??
+                typeRaw.movement?.avoid?.strength;
+            let strength = fallback.movement.avoid.strength;
+            if (strengthRaw !== undefined) {
+                if (
+                    typeof strengthRaw !== "number" ||
+                    !Number.isFinite(strengthRaw) ||
+                    strengthRaw < 0
+                ) {
+                    throw new Error(
+                        `${id}.movement.avoid.strength: expected a non-negative number`
+                    );
+                }
+                strength = strengthRaw;
+            }
+            const hardRaw =
+                entityRaw.movement?.avoid?.hard ??
+                typeRaw.movement?.avoid?.hard;
+            let hard = fallback.movement.avoid.hard;
+            if (hardRaw !== undefined) {
+                if (typeof hardRaw !== "boolean") {
+                    throw new Error(
+                        `${id}.movement.avoid.hard: expected boolean`
+                    );
+                }
+                hard = hardRaw;
+            }
+            const escapeRaw =
+                entityRaw.movement?.allowEmergencyEscape ??
+                typeRaw.movement?.allowEmergencyEscape;
+            let allowEmergencyEscape = fallback.movement.allowEmergencyEscape;
+            if (escapeRaw !== undefined) {
+                if (typeof escapeRaw !== "boolean") {
+                    throw new Error(
+                        `${id}.movement.allowEmergencyEscape: expected boolean`
+                    );
+                }
+                allowEmergencyEscape = escapeRaw;
+            }
+            merged.movement = {
+                avoid: {
+                    ground: registries.ground_type.resolveSet(
+                        avoidGround,
+                        namespace(id),
+                        `${id}.movement.avoid.ground`
+                    ),
+                    strength,
+                    hard,
+                },
+                allowEmergencyEscape,
+            };
+            merged.type = bareType;
+            return merged;
         }
     );
 

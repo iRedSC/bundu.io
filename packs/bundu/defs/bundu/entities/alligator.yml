@@ -7,10 +7,10 @@ animations:
   idle:
     data: { amplitude: 0.01 }
 ---
+type: bundu:aquatic
 health: 700
 score: 1500
 behavior: hostile
-detectionRange: 300
 loseSightRange: 450
 passiveSpeed: 8
 activeSpeed: 11
@@ -20,5 +20,8 @@ aggroSwitch: onHit
 aggroLevel: high
 corpse: alligator_dead
 spawn_count: 3
+movement:
+    avoid:
+        strength: 6
 aggroAt:
     - "#bundu:walls"

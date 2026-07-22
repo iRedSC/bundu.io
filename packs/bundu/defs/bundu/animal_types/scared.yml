@@ -1,0 +1,13 @@
+# Prey that flees on sight (deer family).
+behavior: scared
+detectionRange: 300
+loseSightRange: 700
+passiveSpeed: 11
+activeSpeed: 14
+scale: 0.6
+spawn:
+    ground: ["#bundu:buildable_ground"]
+movement:
+    avoid:
+        ground: ["#bundu:water"]
+        strength: 8

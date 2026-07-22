@@ -5,7 +5,21 @@ export type AnimalBehavior = "hostile" | "neutral" | "passive" | "scared";
 export type AggroSwitch = "never" | "onHit" | "random";
 export type AggroLevel = "high" | "medium" | "low";
 
+/** Soft A* penalty / hard ban for ground types during pathing. */
+export type AnimalAvoidGround = {
+    ground: readonly RegistryId<"ground_type">[];
+    /** Soft step-cost addend on avoided tiles. Ignored when `hard` is true. */
+    strength: number;
+    /** When true, avoided tiles are non-expandable unless escaping. */
+    hard: boolean;
+};
+
 export type AnimalConfig = {
+    /**
+     * Bare animal-type path (`land`, `scared`, …) after load — same role as
+     * item `type`. Null when the entity omitted `type:`.
+     */
+    type: string | null;
     score: number;
     behavior: AnimalBehavior;
     health: number;
@@ -51,10 +65,29 @@ export type AnimalConfig = {
      */
     aggroAt: RegistryId<"structure">[];
     corpse: RegistryId<"resource">;
+    /** Per-species worldgen budget (species must also be in gameplay.worldgen.animals). */
     spawn_count: number;
+    /**
+     * Ground types/tags this animal may spawn on (resolved to numeric ids).
+     * Defaults to `#bundu:buildable_ground` — same gate as structure placement.
+     */
+    spawn: {
+        ground: readonly RegistryId<"ground_type">[];
+    };
+    /**
+     * Pathing bias. Soft `strength` detours around avoided ground; `hard`
+     * forbids it. Standing on avoided ground always bypasses and seeks the
+     * nearest safe tile. `allowEmergencyEscape` (default true) also ignores
+     * avoid when stuck / no other path.
+     */
+    movement: {
+        avoid: AnimalAvoidGround;
+        allowEmergencyEscape: boolean;
+    };
 };
 
 export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("entity_type", {
+    type: null,
     score: 0,
     behavior: "passive",
     health: 100,
@@ -73,4 +106,15 @@ export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("enti
     aggroAt: [],
     corpse: 0 as RegistryId<"resource">,
     spawn_count: 0,
+    spawn: {
+        ground: [],
+    },
+    movement: {
+        avoid: {
+            ground: [],
+            strength: 8,
+            hard: false,
+        },
+        allowEmergencyEscape: true,
+    },
 });

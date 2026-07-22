@@ -5,10 +5,10 @@ parts:
     # Authored for scale 0.8 → net visual ≈ 200
     spriteScale: 2.5
 ---
+type: bundu:land
 health: 350
 score: 500
 behavior: hostile
-detectionRange: 300
 loseSightRange: 450
 passiveSpeed: 7
 activeSpeed: 11
@@ -19,5 +19,8 @@ aggroSwitch: onHit
 aggroLevel: medium
 corpse: bear_dead
 spawn_count: 4
+movement:
+    avoid:
+        strength: 6
 aggroAt:
     - "#bundu:walls"
