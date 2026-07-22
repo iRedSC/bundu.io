@@ -7,6 +7,7 @@ CI files cannot enforce repository-level controls. Configure these once in GitHu
 - Require a pull request before merging.
 - Require branches to be up to date before merging.
 - Require the `check`, `docker (frontend)`, `docker (server)`, `dependency-review`, and `codeql` status checks.
+- `check` and `docker` run in parallel; both remain required so merges still wait on tests and image smoke.
 - Block force pushes and branch deletion.
 - Restrict direct pushes to maintainers or, for the strongest protection, disallow them.
 

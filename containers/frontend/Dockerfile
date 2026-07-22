@@ -9,7 +9,12 @@ COPY packages/figma-plugin/package.json ./packages/figma-plugin/
 COPY packages/server/package.json ./packages/server/
 COPY packages/shared/package.json ./packages/shared/
 
-RUN bun install --frozen-lockfile
+# Only install workspaces needed to build the client (sanitize uses server).
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile --production \
+      --filter '@bundu/client' \
+      --filter '@bundu/server' \
+      --filter '@bundu/shared'
 
 FROM deps AS build
 ARG GAME_WS_URL=ws://localhost:7777
@@ -19,11 +24,15 @@ ENV BUNDU_DEBUG=0
 
 COPY tsconfig.json build.ts index.html static-server.ts ./
 COPY scripts ./scripts
-COPY packages ./packages
+COPY packages/shared ./packages/shared
+COPY packages/server ./packages/server
+COPY packages/client ./packages/client
 COPY packs ./packs
 COPY public ./public
 
-RUN bun run pack:gen && bun run ./build.ts
+# Reuse sanitized pack asset cache across builds when the BuildKit cache hits.
+RUN --mount=type=cache,target=/app/.cache \
+    bun run pack:gen && bun run ./build.ts
 
 FROM oven/bun:1.3.14-slim AS runtime
 WORKDIR /app
