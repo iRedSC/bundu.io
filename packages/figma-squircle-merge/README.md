@@ -4,9 +4,9 @@ Duplicates one selected frame, unions visible rectangles with matching appearanc
 
 ## Use in Figma
 
-1. Build the plugin with `bun run --cwd packages/figma-plugin build`.
+1. Build the plugin with `bun run --cwd packages/figma-squircle-merge build`.
 2. In the Figma desktop app, choose **Plugins → Development → Import plugin from manifest…**.
-3. Select `packages/figma-plugin/manifest.json`.
+3. Select `packages/figma-squircle-merge/manifest.json`.
 4. Select exactly one frame and run **Bundu Squircle Merge**.
 
 The defaults are a 25 px corner radius, object-size radius enabled, 60% square-to-circle roundness, and locked layers excluded. The plugin generates custom superellipse vector paths: 0% is square, 50% is a classic `n = 4` squircle, and 100% is circular.

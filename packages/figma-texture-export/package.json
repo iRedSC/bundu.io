@@ -1,0 +1,15 @@
+{
+  "name": "@bundu/figma-texture-export",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/code.ts --outdir dist --target browser",
+    "companion": "bun run src/companion.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.131.0",
+    "typescript": "~7.0.2"
+  }
+}

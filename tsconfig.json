@@ -37,5 +37,5 @@
         "strictNullChecks": true
     },
     "include": ["packages", "tests"],
-    "exclude": ["packages/figma-plugin"]
+    "exclude": ["packages/figma-squircle-merge", "packages/figma-texture-export"]
 }
