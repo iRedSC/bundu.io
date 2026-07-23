@@ -2,7 +2,7 @@
 extends: model:bundu:corpses/corpse
 parts:
   body:
-    sprite: bundu/entity/animal/scorpion_black/scorpion_black_dead.svg
+    sprite: bundu/entity/animal/scorpion/scorpion_black_dead.svg
     spriteScale: 1
 ---
 decay: 30

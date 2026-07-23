@@ -1,7 +1,7 @@
 extends: model:bundu:actors/animal
 parts:
   body:
-    sprite: bundu/entity/animal/scorpion_black/scorpion_black.svg
+    sprite: bundu/entity/animal/scorpion/scorpion_black.svg
     spriteScale: 1
 animations:
   idle:
