@@ -27,7 +27,7 @@ export const LAND_SEAM_PER_TICK = 1;
 /**
  * Live play / freecam-exit: only run a bake tick every N frames.
  * Kept high so LOD upgrades and ground edits drip in without hitching;
- * initial load bypasses this via `flushLandSeams`.
+ * initial load bypasses this via `flushLandSeams` (nearby only).
  */
 export const LAND_SEAM_TICK_INTERVAL = 18;
 
@@ -36,6 +36,16 @@ export const LAND_SEAM_TICK_INTERVAL = 18;
  * 32 × 64 texels/tile = 2048 px — at the texel cap.
  */
 const SEAM_CHUNK_TILES = 32;
+/**
+ * Bake / keep seam chunks this far past the viewport (tiles). Covers one
+ * chunk past the screen so pans rarely reveal hard AABB edges.
+ */
+export const LAND_SEAM_KEEP_TILES = SEAM_CHUNK_TILES;
+/**
+ * Unload resident chunks only past this pad (tiles). Larger than keep so
+ * camera jitter / short pans don't thrash bake ↔ destroy.
+ */
+export const LAND_SEAM_EVICT_TILES = SEAM_CHUNK_TILES * 2;
 /**
  * Zoom → seam texel density. Play zooms use the top bucket; freecam stays on
  * the cheap floor. Mid bucket is only for the freecam zoom-out ramp.
@@ -47,12 +57,21 @@ export type SeamLod = 0 | 1 | 2;
 export type LandSeamChunkBake = {
     /** Ground entity id. */
     id: number;
+    /** Stable id for apply / unload (`patch:x0,y0,x1,y1`). */
+    key: string;
     texture: Texture;
     /** World-pixel placement. */
     x: number;
     y: number;
     w: number;
     h: number;
+};
+
+export type LandSeamUnload = {
+    id: number;
+    key: string;
+    /** Destroy after the patch sprite is unbound. */
+    texture: Texture;
 };
 
 type SeamChunkJob = {
@@ -79,6 +98,7 @@ export function seamLodFromZoom(zoom: number, freecam = false): SeamLod {
 /**
  * Edge-band seam baker: opaque fill stays an inset sprite; only the
  * land↔land ring is baked in zoom-LOD chunks, visible ones first.
+ * Distant chunks stay queued / get unloaded — textures only for nearby.
  * Textured fills (sand/forest) shade here so color follows the organic edge.
  */
 export class LandSeamBaker {
@@ -91,6 +111,8 @@ export class LandSeamBaker {
         undefined;
     private inlandAt: (tileX: number, tileY: number) => number = () => 0;
     private readonly textures = new Map<string, Texture>();
+    /** Jobs currently resident as GPU textures (keyed like {@link textures}). */
+    private readonly resident = new Map<string, SeamChunkJob>();
     private total = 0;
     private done = 0;
     private lod: SeamLod = 2;
@@ -170,25 +192,78 @@ export class LandSeamBaker {
 
     /**
      * Bake up to `limit` chunks. When `view` is set, prefer chunks near the
-     * viewport (on-screen first, then closest).
+     * viewport and skip anything outside the keep ring (stream-in only).
      */
     tick(
         limit = LAND_SEAM_PER_TICK,
         view?: GroundViewBounds
     ): LandSeamChunkBake[] {
         const out: LandSeamChunkBake[] = [];
+        const keepPad = LAND_SEAM_KEEP_TILES * TILE_SIZE;
         while (limit > 0 && this.queue.length > 0) {
-            const index = view ? pickVisibleJob(this.queue, view) : 0;
+            const index = view
+                ? pickNearbyJob(this.queue, view, keepPad)
+                : 0;
+            if (index < 0) break;
             const [job] = this.queue.splice(index, 1);
             if (!job) break;
             const baked = this.bakeChunk(job);
             const key = chunkKey(job);
             this.textures.set(key, baked.texture);
+            this.resident.set(key, job);
             out.push(baked);
-            this.done++;
+            this.done = this.textures.size;
             limit--;
         }
         return out;
+    }
+
+    /**
+     * Drop resident chunks outside the evict ring and re-queue those jobs.
+     * Caller must unbind sprites, then destroy each returned texture.
+     */
+    unloadDistant(view: GroundViewBounds): LandSeamUnload[] {
+        const evictPad = LAND_SEAM_EVICT_TILES * TILE_SIZE;
+        const out: LandSeamUnload[] = [];
+        for (const [key, job] of [...this.resident]) {
+            if (jobIntersectsView(job, view, evictPad)) continue;
+            const texture = this.textures.get(key);
+            if (!texture) continue;
+            this.textures.delete(key);
+            this.resident.delete(key);
+            this.queue.push(job);
+            out.push({ id: job.patch.id, key, texture });
+        }
+        if (out.length > 0) this.done = this.textures.size;
+        return out;
+    }
+
+    /** Queued chunks that intersect the keep ring around `view`. */
+    nearbyPending(view: GroundViewBounds): number {
+        const keepPad = LAND_SEAM_KEEP_TILES * TILE_SIZE;
+        let n = 0;
+        for (const job of this.queue) {
+            if (jobIntersectsView(job, view, keepPad)) n++;
+        }
+        return n;
+    }
+
+    /**
+     * Nearby bake progress: resident-in-keep + pending-in-keep.
+     * Used by the join loading bar (world-wide pending stays high on purpose).
+     */
+    nearbyProgress(view: GroundViewBounds): {
+        done: number;
+        total: number;
+        pending: number;
+    } {
+        const keepPad = LAND_SEAM_KEEP_TILES * TILE_SIZE;
+        let done = 0;
+        for (const job of this.resident.values()) {
+            if (jobIntersectsView(job, view, keepPad)) done++;
+        }
+        const pending = this.nearbyPending(view);
+        return { done, total: done + pending, pending };
     }
 
     get pending(): number {
@@ -218,6 +293,7 @@ export class LandSeamBaker {
     private destroyTextures(): void {
         for (const tex of this.textures.values()) tex.destroy(true);
         this.textures.clear();
+        this.resident.clear();
     }
 
     private bakeChunk(job: SeamChunkJob): LandSeamChunkBake {
@@ -319,6 +395,7 @@ export class LandSeamBaker {
         });
         return {
             id: patch.id,
+            key: chunkKey(job),
             texture: new Texture({ source }),
             x: x0 * TILE_SIZE,
             y: y0 * TILE_SIZE,
@@ -383,23 +460,24 @@ function chunkRect(
     return out;
 }
 
-function pickVisibleJob(
+function pickNearbyJob(
     queue: readonly SeamChunkJob[],
-    view: GroundViewBounds
+    view: GroundViewBounds,
+    keepPadPx: number
 ): number {
-    const pad = LAND_SEAM_PAD_TILES * TILE_SIZE;
-    const minX = view.minX - pad;
-    const minY = view.minY - pad;
-    const maxX = view.maxX + pad;
-    const maxY = view.maxY + pad;
     const cx = (view.minX + view.maxX) * 0.5;
     const cy = (view.minY + view.maxY) * 0.5;
+    const visPad = LAND_SEAM_PAD_TILES * TILE_SIZE;
+    const minX = view.minX - visPad;
+    const minY = view.minY - visPad;
+    const maxX = view.maxX + visPad;
+    const maxY = view.maxY + visPad;
 
-    let best = 0;
+    let best = -1;
     let bestScore = Number.POSITIVE_INFINITY;
     for (let i = 0; i < queue.length; i++) {
         const job = queue[i];
-        if (!job) continue;
+        if (!job || !jobIntersectsView(job, view, keepPadPx)) continue;
         const jx0 = job.x0 * TILE_SIZE;
         const jy0 = job.y0 * TILE_SIZE;
         const jx1 = job.x1 * TILE_SIZE;
@@ -409,7 +487,7 @@ function pickVisibleJob(
         const mx = (jx0 + jx1) * 0.5;
         const my = (jy0 + jy1) * 0.5;
         const dist = (mx - cx) * (mx - cx) + (my - cy) * (my - cy);
-        // Visible chunks always beat off-screen; then nearest center.
+        // On-screen first, then nearest center within the keep ring.
         const score = visible ? dist : 1e15 + dist;
         if (score < bestScore) {
             bestScore = score;
@@ -417,6 +495,23 @@ function pickVisibleJob(
         }
     }
     return best;
+}
+
+function jobIntersectsView(
+    job: SeamChunkJob,
+    view: GroundViewBounds,
+    padPx: number
+): boolean {
+    const jx0 = job.x0 * TILE_SIZE;
+    const jy0 = job.y0 * TILE_SIZE;
+    const jx1 = job.x1 * TILE_SIZE;
+    const jy1 = job.y1 * TILE_SIZE;
+    return (
+        jx1 >= view.minX - padPx &&
+        jx0 <= view.maxX + padPx &&
+        jy1 >= view.minY - padPx &&
+        jy0 <= view.maxY + padPx
+    );
 }
 
 function writeLand(
@@ -587,15 +682,16 @@ export function facesLandLand(
 export function addLandSeamChunk(
     layer: Container,
     chunk: LandSeamChunkBake
-): void {
+): Sprite {
     const sprite = new Sprite(chunk.texture);
     sprite.position.set(chunk.x, chunk.y);
     sprite.width = chunk.w;
     sprite.height = chunk.h;
     layer.addChild(sprite);
+    return sprite;
 }
 
 /** Drop seam overlays (safe before texture destroy). */
 export function clearLandSeamLayer(layer: Container): void {
-    layer.removeChildren();
+    layer.removeChildren().forEach((child) => child.destroy());
 }

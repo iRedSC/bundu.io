@@ -284,9 +284,8 @@ async function waitForWorldReady(
     if (gen !== worldGateGeneration) return { ready: false, gen };
 
     while (gen === worldGateGeneration) {
-        if (world.landSeamProgress().pending === 0) break;
-        world.flushLandSeams(8);
-        // Progress after flush — pre-flush `done` left the bar lagging the bake.
+        if (world.flushLandSeams(8)) break;
+        // Progress after flush — nearby keep-ring only (distant streams later).
         const { done, total } = world.landSeamProgress();
         const frac = total > 0 ? done / total : 1;
         setLoadingProgress({

@@ -79,19 +79,33 @@ export function createSolidGround(
 
     const seamLayer = new Container();
     root.addChild(seamLayer);
+    const seamSprites = new Map<string, Sprite>();
 
     return {
         container: root,
         paintLandFill,
         applyLandSeam(chunk: LandSeamChunkBake) {
-            addLandSeamChunk(seamLayer, chunk);
+            const prev = seamSprites.get(chunk.key);
+            if (prev) {
+                prev.destroy();
+                seamSprites.delete(chunk.key);
+            }
+            seamSprites.set(chunk.key, addLandSeamChunk(seamLayer, chunk));
+        },
+        removeLandSeam(key: string) {
+            const sprite = seamSprites.get(key);
+            if (!sprite) return;
+            sprite.destroy();
+            seamSprites.delete(key);
         },
         clearLandSeam() {
+            seamSprites.clear();
             clearLandSeamLayer(seamLayer);
         },
         destroy() {
             owned?.destroy(true);
             owned = undefined;
+            seamSprites.clear();
             root.destroy({ children: true });
         },
     };
