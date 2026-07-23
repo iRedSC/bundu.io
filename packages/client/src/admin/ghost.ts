@@ -1,4 +1,4 @@
-import { type Container, Graphics, Point } from "pixi.js";
+import { type Container, Graphics, Point, Text, TextStyle } from "pixi.js";
 import { AdminPlaceKind } from "@bundu/shared/packet_definitions";
 import {
     FOOTPRINT_CIRCLE_RADIUS,
@@ -10,6 +10,7 @@ import {
 import { structureOriginAtPoint } from "@bundu/shared/structure_placement";
 import { radians } from "@bundu/shared/transforms";
 import { AnimationManagers } from "../animation/animations";
+import { UI_FONT } from "../assets/text";
 import {
     clientGroundType,
     clientStructurePlacement,
@@ -30,6 +31,16 @@ const GHOST_TINT = 0xffffff;
 const OVERLAY_Z = 250;
 const DELETE_OUTLINE = 0xff4444;
 const GROUND_GHOST_STROKE = 0xffffff;
+/** Base font size for the ground-rect WxH label (scaled to screen px). */
+const GROUND_SIZE_LABEL_FONT_PX = 40;
+/** Constant on-screen height of the WxH label across zoom. */
+const GROUND_SIZE_LABEL_SCREEN_PX = 14;
+const GROUND_SIZE_LABEL_STYLE = new TextStyle({
+    fontFamily: UI_FONT,
+    fill: "#ffffff",
+    fontSize: GROUND_SIZE_LABEL_FONT_PX,
+    stroke: { color: "#000000", width: 5 },
+});
 
 export type AdminGhostCursor = {
     tool: EditorTool;
@@ -53,11 +64,15 @@ export class AdminGhost {
     private decoration?: Container;
     private animal?: Animal;
     private ground?: Graphics;
+    private groundSizeLabel?: Text;
     private groundSize = { w: 1, h: 1 };
     private deleteOutline?: Graphics;
     private identity = "";
 
-    constructor(private readonly renderer: LayeredRenderer) {}
+    constructor(
+        private readonly renderer: LayeredRenderer,
+        private readonly getViewScale: () => number
+    ) {}
 
     update(cursor: AdminGhostCursor): void {
         if (cursor.tool === "look") {
@@ -100,6 +115,7 @@ export class AdminGhost {
             }
             if (this.ground) {
                 this.ground.position.set(rect.x * TILE_SIZE, rect.y * TILE_SIZE);
+                this.syncGroundSizeLabelScale();
             }
             return;
         }
@@ -262,10 +278,29 @@ export class AdminGhost {
             alpha: 0.9,
             pixelLine: true,
         });
+        const label = new Text({
+            text: `${tw} x ${th}`,
+            style: GROUND_SIZE_LABEL_STYLE,
+        });
+        label.anchor.set(0.5);
+        label.position.set(pw / 2, ph / 2);
+        label.eventMode = "none";
+        g.addChild(label);
         g.eventMode = "none";
         g.zIndex = OVERLAY_Z;
         this.ground = g;
+        this.groundSizeLabel = label;
+        this.syncGroundSizeLabelScale();
         this.renderer.add(ADMIN_GHOST_ID, g);
+    }
+
+    /** Keep the WxH readout a constant screen size while the world zooms. */
+    private syncGroundSizeLabelScale(): void {
+        if (!this.groundSizeLabel) return;
+        const vp = Math.abs(this.getViewScale()) || 1;
+        this.groundSizeLabel.scale.set(
+            GROUND_SIZE_LABEL_SCREEN_PX / (GROUND_SIZE_LABEL_FONT_PX * vp)
+        );
     }
 
     private clearStructure(): void {
@@ -292,6 +327,7 @@ export class AdminGhost {
         if (!this.ground) return;
         this.renderer.delete(ADMIN_GHOST_ID);
         this.ground = undefined;
+        this.groundSizeLabel = undefined;
         this.groundSize = { w: 1, h: 1 };
     }
 
