@@ -21,6 +21,7 @@ export {
     clearLandSeamLayer,
     seamLodFromZoom,
     type LandSeamChunkBake,
+    type LandSeamUnload,
     type SeamLod,
 } from "./land_seam";
 export {

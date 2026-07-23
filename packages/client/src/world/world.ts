@@ -1348,11 +1348,14 @@ export class World {
             inlandAt
         );
         this.landSeamFrame = 0;
+        // Warm the camera keep ring immediately; distant chunks stream later.
+        this.tickLandSeams(8);
     }
 
     /** Bake a few edge-band seam chunks each frame (visible first when live). */
     private tickLandSeams(limit?: number): void {
         const live = limit === undefined;
+        const view = this.camera.worldBounds();
         if (live) {
             const zoom = Math.hypot(
                 this.viewport.scale.x,
@@ -1363,15 +1366,22 @@ export class World {
             );
             this.landSeamFrame++;
             if (this.landSeamFrame % LAND_SEAM_TICK_INTERVAL !== 0) return;
-            limit = LAND_SEAM_PER_TICK;
+            // Catch up faster after big pans — keep ring should usually be warm.
+            const backlog = this.landSeamBaker.nearbyPending(view);
+            limit = backlog > 6 ? 3 : LAND_SEAM_PER_TICK;
         }
-        if (this.landSeamBaker.pending === 0) return;
-        const view = live ? this.camera.worldBounds() : undefined;
-        const baked = this.landSeamBaker.tick(limit, view);
-        if (baked.length === 0) return;
         const byId = new Map(
             this.groundPatches.map((patch) => [patch.id, patch])
         );
+        if (live) {
+            for (const unloaded of this.landSeamBaker.unloadDistant(view)) {
+                byId.get(unloaded.id)?.visual.removeLandSeam?.(unloaded.key);
+                unloaded.texture.destroy(true);
+            }
+        }
+        if (this.landSeamBaker.nearbyPending(view) === 0) return;
+        const baked = this.landSeamBaker.tick(limit, view);
+        if (baked.length === 0) return;
         for (const chunk of baked) {
             byId.get(chunk.id)?.visual.applyLandSeam?.(chunk);
         }
@@ -1389,16 +1399,20 @@ export class World {
 
     /** Swap seam LOD; clears applied overlays when the baker rebuilds. */
     private applyLandSeamLod(lod: SeamLod): void {
-        if (!this.landSeamBaker.setLod(lod)) return;
+        if (lod === this.landSeamBaker.getLod()) return;
+        // Unbind before setLod destroys textures.
         for (const patch of this.groundPatches) {
             patch.visual.clearLandSeam?.();
         }
+        this.landSeamBaker.setLod(lod);
     }
 
-    /** Land-seam bake progress after the latest ground rebuild. */
+    /**
+     * Nearby seam bake progress (join bar). Distant chunks stay queued and
+     * are not part of this total.
+     */
     landSeamProgress(): { done: number; total: number; pending: number } {
-        const { done, total } = this.landSeamBaker.progress;
-        return { done, total, pending: this.landSeamBaker.pending };
+        return this.landSeamBaker.nearbyProgress(this.camera.worldBounds());
     }
 
     /** True once the server has sent at least one ground sync this session. */
@@ -1407,11 +1421,14 @@ export class World {
     }
 
     /**
-     * Bake several seam patches now (loading screen). Returns true when idle.
+     * Bake several nearby seam chunks now (loading screen).
+     * Returns true when the keep ring around the camera is fully baked.
      */
     flushLandSeams(limit = 6): boolean {
         this.tickLandSeams(limit);
-        return this.landSeamBaker.pending === 0;
+        return (
+            this.landSeamBaker.nearbyPending(this.camera.worldBounds()) === 0
+        );
     }
 
     private updateGroundVisuals(deltaMS: number, now: number): void {

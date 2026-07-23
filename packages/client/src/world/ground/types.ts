@@ -74,6 +74,8 @@ export type GroundVisual = {
     paintLandFill?(inlandAt: (tileX: number, tileY: number) => number): void;
     /** Append one edge-band seam chunk (solid land only). */
     applyLandSeam?(chunk: LandSeamChunkBake): void;
+    /** Drop one streamed seam chunk before its texture is destroyed. */
+    removeLandSeam?(key: string): void;
     /** Drop seam overlays before textures are destroyed. */
     clearLandSeam?(): void;
     /** Free GPU resources when the patch is unloaded. */
