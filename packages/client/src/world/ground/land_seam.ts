@@ -25,42 +25,48 @@ export const LAND_SEAM_FILL_INSET_TILES = LAND_SEAM_PAD_TILES + 1;
 /** Land chunks to bake per sync flush step (loading screen). */
 export const LAND_SEAM_PER_TICK = 1;
 /**
- * Soft cap on CPU ms spent baking seams in one idle slice. Keeps work in the
- * gaps between frames instead of hitching the Pixi ticker.
+ * Soft cap on CPU ms for one idle bake slice. Live path always bakes at most
+ * one chunk, so this mainly gates whether we start at all.
  */
-export const LAND_SEAM_IDLE_BUDGET_MS = 3;
+export const LAND_SEAM_IDLE_BUDGET_MS = 2;
+/** Need at least this much idle headroom before starting a chunk bake. */
+export const LAND_SEAM_IDLE_MIN_REMAIN_MS = 3;
 /**
- * When the idle deadline reports ~0 remaining (timeout path), still allow a
- * tiny bake so the queue never starves under sustained load.
+ * Minimum gap between live bake attempts. Slows generation so seams drip in
+ * well behind gameplay instead of competing every idle callback.
  */
-export const LAND_SEAM_IDLE_FALLBACK_MS = 1.5;
-/** Max wait before forcing an idle bake under a busy main thread. */
-export const LAND_SEAM_IDLE_TIMEOUT_MS = 50;
+export const LAND_SEAM_IDLE_GAP_MS = 64;
 
 export type LandSeamIdleHandle = {
     kind: "ric" | "timeout";
     id: number;
 };
 
-/** Run `fn` between frames; `budgetMs` is how long it may bake this slice. */
+/**
+ * Schedule a between-frame bake. Passes `0` when the thread lacks headroom so
+ * the caller can wait — never forces work via idle `timeout`.
+ */
 export function scheduleLandSeamIdle(
     fn: (budgetMs: number) => void
 ): LandSeamIdleHandle {
     if (typeof requestIdleCallback === "function") {
-        const id = requestIdleCallback(
-            (deadline) => {
-                const remain = deadline.timeRemaining();
-                const raw =
-                    remain > 0.5 ? remain : LAND_SEAM_IDLE_FALLBACK_MS;
-                fn(Math.min(raw, LAND_SEAM_IDLE_BUDGET_MS));
-            },
-            { timeout: LAND_SEAM_IDLE_TIMEOUT_MS }
-        );
+        const id = requestIdleCallback((deadline) => {
+            if (
+                deadline.didTimeout ||
+                deadline.timeRemaining() < LAND_SEAM_IDLE_MIN_REMAIN_MS
+            ) {
+                fn(0);
+                return;
+            }
+            fn(
+                Math.min(deadline.timeRemaining(), LAND_SEAM_IDLE_BUDGET_MS)
+            );
+        });
         return { kind: "ric", id };
     }
     const id = window.setTimeout(
         () => fn(LAND_SEAM_IDLE_BUDGET_MS),
-        0
+        LAND_SEAM_IDLE_GAP_MS
     );
     return { kind: "timeout", id };
 }
@@ -74,20 +80,25 @@ export function cancelLandSeamIdle(
 }
 
 /**
- * Max tile edge of one seam chunk. Keeps crisp subdiv cheap:
- * 32 × 64 texels/tile = 2048 px — at the texel cap.
+ * Max tile edge of one seam chunk. 16 keeps a single idle bake cheap
+ * (vs 32) so one job rarely blows a frame even at crisp LOD.
  */
-const SEAM_CHUNK_TILES = 32;
+const SEAM_CHUNK_TILES = 16;
 /**
- * Bake / keep seam chunks this far past the viewport (tiles). Covers one
- * chunk past the screen so pans rarely reveal hard AABB edges.
+ * Join flush / loading bar: only this much past the view must be ready
+ * before play. Outer ring streams in idle afterward.
  */
-export const LAND_SEAM_KEEP_TILES = SEAM_CHUNK_TILES;
+export const LAND_SEAM_READY_TILES = 20;
+/**
+ * Idle prefetch ring (tiles past the view). Far enough that pans usually
+ * arrive on already-baked seams.
+ */
+export const LAND_SEAM_KEEP_TILES = 96;
 /**
  * Unload resident chunks only past this pad (tiles). Larger than keep so
  * camera jitter / short pans don't thrash bake ↔ destroy.
  */
-export const LAND_SEAM_EVICT_TILES = SEAM_CHUNK_TILES * 2;
+export const LAND_SEAM_EVICT_TILES = 144;
 /**
  * Zoom → seam texel density. Play zooms use the top bucket; freecam stays on
  * the cheap floor. Mid bucket is only for the freecam zoom-out ramp.
@@ -238,10 +249,11 @@ export class LandSeamBaker {
      */
     tick(
         limit = LAND_SEAM_PER_TICK,
-        view?: GroundViewBounds
+        view?: GroundViewBounds,
+        padTiles: number = LAND_SEAM_KEEP_TILES
     ): LandSeamChunkBake[] {
         const out: LandSeamChunkBake[] = [];
-        const keepPad = LAND_SEAM_KEEP_TILES * TILE_SIZE;
+        const keepPad = padTiles * TILE_SIZE;
         while (limit > 0 && this.queue.length > 0) {
             const index = view
                 ? pickNearbyJob(this.queue, view, keepPad)
@@ -280,31 +292,37 @@ export class LandSeamBaker {
         return out;
     }
 
-    /** Queued chunks that intersect the keep ring around `view`. */
-    nearbyPending(view: GroundViewBounds): number {
-        const keepPad = LAND_SEAM_KEEP_TILES * TILE_SIZE;
+    /** Queued chunks that intersect a pad ring around `view`. */
+    nearbyPending(
+        view: GroundViewBounds,
+        padTiles: number = LAND_SEAM_KEEP_TILES
+    ): number {
+        const pad = padTiles * TILE_SIZE;
         let n = 0;
         for (const job of this.queue) {
-            if (jobIntersectsView(job, view, keepPad)) n++;
+            if (jobIntersectsView(job, view, pad)) n++;
         }
         return n;
     }
 
     /**
-     * Nearby bake progress: resident-in-keep + pending-in-keep.
-     * Used by the join loading bar (world-wide pending stays high on purpose).
+     * Ring bake progress: resident-in-pad + pending-in-pad.
+     * Join loading uses {@link LAND_SEAM_READY_TILES}; idle uses keep.
      */
-    nearbyProgress(view: GroundViewBounds): {
+    nearbyProgress(
+        view: GroundViewBounds,
+        padTiles: number = LAND_SEAM_READY_TILES
+    ): {
         done: number;
         total: number;
         pending: number;
     } {
-        const keepPad = LAND_SEAM_KEEP_TILES * TILE_SIZE;
+        const pad = padTiles * TILE_SIZE;
         let done = 0;
         for (const job of this.resident.values()) {
-            if (jobIntersectsView(job, view, keepPad)) done++;
+            if (jobIntersectsView(job, view, pad)) done++;
         }
-        const pending = this.nearbyPending(view);
+        const pending = this.nearbyPending(view, padTiles);
         return { done, total: done + pending, pending };
     }
 

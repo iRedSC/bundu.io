@@ -29,6 +29,9 @@ import {
     isOceanGroundModel,
     LandDistanceField,
     LandSeamBaker,
+    LAND_SEAM_IDLE_GAP_MS,
+    LAND_SEAM_KEEP_TILES,
+    LAND_SEAM_READY_TILES,
     cancelLandSeamIdle,
     scheduleLandSeamIdle,
     NearshoreFill,
@@ -1350,12 +1353,15 @@ export class World {
             fillOfType,
             inlandAt
         );
-        // Live bake runs between frames; join still flushes nearby sync.
+        // Live bake runs between frames; join still flushes the ready ring sync.
         this.cancelLandSeamIdleWork();
         this.scheduleLandSeamIdleWork();
     }
 
-    /** LOD + unload on the ticker; bake only in idle slices. */
+    /**
+     * Live: LOD only on the ticker — bake + unload happen in paced idle slices.
+     * Flush (loading): sync-bake the small ready ring.
+     */
     private tickLandSeams(limit?: number): void {
         const view = this.camera.worldBounds();
         if (limit === undefined) {
@@ -1366,14 +1372,14 @@ export class World {
             this.applyLandSeamLod(
                 seamLodFromZoom(zoom, this.camera.isFreecam())
             );
-            this.applyLandSeamUnloads(view);
-            if (this.landSeamBaker.nearbyPending(view) > 0) {
+            if (
+                this.landSeamBaker.nearbyPending(view, LAND_SEAM_KEEP_TILES) > 0
+            ) {
                 this.scheduleLandSeamIdleWork();
             }
             return;
         }
-        this.applyLandSeamUnloads(view);
-        this.bakeLandSeamChunks(limit, view);
+        this.bakeLandSeamChunks(limit, view, LAND_SEAM_READY_TILES);
     }
 
     private cancelLandSeamIdleWork(): void {
@@ -1381,25 +1387,41 @@ export class World {
         this.landSeamIdle = null;
     }
 
-    private scheduleLandSeamIdleWork(): void {
+    /** @param gapMs wait before asking for idle time (paces live generation). */
+    private scheduleLandSeamIdleWork(gapMs = 0): void {
         if (this.landSeamIdle) return;
+        if (gapMs > 0) {
+            const id = window.setTimeout(() => {
+                this.landSeamIdle = null;
+                this.scheduleLandSeamIdleWork(0);
+            }, gapMs);
+            this.landSeamIdle = { kind: "timeout", id };
+            return;
+        }
         this.landSeamIdle = scheduleLandSeamIdle((budgetMs) => {
             this.landSeamIdle = null;
             this.bakeLandSeamsIdle(budgetMs);
         });
     }
 
-    /** Time-sliced bake between frames — stop when the budget is spent. */
+    /**
+     * At most one chunk per true-idle slice. Busy / starved callbacks skip and
+     * retry after {@link LAND_SEAM_IDLE_GAP_MS}.
+     */
     private bakeLandSeamsIdle(budgetMs: number): void {
         const view = this.camera.worldBounds();
-        this.applyLandSeamUnloads(view);
-        const started = performance.now();
-        while (performance.now() - started < budgetMs) {
-            if (this.landSeamBaker.nearbyPending(view) === 0) return;
-            if (this.bakeLandSeamChunks(1, view) === 0) return;
+        if (budgetMs <= 0) {
+            if (
+                this.landSeamBaker.nearbyPending(view, LAND_SEAM_KEEP_TILES) > 0
+            ) {
+                this.scheduleLandSeamIdleWork(LAND_SEAM_IDLE_GAP_MS);
+            }
+            return;
         }
-        if (this.landSeamBaker.nearbyPending(view) > 0) {
-            this.scheduleLandSeamIdleWork();
+        this.applyLandSeamUnloads(view);
+        this.bakeLandSeamChunks(1, view, LAND_SEAM_KEEP_TILES);
+        if (this.landSeamBaker.nearbyPending(view, LAND_SEAM_KEEP_TILES) > 0) {
+            this.scheduleLandSeamIdleWork(LAND_SEAM_IDLE_GAP_MS);
         }
     }
 
@@ -1413,10 +1435,14 @@ export class World {
         }
     }
 
-    /** Bake up to `limit` nearby chunks and attach sprites. Returns baked count. */
-    private bakeLandSeamChunks(limit: number, view: GroundViewBounds): number {
-        if (this.landSeamBaker.nearbyPending(view) === 0) return 0;
-        const baked = this.landSeamBaker.tick(limit, view);
+    /** Bake up to `limit` chunks inside `padTiles` of the view. */
+    private bakeLandSeamChunks(
+        limit: number,
+        view: GroundViewBounds,
+        padTiles: number
+    ): number {
+        if (this.landSeamBaker.nearbyPending(view, padTiles) === 0) return 0;
+        const baked = this.landSeamBaker.tick(limit, view, padTiles);
         if (baked.length === 0) return 0;
         const byId = new Map(
             this.groundPatches.map((patch) => [patch.id, patch])
@@ -1450,11 +1476,13 @@ export class World {
     }
 
     /**
-     * Nearby seam bake progress (join bar). Distant chunks stay queued and
-     * are not part of this total.
+     * Ready-ring bake progress (join bar). Prefetch keep ring streams later.
      */
     landSeamProgress(): { done: number; total: number; pending: number } {
-        return this.landSeamBaker.nearbyProgress(this.camera.worldBounds());
+        return this.landSeamBaker.nearbyProgress(
+            this.camera.worldBounds(),
+            LAND_SEAM_READY_TILES
+        );
     }
 
     /** True once the server has sent at least one ground sync this session. */
@@ -1463,13 +1491,16 @@ export class World {
     }
 
     /**
-     * Bake several nearby seam chunks now (loading screen).
-     * Returns true when the keep ring around the camera is fully baked.
+     * Bake several ready-ring seam chunks now (loading screen).
+     * Returns true when the ready ring around the camera is fully baked.
      */
     flushLandSeams(limit = 6): boolean {
         this.tickLandSeams(limit);
         return (
-            this.landSeamBaker.nearbyPending(this.camera.worldBounds()) === 0
+            this.landSeamBaker.nearbyPending(
+                this.camera.worldBounds(),
+                LAND_SEAM_READY_TILES
+            ) === 0
         );
     }
 
