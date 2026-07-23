@@ -26,12 +26,17 @@ import {
 import { AnchoredDisplacementFilter } from "./anchored_displacement";
 import { ambientRate } from "./ambient_fx";
 import { oceanFx, oceanTint } from "./ocean_fx";
-import { oceanSparkle, oceanWaveWash } from "./particles/foam";
+import {
+    oceanSparkle,
+    oceanWaveWash,
+    type WaveSplashSpawn,
+} from "./particles/foam";
 import {
     createDropletDisplacementTexture,
     createSplashRefractionFilter,
 } from "./splash_refraction";
 import { sizeEnvelope } from "../../rendering/particles/size_envelope";
+import { surgeAlong } from "../../rendering/particles/surge";
 import type {
     GroundUpdateContext,
     GroundVisual,
@@ -294,6 +299,14 @@ export function createOceanGround(
         startSize: number;
         peakSize: number | undefined;
         rotation: number;
+        /** Surge wash (shore wave band). Omit for ballistic mover splashes. */
+        originX?: number;
+        originY?: number;
+        dirX?: number;
+        dirY?: number;
+        surgeDistance?: number;
+        surgeApexAt?: number;
+        blockedAt?: (x: number, y: number) => boolean;
     };
     const splashes: Splash[] = [];
     const splashSprites: Sprite[] = [];
@@ -378,6 +391,36 @@ export function createOceanGround(
                 rotation: Math.random() * Math.PI * 2,
             });
         }
+    };
+
+    /** Shore-wave rear band: droplet refraction that surges with the foam. */
+    const addSplashWash = (
+        spawn: WaveSplashSpawn,
+        now: number,
+        blockedAt?: (x: number, y: number) => boolean
+    ) => {
+        if (splashes.length >= oceanFx.splash.max) return;
+        const dirX = Math.cos(spawn.direction);
+        const dirY = Math.sin(spawn.direction);
+        splashes.push({
+            x: spawn.x,
+            y: spawn.y,
+            born: now,
+            updatedAt: now,
+            velocityX: 0,
+            velocityY: 0,
+            lifetime: spawn.lifetime,
+            startSize: spawn.startSize,
+            peakSize: spawn.startSize * 1.12,
+            rotation: Math.random() * Math.PI * 2,
+            originX: spawn.x,
+            originY: spawn.y,
+            dirX,
+            dirY,
+            surgeDistance: spawn.surgeDistance,
+            surgeApexAt: spawn.apexAt,
+            blockedAt,
+        });
     };
 
     const splashSprite = (i: number): Sprite => {
@@ -524,11 +567,44 @@ export function createOceanGround(
             if (!entry) continue;
             const deltaSeconds = Math.max(0, now - entry.updatedAt) / 1000;
             entry.updatedAt = now;
-            const friction = Math.exp(-splash.friction * deltaSeconds);
-            entry.velocityX *= friction;
-            entry.velocityY *= friction;
-            entry.x += entry.velocityX * deltaSeconds;
-            entry.y += entry.velocityY * deltaSeconds;
+
+            if (entry.surgeDistance !== undefined) {
+                const progress = (now - entry.born) / entry.lifetime;
+                const apexAt = entry.surgeApexAt ?? 0.45;
+                const along = surgeAlong(progress, apexAt);
+                const originX = entry.originX ?? entry.x;
+                const originY = entry.originY ?? entry.y;
+                const dirX = entry.dirX ?? 0;
+                const dirY = entry.dirY ?? 0;
+                entry.x = originX + dirX * entry.surgeDistance * along;
+                entry.y = originY + dirY * entry.surgeDistance * along;
+
+                if (
+                    progress > 0.06 &&
+                    progress < apexAt &&
+                    entry.blockedAt?.(entry.x, entry.y)
+                ) {
+                    const lifeSec = Math.max(0.05, (apexAt * entry.lifetime) / 1000);
+                    const kick =
+                        (entry.surgeDistance / lifeSec) *
+                        (1.15 + Math.random() * 0.55);
+                    const lateral = (Math.random() - 0.5) * kick * 0.45;
+                    entry.velocityX = -dirX * kick - dirY * lateral;
+                    entry.velocityY = -dirY * kick + dirX * lateral;
+                    entry.surgeDistance = undefined;
+                    entry.blockedAt = undefined;
+                    entry.born = now;
+                    entry.lifetime = 260 + Math.random() * 240;
+                    entry.peakSize = undefined;
+                }
+            } else {
+                const friction = Math.exp(-splash.friction * deltaSeconds);
+                entry.velocityX *= friction;
+                entry.velocityY *= friction;
+                entry.x += entry.velocityX * deltaSeconds;
+                entry.y += entry.velocityY * deltaSeconds;
+            }
+
             const t = (now - entry.born) / entry.lifetime;
             const sprite = splashSprite(i);
             sprite.position.set(
@@ -541,7 +617,7 @@ export function createOceanGround(
                 entry.startSize,
                 splash.sizeEnd,
                 entry.peakSize,
-                splash.peakAt
+                entry.surgeApexAt ?? splash.peakAt
             );
             sprite.scale.set(
                 (size / Math.max(1, sprite.texture.width)) * scale
@@ -772,16 +848,19 @@ export function createOceanGround(
                         sample.y + sample.ny * 24
                     )
                 ) {
-                    for (const burst of oceanWaveWash(
+                    const wave = oceanWaveWash(
                         foamTex,
-                        displaceTex,
                         sample.x,
                         sample.y,
                         sample.nx,
                         sample.ny,
                         ctx.blockedAt
-                    )) {
+                    );
+                    for (const burst of wave.foam) {
                         ctx.emitParticles(burst);
+                    }
+                    for (const spawn of wave.splashes) {
+                        addSplashWash(spawn, ctx.now, ctx.blockedAt);
                     }
                 }
             }
