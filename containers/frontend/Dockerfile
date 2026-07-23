@@ -5,7 +5,8 @@ WORKDIR /app
 
 COPY package.json bun.lock ./
 COPY packages/client/package.json ./packages/client/
-COPY packages/figma-plugin/package.json ./packages/figma-plugin/
+COPY packages/figma-squircle-merge/package.json ./packages/figma-squircle-merge/
+COPY packages/figma-texture-export/package.json ./packages/figma-texture-export/
 COPY packages/server/package.json ./packages/server/
 COPY packages/shared/package.json ./packages/shared/
 
