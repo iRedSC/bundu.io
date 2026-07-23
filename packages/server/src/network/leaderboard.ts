@@ -10,7 +10,16 @@ export class Leaderboard {
     private entriesKey = "";
     private recipients = new Set<number>();
 
-    update(players: GameObject[], packets: PlayerPacketManager, world: World) {
+    /**
+     * Rank all world players (including soft-disconnected / AFK); broadcast
+     * only to connected recipients.
+     */
+    update(
+        players: GameObject[],
+        recipients: GameObject[],
+        packets: PlayerPacketManager,
+        world: World
+    ) {
         const entries = players
             .filter((player) => !hidesFromLeaderboard(player, world))
             .map((player) => {
@@ -21,7 +30,9 @@ export class Leaderboard {
             .slice(0, LEADERBOARD_SIZE);
         const entriesKey = JSON.stringify(entries);
         const changed = entriesKey !== this.entriesKey;
-        const currentRecipients = new Set(players.map((player) => player.id));
+        const currentRecipients = new Set(
+            recipients.map((player) => player.id)
+        );
 
         for (const playerId of currentRecipients) {
             if (changed || !this.recipients.has(playerId)) {
