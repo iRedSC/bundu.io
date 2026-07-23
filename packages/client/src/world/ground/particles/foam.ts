@@ -30,6 +30,7 @@ type WaveLayer = {
 /**
  * One shoreline wave group: a band of foam in front and splash (displace)
  * behind it. Particles fade in offshore, surge onto the lip, then retreat.
+ * `blockedAt` makes particles that strike land/objects spray back and fade.
  */
 export function oceanWaveWash(
     foamTexture: Texture,
@@ -37,7 +38,8 @@ export function oceanWaveWash(
     shoreX: number,
     shoreY: number,
     nx: number,
-    ny: number
+    ny: number,
+    blockedAt?: (x: number, y: number) => boolean
 ): ParticleBurst[] {
     // Normal points oceanward; wash travels the opposite way onto land.
     const inland = Math.atan2(-ny, -nx);
@@ -110,6 +112,7 @@ export function oceanWaveWash(
                     distance: layer.distance,
                     apexAt: layer.apexAt,
                 },
+                blockedAt,
                 tint: layer.tint,
                 alpha: layer.alpha,
                 alphaFadeIn: layer.alphaFadeIn,

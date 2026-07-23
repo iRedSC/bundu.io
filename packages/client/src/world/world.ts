@@ -1561,6 +1561,40 @@ export class World {
             if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
             return clientGroundType(type).model;
         };
+
+        // Shore-wash splash blockers: land tiles + nearby structures/resources.
+        const pad = 160;
+        const blockMinX = view.minX - pad;
+        const blockMaxX = view.maxX + pad;
+        const blockMinY = view.minY - pad;
+        const blockMaxY = view.maxY + pad;
+        const solids: { x: number; y: number; r2: number }[] = [];
+        for (const object of this.objects.all()) {
+            if (!(object instanceof Structure)) continue;
+            const { x, y } = object.position;
+            if (
+                x < blockMinX ||
+                x > blockMaxX ||
+                y < blockMinY ||
+                y > blockMaxY
+            ) {
+                continue;
+            }
+            const r = Math.max(object.collisionRadius, TILE_SIZE * 0.35);
+            solids.push({ x, y, r2: r * r });
+        }
+        const landDistanceAt = (wx: number, wy: number) =>
+            this.landDistance.atWorld(wx, wy);
+        const blockedAt = (wx: number, wy: number) => {
+            if (landDistanceAt(wx, wy) === 0) return true;
+            for (const solid of solids) {
+                const dx = wx - solid.x;
+                const dy = wy - solid.y;
+                if (dx * dx + dy * dy <= solid.r2) return true;
+            }
+            return false;
+        };
+
         const ctx = {
             deltaMS,
             now,
@@ -1571,8 +1605,8 @@ export class World {
             shore: this.shoreSamples,
             isOceanAt,
             waterModelAt,
-            landDistanceAt: (wx: number, wy: number) =>
-                this.landDistance.atWorld(wx, wy),
+            landDistanceAt,
+            blockedAt,
             shoreColor: this.nearshoreFill.colorTexture,
             shoreMask: this.nearshoreFill.maskTexture,
         };

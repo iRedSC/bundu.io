@@ -778,7 +778,8 @@ export function createOceanGround(
                         sample.x,
                         sample.y,
                         sample.nx,
-                        sample.ny
+                        sample.ny,
+                        ctx.blockedAt
                     )) {
                         ctx.emitParticles(burst);
                     }

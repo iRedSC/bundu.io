@@ -43,6 +43,11 @@ export type ParticleBurst = {
     motionEndAt?: number;
     /** Overrides ballistic integration when set. */
     motion?: ParticleMotion;
+    /**
+     * While a surge particle is washing inbound, if this returns true the
+     * particle is repelled back and fades out (wave hitting an outcropping).
+     */
+    blockedAt?: (x: number, y: number) => boolean;
     spin?: NumberRange;
     spinFriction?: number;
     spinEndAt?: number;

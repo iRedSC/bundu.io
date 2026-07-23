@@ -35,6 +35,11 @@ export type GroundUpdateContext = {
      * O(1) lookup. Capped at 255.
      */
     landDistanceAt: (worldX: number, worldY: number) => number;
+    /**
+     * True when a shore-wash particle should splash back (land tile or solid
+     * structure/resource under the point).
+     */
+    blockedAt?: (worldX: number, worldY: number) => boolean;
     /** Opaque world-tile ocean→land color bake. */
     shoreColor: Texture;
     /** Independent land-side fade used only to mask ocean effects. */
