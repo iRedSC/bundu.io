@@ -27,6 +27,6 @@ ambient:
         blend_mode: screen
         alpha_fade_in: 0.25
         alpha_hold: 0.45
-        end_size: 120
+        end_size: 700
 ---
 model: island
