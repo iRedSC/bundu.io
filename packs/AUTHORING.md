@@ -79,7 +79,9 @@ whenMainHand:
 Ops: `addBase` \| `add` \| `multiply` (fold: `(Σ addBase + Σ add) × Π multiply`).  
 Attribute paths form a tree: parent keys (e.g. `attack.damage`) also apply to children
 (`attack.damage.building`, `attack.damage.animal`) unless marked non-inheriting
-(`health.defense.blocking`). Unknown attribute keys fail pack load.  
+(`health.defense.blocking`). Same for `temperature.insulation` →
+`temperature.insulation.up` / `temperature.insulation.down` (resist heating /
+cooling). Unknown attribute keys fail pack load.  
 Targets: `"@s"` / `"@a[…]"` selectors, entity ids, `#tags`, or legacy
 `type=`/`flag=` filter strings.
 
