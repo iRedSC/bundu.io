@@ -600,7 +600,7 @@ export function loadConfigs() {
         resourceConfig as Record<string, Partial<ResourceConfig>>,
         (resource, record, fallback) => {
             const raw = record as Partial<ResourceConfig> & {
-                loot_table?: string;
+                loot_table?: string | Record<string, unknown>;
                 solid?: unknown;
             } & Record<string, unknown>;
             if (
@@ -628,14 +628,32 @@ export function loadConfigs() {
                 resource,
                 SPATIAL_CONTEXTS
             );
-            if (raw.loot_table) {
-                record.lootTable = resolve(
-                    registries,
-                    "loot_table",
-                    raw.loot_table,
-                    resource,
-                    `${resource}.loot_table`
-                );
+            if (raw.loot_table !== undefined && raw.loot_table !== null) {
+                if (typeof raw.loot_table === "string") {
+                    record.lootTable = resolve(
+                        registries,
+                        "loot_table",
+                        raw.loot_table,
+                        resource,
+                        `${resource}.loot_table`
+                    );
+                } else if (
+                    typeof raw.loot_table === "object" &&
+                    !Array.isArray(raw.loot_table)
+                ) {
+                    // Inline table was promoted to this resource's location.
+                    record.lootTable = resolve(
+                        registries,
+                        "loot_table",
+                        resource,
+                        resource,
+                        `${resource}.loot_table`
+                    );
+                } else {
+                    throw new Error(
+                        `${resource}.loot_table: expected a string id or loot table object`
+                    );
+                }
             }
             return mergeObjects(record, undefined, fallback);
         }

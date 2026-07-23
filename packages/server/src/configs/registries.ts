@@ -23,6 +23,42 @@ function definitionsOrRecords(resource: string): Map<string, SourcedRecord> {
     return definitions.size > 0 ? definitions : packs.registryRecords(resource);
 }
 
+/**
+ * Promote object-shaped `loot_table` fields on resources into the loot_table
+ * registry under the resource's own `namespace:path`. Throws if that id already
+ * exists (e.g. a file under loot_tables/).
+ */
+export function promoteInlineLootTables(
+    resources: ReadonlyMap<string, SourcedRecord>,
+    lootTables: Map<string, SourcedRecord>
+): void {
+    for (const [location, source] of resources) {
+        if (!source.value || typeof source.value !== "object" || Array.isArray(source.value)) {
+            continue;
+        }
+        const loot = (source.value as Record<string, unknown>).loot_table;
+        if (loot === undefined || loot === null || typeof loot === "string") {
+            continue;
+        }
+        if (typeof loot !== "object" || Array.isArray(loot)) {
+            throw new Error(
+                `${source.source}.loot_table: expected a string id or loot table object`
+            );
+        }
+        const existing = lootTables.get(location);
+        if (existing) {
+            throw new Error(
+                `loot_table: duplicate entry "${location}" — inline on ${source.source} collides with ${existing.source}`
+            );
+        }
+        lootTables.set(location, {
+            namespace: source.namespace,
+            source: `${source.source}.loot_table`,
+            value: loot,
+        });
+    }
+}
+
 function applyTags<K extends RegistryName>(registry: Registry<K>): void {
     for (const [tag, sources] of packs.registryTags(registry.name)) {
         for (const source of sources) {
@@ -49,6 +85,7 @@ export function loadRegistries(): GameRegistries {
         recipe: definitionsOrRecords("recipes"),
         loot_table: definitionsOrRecords("loot_tables"),
     };
+    promoteInlineLootTables(sources.resource, sources.loot_table);
 
     const registries = Object.fromEntries(
         REGISTRY_NAMES.map((name) => [name, new Registry(name, sources[name].keys())])
