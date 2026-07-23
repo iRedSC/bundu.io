@@ -34,8 +34,10 @@ export class Animal extends GameObject {
             .add(attributes)
             .add(new AnimalData({
                 type: type.id,
+                home: { x: physics.position.x, y: physics.position.y },
                 path: [],
                 state: "idle",
+                roamPhase: "home",
                 stateUntil: 0,
                 nextThinkAt: 0,
                 nextAttackAt: 0,

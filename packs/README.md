@@ -179,6 +179,7 @@ values: `hostile` attacks on sight, `neutral` retaliates, `passive` flees when
 hit, `scared` flees on sight. Useful fields:
 
 - `scale` — size in tiles (`1` → diameter = 1 tile; default `1`)
+- `hasHome` — idle roam tethered to spawn when true (bees only)
 - `attack_reach` — seed for `attack.reach`; effective reach adds collision radius
 - `aggroSwitch` — `never` | `onHit` | `random` retargeting when others interact
 - `aggroLevel` — `high` | `medium` | `low` lock-on strength

@@ -523,13 +523,38 @@ export class AnimalSystem extends System<GameEventMap> {
             time + ai.wanderMinMs + random.integer(0, ai.wanderVarianceMs);
         data.path = [];
         data.stuckSince = 0;
-        data.destination = this.pickWanderPoint(
-            physics,
-            physics.position.x,
-            physics.position.y,
-            config.wander_distance,
-            config
-        );
+
+        if (!config.hasHome) {
+            data.destination = this.pickWanderPoint(
+                physics,
+                physics.position.x,
+                physics.position.y,
+                config.wander_distance,
+                config
+            );
+            return;
+        }
+
+        // Alternate homeward and wander sessions so returns aren't a bee-line.
+        if (data.roamPhase === "home") {
+            data.destination = this.pickWanderPoint(
+                physics,
+                data.home.x,
+                data.home.y,
+                TILE_SIZE,
+                config
+            ) ?? { x: data.home.x, y: data.home.y };
+            data.roamPhase = "wander";
+        } else {
+            data.destination = this.pickWanderPoint(
+                physics,
+                data.home.x,
+                data.home.y,
+                config.wander_distance,
+                config
+            );
+            data.roamPhase = "home";
+        }
     }
 
     /** Prefer open, non-avoided ground so wander doesn't aim into clumps / water. */

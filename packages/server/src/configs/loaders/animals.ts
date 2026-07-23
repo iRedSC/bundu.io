@@ -34,6 +34,11 @@ export type AnimalConfig = {
      * and client visual root TILE_SIZE. Identity = 1.
      */
     scale: number;
+    /**
+     * When true, idle roam alternates homeward and wander sessions around
+     * the spawn point. Off by default — bees opt in.
+     */
+    hasHome: boolean;
     wander_distance: number;
     attack_damage: number;
     attack_interval_ms: number;
@@ -100,6 +105,7 @@ export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("enti
     passiveSpeed: 4,
     activeSpeed: 6,
     scale: 1,
+    hasHome: false,
     wander_distance: 300,
     attack_damage: 0,
     attack_interval_ms: 1000,

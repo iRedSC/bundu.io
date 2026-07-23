@@ -17,6 +17,7 @@ passiveSpeed: 10
 activeSpeed: 10
 attack_damage: 60
 scale: 1.6
+hasHome: true
 aggroSwitch: onHit
 aggroLevel: high
 ignorePreferredWhenAggro: true

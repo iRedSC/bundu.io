@@ -180,10 +180,14 @@ export const Living = Component.register<Living>(() => ({}));
 export type AnimalData = {
     /** Stable config/type id. */
     type: number;
+    /** Spawn-anchor for `hasHome` idle roam. */
+    home: { x: number; y: number };
     targetId?: number;
     destination?: { x: number; y: number };
     path: { x: number; y: number }[];
     state: "idle" | "wander" | "chase" | "flee";
+    /** Next idle roam session when `hasHome` (homeward vs wander). */
+    roamPhase: "home" | "wander";
     stateUntil: number;
     nextThinkAt: number;
     nextAttackAt: number;
@@ -199,8 +203,10 @@ export type AnimalData = {
 };
 export const AnimalData = Component.register<AnimalData>(() => ({
     type: 0,
+    home: { x: 0, y: 0 },
     path: [],
     state: "idle",
+    roamPhase: "home",
     stateUntil: 0,
     nextThinkAt: 0,
     nextAttackAt: 0,

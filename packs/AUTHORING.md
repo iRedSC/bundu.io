@@ -437,7 +437,8 @@ for items). Author `type: bundu:land` on the entity data half; nested
 | `detectionRange` / `loseSightRange` | `300` / `450` | World units |
 | `passiveSpeed` / `activeSpeed` | `4` / `6` | Per 20 TPS tick |
 | `scale` | `1` | Size in tiles |
-| `wander_distance` | `300` | Idle roam radius from current position |
+| `hasHome` | `false` | Idle roam tethered to spawn (bees) |
+| `wander_distance` | `300` | Idle roam radius (from home when `hasHome`) |
 | `attack_damage` / `attack_interval_ms` / `attack_reach` | `0` / `1000` / `65` | |
 | `aggroSwitch` | `never` | `never` \| `onHit` \| `random` |
 | `aggroLevel` | `high` | `high` \| `medium` \| `low` |
