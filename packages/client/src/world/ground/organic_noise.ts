@@ -1,6 +1,6 @@
 /**
- * Organic edge noise shared by land / pond shaders (and any CPU fallback).
- * Keep coefficients in sync with the GLSL/WGSL ports in organic_*_filter.ts.
+ * Organic edge noise shared by land / pond shaders.
+ * Keep coefficients in sync with the GLSL/WGSL ports in organic_*_mesh.ts.
  */
 
 /** How far the organic land edge can push past the authored rect (tiles). */

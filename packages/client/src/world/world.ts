@@ -1268,10 +1268,15 @@ export class World {
             (i) =>
                 fadeByType.get(this.topGroundTypes[i]!) ??
                 DEFAULT_OCEAN_FADE_TILES,
-            // Every water material participates so rivers/ponds can meet the sea.
+            // Soft shoreColor bake is for open water fills only. Organic ponds
+            // own fill + FX via SDF meshes — painting them here fights the edge.
             (i) => {
                 const type = this.topGroundTypes[i]!;
-                return type !== 0 && this.oceanTypeIds.has(type);
+                if (type === 0 || !this.oceanTypeIds.has(type)) return false;
+                return (
+                    oceanGroundModel(clientGroundType(type).model).edge !==
+                    "organic"
+                );
             },
             Math.max(
                 DEFAULT_WATER_WATER_FADE_TILES,

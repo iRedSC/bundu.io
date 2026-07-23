@@ -12,14 +12,14 @@ import {
     TilingSprite,
 } from "pixi.js";
 import { getAsset } from "../../assets/load";
-import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
 import {
     bindNearshoreSprite,
     type NearshoreBindState,
 } from "./nearshore_fill";
-import type { GroundFieldTextures } from "./ground_fields";
-import { OrganicWaterFilter } from "./organic_water_filter";
-import { POND_SEAM_AMPLITUDE } from "./organic_noise";
+import {
+    createOrganicWaterMesh,
+    type OrganicWaterMesh,
+} from "./organic_water_mesh";
 import { AnchoredDisplacementFilter } from "./anchored_displacement";
 import { ambientRate } from "./ambient_fx";
 import { oceanFx, oceanTint } from "./ocean_fx";
@@ -42,11 +42,9 @@ const BAKE_RT_MAX = 1024;
 /** World-space radius sampled when stabilizing anchored displacement. */
 const ANCHORED_DISPLACE_SAMPLE_RADIUS = 64;
 
-let sharedWaterFields: GroundFieldTextures | undefined;
-
-/** World installs pond-distance fields before organic water visuals refresh. */
-export function setOceanGroundFields(fields: GroundFieldTextures): void {
-    sharedWaterFields = fields;
+/** No-op kept so World can still call the shared field install hook. */
+export function setOceanGroundFields(_fields: unknown): void {
+    // Pond organic meshes are analytic — no field textures needed.
 }
 
 function tex(path: string): Texture {
@@ -111,8 +109,17 @@ export function createOceanGround(
     };
     const materialColor = parseHexColor(model.color);
     let waterModelIds: ReadonlySet<string> = new Set([model.id]);
-    const organicFill = new Sprite(Texture.EMPTY);
-    if (hasOrganicEdge) root.addChild(organicFill);
+    let organicFill: OrganicWaterMesh | undefined;
+    /** Offscreen SDF mesh — rendered into the viewport FX mask each frame. */
+    let organicMaskMesh: OrganicWaterMesh | undefined;
+    const organicMaskBake = new Container();
+    let organicMaskRt: RenderTexture | undefined;
+    if (hasOrganicEdge) {
+        organicFill = createOrganicWaterMesh(materialColor, "fill");
+        organicMaskMesh = createOrganicWaterMesh(0xffffff, "mask");
+        organicMaskBake.addChild(organicMaskMesh.mesh);
+        root.addChild(organicFill.mesh);
+    }
 
     const causticsTex = tex(model.textures.caustics);
     const displaceTex = tex(model.textures.displace);
@@ -229,84 +236,62 @@ export function createOceanGround(
     );
     anchoredDisplace.padding = 80;
     anchoredContent.filters = [anchoredDisplace];
-    let organicFillFilter: OrganicWaterFilter | undefined;
-    let organicMaskFilter: OrganicWaterFilter | undefined;
-    let organicAnchoredMaskFilter: OrganicWaterFilter | undefined;
 
-    const setOrganicMaskBounds = (waterBounds: readonly Rectangle[]) => {
-        if (!hasOrganicEdge) return;
-        const fields = sharedWaterFields;
-        if (!fields || waterBounds.length === 0) {
-            organicFill.texture = Texture.EMPTY;
-            fxMask.texture = Texture.EMPTY;
-            anchoredMask.texture = Texture.EMPTY;
-            organicFill.filters = null;
-            fxMask.filters = null;
-            anchoredMask.filters = null;
-            organicFillFilter?.destroy();
-            organicMaskFilter?.destroy();
-            organicAnchoredMaskFilter?.destroy();
-            organicFillFilter = undefined;
-            organicMaskFilter = undefined;
-            organicAnchoredMaskFilter = undefined;
+    const applyOrganicMaskTexture = (texture: Texture) => {
+        fxMask.texture = texture;
+        fxMask.position.set(overlayX, overlayY);
+        fxMask.width = overlayW;
+        fxMask.height = overlayH;
+        anchoredMask.texture = texture;
+        anchoredMask.position.set(overlayX, overlayY);
+        anchoredMask.width = overlayW;
+        anchoredMask.height = overlayH;
+    };
+
+    const bakeOrganicFxMask = (renderer: Renderer) => {
+        if (!hasOrganicEdge || !organicMaskMesh || overlayW < 1 || overlayH < 1) {
             return;
         }
+        const scale = Math.min(1, BAKE_RT_MAX / Math.max(overlayW, overlayH));
+        const rtW = Math.max(1, Math.ceil(overlayW * scale));
+        const rtH = Math.max(1, Math.ceil(overlayH * scale));
+        if (!organicMaskRt) {
+            organicMaskRt = RenderTexture.create({
+                width: rtW,
+                height: rtH,
+                dynamic: true,
+            });
+        } else if (organicMaskRt.width !== rtW || organicMaskRt.height !== rtH) {
+            organicMaskRt.resize(rtW, rtH);
+        }
+        organicMaskBake.position.set(-overlayX * scale, -overlayY * scale);
+        organicMaskBake.scale.set(scale);
+        renderer.render({
+            container: organicMaskBake,
+            target: organicMaskRt,
+            clear: true,
+            clearColor: { r: 0, g: 0, b: 0, a: 0 },
+        });
+        applyOrganicMaskTexture(organicMaskRt);
+    };
 
-        const pad = (Math.ceil(POND_SEAM_AMPLITUDE) + 1) * TILE_SIZE;
-        let minX = Number.POSITIVE_INFINITY;
-        let minY = Number.POSITIVE_INFINITY;
-        let maxX = Number.NEGATIVE_INFINITY;
-        let maxY = Number.NEGATIVE_INFINITY;
-        for (const b of waterBounds) {
-            minX = Math.min(minX, b.x);
-            minY = Math.min(minY, b.y);
-            maxX = Math.max(maxX, b.x + b.width);
-            maxY = Math.max(maxY, b.y + b.height);
+    const setOrganicMaskBounds = (waterBounds: readonly Rectangle[]) => {
+        if (!hasOrganicEdge || !organicFill || !organicMaskMesh) return;
+        if (waterBounds.length === 0) {
+            organicFill.setBounds([]);
+            organicMaskMesh.setBounds([]);
+            fxMask.texture = Texture.EMPTY;
+            anchoredMask.texture = Texture.EMPTY;
+            return;
         }
-        const x = minX - pad;
-        const y = minY - pad;
-        const w = maxX - minX + pad * 2;
-        const h = maxY - minY + pad * 2;
-        const spriteWorld = new Float32Array([x, y, w, h]);
-
-        const layout = (sprite: Sprite, filter: OrganicWaterFilter) => {
-            sprite.texture = Texture.WHITE;
-            sprite.position.set(x, y);
-            sprite.width = w;
-            sprite.height = h;
-            filter.setSpriteWorld(x, y, w, h);
-            filter.setWorldTiles(WORLD_TILES);
-            filter.bindFields(fields);
-            sprite.filters = [filter];
-        };
-
-        if (!organicFillFilter) {
-            organicFillFilter = new OrganicWaterFilter(
-                fields,
-                materialColor,
-                "fill",
-                spriteWorld
-            );
-        }
-        if (!organicMaskFilter) {
-            organicMaskFilter = new OrganicWaterFilter(
-                fields,
-                0xffffff,
-                "mask",
-                spriteWorld
-            );
-        }
-        if (!organicAnchoredMaskFilter) {
-            organicAnchoredMaskFilter = new OrganicWaterFilter(
-                fields,
-                0xffffff,
-                "mask",
-                spriteWorld
-            );
-        }
-        layout(organicFill, organicFillFilter);
-        layout(fxMask, organicMaskFilter);
-        layout(anchoredMask, organicAnchoredMaskFilter);
+        const rects = waterBounds.map((b) => ({
+            x: b.x,
+            y: b.y,
+            w: b.width,
+            h: b.height,
+        }));
+        organicFill.setBounds(rects);
+        organicMaskMesh.setBounds(rects);
     };
 
     type Wake = {
@@ -693,16 +678,8 @@ export function createOceanGround(
         setWaterBounds(waterBounds) {
             setOrganicMaskBounds(waterBounds);
         },
-        bindGroundFields(fields) {
-            setOceanGroundFields(fields);
-            if (hasOrganicEdge) {
-                organicFillFilter?.bindFields(fields);
-                organicMaskFilter?.bindFields(fields);
-                organicAnchoredMaskFilter?.bindFields(fields);
-                organicFillFilter?.setWorldTiles(WORLD_TILES);
-                organicMaskFilter?.setWorldTiles(WORLD_TILES);
-                organicAnchoredMaskFilter?.setWorldTiles(WORLD_TILES);
-            }
+        bindGroundFields(_fields) {
+            // Pond organic meshes are analytic — no field textures needed.
         },
         update(ctx: GroundUpdateContext) {
             const cfg = oceanFx;
@@ -745,6 +722,8 @@ export function createOceanGround(
                 );
             }
             if (!syncOverlay(ctx.view)) return;
+
+            bakeOrganicFxMask(ctx.renderer);
 
             const area = overlayW * overlayH;
             const heavy = area > cfg.heavyArea;
@@ -853,9 +832,6 @@ export function createOceanGround(
             // MaskFilter BindGroup and crashes if the shore source dies first.
             fx.mask = null;
             anchoredFx.mask = null;
-            organicFill.filters = null;
-            fxMask.filters = null;
-            anchoredMask.filters = null;
             fx.filters = null;
             anchoredContent.filters = null;
             splashOverlay.filters = null;
@@ -865,12 +841,13 @@ export function createOceanGround(
             anchoredMaskBind.map?.destroy(false);
             anchoredMaskBind.map = undefined;
             anchoredMaskBind.source = undefined;
-            organicFillFilter?.destroy();
-            organicFillFilter = undefined;
-            organicMaskFilter?.destroy();
-            organicMaskFilter = undefined;
-            organicAnchoredMaskFilter?.destroy();
-            organicAnchoredMaskFilter = undefined;
+            organicFill?.destroy();
+            organicFill = undefined;
+            organicMaskMesh?.destroy();
+            organicMaskMesh = undefined;
+            organicMaskRt?.destroy(false);
+            organicMaskRt = undefined;
+            organicMaskBake.destroy({ children: false });
             mapRt.destroy(true);
             anchoredMapRt.destroy(true);
             splashRt.destroy(true);

@@ -2,10 +2,7 @@ import { Container, Sprite, Texture, type Rectangle } from "pixi.js";
 import type { SolidGroundFill } from "@bundu/shared/ground_models";
 import { WORLD_TILES } from "@bundu/shared/tiles";
 import type { GroundFieldTextures } from "./ground_fields";
-import {
-    OrganicLandFilter,
-    organicLandSpriteRect,
-} from "./organic_land_filter";
+import { createOrganicLandMesh } from "./organic_land_mesh";
 import type { GroundVisual } from "./types";
 
 let sharedFields: GroundFieldTextures | undefined;
@@ -41,30 +38,23 @@ export function createSolidGround(
         };
     }
 
-    const rect = organicLandSpriteRect(bounds);
-    const sprite = new Sprite(Texture.WHITE);
-    sprite.position.set(rect.x, rect.y);
-    sprite.width = rect.w;
-    sprite.height = rect.h;
-    const filter = new OrganicLandFilter({
+    const land = createOrganicLandMesh({
         bounds,
         color,
         fill,
         fields,
         worldTiles: WORLD_TILES,
     });
-    sprite.filters = [filter];
-    root.addChild(sprite);
+    root.addChild(land.mesh);
 
     return {
         container: root,
         bindGroundFields(next) {
-            filter.bindFields(next);
-            filter.setWorldTiles(WORLD_TILES);
+            land.bindFields(next);
+            land.setWorldTiles(WORLD_TILES);
         },
         destroy() {
-            sprite.filters = null;
-            filter.destroy();
+            land.destroy();
             root.destroy({ children: true });
         },
     };
