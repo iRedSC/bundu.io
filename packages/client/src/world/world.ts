@@ -1607,11 +1607,10 @@ export class World {
             ) {
                 continue;
             }
-            // Generous splash footprint so wash breaks before the visual lip.
             this.waveBlockSolids.push({
                 x,
                 y,
-                r: Math.max(object.collisionRadius * 2.4, TILE_SIZE * 1.35),
+                r: Math.max(object.collisionRadius, TILE_SIZE / 2),
             });
         }
         const landDistanceAt = (wx: number, wy: number) =>
