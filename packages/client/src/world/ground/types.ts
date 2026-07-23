@@ -36,8 +36,8 @@ export type GroundUpdateContext = {
      */
     landDistanceAt: (worldX: number, worldY: number) => number;
     /**
-     * True when a shore-wash particle should splash back (land tile or solid
-     * structure/resource under the point).
+     * True when a shore-wash particle should splash back (solid structure /
+     * resource under the point). Land is washable so waves can overshoot.
      */
     blockedAt?: (worldX: number, worldY: number) => boolean;
     /** Opaque world-tile ocean→land color bake. */

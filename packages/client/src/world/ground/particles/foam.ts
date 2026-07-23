@@ -1,4 +1,5 @@
 import type { Texture } from "pixi.js";
+import { TILE_SIZE } from "@bundu/shared/tiles";
 import type { ParticleBurst } from "../../../rendering/particles/types";
 
 const FOAM_TINTS = [0xe8f4ff, 0xffffff, 0xcfe8f8] as const;
@@ -8,6 +9,13 @@ const pickTint = (tints: readonly number[]): number =>
 
 /** Above ocean ground (-10), below admin grid (-1) and entities (0+). */
 export const GROUND_PARTICLE_Z = -5;
+
+/** Spawn distance offshore from the shore lip. */
+const WAVE_OFFSHORE = TILE_SIZE * 4;
+/** How far past the shore lip the wash runs inland. */
+const WAVE_OVERSHOOT = TILE_SIZE * 4;
+/** Total surge travel: offshore → overshoot apex. */
+const WAVE_TRAVEL = WAVE_OFFSHORE + WAVE_OVERSHOOT;
 
 /** One droplet in the refractive splash wash line behind the foam. */
 export type WaveSplashSpawn = {
@@ -45,18 +53,14 @@ export function oceanWaveWash(
     const tx = -ny;
     const ty = nx;
 
-    const bandWidth = 90 + Math.random() * 70;
-    const count = 4 + ((Math.random() * 3) | 0);
-    const foamOffshore = 48 + Math.random() * 18;
+    // ~4× the original band length, with denser samples to match.
+    const bandWidth = 360 + Math.random() * 280;
+    const count = 14 + ((Math.random() * 7) | 0);
     const foam: ParticleBurst[] = [];
     const splashes: WaveSplashSpawn[] = [];
 
     const foamApex = 0.38;
-    const foamDistance: readonly [number, number] = [
-        foamOffshore + 6,
-        foamOffshore + 28,
-    ];
-    const foamLife: readonly [number, number] = [2000, 2800];
+    const foamLife: readonly [number, number] = [4200, 5600];
     const foamSize: readonly [number, number] = [56, 110];
     const foamTint = pickTint(FOAM_TINTS);
 
@@ -65,18 +69,16 @@ export function oceanWaveWash(
             count <= 1
                 ? 0
                 : (i / (count - 1) - 0.5) * bandWidth +
-                  (Math.random() - 0.5) * 14;
-        const alongJitter = (Math.random() - 0.5) * 10;
-        const distance =
-            foamDistance[0] +
-            Math.random() * (foamDistance[1] - foamDistance[0]);
+                  (Math.random() - 0.5) * 18;
+        const alongJitter = (Math.random() - 0.5) * 16;
+        const distance = WAVE_TRAVEL + (Math.random() - 0.5) * TILE_SIZE * 0.4;
         foam.push({
             texture: foamTexture,
-            x: shoreX + nx * (foamOffshore + alongJitter) + tx * across,
-            y: shoreY + ny * (foamOffshore + alongJitter) + ty * across,
+            x: shoreX + nx * (WAVE_OFFSHORE + alongJitter) + tx * across,
+            y: shoreY + ny * (WAVE_OFFSHORE + alongJitter) + ty * across,
             direction: inland,
             count: 1,
-            spread: 0.12,
+            spread: 0.08,
             speed: 0,
             lifetime: foamLife,
             size: foamSize,
@@ -91,32 +93,33 @@ export function oceanWaveWash(
             blockedAt,
             tint: foamTint,
             alpha: 0.85,
-            alphaFadeIn: 0.12,
+            alphaFadeIn: 0.1,
             alphaHold: 0.55,
             blendMode: "screen",
-            spin: [-0.4, 0.4],
+            spin: [-0.35, 0.35],
             spinFriction: 0.8,
             zIndex: GROUND_PARTICLE_Z,
         });
     }
 
     // Splash line sits behind the foam and moves a bit slower.
-    const splashBehind = 28 + Math.random() * 18;
-    const splashOffshore = foamOffshore + splashBehind;
+    const splashBehind = TILE_SIZE * 0.55 + Math.random() * TILE_SIZE * 0.35;
+    const splashOffshore = WAVE_OFFSHORE + splashBehind;
     const splashApex = 0.48;
     for (let i = 0; i < count; i++) {
         const across =
             count <= 1
                 ? 0
                 : (i / (count - 1) - 0.5) * bandWidth +
-                  (Math.random() - 0.5) * 16;
-        const alongJitter = (Math.random() - 0.5) * 12;
+                  (Math.random() - 0.5) * 20;
+        const alongJitter = (Math.random() - 0.5) * 18;
         splashes.push({
             x: shoreX + nx * (splashOffshore + alongJitter) + tx * across,
             y: shoreY + ny * (splashOffshore + alongJitter) + ty * across,
-            direction: inland + (Math.random() - 0.5) * 0.12,
-            surgeDistance: splashOffshore + 10 + Math.random() * 26,
-            lifetime: 2600 + Math.random() * 1000,
+            direction: inland + (Math.random() - 0.5) * 0.1,
+            surgeDistance:
+                splashOffshore + WAVE_OVERSHOOT + (Math.random() - 0.5) * 40,
+            lifetime: 5200 + Math.random() * 1600,
             apexAt: splashApex,
             startSize: 70 + Math.random() * 50,
         });

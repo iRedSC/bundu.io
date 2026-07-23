@@ -1562,8 +1562,9 @@ export class World {
             return clientGroundType(type).model;
         };
 
-        // Shore-wash splash blockers: land tiles + nearby structures/resources.
-        const pad = 160;
+        // Shore-wash splash blockers: structures/resources only.
+        // Land is intentionally washable (waves overshoot several tiles inland).
+        const pad = TILE_SIZE * 5;
         const blockMinX = view.minX - pad;
         const blockMaxX = view.maxX + pad;
         const blockMinY = view.minY - pad;
@@ -1586,7 +1587,6 @@ export class World {
         const landDistanceAt = (wx: number, wy: number) =>
             this.landDistance.atWorld(wx, wy);
         const blockedAt = (wx: number, wy: number) => {
-            if (landDistanceAt(wx, wy) === 0) return true;
             for (const solid of solids) {
                 const dx = wx - solid.x;
                 const dy = wy - solid.y;
