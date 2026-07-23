@@ -5,6 +5,7 @@ import {
     Sprite,
     type Container,
     type Renderer,
+    type Texture,
 } from "pixi.js";
 import type { NumberRange, ParticleBurst } from "./types";
 import { sizeEnvelope } from "./size_envelope";
@@ -66,6 +67,15 @@ type MergeLayer = {
     mergeAlpha: number;
 };
 
+/** Opaque particle coverage in world space — usable as an AlphaMask. */
+export type ParticleMergeCoverage = {
+    texture: Texture;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
 const MERGE_RT_MAX = 2048;
 
 const random = (range: NumberRange): number => {
@@ -115,6 +125,24 @@ export class ParticleSystem {
     private readonly active: ActiveParticle[] = [];
 
     constructor(private readonly parent: Container) {}
+
+    /**
+     * Latest merge-layer coverage (opaque silhouette). Ocean FX can AlphaMask
+     * caustics with this so the overlay washes inland with the foam.
+     */
+    getMergeCoverage(): ParticleMergeCoverage | undefined {
+        for (const layer of this.mergeLayers.values()) {
+            if (!layer.sprite.visible) continue;
+            return {
+                texture: layer.rt,
+                x: layer.sprite.position.x,
+                y: layer.sprite.position.y,
+                width: layer.sprite.width,
+                height: layer.sprite.height,
+            };
+        }
+        return undefined;
+    }
 
     burst(options: ParticleBurst): void {
         const container = this.getContainer(options);

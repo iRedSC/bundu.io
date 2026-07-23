@@ -171,6 +171,32 @@ export function createOceanGround(
     causticsB.blendMode = "add";
     fx.addChild(causticsB);
 
+    /**
+     * Wave-shaped caustics pass: same scroll/tint as main FX, but AlphaMasked
+     * by foam merge coverage so the overlay washes onto land with the waves.
+     */
+    const waveFx = new Container();
+    waveFx.visible = false;
+    root.addChild(waveFx);
+    const waveMask = new Sprite(Texture.EMPTY);
+    // Keep in the tree for AlphaMask sampling; empty/unused stays invisible.
+    root.addChild(waveMask);
+    waveFx.setMask({ mask: waveMask, channel: "alpha" });
+    const waveCausticsA = new TilingSprite({
+        texture: causticsTex,
+        width: 1,
+        height: 1,
+    });
+    waveCausticsA.blendMode = "add";
+    waveFx.addChild(waveCausticsA);
+    const waveCausticsB = new TilingSprite({
+        texture: causticsTex,
+        width: 1,
+        height: 1,
+    });
+    waveCausticsB.blendMode = "add";
+    waveFx.addChild(waveCausticsB);
+
     const bake = new Container();
     const swellBig = new TilingSprite({
         texture: displaceTex,
@@ -721,6 +747,27 @@ export function createOceanGround(
         causticsB.position.set(x, y);
         causticsB.width = w;
         causticsB.height = h;
+        waveCausticsA.position.set(x, y);
+        waveCausticsA.width = w;
+        waveCausticsA.height = h;
+        waveCausticsB.position.set(x, y);
+        waveCausticsB.width = w;
+        waveCausticsB.height = h;
+    };
+
+    const syncWaveMask = (
+        wave?: GroundUpdateContext["waveMask"]
+    ): void => {
+        if (!wave || wave.width < 1 || wave.height < 1) {
+            waveFx.visible = false;
+            waveMask.texture = Texture.EMPTY;
+            return;
+        }
+        waveMask.texture = wave.texture;
+        waveMask.position.set(wave.x, wave.y);
+        waveMask.width = wave.width;
+        waveMask.height = wave.height;
+        waveFx.visible = true;
     };
 
     const syncOverlay = (view: GroundViewBounds) => {
@@ -740,6 +787,7 @@ export function createOceanGround(
         const h = Math.max(0, bottom - y);
         if (w < 1 || h < 1) {
             fx.visible = false;
+            waveFx.visible = false;
             anchoredFx.visible = false;
             splashOverlay.visible = false;
             overlayW = 0;
@@ -822,6 +870,13 @@ export function createOceanGround(
             causticsB.tint = tintB;
             causticsB.alpha = alphaB;
             causticsB.tileScale.set(b.tileScale);
+            // Slightly hotter on the wave pass so beach wash reads clearly.
+            waveCausticsA.tint = tintA;
+            waveCausticsA.alpha = alphaA * 1.15;
+            waveCausticsA.tileScale.set(a.tileScale);
+            waveCausticsB.tint = tintB;
+            waveCausticsB.alpha = alphaB * 1.15;
+            waveCausticsB.tileScale.set(b.tileScale);
 
             if (!hasOrganicEdge) {
                 bindNearshoreSprite(
@@ -866,6 +921,15 @@ export function createOceanGround(
                 worldTile(overlayX, scrollBx),
                 worldTile(overlayY, scrollBy)
             );
+            waveCausticsA.tilePosition.set(
+                worldTile(overlayX, scrollAx),
+                worldTile(overlayY, scrollAy)
+            );
+            waveCausticsB.tilePosition.set(
+                worldTile(overlayX, scrollBx),
+                worldTile(overlayY, scrollBy)
+            );
+            syncWaveMask(ctx.waveMask);
 
             bakeDisplace(ctx.renderer, ctx.now);
 
@@ -971,6 +1035,7 @@ export function createOceanGround(
             // Unbind before destroy — pooled AlphaMaskPipe keeps the last
             // MaskFilter BindGroup and crashes if the shore source dies first.
             fx.mask = null;
+            waveFx.mask = null;
             anchoredFx.mask = null;
             fx.filters = null;
             anchoredContent.filters = null;

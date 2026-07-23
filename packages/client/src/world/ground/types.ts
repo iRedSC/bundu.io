@@ -48,6 +48,17 @@ export type GroundUpdateContext = {
     shoreColor: Texture;
     /** Independent land-side fade used only to mask ocean effects. */
     shoreMask: Texture;
+    /**
+     * Foam merge coverage in world space. Ocean draws a wave-shaped caustics
+     * pass AlphaMasked by this so FX wash onto land with the foam.
+     */
+    waveMask?: {
+        texture: Texture;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
 };
 
 /** Outward-facing shore sample along a land↔ocean boundary. */
