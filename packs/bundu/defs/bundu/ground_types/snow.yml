@@ -4,17 +4,21 @@ fill: forest_blobs
 footsteps: true
 ambient:
     snow:
-        interval_ms: [220, 520]
+        interval_ms: [90, 220]
+        count: 2
         size: [20, 40]
-        alpha: [0.22, 0.04]
-        lifetime: [1600, 3200]
-        speed: [20, 60]
-        gravity: 18
-        gravity_x: 4
-        friction: 0.15
+        # Bigger flakes stay readable — was nearly invisible after the size bump.
+        alpha: [0.72, 0.38]
+        lifetime: [2200, 4200]
+        speed: [80, 160]
+        # Narrow cone into the wind so flakes stream across, not spray everywhere.
+        spread: 0.55
+        gravity: 10
+        gravity_x: 32
+        friction: 0.08
         tint: "#f4f8fb"
-        alpha_fade_in: 0.1
-        alpha_hold: 0.55
+        alpha_fade_in: 0.08
+        alpha_hold: 0.6
 ---
 model: snow
 whenOccupied:

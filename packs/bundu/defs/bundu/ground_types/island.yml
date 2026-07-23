@@ -15,18 +15,19 @@ trail:
     spacing: 12
 ambient:
     steam:
-        interval_ms: [700, 1400]
+        interval_ms: [380, 850]
         size: [750, 1000]
-        alpha: [0.045, 0.012]
+        # Screen-blend mist was essentially invisible at ~0.045.
+        alpha: [0.16, 0.06]
         lifetime: [2800, 4800]
-        speed: [4, 14]
+        speed: [6, 18]
         gravity: -4
         gravity_x: 2
         friction: 0.2
         tint: "#ffffff"
         blend_mode: screen
-        alpha_fade_in: 0.25
-        alpha_hold: 0.45
+        alpha_fade_in: 0.15
+        alpha_hold: 0.55
         end_size: 700
 ---
 model: island
