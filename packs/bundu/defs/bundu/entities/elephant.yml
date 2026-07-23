@@ -8,7 +8,8 @@ animations:
     data: { amplitude: 0.02 }
 ---
 type: bundu:land
-health: 2500
+health: 1500
+score: 3000
 behavior: neutral
 loseSightRange: 750
 passiveSpeed: 5
@@ -19,7 +20,7 @@ hasHome: true
 aggroSwitch: onHit
 aggroLevel: high
 corpse: elephant_dead
-spawn_count: 2
+spawn_count: 4
 spawn:
     ground: [savannah]
 movement:

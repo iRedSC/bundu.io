@@ -1,0 +1,11 @@
+result:
+    item: poison_crystal
+    amount: 1
+duration: 10000
+score: 700
+ingredients:
+    poison: 12
+requirements:
+    - near_fire
+    - near_crafting_table
+    - near_anvil

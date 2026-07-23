@@ -5,6 +5,6 @@ duration: 6000
 score: 400
 ingredients:
     deer_hide: 2
-    meat_cooked: 10
+    meat_cooked: 20
 requirements:
     - near_crafting_table

@@ -4,11 +4,11 @@ texture: bundu/item/material/bird_skull.svg
 type: bundu:book
 function: off_hand
 whenOffHand:
-    "@s":
+    "*":
         attributes:
             attack.damage:
                 op: add
-                value: 5
+                value: 3
             health.regen_amount:
                 op: multiply
                 value: 0

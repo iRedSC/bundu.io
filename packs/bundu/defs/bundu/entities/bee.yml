@@ -9,7 +9,7 @@ animations:
     data: { amplitude: 0.02 }
 ---
 type: bundu:land
-health: 200
+health: 125
 score: 200
 behavior: hostile
 loseSightRange: 300
