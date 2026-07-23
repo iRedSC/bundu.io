@@ -5,7 +5,7 @@ ambient:
     snow:
         # Same idea as winter, lower density.
         interval_ms: [550, 1200]
-        size: [2, 11]
+        size: [20, 40]
         alpha: [0.16, 0.03]
         lifetime: [1400, 2800]
         speed: [16, 48]

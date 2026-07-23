@@ -5,7 +5,7 @@ ambient:
     firefly:
         periods: [night]
         interval_ms: [180, 420]
-        size: [3, 7]
+        size: [10, 30]
         alpha: [0.55, 0.22]
         lifetime: [1800, 3400]
         speed: [3, 12]

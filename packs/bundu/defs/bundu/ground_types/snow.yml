@@ -5,7 +5,7 @@ footsteps: true
 ambient:
     snow:
         interval_ms: [220, 520]
-        size: [2, 14]
+        size: [20, 40]
         alpha: [0.22, 0.04]
         lifetime: [1600, 3200]
         speed: [20, 60]

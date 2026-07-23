@@ -83,7 +83,7 @@ ambient_particles:
         forest:
             resource_tag: "#bundu:leaves_forest"
             interval_ms: [800, 1600]
-            size: [5, 12]
+            size: [20, 30]
             alpha: [0.42, 0.16]
             lifetime: [2200, 4000]
             speed: [12, 36]
