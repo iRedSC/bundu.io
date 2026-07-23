@@ -50,7 +50,10 @@ export function createAdminEditor(
     let palette: PaletteHandle | undefined;
     let toolbar: ToolbarHandle | undefined;
     let input: AdminInput | undefined;
-    const ghost = new AdminGhost(world.renderer);
+    const ghost = new AdminGhost(
+        world.renderer,
+        () => Math.abs(worldLayer.scale.x) || 1
+    );
     const tileGrid = createTileGridOverlay();
     worldLayer.addChild(tileGrid.container);
 

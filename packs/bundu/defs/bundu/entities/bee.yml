@@ -20,6 +20,7 @@ scale: 0.4
 hasHome: true
 aggroSwitch: random
 aggroLevel: low
+ignorePreferredWhenAggro: true
 corpse: bee_dead
 spawn_count: 8
 movement:

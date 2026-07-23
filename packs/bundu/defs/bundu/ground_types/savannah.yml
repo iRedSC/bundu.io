@@ -9,17 +9,19 @@ trail:
     spacing: 16
 ambient:
     dust:
-        interval_ms: [280, 700]
+        interval_ms: [110, 280]
+        count: 2
         size: [50, 100]
-        # Paired with size — bigger = more faint.
-        alpha: [0.2, 0.035]
-        lifetime: [1400, 2800]
-        speed: [18, 55]
-        gravity_x: 6
-        friction: 0.25
+        # Paired with size — bigger = more faint, but still readable while blowing.
+        alpha: [0.32, 0.12]
+        lifetime: [2000, 3800]
+        speed: [90, 180]
+        spread: 0.7
+        gravity_x: 40
+        friction: 0.1
         tint: "#d2b87a"
-        alpha_fade_in: 0.12
-        alpha_hold: 0.5
+        alpha_fade_in: 0.1
+        alpha_hold: 0.55
 ---
 model: savannah
 overheat: true

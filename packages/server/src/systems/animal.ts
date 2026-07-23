@@ -194,9 +194,13 @@ export class AnimalSystem extends System<GameEventMap> {
         const physics = animal.get(Physics);
         const radius = physics.collisionRadius;
         const config = AnimalConfigs.get(animal.get(Type).id);
-        this.retargetOffAvoidedGround(animal, config);
+        const ignorePreferred =
+            config.ignorePreferredWhenAggro && data.state === "chase";
+        if (!ignorePreferred) {
+            this.retargetOffAvoidedGround(animal, config);
+        }
         const seek = data.destination ?? target;
-        const policy = this.groundPolicy(config, physics, false);
+        const policy = this.groundPolicy(config, physics, ignorePreferred);
 
         // Drop a cached path if the next waypoint is no longer walkable.
         const nextWaypoint = data.path[0];

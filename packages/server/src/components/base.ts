@@ -180,6 +180,7 @@ export const Living = Component.register<Living>(() => ({}));
 export type AnimalData = {
     /** Stable config/type id. */
     type: number;
+    /** Spawn-anchor for `hasHome` idle roam. */
     home: { x: number; y: number };
     targetId?: number;
     destination?: { x: number; y: number };

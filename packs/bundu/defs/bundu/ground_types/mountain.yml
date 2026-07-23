@@ -3,18 +3,20 @@ color: "#6a6e68"
 fill: solid_blobs
 ambient:
     snow:
-        # Same idea as winter, lower density.
-        interval_ms: [550, 1200]
+        # Same blow as winter, lower density.
+        interval_ms: [220, 520]
+        count: 2
         size: [20, 40]
-        alpha: [0.16, 0.03]
-        lifetime: [1400, 2800]
-        speed: [16, 48]
-        gravity: 14
-        gravity_x: 3
-        friction: 0.18
+        alpha: [0.62, 0.3]
+        lifetime: [2000, 3800]
+        speed: [70, 140]
+        spread: 0.55
+        gravity: 8
+        gravity_x: 28
+        friction: 0.1
         tint: "#e8eef2"
-        alpha_fade_in: 0.1
-        alpha_hold: 0.55
+        alpha_fade_in: 0.08
+        alpha_hold: 0.6
 ---
 model: mountain
 whenOccupied:

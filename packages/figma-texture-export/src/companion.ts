@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import {
     COMPANION_PORT,
     isValidNamespace,
@@ -89,7 +89,8 @@ async function pushFiles(body: PushBody): Promise<{ written: string[]; overwritt
         }
 
         const absolutePath = resolve(root, relativePath);
-        if (!absolutePath.startsWith(root + "/") && absolutePath !== root) {
+        const fromRoot = relative(root, absolutePath);
+        if (fromRoot === "" || fromRoot.startsWith("..") || isAbsolute(fromRoot)) {
             throw new Error(`Refusing path outside textures root: ${relativePath}`);
         }
 
