@@ -5,6 +5,7 @@ import { Flags } from "../components/flags.js";
 import { PlayerData } from "../components/player.js";
 import { BuildingConfigs } from "../configs/loaders/buildings.js";
 import { distanceClauseMaxTiles } from "../configs/entity_filter.js";
+import { flagRegistry } from "../configs/flag_registry.js";
 import type {
     EffectContext,
     EffectPayload,
@@ -22,6 +23,7 @@ import { syncFlags, clearFlagSync } from "../network/flags.js";
 import type { GameEventMap } from "./event_map.js";
 import {
     applyContextEffects,
+    applyFlags,
     applyMaxEffects,
     clearContextSource,
     payloadForSubject,
@@ -33,6 +35,14 @@ import {
 } from "./effect_targets.js";
 import { topGroundAt } from "./ground_at.js";
 import { getSizedBounds } from "./position.js";
+import { isPlayerFriendlyTo } from "./structure_friendly.js";
+
+/** Engine source id + flag for hostile player proximity. */
+const NEAR_ENEMY_SOURCE = "near_enemy";
+/** Euclidean tile radius for {@link NEAR_ENEMY_SOURCE}. */
+const NEAR_ENEMY_TILES = 3;
+const NEAR_ENEMY_RANGE = NEAR_ENEMY_TILES * TILE_SIZE;
+const NEAR_ENEMY_RANGE_SQ = NEAR_ENEMY_RANGE * NEAR_ENEMY_RANGE;
 
 type Applied = {
     sources: Set<string>;
@@ -274,6 +284,7 @@ export class EffectContextSystem extends System<GameEventMap> {
         }
 
         this.syncEquip(subject, physics, desired);
+        this.syncNearEnemy(subject, physics, desired);
 
         const applied = getApplied(subject.id);
         for (const sourceId of applied.sources) {
@@ -282,6 +293,52 @@ export class EffectContextSystem extends System<GameEventMap> {
             }
         }
         applied.sources = desired;
+    }
+
+    /**
+     * Grant `near_enemy` while any non-friendly, non-freecam player is within
+     * {@link NEAR_ENEMY_TILES} Euclidean tiles.
+     */
+    private syncNearEnemy(
+        subject: GameObject,
+        physics: Physics,
+        desired: Set<string>
+    ): void {
+        const flags = Flags.get(subject);
+        if (!flags) return;
+
+        const others = this.world.query(
+            [PlayerData, Physics],
+            this.world.context.quadtree.query(
+                getSizedBounds(physics.position, NEAR_ENEMY_RANGE, NEAR_ENEMY_RANGE)
+            )
+        );
+
+        let near = false;
+        for (const other of others) {
+            if (other === subject) continue;
+            const otherData = PlayerData.get(other);
+            if (!otherData || otherData.freecam) continue;
+            if (isPlayerFriendlyTo(subject, other)) continue;
+
+            const otherPhys = Physics.get(other);
+            if (!otherPhys) continue;
+            const dx = physics.position.x - otherPhys.position.x;
+            const dy = physics.position.y - otherPhys.position.y;
+            if (dx * dx + dy * dy <= NEAR_ENEMY_RANGE_SQ) {
+                near = true;
+                break;
+            }
+        }
+
+        if (!near) return;
+
+        const flagId = flagRegistry().resolve(
+            NEAR_ENEMY_SOURCE,
+            "engine:near_enemy"
+        );
+        applyFlags(flags, NEAR_ENEMY_SOURCE, [flagId]);
+        desired.add(NEAR_ENEMY_SOURCE);
     }
 
     /**
