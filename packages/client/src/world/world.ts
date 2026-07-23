@@ -496,10 +496,6 @@ export class World {
         }
 
         const mode = hover.canInteract ? "can" : "cannot";
-        const changed =
-            !this.interactHover ||
-            this.interactHover.structure.id !== hover.structure.id ||
-            this.interactHover.canInteract !== hover.canInteract;
         this.interactHover = hover;
         this.interactionHighlight.attach(hover.structure, mode);
         this.interactionHighlight.syncVisibility();
