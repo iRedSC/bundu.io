@@ -12,10 +12,14 @@ ambient:
         gravity: -8
         gravity_x: 0
         friction: 0.6
+        # Hover in place — do not stream with snow/dust wind.
+        wind: false
         tint: "#eaff9c"
         blend_mode: add
-        alpha_fade_in: 0.22
-        alpha_hold: 0.65
-        z_index: 12
+        # Soft blink; reads clearly once above the sky multiply.
+        alpha_fade_in: 0.35
+        alpha_hold: 0.55
+        # Above sky multiply (200) so night tint doesn't crush the glow.
+        z_index: 202
 ---
 model: grass

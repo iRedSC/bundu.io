@@ -70,6 +70,11 @@ export type GroundAmbientEmitterDef = {
     speed: GroundFxRange;
     /** Radians; omit to use global wind heading. */
     direction?: number;
+    /**
+     * When false, skip global ambient wind (heading + gravity).
+     * Default true — snow/dust stream with the breeze; fireflies do not.
+     */
+    wind: boolean;
     spread: number;
     friction: number;
     gravity: number;
@@ -448,6 +453,7 @@ const DEFAULT_AMBIENT: GroundAmbientEmitterDef = {
     alpha: [0.16, 0.04],
     lifetime: [1200, 2400],
     speed: [16, 48],
+    wind: true,
     spread: Math.PI * 2,
     friction: 0.35,
     gravity: 0,
@@ -558,6 +564,7 @@ function parseAmbientEmitter(
             DEFAULT_AMBIENT.lifetime
         ),
         speed: optionalRange(raw, "speed", "speed", path, DEFAULT_AMBIENT.speed),
+        wind: optionalBoolean(raw, "wind", "wind", path, DEFAULT_AMBIENT.wind),
         spread: optionalPositive(
             raw,
             "spread",
