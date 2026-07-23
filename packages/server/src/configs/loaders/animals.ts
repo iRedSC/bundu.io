@@ -34,8 +34,6 @@ export type AnimalConfig = {
      * and client visual root TILE_SIZE. Identity = 1.
      */
     scale: number;
-    /** When true, idle roam alternates homeward and wander sessions. */
-    hasHome: boolean;
     wander_distance: number;
     attack_damage: number;
     attack_interval_ms: number;
@@ -60,6 +58,11 @@ export type AnimalConfig = {
      */
     aggroLevel: AggroLevel;
     /**
+     * When true, chase pathing ignores `movement.avoid` (crosses water/land
+     * freely while aggroed). Idle wander still respects avoid.
+     */
+    ignorePreferredWhenAggro: boolean;
+    /**
      * Structure type ids the animal will chase/attack when no player target
      * is available. YAML lists string ids; loader resolves to numeric ids.
      */
@@ -78,7 +81,8 @@ export type AnimalConfig = {
      * Pathing bias. Soft `strength` detours around avoided ground; `hard`
      * forbids it. Standing on avoided ground always bypasses and seeks the
      * nearest safe tile. `allowEmergencyEscape` (default true) also ignores
-     * avoid when stuck / no other path.
+     * avoid when stuck / no other path. Chase can ignore avoid entirely via
+     * `ignorePreferredWhenAggro`.
      */
     movement: {
         avoid: AnimalAvoidGround;
@@ -96,13 +100,13 @@ export const AnimalConfigs = new ConfigLoader<"entity_type", AnimalConfig>("enti
     passiveSpeed: 4,
     activeSpeed: 6,
     scale: 1,
-    hasHome: true,
     wander_distance: 300,
     attack_damage: 0,
     attack_interval_ms: 1000,
     attack_reach: 65,
     aggroSwitch: "never",
     aggroLevel: "high",
+    ignorePreferredWhenAggro: false,
     aggroAt: [],
     corpse: 0 as RegistryId<"resource">,
     spawn_count: 0,

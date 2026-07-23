@@ -194,9 +194,13 @@ export class AnimalSystem extends System<GameEventMap> {
         const physics = animal.get(Physics);
         const radius = physics.collisionRadius;
         const config = AnimalConfigs.get(animal.get(Type).id);
-        this.retargetOffAvoidedGround(animal, config);
+        const ignorePreferred =
+            config.ignorePreferredWhenAggro && data.state === "chase";
+        if (!ignorePreferred) {
+            this.retargetOffAvoidedGround(animal, config);
+        }
         const seek = data.destination ?? target;
-        const policy = this.groundPolicy(config, physics, false);
+        const policy = this.groundPolicy(config, physics, ignorePreferred);
 
         // Drop a cached path if the next waypoint is no longer walkable.
         const nextWaypoint = data.path[0];
@@ -519,38 +523,13 @@ export class AnimalSystem extends System<GameEventMap> {
             time + ai.wanderMinMs + random.integer(0, ai.wanderVarianceMs);
         data.path = [];
         data.stuckSince = 0;
-
-        if (!config.hasHome) {
-            data.destination = this.pickWanderPoint(
-                physics,
-                physics.position.x,
-                physics.position.y,
-                config.wander_distance,
-                config
-            );
-            return;
-        }
-
-        // Alternate homeward and wander sessions so returns aren't a bee-line.
-        if (data.roamPhase === "home") {
-            data.destination = this.pickWanderPoint(
-                physics,
-                data.home.x,
-                data.home.y,
-                TILE_SIZE,
-                config
-            ) ?? { x: data.home.x, y: data.home.y };
-            data.roamPhase = "wander";
-        } else {
-            data.destination = this.pickWanderPoint(
-                physics,
-                data.home.x,
-                data.home.y,
-                config.wander_distance,
-                config
-            );
-            data.roamPhase = "home";
-        }
+        data.destination = this.pickWanderPoint(
+            physics,
+            physics.position.x,
+            physics.position.y,
+            config.wander_distance,
+            config
+        );
     }
 
     /** Prefer open, non-avoided ground so wander doesn't aim into clumps / water. */

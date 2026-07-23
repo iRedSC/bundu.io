@@ -437,11 +437,11 @@ for items). Author `type: bundu:land` on the entity data half; nested
 | `detectionRange` / `loseSightRange` | `300` / `450` | World units |
 | `passiveSpeed` / `activeSpeed` | `4` / `6` | Per 20 TPS tick |
 | `scale` | `1` | Size in tiles |
-| `hasHome` | `true` | Idle roam |
-| `wander_distance` | `300` | |
+| `wander_distance` | `300` | Idle roam radius from current position |
 | `attack_damage` / `attack_interval_ms` / `attack_reach` | `0` / `1000` / `65` | |
 | `aggroSwitch` | `never` | `never` \| `onHit` \| `random` |
 | `aggroLevel` | `high` | `high` \| `medium` \| `low` |
+| `ignorePreferredWhenAggro` | `false` | Ignore `movement.avoid` while chasing |
 | `aggroAt` | `[]` | Structures/tags to attack without a player |
 | `corpse` | required | Resource id for the body |
 | `spawn_count` | `0` | Per-species worldgen budget (also needs `gameplay.worldgen.animals`) |

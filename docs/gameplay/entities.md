@@ -15,7 +15,7 @@ Animals and other actors in the world. Stats below are from the base `bundu` pac
     <img src="/entities/bee.svg" alt="Bee" />
     <strong>Bee</strong>
     <code>bundu:bee</code>
-    <p>Hostile, fast, home-bound. Light hits, annoying packs.</p>
+    <p>Hostile, fast. Light hits, annoying packs.</p>
   </div>
   <div class="catalog-card">
     <img src="/entities/bear.svg" alt="Bear" />
