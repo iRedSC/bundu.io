@@ -29,16 +29,18 @@ import {
     isOceanGroundModel,
     LandDistanceField,
     LandSeamBaker,
-    LAND_SEAM_PER_TICK,
-    LAND_SEAM_TICK_INTERVAL,
+    cancelLandSeamIdle,
+    scheduleLandSeamIdle,
     NearshoreFill,
     oceanGroundModel,
     seamLodFromZoom,
     solidGroundModel,
     waterFxProfileKey,
     type GroundVisual,
+    type LandSeamIdleHandle,
     type SeamLod,
     type ShoreSample,
+    type GroundViewBounds,
 } from "./ground";
 import {
     DEFAULT_OCEAN_FADE_TILES,
@@ -226,8 +228,8 @@ export class World {
     private readonly landDistance = new LandDistanceField();
     private readonly nearshoreFill = new NearshoreFill();
     private readonly landSeamBaker = new LandSeamBaker();
-    /** Frame counter for live seam bake pacing. */
-    private landSeamFrame = 0;
+    /** Pending between-frame bake; cancelled on reset / rebuild. */
+    private landSeamIdle: LandSeamIdleHandle | null = null;
     private oceanTypeIds = new Set<number>();
     /** Topmost-patch ocean mask (1 = ocean). Empty tiles stay 0. */
     private oceanTiles = new Uint8Array(WORLD_TILES * WORLD_TILES);
@@ -339,6 +341,7 @@ export class World {
         // Pixi's pooled AlphaMask BindGroup still references them crashes on
         // the next ocean render (respawn). syncModelMasks reuses entries.
         this.landSeamBaker.reset();
+        this.cancelLandSeamIdleWork();
         this.groundSynced = false;
         this.wakeIdleAt.clear();
         this.wakeMoveAt.clear();
@@ -1347,16 +1350,15 @@ export class World {
             fillOfType,
             inlandAt
         );
-        this.landSeamFrame = 0;
-        // Warm the camera keep ring immediately; distant chunks stream later.
-        this.tickLandSeams(8);
+        // Live bake runs between frames; join still flushes nearby sync.
+        this.cancelLandSeamIdleWork();
+        this.scheduleLandSeamIdleWork();
     }
 
-    /** Bake a few edge-band seam chunks each frame (visible first when live). */
+    /** LOD + unload on the ticker; bake only in idle slices. */
     private tickLandSeams(limit?: number): void {
-        const live = limit === undefined;
         const view = this.camera.worldBounds();
-        if (live) {
+        if (limit === undefined) {
             const zoom = Math.hypot(
                 this.viewport.scale.x,
                 this.viewport.scale.y
@@ -1364,27 +1366,65 @@ export class World {
             this.applyLandSeamLod(
                 seamLodFromZoom(zoom, this.camera.isFreecam())
             );
-            this.landSeamFrame++;
-            if (this.landSeamFrame % LAND_SEAM_TICK_INTERVAL !== 0) return;
-            // Catch up faster after big pans — keep ring should usually be warm.
-            const backlog = this.landSeamBaker.nearbyPending(view);
-            limit = backlog > 6 ? 3 : LAND_SEAM_PER_TICK;
+            this.applyLandSeamUnloads(view);
+            if (this.landSeamBaker.nearbyPending(view) > 0) {
+                this.scheduleLandSeamIdleWork();
+            }
+            return;
         }
+        this.applyLandSeamUnloads(view);
+        this.bakeLandSeamChunks(limit, view);
+    }
+
+    private cancelLandSeamIdleWork(): void {
+        cancelLandSeamIdle(this.landSeamIdle);
+        this.landSeamIdle = null;
+    }
+
+    private scheduleLandSeamIdleWork(): void {
+        if (this.landSeamIdle) return;
+        this.landSeamIdle = scheduleLandSeamIdle((budgetMs) => {
+            this.landSeamIdle = null;
+            this.bakeLandSeamsIdle(budgetMs);
+        });
+    }
+
+    /** Time-sliced bake between frames — stop when the budget is spent. */
+    private bakeLandSeamsIdle(budgetMs: number): void {
+        const view = this.camera.worldBounds();
+        this.applyLandSeamUnloads(view);
+        const started = performance.now();
+        while (performance.now() - started < budgetMs) {
+            if (this.landSeamBaker.nearbyPending(view) === 0) return;
+            if (this.bakeLandSeamChunks(1, view) === 0) return;
+        }
+        if (this.landSeamBaker.nearbyPending(view) > 0) {
+            this.scheduleLandSeamIdleWork();
+        }
+    }
+
+    private applyLandSeamUnloads(view: GroundViewBounds): void {
         const byId = new Map(
             this.groundPatches.map((patch) => [patch.id, patch])
         );
-        if (live) {
-            for (const unloaded of this.landSeamBaker.unloadDistant(view)) {
-                byId.get(unloaded.id)?.visual.removeLandSeam?.(unloaded.key);
-                unloaded.texture.destroy(true);
-            }
+        for (const unloaded of this.landSeamBaker.unloadDistant(view)) {
+            byId.get(unloaded.id)?.visual.removeLandSeam?.(unloaded.key);
+            unloaded.texture.destroy(true);
         }
-        if (this.landSeamBaker.nearbyPending(view) === 0) return;
+    }
+
+    /** Bake up to `limit` nearby chunks and attach sprites. Returns baked count. */
+    private bakeLandSeamChunks(limit: number, view: GroundViewBounds): number {
+        if (this.landSeamBaker.nearbyPending(view) === 0) return 0;
         const baked = this.landSeamBaker.tick(limit, view);
-        if (baked.length === 0) return;
+        if (baked.length === 0) return 0;
+        const byId = new Map(
+            this.groundPatches.map((patch) => [patch.id, patch])
+        );
         for (const chunk of baked) {
             byId.get(chunk.id)?.visual.applyLandSeam?.(chunk);
         }
+        return baked.length;
     }
 
     private disposeGroundVisual(visual: GroundVisual): void {
@@ -1401,10 +1441,12 @@ export class World {
     private applyLandSeamLod(lod: SeamLod): void {
         if (lod === this.landSeamBaker.getLod()) return;
         // Unbind before setLod destroys textures.
+        this.cancelLandSeamIdleWork();
         for (const patch of this.groundPatches) {
             patch.visual.clearLandSeam?.();
         }
         this.landSeamBaker.setLod(lod);
+        this.scheduleLandSeamIdleWork();
     }
 
     /**
