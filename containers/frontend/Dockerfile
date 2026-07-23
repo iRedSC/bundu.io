@@ -41,6 +41,9 @@ WORKDIR /app
 ENV PORT=3000
 # Hot-reload / debug endpoints stay off in the shipped image.
 ENV BUNDU_DEBUG=0
+# VitePress is built with base `/`; serve public/docs when Host matches.
+ENV DOCS_HOST=wiki.bundu.io
+ENV DOCS_PUBLIC_ORIGIN=https://wiki.bundu.io
 
 COPY --from=build /app/static-server.ts ./static-server.ts
 COPY --from=build /app/public ./public

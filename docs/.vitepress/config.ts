@@ -3,8 +3,8 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
 	title: "bundu docs",
 	description: "Gameplay reference and pack authoring for bundu.io",
-	// Served by the same frontend container as the game client.
-	base: "/docs/",
+	// Root paths — wiki.bundu.io serves public/docs/ as the site root.
+	base: "/",
 	outDir: "../public/docs",
 	cleanUrls: true,
 	ignoreDeadLinks: true,
