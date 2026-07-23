@@ -16,7 +16,8 @@ import { isGodmode } from "../creative/mode.js";
 
 /**
  * Applies temperature.warmth once every vitals.tick_period_ms
- * (scaled by insulation toward zero).
+ * (scaled by directional insulation toward zero).
+ * Heating uses `temperature.insulation.up`; cooling uses `.down`.
  */
 export class TemperatureSystem extends System<GameEventMap> {
     constructor(world: World) {
@@ -43,10 +44,20 @@ export class TemperatureSystem extends System<GameEventMap> {
         );
         if (ticks > 0) {
             const warmth = attributes.get("temperature.warmth");
-            const insulation = Math.min(
-                1,
-                Math.max(0, attributes.get("temperature.insulation"))
-            );
+            const channel = warmth > 0 ? "up" : warmth < 0 ? "down" : undefined;
+            const insulation =
+                channel === undefined
+                    ? 0
+                    : Math.min(
+                          1,
+                          Math.max(
+                              0,
+                              attributes.resolve(
+                                  "temperature.insulation",
+                                  channel
+                              )
+                          )
+                      );
             const effective = warmth * (1 - insulation);
             if (effective !== 0) {
                 stats.set("temperature", {

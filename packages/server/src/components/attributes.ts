@@ -34,6 +34,8 @@ export const AttributeList = [
     "temperature.max",
     "temperature.warmth",
     "temperature.insulation",
+    "temperature.insulation.up",
+    "temperature.insulation.down",
     "temperature.cancel_regen_below",
     "temperature.cancel_regen_above",
 
@@ -55,6 +57,9 @@ export type AttributeOperations = (typeof AttributeOperationList)[number];
 
 /** Damage channel suffix under `attack.damage` (pack / resolve). */
 export type AttackDamageChannel = "building" | "animal";
+
+/** Directional channel under `temperature.insulation` (pack / resolve). */
+export type InsulationChannel = "up" | "down";
 
 const ATTRIBUTE_SET = new Set<string>(AttributeList);
 
