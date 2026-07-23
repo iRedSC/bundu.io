@@ -12,41 +12,71 @@ export function surgeAlong(progress: number, apexAt: number): number {
     return Math.sin(phase);
 }
 
+/**
+ * Ease-out travel 0→1 for post-hit seaward retreat (no apex stall).
+ */
+export function surgeRetreatTravel(progress: number): number {
+    const t = Math.min(1, Math.max(0, progress));
+    return 1 - (1 - t) * (1 - t);
+}
+
 export type SurgeRetreat = {
     originX: number;
     originY: number;
     dirX: number;
     dirY: number;
     surgeDistance: number;
-    age: number;
     lifetime: number;
 };
 
 /**
- * Snap a surge to its apex at the hit point, then retreat along `nx,ny`
- * (circle normal) back out — same wash-out curve, not an instant fade.
+ * Build a seaward retreat from a circle hit.
+ * `offshoreX/Y` is the unit wash reverse (back out to sea); the contact
+ * normal is flipped/biased so motion always leaves toward open water.
  */
 export function surgeRetreatFromHit(
     hitX: number,
     hitY: number,
-    nx: number,
-    ny: number,
+    hitNx: number,
+    hitNy: number,
     along: number,
     surgeDistance: number,
     apexAt: number,
-    lifetime: number
+    lifetime: number,
+    offshoreX: number,
+    offshoreY: number
 ): SurgeRetreat {
-    const retreatDist = Math.max(24, surgeDistance * Math.max(0.2, along));
+    let nx = hitNx;
+    let ny = hitNy;
+    if (nx * nx + ny * ny < 0.25) {
+        nx = offshoreX;
+        ny = offshoreY;
+    }
+    // Face seaward if the contact normal points inland.
+    if (nx * offshoreX + ny * offshoreY < 0) {
+        nx = -nx;
+        ny = -ny;
+    }
+    // Bias toward offshore so sideways hits still wash out.
+    nx += offshoreX;
+    ny += offshoreY;
+    const len = Math.hypot(nx, ny) || 1;
+    nx /= len;
+    ny /= len;
+
+    const retreatDist = Math.max(
+        120,
+        surgeDistance * Math.max(0.4, along)
+    );
     const apex = Math.min(0.95, Math.max(0.05, apexAt));
-    const age = apex * lifetime;
-    const retreatMs = (1 - apex) * lifetime;
+    const retreatMs = Math.max(1400, (1 - apex) * lifetime);
+
     return {
-        originX: hitX - nx * retreatDist,
-        originY: hitY - ny * retreatDist,
+        originX: hitX,
+        originY: hitY,
         dirX: nx,
         dirY: ny,
         surgeDistance: retreatDist,
-        age,
-        lifetime: age + retreatMs,
+        lifetime: retreatMs,
     };
 }

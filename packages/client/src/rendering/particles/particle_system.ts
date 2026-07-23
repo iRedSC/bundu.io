@@ -8,7 +8,11 @@ import {
 } from "pixi.js";
 import type { NumberRange, ParticleBurst } from "./types";
 import { sizeEnvelope } from "./size_envelope";
-import { surgeAlong, surgeRetreatFromHit } from "./surge";
+import {
+    surgeAlong,
+    surgeRetreatFromHit,
+    surgeRetreatTravel,
+} from "./surge";
 import type { ParticleBlockHit } from "./types";
 
 type ActiveParticle = {
@@ -26,6 +30,8 @@ type ActiveParticle = {
     motionEndAt: number;
     surgeDistance: number | undefined;
     surgeApexAt: number;
+    /** Post-hit seaward ease-out (skips the surge apex stall). */
+    retreating: boolean;
     blockedAt:
         | ((
               x: number,
@@ -67,39 +73,40 @@ const random = (range: NumberRange): number => {
     return range[0] + Math.random() * (range[1] - range[0]);
 };
 
-/** Snap to apex at the hit and wash back out along the circle normal. */
+/** Leave the solid along a seaward normal — continuous ease-out, no apex stall. */
 function retreatFromHit(
     particle: ActiveParticle,
     hit: ParticleBlockHit,
     along: number
 ): void {
-    const distance = particle.surgeDistance ?? 0;
-    let { nx, ny } = hit;
-    if (nx * nx + ny * ny < 0.25) {
-        // Center hit — fall back to offshore (reverse of inbound wash).
-        nx = -particle.dirX;
-        ny = -particle.dirY;
-    }
     const retreat = surgeRetreatFromHit(
         particle.view.x,
         particle.view.y,
-        nx,
-        ny,
+        hit.nx,
+        hit.ny,
         along,
-        distance,
+        particle.surgeDistance ?? 0,
         particle.surgeApexAt,
-        particle.lifetime
+        particle.lifetime,
+        -particle.dirX,
+        -particle.dirY
     );
     particle.originX = retreat.originX;
     particle.originY = retreat.originY;
     particle.dirX = retreat.dirX;
     particle.dirY = retreat.dirY;
     particle.surgeDistance = retreat.surgeDistance;
-    particle.age = retreat.age;
+    particle.retreating = true;
+    particle.age = 0;
     particle.lifetime = retreat.lifetime;
     particle.blockedAt = undefined;
     particle.velocityX = 0;
     particle.velocityY = 0;
+    particle.startScale = Math.max(particle.view.scaleX, particle.view.scaleY);
+    particle.peakScale = undefined;
+    particle.endScale = 0;
+    particle.peakAt = 0;
+    particle.sizeEndAt = 1;
 }
 
 export class ParticleSystem {
@@ -172,6 +179,7 @@ export class ParticleSystem {
                 motionEndAt: options.motionEndAt ?? 1,
                 surgeDistance: surge ? random(surge.distance) : undefined,
                 surgeApexAt: Math.min(0.95, Math.max(0.05, surge?.apexAt ?? 0.45)),
+                retreating: false,
                 blockedAt: surge ? options.blockedAt : undefined,
                 hitRadius: size * 0.5,
                 mergeAlpha,
@@ -216,37 +224,47 @@ export class ParticleSystem {
 
             let progress = particle.age / particle.lifetime;
             if (particle.surgeDistance !== undefined) {
-                const along = surgeAlong(progress, particle.surgeApexAt);
-                particle.view.x =
-                    particle.originX +
-                    particle.dirX * particle.surgeDistance * along;
-                particle.view.y =
-                    particle.originY +
-                    particle.dirY * particle.surgeDistance * along;
+                if (particle.retreating) {
+                    const travel = surgeRetreatTravel(progress);
+                    particle.view.x =
+                        particle.originX +
+                        particle.dirX * particle.surgeDistance * travel;
+                    particle.view.y =
+                        particle.originY +
+                        particle.dirY * particle.surgeDistance * travel;
+                } else {
+                    const along = surgeAlong(progress, particle.surgeApexAt);
+                    particle.view.x =
+                        particle.originX +
+                        particle.dirX * particle.surgeDistance * along;
+                    particle.view.y =
+                        particle.originY +
+                        particle.dirY * particle.surgeDistance * along;
 
-                // Only while washing in — a hit retreats seaward along the normal.
-                if (
-                    progress > 0.06 &&
-                    progress < particle.surgeApexAt &&
-                    particle.blockedAt
-                ) {
-                    const hitR =
-                        particle.startScale > 0
-                            ? particle.hitRadius *
-                              (Math.max(
-                                  particle.view.scaleX,
-                                  particle.view.scaleY
-                              ) /
-                                  particle.startScale)
-                            : particle.hitRadius;
-                    const hit = particle.blockedAt(
-                        particle.view.x,
-                        particle.view.y,
-                        hitR
-                    );
-                    if (hit) {
-                        retreatFromHit(particle, hit, along);
-                        progress = particle.age / particle.lifetime;
+                    // Only while washing in — a hit retreats seaward along the normal.
+                    if (
+                        progress > 0.06 &&
+                        progress < particle.surgeApexAt &&
+                        particle.blockedAt
+                    ) {
+                        const hitR =
+                            particle.startScale > 0
+                                ? particle.hitRadius *
+                                  (Math.max(
+                                      particle.view.scaleX,
+                                      particle.view.scaleY
+                                  ) /
+                                      particle.startScale)
+                                : particle.hitRadius;
+                        const hit = particle.blockedAt(
+                            particle.view.x,
+                            particle.view.y,
+                            hitR
+                        );
+                        if (hit) {
+                            retreatFromHit(particle, hit, along);
+                            progress = 0;
+                        }
                     }
                 }
             } else if (progress < particle.motionEndAt) {

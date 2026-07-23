@@ -36,7 +36,11 @@ import {
     createSplashRefractionFilter,
 } from "./splash_refraction";
 import { sizeEnvelope } from "../../rendering/particles/size_envelope";
-import { surgeAlong, surgeRetreatFromHit } from "../../rendering/particles/surge";
+import {
+    surgeAlong,
+    surgeRetreatFromHit,
+    surgeRetreatTravel,
+} from "../../rendering/particles/surge";
 import type { ParticleBlockHit } from "../../rendering/particles/types";
 import type {
     GroundUpdateContext,
@@ -307,6 +311,7 @@ export function createOceanGround(
         dirY?: number;
         surgeDistance?: number;
         surgeApexAt?: number;
+        retreating?: boolean;
         blockedAt?: (
             x: number,
             y: number,
@@ -580,47 +585,51 @@ export function createOceanGround(
             if (entry.surgeDistance !== undefined) {
                 const progress = (now - entry.born) / entry.lifetime;
                 const apexAt = entry.surgeApexAt ?? 0.45;
-                const along = surgeAlong(progress, apexAt);
                 const originX = entry.originX ?? entry.x;
                 const originY = entry.originY ?? entry.y;
                 const dirX = entry.dirX ?? 0;
                 const dirY = entry.dirY ?? 0;
-                entry.x = originX + dirX * entry.surgeDistance * along;
-                entry.y = originY + dirY * entry.surgeDistance * along;
 
-                const hitRadius = entry.startSize * 0.45;
-                const hit =
-                    progress > 0.06 && progress < apexAt
-                        ? entry.blockedAt?.(entry.x, entry.y, hitRadius)
-                        : undefined;
-                if (hit) {
-                    let { nx, ny } = hit;
-                    if (nx * nx + ny * ny < 0.25) {
-                        nx = -dirX;
-                        ny = -dirY;
+                if (entry.retreating) {
+                    const travel = surgeRetreatTravel(progress);
+                    entry.x = originX + dirX * entry.surgeDistance * travel;
+                    entry.y = originY + dirY * entry.surgeDistance * travel;
+                } else {
+                    const along = surgeAlong(progress, apexAt);
+                    entry.x = originX + dirX * entry.surgeDistance * along;
+                    entry.y = originY + dirY * entry.surgeDistance * along;
+
+                    const hitRadius = entry.startSize * 0.45;
+                    const hit =
+                        progress > 0.06 && progress < apexAt
+                            ? entry.blockedAt?.(entry.x, entry.y, hitRadius)
+                            : undefined;
+                    if (hit) {
+                        const retreat = surgeRetreatFromHit(
+                            entry.x,
+                            entry.y,
+                            hit.nx,
+                            hit.ny,
+                            along,
+                            entry.surgeDistance,
+                            apexAt,
+                            entry.lifetime,
+                            -dirX,
+                            -dirY
+                        );
+                        entry.originX = retreat.originX;
+                        entry.originY = retreat.originY;
+                        entry.dirX = retreat.dirX;
+                        entry.dirY = retreat.dirY;
+                        entry.surgeDistance = retreat.surgeDistance;
+                        entry.retreating = true;
+                        entry.born = now;
+                        entry.lifetime = retreat.lifetime;
+                        entry.blockedAt = undefined;
+                        entry.velocityX = 0;
+                        entry.velocityY = 0;
+                        entry.peakSize = undefined;
                     }
-                    const retreat = surgeRetreatFromHit(
-                        entry.x,
-                        entry.y,
-                        nx,
-                        ny,
-                        along,
-                        entry.surgeDistance,
-                        apexAt,
-                        entry.lifetime
-                    );
-                    entry.originX = retreat.originX;
-                    entry.originY = retreat.originY;
-                    entry.dirX = retreat.dirX;
-                    entry.dirY = retreat.dirY;
-                    entry.surgeDistance = retreat.surgeDistance;
-                    entry.born = now - retreat.age;
-                    entry.lifetime = retreat.lifetime;
-                    entry.blockedAt = undefined;
-                    entry.velocityX = 0;
-                    entry.velocityY = 0;
-                    entry.x = entry.originX + entry.dirX * entry.surgeDistance;
-                    entry.y = entry.originY + entry.dirY * entry.surgeDistance;
                 }
             } else {
                 const friction = Math.exp(-splash.friction * deltaSeconds);
