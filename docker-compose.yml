@@ -7,6 +7,8 @@ services:
         GAME_WS_URL: ${GAME_WS_URL:-ws://localhost:7777}
     environment:
       PORT: 3000
+      DOCS_HOST: ${DOCS_HOST:-wiki.bundu.io}
+      DOCS_PUBLIC_ORIGIN: ${DOCS_PUBLIC_ORIGIN:-https://wiki.bundu.io}
     depends_on:
       - server
 

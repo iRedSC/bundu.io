@@ -3,10 +3,20 @@ import path from "node:path";
 import fs from "node:fs";
 
 const PUBLIC_DIR = path.join(import.meta.dir, "public");
+const DOCS_DIR = path.join(PUBLIC_DIR, "docs");
 const PACKS_ROOT = path.join(import.meta.dir, "packs");
 const PORT = Number(process.env.PORT ?? 3000);
 /** Dev-only model-definition hot reload + browser live-reload. Never in CI/prod. */
 const DEV_CONFIG_RELOAD = process.env.BUNDU_DEBUG === "1";
+/** Hostnames that serve VitePress from public/docs as site root (comma-separated). */
+const DOCS_HOSTS = new Set(
+    (process.env.DOCS_HOST ?? "wiki.bundu.io")
+        .split(",")
+        .map((host) => host.trim().toLowerCase())
+        .filter(Boolean)
+);
+/** Public origin used when redirecting /docs on the game host. */
+const DOCS_PUBLIC_ORIGIN = process.env.DOCS_PUBLIC_ORIGIN ?? "https://wiki.bundu.io";
 
 const LIVE_RELOAD_SCRIPT = `<script>(function(){var e=new EventSource("/__dev/live-reload");e.onmessage=function(){location.reload()};})();</script>`;
 
@@ -257,8 +267,21 @@ function staticHeaders(): HeadersInit {
     return DEV_CONFIG_RELOAD ? { "Cache-Control": "no-store" } : {};
 }
 
-/** Resolve a public URL path to a file. Supports VitePress cleanUrls. */
-function resolvePublicFile(pathname: string): string | null | "forbidden" {
+function requestHost(req: Request): string {
+    const forwarded = req.headers.get("x-forwarded-host");
+    const raw = forwarded?.split(",")[0]?.trim() || req.headers.get("host") || "";
+    return raw.split(":")[0]?.toLowerCase() ?? "";
+}
+
+function isDocsHost(host: string): boolean {
+    return DOCS_HOSTS.has(host);
+}
+
+/** Resolve a URL path under rootDir. Supports VitePress cleanUrls. */
+function resolvePublicFile(
+    pathname: string,
+    rootDir: string
+): string | null | "forbidden" {
     const candidates: string[] = [];
     if (pathname.endsWith("/")) {
         candidates.push(`${pathname}index.html`);
@@ -270,8 +293,8 @@ function resolvePublicFile(pathname: string): string | null | "forbidden" {
     }
 
     for (const candidate of candidates) {
-        const filepath = path.join(PUBLIC_DIR, candidate);
-        if (filepath !== PUBLIC_DIR && !filepath.startsWith(`${PUBLIC_DIR}${path.sep}`)) {
+        const filepath = path.join(rootDir, candidate);
+        if (filepath !== rootDir && !filepath.startsWith(`${rootDir}${path.sep}`)) {
             return "forbidden";
         }
         try {
@@ -281,6 +304,23 @@ function resolvePublicFile(pathname: string): string | null | "forbidden" {
         }
     }
     return null;
+}
+
+function responseForPublicFile(
+    filepath: string | null | "forbidden"
+): Response | Promise<Response> {
+    if (filepath === "forbidden") {
+        return new Response("Forbidden", { status: 403 });
+    }
+    if (!filepath) {
+        return new Response("Not Found", { status: 404 });
+    }
+    if (path.extname(filepath).toLowerCase() === ".html") {
+        return serveHtml(filepath);
+    }
+    return new Response(file(filepath), {
+        headers: staticHeaders(),
+    });
 }
 
 async function serveHtml(filepath: string): Promise<Response> {
@@ -355,6 +395,22 @@ serve({
     ...(DEV_CONFIG_RELOAD ? { idleTimeout: 0 } : {}),
     async fetch(req) {
         const url = new URL(req.url);
+        const host = requestHost(req);
+
+        // wiki.bundu.io (etc.): public/docs as site root, including /assets.
+        if (isDocsHost(host)) {
+            return responseForPublicFile(resolvePublicFile(url.pathname, DOCS_DIR));
+        }
+
+        // Game host: send /docs traffic to the wiki origin (links use root paths).
+        if (url.pathname === "/docs" || url.pathname.startsWith("/docs/")) {
+            const suffix =
+                url.pathname === "/docs" || url.pathname === "/docs/"
+                    ? "/"
+                    : url.pathname.slice("/docs".length);
+            return Response.redirect(new URL(`${suffix}${url.search}`, DOCS_PUBLIC_ORIGIN), 302);
+        }
+
         if (url.pathname === "/") {
             return Response.redirect(new URL("/site/", url), 302);
         }
@@ -413,24 +469,14 @@ serve({
             });
         }
 
-        const filepath = resolvePublicFile(url.pathname);
-        if (filepath === "forbidden") {
-            return new Response("Forbidden", { status: 403 });
-        }
-        if (!filepath) {
-            return new Response("Not Found", { status: 404 });
-        }
-        if (path.extname(filepath).toLowerCase() === ".html") {
-            return serveHtml(filepath);
-        }
-        return new Response(file(filepath), {
-            headers: staticHeaders(),
-        });
+        return responseForPublicFile(resolvePublicFile(url.pathname, PUBLIC_DIR));
     },
 });
 
 console.log(`Client running at http://localhost:${PORT}/site/`);
-console.log(`Docs running at http://localhost:${PORT}/docs/`);
+console.log(
+    `Docs hosts ${[...DOCS_HOSTS].join(", ") || "(none)"} → ${DOCS_DIR} (public ${DOCS_PUBLIC_ORIGIN})`
+);
 if (DEV_CONFIG_RELOAD) {
     console.log(
         `[static] model definition hot-reload enabled (${modelDirs.length} pack namespace(s))`
