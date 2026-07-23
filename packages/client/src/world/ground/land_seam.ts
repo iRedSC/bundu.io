@@ -22,14 +22,56 @@ export const LAND_SEAM_PAD_TILES = Math.ceil(LAND_SEAM_AMPLITUDE + 0.02);
  * corner bites) never reveal the hard rect. Seam band paints the ring.
  */
 export const LAND_SEAM_FILL_INSET_TILES = LAND_SEAM_PAD_TILES + 1;
-/** Land chunks to bake per live tick (join flush uses its own limit). */
+/** Land chunks to bake per sync flush step (loading screen). */
 export const LAND_SEAM_PER_TICK = 1;
 /**
- * Live play / freecam-exit: only run a bake tick every N frames.
- * Kept high so LOD upgrades and ground edits drip in without hitching;
- * initial load bypasses this via `flushLandSeams` (nearby only).
+ * Soft cap on CPU ms spent baking seams in one idle slice. Keeps work in the
+ * gaps between frames instead of hitching the Pixi ticker.
  */
-export const LAND_SEAM_TICK_INTERVAL = 18;
+export const LAND_SEAM_IDLE_BUDGET_MS = 3;
+/**
+ * When the idle deadline reports ~0 remaining (timeout path), still allow a
+ * tiny bake so the queue never starves under sustained load.
+ */
+export const LAND_SEAM_IDLE_FALLBACK_MS = 1.5;
+/** Max wait before forcing an idle bake under a busy main thread. */
+export const LAND_SEAM_IDLE_TIMEOUT_MS = 50;
+
+export type LandSeamIdleHandle = {
+    kind: "ric" | "timeout";
+    id: number;
+};
+
+/** Run `fn` between frames; `budgetMs` is how long it may bake this slice. */
+export function scheduleLandSeamIdle(
+    fn: (budgetMs: number) => void
+): LandSeamIdleHandle {
+    if (typeof requestIdleCallback === "function") {
+        const id = requestIdleCallback(
+            (deadline) => {
+                const remain = deadline.timeRemaining();
+                const raw =
+                    remain > 0.5 ? remain : LAND_SEAM_IDLE_FALLBACK_MS;
+                fn(Math.min(raw, LAND_SEAM_IDLE_BUDGET_MS));
+            },
+            { timeout: LAND_SEAM_IDLE_TIMEOUT_MS }
+        );
+        return { kind: "ric", id };
+    }
+    const id = window.setTimeout(
+        () => fn(LAND_SEAM_IDLE_BUDGET_MS),
+        0
+    );
+    return { kind: "timeout", id };
+}
+
+export function cancelLandSeamIdle(
+    handle: LandSeamIdleHandle | null | undefined
+): void {
+    if (!handle) return;
+    if (handle.kind === "ric") cancelIdleCallback(handle.id);
+    else clearTimeout(handle.id);
+}
 
 /**
  * Max tile edge of one seam chunk. Keeps crisp subdiv cheap:
