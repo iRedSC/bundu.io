@@ -44,7 +44,7 @@ export let oceanFx: OceanFxConfig = {
         peakAt: 0.35,
     },
     particles: {
-        foamIntervalMs: [180, 400],
+        foamIntervalMs: [900, 1600],
         sparkleIntervalMs: [280, 600],
         shoreFilterMs: 250,
     },

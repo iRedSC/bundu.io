@@ -26,7 +26,7 @@ import {
 import { AnchoredDisplacementFilter } from "./anchored_displacement";
 import { ambientRate } from "./ambient_fx";
 import { oceanFx, oceanTint } from "./ocean_fx";
-import { oceanFoam, oceanSparkle } from "./particles/foam";
+import { oceanSparkle, oceanWaveWash } from "./particles/foam";
 import {
     createDropletDisplacementTexture,
     createSplashRefractionFilter,
@@ -772,14 +772,16 @@ export function createOceanGround(
                         sample.y + sample.ny * 24
                     )
                 ) {
-                    ctx.emitParticles(
-                        oceanFoam(
-                            foamTex,
-                            sample.x,
-                            sample.y,
-                            Math.atan2(sample.ny, sample.nx)
-                        )
-                    );
+                    for (const burst of oceanWaveWash(
+                        foamTex,
+                        displaceTex,
+                        sample.x,
+                        sample.y,
+                        sample.nx,
+                        sample.ny
+                    )) {
+                        ctx.emitParticles(burst);
+                    }
                 }
             }
 

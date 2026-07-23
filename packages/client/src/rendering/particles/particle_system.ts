@@ -5,16 +5,23 @@ import {
 } from "pixi.js";
 import type { NumberRange, ParticleBurst } from "./types";
 import { sizeEnvelope } from "./size_envelope";
+import { surgeAlong } from "./surge";
 
 type ActiveParticle = {
     view: Particle;
     container: ParticleContainer;
+    originX: number;
+    originY: number;
+    dirX: number;
+    dirY: number;
     velocityX: number;
     velocityY: number;
     gravity: number;
     gravityX: number;
     friction: number;
     motionEndAt: number;
+    surgeDistance: number | undefined;
+    surgeApexAt: number;
     spin: number;
     spinFriction: number;
     spinEndAt: number;
@@ -48,11 +55,13 @@ export class ParticleSystem {
             options.texture.width,
             options.texture.height
         );
+        const surge =
+            options.motion?.kind === "surge" ? options.motion : undefined;
 
         for (let i = 0; i < options.count; i++) {
             const direction =
                 options.direction + random([-spread / 2, spread / 2]);
-            const speed = random(options.speed);
+            const speed = surge ? 0 : random(options.speed);
             const size = random(options.size);
             const scale = size / texSize;
             const startAlpha = options.alpha ?? 1;
@@ -64,6 +73,8 @@ export class ParticleSystem {
                 1,
                 Math.max(alphaFadeIn, options.alphaHold ?? 0)
             );
+            const dirX = Math.cos(direction);
+            const dirY = Math.sin(direction);
             const view = new Particle({
                 texture: options.texture,
                 x: options.x,
@@ -81,12 +92,18 @@ export class ParticleSystem {
             this.active.push({
                 view,
                 container,
-                velocityX: Math.cos(direction) * speed,
-                velocityY: Math.sin(direction) * speed,
+                originX: options.x,
+                originY: options.y,
+                dirX,
+                dirY,
+                velocityX: dirX * speed,
+                velocityY: dirY * speed,
                 gravity: options.gravity ?? 0,
                 gravityX: options.gravityX ?? 0,
                 friction: options.friction ?? 0,
                 motionEndAt: options.motionEndAt ?? 1,
+                surgeDistance: surge ? random(surge.distance) : undefined,
+                surgeApexAt: Math.min(0.95, Math.max(0.05, surge?.apexAt ?? 0.45)),
                 spin: random(options.spin ?? 0),
                 spinFriction: options.spinFriction ?? 0,
                 spinEndAt: options.spinEndAt ?? 1,
@@ -122,7 +139,13 @@ export class ParticleSystem {
             }
 
             const progress = particle.age / particle.lifetime;
-            if (progress < particle.motionEndAt) {
+            if (particle.surgeDistance !== undefined) {
+                const along = surgeAlong(progress, particle.surgeApexAt);
+                particle.view.x =
+                    particle.originX + particle.dirX * particle.surgeDistance * along;
+                particle.view.y =
+                    particle.originY + particle.dirY * particle.surgeDistance * along;
+            } else if (progress < particle.motionEndAt) {
                 particle.velocityX += particle.gravityX * deltaSeconds;
                 particle.velocityY += particle.gravity * deltaSeconds;
                 const friction = Math.exp(-particle.friction * deltaSeconds);

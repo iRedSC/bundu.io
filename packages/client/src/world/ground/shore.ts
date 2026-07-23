@@ -13,7 +13,7 @@ export type GroundPatchRef = {
 
 /** Sample every N edge tiles to keep shore lists small on large coasts. */
 const EDGE_STRIDE = 2;
-/** Hard cap — foam only needs a sparse random set. */
+/** Hard cap — shore wave bands only need a sparse random set. */
 const MAX_SHORES = 240;
 
 /**

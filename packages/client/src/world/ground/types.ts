@@ -22,7 +22,7 @@ export type GroundUpdateContext = {
     view: GroundViewBounds;
     /** Pixi renderer — ocean wakes bake a faded displace map each frame. */
     renderer: Renderer;
-    /** Emit ambient foam / sparkles into the shared particle system. */
+    /** Emit ambient shore wash / sparkles into the shared particle system. */
     emitParticles?: (burst: ParticleBurst) => void;
     /** Shore samples in world pixels (rebuilt when ground patches change). */
     shore: readonly ShoreSample[];

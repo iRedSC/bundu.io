@@ -2,6 +2,18 @@ import type { Texture } from "pixi.js";
 
 export type NumberRange = number | readonly [min: number, max: number];
 
+/**
+ * Non-ballistic position controller. Default motion is velocity + gravity.
+ * `surge` washes along `direction` then reverses — for shore wave bands.
+ */
+export type ParticleMotion = {
+    kind: "surge";
+    /** World px from spawn to apex along `direction`. */
+    distance: NumberRange;
+    /** Lifetime progress [0,1] at farthest point. Default 0.45. */
+    apexAt?: number;
+};
+
 export type ParticleBurst = {
     texture: Texture;
     x: number;
@@ -29,6 +41,8 @@ export type ParticleBurst = {
     gravityX?: number;
     friction?: number;
     motionEndAt?: number;
+    /** Overrides ballistic integration when set. */
+    motion?: ParticleMotion;
     spin?: NumberRange;
     spinFriction?: number;
     spinEndAt?: number;

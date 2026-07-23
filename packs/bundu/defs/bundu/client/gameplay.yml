@@ -58,7 +58,8 @@ ocean:
         size_max: 88
         size_end: 12
     particles:
-        foam_interval_ms: [180, 400]
+        # Shore wave-band groups (foam front + splash behind).
+        foam_interval_ms: [900, 1600]
         sparkle_interval_ms: [280, 600]
         shore_filter_ms: 250
     # Soften heavy FX past this view area (world²); never fully cull.
