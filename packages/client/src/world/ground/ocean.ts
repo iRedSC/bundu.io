@@ -647,6 +647,39 @@ export function createOceanGround(
     let nextSparkleAt = 0;
     let nextShoreFilterAt = 0;
     let visibleShores: ShoreSample[] = [];
+    /** Waves left in the current surf set (0 = start a new set next). */
+    let wavesLeftInSet = 0;
+    /** Keep successive set waves on the same stretch of shore. */
+    let waveFocus: ShoreSample | undefined;
+
+    /** Prefer a nearby same-facing shore sample so sets read as one surf line. */
+    const pickWaveShore = (
+        shores: readonly ShoreSample[]
+    ): ShoreSample | undefined => {
+        if (shores.length === 0) return undefined;
+        const focus = waveFocus;
+        if (!focus) {
+            return shores[Math.floor(Math.random() * shores.length)];
+        }
+        const maxDist = 520;
+        const maxDist2 = maxDist * maxDist;
+        let best: ShoreSample | undefined;
+        let bestScore = Infinity;
+        for (const sample of shores) {
+            // Same oceanward facing (axis-aligned shores share normals).
+            if (sample.nx !== focus.nx || sample.ny !== focus.ny) continue;
+            const dx = sample.x - focus.x;
+            const dy = sample.y - focus.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > maxDist2 || d2 < 40 * 40) continue;
+            const score = d2 + Math.random() * 80 * 80;
+            if (score < bestScore) {
+                bestScore = score;
+                best = sample;
+            }
+        }
+        return best ?? shores[Math.floor(Math.random() * shores.length)];
+    };
 
     const setOverlay = (x: number, y: number, w: number, h: number) => {
         causticsA.position.set(x, y);
@@ -835,12 +868,13 @@ export function createOceanGround(
                 );
 
             if (ctx.now >= nextFoamAt && visibleShores.length > 0) {
-                const [lo, hi] = foamIntervalMs;
-                nextFoamAt = ctx.now + lo + Math.random() * (hi - lo);
-                const sample =
-                    visibleShores[
-                        Math.floor(Math.random() * visibleShores.length)
-                    ];
+                if (wavesLeftInSet <= 0) {
+                    // Sets of 2–4, like a real surf train.
+                    wavesLeftInSet = 2 + ((Math.random() * 3) | 0);
+                    waveFocus = undefined;
+                }
+
+                const sample = pickWaveShore(visibleShores);
                 // Samples sit on the land lip — step into water to resolve model.
                 if (
                     sample &&
@@ -849,6 +883,7 @@ export function createOceanGround(
                         sample.y + sample.ny * 24
                     )
                 ) {
+                    waveFocus = sample;
                     const wave = oceanWaveWash(
                         foamTex,
                         sample.x,
@@ -863,6 +898,20 @@ export function createOceanGround(
                     for (const spawn of wave.splashes) {
                         addSplashWash(spawn, ctx.now, ctx.blockedAt);
                     }
+                }
+
+                wavesLeftInSet--;
+                const [lo, hi] = foamIntervalMs;
+                if (wavesLeftInSet > 0) {
+                    // Steady beat inside a set — slight jitter only.
+                    const beat = lo + Math.random() * (hi - lo);
+                    nextFoamAt = ctx.now + beat;
+                } else {
+                    // Longer lull between sets.
+                    const lull =
+                        lo * 2.2 + Math.random() * (hi - lo + lo * 0.6);
+                    nextFoamAt = ctx.now + lull;
+                    waveFocus = undefined;
                 }
             }
 
