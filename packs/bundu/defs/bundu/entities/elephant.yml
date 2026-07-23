@@ -15,7 +15,6 @@ passiveSpeed: 5
 activeSpeed: 10
 attack_damage: 90
 scale: 4
-hasHome: true
 aggroSwitch: onHit
 aggroLevel: high
 corpse: elephant_dead
