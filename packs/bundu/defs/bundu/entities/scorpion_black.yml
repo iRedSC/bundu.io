@@ -1,25 +1,25 @@
 extends: model:bundu:actors/animal
 parts:
   body:
-    sprite: bundu/entity/animal/komodo_dragon/komodo_dragon.svg
-    spriteScale: 3.125
+    sprite: bundu/entity/animal/scorpion/scorpion_black.svg
+    spriteScale: 1
 animations:
   idle:
     data: { amplitude: 0.01 }
 ---
 type: bundu:land
-health: 800
-score: 2000
+health: 650
+score: 1000
 behavior: hostile
 loseSightRange: 700
 passiveSpeed: 9
-activeSpeed: 11
-attack_damage: 65
-scale: 0.8
+activeSpeed: 13
+attack_damage: 40
+scale: 1
 aggroSwitch: random
-aggroLevel: high
-corpse: komodo_dragon_dead
-spawn_count: 3
+aggroLevel: low
+corpse: scorpion_black_dead
+spawn_count: 2
 spawn:
     ground: [island]
 movement:

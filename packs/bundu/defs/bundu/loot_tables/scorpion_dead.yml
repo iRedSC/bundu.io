@@ -1,0 +1,6 @@
+type: fixed
+entries:
+    - item: meat
+      count: 2
+    - item: poison
+      count: 1
