@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bundu Menu — Market Banner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Karla:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #16120f;
+      --paper: #ffe8b0;
+      --marigold: #f5a623;
+      --coral: #e4572e;
+      --green: #2f6b3a;
+      --cream: #fff6df;
+      --line: #16120f;
+      --muted: #5c4632;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: Karla, sans-serif;
+      color: var(--ink);
+      background: #f0c86a;
+      overflow: hidden;
+    }
+    .scene {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(255,255,255,0.35), transparent 28%),
+        repeating-linear-gradient(
+          90deg,
+          #f0c86a 0 48px,
+          #eeb85a 48px 96px
+        );
+    }
+    .bunting {
+      position: absolute; top: 0; left: 0; right: 0; height: 70px;
+      display: flex; justify-content: space-between;
+      padding: 0 1rem;
+      pointer-events: none;
+      animation: sway 5s ease-in-out infinite;
+      transform-origin: top center;
+    }
+    .bunting span {
+      width: 0; height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-top: 34px solid var(--coral);
+      margin-top: 8px;
+    }
+    .bunting span:nth-child(3n) { border-top-color: var(--green); }
+    .bunting span:nth-child(3n+1) { border-top-color: var(--ink); }
+    .stall {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 26%;
+      background: linear-gradient(180deg, #d9a24a, #c4892f);
+      border-top: 4px solid var(--ink);
+    }
+    .stall::before {
+      content: "";
+      position: absolute; left: 8%; right: 8%; top: -28px; height: 28px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--coral) 0 40px,
+        var(--cream) 40px 80px,
+        var(--green) 80px 120px,
+        var(--ink) 120px 160px
+      );
+      border: 3px solid var(--ink);
+      border-bottom: none;
+      transform: perspective(200px) rotateX(18deg);
+      transform-origin: bottom;
+    }
+    .shell {
+      position: relative; z-index: 1;
+      min-height: 100vh; height: 100%;
+      display: grid;
+      grid-template-columns: 120px 1fr;
+    }
+    .rail {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 1rem 0.55rem;
+      display: flex; flex-direction: column; gap: 0.35rem;
+      animation: ticketIn 0.55s ease-out both;
+    }
+    .rail a {
+      text-decoration: none;
+      color: #d7c4a4;
+      background: #241c16;
+      border: 2px dashed #6b5640;
+      padding: 0.7rem 0.35rem;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: color 0.15s, background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .rail a.active, .rail a:hover {
+      color: var(--ink);
+      background: var(--marigold);
+      border-style: solid;
+      border-color: var(--ink);
+      transform: rotate(-1deg);
+    }
+    .main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 1rem 1.25rem 1rem;
+      min-width: 0;
+    }
+    .top {
+      display: flex; justify-content: space-between; gap: 0.75rem; align-items: start;
+      animation: fade 0.6s ease-out 0.1s both;
+    }
+    .utility { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .utility button {
+      font: inherit; font-weight: 800; font-size: 0.8rem;
+      background: var(--cream);
+      color: var(--ink);
+      border: 3px solid var(--ink);
+      padding: 0.4rem 0.7rem;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .utility button:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+    .badge {
+      background: var(--cream);
+      border: 3px solid var(--ink);
+      min-width: 250px;
+      padding: 0.6rem 0.75rem;
+      box-shadow: 4px 4px 0 var(--coral);
+    }
+    .badge-row { display: flex; gap: 0.65rem; align-items: center; }
+    .avatar {
+      width: 44px; height: 44px;
+      background: var(--coral);
+      color: var(--cream);
+      border: 3px solid var(--ink);
+      display: grid; place-items: center;
+      font-family: "Lilita One", sans-serif;
+      font-size: 1.3rem;
+    }
+    .badge strong { display: block; font-size: 1rem; }
+    .badge small { color: var(--coral); font-weight: 800; letter-spacing: 0.04em; }
+    .xp {
+      margin-top: 0.5rem; height: 10px;
+      background: #ecd7a4;
+      border: 2px solid var(--ink);
+      overflow: hidden;
+    }
+    .xp i {
+      display: block; height: 100%; width: 58%;
+      background: var(--green);
+      animation: grow 0.9s ease-out 0.3s both;
+      transform-origin: left;
+    }
+    .stage {
+      display: grid; place-items: center;
+      padding: 0.4rem 0 1.5rem;
+    }
+    .poster {
+      width: min(620px, 95%);
+      background: var(--paper);
+      border: 4px solid var(--ink);
+      padding: 1.5rem 1.5rem 1.25rem;
+      box-shadow: 8px 8px 0 var(--ink);
+      animation: pop 0.65s cubic-bezier(.2,1.2,.3,1) 0.12s both;
+      position: relative;
+    }
+    .poster::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 2px dashed rgba(22,18,15,0.25);
+      pointer-events: none;
+    }
+    .brand {
+      font-family: "Lilita One", sans-serif;
+      font-size: clamp(3.8rem, 10vw, 6.4rem);
+      line-height: 0.9;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+      text-align: center;
+      margin-bottom: 0.25rem;
+      position: relative;
+      z-index: 1;
+    }
+    .brand span {
+      color: var(--coral);
+    }
+    .tag {
+      text-align: center;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 1.2rem;
+      position: relative;
+      z-index: 1;
+    }
+    .join {
+      display: grid;
+      grid-template-columns: 1fr 130px;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+    .join input {
+      font: inherit; font-weight: 700; font-size: 1.05rem;
+      border: 3px solid var(--ink);
+      background: var(--cream);
+      padding: 0.8rem 0.9rem;
+      outline: none;
+      color: var(--ink);
+    }
+    .join input:focus { background: #fff; }
+    .play {
+      font: inherit;
+      font-family: "Lilita One", sans-serif;
+      font-size: 1.45rem;
+      letter-spacing: 0.04em;
+      background: var(--coral);
+      color: var(--cream);
+      border: 3px solid var(--ink);
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .play:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--ink);
+    }
+    .selectors {
+      display: grid;
+      gap: 0.85rem;
+      position: relative;
+      z-index: 1;
+    }
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+    select {
+      width: 100%;
+      font: inherit; font-weight: 700;
+      border: 3px solid var(--ink);
+      background: var(--cream);
+      padding: 0.7rem 0.8rem;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+    .mode {
+      font: inherit; font-weight: 800; font-size: 0.8rem;
+      border: 3px solid var(--ink);
+      background: var(--cream);
+      color: var(--muted);
+      padding: 0.7rem 0.3rem;
+      cursor: pointer;
+    }
+    .mode:hover { color: var(--ink); background: #fff; }
+    .mode.active {
+      background: var(--green);
+      color: var(--cream);
+    }
+    .foot {
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; font-weight: 800;
+      color: var(--ink);
+      animation: fade 0.7s ease-out 0.25s both;
+    }
+    @keyframes pop {
+      from { opacity: 0; transform: scale(0.94) rotate(-1deg); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes grow {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    @keyframes ticketIn {
+      from { opacity: 0; transform: translateX(-16px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes sway {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(0.6deg); }
+    }
+    @media (max-width: 800px) {
+      .shell { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+      .rail { order: 2; flex-direction: row; overflow-x: auto; }
+      .modes { grid-template-columns: 1fr; }
+      .top { flex-direction: column-reverse; }
+      .badge { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <div class="bunting" id="bunting"></div>
+    <div class="stall"></div>
+  </div>
+
+  <div class="shell">
+    <nav class="rail" aria-label="Main">
+      <a class="active" href="#play">Play</a>
+      <a href="#cosmetics">Cosmetics</a>
+      <a href="#settings">Settings</a>
+      <a href="#account">Account</a>
+      <a href="#store">Store</a>
+    </nav>
+
+    <div class="main">
+      <header class="top">
+        <div class="utility">
+          <button type="button">Wiki</button>
+          <button type="button">Socials</button>
+          <button type="button">Changelog</button>
+        </div>
+        <aside class="badge" aria-label="Account">
+          <div class="badge-row">
+            <div class="avatar">R</div>
+            <div>
+              <strong>Redstone</strong>
+              <small>LEVEL 24</small>
+            </div>
+          </div>
+          <div class="xp" aria-label="Level progress"><i></i></div>
+        </aside>
+      </header>
+
+      <main class="stage">
+        <div class="poster">
+          <h1 class="brand">BUN<span>DU</span></h1>
+          <p class="tag">Tonight’s booth is open. Bring a name and bad ideas.</p>
+          <div class="join">
+            <input type="text" placeholder="Your name" maxlength="24" value="Huckster" />
+            <button class="play" type="button">PLAY</button>
+          </div>
+          <div class="selectors">
+            <div class="field">
+              <label for="server">Server</label>
+              <select id="server">
+                <option>US East — Fairground</option>
+                <option>EU — Night Bazaar</option>
+                <option>BR — Lantern Row</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Game type</label>
+              <div class="modes" role="group">
+                <button class="mode active" type="button">Normal</button>
+                <button class="mode" type="button">Survival Games</button>
+                <button class="mode" type="button">Community</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="foot">
+        <span>Candidate 05 · Market Banner</span>
+        <span>Festival lobby poster</span>
+      </footer>
+    </div>
+  </div>
+  <script>
+    const b = document.getElementById("bunting");
+    for (let i = 0; i < 28; i++) {
+      b.appendChild(document.createElement("span"));
+    }
+    document.querySelectorAll(".mode").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".mode").forEach((x) => x.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bundu Menu — Canopy Signal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #122018;
+      --leaf: #1f4d34;
+      --moss: #3f7a4f;
+      --sap: #c6e07a;
+      --amber: #e8b23a;
+      --bark: #2a1f14;
+      --mist: rgba(214, 232, 196, 0.12);
+      --panel: rgba(14, 28, 20, 0.72);
+      --line: rgba(198, 224, 122, 0.28);
+      --text: #eef6e4;
+      --muted: #a8c4a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: "DM Sans", sans-serif;
+      color: var(--text);
+      background: #0c1812;
+      overflow: hidden;
+    }
+    .scene {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 70% 10%, rgba(232, 178, 58, 0.18), transparent 55%),
+        radial-gradient(ellipse 60% 70% at 20% 90%, rgba(63, 122, 79, 0.35), transparent 60%),
+        linear-gradient(165deg, #163224 0%, #0c1812 45%, #1a2818 100%);
+    }
+    .scene svg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.9; }
+    .haze {
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(8,16,12,0.55) 0%, transparent 35%, transparent 70%, rgba(8,16,12,0.4) 100%);
+      pointer-events: none;
+    }
+    .shell {
+      position: relative; z-index: 1;
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      height: 100%;
+      min-height: 100vh;
+    }
+    .rail {
+      display: flex; flex-direction: column; gap: 0.35rem;
+      padding: 1rem 0.65rem;
+      background: linear-gradient(180deg, rgba(18,32,24,0.92), rgba(10,18,14,0.88));
+      border-right: 1px solid var(--line);
+      animation: rise 0.7s ease-out both;
+    }
+    .rail a {
+      display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+      padding: 0.75rem 0.35rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .rail a svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+    .rail a.active, .rail a:hover {
+      color: var(--sap);
+      background: var(--mist);
+      border-color: var(--line);
+    }
+    .main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 1.25rem 1.5rem 1.1rem;
+      min-width: 0;
+    }
+    .top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      animation: fade 0.8s ease-out 0.1s both;
+    }
+    .utility { display: flex; gap: 0.5rem; }
+    .utility button {
+      font: inherit; font-size: 0.78rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--sap);
+      background: transparent;
+      border: 1px solid var(--line);
+      padding: 0.45rem 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .utility button:hover { background: var(--mist); color: var(--text); }
+    .badge {
+      width: min(260px, 34vw);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 0.7rem 0.85rem;
+      backdrop-filter: blur(8px);
+    }
+    .badge-row { display: flex; align-items: center; gap: 0.7rem; }
+    .avatar {
+      width: 42px; height: 42px; flex: 0 0 auto;
+      background: linear-gradient(145deg, var(--moss), var(--leaf));
+      border: 2px solid var(--amber);
+      display: grid; place-items: center;
+      font-family: Syne, sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--sap);
+    }
+    .badge-meta { flex: 1; min-width: 0; }
+    .badge-name { font-weight: 700; font-size: 0.95rem; }
+    .badge-lvl { color: var(--amber); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; }
+    .xp {
+      margin-top: 0.45rem; height: 7px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(232,178,58,0.25);
+      overflow: hidden;
+    }
+    .xp > i {
+      display: block; height: 100%; width: 68%;
+      background: linear-gradient(90deg, var(--amber), var(--sap));
+      animation: fill 1.2s ease-out 0.4s both;
+      transform-origin: left;
+    }
+    .stage {
+      display: grid;
+      place-items: center;
+      padding: 1rem 0;
+    }
+    .panel {
+      width: min(520px, 92%);
+      text-align: center;
+      animation: rise 0.85s ease-out 0.15s both;
+    }
+    .brand {
+      font-family: Syne, sans-serif;
+      font-weight: 800;
+      font-size: clamp(3.4rem, 8vw, 5.6rem);
+      letter-spacing: -0.03em;
+      line-height: 0.9;
+      color: var(--sap);
+      text-shadow: 0 2px 0 rgba(18,32,24,0.8);
+      margin-bottom: 0.35rem;
+    }
+    .tag {
+      color: var(--muted);
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.02em;
+    }
+    .join {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.55rem;
+      margin-bottom: 1.15rem;
+    }
+    .join input {
+      font: inherit; font-size: 1.05rem; font-weight: 600;
+      padding: 0.9rem 1rem;
+      color: var(--text);
+      background: rgba(8, 18, 12, 0.75);
+      border: 1px solid var(--line);
+      outline: none;
+    }
+    .join input::placeholder { color: #6f8a6f; }
+    .join input:focus { border-color: var(--amber); }
+    .play {
+      font: inherit; font-family: Syne, sans-serif; font-weight: 800;
+      font-size: 1.15rem; letter-spacing: 0.04em;
+      padding: 0.9rem 1.5rem;
+      color: var(--ink);
+      background: var(--amber);
+      border: none; cursor: pointer;
+      transition: transform 0.15s, filter 0.15s;
+    }
+    .play:hover { transform: translateY(-2px); filter: brightness(1.05); }
+    .play:active { transform: translateY(0); }
+    .selectors { display: grid; gap: 0.85rem; text-align: left; }
+    .field label {
+      display: block;
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    .server {
+      width: 100%;
+      font: inherit; font-weight: 600;
+      color: var(--text);
+      background: rgba(8, 18, 12, 0.75);
+      border: 1px solid var(--line);
+      padding: 0.75rem 0.9rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; }
+    .mode {
+      font: inherit; font-weight: 700; font-size: 0.82rem;
+      padding: 0.75rem 0.4rem;
+      color: var(--muted);
+      background: rgba(8, 18, 12, 0.55);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .mode:hover { color: var(--text); border-color: var(--line); }
+    .mode.active {
+      color: var(--ink);
+      background: var(--sap);
+      border-color: var(--sap);
+    }
+    .foot {
+      display: flex; justify-content: space-between; align-items: end;
+      color: var(--muted); font-size: 0.75rem;
+      animation: fade 1s ease-out 0.3s both;
+    }
+    .pulse-leaf {
+      animation: sway 8s ease-in-out infinite;
+      transform-origin: 50% 0%;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fill {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    @keyframes sway {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(1.2deg); }
+    }
+    @media (max-width: 720px) {
+      .shell { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+      .rail {
+        order: 2; flex-direction: row; justify-content: space-around;
+        border-right: none; border-top: 1px solid var(--line);
+        padding: 0.4rem;
+      }
+      .modes { grid-template-columns: 1fr; }
+      .top { flex-direction: column-reverse; gap: 0.75rem; }
+      .badge { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="trunk" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3a2a1a"/>
+          <stop offset="100%" stop-color="#1a120c"/>
+        </linearGradient>
+      </defs>
+      <g class="pulse-leaf" opacity="0.55">
+        <ellipse cx="180" cy="120" rx="160" ry="90" fill="#214d32"/>
+        <ellipse cx="320" cy="80" rx="140" ry="70" fill="#2d6642"/>
+        <ellipse cx="1180" cy="140" rx="190" ry="100" fill="#1d4630"/>
+        <ellipse cx="1320" cy="90" rx="150" ry="80" fill="#2a5c3c"/>
+        <ellipse cx="720" cy="-20" rx="280" ry="120" fill="#163826"/>
+      </g>
+      <path d="M0 720 C220 640 380 760 560 700 C740 640 860 780 1040 720 C1180 670 1320 740 1440 700 L1440 900 L0 900 Z" fill="#14261c"/>
+      <path d="M0 780 C200 730 360 820 540 770 C740 710 900 830 1100 780 C1240 745 1340 800 1440 770 L1440 900 L0 900 Z" fill="#0e1c14"/>
+      <rect x="240" y="420" width="28" height="280" fill="url(#trunk)"/>
+      <rect x="1100" y="380" width="34" height="340" fill="url(#trunk)"/>
+      <circle cx="254" cy="400" r="70" fill="#2f6a45" opacity="0.85"/>
+      <circle cx="1117" cy="360" r="90" fill="#275839" opacity="0.85"/>
+      <circle cx="980" cy="520" r="8" fill="#e8b23a" opacity="0.7"/>
+      <circle cx="420" cy="560" r="5" fill="#c6e07a" opacity="0.55"/>
+    </svg>
+    <div class="haze"></div>
+  </div>
+
+  <div class="shell">
+    <nav class="rail" aria-label="Main">
+      <a class="active" href="#play">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        Play
+      </a>
+      <a href="#cosmetics">
+        <svg viewBox="0 0 24 24"><path d="M12 3l2.2 6.6H21l-5.4 4 2.1 6.4L12 16.8 6.3 20l2.1-6.4L3 9.6h6.8z"/></svg>
+        Cosmetics
+      </a>
+      <a href="#settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        Settings
+      </a>
+      <a href="#account">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>
+        Account
+      </a>
+      <a href="#store">
+        <svg viewBox="0 0 24 24"><path d="M6 7h12l-1 12H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
+        Store
+      </a>
+    </nav>
+
+    <div class="main">
+      <header class="top">
+        <div class="utility">
+          <button type="button">Wiki</button>
+          <button type="button">Socials</button>
+          <button type="button">Changelog</button>
+        </div>
+        <aside class="badge" aria-label="Account">
+          <div class="badge-row">
+            <div class="avatar">R</div>
+            <div class="badge-meta">
+              <div class="badge-name">Redstone</div>
+              <div class="badge-lvl">LEVEL 24</div>
+            </div>
+          </div>
+          <div class="xp" aria-label="Level progress"><i></i></div>
+        </aside>
+      </header>
+
+      <main class="stage">
+        <div class="panel">
+          <h1 class="brand">BUNDU</h1>
+          <p class="tag">Find a clearing. Claim the night.</p>
+          <div class="join">
+            <input type="text" placeholder="Enter your name" maxlength="24" value="Wanderer" />
+            <button class="play" type="button">Play</button>
+          </div>
+          <div class="selectors">
+            <div class="field">
+              <label for="server">Server</label>
+              <select class="server" id="server">
+                <option>US East — Clearwater Ridge</option>
+                <option>EU West — Mossfall</option>
+                <option>Asia — Ember Canopy</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Game type</label>
+              <div class="modes" role="group" aria-label="Game type">
+                <button class="mode active" type="button">Normal</button>
+                <button class="mode" type="button">Survival Games</button>
+                <button class="mode" type="button">Community</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="foot">
+        <span>Candidate 01 · Canopy Signal</span>
+        <span>v0.9 concept</span>
+      </footer>
+    </div>
+  </div>
+  <script>
+    document.querySelectorAll(".mode").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".mode").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+  </script>
+</body>
+</html>

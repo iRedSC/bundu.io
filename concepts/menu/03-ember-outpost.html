@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bundu Menu — Ember Outpost</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --night: #1b1410;
+      --rust: #c4512a;
+      --ember: #f07a32;
+      --coal: #2a211b;
+      --sand: #e8c39a;
+      --bone: #f4e6d2;
+      --smoke: rgba(244,230,210,0.12);
+      --line: rgba(240,122,50,0.35);
+      --muted: #b79a7e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: "Source Sans 3", sans-serif;
+      color: var(--bone);
+      background: var(--night);
+      overflow: hidden;
+    }
+    .scene {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 45% at 50% 100%, rgba(196,81,42,0.45), transparent 55%),
+        linear-gradient(180deg, #3a2218 0%, #1b1410 55%, #120e0c 100%);
+    }
+    .embers {
+      position: absolute; inset: 0; overflow: hidden;
+    }
+    .ember-dot {
+      position: absolute; bottom: 8%;
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--ember);
+      opacity: 0.7;
+      animation: riseEmber linear infinite;
+    }
+    .ridge {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 28%;
+      background: #120e0c;
+      clip-path: polygon(0 55%, 10% 40%, 22% 60%, 35% 30%, 48% 55%, 62% 25%, 78% 50%, 90% 35%, 100% 48%, 100% 100%, 0 100%);
+    }
+    .fireglow {
+      position: absolute; left: 50%; bottom: 18%;
+      width: 280px; height: 120px;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at center, rgba(240,122,50,0.55), transparent 70%);
+      animation: flicker 1.8s ease-in-out infinite;
+    }
+    .shell {
+      position: relative; z-index: 1;
+      min-height: 100vh; height: 100%;
+      display: grid;
+      grid-template-columns: 100px 1fr;
+    }
+    .rail {
+      background: rgba(26,18,14,0.9);
+      border-right: 2px solid var(--line);
+      display: flex; flex-direction: column;
+      align-items: stretch;
+      padding: 1rem 0.5rem;
+      gap: 0.3rem;
+      animation: stamp 0.6s cubic-bezier(.2,.8,.2,1) both;
+    }
+    .rail a {
+      text-decoration: none;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 0.85rem 0.25rem;
+      border: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .rail a .mark {
+      display: block;
+      font-family: "Archivo Black", sans-serif;
+      font-size: 1.15rem;
+      letter-spacing: 0;
+      margin-bottom: 0.25rem;
+      color: inherit;
+    }
+    .rail a.active, .rail a:hover {
+      color: var(--bone);
+      border-color: var(--ember);
+      background: rgba(240,122,50,0.12);
+    }
+    .main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 1.1rem 1.4rem;
+    }
+    .top {
+      display: flex; justify-content: space-between; gap: 1rem; align-items: start;
+      animation: fade 0.7s ease-out 0.1s both;
+    }
+    .utility { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+    .utility button {
+      font: inherit; font-weight: 800; font-size: 0.78rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--sand);
+      background: transparent;
+      border: 2px solid rgba(232,195,154,0.35);
+      padding: 0.45rem 0.7rem;
+      cursor: pointer;
+    }
+    .utility button:hover {
+      border-color: var(--ember);
+      color: var(--bone);
+      background: rgba(240,122,50,0.15);
+    }
+    .badge {
+      min-width: 250px;
+      background: rgba(42,33,27,0.88);
+      border: 2px solid var(--line);
+      padding: 0.7rem 0.8rem;
+    }
+    .badge-top { display: flex; gap: 0.7rem; align-items: center; }
+    .avatar {
+      width: 46px; height: 46px;
+      background: linear-gradient(160deg, var(--ember), var(--rust));
+      display: grid; place-items: center;
+      font-family: "Archivo Black", sans-serif;
+      color: var(--night);
+      font-size: 1.2rem;
+      border: 2px solid var(--sand);
+    }
+    .badge strong { display: block; font-size: 1rem; }
+    .badge small { color: var(--ember); font-weight: 800; letter-spacing: 0.06em; }
+    .xp {
+      margin-top: 0.55rem; height: 9px;
+      background: #120e0c;
+      border: 1px solid rgba(232,195,154,0.25);
+      overflow: hidden;
+    }
+    .xp i {
+      display: block; height: 100%; width: 61%;
+      background: linear-gradient(90deg, var(--rust), var(--ember));
+      animation: grow 1.1s ease-out 0.35s both;
+      transform-origin: left;
+    }
+    .stage {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1.5rem;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+    .hero { animation: rise 0.75s ease-out 0.15s both; }
+    .brand {
+      font-family: "Archivo Black", sans-serif;
+      font-size: clamp(3.8rem, 9vw, 6.2rem);
+      line-height: 0.9;
+      letter-spacing: -0.02em;
+      color: var(--bone);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .brand span { color: var(--ember); }
+    .tag {
+      font-size: 1.1rem;
+      color: var(--sand);
+      max-width: 28ch;
+      margin-bottom: 1.4rem;
+    }
+    .join { display: flex; gap: 0.5rem; max-width: 420px; }
+    .join input {
+      flex: 1;
+      font: inherit; font-weight: 700; font-size: 1.05rem;
+      background: rgba(18,14,12,0.8);
+      border: 2px solid rgba(232,195,154,0.3);
+      color: var(--bone);
+      padding: 0.85rem 0.95rem;
+      outline: none;
+    }
+    .join input:focus { border-color: var(--ember); }
+    .play {
+      font: inherit; font-family: "Archivo Black", sans-serif;
+      font-size: 1.15rem; letter-spacing: 0.04em;
+      background: var(--ember); color: var(--night);
+      border: none; padding: 0 1.35rem; cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .play:hover { background: #ff8d42; transform: translateY(-2px) rotate(-0.5deg); }
+    .controls {
+      background: rgba(42,33,27,0.78);
+      border: 2px solid var(--line);
+      padding: 1.1rem;
+      animation: rise 0.8s ease-out 0.25s both;
+    }
+    .field + .field { margin-top: 1rem; }
+    .field label {
+      display: block;
+      font-size: 0.72rem; font-weight: 800;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    select {
+      width: 100%;
+      font: inherit; font-weight: 700;
+      background: rgba(18,14,12,0.85);
+      color: var(--bone);
+      border: 2px solid rgba(232,195,154,0.28);
+      padding: 0.75rem 0.85rem;
+      cursor: pointer;
+    }
+    .modes { display: grid; gap: 0.4rem; }
+    .mode {
+      font: inherit; font-weight: 800; text-align: left;
+      color: var(--muted);
+      background: rgba(18,14,12,0.55);
+      border: 2px solid transparent;
+      padding: 0.7rem 0.8rem;
+      cursor: pointer;
+    }
+    .mode:hover { color: var(--bone); border-color: rgba(232,195,154,0.25); }
+    .mode.active {
+      color: var(--night);
+      background: var(--sand);
+      border-color: var(--sand);
+    }
+    .foot {
+      display: flex; justify-content: space-between;
+      color: var(--muted); font-size: 0.75rem; font-weight: 700;
+      animation: fade 0.8s ease-out 0.3s both;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes stamp {
+      from { opacity: 0; transform: translateX(-18px) rotate(-1deg); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes grow {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.08); }
+    }
+    @keyframes riseEmber {
+      0% { transform: translateY(0) translateX(0); opacity: 0; }
+      15% { opacity: 0.8; }
+      100% { transform: translateY(-55vh) translateX(20px); opacity: 0; }
+    }
+    @media (max-width: 860px) {
+      .shell { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+      .rail { order: 2; flex-direction: row; justify-content: space-around; border-right: none; border-top: 2px solid var(--line); }
+      .stage { grid-template-columns: 1fr; }
+      .top { flex-direction: column-reverse; }
+      .badge { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <div class="embers" id="embers"></div>
+    <div class="fireglow"></div>
+    <div class="ridge"></div>
+  </div>
+
+  <div class="shell">
+    <nav class="rail" aria-label="Main">
+      <a class="active" href="#play"><span class="mark">▶</span>Play</a>
+      <a href="#cosmetics"><span class="mark">◈</span>Cosmetics</a>
+      <a href="#settings"><span class="mark">⚙</span>Settings</a>
+      <a href="#account"><span class="mark">◎</span>Account</a>
+      <a href="#store"><span class="mark">▣</span>Store</a>
+    </nav>
+
+    <div class="main">
+      <header class="top">
+        <div class="utility">
+          <button type="button">Wiki</button>
+          <button type="button">Socials</button>
+          <button type="button">Changelog</button>
+        </div>
+        <aside class="badge" aria-label="Account">
+          <div class="badge-top">
+            <div class="avatar">R</div>
+            <div>
+              <strong>Redstone</strong>
+              <small>LEVEL 24</small>
+            </div>
+          </div>
+          <div class="xp" aria-label="Level progress"><i></i></div>
+        </aside>
+      </header>
+
+      <main class="stage">
+        <section class="hero">
+          <h1 class="brand">BUN<span>DU</span></h1>
+          <p class="tag">Warm the outpost. Then go make the wilderness nervous.</p>
+          <div class="join">
+            <input type="text" placeholder="Callsign" maxlength="24" value="Ashwalker" />
+            <button class="play" type="button">PLAY</button>
+          </div>
+        </section>
+        <aside class="controls">
+          <div class="field">
+            <label for="server">Server</label>
+            <select id="server">
+              <option>US West — Cinder Pass</option>
+              <option>EU South — Kiln Valley</option>
+              <option>OCE — Smoke Ridge</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Game type</label>
+            <div class="modes" role="group">
+              <button class="mode active" type="button">Normal</button>
+              <button class="mode" type="button">Survival Games</button>
+              <button class="mode" type="button">Community</button>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="foot">
+        <span>Candidate 03 · Ember Outpost</span>
+        <span>Dusk raid briefing</span>
+      </footer>
+    </div>
+  </div>
+  <script>
+    const host = document.getElementById("embers");
+    for (let i = 0; i < 18; i++) {
+      const d = document.createElement("span");
+      d.className = "ember-dot";
+      d.style.left = `${10 + Math.random() * 80}%`;
+      d.style.animationDuration = `${3 + Math.random() * 4}s`;
+      d.style.animationDelay = `${Math.random() * 3}s`;
+      host.appendChild(d);
+    }
+    document.querySelectorAll(".mode").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".mode").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+  </script>
+</body>
+</html>

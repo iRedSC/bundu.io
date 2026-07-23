@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bundu Menu — Salt Flat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f3f1ea;
+      --ink: #171a1c;
+      --steel: #2d3439;
+      --teal: #0f8a7a;
+      --teal-deep: #0a5f54;
+      --sand: #d9d2c3;
+      --line: #c7c0b2;
+      --soft: #ffffff;
+      --muted: #5c646b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: "IBM Plex Sans", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .scene {
+      position: fixed; inset: 0;
+      background:
+        linear-gradient(180deg, #e8f0ef 0%, #f3f1ea 38%, #e7dfcf 100%);
+    }
+    .scene::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(23,26,28,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,26,28,0.05) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
+    }
+    .horizon {
+      position: absolute; left: 0; right: 0; bottom: 18%;
+      height: 2px; background: rgba(15,138,122,0.35);
+      animation: pulseLine 3.5s ease-in-out infinite;
+    }
+    .mesa {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 22%;
+      background: linear-gradient(180deg, #cfc5b2, #b7ad98);
+      clip-path: polygon(0 40%, 12% 28%, 22% 45%, 38% 20%, 55% 42%, 70% 18%, 86% 38%, 100% 24%, 100% 100%, 0 100%);
+    }
+    .sun {
+      position: absolute; top: 12%; right: 18%;
+      width: 110px; height: 110px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff7d6, #f0d27a 55%, #e0b24a);
+      animation: floatSun 7s ease-in-out infinite;
+    }
+    .shell {
+      position: relative; z-index: 1;
+      height: 100%; min-height: 100vh;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+    }
+    .rail {
+      background: var(--ink);
+      color: #e8ecef;
+      padding: 1.4rem 1rem;
+      display: flex; flex-direction: column; gap: 0.25rem;
+      animation: slideIn 0.55s ease-out both;
+    }
+    .rail-brand {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 2.4rem;
+      letter-spacing: 0.06em;
+      color: #f4f7f6;
+      line-height: 1;
+      margin-bottom: 1.4rem;
+      border-bottom: 3px solid var(--teal);
+      padding-bottom: 0.7rem;
+    }
+    .rail a {
+      display: flex; align-items: center; gap: 0.7rem;
+      text-decoration: none;
+      color: #aeb6bc;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.7rem 0.75rem;
+      border-left: 3px solid transparent;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .rail a span.idx {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.1rem;
+      color: #667078;
+      width: 1.4rem;
+    }
+    .rail a.active, .rail a:hover {
+      color: #fff;
+      background: rgba(15,138,122,0.18);
+      border-left-color: var(--teal);
+    }
+    .rail a.active span.idx { color: var(--teal); }
+    .main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 1.25rem 1.75rem;
+      min-width: 0;
+    }
+    .top {
+      display: flex; justify-content: flex-end; gap: 0.75rem;
+      animation: fade 0.7s ease-out 0.1s both;
+    }
+    .utility { display: flex; gap: 0.4rem; margin-right: auto; }
+    .utility button {
+      font: inherit; font-size: 0.78rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--steel);
+      padding: 0.5rem 0.8rem;
+      cursor: pointer;
+    }
+    .utility button:hover { border-color: var(--teal); color: var(--teal-deep); }
+    .badge {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      min-width: 250px;
+      padding: 0.65rem 0.8rem;
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 0.65rem 0.75rem;
+      align-items: center;
+    }
+    .avatar {
+      width: 44px; height: 44px;
+      background: var(--teal);
+      color: white;
+      display: grid; place-items: center;
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.4rem;
+    }
+    .badge strong { display: block; font-size: 0.95rem; }
+    .badge small { color: var(--muted); font-weight: 700; letter-spacing: 0.05em; }
+    .xp {
+      grid-column: 1 / -1;
+      height: 8px;
+      background: var(--sand);
+      overflow: hidden;
+    }
+    .xp i {
+      display: block; height: 100%; width: 72%;
+      background: var(--teal);
+      animation: grow 1s ease-out 0.3s both;
+      transform-origin: left;
+    }
+    .stage {
+      display: flex; align-items: center; justify-content: center;
+    }
+    .board {
+      width: min(640px, 94%);
+      background: rgba(255,255,255,0.82);
+      border: 1px solid var(--line);
+      padding: 2rem 2rem 1.6rem;
+      animation: rise 0.7s ease-out 0.15s both;
+      box-shadow: 8px 8px 0 rgba(23,26,28,0.08);
+    }
+    .eyebrow {
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--teal-deep);
+      margin-bottom: 0.35rem;
+    }
+    .brand {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(4.5rem, 11vw, 7rem);
+      letter-spacing: 0.04em;
+      line-height: 0.85;
+      color: var(--ink);
+      margin-bottom: 0.35rem;
+    }
+    .tag {
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin-bottom: 1.5rem;
+      max-width: 28ch;
+    }
+    .join {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .join input {
+      font: inherit; font-weight: 600; font-size: 1rem;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0.9rem 1rem;
+      outline: none;
+      color: var(--ink);
+    }
+    .join input:focus { border-color: var(--teal); }
+    .play {
+      font: inherit; font-family: "Bebas Neue", sans-serif;
+      font-size: 1.6rem; letter-spacing: 0.08em;
+      background: var(--ink); color: #fff;
+      border: none; cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .play:hover { background: var(--teal-deep); transform: translateY(-2px); }
+    .grid2 { display: grid; gap: 1rem; }
+    .field label {
+      display: block;
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    select {
+      width: 100%;
+      font: inherit; font-weight: 600;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0.8rem 0.9rem;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+    .mode {
+      font: inherit; font-weight: 700; font-size: 0.82rem;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      padding: 0.8rem 0.35rem;
+      cursor: pointer;
+    }
+    .mode:hover { color: var(--ink); border-color: var(--steel); }
+    .mode.active {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+    .foot {
+      display: flex; justify-content: space-between;
+      font-size: 0.75rem; font-weight: 600; color: var(--muted);
+      animation: fade 0.8s ease-out 0.25s both;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(-24px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes rise {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes grow {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    @keyframes floatSun {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(10px); }
+    }
+    @keyframes pulseLine {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+    @media (max-width: 800px) {
+      .shell { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+      .rail { order: 2; flex-direction: row; overflow-x: auto; gap: 0.15rem; padding: 0.6rem; }
+      .rail-brand { display: none; }
+      .rail a { border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+      .rail a.active { border-bottom-color: var(--teal); }
+      .modes { grid-template-columns: 1fr; }
+      .top { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <div class="sun"></div>
+    <div class="horizon"></div>
+    <div class="mesa"></div>
+  </div>
+
+  <div class="shell">
+    <nav class="rail" aria-label="Main">
+      <div class="rail-brand">BUNDU</div>
+      <a class="active" href="#play"><span class="idx">01</span>Play</a>
+      <a href="#cosmetics"><span class="idx">02</span>Cosmetics</a>
+      <a href="#settings"><span class="idx">03</span>Settings</a>
+      <a href="#account"><span class="idx">04</span>Account</a>
+      <a href="#store"><span class="idx">05</span>Store</a>
+    </nav>
+
+    <div class="main">
+      <header class="top">
+        <div class="utility">
+          <button type="button">Wiki</button>
+          <button type="button">Socials</button>
+          <button type="button">Changelog</button>
+        </div>
+        <aside class="badge" aria-label="Account">
+          <div class="avatar">R</div>
+          <div>
+            <strong>Redstone</strong>
+            <small>LEVEL 24</small>
+          </div>
+          <div class="xp" aria-label="Level progress"><i></i></div>
+        </aside>
+      </header>
+
+      <main class="stage">
+        <div class="board">
+          <p class="eyebrow">Open world · live servers</p>
+          <h1 class="brand">BUNDU</h1>
+          <p class="tag">Bright maps. Sharp decisions. No fog of war on the menu.</p>
+          <div class="join">
+            <input type="text" placeholder="Name" maxlength="24" value="Scout" />
+            <button class="play" type="button">PLAY</button>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="server">Server</label>
+              <select id="server">
+                <option>US Central — White Mesa</option>
+                <option>EU North — Glass Lake</option>
+                <option>SA East — Dryline</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Game type</label>
+              <div class="modes" role="group">
+                <button class="mode active" type="button">Normal</button>
+                <button class="mode" type="button">Survival Games</button>
+                <button class="mode" type="button">Community</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="foot">
+        <span>Candidate 02 · Salt Flat</span>
+        <span>Daylight terminal UI</span>
+      </footer>
+    </div>
+  </div>
+  <script>
+    document.querySelectorAll(".mode").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".mode").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+  </script>
+</body>
+</html>

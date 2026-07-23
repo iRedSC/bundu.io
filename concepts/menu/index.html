@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bundu Menu Concepts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #121410;
+      --panel: #1c211b;
+      --text: #eef2e6;
+      --muted: #9aa894;
+      --accent: #d2b25a;
+      --line: rgba(238, 242, 230, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Sora, sans-serif;
+      background:
+        radial-gradient(ellipse 60% 40% at 10% 0%, rgba(210,178,90,0.12), transparent 50%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2.5rem 1.5rem 3rem;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      letter-spacing: -0.03em;
+      margin-bottom: 0.4rem;
+    }
+    p { color: var(--muted); margin-bottom: 1.75rem; max-width: 50ch; line-height: 1.5; }
+    .grid { display: grid; gap: 0.75rem; }
+    a {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+      text-decoration: none;
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 1rem 1.15rem;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    a:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    a strong { font-size: 1.05rem; }
+    a span { color: var(--muted); font-size: 0.85rem; }
+    a em {
+      font-style: normal;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Bundu menu concepts</h1>
+    <p>Five static lobby candidates with name + play, server/game-type selectors, nav sidebar, account XP badge, and wiki/socials/changelog.</p>
+    <div class="grid">
+      <a href="./01-canopy-signal.html"><div><strong>Canopy Signal</strong><br /><span>Forest dusk, amber play CTA</span></div><em>01</em></a>
+      <a href="./02-salt-flat.html"><div><strong>Salt Flat</strong><br /><span>Daylight terminal, numbered rail</span></div><em>02</em></a>
+      <a href="./03-ember-outpost.html"><div><strong>Ember Outpost</strong><br /><span>Asymmetric dusk briefing</span></div><em>03</em></a>
+      <a href="./04-river-chart.html"><div><strong>River Chart</strong><br /><span>Navigation chart / operator HUD</span></div><em>04</em></a>
+      <a href="./05-market-banner.html"><div><strong>Market Banner</strong><br /><span>Festival poster lobby</span></div><em>05</em></a>
+    </div>
+  </div>
+</body>
+</html>
