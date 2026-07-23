@@ -5,8 +5,7 @@ WORKDIR /app
 
 COPY package.json bun.lock ./
 COPY packages/client/package.json ./packages/client/
-COPY packages/figma-squircle-merge/package.json ./packages/figma-squircle-merge/
-COPY packages/figma-texture-export/package.json ./packages/figma-texture-export/
+COPY packages/figma-plugin/package.json ./packages/figma-plugin/
 COPY packages/server/package.json ./packages/server/
 COPY packages/shared/package.json ./packages/shared/
 
@@ -41,6 +40,9 @@ WORKDIR /app
 ENV PORT=3000
 # Hot-reload / debug endpoints stay off in the shipped image.
 ENV BUNDU_DEBUG=0
+# VitePress is built with base `/`; serve public/docs when Host matches.
+ENV DOCS_HOST=wiki.bundu.io
+ENV DOCS_PUBLIC_ORIGIN=https://wiki.bundu.io
 
 COPY --from=build /app/static-server.ts ./static-server.ts
 COPY --from=build /app/public ./public
