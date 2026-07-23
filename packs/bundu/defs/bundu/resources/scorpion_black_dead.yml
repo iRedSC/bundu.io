@@ -1,4 +1,4 @@
-# @pack-gen model=models/corpses/komodo_dragon_dead.yml
+# @pack-gen model=models/corpses/scorpion_black_dead.yml
 extends: model:bundu:corpses/corpse
 parts:
   body:
