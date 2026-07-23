@@ -357,7 +357,7 @@ export class Player extends GameObject implements AnimContext {
         // Under-body slot, identity pose — match body visual scale so the
         // 200×200 backpack lines up with spilled body art.
         if (this.backpack) {
-            this.fillSlot("backpack", "backpack");
+            this.fillSlot("backpack", clientItemModelId("backpack"));
             const mounted = this.slotModels.get("backpack");
             const body = this.parts.get("body");
             if (mounted && body) {
