@@ -16,7 +16,7 @@ trail:
 ambient:
     steam:
         interval_ms: [700, 1400]
-        size: [90, 220]
+        size: [750, 1000]
         alpha: [0.045, 0.012]
         lifetime: [2800, 4800]
         speed: [4, 14]

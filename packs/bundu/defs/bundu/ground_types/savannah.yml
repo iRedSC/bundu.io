@@ -10,7 +10,7 @@ trail:
 ambient:
     dust:
         interval_ms: [280, 700]
-        size: [2, 16]
+        size: [50, 100]
         # Paired with size — bigger = more faint.
         alpha: [0.2, 0.035]
         lifetime: [1400, 2800]
