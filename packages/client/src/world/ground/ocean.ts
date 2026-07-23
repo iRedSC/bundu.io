@@ -179,7 +179,8 @@ export function createOceanGround(
     waveFx.visible = false;
     root.addChild(waveFx);
     const waveMask = new Sprite(Texture.EMPTY);
-    // Keep in the tree for AlphaMask sampling; empty/unused stays invisible.
+    // Sampled for AlphaMask only — never draw the coverage texture itself.
+    waveMask.renderable = false;
     root.addChild(waveMask);
     waveFx.setMask({ mask: waveMask, channel: "alpha" });
     const waveCausticsA = new TilingSprite({

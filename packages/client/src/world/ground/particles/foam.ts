@@ -113,11 +113,11 @@ export function oceanWaveWash(
             },
             blockedAt,
             tint: foamTint,
-            // Opaque coverage; mergeAlpha applies one shared transparency pass.
+            // Opaque coverage; merge sprite stays fully opaque.
             alpha: 1,
             alphaFadeIn: 0,
             alphaHold: 1,
-            mergeAlpha: 0.3,
+            mergeAlpha: 1,
             blendMode: "normal",
             spin: [-0.2, 0.2],
             spinFriction: 0.8,
