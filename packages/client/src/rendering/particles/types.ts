@@ -68,4 +68,9 @@ export type ParticleBurst = {
     alphaHold?: number;
     blendMode?: "normal" | "add" | "screen";
     zIndex?: number;
+    /**
+     * Bake particles in this burst into one coverage pass, then draw at this
+     * alpha. Overlaps merge into a single silhouette instead of stacking.
+     */
+    mergeAlpha?: number;
 };

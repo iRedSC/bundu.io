@@ -83,7 +83,7 @@ export function oceanWaveWash(
             speed: 0,
             lifetime: foamLife,
             size: foamSize,
-            endSize: 22,
+            endSize: 0,
             peakSize: [foamSize[0] * 1.05, foamSize[1] * 1.15],
             peakAt: foamApex,
             motion: {
@@ -93,10 +93,11 @@ export function oceanWaveWash(
             },
             blockedAt,
             tint: foamTint,
-            // Texture is already mostly transparent; keep particle alpha high.
-            alpha: 0.9,
-            alphaFadeIn: 0.12,
-            alphaHold: 0.55,
+            // Opaque coverage; mergeAlpha applies one shared transparency pass.
+            alpha: 1,
+            alphaFadeIn: 0,
+            alphaHold: 1,
+            mergeAlpha: 0.3,
             blendMode: "normal",
             spin: [-0.2, 0.2],
             spinFriction: 0.8,

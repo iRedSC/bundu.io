@@ -1,7 +1,8 @@
 import {
+    Container,
     Particle,
     ParticleContainer,
-    type Container,
+    type Renderer,
 } from "pixi.js";
 import type { NumberRange, ParticleBurst } from "./types";
 import { sizeEnvelope } from "./size_envelope";
@@ -27,6 +28,8 @@ type ActiveParticle = {
         | undefined;
     /** World-space radius at birth size (scales with current size). */
     hitRadius: number;
+    /** When set, particle writes opaque coverage into a merge layer. */
+    mergeAlpha: number | undefined;
     spin: number;
     spinFriction: number;
     spinEndAt: number;
@@ -40,6 +43,12 @@ type ActiveParticle = {
     startAlpha: number;
     alphaFadeIn: number;
     alphaHold: number;
+};
+
+type MergeLayer = {
+    wrap: Container;
+    container: ParticleContainer;
+    mergeAlpha: number;
 };
 
 const random = (range: NumberRange): number => {
@@ -63,11 +72,11 @@ function splashBack(particle: ActiveParticle): void {
     particle.gravity = 0;
     particle.gravityX = 0;
     particle.motionEndAt = 1;
-    particle.startAlpha = particle.view.alpha;
+    particle.startAlpha = particle.mergeAlpha !== undefined ? 1 : particle.view.alpha;
     particle.age = 0;
     particle.lifetime = 260 + Math.random() * 240;
     particle.alphaFadeIn = 0;
-    particle.alphaHold = 0.12;
+    particle.alphaHold = particle.mergeAlpha !== undefined ? 1 : 0.12;
     particle.startScale = Math.max(particle.view.scaleX, particle.view.scaleY);
     particle.peakScale = undefined;
     particle.endScale = particle.startScale * 0.2;
@@ -79,6 +88,7 @@ function splashBack(particle: ActiveParticle): void {
 
 export class ParticleSystem {
     private readonly containers = new Map<string, ParticleContainer>();
+    private readonly mergeLayers = new Map<string, MergeLayer>();
     private readonly active: ActiveParticle[] = [];
 
     constructor(private readonly parent: Container) {}
@@ -92,6 +102,10 @@ export class ParticleSystem {
         );
         const surge =
             options.motion?.kind === "surge" ? options.motion : undefined;
+        const mergeAlpha =
+            options.mergeAlpha !== undefined
+                ? Math.min(1, Math.max(0, options.mergeAlpha))
+                : undefined;
 
         for (let i = 0; i < options.count; i++) {
             const direction =
@@ -99,15 +113,18 @@ export class ParticleSystem {
             const speed = surge ? 0 : random(options.speed);
             const size = random(options.size);
             const scale = size / texSize;
-            const startAlpha = options.alpha ?? 1;
-            const alphaFadeIn = Math.min(
-                1,
-                Math.max(0, options.alphaFadeIn ?? 0)
-            );
-            const alphaHold = Math.min(
-                1,
-                Math.max(alphaFadeIn, options.alphaHold ?? 0)
-            );
+            const startAlpha = mergeAlpha !== undefined ? 1 : (options.alpha ?? 1);
+            const alphaFadeIn =
+                mergeAlpha !== undefined
+                    ? 0
+                    : Math.min(1, Math.max(0, options.alphaFadeIn ?? 0));
+            const alphaHold =
+                mergeAlpha !== undefined
+                    ? 1
+                    : Math.min(
+                          1,
+                          Math.max(alphaFadeIn, options.alphaHold ?? 0)
+                      );
             const dirX = Math.cos(direction);
             const dirY = Math.sin(direction);
             const view = new Particle({
@@ -141,6 +158,7 @@ export class ParticleSystem {
                 surgeApexAt: Math.min(0.95, Math.max(0.05, surge?.apexAt ?? 0.45)),
                 blockedAt: surge ? options.blockedAt : undefined,
                 hitRadius: size * 0.5,
+                mergeAlpha,
                 spin: random(options.spin ?? 0),
                 spinFriction: options.spinFriction ?? 0,
                 spinEndAt: options.spinEndAt ?? 1,
@@ -161,8 +179,9 @@ export class ParticleSystem {
         }
     }
 
-    update(deltaMS: number): void {
+    update(deltaMS: number, _renderer?: Renderer): void {
         const deltaSeconds = deltaMS / 1000;
+        const mergeUsed = new Set<ParticleContainer>();
 
         for (let i = this.active.length - 1; i >= 0; i--) {
             const particle = this.active[i];
@@ -173,6 +192,10 @@ export class ParticleSystem {
                 particle.container.removeParticle(particle.view);
                 this.active.splice(i, 1);
                 continue;
+            }
+
+            if (particle.mergeAlpha !== undefined) {
+                mergeUsed.add(particle.container);
             }
 
             let progress = particle.age / particle.lifetime;
@@ -243,17 +266,29 @@ export class ParticleSystem {
             );
             particle.view.scaleX = scale;
             particle.view.scaleY = scale;
-            const fadeIn = particle.alphaFadeIn;
-            const hold = particle.alphaHold;
-            let alphaMult: number;
-            if (progress < fadeIn) {
-                alphaMult = fadeIn <= 0 ? 1 : progress / fadeIn;
-            } else if (progress <= hold || hold >= 1) {
-                alphaMult = 1;
+
+            if (particle.mergeAlpha !== undefined) {
+                // Opaque coverage — shared transparency lives on the merge wrap.
+                particle.view.alpha = 1;
             } else {
-                alphaMult = Math.max(0, (1 - progress) / (1 - hold));
+                const fadeIn = particle.alphaFadeIn;
+                const hold = particle.alphaHold;
+                let alphaMult: number;
+                if (progress < fadeIn) {
+                    alphaMult = fadeIn <= 0 ? 1 : progress / fadeIn;
+                } else if (progress <= hold || hold >= 1) {
+                    alphaMult = 1;
+                } else {
+                    alphaMult = Math.max(0, (1 - progress) / (1 - hold));
+                }
+                particle.view.alpha = particle.startAlpha * alphaMult;
             }
-            particle.view.alpha = particle.startAlpha * alphaMult;
+        }
+
+        for (const layer of this.mergeLayers.values()) {
+            const live = mergeUsed.has(layer.container);
+            layer.wrap.visible = live;
+            if (live) layer.wrap.updateCacheTexture();
         }
     }
 
@@ -262,11 +297,21 @@ export class ParticleSystem {
             container.removeParticles(0, container.particleChildren.length);
         }
         this.active.length = 0;
+        for (const layer of this.mergeLayers.values()) {
+            layer.wrap.visible = false;
+        }
     }
 
     destroy(): void {
         this.clear();
+        for (const layer of this.mergeLayers.values()) {
+            layer.wrap.cacheAsTexture(false);
+            layer.wrap.removeFromParent();
+            layer.wrap.destroy({ children: true });
+        }
+        this.mergeLayers.clear();
         for (const container of this.containers.values()) {
+            if (container.destroyed) continue;
             container.removeFromParent();
             container.destroy();
         }
@@ -276,7 +321,11 @@ export class ParticleSystem {
     private getContainer(options: ParticleBurst): ParticleContainer {
         const blendMode = options.blendMode ?? "normal";
         const zIndex = options.zIndex ?? 20;
-        const key = `${options.texture.uid}:${blendMode}:${zIndex}`;
+        const mergeAlpha = options.mergeAlpha;
+        const key =
+            mergeAlpha !== undefined
+                ? `${options.texture.uid}:merge:${mergeAlpha}:${zIndex}`
+                : `${options.texture.uid}:${blendMode}:${zIndex}`;
         const existing = this.containers.get(key);
         if (existing) return existing;
 
@@ -289,9 +338,27 @@ export class ParticleSystem {
                 color: true,
             },
         });
-        container.zIndex = zIndex;
-        container.blendMode = blendMode;
-        this.parent.addChild(container);
+
+        if (mergeAlpha !== undefined) {
+            const wrap = new Container();
+            wrap.zIndex = zIndex;
+            wrap.alpha = Math.min(1, Math.max(0, mergeAlpha));
+            wrap.blendMode = blendMode;
+            container.blendMode = "normal";
+            wrap.addChild(container);
+            this.parent.addChild(wrap);
+            wrap.cacheAsTexture(true);
+            this.mergeLayers.set(key, {
+                wrap,
+                container,
+                mergeAlpha: wrap.alpha,
+            });
+        } else {
+            container.zIndex = zIndex;
+            container.blendMode = blendMode;
+            this.parent.addChild(container);
+        }
+
         this.containers.set(key, container);
         return container;
     }
