@@ -4,18 +4,18 @@ fill: forest_blobs
 ambient:
     firefly:
         periods: [night]
-        interval_ms: [180, 420]
-        size: [10, 30]
-        alpha: [0.55, 0.22]
+        interval_ms: [420, 900]
+        size: [12, 34]
+        alpha: [0.95, 0.55]
         lifetime: [1800, 3400]
         speed: [3, 12]
         gravity: -8
         gravity_x: 0
         friction: 0.6
-        tint: "#d6f28a"
+        tint: "#eaff9c"
         blend_mode: add
-        alpha_fade_in: 0.28
-        alpha_hold: 0.6
+        alpha_fade_in: 0.22
+        alpha_hold: 0.65
         z_index: 12
 ---
 model: grass

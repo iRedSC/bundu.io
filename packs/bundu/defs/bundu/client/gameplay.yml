@@ -69,7 +69,8 @@ ocean:
 # Biome / tree ambience. Ground models own emitters; this owns globals + leaves.
 ambient_particles:
     particle_max_area: 36000000
-    wind: { x: 20, y: 3 }
+    # Strong lateral push so snow/dust read as blowing across the view.
+    wind: { x: 55, y: 6 }
     period_rates:
         morning:
             water_sparkle: 2.2
