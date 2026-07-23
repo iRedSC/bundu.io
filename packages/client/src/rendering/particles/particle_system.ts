@@ -22,7 +22,11 @@ type ActiveParticle = {
     motionEndAt: number;
     surgeDistance: number | undefined;
     surgeApexAt: number;
-    blockedAt: ((x: number, y: number) => boolean) | undefined;
+    blockedAt:
+        | ((x: number, y: number, hitRadius: number) => boolean)
+        | undefined;
+    /** World-space radius at birth size (scales with current size). */
+    hitRadius: number;
     spin: number;
     spinFriction: number;
     spinEndAt: number;
@@ -136,6 +140,7 @@ export class ParticleSystem {
                 surgeDistance: surge ? random(surge.distance) : undefined,
                 surgeApexAt: Math.min(0.95, Math.max(0.05, surge?.apexAt ?? 0.45)),
                 blockedAt: surge ? options.blockedAt : undefined,
+                hitRadius: size * 0.5,
                 spin: random(options.spin ?? 0),
                 spinFriction: options.spinFriction ?? 0,
                 spinEndAt: options.spinEndAt ?? 1,
@@ -184,10 +189,27 @@ export class ParticleSystem {
                 if (
                     progress > 0.06 &&
                     progress < particle.surgeApexAt &&
-                    particle.blockedAt?.(particle.view.x, particle.view.y)
+                    particle.blockedAt
                 ) {
-                    splashBack(particle);
-                    progress = 0;
+                    const hitR =
+                        particle.startScale > 0
+                            ? particle.hitRadius *
+                              (Math.max(
+                                  particle.view.scaleX,
+                                  particle.view.scaleY
+                              ) /
+                                  particle.startScale)
+                            : particle.hitRadius;
+                    if (
+                        particle.blockedAt(
+                            particle.view.x,
+                            particle.view.y,
+                            hitR
+                        )
+                    ) {
+                        splashBack(particle);
+                        progress = 0;
+                    }
                 }
             } else if (progress < particle.motionEndAt) {
                 particle.velocityX += particle.gravityX * deltaSeconds;

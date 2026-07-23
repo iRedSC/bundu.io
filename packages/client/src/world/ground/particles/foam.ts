@@ -46,7 +46,7 @@ export function oceanWaveWash(
     shoreY: number,
     nx: number,
     ny: number,
-    blockedAt?: (x: number, y: number) => boolean
+    blockedAt?: (x: number, y: number, hitRadius: number) => boolean
 ): WaveWashGroup {
     // Normal points oceanward; wash travels the opposite way onto land.
     const inland = Math.atan2(-ny, -nx);
@@ -60,8 +60,9 @@ export function oceanWaveWash(
     const splashes: WaveSplashSpawn[] = [];
 
     const foamApex = 0.38;
-    const foamLife: readonly [number, number] = [4200, 5600];
-    const foamSize: readonly [number, number] = [56, 110];
+    // Slow wash across the 8-tile surge path.
+    const foamLife: readonly [number, number] = [9000, 12_000];
+    const foamSize: readonly [number, number] = [48, 88];
     const foamTint = pickTint(FOAM_TINTS);
 
     for (let i = 0; i < count; i++) {
@@ -92,11 +93,12 @@ export function oceanWaveWash(
             },
             blockedAt,
             tint: foamTint,
-            alpha: 0.85,
-            alphaFadeIn: 0.1,
+            // Texture is already mostly transparent; keep particle alpha high.
+            alpha: 0.9,
+            alphaFadeIn: 0.12,
             alphaHold: 0.55,
-            blendMode: "screen",
-            spin: [-0.35, 0.35],
+            blendMode: "normal",
+            spin: [-0.2, 0.2],
             spinFriction: 0.8,
             zIndex: GROUND_PARTICLE_Z,
         });
@@ -119,7 +121,7 @@ export function oceanWaveWash(
             direction: inland + (Math.random() - 0.5) * 0.1,
             surgeDistance:
                 splashOffshore + WAVE_OVERSHOOT + (Math.random() - 0.5) * 40,
-            lifetime: 5200 + Math.random() * 1600,
+            lifetime: 11_000 + Math.random() * 3000,
             apexAt: splashApex,
             startSize: 70 + Math.random() * 50,
         });

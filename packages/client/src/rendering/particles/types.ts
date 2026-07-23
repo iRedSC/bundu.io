@@ -46,8 +46,9 @@ export type ParticleBurst = {
     /**
      * While a surge particle is washing inbound, if this returns true the
      * particle is repelled back and fades out (wave hitting an outcropping).
+     * `hitRadius` is the particle's world-space radius for circle tests.
      */
-    blockedAt?: (x: number, y: number) => boolean;
+    blockedAt?: (x: number, y: number, hitRadius: number) => boolean;
     spin?: NumberRange;
     spinFriction?: number;
     spinEndAt?: number;

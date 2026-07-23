@@ -306,7 +306,7 @@ export function createOceanGround(
         dirY?: number;
         surgeDistance?: number;
         surgeApexAt?: number;
-        blockedAt?: (x: number, y: number) => boolean;
+        blockedAt?: (x: number, y: number, hitRadius?: number) => boolean;
     };
     const splashes: Splash[] = [];
     const splashSprites: Sprite[] = [];
@@ -397,7 +397,7 @@ export function createOceanGround(
     const addSplashWash = (
         spawn: WaveSplashSpawn,
         now: number,
-        blockedAt?: (x: number, y: number) => boolean
+        blockedAt?: (x: number, y: number, hitRadius?: number) => boolean
     ) => {
         if (splashes.length >= oceanFx.splash.max) return;
         const dirX = Math.cos(spawn.direction);
@@ -579,10 +579,11 @@ export function createOceanGround(
                 entry.x = originX + dirX * entry.surgeDistance * along;
                 entry.y = originY + dirY * entry.surgeDistance * along;
 
+                const hitRadius = entry.startSize * 0.45;
                 if (
                     progress > 0.06 &&
                     progress < apexAt &&
-                    entry.blockedAt?.(entry.x, entry.y)
+                    entry.blockedAt?.(entry.x, entry.y, hitRadius)
                 ) {
                     const lifeSec = Math.max(0.05, (apexAt * entry.lifetime) / 1000);
                     const kick =

@@ -247,6 +247,25 @@ export class World {
     private readonly wakeMoveAt = new Map<number, number>();
     private readonly wakeSplashAt = new Map<number, number>();
     private readonly wakeLastPos = new Map<number, { x: number; y: number }>();
+    /**
+     * Live structure/resource circles for shore-wash splash-back.
+     * Refilled each ground FX tick; wave particles keep a stable probe closure.
+     */
+    private readonly waveBlockSolids: { x: number; y: number; r: number }[] =
+        [];
+    private readonly waveBlockedAt = (
+        x: number,
+        y: number,
+        hitRadius = 0
+    ): boolean => {
+        for (const solid of this.waveBlockSolids) {
+            const reach = solid.r + hitRadius;
+            const dx = x - solid.x;
+            const dy = y - solid.y;
+            if (dx * dx + dy * dy <= reach * reach) return true;
+        }
+        return false;
+    };
     private readonly wakeTravel = new Map<number, number>();
     /** Accumulated move delta since last splash — stabler heading than 1 frame. */
     private readonly wakeMoveDelta = new Map<number, { x: number; y: number }>();
@@ -1564,12 +1583,12 @@ export class World {
 
         // Shore-wash splash blockers: structures/resources only.
         // Land is intentionally washable (waves overshoot several tiles inland).
-        const pad = TILE_SIZE * 5;
+        const pad = TILE_SIZE * 8;
         const blockMinX = view.minX - pad;
         const blockMaxX = view.maxX + pad;
         const blockMinY = view.minY - pad;
         const blockMaxY = view.maxY + pad;
-        const solids: { x: number; y: number; r2: number }[] = [];
+        this.waveBlockSolids.length = 0;
         for (const object of this.objects.all()) {
             if (!(object instanceof Structure)) continue;
             const { x, y } = object.position;
@@ -1581,19 +1600,14 @@ export class World {
             ) {
                 continue;
             }
-            const r = Math.max(object.collisionRadius, TILE_SIZE * 0.35);
-            solids.push({ x, y, r2: r * r });
+            this.waveBlockSolids.push({
+                x,
+                y,
+                r: Math.max(object.collisionRadius, TILE_SIZE / 2),
+            });
         }
         const landDistanceAt = (wx: number, wy: number) =>
             this.landDistance.atWorld(wx, wy);
-        const blockedAt = (wx: number, wy: number) => {
-            for (const solid of solids) {
-                const dx = wx - solid.x;
-                const dy = wy - solid.y;
-                if (dx * dx + dy * dy <= solid.r2) return true;
-            }
-            return false;
-        };
 
         const ctx = {
             deltaMS,
@@ -1606,7 +1620,7 @@ export class World {
             isOceanAt,
             waterModelAt,
             landDistanceAt,
-            blockedAt,
+            blockedAt: this.waveBlockedAt,
             shoreColor: this.nearshoreFill.colorTexture,
             shoreMask: this.nearshoreFill.maskTexture,
         };
