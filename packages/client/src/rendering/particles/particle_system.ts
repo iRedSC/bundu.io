@@ -63,8 +63,15 @@ type MergeLayer = {
     /** Detached bake source — not shown in the scene graph. */
     container: ParticleContainer;
     rt: RenderTexture;
-    sprite: Sprite;
+    /** Drawn merge (foam). Absent for mask-only wave overlay coverage. */
+    sprite?: Sprite;
     mergeAlpha: number;
+    maskOnly: boolean;
+    coverX: number;
+    coverY: number;
+    coverW: number;
+    coverH: number;
+    live: boolean;
 };
 
 /** Opaque particle coverage in world space — usable as an AlphaMask. */
@@ -127,18 +134,17 @@ export class ParticleSystem {
     constructor(private readonly parent: Container) {}
 
     /**
-     * Latest merge-layer coverage (opaque silhouette). Ocean FX can AlphaMask
-     * caustics with this so the overlay washes inland with the foam.
+     * Mask-only merge coverage (wave overlay particles). Not the visible foam.
      */
-    getMergeCoverage(): ParticleMergeCoverage | undefined {
+    getMaskCoverage(): ParticleMergeCoverage | undefined {
         for (const layer of this.mergeLayers.values()) {
-            if (!layer.sprite.visible) continue;
+            if (!layer.maskOnly || !layer.live) continue;
             return {
                 texture: layer.rt,
-                x: layer.sprite.position.x,
-                y: layer.sprite.position.y,
-                width: layer.sprite.width,
-                height: layer.sprite.height,
+                x: layer.coverX,
+                y: layer.coverY,
+                width: layer.coverW,
+                height: layer.coverH,
             };
         }
         return undefined;
@@ -153,10 +159,13 @@ export class ParticleSystem {
         );
         const surge =
             options.motion?.kind === "surge" ? options.motion : undefined;
-        const mergeAlpha =
-            options.mergeAlpha !== undefined
-                ? Math.min(1, Math.max(0, options.mergeAlpha))
-                : undefined;
+        const maskOnly = options.mergeMask === true;
+        const mergeAlpha = maskOnly
+            ? 1
+            : options.mergeAlpha !== undefined
+              ? Math.min(1, Math.max(0, options.mergeAlpha))
+              : undefined;
+        const merges = mergeAlpha !== undefined;
 
         for (let i = 0; i < options.count; i++) {
             const direction =
@@ -164,18 +173,16 @@ export class ParticleSystem {
             const speed = surge ? 0 : random(options.speed);
             const size = random(options.size);
             const scale = size / texSize;
-            const startAlpha = mergeAlpha !== undefined ? 1 : (options.alpha ?? 1);
-            const alphaFadeIn =
-                mergeAlpha !== undefined
-                    ? 0
-                    : Math.min(1, Math.max(0, options.alphaFadeIn ?? 0));
-            const alphaHold =
-                mergeAlpha !== undefined
-                    ? 1
-                    : Math.min(
-                          1,
-                          Math.max(alphaFadeIn, options.alphaHold ?? 0)
-                      );
+            const startAlpha = merges ? 1 : (options.alpha ?? 1);
+            const alphaFadeIn = merges
+                ? 0
+                : Math.min(1, Math.max(0, options.alphaFadeIn ?? 0));
+            const alphaHold = merges
+                ? 1
+                : Math.min(
+                      1,
+                      Math.max(alphaFadeIn, options.alphaHold ?? 0)
+                  );
             const dirX = Math.cos(direction);
             const dirY = Math.sin(direction);
             const view = new Particle({
@@ -348,7 +355,8 @@ export class ParticleSystem {
 
         for (const layer of this.mergeLayers.values()) {
             if (!mergeUsed.has(layer.container) || !renderer) {
-                layer.sprite.visible = false;
+                layer.live = false;
+                if (layer.sprite) layer.sprite.visible = false;
                 continue;
             }
             this.bakeMergeLayer(layer, renderer);
@@ -361,15 +369,16 @@ export class ParticleSystem {
         }
         this.active.length = 0;
         for (const layer of this.mergeLayers.values()) {
-            layer.sprite.visible = false;
+            layer.live = false;
+            if (layer.sprite) layer.sprite.visible = false;
         }
     }
 
     destroy(): void {
         this.clear();
         for (const layer of this.mergeLayers.values()) {
-            layer.sprite.removeFromParent();
-            layer.sprite.destroy();
+            layer.sprite?.removeFromParent();
+            layer.sprite?.destroy();
             layer.rt.destroy(true);
             layer.container.destroy();
         }
@@ -385,7 +394,8 @@ export class ParticleSystem {
     private bakeMergeLayer(layer: MergeLayer, renderer: Renderer): void {
         const particles = layer.container.particleChildren;
         if (particles.length === 0) {
-            layer.sprite.visible = false;
+            layer.live = false;
+            if (layer.sprite) layer.sprite.visible = false;
             return;
         }
 
@@ -427,22 +437,36 @@ export class ParticleSystem {
         layer.container.position.set(0, 0);
         layer.container.scale.set(1);
 
-        layer.sprite.texture = layer.rt;
-        layer.sprite.position.set(minX, minY);
-        layer.sprite.width = worldW;
-        layer.sprite.height = worldH;
-        layer.sprite.alpha = layer.mergeAlpha;
-        layer.sprite.visible = true;
+        layer.coverX = minX;
+        layer.coverY = minY;
+        layer.coverW = worldW;
+        layer.coverH = worldH;
+        layer.live = true;
+
+        if (layer.sprite) {
+            layer.sprite.texture = layer.rt;
+            layer.sprite.position.set(minX, minY);
+            layer.sprite.width = worldW;
+            layer.sprite.height = worldH;
+            layer.sprite.alpha = layer.mergeAlpha;
+            layer.sprite.visible = true;
+        }
     }
 
     private getContainer(options: ParticleBurst): ParticleContainer {
         const blendMode = options.blendMode ?? "normal";
         const zIndex = options.zIndex ?? 20;
-        const mergeAlpha = options.mergeAlpha;
-        const key =
-            mergeAlpha !== undefined
-                ? `${options.texture.uid}:merge:${mergeAlpha}:${zIndex}`
-                : `${options.texture.uid}:${blendMode}:${zIndex}`;
+        const maskOnly = options.mergeMask === true;
+        const mergeAlpha = maskOnly
+            ? 1
+            : options.mergeAlpha !== undefined
+              ? Math.min(1, Math.max(0, options.mergeAlpha))
+              : undefined;
+        const key = maskOnly
+            ? `${options.texture.uid}:mask:${zIndex}`
+            : mergeAlpha !== undefined
+              ? `${options.texture.uid}:merge:${mergeAlpha}:${zIndex}`
+              : `${options.texture.uid}:${blendMode}:${zIndex}`;
         const existing = this.containers.get(key);
         if (existing) return existing;
 
@@ -457,23 +481,32 @@ export class ParticleSystem {
         });
 
         if (mergeAlpha !== undefined) {
-            // Keep the particle source off-stage; only the baked sprite is shown.
+            // Keep the particle source off-stage; display merge draws a sprite.
             const rt = RenderTexture.create({
                 width: 64,
                 height: 64,
                 dynamic: true,
             });
-            const sprite = new Sprite(rt);
-            sprite.zIndex = zIndex;
-            sprite.blendMode = blendMode;
-            sprite.alpha = Math.min(1, Math.max(0, mergeAlpha));
-            sprite.visible = false;
-            this.parent.addChild(sprite);
+            let sprite: Sprite | undefined;
+            if (!maskOnly) {
+                sprite = new Sprite(rt);
+                sprite.zIndex = zIndex;
+                sprite.blendMode = blendMode;
+                sprite.alpha = mergeAlpha;
+                sprite.visible = false;
+                this.parent.addChild(sprite);
+            }
             this.mergeLayers.set(key, {
                 container,
                 rt,
                 sprite,
-                mergeAlpha: sprite.alpha,
+                mergeAlpha,
+                maskOnly,
+                coverX: 0,
+                coverY: 0,
+                coverW: 0,
+                coverH: 0,
+                live: false,
             });
         } else {
             container.zIndex = zIndex;

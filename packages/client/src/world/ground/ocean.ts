@@ -173,7 +173,7 @@ export function createOceanGround(
 
     /**
      * Wave-shaped caustics pass: same scroll/tint as main FX, but AlphaMasked
-     * by foam merge coverage so the overlay washes onto land with the waves.
+     * by dedicated overlay particles (not the visible foam).
      */
     const waveFx = new Container();
     waveFx.visible = false;
@@ -990,6 +990,9 @@ export function createOceanGround(
                         ctx.blockedAt
                     );
                     for (const burst of wave.foam) {
+                        ctx.emitParticles(burst);
+                    }
+                    for (const burst of wave.overlay) {
                         ctx.emitParticles(burst);
                     }
                     for (const spawn of wave.splashes) {

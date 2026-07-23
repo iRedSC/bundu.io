@@ -1630,7 +1630,7 @@ export class World {
             blockedAt: this.waveBlockedAt,
             shoreColor: this.nearshoreFill.colorTexture,
             shoreMask: this.nearshoreFill.maskTexture,
-            waveMask: this.particles.getMergeCoverage(),
+            waveMask: this.particles.getMaskCoverage(),
         };
         for (const visual of this.oceanVisuals.values()) visual.update?.(ctx);
         for (const patch of this.groundPatches) patch.visual.update?.(ctx);

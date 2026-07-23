@@ -83,4 +83,9 @@ export type ParticleBurst = {
      * alpha. Overlaps merge into a single silhouette instead of stacking.
      */
     mergeAlpha?: number;
+    /**
+     * Bake opaque coverage for AlphaMasking only — not drawn to the scene.
+     * Used for wave ocean-overlay particles (separate from visible foam).
+     */
+    mergeMask?: boolean;
 };
