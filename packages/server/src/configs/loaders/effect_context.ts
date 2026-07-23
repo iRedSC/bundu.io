@@ -35,14 +35,8 @@ export type EffectPayload = {
     flags: number[];
 };
 
-/**
- * One target selector entry after load.
- * - `*` → `all`
- * - `@s` / `@a[distance=…]` → base + clauses
- * - bare type / `#tag` → type clause
- * - legacy `type=…,flag=…` → resolved match clauses
- */
-export type TargetEffect = {
+/** Matcher fields shared by effect targets and hide exclusion selectors. */
+export type EffectTargetMatch = {
     /** When true, matches every subject. */
     all: boolean;
     /** `@s` / `@a` / … when the key was a selector. */
@@ -51,6 +45,16 @@ export type TargetEffect = {
     types: ReadonlySet<RegistryId<"entity_type">>;
     /** Extra / compound filter clauses (`flag=`, `distance=`, …). */
     clauses: readonly ResolvedMatchClause[];
+};
+
+/**
+ * One target selector entry after load.
+ * - `*` → `all`
+ * - `@s` / `@a[distance=…]` → base + clauses
+ * - bare type / `#tag` → type clause
+ * - legacy `type=…,flag=…` → resolved match clauses
+ */
+export type TargetEffect = EffectTargetMatch & {
     effects: EffectPayload;
 };
 
@@ -154,7 +158,11 @@ function parseFlags(raw: unknown, path: string): number[] {
     return ids;
 }
 
-function parsePayload(raw: unknown, path: string): EffectPayload {
+function parsePayload(
+    raw: unknown,
+    path: string,
+    ownerId: string
+): EffectPayload {
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
         throw new Error(`${path}: expected object`);
     }
@@ -165,7 +173,7 @@ function parsePayload(raw: unknown, path: string): EffectPayload {
         }
     }
     return {
-        hide: parseHide(obj.hide, `${path}.hide`),
+        hide: parseHide(obj.hide, `${path}.hide`, ownerId),
         attributes: parseAttributes(obj.attributes, `${path}.attributes`),
         flags: parseFlags(obj.flags, `${path}.flags`),
     };
@@ -249,7 +257,7 @@ export function parseEffectContext(
     const targets: TargetEffect[] = [];
     for (const [key, value] of Object.entries(obj)) {
         if (RESERVED.has(key)) continue;
-        const payload = parsePayload(value, `${path}.${key}`);
+        const payload = parsePayload(value, `${path}.${key}`, ownerId);
         if (key === "*") {
             targets.push({
                 all: true,

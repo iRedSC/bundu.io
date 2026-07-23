@@ -12,8 +12,14 @@ import { ServerPacket } from "@bundu/shared/packet_definitions.js";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { PlayerData } from "../components/player.js";
 import { AnonProxy } from "../components/anon_proxy.js";
-import { isVisibleToViewer } from "./anon_occlusion.js";
+import {
+    clearGhostedForView,
+    isVisibleToViewer,
+    loadObjectPacketForViewer,
+    noteGhostedOnLoad,
+} from "./anon_occlusion.js";
 import { modelBoundsPadding } from "../configs/model_bounds.js";
+import { GameObjectData } from "@bundu/shared/object_types.js";
 
 function getBodyRenderBounds(physics: Physics): Range {
     const distance = gameplayConfig().renderDistance;
@@ -86,9 +92,12 @@ function loadObjectsIntoView(
 ) {
     for (const object of objects) {
         if (!isVisibleToViewer(viewer, object, world)) continue;
-        const packet = object.getNewObjectPacket();
+        const packet = loadObjectPacketForViewer(object, viewer, world);
         if (!packet) continue;
         playerPacketManager.add(viewer.id, ServerPacket.LoadObject, packet);
+        if (packet.type === GameObjectData.PlayerType) {
+            noteGhostedOnLoad(viewer.id, object.id, packet.data[8]);
+        }
     }
 }
 
@@ -98,8 +107,10 @@ function deleteObjectsFromView(
     playerPacketManager: ServerContext["playerPacketManager"]
 ) {
     if (objects.length === 0) return;
+    const ids = objects.map((o) => o.id);
+    clearGhostedForView(viewer.id, ids);
     playerPacketManager.add(viewer.id, ServerPacket.DeleteObjects, {
-        objects: objects.map((o) => o.id),
+        objects: ids,
     });
 }
 

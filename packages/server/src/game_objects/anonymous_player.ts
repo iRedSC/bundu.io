@@ -31,6 +31,7 @@ export class AnonymousPlayer extends GameObject {
                 proxy.skinVariant,
                 proxy.collisionRadius,
                 proxy.scale,
+                false,
             ],
         };
     }

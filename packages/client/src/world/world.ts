@@ -714,6 +714,7 @@ export class World {
             playerSkin,
             collisionRadius,
             scale,
+            ghosted,
         ] = packet.data;
         const id = packet.id;
         this.removeClientObject(id);
@@ -733,6 +734,7 @@ export class World {
         );
 
         player.setEquipment({ mainhand, offhand, helmet, backpack });
+        player.setGhosted(!!ghosted);
         player.enableParticles((burst) => this.particles.burst(burst));
         this.objects.add(player);
         this.renderer.add(player.id, ...player.containers);
@@ -740,6 +742,13 @@ export class World {
         if (id === this.user) {
             this.attachLocalPlayer(player);
         }
+    };
+
+    setPlayerVisual = (packet: ServerPacket.SetPlayerVisual) => {
+        const object = this.objects.get(packet.id);
+        if (!(object instanceof Player)) return;
+        object.setGhosted(packet.ghosted);
+        this.objects.updating.add(object);
     };
 
     newResource = (packet: LoadResource) => {

@@ -10,7 +10,10 @@ import type {
     EffectPayload,
     EquipContextName,
 } from "../configs/loaders/effect_context.js";
-import { contextHasEffects } from "../configs/loaders/effect_context.js";
+import {
+    contextHasEffects,
+    matchingPayloads,
+} from "../configs/loaders/effect_context.js";
 import type { Hide } from "../configs/loaders/hide.js";
 import { orHide } from "../configs/loaders/hide.js";
 import { GroundTypeConfigs } from "../configs/loaders/ground_types.js";
@@ -432,15 +435,18 @@ export class EffectContextSystem extends System<GameEventMap> {
     }
 }
 
-/** OR-merged hide from occupied + nearby tile entities + ground for a subject. */
-export function resolveSpatialHide(
+/**
+ * Visit each spatial hide payload separately (before OR-merge) so per-source
+ * fields like exclusionTarget stay intact.
+ */
+export function forEachSpatialHidePayload(
     subject: GameObject,
-    world: World
-): Hide | undefined {
+    world: World,
+    visit: (hide: Hide) => void
+): void {
     const physics = Physics.get(subject);
-    if (!physics) return undefined;
+    if (!physics) return;
 
-    let hide: Hide | undefined;
     const tx = worldToTile(physics.position.x);
     const ty = worldToTile(physics.position.y);
 
@@ -452,20 +458,25 @@ export function resolveSpatialHide(
         const context = tileConfig(source)?.whenOccupied;
         if (!context) continue;
         if (!occupiedMatch(subject, source, context)) continue;
-        const payload = payloadForSubject(context, (t) =>
+        for (const payload of matchingPayloads(context, (t) =>
             subjectMatchesTarget(subject, t, { world, executor: source })
-        );
-        hide = orHide(hide, payload.hide);
+        )) {
+            if (payload.hide) visit(payload.hide);
+        }
     }
 
     const top = topGroundAt(world, tx, ty);
     if (top) {
         const context = GroundTypeConfigs.get(top.type).whenOccupied;
         if (context) {
-            const payload = payloadForSubject(context, (t) =>
-                subjectMatchesTarget(subject, t, { world, executor: subject })
-            );
-            hide = orHide(hide, payload.hide);
+            for (const payload of matchingPayloads(context, (t) =>
+                subjectMatchesTarget(subject, t, {
+                    world,
+                    executor: subject,
+                })
+            )) {
+                if (payload.hide) visit(payload.hide);
+            }
         }
     }
 
@@ -483,11 +494,22 @@ export function resolveSpatialHide(
         const context = tileConfig(source)?.whenNearby;
         if (!context) continue;
         if (!nearbyMatch(subject, source, context)) continue;
-        const payload = payloadForSubject(context, (t) =>
+        for (const payload of matchingPayloads(context, (t) =>
             subjectMatchesTarget(subject, t, { world, executor: source })
-        );
-        hide = orHide(hide, payload.hide);
+        )) {
+            if (payload.hide) visit(payload.hide);
+        }
     }
+}
 
+/** OR-merged hide from occupied + nearby tile entities + ground for a subject. */
+export function resolveSpatialHide(
+    subject: GameObject,
+    world: World
+): Hide | undefined {
+    let hide: Hide | undefined;
+    forEachSpatialHidePayload(subject, world, (payload) => {
+        hide = orHide(hide, payload);
+    });
     return hide;
 }

@@ -62,6 +62,8 @@ const AIR_RING_FADE_LERP = 0.1;
  * counter-offset so it still reads centered on the player.
  */
 const AIR_DEFAULT_MAX = 100;
+/** Semi-transparent model alpha when hide.visualEffect applies. */
+export const HIDE_VISUAL_ALPHA = 0.45;
 
 export class Player extends GameObject implements AnimContext {
     name: Text;
@@ -205,6 +207,14 @@ export class Player extends GameObject implements AnimContext {
     setAir(value: number, max = this.airMax): void {
         this.airMax = Math.max(1, max);
         this.air = Math.min(this.airMax, Math.max(0, value));
+    }
+
+    /**
+     * Hide visual effect: fade the player model only (name / chat stay opaque).
+     * Anon proxies never receive this.
+     */
+    setGhosted(ghosted: boolean): void {
+        this.container.alpha = ghosted ? HIDE_VISUAL_ALPHA : 1;
     }
     /** `duration > 0` starts the overhead channel; `0` clears it. */
     setCraftProgress(duration: number, recipeId: number, startedAt: number) {

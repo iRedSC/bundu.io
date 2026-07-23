@@ -48,6 +48,7 @@ export function setupPacketReceiving(
     receiver.on(ServerPacket.UnloadDecorations, world.unloadDecorations);
     receiver.on(ServerPacket.ClientConnectionInfo, world.clientConnectionInfo);
     receiver.on(ServerPacket.UpdateEquipment, world.updateEquipment);
+    receiver.on(ServerPacket.SetPlayerVisual, world.setPlayerVisual);
     // ChatMessage → world bubbles; log wiring is in setupChatPacketReceiving.
     receiver.on(ServerPacket.SetSelectedStructure, world.selectStructure);
     receiver.on(
