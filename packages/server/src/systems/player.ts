@@ -78,7 +78,6 @@ import { syncFlags } from "../network/flags.js";
 import type { RenderDistanceSystem } from "./render_distance.js";
 import type { FreecamGhostSystem } from "./freecam_ghost.js";
 import type { CreativeModeSystem } from "../creative/mode.js";
-import { getAnonProxyId } from "./anon_occlusion.js";
 import { gameRegistries } from "../configs/registries.js";
 
 /**
@@ -935,13 +934,6 @@ export class PlayerSystem extends System<GameEventMap> {
             id: player.id,
             message,
         });
-        const proxyId = getAnonProxyId(player.id);
-        if (proxyId !== undefined) {
-            worldPacketManager.emit(ServerPacket.ChatMessage, {
-                id: proxyId,
-                message,
-            });
-        }
     };
 
     viewBounds = (playerId: number, packet: ClientPacket.ViewBounds) => {

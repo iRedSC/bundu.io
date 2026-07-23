@@ -22,7 +22,10 @@ import { GroundItemSystem } from "../systems/ground_item";
 import { PointGeneratorSystem } from "../systems/point_generator";
 import { DoorSystem } from "../systems/door";
 import { RoofSystem } from "../systems/roof";
-import { AnonOcclusionSystem } from "../systems/anon_occlusion";
+import {
+    AnonOcclusionSystem,
+    getAnonProxyId,
+} from "../systems/anon_occlusion";
 import { RottingSystem } from "../systems/rotting";
 import { AnimalSystem } from "../systems/animal";
 import { HungerSystem } from "../systems/hunger";
@@ -44,6 +47,8 @@ export type ServerWorld = {
 export function createWorld(): ServerWorld {
     const world = new World();
     world.context = createServerContext();
+    // Anon proxies use a different object id; dual-queue player FX onto them.
+    world.context.worldPacketManager.forwardEmitId = getAnonProxyId;
     loadConfigs();
 
     const playerSystem = new PlayerSystem(world);
