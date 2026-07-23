@@ -1,6 +1,6 @@
 export const DEFAULT_NAMESPACE = "bundu";
 export const COMPANION_PORT = 4177;
-export const COMPANION_ORIGIN = `http://127.0.0.1:${COMPANION_PORT}`;
+export const COMPANION_ORIGIN = `http://localhost:${COMPANION_PORT}`;
 
 const NAMESPACE_PATTERN = /^[a-z][a-z0-9_]*$/;
 const STEM_PATTERN = /^[a-z][a-z0-9_]*$/;
