@@ -2,6 +2,12 @@ import type { Texture } from "pixi.js";
 
 export type NumberRange = number | readonly [min: number, max: number];
 
+/** Outward unit normal from a blocking circle at the contact point. */
+export type ParticleBlockHit = {
+    nx: number;
+    ny: number;
+};
+
 /**
  * Non-ballistic position controller. Default motion is velocity + gravity.
  * `surge` washes along `direction` then reverses — for shore wave bands.
@@ -44,11 +50,15 @@ export type ParticleBurst = {
     /** Overrides ballistic integration when set. */
     motion?: ParticleMotion;
     /**
-     * While a surge particle is washing inbound, if this returns true the
-     * particle is repelled back and fades out (wave hitting an outcropping).
+     * While a surge particle is washing inbound, return a circle-hit normal to
+     * retreat seaward along that normal (wave hitting an outcropping).
      * `hitRadius` is the particle's world-space radius for circle tests.
      */
-    blockedAt?: (x: number, y: number, hitRadius: number) => boolean;
+    blockedAt?: (
+        x: number,
+        y: number,
+        hitRadius: number
+    ) => ParticleBlockHit | undefined;
     spin?: NumberRange;
     spinFriction?: number;
     spinEndAt?: number;

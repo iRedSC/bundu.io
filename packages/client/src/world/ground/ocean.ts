@@ -36,7 +36,8 @@ import {
     createSplashRefractionFilter,
 } from "./splash_refraction";
 import { sizeEnvelope } from "../../rendering/particles/size_envelope";
-import { surgeAlong } from "../../rendering/particles/surge";
+import { surgeAlong, surgeRetreatFromHit } from "../../rendering/particles/surge";
+import type { ParticleBlockHit } from "../../rendering/particles/types";
 import type {
     GroundUpdateContext,
     GroundVisual,
@@ -306,7 +307,11 @@ export function createOceanGround(
         dirY?: number;
         surgeDistance?: number;
         surgeApexAt?: number;
-        blockedAt?: (x: number, y: number, hitRadius?: number) => boolean;
+        blockedAt?: (
+            x: number,
+            y: number,
+            hitRadius?: number
+        ) => ParticleBlockHit | undefined;
     };
     const splashes: Splash[] = [];
     const splashSprites: Sprite[] = [];
@@ -397,7 +402,11 @@ export function createOceanGround(
     const addSplashWash = (
         spawn: WaveSplashSpawn,
         now: number,
-        blockedAt?: (x: number, y: number, hitRadius?: number) => boolean
+        blockedAt?: (
+            x: number,
+            y: number,
+            hitRadius?: number
+        ) => ParticleBlockHit | undefined
     ) => {
         if (splashes.length >= oceanFx.splash.max) return;
         const dirX = Math.cos(spawn.direction);
@@ -580,23 +589,38 @@ export function createOceanGround(
                 entry.y = originY + dirY * entry.surgeDistance * along;
 
                 const hitRadius = entry.startSize * 0.45;
-                if (
-                    progress > 0.06 &&
-                    progress < apexAt &&
-                    entry.blockedAt?.(entry.x, entry.y, hitRadius)
-                ) {
-                    const lifeSec = Math.max(0.05, (apexAt * entry.lifetime) / 1000);
-                    const kick =
-                        (entry.surgeDistance / lifeSec) *
-                        (1.15 + Math.random() * 0.55);
-                    const lateral = (Math.random() - 0.5) * kick * 0.45;
-                    entry.velocityX = -dirX * kick - dirY * lateral;
-                    entry.velocityY = -dirY * kick + dirX * lateral;
-                    entry.surgeDistance = undefined;
+                const hit =
+                    progress > 0.06 && progress < apexAt
+                        ? entry.blockedAt?.(entry.x, entry.y, hitRadius)
+                        : undefined;
+                if (hit) {
+                    let { nx, ny } = hit;
+                    if (nx * nx + ny * ny < 0.25) {
+                        nx = -dirX;
+                        ny = -dirY;
+                    }
+                    const retreat = surgeRetreatFromHit(
+                        entry.x,
+                        entry.y,
+                        nx,
+                        ny,
+                        along,
+                        entry.surgeDistance,
+                        apexAt,
+                        entry.lifetime
+                    );
+                    entry.originX = retreat.originX;
+                    entry.originY = retreat.originY;
+                    entry.dirX = retreat.dirX;
+                    entry.dirY = retreat.dirY;
+                    entry.surgeDistance = retreat.surgeDistance;
+                    entry.born = now - retreat.age;
+                    entry.lifetime = retreat.lifetime;
                     entry.blockedAt = undefined;
-                    entry.born = now;
-                    entry.lifetime = 260 + Math.random() * 240;
-                    entry.peakSize = undefined;
+                    entry.velocityX = 0;
+                    entry.velocityY = 0;
+                    entry.x = entry.originX + entry.dirX * entry.surgeDistance;
+                    entry.y = entry.originY + entry.dirY * entry.surgeDistance;
                 }
             } else {
                 const friction = Math.exp(-splash.friction * deltaSeconds);

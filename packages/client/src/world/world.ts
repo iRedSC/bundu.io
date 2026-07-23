@@ -257,14 +257,21 @@ export class World {
         x: number,
         y: number,
         hitRadius = 0
-    ): boolean => {
+    ): { nx: number; ny: number } | undefined => {
         for (const solid of this.waveBlockSolids) {
             const reach = solid.r + hitRadius;
             const dx = x - solid.x;
             const dy = y - solid.y;
-            if (dx * dx + dy * dy <= reach * reach) return true;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > reach * reach) continue;
+            const d = Math.sqrt(d2);
+            if (d < 1e-4) {
+                // Caller falls back to the wash's offshore axis.
+                return { nx: 0, ny: 0 };
+            }
+            return { nx: dx / d, ny: dy / d };
         }
-        return false;
+        return undefined;
     };
     private readonly wakeTravel = new Map<number, number>();
     /** Accumulated move delta since last splash — stabler heading than 1 frame. */
@@ -1600,10 +1607,11 @@ export class World {
             ) {
                 continue;
             }
+            // Generous splash footprint so wash breaks before the visual lip.
             this.waveBlockSolids.push({
                 x,
                 y,
-                r: Math.max(object.collisionRadius, TILE_SIZE / 2),
+                r: Math.max(object.collisionRadius * 2.4, TILE_SIZE * 1.35),
             });
         }
         const landDistanceAt = (wx: number, wy: number) =>

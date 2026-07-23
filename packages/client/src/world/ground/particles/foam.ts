@@ -1,6 +1,9 @@
 import type { Texture } from "pixi.js";
 import { TILE_SIZE } from "@bundu/shared/tiles";
-import type { ParticleBurst } from "../../../rendering/particles/types";
+import type {
+    ParticleBlockHit,
+    ParticleBurst,
+} from "../../../rendering/particles/types";
 
 const FOAM_TINTS = [0xe8f4ff, 0xffffff, 0xcfe8f8] as const;
 
@@ -46,7 +49,11 @@ export function oceanWaveWash(
     shoreY: number,
     nx: number,
     ny: number,
-    blockedAt?: (x: number, y: number, hitRadius: number) => boolean
+    blockedAt?: (
+        x: number,
+        y: number,
+        hitRadius: number
+    ) => ParticleBlockHit | undefined
 ): WaveWashGroup {
     // Normal points oceanward; wash travels the opposite way onto land.
     const inland = Math.atan2(-ny, -nx);

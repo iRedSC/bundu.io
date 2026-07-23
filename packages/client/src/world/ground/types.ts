@@ -36,15 +36,14 @@ export type GroundUpdateContext = {
      */
     landDistanceAt: (worldX: number, worldY: number) => number;
     /**
-     * True when a shore-wash particle should splash back (solid structure /
-     * resource under the point). `hitRadius` expands the probe for large foam.
-     * Land is washable so waves can overshoot.
+     * Circle hit against a structure/resource. Returns the outward unit normal
+     * at the contact so wash can retreat seaward along it. Land is washable.
      */
     blockedAt?: (
         worldX: number,
         worldY: number,
         hitRadius?: number
-    ) => boolean;
+    ) => { nx: number; ny: number } | undefined;
     /** Opaque world-tile ocean→land color bake. */
     shoreColor: Texture;
     /** Independent land-side fade used only to mask ocean effects. */

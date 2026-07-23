@@ -8,7 +8,8 @@ import {
 } from "pixi.js";
 import type { NumberRange, ParticleBurst } from "./types";
 import { sizeEnvelope } from "./size_envelope";
-import { surgeAlong } from "./surge";
+import { surgeAlong, surgeRetreatFromHit } from "./surge";
+import type { ParticleBlockHit } from "./types";
 
 type ActiveParticle = {
     view: Particle;
@@ -26,7 +27,11 @@ type ActiveParticle = {
     surgeDistance: number | undefined;
     surgeApexAt: number;
     blockedAt:
-        | ((x: number, y: number, hitRadius: number) => boolean)
+        | ((
+              x: number,
+              y: number,
+              hitRadius: number
+          ) => ParticleBlockHit | undefined)
         | undefined;
     /** World-space radius at birth size (scales with current size). */
     hitRadius: number;
@@ -62,34 +67,39 @@ const random = (range: NumberRange): number => {
     return range[0] + Math.random() * (range[1] - range[0]);
 };
 
-/** Kick a surge particle back offshore and fade it out quickly. */
-function splashBack(particle: ActiveParticle): void {
-    const lifeSec = Math.max(0.05, (particle.surgeApexAt * particle.lifetime) / 1000);
+/** Snap to apex at the hit and wash back out along the circle normal. */
+function retreatFromHit(
+    particle: ActiveParticle,
+    hit: ParticleBlockHit,
+    along: number
+): void {
     const distance = particle.surgeDistance ?? 0;
-    const inboundSpeed = distance / lifeSec;
-    const kick = inboundSpeed * (1.15 + Math.random() * 0.55);
-    const lateral = (Math.random() - 0.5) * kick * 0.45;
-    // Perpendicular to surge direction for a spray fan.
-    particle.velocityX = -particle.dirX * kick - particle.dirY * lateral;
-    particle.velocityY = -particle.dirY * kick + particle.dirX * lateral;
-    particle.surgeDistance = undefined;
+    let { nx, ny } = hit;
+    if (nx * nx + ny * ny < 0.25) {
+        // Center hit — fall back to offshore (reverse of inbound wash).
+        nx = -particle.dirX;
+        ny = -particle.dirY;
+    }
+    const retreat = surgeRetreatFromHit(
+        particle.view.x,
+        particle.view.y,
+        nx,
+        ny,
+        along,
+        distance,
+        particle.surgeApexAt,
+        particle.lifetime
+    );
+    particle.originX = retreat.originX;
+    particle.originY = retreat.originY;
+    particle.dirX = retreat.dirX;
+    particle.dirY = retreat.dirY;
+    particle.surgeDistance = retreat.surgeDistance;
+    particle.age = retreat.age;
+    particle.lifetime = retreat.lifetime;
     particle.blockedAt = undefined;
-    particle.friction = 2.8;
-    particle.gravity = 0;
-    particle.gravityX = 0;
-    particle.motionEndAt = 1;
-    particle.startAlpha = particle.mergeAlpha !== undefined ? 1 : particle.view.alpha;
-    particle.age = 0;
-    particle.lifetime = 260 + Math.random() * 240;
-    particle.alphaFadeIn = 0;
-    particle.alphaHold = particle.mergeAlpha !== undefined ? 1 : 0.12;
-    particle.startScale = Math.max(particle.view.scaleX, particle.view.scaleY);
-    particle.peakScale = undefined;
-    particle.endScale = particle.startScale * 0.2;
-    particle.sizeEndAt = 1;
-    particle.spin = (Math.random() - 0.5) * 5;
-    particle.spinFriction = 1.2;
-    particle.spinEndAt = 1;
+    particle.velocityX = 0;
+    particle.velocityY = 0;
 }
 
 export class ParticleSystem {
@@ -214,7 +224,7 @@ export class ParticleSystem {
                     particle.originY +
                     particle.dirY * particle.surgeDistance * along;
 
-                // Only while washing in — a hit becomes spray back + fade.
+                // Only while washing in — a hit retreats seaward along the normal.
                 if (
                     progress > 0.06 &&
                     progress < particle.surgeApexAt &&
@@ -229,15 +239,14 @@ export class ParticleSystem {
                               ) /
                                   particle.startScale)
                             : particle.hitRadius;
-                    if (
-                        particle.blockedAt(
-                            particle.view.x,
-                            particle.view.y,
-                            hitR
-                        )
-                    ) {
-                        splashBack(particle);
-                        progress = 0;
+                    const hit = particle.blockedAt(
+                        particle.view.x,
+                        particle.view.y,
+                        hitR
+                    );
+                    if (hit) {
+                        retreatFromHit(particle, hit, along);
+                        progress = particle.age / particle.lifetime;
                     }
                 }
             } else if (progress < particle.motionEndAt) {
