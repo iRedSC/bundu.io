@@ -6,6 +6,8 @@ import {
 } from "./tiles";
 
 export const DEFAULT_PLACEMENT_REACH = TILE_SIZE * 2;
+/** Default player reach for right-click world interactions (doors, …). */
+export const DEFAULT_INTERACTION_REACH = TILE_SIZE * 2;
 
 export function footprintCenter(
     blocked: readonly TilePos[],

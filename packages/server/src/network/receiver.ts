@@ -11,6 +11,7 @@ export function setupPacketReceiving(
     creative: CreativeModeSystem
 ) {
     receiver.on(ClientPacket.Attack, system.attack);
+    receiver.on(ClientPacket.Interact, system.interact);
     receiver.on(ClientPacket.Block, system.block);
     receiver.on(ClientPacket.ChatMessage, system.chatMessage);
     receiver.on(ClientPacket.Movement, system.move);

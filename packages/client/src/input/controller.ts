@@ -35,6 +35,8 @@ export type InputPlayerFacade = {
      * Caller flashes lock UI.
      */
     isUseBlocked?: (kind: "attack" | "block" | "place") => boolean;
+    /** Hovered world interactable (doors). Interact wins over Block when canInteract. */
+    getInteractHover(): { targetId: number; canInteract: boolean } | null;
 };
 
 /**
@@ -51,6 +53,8 @@ export class InputController {
     private placing = false;
     /** Last origin we already sent a place for during this hold. */
     private lastAttemptKey = "";
+    /** True while RMB is held as Block (not Interact). */
+    private blocking = false;
     private readonly onPointerDown: (event: PointerEvent) => void;
     private readonly onPointerUp: (event: PointerEvent) => void;
     private readonly onPointerMove: (event: PointerEvent) => void;
@@ -207,7 +211,15 @@ export class InputController {
         if (this.facade.isOverInventory()) return;
         if (this.facade.getLocalPlayer()?.isCrafting) return;
         if (event.button === 2) {
+            const hover = this.facade.getInteractHover();
+            if (hover?.canInteract) {
+                this.sendPacket(ClientPacket.Interact, {
+                    targetId: hover.targetId,
+                });
+                return;
+            }
             if (this.facade.isUseBlocked?.("block")) return;
+            this.blocking = true;
             this.sendPacket(ClientPacket.Block, { stop: false });
             return;
         }
@@ -234,7 +246,8 @@ export class InputController {
             return;
         }
         if (this.facade.getLocalPlayer()?.isCrafting) return;
-        if (event.button === 2) {
+        if (event.button === 2 && this.blocking) {
+            this.blocking = false;
             this.sendPacket(ClientPacket.Block, { stop: true });
         }
         if (event.button === 0) {

@@ -12,6 +12,7 @@ export * from "./types";
 export * from "./tiles";
 export * from "./occupancy_layer";
 export * from "./structure_placement";
+export * from "./tile_line";
 export * from "./transforms";
 export * from "./attack_box";
 export * from "./range";

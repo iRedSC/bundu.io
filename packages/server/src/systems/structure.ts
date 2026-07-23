@@ -4,13 +4,12 @@ import {
     TILE_SIZE,
     WORLD_TILES,
     footprintCenter,
-    pointToTile,
     structureOriginAtPoint,
     tileCenterWorld,
-    tilesOnLine,
     type TilePos,
     type TileRot,
 } from "@bundu/shared";
+import { hasOwnedClearTileLine } from "./tile_line.js";
 import { Circle, testCircleCircle, Vector } from "sat";
 import {
     Health,
@@ -45,10 +44,7 @@ import {
     structureUpgradeGroup,
     type BuildingConfig,
 } from "../configs/loaders/buildings.js";
-import {
-    isSolidTileEntity,
-    stackAllowedForBuilding,
-} from "../configs/loaders/placement_rules.js";
+import { stackAllowedForBuilding } from "../configs/loaders/placement_rules.js";
 
 type PlacementResult = {
     allowed: boolean;
@@ -209,7 +205,8 @@ export class StructureSystem extends System<GameEventMap> {
                 tileCenterWorld(origin.x) + center.x * TILE_SIZE - physics.position.x,
                 tileCenterWorld(origin.y) + center.y * TILE_SIZE - physics.position.y
             ) <= reach;
-        const lineClear = this.hasPlacementLine(
+        const lineClear = hasOwnedClearTileLine(
+            this.world,
             physics.position,
             cursor,
             player.id
@@ -497,60 +494,6 @@ export class StructureSystem extends System<GameEventMap> {
         );
     }
 
-    /**
-     * Line from player to target tile: blocked by other players (segment vs
-     * collider — includes overlapping someone on top of you) or structures
-     * not owned by the placer. Owned structures do not block the line.
-     */
-    private hasPlacementLine(
-        from: { x: number; y: number },
-        to: TilePos,
-        placerId: number
-    ): boolean {
-        const toX = tileCenterWorld(to.x);
-        const toY = tileCenterWorld(to.y);
-
-        for (const object of this.world.query([Physics])) {
-            if (object.id === placerId || TileEntity.get(object)) continue;
-            const { collider } = object.get(Physics);
-            if (
-                segmentHitsCircle(
-                    from.x,
-                    from.y,
-                    toX,
-                    toY,
-                    collider.pos.x,
-                    collider.pos.y,
-                    collider.r
-                )
-            ) {
-                return false;
-            }
-        }
-
-        const fromTile = pointToTile(from);
-        const tiles = tilesOnLine(fromTile, to);
-        for (let i = 0; i < tiles.length - 1; i++) {
-            const tile = tiles[i];
-            if (!tile) continue;
-            // Skip the placer's own tile for structure blocking — standing in
-            // an owned doorway shouldn't brick placement; enemies still block
-            // via the segment test above if they're dynamic.
-            if (tile.x === fromTile.x && tile.y === fromTile.y) continue;
-
-            for (const occupantId of this.world.context.occupancy.occupants(
-                tile.x,
-                tile.y
-            )) {
-                const occupant = this.world.getObject(occupantId);
-                if (!occupant || !isSolidTileEntity(occupant)) continue;
-                const entity = TileEntity.get(occupant);
-                if (entity && entity.ownerId !== placerId) return false;
-            }
-        }
-        return true;
-    }
-
     private hasGround(
         occupied: readonly TilePos[],
         allowedTypes: readonly number[]
@@ -574,26 +517,4 @@ function sameFootprint(
     if (left.length !== right.length) return false;
     const cells = new Set(left.map(({ x, y }) => `${x},${y}`));
     return right.every(({ x, y }) => cells.has(`${x},${y}`));
-}
-
-/** True when segment AB comes within `radius` of point C. */
-function segmentHitsCircle(
-    ax: number,
-    ay: number,
-    bx: number,
-    by: number,
-    cx: number,
-    cy: number,
-    radius: number
-): boolean {
-    const abx = bx - ax;
-    const aby = by - ay;
-    const acx = cx - ax;
-    const acy = cy - ay;
-    const abLenSq = abx * abx + aby * aby;
-    if (abLenSq === 0) return acx * acx + acy * acy <= radius * radius;
-    const t = Math.max(0, Math.min(1, (acx * abx + acy * aby) / abLenSq));
-    const dx = cx - (ax + t * abx);
-    const dy = cy - (ay + t * aby);
-    return dx * dx + dy * dy <= radius * radius;
 }

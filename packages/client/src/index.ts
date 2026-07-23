@@ -645,6 +645,7 @@ async function main() {
                 )
             );
         },
+        getInteractHover: () => world.getInteractHover(),
     });
     input.bindChat(chat);
     bindDebugChat?.(chat, (handler) => {

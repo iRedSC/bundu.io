@@ -104,6 +104,7 @@ player:
     eating.movement_speed_multiplier: 1
     movement.speed: 16
     placement.reach: 200
+    interaction.reach: 200
     temperature.max: 200
     temperature.warmth: 0
     temperature.insulation: 0

@@ -51,6 +51,8 @@ export function translateEntry(
 export type TooltipCopy = {
     title: string;
     body?: string;
+    /** Extra line under the body (e.g. interaction hint). */
+    footer?: string;
 };
 
 export function tooltipCopy(

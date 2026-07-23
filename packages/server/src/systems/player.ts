@@ -710,6 +710,17 @@ export class PlayerSystem extends System<GameEventMap> {
         }
     };
 
+    interact = (playerId: number, { targetId }: ClientPacket.Interact) => {
+        const player = this.world.getObject(playerId);
+        if (!player) return;
+        const data = PlayerData.get(player);
+        if (!data?.clientReady || data.freecam) return;
+        if (data.crafting || data.eating) return;
+        const target = this.world.getObject(targetId);
+        if (!target) return;
+        this.trigger(GameEvent.Interact, { object: player, target });
+    };
+
     block = (playerId: number, { stop }: ClientPacket.Block) => {
         const player = this.world.getObject(playerId);
         if (!player) return;

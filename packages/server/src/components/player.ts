@@ -37,6 +37,8 @@ export type PlayerData = {
     attacking?: boolean;
     blocking?: boolean;
     lastAttackTime?: number;
+    /** GameTime of last Interact (door toggle cooloff). */
+    lastInteractTime?: number;
     crafting?: CraftingState;
     eating?: EatingState;
     /**

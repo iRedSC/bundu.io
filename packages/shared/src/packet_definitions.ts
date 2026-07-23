@@ -356,6 +356,8 @@ export const ClientPacket = {
     CreativeClearInventory: 0x26,
     /** Creative: grant a named kit into inventory. */
     CreativeGiveKit: 0x27,
+    /** Right-click world interaction (doors, …). */
+    Interact: 0x29,
 } as const;
 
 export namespace ClientPacket {
@@ -443,6 +445,8 @@ export namespace ClientPacket {
     export type CreativeClearInventory = Record<string, never>;
     /** Kit id key from shared `KITS` (e.g. `"copper"`). */
     export type CreativeGiveKit = { kitId: string };
+    /** Target entity id under the cursor. */
+    export type Interact = { targetId: number };
 }
 
 /** ID → payload map for server packets. */
@@ -523,6 +527,7 @@ export type ClientPacketMap = {
     [ClientPacket.CreativeVoid]: ClientPacket.CreativeVoid;
     [ClientPacket.CreativeClearInventory]: ClientPacket.CreativeClearInventory;
     [ClientPacket.CreativeGiveKit]: ClientPacket.CreativeGiveKit;
+    [ClientPacket.Interact]: ClientPacket.Interact;
 };
 
 export type ServerPacketID = keyof ServerPacketMap;
@@ -651,6 +656,7 @@ export const ClientSchema: {
     [ClientPacket.CreativeVoid]: { fields: ["slot"] },
     [ClientPacket.CreativeClearInventory]: { fields: [] },
     [ClientPacket.CreativeGiveKit]: { fields: ["kitId"] },
+    [ClientPacket.Interact]: { fields: ["targetId"] },
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -938,4 +944,8 @@ export const ClientPacketGuards = {
         typeof value.kitId === "string" &&
         value.kitId.length > 0 &&
         value.kitId.length <= 32,
+    [ClientPacket.Interact]: (value: unknown): value is ClientPacket.Interact =>
+        isRecord(value) &&
+        isSafeInteger(value.targetId) &&
+        value.targetId >= 0,
 } satisfies PacketGuards<ClientPacketMap>;

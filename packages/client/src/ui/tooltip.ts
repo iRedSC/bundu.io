@@ -27,6 +27,14 @@ const bodyStyle = {
     wordWrapWidth: MAX_WIDTH - PAD_X * 2,
 } as const;
 
+const footerStyle = {
+    fill: 0xa8b898,
+    fontFamily: UI_FONT,
+    fontSize: 11,
+    wordWrap: true,
+    wordWrapWidth: MAX_WIDTH - PAD_X * 2,
+} as const;
+
 export type Tooltip = {
     container: Container;
     show: (copy: TooltipCopy, screenX: number, screenY: number) => void;
@@ -67,14 +75,29 @@ export function createTooltip(): Tooltip {
     const background = new Graphics();
     const title = new Text({ text: "", style: titleStyle });
     const body = new Text({ text: "", style: bodyStyle });
+    const footer = new Text({ text: "", style: footerStyle });
     title.position.set(PAD_X, PAD_Y);
-    container.addChild(background, title, body);
+    container.addChild(background, title, body, footer);
 
     function layoutChrome() {
-        const textW = Math.max(title.width, body.visible ? body.width : 0);
-        const textH = title.height + (body.visible ? GAP + body.height : 0);
+        let y = PAD_Y + title.height;
+        if (body.visible) {
+            y += GAP;
+            body.position.set(PAD_X, y);
+            y += body.height;
+        }
+        if (footer.visible) {
+            y += GAP;
+            footer.position.set(PAD_X, y);
+            y += footer.height;
+        }
+        const textW = Math.max(
+            title.width,
+            body.visible ? body.width : 0,
+            footer.visible ? footer.width : 0
+        );
         const width = Math.min(MAX_WIDTH, Math.ceil(textW + PAD_X * 2));
-        const height = Math.ceil(textH + PAD_Y * 2);
+        const height = Math.ceil(y + PAD_Y);
         background.clear();
         background
             .roundRect(0, 0, width, height, 6)
@@ -106,10 +129,16 @@ export function createTooltip(): Tooltip {
             if (copy.body) {
                 body.text = copy.body;
                 body.visible = true;
-                body.position.set(PAD_X, PAD_Y + title.height + GAP);
             } else {
                 body.text = "";
                 body.visible = false;
+            }
+            if (copy.footer) {
+                footer.text = copy.footer;
+                footer.visible = true;
+            } else {
+                footer.text = "";
+                footer.visible = false;
             }
             container.visible = true;
             place(screenX, screenY);
@@ -122,6 +151,7 @@ export function createTooltip(): Tooltip {
             container.visible = false;
             title.text = "";
             body.text = "";
+            footer.text = "";
         },
         destroy() {
             if (bound === tip) bound = null;

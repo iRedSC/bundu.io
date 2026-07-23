@@ -52,6 +52,10 @@ export type ClientRegistryProjection = RegistrySetProjection & {
         {
             blocked: readonly { x: number; y: number }[];
             ground: readonly number[];
+            /** Building class from pack gameplay (`door`, `wall`, …). */
+            class: string;
+            /** Footprint tiles block movers / interaction lines when true. */
+            solid: boolean;
         }
     >;
     /**
