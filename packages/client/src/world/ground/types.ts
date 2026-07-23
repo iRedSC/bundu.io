@@ -4,7 +4,7 @@ import type {
 } from "@bundu/shared/ground_models";
 import type { Container, Rectangle, Renderer, Texture } from "pixi.js";
 import type { ParticleBurst } from "../../rendering/particles/types";
-import type { LandSeamChunkBake } from "./land_seam";
+import type { GroundFieldTextures } from "./ground_fields";
 
 /** World-space view used to keep expensive FX viewport-scoped. */
 export type GroundViewBounds = {
@@ -67,17 +67,8 @@ export type GroundVisual = {
     anchoredFxLayer?: Container;
     setFxAnchor?(worldX: number, worldY: number): void;
     update?(ctx: GroundUpdateContext): void;
-    /**
-     * Rebake textured inset fill (sand/forest) after shore distance rebuild.
-     * Tile-space inland sampler — same contract as sand-band shading.
-     */
-    paintLandFill?(inlandAt: (tileX: number, tileY: number) => number): void;
-    /** Append one edge-band seam chunk (solid land only). */
-    applyLandSeam?(chunk: LandSeamChunkBake): void;
-    /** Drop one streamed seam chunk before its texture is destroyed. */
-    removeLandSeam?(key: string): void;
-    /** Drop seam overlays before textures are destroyed. */
-    clearLandSeam?(): void;
+    /** Rebind world field textures after a ground rebuild / world resize. */
+    bindGroundFields?(fields: GroundFieldTextures): void;
     /** Free GPU resources when the patch is unloaded. */
     destroy?(): void;
     /**
@@ -87,7 +78,7 @@ export type GroundVisual = {
     setShoreMask?(texture: Texture): void;
     /** Water model ids rendered by this compatible shared FX pass. */
     setWaterModelIds?(modelIds: ReadonlySet<string>): void;
-    /** Authored patches used to build an organic FX mask. */
+    /** Authored patches used to lay out organic pond fill / FX masks. */
     setWaterBounds?(bounds: readonly Rectangle[]): void;
     /** Wake ripple at world position (ocean only). */
     addWakeRipple?(

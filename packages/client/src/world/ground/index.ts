@@ -11,25 +11,19 @@ export {
     LandDistanceField,
 } from "./land_distance";
 export {
+    GroundFieldTextures,
+    INLAND_SAMPLE_SCALE,
+    POND_DIST_SAMPLE_SCALE,
+    openOceanInlandField,
+} from "./ground_fields";
+export {
     LAND_SEAM_AMPLITUDE,
-    LAND_SEAM_FILL_INSET_TILES,
-    LAND_SEAM_PAD_TILES,
-    LAND_SEAM_PER_TICK,
-    LAND_SEAM_IDLE_BUDGET_MS,
-    LAND_SEAM_IDLE_GAP_MS,
-    LAND_SEAM_KEEP_TILES,
-    LAND_SEAM_READY_TILES,
-    cancelLandSeamIdle,
-    scheduleLandSeamIdle,
-    LandSeamBaker,
-    addLandSeamChunk,
-    clearLandSeamLayer,
-    seamLodFromZoom,
-    type LandSeamChunkBake,
-    type LandSeamIdleHandle,
-    type LandSeamUnload,
-    type SeamLod,
-} from "./land_seam";
+    POND_SEAM_AMPLITUDE,
+    seamOffset,
+    seamOffsetPond,
+} from "./organic_noise";
+export { setSolidGroundFields } from "./solid";
+export { setOceanGroundFields, waterFxProfileKey } from "./ocean";
 export {
     groundModel,
     isOceanGroundModel,
@@ -37,9 +31,9 @@ export {
     oceanGroundModel,
     replaceGroundModels,
     solidGroundModel,
+    allSolidGroundModels,
 } from "./models";
 export { applyOceanFx } from "./ocean_fx";
-export { waterFxProfileKey } from "./ocean";
 export {
     NEARSHORE_BLEND_TILES,
     NEARSHORE_OVERSHOOT_TILES,

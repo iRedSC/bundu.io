@@ -17,12 +17,9 @@ import {
     bindNearshoreSprite,
     type NearshoreBindState,
 } from "./nearshore_fill";
-import { POND_SEAM_AMPLITUDE, seamOffsetPond } from "./land_seam";
-import {
-    bakeOrganicRectMask,
-    ORGANIC_EDGE_SUBDIV,
-    ORGANIC_EDGE_TEXTURE_MAX,
-} from "./organic_boundary";
+import type { GroundFieldTextures } from "./ground_fields";
+import { OrganicWaterFilter } from "./organic_water_filter";
+import { POND_SEAM_AMPLITUDE } from "./organic_noise";
 import { AnchoredDisplacementFilter } from "./anchored_displacement";
 import { ambientRate } from "./ambient_fx";
 import { oceanFx, oceanTint } from "./ocean_fx";
@@ -42,10 +39,15 @@ import type {
 const SPLASH_OVERLAY_Z = 1_000_000_000;
 /** Cap bake RT edge so huge views stay cheap. */
 const BAKE_RT_MAX = 1024;
-/** Let pond caustics clear the organic edge before disappearing. */
-const ORGANIC_FX_OVERSHOOT_TILES = 0.25;
 /** World-space radius sampled when stabilizing anchored displacement. */
 const ANCHORED_DISPLACE_SAMPLE_RADIUS = 64;
+
+let sharedWaterFields: GroundFieldTextures | undefined;
+
+/** World installs pond-distance fields before organic water visuals refresh. */
+export function setOceanGroundFields(fields: GroundFieldTextures): void {
+    sharedWaterFields = fields;
+}
 
 function tex(path: string): Texture {
     return getAsset(toSanitizedTexturePath(path));
@@ -227,51 +229,84 @@ export function createOceanGround(
     );
     anchoredDisplace.padding = 80;
     anchoredContent.filters = [anchoredDisplace];
-    let organicMaskTexture: Texture | undefined;
-    let organicFillTexture: Texture | undefined;
+    let organicFillFilter: OrganicWaterFilter | undefined;
+    let organicMaskFilter: OrganicWaterFilter | undefined;
+    let organicAnchoredMaskFilter: OrganicWaterFilter | undefined;
 
     const setOrganicMaskBounds = (waterBounds: readonly Rectangle[]) => {
         if (!hasOrganicEdge) return;
-        fxMask.texture = Texture.EMPTY;
-        anchoredMask.texture = Texture.EMPTY;
-        organicFill.texture = Texture.EMPTY;
-        organicMaskTexture?.destroy(true);
-        organicFillTexture?.destroy(true);
-        organicMaskTexture = undefined;
-        organicFillTexture = undefined;
-
-        const bounds = waterBounds.map((waterBoundsPx) => ({
-                x: waterBoundsPx.x / TILE_SIZE,
-                y: waterBoundsPx.y / TILE_SIZE,
-                w: waterBoundsPx.width / TILE_SIZE,
-                h: waterBoundsPx.height / TILE_SIZE,
-            }));
-        const baked = bakeOrganicRectMask(
-            bounds,
-            { amplitude: POND_SEAM_AMPLITUDE, offset: seamOffsetPond },
-            ORGANIC_EDGE_SUBDIV,
-            ORGANIC_EDGE_TEXTURE_MAX,
-            { x: 0, y: 0, w: WORLD_TILES, h: WORLD_TILES },
-            ORGANIC_FX_OVERSHOOT_TILES,
-            0xffffff,
-            materialColor
-        );
-        if (!baked?.fillTexture) return;
-        organicMaskTexture = baked.texture;
-        organicFillTexture = baked.fillTexture;
-        organicFill.texture = baked.fillTexture;
-        organicFill.position.set(baked.x * TILE_SIZE, baked.y * TILE_SIZE);
-        organicFill.width = baked.w * TILE_SIZE;
-        organicFill.height = baked.h * TILE_SIZE;
-        for (const maskSprite of [fxMask, anchoredMask]) {
-            maskSprite.texture = baked.texture;
-            maskSprite.position.set(
-                baked.x * TILE_SIZE,
-                baked.y * TILE_SIZE
-            );
-            maskSprite.width = baked.w * TILE_SIZE;
-            maskSprite.height = baked.h * TILE_SIZE;
+        const fields = sharedWaterFields;
+        if (!fields || waterBounds.length === 0) {
+            organicFill.texture = Texture.EMPTY;
+            fxMask.texture = Texture.EMPTY;
+            anchoredMask.texture = Texture.EMPTY;
+            organicFill.filters = null;
+            fxMask.filters = null;
+            anchoredMask.filters = null;
+            organicFillFilter?.destroy();
+            organicMaskFilter?.destroy();
+            organicAnchoredMaskFilter?.destroy();
+            organicFillFilter = undefined;
+            organicMaskFilter = undefined;
+            organicAnchoredMaskFilter = undefined;
+            return;
         }
+
+        const pad = (Math.ceil(POND_SEAM_AMPLITUDE) + 1) * TILE_SIZE;
+        let minX = Number.POSITIVE_INFINITY;
+        let minY = Number.POSITIVE_INFINITY;
+        let maxX = Number.NEGATIVE_INFINITY;
+        let maxY = Number.NEGATIVE_INFINITY;
+        for (const b of waterBounds) {
+            minX = Math.min(minX, b.x);
+            minY = Math.min(minY, b.y);
+            maxX = Math.max(maxX, b.x + b.width);
+            maxY = Math.max(maxY, b.y + b.height);
+        }
+        const x = minX - pad;
+        const y = minY - pad;
+        const w = maxX - minX + pad * 2;
+        const h = maxY - minY + pad * 2;
+        const spriteWorld = new Float32Array([x, y, w, h]);
+
+        const layout = (sprite: Sprite, filter: OrganicWaterFilter) => {
+            sprite.texture = Texture.WHITE;
+            sprite.position.set(x, y);
+            sprite.width = w;
+            sprite.height = h;
+            filter.setSpriteWorld(x, y, w, h);
+            filter.setWorldTiles(WORLD_TILES);
+            filter.bindFields(fields);
+            sprite.filters = [filter];
+        };
+
+        if (!organicFillFilter) {
+            organicFillFilter = new OrganicWaterFilter(
+                fields,
+                materialColor,
+                "fill",
+                spriteWorld
+            );
+        }
+        if (!organicMaskFilter) {
+            organicMaskFilter = new OrganicWaterFilter(
+                fields,
+                0xffffff,
+                "mask",
+                spriteWorld
+            );
+        }
+        if (!organicAnchoredMaskFilter) {
+            organicAnchoredMaskFilter = new OrganicWaterFilter(
+                fields,
+                0xffffff,
+                "mask",
+                spriteWorld
+            );
+        }
+        layout(organicFill, organicFillFilter);
+        layout(fxMask, organicMaskFilter);
+        layout(anchoredMask, organicAnchoredMaskFilter);
     };
 
     type Wake = {
@@ -658,6 +693,17 @@ export function createOceanGround(
         setWaterBounds(waterBounds) {
             setOrganicMaskBounds(waterBounds);
         },
+        bindGroundFields(fields) {
+            setOceanGroundFields(fields);
+            if (hasOrganicEdge) {
+                organicFillFilter?.bindFields(fields);
+                organicMaskFilter?.bindFields(fields);
+                organicAnchoredMaskFilter?.bindFields(fields);
+                organicFillFilter?.setWorldTiles(WORLD_TILES);
+                organicMaskFilter?.setWorldTiles(WORLD_TILES);
+                organicAnchoredMaskFilter?.setWorldTiles(WORLD_TILES);
+            }
+        },
         update(ctx: GroundUpdateContext) {
             const cfg = oceanFx;
             const { a, b } = cfg.caustics;
@@ -807,6 +853,9 @@ export function createOceanGround(
             // MaskFilter BindGroup and crashes if the shore source dies first.
             fx.mask = null;
             anchoredFx.mask = null;
+            organicFill.filters = null;
+            fxMask.filters = null;
+            anchoredMask.filters = null;
             fx.filters = null;
             anchoredContent.filters = null;
             splashOverlay.filters = null;
@@ -816,10 +865,12 @@ export function createOceanGround(
             anchoredMaskBind.map?.destroy(false);
             anchoredMaskBind.map = undefined;
             anchoredMaskBind.source = undefined;
-            organicMaskTexture?.destroy(true);
-            organicMaskTexture = undefined;
-            organicFillTexture?.destroy(true);
-            organicFillTexture = undefined;
+            organicFillFilter?.destroy();
+            organicFillFilter = undefined;
+            organicMaskFilter?.destroy();
+            organicMaskFilter = undefined;
+            organicAnchoredMaskFilter?.destroy();
+            organicAnchoredMaskFilter = undefined;
             mapRt.destroy(true);
             anchoredMapRt.destroy(true);
             splashRt.destroy(true);
