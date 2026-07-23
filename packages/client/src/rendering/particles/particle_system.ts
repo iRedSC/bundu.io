@@ -495,6 +495,9 @@ export class ParticleSystem {
                 sprite.alpha = mergeAlpha;
                 sprite.visible = false;
                 this.parent.addChild(sprite);
+                // Ensure foam sits above ocean FX and below entities immediately.
+                this.parent.sortableChildren = true;
+                this.parent.sortChildren();
             }
             this.mergeLayers.set(key, {
                 container,

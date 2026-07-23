@@ -4,14 +4,21 @@ import type {
     ParticleBlockHit,
     ParticleBurst,
 } from "../../../rendering/particles/types";
+import { GROUND_Z_OCEAN } from "../create";
 
 const FOAM_TINTS = [0xe8f4ff, 0xffffff, 0xcfe8f8] as const;
 
 const pickTint = (tints: readonly number[]): number =>
     tints[Math.floor(Math.random() * tints.length)] ?? 0xffffff;
 
-/** Above ocean ground (-10), below admin grid (-1) and entities (0+). */
+/** Footsteps / trails / sparkles — above ocean FX, below entities. */
 export const GROUND_PARTICLE_Z = -5;
+
+/**
+ * Visible shore foam. Above ocean FX (`GROUND_Z_OCEAN`), below admin grid (-1)
+ * and entities/players (0+).
+ */
+export const FOAM_PARTICLE_Z = GROUND_Z_OCEAN + 1;
 
 /** Spawn distance offshore from the shore lip. */
 const WAVE_OFFSHORE = TILE_SIZE * 4;
@@ -114,7 +121,7 @@ export function oceanWaveWash(
             blendMode: "normal",
             spin: [-0.2, 0.2],
             spinFriction: 0.8,
-            zIndex: GROUND_PARTICLE_Z,
+            zIndex: FOAM_PARTICLE_Z,
         });
     }
 
