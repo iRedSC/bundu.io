@@ -421,7 +421,7 @@ export class World {
                 object.updateHealthBar(now, this.cursorWorld, this.showAllHover);
             }
         }
-        this.particles.update(deltaMS);
+        this.particles.update(deltaMS, this.pixi);
         this.tickLandSeams();
         this.updateGroundVisuals(deltaMS, now);
         this.updatePlacementGhost();

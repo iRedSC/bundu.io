@@ -1,7 +1,9 @@
 import {
-    Container,
     Particle,
     ParticleContainer,
+    RenderTexture,
+    Sprite,
+    type Container,
     type Renderer,
 } from "pixi.js";
 import type { NumberRange, ParticleBurst } from "./types";
@@ -46,10 +48,14 @@ type ActiveParticle = {
 };
 
 type MergeLayer = {
-    wrap: Container;
+    /** Detached bake source — not shown in the scene graph. */
     container: ParticleContainer;
+    rt: RenderTexture;
+    sprite: Sprite;
     mergeAlpha: number;
 };
+
+const MERGE_RT_MAX = 2048;
 
 const random = (range: NumberRange): number => {
     if (typeof range === "number") return range;
@@ -179,7 +185,7 @@ export class ParticleSystem {
         }
     }
 
-    update(deltaMS: number, _renderer?: Renderer): void {
+    update(deltaMS: number, renderer?: Renderer): void {
         const deltaSeconds = deltaMS / 1000;
         const mergeUsed = new Set<ParticleContainer>();
 
@@ -268,7 +274,7 @@ export class ParticleSystem {
             particle.view.scaleY = scale;
 
             if (particle.mergeAlpha !== undefined) {
-                // Opaque coverage — shared transparency lives on the merge wrap.
+                // Opaque coverage — shared transparency lives on the merge sprite.
                 particle.view.alpha = 1;
             } else {
                 const fadeIn = particle.alphaFadeIn;
@@ -286,9 +292,11 @@ export class ParticleSystem {
         }
 
         for (const layer of this.mergeLayers.values()) {
-            const live = mergeUsed.has(layer.container);
-            layer.wrap.visible = live;
-            if (live) layer.wrap.updateCacheTexture();
+            if (!mergeUsed.has(layer.container) || !renderer) {
+                layer.sprite.visible = false;
+                continue;
+            }
+            this.bakeMergeLayer(layer, renderer);
         }
     }
 
@@ -298,16 +306,17 @@ export class ParticleSystem {
         }
         this.active.length = 0;
         for (const layer of this.mergeLayers.values()) {
-            layer.wrap.visible = false;
+            layer.sprite.visible = false;
         }
     }
 
     destroy(): void {
         this.clear();
         for (const layer of this.mergeLayers.values()) {
-            layer.wrap.cacheAsTexture(false);
-            layer.wrap.removeFromParent();
-            layer.wrap.destroy({ children: true });
+            layer.sprite.removeFromParent();
+            layer.sprite.destroy();
+            layer.rt.destroy(true);
+            layer.container.destroy();
         }
         this.mergeLayers.clear();
         for (const container of this.containers.values()) {
@@ -316,6 +325,59 @@ export class ParticleSystem {
             container.destroy();
         }
         this.containers.clear();
+    }
+
+    private bakeMergeLayer(layer: MergeLayer, renderer: Renderer): void {
+        const particles = layer.container.particleChildren;
+        if (particles.length === 0) {
+            layer.sprite.visible = false;
+            return;
+        }
+
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        for (const particle of particles) {
+            const radius =
+                Math.max(Math.abs(particle.scaleX), Math.abs(particle.scaleY)) *
+                Math.max(particle.texture.width, particle.texture.height) *
+                0.5;
+            minX = Math.min(minX, particle.x - radius);
+            minY = Math.min(minY, particle.y - radius);
+            maxX = Math.max(maxX, particle.x + radius);
+            maxY = Math.max(maxY, particle.y + radius);
+        }
+
+        const worldW = Math.max(1, maxX - minX);
+        const worldH = Math.max(1, maxY - minY);
+        const scale = Math.min(1, MERGE_RT_MAX / Math.max(worldW, worldH));
+        const rtW = Math.max(1, Math.ceil(worldW * scale));
+        const rtH = Math.max(1, Math.ceil(worldH * scale));
+        if (layer.rt.width !== rtW || layer.rt.height !== rtH) {
+            layer.rt.resize(rtW, rtH);
+        }
+
+        // Detached container: local transform only, no viewport camera.
+        layer.container.position.set(-minX * scale, -minY * scale);
+        layer.container.scale.set(scale);
+
+        renderer.render({
+            container: layer.container,
+            target: layer.rt,
+            clear: true,
+            clearColor: { r: 0, g: 0, b: 0, a: 0 },
+        });
+
+        layer.container.position.set(0, 0);
+        layer.container.scale.set(1);
+
+        layer.sprite.texture = layer.rt;
+        layer.sprite.position.set(minX, minY);
+        layer.sprite.width = worldW;
+        layer.sprite.height = worldH;
+        layer.sprite.alpha = layer.mergeAlpha;
+        layer.sprite.visible = true;
     }
 
     private getContainer(options: ParticleBurst): ParticleContainer {
@@ -340,18 +402,23 @@ export class ParticleSystem {
         });
 
         if (mergeAlpha !== undefined) {
-            const wrap = new Container();
-            wrap.zIndex = zIndex;
-            wrap.alpha = Math.min(1, Math.max(0, mergeAlpha));
-            wrap.blendMode = blendMode;
-            container.blendMode = "normal";
-            wrap.addChild(container);
-            this.parent.addChild(wrap);
-            wrap.cacheAsTexture(true);
+            // Keep the particle source off-stage; only the baked sprite is shown.
+            const rt = RenderTexture.create({
+                width: 64,
+                height: 64,
+                dynamic: true,
+            });
+            const sprite = new Sprite(rt);
+            sprite.zIndex = zIndex;
+            sprite.blendMode = blendMode;
+            sprite.alpha = Math.min(1, Math.max(0, mergeAlpha));
+            sprite.visible = false;
+            this.parent.addChild(sprite);
             this.mergeLayers.set(key, {
-                wrap,
                 container,
-                mergeAlpha: wrap.alpha,
+                rt,
+                sprite,
+                mergeAlpha: sprite.alpha,
             });
         } else {
             container.zIndex = zIndex;
