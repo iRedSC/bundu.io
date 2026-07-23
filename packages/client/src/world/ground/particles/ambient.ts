@@ -97,10 +97,14 @@ function burstFromEmitter(
     const t = Math.random();
     const size = sampleRange(emitter.size, t);
     const alpha = sampleRange(emitter.alpha, t);
+    // Ground emitters may opt out (`wind: false`); leaf presets always take wind.
+    const applyWind = !("wind" in emitter && emitter.wind === false);
+    const wx = applyWind ? wind.x : 0;
+    const wy = applyWind ? wind.y : 0;
     const direction =
         "direction" in emitter && emitter.direction !== undefined
             ? emitter.direction
-            : windHeading(wind.x + emitter.gravityX, wind.y + emitter.gravity);
+            : windHeading(wx + emitter.gravityX, wy + emitter.gravity);
     return {
         texture,
         x,
@@ -113,8 +117,8 @@ function burstFromEmitter(
         size,
         endSize: emitter.endSize,
         friction: emitter.friction,
-        gravity: emitter.gravity + wind.y,
-        gravityX: emitter.gravityX + wind.x,
+        gravity: emitter.gravity + wy,
+        gravityX: emitter.gravityX + wx,
         tint: parseHexColor(emitter.tint ?? "#ffffff"),
         alpha,
         alphaFadeIn: emitter.alphaFadeIn,
