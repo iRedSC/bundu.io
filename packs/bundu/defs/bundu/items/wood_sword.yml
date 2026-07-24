@@ -8,7 +8,7 @@ whenMainHand:
         attributes:
             attack.damage:
                 op: add
-                value: 13
+                value: 5
             health.defense.blocking:
                 op: add
                 value: 2
