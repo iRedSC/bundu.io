@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createHash } from "node:crypto";
 import { packs } from "./packs";
 import type { ClientRegistryProjection } from "@bundu/shared/registry";
 import { parseClientGameplayConfig } from "@bundu/shared/client_gameplay";
@@ -42,6 +41,12 @@ import {
     sanitizePackTexture,
 } from "./sanitize_pack_assets";
 import { assertValidPackStack } from "./pack_validation";
+import {
+    packResourceHash,
+    resourcePackFingerprint,
+    sha256,
+    sortedFiles,
+} from "./resource_pack_fingerprint";
 
 export type ResourceAsset = {
     path: string;
@@ -73,41 +78,6 @@ let loadedModels: CompiledModelDefs | undefined;
 export function modelSupportsVariant(id: string, variant: string): boolean {
     if (variant === "base") return true;
     return loadedModels?.get(id)?.variants?.[variant] !== undefined;
-}
-
-function hash(data: string | Uint8Array): string {
-    return createHash("sha256").update(data).digest("hex");
-}
-
-function files(directory: string): string[] {
-    if (!fs.existsSync(directory)) return [];
-    return fs
-        .readdirSync(directory, { withFileTypes: true })
-        .flatMap((entry) => {
-            const filename = path.join(directory, entry.name);
-            return entry.isDirectory() ? files(filename) : [filename];
-        })
-        .sort((left, right) => left.localeCompare(right));
-}
-
-/** Hash pack.yml + assets/ only — data/ edits must not force model renegotiation. */
-function hashPackResourceInputs(packDirectory: string): string {
-    const digest = createHash("sha256");
-    const packYml = path.join(packDirectory, "pack.yml");
-    const packContent = fs.readFileSync(packYml);
-    digest.update(`pack.yml:${packContent.length}:`);
-    digest.update(packContent);
-
-    const assetsDirectory = path.join(packDirectory, "assets");
-    for (const filename of files(assetsDirectory)) {
-        const relative = path
-            .relative(assetsDirectory, filename)
-            .replaceAll("\\", "/");
-        const content = fs.readFileSync(filename);
-        digest.update(`${relative.length}:${relative}:${content.length}:`);
-        digest.update(content);
-    }
-    return digest.digest("hex");
 }
 
 function record(value: unknown, source: string): Record<string, unknown> {
@@ -238,7 +208,7 @@ export class ResourcePackService {
                 }
 
                 const langRoot = path.join(namespaceRoot, "lang");
-                for (const filename of files(langRoot).filter((name) =>
+                for (const filename of sortedFiles(langRoot).filter((name) =>
                     /\.ya?ml$/i.test(name)
                 )) {
                     const locale = path
@@ -260,7 +230,7 @@ export class ResourcePackService {
                 }
 
                 const texturesRoot = path.join(namespaceRoot, "textures");
-                for (const filename of files(texturesRoot)) {
+                for (const filename of sortedFiles(texturesRoot)) {
                     const relative = path
                         .relative(texturesRoot, filename)
                         .replaceAll("\\", "/");
@@ -272,7 +242,7 @@ export class ResourcePackService {
                 }
 
                 const modelsRoot = path.join(namespaceRoot, "models");
-                for (const filename of files(modelsRoot).filter((name) =>
+                for (const filename of sortedFiles(modelsRoot).filter((name) =>
                     /\.ya?ml$/i.test(name)
                 )) {
                     const relative = path
@@ -317,8 +287,8 @@ export class ResourcePackService {
                     namespaceRoot,
                     "ground_models"
                 );
-                for (const filename of files(groundModelsRoot).filter((name) =>
-                    /\.ya?ml$/i.test(name)
+                for (const filename of sortedFiles(groundModelsRoot).filter(
+                    (name) => /\.ya?ml$/i.test(name)
                 )) {
                     const stem = path
                         .relative(groundModelsRoot, filename)
@@ -380,7 +350,7 @@ export class ResourcePackService {
                     `Duplicate sanitized texture path "${asset.path}" (same stem as another pack texture)`
                 );
             }
-            const contentHash = hash(asset.bytes);
+            const contentHash = sha256(asset.bytes);
             servedAssets.set(asset.path, {
                 path: asset.path,
                 hash: contentHash,
@@ -456,11 +426,11 @@ export class ResourcePackService {
             flags: flagRegistry().toProjection(),
         };
         const registriesJson = JSON.stringify(projection);
-        const modelsHash = hash(modelsJson);
-        const registriesHash = hash(registriesJson);
-        const gameplayHash = hash(gameplayJson);
-        const statBarsHash = hash(statBarsJson);
-        const langHash = hash(langJson);
+        const modelsHash = sha256(modelsJson);
+        const registriesHash = sha256(registriesJson);
+        const gameplayHash = sha256(gameplayJson);
+        const statBarsHash = sha256(statBarsJson);
+        const langHash = sha256(langJson);
         const assets = [...servedAssets.values()]
             .map(({ bytes: _bytes, ...asset }) => asset)
             .sort((left, right) => left.path.localeCompare(right.path));
@@ -468,20 +438,17 @@ export class ResourcePackService {
             id: pack.manifest.id,
             version: pack.manifest.version,
             format: pack.manifest.format,
-            hash: hashPackResourceInputs(pack.directory),
+            hash: packResourceHash(pack.directory),
         }));
-        const fingerprint = hash(
-            JSON.stringify({
-                format: 2,
-                packs: packEntries,
-                modelsHash,
-                registriesHash,
-                gameplayHash,
-                statBarsHash,
-                langHash,
-                assets,
-            })
-        );
+        const fingerprint = resourcePackFingerprint({
+            packs: packEntries,
+            modelsHash,
+            registriesHash,
+            gameplayHash,
+            statBarsHash,
+            langHash,
+            assets,
+        });
 
         return new ResourcePackService(
             {
