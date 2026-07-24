@@ -29,7 +29,7 @@ function refreshCraftingMenu(ui: UI): void {
     applyCraftRecipeLocks(ui);
 }
 
-/** Show persistent lock wipe on recipes whose ingredients are craft-locked. */
+/** Show persistent lock wipe on recipes blocked by craft locks (result or ingredients). */
 function applyCraftRecipeLocks(ui: UI): void {
     for (const [i, button] of ui.craftingMenu.buttons.entries()) {
         const view = ui.craftingMenu.items[i];
@@ -42,7 +42,8 @@ function applyCraftRecipeLocks(ui: UI): void {
             button.setItemLock(null);
             continue;
         }
-        const craftLock = ui.inventory.craftLockForIngredients(
+        const craftLock = ui.inventory.craftLockForRecipe(
+            recipe.resultItemId,
             recipe.ingredients.keys()
         );
         button.setItemLock(craftLock ?? null, craftLock !== undefined);

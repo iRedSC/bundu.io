@@ -307,3 +307,17 @@ export function inventoryHasLockedIngredient(
     }
     return false;
 }
+
+/**
+ * True if crafting this recipe is blocked: craft-locked result and/or
+ * craft-locked ingredient.
+ */
+export function recipeIsCraftLocked(
+    player: GameObject,
+    resultItemId: number,
+    ingredients: ReadonlyMap<number, number>,
+    now: number
+): boolean {
+    if (isActionLocked(player, resultItemId, "craft", now)) return true;
+    return inventoryHasLockedIngredient(player, ingredients, now);
+}

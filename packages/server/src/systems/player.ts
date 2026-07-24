@@ -52,9 +52,9 @@ import {
 import {
     clearPlayerItemLocks,
     emitItemLocks,
-    inventoryHasLockedIngredient,
     isActionLocked,
     pruneExpiredLocks,
+    recipeIsCraftLocked,
 } from "../network/item_locks.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { groundWire } from "./ground_wire.js";
@@ -586,8 +586,9 @@ export class PlayerSystem extends System<GameEventMap> {
             !inv ||
             !this.hasCraftingRequirements(player, recipe.flags) ||
             !hasItems(inv, recipe.ingredients) ||
-            inventoryHasLockedIngredient(
+            recipeIsCraftLocked(
                 player,
+                recipe.resultItemId,
                 recipe.ingredients,
                 this.world.gameTime
             ) ||

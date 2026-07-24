@@ -971,8 +971,24 @@ export class Inventory {
     }
 
     /**
-     * Merged craft lock across ingredient item ids (latest expiry wins).
+     * Merged craft lock for a recipe: result and/or any ingredient
+     * (latest expiry wins).
      */
+    craftLockForRecipe(
+        resultItemId: number,
+        ingredientIds: Iterable<number>
+    ): ItemLockVisual | undefined {
+        const matched: ItemLockVisual[] = [];
+        const resultLock = this.findLock(resultItemId, "craft");
+        if (resultLock) matched.push(resultLock);
+        for (const itemId of ingredientIds) {
+            const lock = this.findLock(itemId, "craft");
+            if (lock) matched.push(lock);
+        }
+        return this.mergeLocks(matched);
+    }
+
+    /** @deprecated Prefer {@link craftLockForRecipe}. */
     craftLockForIngredients(
         itemIds: Iterable<number>
     ): ItemLockVisual | undefined {

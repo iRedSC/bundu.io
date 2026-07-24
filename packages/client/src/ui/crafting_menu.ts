@@ -66,17 +66,29 @@ export class RecipeManager {
         return craftable;
     }
 
-    /** First craft-locked ingredient id for a recipe, if any. */
-    craftLockedIngredient(
+    /**
+     * First craft-locked item id for a recipe (result preferred, else an
+     * ingredient), if any.
+     */
+    craftLockedItem(
         recipeId: number,
         isLocked: (itemId: number) => boolean
     ): number | undefined {
         const recipe = this.recipes.get(recipeId);
         if (!recipe) return undefined;
+        if (isLocked(recipe.resultItemId)) return recipe.resultItemId;
         for (const itemId of recipe.ingredients.keys()) {
             if (isLocked(itemId)) return itemId;
         }
         return undefined;
+    }
+
+    /** @deprecated Prefer {@link craftLockedItem}. */
+    craftLockedIngredient(
+        recipeId: number,
+        isLocked: (itemId: number) => boolean
+    ): number | undefined {
+        return this.craftLockedItem(recipeId, isLocked);
     }
 }
 
