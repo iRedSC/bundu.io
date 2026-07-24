@@ -535,8 +535,9 @@ export class ItemButton {
         this.disableSprite.destroy();
         this.lockWipe.destroy();
         this.lockIcon.destroy();
-        this.lockOverlay.mask = null;
+        this.lockWipeLayer.mask = null;
         this.lockMask.destroy();
+        this.lockWipeLayer.destroy({ children: false });
         this.lockBadge.destroy();
         this.lockOverlay.destroy({ children: false });
         this.itemDisplay.destroy({ children: true });
