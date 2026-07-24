@@ -8,3 +8,12 @@ displays:
         scale: 1.75
 ---
 function: "wear"
+onEquip:
+    lockItem:
+        items: [bundu:wood]
+        slots: [helmet]
+        lock: [equip, unequip, craft]
+onUnequip:
+    unlockItem:
+        items: [bundu:wood]
+        slots: [helmet]

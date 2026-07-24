@@ -24,3 +24,8 @@ whenEquipped:
             "attack.origin":
                 op: "add"
                 value: 15
+onEquip:
+    lockItem:
+        slots: [mainhand]
+        for: 10000
+        lock: [unequip, equip]
