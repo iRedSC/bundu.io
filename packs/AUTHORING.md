@@ -131,6 +131,8 @@ onUnequip:
 
 Lock icons appear only while a restriction actively applies (e.g. `unequip` only after equipped). Denied `use` / `craft` flashes the lock on the slot and above the player name (with a circular remaining-time gauge). Craft-locked ingredients also show a lock on the recipe button. `lockItem` / `unlockItem` may be a single object or an array.
 
+Overlapping locks on the same items+slots coalesce (flags combine, timer keeps the later expiry). Overlaps across different scopes still all apply; the UI gauge uses the latest expiry among matches.
+
 ### Display (item models)
 
 Usually just `texture` + optional `extends: item_type:bundu:<type>`.  

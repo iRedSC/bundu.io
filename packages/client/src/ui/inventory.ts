@@ -943,28 +943,59 @@ export class Inventory {
         return this.isEquippedInSlots(itemId, lock.slotFlags);
     }
 
+    /**
+     * Collapse overlapping rules into one visual: flags OR'd, timer = latest
+     * expiry (with that rule's authored duration for the wipe gauge).
+     */
+    private mergeLocks(
+        locks: readonly ItemLockVisual[]
+    ): ItemLockVisual | undefined {
+        if (locks.length === 0) return undefined;
+        if (locks.length === 1) return locks[0];
+        let itemId = LOCK_ANY_ITEM;
+        let endsAt = 0;
+        let durationMs = 0;
+        let flags = 0;
+        let slotFlags = 0;
+        for (const lock of locks) {
+            if (lock.itemId !== LOCK_ANY_ITEM) itemId = lock.itemId;
+            flags |= lock.flags;
+            slotFlags |= lock.slotFlags;
+            if (lock.endsAt > endsAt) {
+                endsAt = lock.endsAt;
+                durationMs = lock.durationMs;
+            }
+        }
+        return { itemId, endsAt, durationMs, flags, slotFlags };
+    }
+
     private findLock(
         itemId: number,
         action: LockAction,
         slot?: LockSlot
     ): ItemLockVisual | undefined {
+        const matched: ItemLockVisual[] = [];
         for (const lock of this.itemLocks) {
             if (!lockFlagsHas(lock.flags, action)) continue;
-            if (this.ruleMatches(lock, itemId, slot)) return lock;
+            if (this.ruleMatches(lock, itemId, slot)) matched.push(lock);
         }
-        return undefined;
+        return this.mergeLocks(matched);
     }
 
-    /** Best lock to show on a hotbar stack (any overlapping rule). */
+    /** Effective lock on a hotbar stack (all overlapping rules merged). */
     private findLockForItem(itemId: number): ItemLockVisual | undefined {
         const slot = this.targetSlotForItem(itemId);
+        const matched: ItemLockVisual[] = [];
         for (const lock of this.itemLocks) {
-            if (this.ruleMatches(lock, itemId, slot)) return lock;
-            // Also surface item-specific locks even when slot filter wouldn't
-            // match the item's equip slot (e.g. craft/drop-only rules).
-            if (lock.itemId === itemId) return lock;
+            if (this.ruleMatches(lock, itemId, slot)) {
+                matched.push(lock);
+                continue;
+            }
+            // Surface item-specific locks even when slot filter wouldn't match
+            // the item's equip slot (e.g. craft/drop-only rules).
+            if (lock.itemId === itemId) matched.push(lock);
         }
-        return undefined;
+        return this.mergeLocks(matched);
     }
 
     /** Persistent slot lock when equip/unequip/drop currently applies. */

@@ -118,6 +118,22 @@ export function isActionLocked(
     return findLock(player, itemId, action, now, slot) !== undefined;
 }
 
+function sameItemSet(
+    a: Set<number> | null,
+    b: ReadonlySet<number> | null
+): boolean {
+    if (a === null && b === null) return true;
+    if (a === null || b === null || a.size !== b.size) return false;
+    for (const id of a) {
+        if (!b.has(id)) return false;
+    }
+    return true;
+}
+
+/**
+ * Apply a lock rule. Same item-set + slotFlags coalesces into one rule:
+ * flags OR together, timer keeps the later expiry.
+ */
 export function applyLockItem(
     player: GameObject,
     action: LockItemAction,
@@ -127,6 +143,20 @@ export function applyLockItem(
     const durationMs = action.forMs ?? 0;
     const endsAt =
         action.forMs === undefined ? Number.POSITIVE_INFINITY : now + action.forMs;
+    for (const rule of rules) {
+        if (
+            rule.slotFlags !== action.slotFlags ||
+            !sameItemSet(rule.items, action.items)
+        ) {
+            continue;
+        }
+        rule.flags |= action.flags;
+        if (endsAt > rule.endsAt) {
+            rule.endsAt = endsAt;
+            rule.durationMs = durationMs;
+        }
+        return true;
+    }
     rules.push({
         items: action.items ? new Set(action.items) : null,
         endsAt,
