@@ -1,0 +1,14 @@
+texture: bundu/item/accessory/amethyst_medallion.svg
+extends: item_type:bundu:book
+---
+type: bundu:book
+function: off_hand
+whenOffHand:
+    "@s":
+        attributes:
+            temperature.warmth:
+                op: add
+                value: 8
+            health.defense:
+                op: add
+                value: 1

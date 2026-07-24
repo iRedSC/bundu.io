@@ -41,10 +41,13 @@ export class ConfigLoader<K extends RegistryName, D extends object> {
 
     get(id?: string | RegistryId<K>) {
         if (id === undefined) return this.fallback;
-        const location =
-            typeof id === "number"
-                ? gameRegistries()[this.registryName].location(id)
-                : resourceLocation(id, "bundu");
-        return this.entries.get(location) ?? this.fallback;
+        if (typeof id === "number") {
+            // Type.id is registry-local; callers may pass a resource id into a
+            // structure loader (shared TileEntity). Unknown ids → fallback.
+            const location = gameRegistries()[this.registryName].tryLocation(id);
+            if (location === undefined) return this.fallback;
+            return this.entries.get(location) ?? this.fallback;
+        }
+        return this.entries.get(resourceLocation(id, "bundu")) ?? this.fallback;
     }
 }

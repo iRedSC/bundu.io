@@ -1,5 +1,5 @@
 extends: item_type:bundu:door
-texture: bundu/structure/door/cobalt_door.png
+texture: bundu/structure/door/cobalt_door.svg
 ---
 type: bundu:building
 places: cobalt_door

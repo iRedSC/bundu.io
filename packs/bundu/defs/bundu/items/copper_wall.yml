@@ -1,5 +1,5 @@
 extends: item_type:bundu:wall
-texture: bundu/structure/wall/copper_wall.png
+texture: bundu/item/structure/copper_wall.svg
 ---
 type: bundu:building
 places: copper_wall

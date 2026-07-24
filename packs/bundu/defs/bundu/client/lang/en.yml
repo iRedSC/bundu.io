@@ -21,9 +21,12 @@ item:
     bandage:
         name: Bandage
         desc: A strip of cloth used to bind a wound.
-    beanie:
-        name: Beanie
-        desc: Night-time is a breeze.
+    artic_gear:
+        name: Artic Gear
+        desc: A little protection from the cold.
+    amethyst_medallion:
+        name: Amethyst Medallion
+        desc: An amethyst medallion.
     bear_fur:
         name: Bear Fur
         desc: The thick fur of a bear.
@@ -54,9 +57,12 @@ item:
     cloth:
         name: Cloth
         desc: A flexible material made from weaving fibers.
-    coat:
-        name: Coat
-        desc: Keeps you very warm.
+    chapka:
+        name: Chapka
+        desc: Night-time is a breeze.
+    crystal_medallion:
+        name: Crystal Medallion
+        desc: A crystal medallion.
     cobalt:
         name: Cobalt
         desc: A hard blue-grey metal.
@@ -120,9 +126,9 @@ item:
     deer_hide:
         name: Deer Hide
         desc: The skin of a deer.
-    earmuffs:
-        name: Earmuffs
-        desc: A little protection from the cold.
+    elephant_skin:
+        name: Elephant Skin
+        desc: Thick, wrinkled hide from an elephant.
     elephant_tusk:
         name: Elephant Tusk
         desc: The elongated, protruding tooth of an elephant.
@@ -189,6 +195,9 @@ item:
     miracle_fruit:
         name: Miracle Fruit
         desc: A fruit that alters the taste perception temporarily.
+    ninja_hat:
+        name: Ninja Hat
+        desc: Light and quick on your feet.
     pinecone:
         name: Pinecone
         desc: The woody, conical fruit of a pine tree.
@@ -210,9 +219,15 @@ item:
     quick_stone_wall:
         name: Quick Stone Wall
         desc: A quickly built wall made of stone.
+    queen_bee_stinger:
+        name: Queen Bee Stinger
+        desc: The stinger of a queen bee.
     quick_wood_wall:
         name: Quick Wood Wall
         desc: A quickly built wall made of wood.
+    ram_horn:
+        name: Ram Horn
+        desc: A curved horn from a ram.
     ram_wool:
         name: Ram Wool
         desc: The wool of a ram.
@@ -222,6 +237,9 @@ item:
     resource_book:
         name: Resource Book
         desc: Save basic resources when crafting.
+    recipe_book:
+        name: Recipe Book
+        desc: Unlocks advanced recipes.
     ruby_medallion:
         name: Ruby Medallion
         desc: A ruby medallion.
@@ -230,6 +248,9 @@ item:
         desc: Loose grains from the shore.
     scuba:
         name: Scuba
+        desc: Breathe underwater.
+    snorkel:
+        name: Snorkel
         desc: Breathe underwater.
     silver:
         name: Silver
@@ -303,6 +324,9 @@ item:
     tusk_spear:
         name: Tusk Spear
         desc: A spear made from a tusk.
+    winter_coat:
+        name: Winter Coat
+        desc: Keeps you very warm.
     wood:
         name: Wood
         desc: Basic building material.
@@ -427,9 +451,18 @@ resource:
     cobalt:
         name: Cobalt
         desc: A cobalt.
+    cobalt_large:
+        name: Large Cobalt
+        desc: A large cobalt deposit.
+    cobalt_small:
+        name: Small Cobalt
+        desc: A small cobalt deposit.
     copper:
         name: Copper
         desc: A copper.
+    copper_small:
+        name: Small Copper
+        desc: A small copper deposit.
     deer_dead:
         name: Deer
         desc: Remains left behind.
@@ -451,6 +484,15 @@ resource:
     hive_small:
         name: Hive Small
         desc: A hive small.
+    iridium:
+        name: Iridium
+        desc: An iridium.
+    iridium_large:
+        name: Large Iridium
+        desc: A large iridium deposit.
+    iridium_small:
+        name: Small Iridium
+        desc: A small iridium deposit.
     komodo_dragon_dead:
         name: Komodo Dragon
         desc: Remains left behind.
@@ -478,12 +520,24 @@ resource:
     silver:
         name: Silver
         desc: A silver.
+    silver_large:
+        name: Large Silver
+        desc: A large silver deposit.
+    silver_small:
+        name: Small Silver
+        desc: A small silver deposit.
     stone:
         name: Stone
         desc: A stone.
     stone_barrier:
         name: Stone Barrier
         desc: A stone barrier.
+    stone_large:
+        name: Large Stone
+        desc: A large stone deposit.
+    stone_small:
+        name: Small Stone
+        desc: A small stone deposit.
 
 ground_type:
     grass:

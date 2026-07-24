@@ -1,0 +1,17 @@
+extends: model:bundu:single_tile_node
+defaultVariant: base
+variants:
+    base:
+        main: bundu/resource/iridium_ore_small.svg
+parts:
+    main:
+        spillover: 25
+---
+score: 40
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 5
+regen_speed: 10
+quantity: 15
+loot_table: iridium

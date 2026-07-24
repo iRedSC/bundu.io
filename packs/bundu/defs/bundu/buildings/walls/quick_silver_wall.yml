@@ -2,8 +2,8 @@ extends: model:bundu:walls/wall
 defaultVariant: base
 variants:
   base:
-    main: bundu/structure/wall/silver_wall.png
-    spike: bundu/structure/spike/silver_spike.png
+    main: bundu/structure/wall/silver_wall.svg
+    spike: bundu/structure/spike/silver_spike.svg
 ---
 class: wall
 material: quick_silver

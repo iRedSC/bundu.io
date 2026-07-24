@@ -2,8 +2,8 @@ extends: model:bundu:walls/wall
 defaultVariant: base
 variants:
   base:
-    main: bundu/structure/wall/cobalt_wall.png
-    spike: bundu/structure/spike/cobalt_spike.png
+    main: bundu/structure/wall/cobalt_wall.svg
+    spike: bundu/structure/spike/cobalt_spike.svg
 ---
 class: wall
 material: cobalt

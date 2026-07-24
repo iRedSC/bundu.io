@@ -1,0 +1,21 @@
+extends: model:bundu:single_tile_node
+defaultVariant: base
+variants:
+    base:
+        main: bundu/resource/silver_ore_large.svg
+tile:
+    footprint:
+        - "X#"
+        - "##"
+parts:
+    main:
+        spillover: 50
+---
+score: 20
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 3
+regen_speed: 14
+quantity: 40
+loot_table: silver

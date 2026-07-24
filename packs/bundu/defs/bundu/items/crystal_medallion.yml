@@ -1,0 +1,13 @@
+texture: bundu/item/accessory/crystal_medallion.svg
+---
+type: bundu:book
+function: off_hand
+whenOffHand:
+    "@s":
+        attributes:
+            temperature.insulation.down:
+                op: add
+                value: 10
+            thirst.hydration:
+                op: multiply
+                value: 0.9

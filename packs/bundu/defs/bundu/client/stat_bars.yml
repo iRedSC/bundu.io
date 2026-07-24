@@ -1,7 +1,7 @@
 health:
   max: 200
   split: true
-  icon: bundu/ui/health_bar_icon.png
+  icon: bundu/ui/health_bar_icon.svg
   colors:
     base: "#88fa57"
     overlay: "#37ad98"
@@ -15,7 +15,7 @@ health:
 hunger:
   max: 200
   split: true
-  icon: bundu/ui/hunger_bar_icon.png
+  icon: bundu/ui/hunger_bar_icon.svg
   colors:
     base: "#b06b30"
     overlay: "#d48457"
@@ -29,7 +29,7 @@ hunger:
 heat:
   max: 200
   split: true
-  icon: bundu/ui/heat_bar_icon.png
+  icon: bundu/ui/heat_bar_icon.svg
   colors:
     base: "#b85a48"
     overlay: "#b02a2a"
@@ -48,7 +48,7 @@ heat:
 thirst:
   max: 100
   split: false
-  icon: bundu/ui/water_bar_icon.png  # reuse water assets
+  icon: bundu/ui/water_bar_icon.svg  # reuse water assets
   colors:
     base: "#3a7ca5"
     overlay: "#5dade2"

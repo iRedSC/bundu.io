@@ -1,4 +1,4 @@
 extends: item_type:bundu:book
-texture: bundu/item/book/resource_book.svg
+texture: bundu/item/accessory/resource_book.svg
 ---
 type: bundu:book

@@ -16,6 +16,8 @@ import {
 } from "./roof_connectivity.js";
 
 function isRoof(object: GameObject): boolean {
+    // Resources also have TileEntity+Type but use the resource registry.
+    if (!(object instanceof Structure)) return false;
     const type = Type.get(object);
     if (!type || !TileEntity.get(object)) return false;
     return BuildingConfigs.get(type.id).class === "roof";

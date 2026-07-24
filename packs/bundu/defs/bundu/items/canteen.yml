@@ -1,4 +1,4 @@
-texture: bundu/misc/unknown_asset.svg
+texture: bundu/item/accessory/canteen.svg
 ---
 type: bundu:book
 function: off_hand

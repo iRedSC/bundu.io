@@ -2,9 +2,9 @@ extends: model:bundu:doors/door
 defaultVariant: base
 variants:
   base:
-    wall: bundu/structure/wall/iridium_wall.png
-    main: bundu/structure/door/iridium_door.png
-    spike: bundu/structure/spike/iridium_spike.png
+    wall: bundu/structure/wall/iridium_wall.svg
+    main: bundu/structure/door/iridium_door.svg
+    spike: bundu/structure/spike/iridium_spike.svg
 ---
 class: door
 material: iridium

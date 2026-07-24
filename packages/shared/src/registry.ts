@@ -65,6 +65,8 @@ export type ClientRegistryProjection = RegistrySetProjection & {
             type: string | null;
             /** Structure id when this item places a building; else null. */
             places: number | null;
+            /** Keep face/hair body art when this helmet/hat is worn. */
+            showOverlay?: boolean;
         }
     >;
     /** `model` is a client ground-visual id (not an entity ModelDef). */
@@ -220,6 +222,10 @@ export class Registry<K extends RegistryName> {
             throw new Error(`${source}: unknown ${this.name} id ${id}`);
         }
         return location;
+    }
+
+    tryLocation(id: number): ResourceLocation | undefined {
+        return this.locations.get(id as RegistryId<K>);
     }
 
     entries(): IterableIterator<[ResourceLocation, RegistryId<K>]> {

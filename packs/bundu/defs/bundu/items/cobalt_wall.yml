@@ -1,5 +1,5 @@
 extends: item_type:bundu:wall
-texture: bundu/structure/wall/cobalt_wall.png
+texture: bundu/item/structure/cobalt_wall.svg
 ---
 type: bundu:building
 places: cobalt_wall

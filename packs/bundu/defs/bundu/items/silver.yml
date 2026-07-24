@@ -1,4 +1,4 @@
-texture: bundu/resource/silver_ore.png
+texture: bundu/resource/silver_ore.svg
 displays:
     world:
         scale: 1.7

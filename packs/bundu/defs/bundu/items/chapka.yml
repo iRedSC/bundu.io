@@ -1,0 +1,10 @@
+extends: item_type:bundu:hat
+texture: bundu/item/equipment/chapka.svg
+---
+type: bundu:hat
+whenHelmet:
+    "@s":
+        attributes:
+            temperature.warmth:
+                op: add
+                value: 12

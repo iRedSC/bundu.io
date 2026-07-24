@@ -1,5 +1,5 @@
 extends: item_type:bundu:wall
-texture: bundu/structure/wall/silver_wall.png
+texture: bundu/item/structure/silver_wall.svg
 ---
 type: bundu:building
 places: quick_silver_wall

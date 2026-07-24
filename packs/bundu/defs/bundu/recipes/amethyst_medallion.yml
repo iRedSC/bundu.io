@@ -1,0 +1,13 @@
+result:
+    item: amethyst_medallion
+    amount: 1
+duration: 20000
+score: 5500
+ingredients:
+    copper: 160
+    silver: 30
+    cobalt: 15
+requirements:
+    - near_fire
+    - near_anvil
+    - near_crafting_table

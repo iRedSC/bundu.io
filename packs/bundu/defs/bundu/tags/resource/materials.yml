@@ -2,8 +2,17 @@ category: true
 values:
     - forest_tree
     - stone
+    - stone_small
+    - stone_large
     - copper
+    - copper_small
     - silver
+    - silver_small
+    - silver_large
     - cobalt
+    - cobalt_small
+    - cobalt_large
     - iridium
+    - iridium_small
+    - iridium_large
     - stone_barrier

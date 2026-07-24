@@ -11,6 +11,8 @@ export type ItemConfig = ContextBundle & {
     can_saturate: boolean;
     eat_duration_ms: number;
     places: RegistryId<"structure"> | null;
+    /** Keep face/hair body art when this helmet/hat is worn. */
+    showOverlay: boolean;
 };
 
 const fallback: ItemConfig = {
@@ -22,6 +24,7 @@ const fallback: ItemConfig = {
     can_saturate: false,
     eat_duration_ms: 1000,
     places: null,
+    showOverlay: false,
 };
 
 export const ItemConfigs = new ConfigLoader<"item", ItemConfig>("item", fallback);

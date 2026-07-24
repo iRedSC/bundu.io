@@ -1,0 +1,17 @@
+extends: model:bundu:single_tile_node
+defaultVariant: base
+variants:
+    base:
+        main: bundu/resource/cobalt_ore_small.svg
+parts:
+    main:
+        spillover: 25
+---
+score: 30
+exclusive: true
+multipliers:
+    pickaxe: 1
+level: 4
+regen_speed: 17
+quantity: 15
+loot_table: cobalt

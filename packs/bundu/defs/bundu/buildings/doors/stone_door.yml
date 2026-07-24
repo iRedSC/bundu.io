@@ -2,9 +2,9 @@ extends: model:bundu:doors/door
 defaultVariant: base
 variants:
   base:
-    wall: bundu/structure/wall/stone_wall.png
-    main: bundu/structure/door/stone_door.png
-    spike: bundu/structure/spike/stone_spike.png
+    wall: bundu/structure/wall/stone_wall.svg
+    main: bundu/structure/door/stone_door.svg
+    spike: bundu/structure/spike/stone_spike.svg
 ---
 class: door
 material: stone

@@ -1,0 +1,22 @@
+texture: bundu/item/equipment/snorkel.svg
+extends: item_type:bundu:hat
+---
+type: bundu:helmet
+showOverlay: true
+whenHelmet:
+    "@s":
+        attributes:
+            health.defense:
+                op: add
+                value: 2
+    "@s[flag=in_water]":
+        attributes:
+            movement.speed:
+                op: multiply
+                value: 1.25
+            temperature.insulation.down:
+                op: add
+                value: 0.35
+            air.oxygen:
+                op: add
+                value: 7
