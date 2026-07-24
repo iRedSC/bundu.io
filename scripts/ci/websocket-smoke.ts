@@ -1,4 +1,10 @@
 import { decode, encode } from "@msgpack/msgpack";
+import {
+    encodeHello,
+    NEGOTIATION_PACKET_ID,
+    PROTOCOL_VERSION,
+    SUPPORTED_FEATURES,
+} from "@bundu/shared";
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
 
 /** Pack sanitization on cold start can take well over 10s in CI. */
@@ -56,7 +62,9 @@ async function packFingerprint(websocketUrl: string): Promise<string> {
     return (manifest as { fingerprint: string }).fingerprint;
 }
 
-async function connect(deadline: number): Promise<WebSocket> {
+async function connect(
+    deadline: number
+): Promise<{ socket: WebSocket; fingerprint: string }> {
     while (Date.now() < deadline) {
         try {
             const fingerprint = await packFingerprint(url);
@@ -72,7 +80,7 @@ async function connect(deadline: number): Promise<WebSocket> {
                     once: true,
                 });
             });
-            if (socket) return socket;
+            if (socket) return { socket, fingerprint };
         } catch {
             // Server may still be starting.
         }
@@ -82,18 +90,38 @@ async function connect(deadline: number): Promise<WebSocket> {
 }
 
 try {
-    const socket = await connect(Date.now() + connectTimeoutMs);
+    const { socket, fingerprint } = await connect(
+        Date.now() + connectTimeoutMs
+    );
     await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(
             () => reject(new Error(`WebSocket smoke test timed out: ${url}`)),
             roundTripTimeoutMs
         );
-        // Spawn / world visibility waits for ClientReady (see player syncSession).
-        socket.send(encode([ClientPacket.ClientReady]));
-        socket.send(encode([ClientPacket.ChatMessage, "ci-smoke"]));
+        socket.send(
+            encodeHello({
+                protocolVersion: PROTOCOL_VERSION,
+                packFingerprint: fingerprint,
+                features: [...SUPPORTED_FEATURES],
+            })
+        );
         socket.addEventListener("message", ({ data }) => {
             if (!(data instanceof ArrayBuffer)) return;
-            if (!containsChatReply(decode(data))) return;
+            const decoded: unknown = decode(data);
+            if (
+                Array.isArray(decoded) &&
+                decoded.some(
+                    (packet) =>
+                        isPacket(packet) &&
+                        packet[0] === NEGOTIATION_PACKET_ID
+                )
+            ) {
+                // Spawn / world visibility waits for ClientReady.
+                socket.send(encode([ClientPacket.ClientReady]));
+                socket.send(encode([ClientPacket.ChatMessage, "ci-smoke"]));
+                return;
+            }
+            if (!containsChatReply(decoded)) return;
             clearTimeout(timeout);
             socket.close();
             resolve();

@@ -18,7 +18,6 @@ const SESSION_ID = /^[A-Za-z0-9_-]+$/;
 export class WebSocketAdmissionPolicy {
     readonly maxPayloadBytes: number;
     private readonly allowedOrigins: ReadonlySet<string>;
-    private readonly allowMissingOrigin: boolean;
     private readonly maxSessionIdLength: number;
 
     constructor(config: AdmissionConfig = {}) {
@@ -30,17 +29,15 @@ export class WebSocketAdmissionPolicy {
                     ? ["http://localhost:5173", "http://127.0.0.1:5173"]
                     : [])
         );
-        this.allowMissingOrigin = local;
         this.maxPayloadBytes = config.maxPayloadBytes ?? 64 * 1024;
         this.maxSessionIdLength = config.maxSessionIdLength ?? 128;
     }
 
     inspectUpgrade(request: Request, sessionId: string): AdmissionResult {
         const origin = request.headers.get("origin");
-        if (
-            (!origin && !this.allowMissingOrigin) ||
-            (origin && !this.allowedOrigins.has(origin))
-        ) {
+        // Browsers always send Origin. Origin-less non-browser clients are not
+        // vulnerable to cross-site WebSocket hijacking.
+        if (origin && !this.allowedOrigins.has(origin)) {
             return { ok: false, status: 403, reason: "origin_rejected" };
         }
         if (

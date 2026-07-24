@@ -7,12 +7,12 @@ import {
 describe("WebSocketAdmissionPolicy", () => {
   const sessionId = "valid_session_1234";
 
-  test("production rejects missing and unknown origins", () => {
+  test("production permits non-browser clients but rejects unknown origins", () => {
     const policy = new WebSocketAdmissionPolicy({
       environment: "production",
       allowedOrigins: ["https://bundu.io"],
     });
-    expect(policy.inspectUpgrade(new Request("https://server.test"), sessionId).ok).toBeFalse();
+    expect(policy.inspectUpgrade(new Request("https://server.test"), sessionId).ok).toBeTrue();
     expect(policy.inspectUpgrade(new Request("https://server.test", {
       headers: { origin: "https://evil.test" },
     }), sessionId).ok).toBeFalse();
