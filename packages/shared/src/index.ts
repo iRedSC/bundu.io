@@ -5,6 +5,7 @@
  * extensionless imports (never import `@bundu/shared` from inside itself).
  */
 export * from "./math";
+export * from "./crafting";
 export * from "./movement";
 export * from "./object_utils";
 export * from "./random";

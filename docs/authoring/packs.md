@@ -87,6 +87,10 @@ Attribute paths form a tree: parent keys (e.g. `attack.damage`) also apply to ch
 (`health.defense.blocking`). Same for `temperature.insulation` →
 `temperature.insulation.up` / `temperature.insulation.down` (resist heating /
 cooling). Unknown attribute keys fail pack load.
+`crafting.multiplier` / `crafting.speed` are direct multipliers (default `1`;
+`2` → double, `0.5` → half). Multiplier scales ingredient costs (base amounts
+≥ 2 cannot fall below 2); speed shortens craft duration. Multiplier is synced
+to the client crafting list.
 Targets: `"@s"` / `"@a[…]"` selectors, entity ids, `#tags`, or legacy
 `type=`/`flag=` filter strings.
 

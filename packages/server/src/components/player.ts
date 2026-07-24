@@ -4,6 +4,8 @@ import type { AttributesData } from "./attributes";
 export type CraftingState = {
     recipeId: number;
     endsAt: number;
+    /** Scaled ingredient costs frozen when the craft channel starts. */
+    ingredients: Map<number, number>;
 };
 
 export type EatingState = {

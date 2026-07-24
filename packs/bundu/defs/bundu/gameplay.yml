@@ -102,6 +102,8 @@ player:
     hunger.cancel_regen_below: 25
     hunger.cancel_regen_above: 175
     eating.movement_speed_multiplier: 1
+    crafting.multiplier: 1
+    crafting.speed: 1
     movement.speed: 16
     placement.reach: 200
     interaction.reach: 200

@@ -2,6 +2,7 @@ import { ItemButton, tickItemButton, formatItemLockTooltip } from "./item_button
 import type { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
+import { scaleCraftAmount } from "@bundu/shared/crafting";
 import { Container } from "pixi.js";
 import { colorLerp, lerp } from "@bundu/shared/transforms";
 import { clientRegistries } from "../configs/registries";
@@ -47,7 +48,11 @@ export class RecipeManager {
         }
     }
 
-    filter(items: Map<number, number>, flags: number[]): RecipeView[] {
+    filter(
+        items: Map<number, number>,
+        flags: number[],
+        multiplier = 1
+    ): RecipeView[] {
         const craftable: RecipeView[] = [];
         const availableFlags = new Set(flags);
         nextRecipe: for (const recipe of this.recipes.values()) {
@@ -55,7 +60,8 @@ export class RecipeManager {
                 if (!availableFlags.has(flag)) continue nextRecipe;
             }
             for (const [id, recipeAmount] of recipe.ingredients) {
-                if ((items.get(id) ?? 0) < recipeAmount) continue nextRecipe;
+                const required = scaleCraftAmount(recipeAmount, multiplier);
+                if ((items.get(id) ?? 0) < required) continue nextRecipe;
             }
             craftable.push({
                 recipeId: recipe.recipeId,

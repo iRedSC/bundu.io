@@ -81,6 +81,8 @@ export const ServerPacket = {
     UpdateItemLocks: 0x27,
     /** Owner-only acknowledgement for authoritative hotbar selection. */
     SelectItemResult: 0x28,
+    /** Owning client's `crafting.multiplier` (recipe cost scale; default 1). */
+    UpdateCraftingMultiplier: 0x29,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -238,6 +240,10 @@ export namespace ServerPacket {
         requested: number;
         selected: number;
         accepted: boolean;
+    };
+    /** Effective `crafting.multiplier` for the receiving player's craft costs. */
+    export type UpdateCraftingMultiplier = {
+        multiplier: number;
     };
     export type UnloadGround = {
         groundData: GroundWire[];
@@ -487,6 +493,7 @@ export type ServerPacketMap = {
     [ServerPacket.SetPlayerVisual]: ServerPacket.SetPlayerVisual;
     [ServerPacket.UpdateItemLocks]: ServerPacket.UpdateItemLocks;
     [ServerPacket.SelectItemResult]: ServerPacket.SelectItemResult;
+    [ServerPacket.UpdateCraftingMultiplier]: ServerPacket.UpdateCraftingMultiplier;
 };
 
 /** ID → payload map for client packets. */
@@ -597,6 +604,7 @@ export const ServerSchema: {
     [ServerPacket.SelectItemResult]: {
         fields: ["requested", "selected", "accepted"],
     },
+    [ServerPacket.UpdateCraftingMultiplier]: { fields: ["multiplier"] },
 };
 
 export const ClientSchema: {
