@@ -36,8 +36,9 @@ export type Hide = {
     /** Widest-wins when OR-merged: exclusions > self > none. */
     visualEffect?: VisualEffect;
     /**
-     * Who is excluded from this hide (hide does not apply to them). With
-     * `visualEffect: exclusions`, those entities see the ghost model.
+     * Who this hide does not apply to (they see the real player).
+     * `visualEffect: exclusions` makes those viewers see a ghost model;
+     * otherwise they see the opaque real body.
      * Kept per-source; stripped by {@link orHide}.
      */
     exclusionTarget?: HideExclusionTarget;
@@ -153,11 +154,6 @@ export function parseHide(
             result[key as (typeof BOOL_KEYS)[number]] = true;
             any = true;
         }
-    }
-    if (result.exclusionTarget && result.visualEffect !== "exclusions") {
-        throw new Error(
-            `${path}.exclusionTarget: only valid when visualEffect is "exclusions"`
-        );
     }
     return any ? result : undefined;
 }
