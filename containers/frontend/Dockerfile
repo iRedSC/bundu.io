@@ -49,4 +49,7 @@ COPY --from=build /app/static-server.ts ./static-server.ts
 COPY --from=build /app/public ./public
 
 EXPOSE 3000
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
+    CMD ["bun", "-e", "const r=await fetch('http://127.0.0.1:3000/readyz');if(!r.ok)process.exit(1)"]
+USER bun
 CMD ["bun", "static-server.ts"]

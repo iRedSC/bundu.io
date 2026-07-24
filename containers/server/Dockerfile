@@ -30,10 +30,18 @@ COPY packages/server ./packages/server
 COPY packages/shared ./packages/shared
 COPY scripts ./scripts
 COPY packs ./packs
+COPY --chown=bun:bun maps ./maps
 COPY tsconfig.json ./
 
 RUN --mount=type=cache,target=/app/.cache \
     bun run pack:gen
 
+# BuildKit cache mounts are not persisted into the image. Recreate a writable
+# runtime cache for startup pack compilation.
+RUN mkdir -p /app/.cache && chown bun:bun /app/.cache
+
 EXPOSE 7777
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
+    CMD ["bun", "-e", "const r=await fetch('http://127.0.0.1:7777/readyz');if(!r.ok)process.exit(1)"]
+USER bun
 CMD ["bun", "run", "packages/server/src/index.ts"]
