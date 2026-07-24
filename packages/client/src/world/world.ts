@@ -247,6 +247,32 @@ export class World {
     private readonly wakeMoveAt = new Map<number, number>();
     private readonly wakeSplashAt = new Map<number, number>();
     private readonly wakeLastPos = new Map<number, { x: number; y: number }>();
+    /**
+     * Live structure/resource circles for shore-wash splash-back.
+     * Refilled each ground FX tick; wave particles keep a stable probe closure.
+     */
+    private readonly waveBlockSolids: { x: number; y: number; r: number }[] =
+        [];
+    private readonly waveBlockedAt = (
+        x: number,
+        y: number,
+        hitRadius = 0
+    ): { nx: number; ny: number } | undefined => {
+        for (const solid of this.waveBlockSolids) {
+            const reach = solid.r + hitRadius;
+            const dx = x - solid.x;
+            const dy = y - solid.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > reach * reach) continue;
+            const d = Math.sqrt(d2);
+            if (d < 1e-4) {
+                // Caller falls back to the wash's offshore axis.
+                return { nx: 0, ny: 0 };
+            }
+            return { nx: dx / d, ny: dy / d };
+        }
+        return undefined;
+    };
     private readonly wakeTravel = new Map<number, number>();
     /** Accumulated move delta since last splash — stabler heading than 1 frame. */
     private readonly wakeMoveDelta = new Map<number, { x: number; y: number }>();
@@ -408,7 +434,7 @@ export class World {
                 object.updateHealthBar(now, this.cursorWorld, this.showAllHover);
             }
         }
-        this.particles.update(deltaMS);
+        this.particles.update(deltaMS, this.pixi);
         this.tickLandSeams();
         this.updateGroundVisuals(deltaMS, now);
         this.updatePlacementGhost();
@@ -1588,6 +1614,35 @@ export class World {
             if (type === 0 || !this.oceanTypeIds.has(type)) return undefined;
             return clientGroundType(type).model;
         };
+
+        // Shore-wash splash blockers: structures/resources only.
+        // Land is intentionally washable (waves overshoot several tiles inland).
+        const pad = TILE_SIZE * 8;
+        const blockMinX = view.minX - pad;
+        const blockMaxX = view.maxX + pad;
+        const blockMinY = view.minY - pad;
+        const blockMaxY = view.maxY + pad;
+        this.waveBlockSolids.length = 0;
+        for (const object of this.objects.all()) {
+            if (!(object instanceof Structure)) continue;
+            const { x, y } = object.position;
+            if (
+                x < blockMinX ||
+                x > blockMaxX ||
+                y < blockMinY ||
+                y > blockMaxY
+            ) {
+                continue;
+            }
+            this.waveBlockSolids.push({
+                x,
+                y,
+                r: Math.max(object.collisionRadius, TILE_SIZE / 2),
+            });
+        }
+        const landDistanceAt = (wx: number, wy: number) =>
+            this.landDistance.atWorld(wx, wy);
+
         const ctx = {
             deltaMS,
             now,
@@ -1598,10 +1653,11 @@ export class World {
             shore: this.shoreSamples,
             isOceanAt,
             waterModelAt,
-            landDistanceAt: (wx: number, wy: number) =>
-                this.landDistance.atWorld(wx, wy),
+            landDistanceAt,
+            blockedAt: this.waveBlockedAt,
             shoreColor: this.nearshoreFill.colorTexture,
             shoreMask: this.nearshoreFill.maskTexture,
+            waveMask: this.particles.getMaskCoverage(),
         };
         for (const visual of this.oceanVisuals.values()) visual.update?.(ctx);
         for (const patch of this.groundPatches) patch.visual.update?.(ctx);

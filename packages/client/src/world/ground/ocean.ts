@@ -26,12 +26,22 @@ import {
 import { AnchoredDisplacementFilter } from "./anchored_displacement";
 import { ambientRate } from "./ambient_fx";
 import { oceanFx, oceanTint } from "./ocean_fx";
-import { oceanFoam, oceanSparkle } from "./particles/foam";
+import {
+    oceanSparkle,
+    oceanWaveWash,
+    type WaveSplashSpawn,
+} from "./particles/foam";
 import {
     createDropletDisplacementTexture,
     createSplashRefractionFilter,
 } from "./splash_refraction";
 import { sizeEnvelope } from "../../rendering/particles/size_envelope";
+import {
+    surgeAlong,
+    surgeRetreatFromHit,
+    surgeRetreatTravel,
+} from "../../rendering/particles/surge";
+import type { ParticleBlockHit } from "../../rendering/particles/types";
 import type {
     GroundUpdateContext,
     GroundVisual,
@@ -160,6 +170,33 @@ export function createOceanGround(
     });
     causticsB.blendMode = "add";
     fx.addChild(causticsB);
+
+    /**
+     * Wave-shaped caustics pass: same scroll/tint as main FX, but AlphaMasked
+     * by dedicated overlay particles (not the visible foam).
+     */
+    const waveFx = new Container();
+    waveFx.visible = false;
+    root.addChild(waveFx);
+    const waveMask = new Sprite(Texture.EMPTY);
+    // Sampled for AlphaMask only — never draw the coverage texture itself.
+    waveMask.renderable = false;
+    root.addChild(waveMask);
+    waveFx.setMask({ mask: waveMask, channel: "alpha" });
+    const waveCausticsA = new TilingSprite({
+        texture: causticsTex,
+        width: 1,
+        height: 1,
+    });
+    waveCausticsA.blendMode = "add";
+    waveFx.addChild(waveCausticsA);
+    const waveCausticsB = new TilingSprite({
+        texture: causticsTex,
+        width: 1,
+        height: 1,
+    });
+    waveCausticsB.blendMode = "add";
+    waveFx.addChild(waveCausticsB);
 
     const bake = new Container();
     const swellBig = new TilingSprite({
@@ -294,6 +331,19 @@ export function createOceanGround(
         startSize: number;
         peakSize: number | undefined;
         rotation: number;
+        /** Surge wash (shore wave band). Omit for ballistic mover splashes. */
+        originX?: number;
+        originY?: number;
+        dirX?: number;
+        dirY?: number;
+        surgeDistance?: number;
+        surgeApexAt?: number;
+        retreating?: boolean;
+        blockedAt?: (
+            x: number,
+            y: number,
+            hitRadius?: number
+        ) => ParticleBlockHit | undefined;
     };
     const splashes: Splash[] = [];
     const splashSprites: Sprite[] = [];
@@ -378,6 +428,40 @@ export function createOceanGround(
                 rotation: Math.random() * Math.PI * 2,
             });
         }
+    };
+
+    /** Shore-wave rear band: droplet refraction that surges with the foam. */
+    const addSplashWash = (
+        spawn: WaveSplashSpawn,
+        now: number,
+        blockedAt?: (
+            x: number,
+            y: number,
+            hitRadius?: number
+        ) => ParticleBlockHit | undefined
+    ) => {
+        if (splashes.length >= oceanFx.splash.max) return;
+        const dirX = Math.cos(spawn.direction);
+        const dirY = Math.sin(spawn.direction);
+        splashes.push({
+            x: spawn.x,
+            y: spawn.y,
+            born: now,
+            updatedAt: now,
+            velocityX: 0,
+            velocityY: 0,
+            lifetime: spawn.lifetime,
+            startSize: spawn.startSize,
+            peakSize: spawn.startSize * 1.12,
+            rotation: Math.random() * Math.PI * 2,
+            originX: spawn.x,
+            originY: spawn.y,
+            dirX,
+            dirY,
+            surgeDistance: spawn.surgeDistance,
+            surgeApexAt: spawn.apexAt,
+            blockedAt,
+        });
     };
 
     const splashSprite = (i: number): Sprite => {
@@ -524,11 +608,64 @@ export function createOceanGround(
             if (!entry) continue;
             const deltaSeconds = Math.max(0, now - entry.updatedAt) / 1000;
             entry.updatedAt = now;
-            const friction = Math.exp(-splash.friction * deltaSeconds);
-            entry.velocityX *= friction;
-            entry.velocityY *= friction;
-            entry.x += entry.velocityX * deltaSeconds;
-            entry.y += entry.velocityY * deltaSeconds;
+
+            if (entry.surgeDistance !== undefined) {
+                const progress = (now - entry.born) / entry.lifetime;
+                const apexAt = entry.surgeApexAt ?? 0.45;
+                const originX = entry.originX ?? entry.x;
+                const originY = entry.originY ?? entry.y;
+                const dirX = entry.dirX ?? 0;
+                const dirY = entry.dirY ?? 0;
+
+                if (entry.retreating) {
+                    const travel = surgeRetreatTravel(progress);
+                    entry.x = originX + dirX * entry.surgeDistance * travel;
+                    entry.y = originY + dirY * entry.surgeDistance * travel;
+                } else {
+                    const along = surgeAlong(progress, apexAt);
+                    entry.x = originX + dirX * entry.surgeDistance * along;
+                    entry.y = originY + dirY * entry.surgeDistance * along;
+
+                    const hitRadius = entry.startSize * 0.45;
+                    const hit =
+                        progress > 0.06 && progress < apexAt
+                            ? entry.blockedAt?.(entry.x, entry.y, hitRadius)
+                            : undefined;
+                    if (hit) {
+                        const retreat = surgeRetreatFromHit(
+                            entry.x,
+                            entry.y,
+                            hit.nx,
+                            hit.ny,
+                            along,
+                            entry.surgeDistance,
+                            apexAt,
+                            entry.lifetime,
+                            -dirX,
+                            -dirY
+                        );
+                        entry.originX = retreat.originX;
+                        entry.originY = retreat.originY;
+                        entry.dirX = retreat.dirX;
+                        entry.dirY = retreat.dirY;
+                        entry.surgeDistance = retreat.surgeDistance;
+                        entry.retreating = true;
+                        entry.born = now;
+                        entry.lifetime = retreat.lifetime;
+                        entry.blockedAt = undefined;
+                        entry.velocityX = 0;
+                        entry.velocityY = 0;
+                        entry.peakSize = undefined;
+                    }
+                }
+            } else {
+                const friction = Math.exp(-splash.friction * deltaSeconds);
+                entry.velocityX *= friction;
+                entry.velocityY *= friction;
+                entry.x += entry.velocityX * deltaSeconds;
+                entry.y += entry.velocityY * deltaSeconds;
+            }
+
             const t = (now - entry.born) / entry.lifetime;
             const sprite = splashSprite(i);
             sprite.position.set(
@@ -541,7 +678,7 @@ export function createOceanGround(
                 entry.startSize,
                 splash.sizeEnd,
                 entry.peakSize,
-                splash.peakAt
+                entry.surgeApexAt ?? splash.peakAt
             );
             sprite.scale.set(
                 (size / Math.max(1, sprite.texture.width)) * scale
@@ -570,6 +707,39 @@ export function createOceanGround(
     let nextSparkleAt = 0;
     let nextShoreFilterAt = 0;
     let visibleShores: ShoreSample[] = [];
+    /** Waves left in the current surf set (0 = start a new set next). */
+    let wavesLeftInSet = 0;
+    /** Keep successive set waves on the same stretch of shore. */
+    let waveFocus: ShoreSample | undefined;
+
+    /** Prefer a nearby same-facing shore sample so sets read as one surf line. */
+    const pickWaveShore = (
+        shores: readonly ShoreSample[]
+    ): ShoreSample | undefined => {
+        if (shores.length === 0) return undefined;
+        const focus = waveFocus;
+        if (!focus) {
+            return shores[Math.floor(Math.random() * shores.length)];
+        }
+        const maxDist = 520;
+        const maxDist2 = maxDist * maxDist;
+        let best: ShoreSample | undefined;
+        let bestScore = Infinity;
+        for (const sample of shores) {
+            // Same oceanward facing (axis-aligned shores share normals).
+            if (sample.nx !== focus.nx || sample.ny !== focus.ny) continue;
+            const dx = sample.x - focus.x;
+            const dy = sample.y - focus.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > maxDist2 || d2 < 40 * 40) continue;
+            const score = d2 + Math.random() * 80 * 80;
+            if (score < bestScore) {
+                bestScore = score;
+                best = sample;
+            }
+        }
+        return best ?? shores[Math.floor(Math.random() * shores.length)];
+    };
 
     const setOverlay = (x: number, y: number, w: number, h: number) => {
         causticsA.position.set(x, y);
@@ -578,6 +748,27 @@ export function createOceanGround(
         causticsB.position.set(x, y);
         causticsB.width = w;
         causticsB.height = h;
+        waveCausticsA.position.set(x, y);
+        waveCausticsA.width = w;
+        waveCausticsA.height = h;
+        waveCausticsB.position.set(x, y);
+        waveCausticsB.width = w;
+        waveCausticsB.height = h;
+    };
+
+    const syncWaveMask = (
+        wave?: GroundUpdateContext["waveMask"]
+    ): void => {
+        if (!wave || wave.width < 1 || wave.height < 1) {
+            waveFx.visible = false;
+            waveMask.texture = Texture.EMPTY;
+            return;
+        }
+        waveMask.texture = wave.texture;
+        waveMask.position.set(wave.x, wave.y);
+        waveMask.width = wave.width;
+        waveMask.height = wave.height;
+        waveFx.visible = true;
     };
 
     const syncOverlay = (view: GroundViewBounds) => {
@@ -597,6 +788,7 @@ export function createOceanGround(
         const h = Math.max(0, bottom - y);
         if (w < 1 || h < 1) {
             fx.visible = false;
+            waveFx.visible = false;
             anchoredFx.visible = false;
             splashOverlay.visible = false;
             overlayW = 0;
@@ -679,6 +871,13 @@ export function createOceanGround(
             causticsB.tint = tintB;
             causticsB.alpha = alphaB;
             causticsB.tileScale.set(b.tileScale);
+            // Slightly hotter on the wave pass so beach wash reads clearly.
+            waveCausticsA.tint = tintA;
+            waveCausticsA.alpha = alphaA * 1.15;
+            waveCausticsA.tileScale.set(a.tileScale);
+            waveCausticsB.tint = tintB;
+            waveCausticsB.alpha = alphaB * 1.15;
+            waveCausticsB.tileScale.set(b.tileScale);
 
             if (!hasOrganicEdge) {
                 bindNearshoreSprite(
@@ -723,6 +922,15 @@ export function createOceanGround(
                 worldTile(overlayX, scrollBx),
                 worldTile(overlayY, scrollBy)
             );
+            waveCausticsA.tilePosition.set(
+                worldTile(overlayX, scrollAx),
+                worldTile(overlayY, scrollAy)
+            );
+            waveCausticsB.tilePosition.set(
+                worldTile(overlayX, scrollBx),
+                worldTile(overlayY, scrollBy)
+            );
+            syncWaveMask(ctx.waveMask);
 
             bakeDisplace(ctx.renderer, ctx.now);
 
@@ -758,12 +966,13 @@ export function createOceanGround(
                 );
 
             if (ctx.now >= nextFoamAt && visibleShores.length > 0) {
-                const [lo, hi] = foamIntervalMs;
-                nextFoamAt = ctx.now + lo + Math.random() * (hi - lo);
-                const sample =
-                    visibleShores[
-                        Math.floor(Math.random() * visibleShores.length)
-                    ];
+                if (wavesLeftInSet <= 0) {
+                    // Sets of 2–4, like a real surf train.
+                    wavesLeftInSet = 2 + ((Math.random() * 3) | 0);
+                    waveFocus = undefined;
+                }
+
+                const sample = pickWaveShore(visibleShores);
                 // Samples sit on the land lip — step into water to resolve model.
                 if (
                     sample &&
@@ -772,14 +981,38 @@ export function createOceanGround(
                         sample.y + sample.ny * 24
                     )
                 ) {
-                    ctx.emitParticles(
-                        oceanFoam(
-                            foamTex,
-                            sample.x,
-                            sample.y,
-                            Math.atan2(sample.ny, sample.nx)
-                        )
+                    waveFocus = sample;
+                    const wave = oceanWaveWash(
+                        foamTex,
+                        sample.x,
+                        sample.y,
+                        sample.nx,
+                        sample.ny,
+                        ctx.blockedAt
                     );
+                    for (const burst of wave.foam) {
+                        ctx.emitParticles(burst);
+                    }
+                    for (const burst of wave.overlay) {
+                        ctx.emitParticles(burst);
+                    }
+                    for (const spawn of wave.splashes) {
+                        addSplashWash(spawn, ctx.now, ctx.blockedAt);
+                    }
+                }
+
+                wavesLeftInSet--;
+                const [lo, hi] = foamIntervalMs;
+                if (wavesLeftInSet > 0) {
+                    // Steady beat inside a set — slight jitter only.
+                    const beat = lo + Math.random() * (hi - lo);
+                    nextFoamAt = ctx.now + beat;
+                } else {
+                    // Longer lull between sets.
+                    const lull =
+                        lo * 2.2 + Math.random() * (hi - lo + lo * 0.6);
+                    nextFoamAt = ctx.now + lull;
+                    waveFocus = undefined;
                 }
             }
 
@@ -806,6 +1039,7 @@ export function createOceanGround(
             // Unbind before destroy — pooled AlphaMaskPipe keeps the last
             // MaskFilter BindGroup and crashes if the shore source dies first.
             fx.mask = null;
+            waveFx.mask = null;
             anchoredFx.mask = null;
             fx.filters = null;
             anchoredContent.filters = null;

@@ -22,7 +22,7 @@ export type GroundUpdateContext = {
     view: GroundViewBounds;
     /** Pixi renderer — ocean wakes bake a faded displace map each frame. */
     renderer: Renderer;
-    /** Emit ambient foam / sparkles into the shared particle system. */
+    /** Emit ambient shore wash / sparkles into the shared particle system. */
     emitParticles?: (burst: ParticleBurst) => void;
     /** Shore samples in world pixels (rebuilt when ground patches change). */
     shore: readonly ShoreSample[];
@@ -35,10 +35,30 @@ export type GroundUpdateContext = {
      * O(1) lookup. Capped at 255.
      */
     landDistanceAt: (worldX: number, worldY: number) => number;
+    /**
+     * Circle hit against a structure/resource. Returns the outward unit normal
+     * at the contact so wash can retreat seaward along it. Land is washable.
+     */
+    blockedAt?: (
+        worldX: number,
+        worldY: number,
+        hitRadius?: number
+    ) => { nx: number; ny: number } | undefined;
     /** Opaque world-tile ocean→land color bake. */
     shoreColor: Texture;
     /** Independent land-side fade used only to mask ocean effects. */
     shoreMask: Texture;
+    /**
+     * Dedicated wave-overlay particle coverage (not visible foam). Ocean draws
+     * a caustics pass AlphaMasked by this so FX fill the wash up to the foam.
+     */
+    waveMask?: {
+        texture: Texture;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
 };
 
 /** Outward-facing shore sample along a land↔ocean boundary. */

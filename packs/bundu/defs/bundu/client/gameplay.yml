@@ -58,7 +58,8 @@ ocean:
         size_max: 88
         size_end: 12
     particles:
-        foam_interval_ms: [180, 400]
+        # Beat between waves in a set (~4s). Sets of 2–4, then a longer lull.
+        foam_interval_ms: [3800, 4800]
         sparkle_interval_ms: [280, 600]
         shore_filter_ms: 250
     # Soften heavy FX past this view area (world²); never fully cull.

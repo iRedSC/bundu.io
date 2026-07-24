@@ -44,7 +44,8 @@ export let oceanFx: OceanFxConfig = {
         peakAt: 0.35,
     },
     particles: {
-        foamIntervalMs: [180, 400],
+        // Beat between waves inside a surf set (lull between sets is longer).
+        foamIntervalMs: [3800, 4800],
         sparkleIntervalMs: [280, 600],
         shoreFilterMs: 250,
     },

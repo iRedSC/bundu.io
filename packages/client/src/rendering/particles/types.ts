@@ -2,6 +2,24 @@ import type { Texture } from "pixi.js";
 
 export type NumberRange = number | readonly [min: number, max: number];
 
+/** Outward unit normal from a blocking circle at the contact point. */
+export type ParticleBlockHit = {
+    nx: number;
+    ny: number;
+};
+
+/**
+ * Non-ballistic position controller. Default motion is velocity + gravity.
+ * `surge` washes along `direction` then reverses — for shore wave bands.
+ */
+export type ParticleMotion = {
+    kind: "surge";
+    /** World px from spawn to apex along `direction`. */
+    distance: NumberRange;
+    /** Lifetime progress [0,1] at farthest point. Default 0.45. */
+    apexAt?: number;
+};
+
 export type ParticleBurst = {
     texture: Texture;
     x: number;
@@ -29,6 +47,18 @@ export type ParticleBurst = {
     gravityX?: number;
     friction?: number;
     motionEndAt?: number;
+    /** Overrides ballistic integration when set. */
+    motion?: ParticleMotion;
+    /**
+     * While a surge particle is washing inbound, return a circle-hit normal to
+     * retreat seaward along that normal (wave hitting an outcropping).
+     * `hitRadius` is the particle's world-space radius for circle tests.
+     */
+    blockedAt?: (
+        x: number,
+        y: number,
+        hitRadius: number
+    ) => ParticleBlockHit | undefined;
     spin?: NumberRange;
     spinFriction?: number;
     spinEndAt?: number;
@@ -48,4 +78,14 @@ export type ParticleBurst = {
     alphaHold?: number;
     blendMode?: "normal" | "add" | "screen";
     zIndex?: number;
+    /**
+     * Bake particles in this burst into one coverage pass, then draw at this
+     * alpha. Overlaps merge into a single silhouette instead of stacking.
+     */
+    mergeAlpha?: number;
+    /**
+     * Bake opaque coverage for AlphaMasking only — not drawn to the scene.
+     * Used for wave ocean-overlay particles (separate from visible foam).
+     */
+    mergeMask?: boolean;
 };
