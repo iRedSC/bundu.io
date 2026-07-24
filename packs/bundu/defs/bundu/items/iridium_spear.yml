@@ -3,7 +3,7 @@ texture: bundu/item/tool/iridium_spear.svg
 ---
 type: bundu:spear
 level: 6
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

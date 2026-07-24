@@ -3,7 +3,7 @@ texture: bundu/item/tool/silver_pickaxe.svg
 ---
 type: bundu:pickaxe
 level: 4
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

@@ -9,7 +9,7 @@ displays:
         scale: 1.25
 ---
 function: "main_hand"
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             "attack.reach":

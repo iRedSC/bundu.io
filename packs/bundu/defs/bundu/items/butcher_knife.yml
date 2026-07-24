@@ -2,7 +2,7 @@ extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/butcher_knife.svg
 ---
 type: bundu:knife
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

@@ -3,7 +3,7 @@ texture: bundu/item/tool/cobalt_sword.svg
 ---
 type: bundu:sword
 level: 5
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

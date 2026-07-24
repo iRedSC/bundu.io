@@ -3,7 +3,7 @@ texture: bundu/item/tool/stone_sword.svg
 ---
 type: bundu:sword
 level: 2
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

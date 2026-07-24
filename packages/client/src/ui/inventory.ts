@@ -1,6 +1,15 @@
 import { Container, Text } from "pixi.js";
-import { ItemButton, tickItemButton } from "./item_button";
+import { ItemButton, tickItemButton, type ItemLockVisual, LOCK_FLASH_MS, formatItemLockTooltip, mergeItemLockVisuals } from "./item_button";
 import { prettifyNumber, percentOf, lerp } from "@bundu/shared";
+import {
+    LOCK_ANY_ITEM,
+    lockFlagsHas,
+    lockSlotFlagsHas,
+    lockSlotForItemFunction,
+    mootEquipLockFlags,
+    type LockAction,
+    type LockSlot,
+} from "@bundu/shared/item_lock";
 import { TEXT_STYLE } from "@client/assets/text";
 import { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
@@ -12,12 +21,13 @@ import {
     placeModeFromModifiers,
     type PlaceMode as PlaceModeType,
 } from "@bundu/shared/inventory";
-import { clientRegistries } from "../configs/registries";
+import { clientItemMeta, clientRegistries } from "../configs/registries";
+import { tooltipCopy } from "../lang/lang";
 import {
     hideRegistryTooltip,
     moveRegistryTooltip,
-    showRegistryTooltip,
 } from "./registry_tooltip";
+import { showTooltip } from "./tooltip";
 
 type ItemStack = [id: number, amount: number];
 
@@ -70,7 +80,10 @@ export class InventoryButton extends ItemButton {
 
     setStack(stack: ItemStack | null) {
         this.clear();
-        if (!stack) return;
+        if (!stack) {
+            this.setItemLock(null);
+            return;
+        }
         const [itemId, amount] = stack;
         this.amount.text = prettifyNumber(amount);
         this.item = itemId;
@@ -84,6 +97,7 @@ export class InventoryButton extends ItemButton {
             this.selected ? 0.92 : 1,
             now
         );
+        this.tickLock(now);
     }
 
     override destroy(): void {
@@ -100,7 +114,7 @@ const inventoryGrid = new Grid(
     1
 );
 
-type SelectCB = (slot: number) => void;
+type SelectCB = (slot: number) => boolean;
 type MoveCB = (from: number, to: number) => void;
 type CursorCB = (slot: number, mode: PlaceModeType) => void;
 type WorldDropCB = (
@@ -126,6 +140,18 @@ export class Inventory {
     slots: (ItemStack | null)[] = [];
     cursor: ItemStack | null = null;
     items = new Map<number, number>();
+    /** Active item lock rules (item-specific and/or slot-only). */
+    private itemLocks: ItemLockVisual[] = [];
+    /** Numeric equipment ids for the local player (from UpdateEquipment). */
+    private equipped = {
+        mainHand: -1,
+        offHand: -1,
+        helmet: -1,
+    };
+    /** Fired when a denied use/craft should flash the above-name lock gauge. */
+    onLockFlash?: (lock: ItemLockVisual) => void;
+    /** Fired after authoritative lock state is replaced (crafting menu sync). */
+    onLocksChanged?: () => void;
 
     onSelect?: SelectCB;
     onMove?: MoveCB;
@@ -273,12 +299,16 @@ export class Inventory {
             hideRegistryTooltip();
             return;
         }
-        showRegistryTooltip(
+        const copy = tooltipCopy(
             "item",
-            clientRegistries().item.location(itemId),
-            screenX,
-            screenY
+            clientRegistries().item.location(itemId)
         );
+        const lock = this.getLock(itemId);
+        if (lock) {
+            const lockLine = formatItemLockTooltip(lock);
+            copy.body = copy.body ? `${copy.body}\n${lockLine}` : lockLine;
+        }
+        showTooltip(copy, screenX, screenY);
     }
 
     private wireButton(button: InventoryButton, slot: number) {
@@ -408,13 +438,17 @@ export class Inventory {
                     if (!this.dragCommitted) {
                         // Never left the click slack — treat as select.
                         if (this.dragStack) {
-                            this.buttons[from]?.setStack(
-                                this.slots[from] ?? null
-                            );
+                            const stack = this.slots[from] ?? null;
+                            const button = this.buttons[from];
+                            if (button) {
+                                button.setStack(stack);
+                                this.applyLockVisual(button, stack?.[0]);
+                            }
                             this.syncGhostToCursor();
                         }
-                        this.selectedSlot = from;
-                        this.onSelect?.(from);
+                        if (this.onSelect?.(from) !== false) {
+                            this.selectedSlot = from;
+                        }
                     } else if (
                         this.hoverSlot === null &&
                         this.isVoidTarget?.(ev.clientX, ev.clientY)
@@ -427,12 +461,14 @@ export class Inventory {
                         this.onVoid?.(from);
                     } else {
                         const to = this.hoverSlot ?? -1;
-                        this.finishDrag(from, to);
-                        this.onMove?.(from, to);
+                        if (this.finishDrag(from, to)) {
+                            this.onMove?.(from, to);
+                        }
                     }
                 } else {
-                    this.selectedSlot = this.dragFrom;
-                    this.onSelect?.(this.dragFrom);
+                    if (this.onSelect?.(this.dragFrom) !== false) {
+                        this.selectedSlot = this.dragFrom;
+                    }
                 }
                 this.clearDrag();
             }
@@ -455,7 +491,12 @@ export class Inventory {
     private abortDrag() {
         const from = this.dragFrom;
         if (from !== null && this.dragStack) {
-            this.buttons[from]?.setStack(this.slots[from] ?? null);
+            const stack = this.slots[from] ?? null;
+            const button = this.buttons[from];
+            if (button) {
+                button.setStack(stack);
+                this.applyLockVisual(button, stack?.[0]);
+            }
             this.syncGhostToCursor();
         }
         this.clearDrag();
@@ -510,10 +551,16 @@ export class Inventory {
     private finishFly(fly: Fly) {
         if (fly.mode === "slot" && fly.slot !== undefined) {
             this.settling.delete(fly.slot);
-            this.buttons[fly.slot]?.setStack(this.slots[fly.slot] ?? null);
+            const stack = this.slots[fly.slot] ?? null;
+            const button = this.buttons[fly.slot];
+            if (button) {
+                button.setStack(stack);
+                this.applyLockVisual(button, stack?.[0]);
+            }
         } else if (fly.mode === "pointer") {
             if (this.cursor) {
                 this.ghost.setStack(this.cursor);
+                this.applyLockVisual(this.ghost, this.cursor[0]);
                 this.ghost.button.visible = true;
                 this.ghost.button.position.copyFrom(fly.view.button.position);
                 this.ghost.button.scale.copyFrom(fly.view.button.scale);
@@ -529,11 +576,11 @@ export class Inventory {
      * Left-drag release: animate into the target slot, and if swapping,
      * animate the displaced stack back to the source.
      */
-    private finishDrag(from: number, to: number) {
+    private finishDrag(from: number, to: number): boolean {
         const fromStack = this.slots[from];
         if (!fromStack) {
             this.syncGhostToCursor();
-            return;
+            return false;
         }
 
         const ghostX = this.ghost.button.position.x;
@@ -543,15 +590,26 @@ export class Inventory {
 
         if (to === from) {
             this.startFly(fromStack, ghostX, ghostY, ghostScale, "slot", from);
-            return;
+            return true;
         }
 
         if (to < 0) {
+            if (this.denyAction(fromStack[0], "drop")) {
+                this.startFly(
+                    fromStack,
+                    ghostX,
+                    ghostY,
+                    ghostScale,
+                    "slot",
+                    from
+                );
+                return false;
+            }
             this.emitWorldDrop(ghostX, ghostY, ghostScale);
             this.slots[from] = null;
             this.rebuildItemsMap();
             this.buttons[from]?.setStack(null);
-            return;
+            return true;
         }
 
         // Inventory↔inventory drag always swaps — creative replace only applies
@@ -568,6 +626,7 @@ export class Inventory {
         } else {
             this.buttons[from]?.setStack(null);
         }
+        return true;
     }
 
     private voidCursorLocal() {
@@ -601,6 +660,10 @@ export class Inventory {
 
         // Drop from cursor outside.
         if (slot < 0) {
+            if (this.denyAction(this.cursor[0], "drop")) {
+                this.syncGhostToCursor();
+                return;
+            }
             const take = amountForMode(this.cursor[1], mode);
             this.cursor = this.shrinkCursor(take);
             if (!this.cursor) this.cursorFromCreative = false;
@@ -727,9 +790,11 @@ export class Inventory {
         this.ghost.disableSprite.visible = false;
         if (this.cursor) {
             this.ghost.setStack(this.cursor);
+            this.applyLockVisual(this.ghost, this.cursor[0]);
             this.ghost.button.visible = true;
             this.container.addChild(this.ghost.button);
         } else {
+            this.ghost.setItemLock(null);
             this.ghost.button.visible = false;
             this.snapGhost = false;
         }
@@ -806,7 +871,321 @@ export class Inventory {
                 continue;
             }
             button.setStack(this.slots[i] ?? null);
+            this.applyLockVisual(button, this.slots[i]?.[0]);
         }
+    }
+
+    private applyLockVisual(
+        button: InventoryButton,
+        itemId: number | undefined
+    ) {
+        if (itemId === undefined) {
+            button.setItemLock(null);
+            return;
+        }
+        const lock = this.displayLockForItem(itemId);
+        if (!lock) {
+            button.setItemLock(null);
+            return;
+        }
+        button.setItemLock(lock, this.shouldShowPersistentLock(itemId, lock));
+    }
+
+    /**
+     * Lock visual for UI: drop equip/unequip flags that don't apply to the
+     * current equipped state (e.g. no equip lock badge while already equipped).
+     */
+    private displayLockForItem(itemId: number): ItemLockVisual | undefined {
+        const lock = this.findLockForItem(itemId);
+        if (!lock) return undefined;
+        const flags = mootEquipLockFlags(lock.flags, this.isEquipped(itemId));
+        if (flags === 0) return undefined;
+        if (flags === lock.flags) return lock;
+        return { ...lock, flags };
+    }
+
+    private isEquipped(itemId: number): boolean {
+        return (
+            this.equipped.mainHand === itemId ||
+            this.equipped.offHand === itemId ||
+            this.equipped.helmet === itemId
+        );
+    }
+
+    private equippedSlotOf(itemId: number): LockSlot | undefined {
+        if (this.equipped.mainHand === itemId) return "mainhand";
+        if (this.equipped.offHand === itemId) return "offhand";
+        if (this.equipped.helmet === itemId) return "helmet";
+        return undefined;
+    }
+
+    private isEquippedInSlots(itemId: number, slotFlags: number): boolean {
+        if (
+            lockSlotFlagsHas(slotFlags, "mainhand") &&
+            this.equipped.mainHand === itemId
+        ) {
+            return true;
+        }
+        if (
+            lockSlotFlagsHas(slotFlags, "offhand") &&
+            this.equipped.offHand === itemId
+        ) {
+            return true;
+        }
+        if (
+            lockSlotFlagsHas(slotFlags, "helmet") &&
+            this.equipped.helmet === itemId
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    private targetSlotForItem(itemId: number): LockSlot | undefined {
+        return (
+            this.equippedSlotOf(itemId) ??
+            lockSlotForItemFunction(clientItemMeta(itemId).function)
+        );
+    }
+
+    private ruleMatches(
+        lock: ItemLockVisual,
+        itemId: number,
+        slot?: LockSlot
+    ): boolean {
+        if (lock.itemId !== LOCK_ANY_ITEM && lock.itemId !== itemId) {
+            return false;
+        }
+        if (slot !== undefined) {
+            return lockSlotFlagsHas(lock.slotFlags, slot);
+        }
+        // Drop / craft: item-scoped locks match by type; slot-only needs equipped.
+        if (lock.itemId !== LOCK_ANY_ITEM) return true;
+        return this.isEquippedInSlots(itemId, lock.slotFlags);
+    }
+
+    /**
+     * Collapse overlapping rules into one visual: flags OR'd, timer = latest
+     * expiry (with that rule's authored duration for the wipe gauge).
+     */
+    private mergeLocks(
+        locks: readonly ItemLockVisual[]
+    ): ItemLockVisual | undefined {
+        return mergeItemLockVisuals(locks);
+    }
+
+    /**
+     * Merged craft lock across recipe ingredient ids (latest expiry wins).
+     * Does not consider the recipe result.
+     */
+    craftLockForIngredients(
+        itemIds: Iterable<number>
+    ): ItemLockVisual | undefined {
+        const matched: ItemLockVisual[] = [];
+        for (const rawId of itemIds) {
+            const itemId = Number(rawId);
+            const lock = this.findLock(itemId, "craft");
+            if (lock) matched.push(lock);
+        }
+        return this.mergeLocks(matched);
+    }
+
+    private findLock(
+        itemId: number,
+        action: LockAction,
+        slot?: LockSlot
+    ): ItemLockVisual | undefined {
+        const id = Number(itemId);
+        const matched: ItemLockVisual[] = [];
+        for (const lock of this.itemLocks) {
+            if (!lockFlagsHas(lock.flags, action)) continue;
+            if (this.ruleMatches(lock, id, slot)) matched.push(lock);
+        }
+        return this.mergeLocks(matched);
+    }
+
+    /** Effective lock on a hotbar stack (all overlapping rules merged). */
+    private findLockForItem(itemId: number): ItemLockVisual | undefined {
+        const slot = this.targetSlotForItem(itemId);
+        const matched: ItemLockVisual[] = [];
+        for (const lock of this.itemLocks) {
+            if (this.ruleMatches(lock, itemId, slot)) {
+                matched.push(lock);
+                continue;
+            }
+            // Surface item-specific locks even when slot filter wouldn't match
+            // the item's equip slot (e.g. craft/drop-only rules).
+            if (lock.itemId === itemId) matched.push(lock);
+        }
+        return this.mergeLocks(matched);
+    }
+
+    /** Persistent slot lock when equip/unequip/drop currently applies. */
+    private shouldShowPersistentLock(
+        itemId: number,
+        lock: ItemLockVisual
+    ): boolean {
+        const equipped = this.isEquipped(itemId);
+        const slot = this.targetSlotForItem(itemId);
+        if (
+            lockFlagsHas(lock.flags, "equip") &&
+            !equipped &&
+            (slot === undefined || lockSlotFlagsHas(lock.slotFlags, slot))
+        ) {
+            return true;
+        }
+        if (
+            lockFlagsHas(lock.flags, "unequip") &&
+            equipped &&
+            (slot === undefined || lockSlotFlagsHas(lock.slotFlags, slot))
+        ) {
+            return true;
+        }
+        if (lockFlagsHas(lock.flags, "drop") && this.ruleMatches(lock, itemId)) {
+            return true;
+        }
+        return false;
+    }
+
+    get equippedMainHand(): number | undefined {
+        return this.equipped.mainHand >= 0 ? this.equipped.mainHand : undefined;
+    }
+
+    get equippedOffHand(): number | undefined {
+        return this.equipped.offHand >= 0 ? this.equipped.offHand : undefined;
+    }
+
+    get equippedHelmet(): number | undefined {
+        return this.equipped.helmet >= 0 ? this.equipped.helmet : undefined;
+    }
+
+    setEquipment(mainhand: number, offhand: number, helmet: number) {
+        this.equipped = {
+            mainHand: mainhand >= 0 ? mainhand : -1,
+            offHand: offhand >= 0 ? offhand : -1,
+            helmet: helmet >= 0 ? helmet : -1,
+        };
+        for (const [i, button] of this.buttons.entries()) {
+            this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
+        }
+        if (this.cursor) {
+            this.applyLockVisual(this.ghost, this.cursor[0]);
+        }
+        this.onLocksChanged?.();
+    }
+
+    reconcileSelection(selected: number): void {
+        if (selected < 0 || selected >= this.buttons.length) return;
+        this.selectedSlot = selected;
+    }
+
+    getLock(
+        itemId: number,
+        action?: LockAction
+    ): ItemLockVisual | undefined {
+        if (action) return this.findLock(itemId, action);
+        return this.displayLockForItem(itemId);
+    }
+
+    isActionLocked(
+        itemId: number | undefined,
+        action: LockAction,
+        slot?: LockSlot
+    ): boolean {
+        if (itemId === undefined || itemId < 0) return false;
+        return this.findLock(itemId, action, slot) !== undefined;
+    }
+
+    /**
+     * Flash lock UI for a denied action. Returns true when the action is locked.
+     */
+    denyAction(
+        itemId: number | undefined,
+        action: LockAction,
+        slot?: LockSlot
+    ): boolean {
+        if (itemId === undefined || itemId < 0) return false;
+        const resolvedSlot = slot ?? this.targetSlotForItem(itemId);
+        const lock = this.findLock(itemId, action, resolvedSlot);
+        if (!lock) return false;
+        this.flashItemLock(itemId, lock);
+        return true;
+    }
+
+    /**
+     * If selecting `itemId` would toggle equip/unequip against a lock, flash and
+     * return true (caller should still send SelectItem — server is authoritative).
+     *
+     * Swapping into an occupied slot requires unequipping the current item first.
+     */
+    notifySelectDenied(itemId: number | undefined): boolean {
+        if (itemId === undefined) return false;
+        const slot = this.targetSlotForItem(itemId);
+        if (this.isEquipped(itemId)) {
+            return this.denyAction(itemId, "unequip", slot);
+        }
+        const current = this.equippedInSlot(slot);
+        if (
+            current !== undefined &&
+            current !== itemId &&
+            this.denyAction(current, "unequip", slot)
+        ) {
+            return true;
+        }
+        return this.denyAction(itemId, "equip", slot);
+    }
+
+    private equippedInSlot(slot: LockSlot | undefined): number | undefined {
+        if (slot === "mainhand") return this.equippedMainHand;
+        if (slot === "offhand") return this.equippedOffHand;
+        if (slot === "helmet") return this.equippedHelmet;
+        return undefined;
+    }
+
+    /** Flash matching hotbar slots + optional above-name gauge. */
+    flashItemLock(itemId: number, lock?: ItemLockVisual) {
+        const visual = lock ?? this.findLockForItem(itemId);
+        if (!visual) return;
+        for (const [i, button] of this.buttons.entries()) {
+            if (this.slots[i]?.[0] === itemId) button.flashLock(LOCK_FLASH_MS);
+        }
+        if (this.cursor?.[0] === itemId) {
+            this.ghost.flashLock(LOCK_FLASH_MS);
+        }
+        this.onLockFlash?.(visual);
+    }
+
+    /**
+     * Apply authoritative item locks.
+     * `remainingMs === -1` → permanent until unlockItem.
+     * `itemId === -1` → slot-only (any item in those slots).
+     */
+    updateLocks(locks: ServerPacket.UpdateItemLocks["locks"]) {
+        const now = performance.now();
+        this.itemLocks = locks.map((entry) => {
+            const itemId = Number(entry[0]);
+            const remainingMs = Number(entry[1]);
+            const durationMs = Number(entry[2]);
+            const flags = Number(entry[3]);
+            const slotFlags = Number(entry[4] ?? 0);
+            return {
+                itemId,
+                endsAt:
+                    remainingMs < 0
+                        ? Number.POSITIVE_INFINITY
+                        : now + remainingMs,
+                durationMs: Math.max(0, durationMs),
+                flags,
+                slotFlags,
+            };
+        });
+        for (const [i, button] of this.buttons.entries()) {
+            this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
+        }
+        if (this.cursor) {
+            this.applyLockVisual(this.ghost, this.cursor[0]);
+        }
+        this.onLocksChanged?.();
     }
 
     update({ items, cursor }: ServerPacket.UpdateInventory) {
@@ -849,9 +1228,21 @@ export class Inventory {
     }
 
     tick(now?: number) {
+        const t = now ?? performance.now();
+        const before = this.itemLocks.length;
+        this.itemLocks = this.itemLocks.filter(
+            (lock) =>
+                lock.endsAt === Number.POSITIVE_INFINITY || t < lock.endsAt
+        );
+        if (this.itemLocks.length !== before) {
+            for (const [i, button] of this.buttons.entries()) {
+                this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
+            }
+            this.onLocksChanged?.();
+        }
         for (const [slot, button] of this.buttons.entries()) {
             button.selected = slot === this.selectedSlot;
-            button.tick(now);
+            button.tick(t);
         }
 
         const pointer = this.pointerLocal();

@@ -1,6 +1,6 @@
 # Items
 
-Starter catalog — a handful of base-pack items with their icons. Full lists can grow page-by-page later.
+Representative base-pack items, their registry ids, and their gameplay roles.
 
 ## Tools
 
@@ -62,4 +62,4 @@ Starter catalog — a handful of base-pack items with their icons. Full lists ca
 | Wear | helmets, hats | Head slot |
 | Building | walls, doors, stations | Place a structure |
 
-Authoring detail lives under [Packs](/authoring/packs) and `packs/AUTHORING.md`.
+Authoring detail lives under [Pack authoring](/authoring/packs).

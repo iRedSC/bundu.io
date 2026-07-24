@@ -20,12 +20,38 @@ export const receiver = new ClientPacketReceiver(
 /** Effective sourced flags for the local player (crafting + gameplay). */
 let playerFlags: number[] = [];
 
+export function resetGUIReceiverState(ui: UI): void {
+    playerFlags = [];
+    ui.inventory.updateLocks([]);
+    ui.inventory.setEquipment(-1, -1, -1);
+}
+
 function refreshCraftingMenu(ui: UI): void {
     ui.craftingMenu.items = ui.recipeManager.filter(
         ui.inventory.items,
         playerFlags
     );
     ui.craftingMenu.update();
+}
+
+/** Show persistent lock wipe on recipes with craft-locked ingredients. */
+function applyCraftRecipeLocks(ui: UI): void {
+    for (const [i, button] of ui.craftingMenu.buttons.entries()) {
+        const view = ui.craftingMenu.items[i];
+        if (!view) {
+            button.setItemLock(null);
+            continue;
+        }
+        const recipe = ui.recipeManager.recipes.get(view.recipeId);
+        if (!recipe) {
+            button.setItemLock(null);
+            continue;
+        }
+        const craftLock = ui.inventory.craftLockForIngredients(
+            recipe.ingredients.keys()
+        );
+        button.setItemLock(craftLock ?? null, craftLock !== undefined);
+    }
 }
 
 export function setupPacketReceiving(
@@ -101,6 +127,8 @@ export function setupGUIPacketReceiving(
     ui: UI,
     world: World
 ) {
+    ui.inventory.onLocksChanged = () => applyCraftRecipeLocks(ui);
+    ui.craftingMenu.onAfterUpdate = () => applyCraftRecipeLocks(ui);
     receiver.on(
         ServerPacket.UpdateVitals,
         ({ health, hunger, heat, thirst, air }) => {
@@ -118,6 +146,12 @@ export function setupGUIPacketReceiving(
     receiver.on(ServerPacket.UpdateInventory, (packet) => {
         ui.inventory.update(packet);
         refreshCraftingMenu(ui);
+    });
+    receiver.on(ServerPacket.UpdateItemLocks, ({ locks }) => {
+        ui.inventory.updateLocks(locks);
+    });
+    receiver.on(ServerPacket.SelectItemResult, ({ selected }) => {
+        ui.inventory.reconcileSelection(selected);
     });
     receiver.on(ServerPacket.UpdateFlags, ({ flags }) => {
         playerFlags = [...flags];

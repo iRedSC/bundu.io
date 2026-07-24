@@ -3,7 +3,7 @@ texture: bundu/item/equipment/cobalt_helmet.svg
 ---
 type: bundu:helmet
 level: 5
-whenHelmet:
+whenEquipped:
     "@s":
         attributes:
             health.defense:

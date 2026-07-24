@@ -14,10 +14,12 @@ import { type GroundTypeConfig, GroundTypeConfigs } from "./ground_types.js";
 import { type DecorationConfig, DecorationConfigs } from "./decorations.js";
 import {
     EQUIP_CONTEXTS,
+    LEGACY_EQUIP_CONTEXTS,
     parseEffectContext,
     SPATIAL_CONTEXTS,
     type ContextName,
 } from "./effect_context.js";
+import { mergeEquipEvents } from "./equip_events.js";
 import { packs } from "../packs.js";
 import { gameplayConfig, setGameplayConfig } from "../gameplay.js";
 import { flagRegistry, resetFlagRegistry } from "../flag_registry.js";
@@ -668,6 +670,13 @@ export function loadConfigs() {
                 `${id}.places`
             );
         }
+        for (const legacy of LEGACY_EQUIP_CONTEXTS) {
+            if (legacy in raw || legacy in typeRaw) {
+                throw new Error(
+                    `${id}.${legacy}: renamed to whenEquipped (item function selects the slot)`
+                );
+            }
+        }
         assignContexts(
             record as Record<string, unknown>,
             raw,
@@ -677,11 +686,27 @@ export function loadConfigs() {
             id,
             EQUIP_CONTEXTS
         );
-        // Merge type fields but keep parsed contexts from `record`.
+        record.onEquip = mergeEquipEvents(
+            typeRaw.onEquip,
+            raw.onEquip,
+            `${id}.onEquip`,
+            registries,
+            id
+        );
+        record.onUnequip = mergeEquipEvents(
+            typeRaw.onUnequip,
+            raw.onUnequip,
+            `${id}.onUnequip`,
+            registries,
+            id
+        );
+        // Merge type fields but keep parsed contexts / events from `record`.
         const merged = mergeObjects(typeRecord, record, fallback);
         for (const name of EQUIP_CONTEXTS) {
             merged[name] = record[name];
         }
+        merged.onEquip = record.onEquip;
+        merged.onUnequip = record.onUnequip;
         // Runtime compares bare type paths (`food`, `pickaxe`) for eat/harvest.
         merged.type = namespaced.slice(namespaced.indexOf(":") + 1);
         return merged;

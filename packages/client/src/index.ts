@@ -1,6 +1,7 @@
 import { Application, Point, type Renderer } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
 import {
+    resetGUIReceiverState,
     receiver,
     setupChatPacketReceiving,
     setupGUIPacketReceiving,
@@ -393,6 +394,7 @@ async function main() {
             gui.hunger.update(0);
             gui.heat.update(0);
             gui.thirst.update(0);
+            resetGUIReceiverState(gui);
             gui.inventory.update({ items: [], cursor: null });
             gui.recipeManager.recipes.clear();
             gui.craftingMenu.items = [];
@@ -624,6 +626,37 @@ async function main() {
         isOverInventory: () => gui.inventory.isInteracting,
         isPlacementAllowed: () => world.isPlacementAllowed(),
         isFreecam: () => world.camera.isFreecam(),
+        isUseBlocked: (kind) => {
+            if (kind === "attack" || kind === "place") {
+                return gui.inventory.denyAction(
+                    gui.inventory.equippedMainHand,
+                    "use",
+                    "mainhand"
+                );
+            }
+            // Block / eat — prefer off-hand, also flash if any equipped use-lock.
+            if (
+                gui.inventory.denyAction(
+                    gui.inventory.equippedOffHand,
+                    "use",
+                    "offhand"
+                )
+            ) {
+                return true;
+            }
+            return (
+                gui.inventory.denyAction(
+                    gui.inventory.equippedMainHand,
+                    "use",
+                    "mainhand"
+                ) ||
+                gui.inventory.denyAction(
+                    gui.inventory.equippedHelmet,
+                    "use",
+                    "helmet"
+                )
+            );
+        },
     });
     input.bindChat(chat);
     bindDebugChat?.(chat, (handler) => {
@@ -632,13 +665,25 @@ async function main() {
     input.onToggleLeaderboard = () => gui.leaderboard.toggle();
     input.onShowWorldHover = (show) => world.setShowAllHover(show);
     world.onPlacementValidity = (allowed) => input.onPlacementValidity(allowed);
+    world.onLocalEquipment = (mainhand, offhand, helmet) => {
+        gui.inventory.setEquipment(mainhand, offhand, helmet);
+    };
 
     gui.inventory.isLocked = () => {
         const local = world.objects.get(world.user ?? -1);
         return local instanceof Player && local.isCrafting;
     };
+    gui.inventory.onLockFlash = (lock) => {
+        const local = world.objects.get(world.user ?? -1);
+        if (!(local instanceof Player)) return;
+        local.flashLockHud(lock.endsAt, lock.durationMs);
+        world.objects.updating.add(local);
+    };
     gui.inventory.onSelect = (slot) => {
+        const itemId = gui.inventory.slots[slot]?.[0];
+        const predictedDenied = gui.inventory.notifySelectDenied(itemId);
         session.sendPacket(ClientPacket.SelectItem, { slot });
+        return !predictedDenied;
     };
     gui.inventory.creativeReplace = () => creative.isActive();
     gui.inventory.isVoidTarget = (screenX, screenY) =>
@@ -662,8 +707,29 @@ async function main() {
     gui.craftingMenu.leftclick = (recipeId) => {
         const local = world.objects.get(world.user ?? -1);
         if (local instanceof Player && local.isCrafting) return;
+        const lockedIngredient = gui.recipeManager.craftLockedIngredient(
+            recipeId,
+            (itemId) => gui.inventory.isActionLocked(itemId, "craft")
+        );
+        if (lockedIngredient !== undefined) {
+            const recipe = gui.recipeManager.recipes.get(recipeId);
+            const craftLock = recipe
+                ? gui.inventory.craftLockForIngredients(
+                      recipe.ingredients.keys()
+                  )
+                : undefined;
+            gui.inventory.flashItemLock(lockedIngredient, craftLock);
+            const button = gui.craftingMenu.buttons.find(
+                (_, i) => gui.craftingMenu.items[i]?.recipeId === recipeId
+            );
+            // Ensure the recipe button has a lock visual before flashing.
+            if (craftLock) button?.setItemLock(craftLock, true);
+            button?.flashLock();
+            return;
+        }
         session.sendPacket(ClientPacket.CraftItem, { recipeId });
     };
+    gui.craftingMenu.rightclick = gui.craftingMenu.leftclick;
 
     app.canvas.oncontextmenu = () => {};
     document.body.appendChild(app.canvas);

@@ -3,7 +3,7 @@ texture: bundu/item/tool/copper_sword.svg
 ---
 type: bundu:sword
 level: 3
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

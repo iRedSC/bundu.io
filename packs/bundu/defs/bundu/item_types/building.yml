@@ -6,7 +6,7 @@ displays:
         scale: 0.25
 ---
 function: "building"
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             "movement.speed":

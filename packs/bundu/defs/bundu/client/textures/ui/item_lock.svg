@@ -1,0 +1,7 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Solid lock silhouette -->
+  <path d="M22 28V20c0-5.523 4.477-10 10-10s10 4.477 10 10v8h-6V20a4 4 0 1 0-8 0v8h-6z" fill="#f2f2f2"/>
+  <rect x="12" y="26" width="40" height="30" rx="5" fill="#f2f2f2"/>
+  <circle cx="32" cy="40" r="4" fill="#1a1a1a"/>
+  <rect x="30" y="40" width="4" height="9" rx="2" fill="#1a1a1a"/>
+</svg>

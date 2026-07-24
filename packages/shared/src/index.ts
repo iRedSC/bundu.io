@@ -20,6 +20,7 @@ export * from "./username";
 export * from "./registry";
 export * from "./command";
 export * from "./entity_selector";
+export * from "./item_lock";
 export { ReversableMap } from "./reverseable_map";
 export {
     Serializer,

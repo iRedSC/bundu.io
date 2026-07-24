@@ -3,7 +3,7 @@ texture: bundu/item/equipment/copper_helmet.svg
 ---
 type: bundu:helmet
 level: 3
-whenHelmet:
+whenEquipped:
     "@s":
         attributes:
             health.defense:
