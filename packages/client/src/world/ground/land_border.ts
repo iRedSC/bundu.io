@@ -9,10 +9,10 @@ import {
     type Container,
 } from "pixi.js";
 import { TILE_SIZE, WORLD_TILES } from "@bundu/shared/tiles";
+import { LAND_SEAM_AMPLITUDE } from "./land_seam";
 import type { GroundPatchRef } from "./shore";
 
-const AMPLITUDE = 1.15;
-const OUTER_PAD = AMPLITUDE + 0.1;
+const OUTER_PAD = LAND_SEAM_AMPLITUDE + 0.1;
 /** Safe against the maximum inward organic cut while extending texture under it. */
 export const LAND_FILL_INSET_TILES = 2;
 /** Geometry reaches farther inland to crossfade textured fills into edge color. */
@@ -64,7 +64,7 @@ float seamOffset(vec2 p) {
     float wy = p.y
         + 0.9 * sin(0.4 * p.x - 0.26 * p.y + 1.9)
         + 0.5 * sin(0.92 * p.y + 0.68 * p.x + 0.4);
-    return ${AMPLITUDE} * (
+    return ${LAND_SEAM_AMPLITUDE} * (
         0.30 * sin(1.6 * wx + 0.7 * wy)
         + 0.22 * sin(1.0 * wx - 1.4 * wy + 1.4)
         + 0.18 * sin(2.6 * wx + 1.2 * wy + 2.7)
@@ -147,7 +147,7 @@ fn seamOffset(p: vec2<f32>) -> f32 {
     let wy = p.y
         + 0.9 * sin(0.4 * p.x - 0.26 * p.y + 1.9)
         + 0.5 * sin(0.92 * p.y + 0.68 * p.x + 0.4);
-    return ${AMPLITUDE} * (
+    return ${LAND_SEAM_AMPLITUDE} * (
         0.30 * sin(1.6 * wx + 0.7 * wy)
         + 0.22 * sin(1.0 * wx - 1.4 * wy + 1.4)
         + 0.18 * sin(2.6 * wx + 1.2 * wy + 2.7)

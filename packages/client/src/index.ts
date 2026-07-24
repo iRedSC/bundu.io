@@ -283,19 +283,7 @@ async function waitForWorldReady(
     }
     if (gen !== worldGateGeneration) return { ready: false, gen };
 
-    while (gen === worldGateGeneration) {
-        if (world.flushLandSeams(8)) break;
-        // Progress after flush — nearby keep-ring only (distant streams later).
-        const { done, total } = world.landSeamProgress();
-        const frac = total > 0 ? done / total : 1;
-        setLoadingProgress({
-            status: `Preparing terrain… (${done}/${total})`,
-            progress: 0.65 + 0.34 * frac,
-        });
-        await sleep(0);
-    }
-    if (gen !== worldGateGeneration) return { ready: false, gen };
-
+    // Shader borders are ready with ground sync; no streamed terrain bake.
     setLoadingProgress({ status: "Ready", progress: 1 });
     // Bar uses a 150ms width transition — wait so 100% paints before teardown.
     await sleep(180);

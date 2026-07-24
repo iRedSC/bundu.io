@@ -13,6 +13,7 @@ import {
     LAND_FILL_INSET_TILES,
     setLandBorderMeshes,
 } from "./land_border";
+import { NEARSHORE_OVERSHOOT_TILES } from "./nearshore_fill";
 import type { GroundVisual } from "./types";
 
 /** Texels per tile for inset fill bake — matches former overlay density. */
@@ -32,9 +33,12 @@ export function createSolidGround(
     const root = new Container();
     root.zIndex = zIndex;
 
-    // Keep the texture safely inside the maximum organic cut. The border shader
-    // crossfades over this inset; tiny patches retain a full fallback fill.
-    const insetPx = LAND_FILL_INSET_TILES * TILE_SIZE;
+    // Textured fills stay inside the max organic cut; flat lands also clear the
+    // nearshore overshoot band so shore color owns the beach.
+    const insetTiles = fill
+        ? LAND_FILL_INSET_TILES
+        : Math.max(LAND_FILL_INSET_TILES, NEARSHORE_OVERSHOOT_TILES);
+    const insetPx = insetTiles * TILE_SIZE;
     const insetW = bounds.width - insetPx * 2;
     const insetH = bounds.height - insetPx * 2;
     const useInset = insetW > 0 && insetH > 0;
@@ -85,9 +89,14 @@ export function createSolidGround(
         container: root,
         paintLandFill,
         setLandBorders(segments) {
+            // Flat coasts omit ocean-facing borders so nearshore shore color owns
+            // the beach band (same contract as the former coastClear bake).
+            const edgeSegments = owned
+                ? segments
+                : segments.filter((segment) => segment.organic);
             setLandBorderMeshes(
                 borderLayer,
-                segments,
+                edgeSegments,
                 bounds,
                 color,
                 owned,

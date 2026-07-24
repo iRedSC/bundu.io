@@ -564,7 +564,7 @@ export class World {
 
     /**
      * Enter/exit freecam spectate mode: detach camera, hide the local avatar.
-     * Freecam immediately drops seam LOD and keeps it cheap until exit.
+     * Leaving freecam eagerly rebuilds organic water masks for the play view.
      */
     setFreecamMode(enabled: boolean): void {
         this.camera.setFreecam(enabled);
@@ -1345,24 +1345,9 @@ export class World {
         visual.overlay?.destroy({ children: true });
     }
 
-    /**
-     * Ready-ring bake progress (join bar). Prefetch keep ring streams later.
-     */
-    landSeamProgress(): { done: number; total: number; pending: number } {
-        return { done: 0, total: 0, pending: 0 };
-    }
-
     /** True once the server has sent at least one ground sync this session. */
     hasGroundSync(): boolean {
         return this.groundSynced;
-    }
-
-    /**
-     * Bake several ready-ring seam chunks now (loading screen).
-     * Returns true when the ready ring around the camera is fully baked.
-     */
-    flushLandSeams(_limit = 6): boolean {
-        return true;
     }
 
     private updateGroundVisuals(deltaMS: number, now: number): void {
