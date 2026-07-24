@@ -16,7 +16,7 @@ Set `BUNDU_PACK_ROOT` to load packs from another directory. Run
 `bun run validate:packs` after editing a pack.
 
 For a how-to on each content type (items, buildings, resources, recipes, …)
-see [AUTHORING.md](./AUTHORING.md).
+see the [pack authoring guide](https://wiki.bundu.io/authoring/packs).
 
 ## Authoring with `defs/`
 

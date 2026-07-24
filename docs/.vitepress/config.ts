@@ -28,7 +28,7 @@ export default defineConfig({
 				text: "Authoring",
 				items: [
 					{ text: "Overview", link: "/authoring/" },
-					{ text: "Packs", link: "/authoring/packs" },
+					{ text: "Pack authoring", link: "/authoring/packs" },
 				],
 			},
 		],
