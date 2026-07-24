@@ -34,8 +34,13 @@ bun run docs:preview   # preview the production build at /
 ## Containers
 
 ```bash
-docker compose up --build
+GAME_WS_URL=ws://localhost:7777 docker compose up --build
 ```
+
+Compose publishes ports `3000` and `7777` and requires an explicit browser-facing
+WebSocket URL. The local value above is correct because the browser and containers
+share the same machine. Remote deployments must use the public TLS endpoint, for
+example `GAME_WS_URL=wss://game.example.com`.
 
 | Service   | Internal port | Image build file        |
 |-----------|------|-------------------------|
@@ -54,11 +59,16 @@ The frontend image builds the game client (`/site/`) and VitePress docs (`public
 | `DOCS_HOST`    | frontend runtime   | `wiki.bundu.io`         |
 | `DOCS_PUBLIC_ORIGIN` | frontend runtime | `https://wiki.bundu.io` |
 
-Compose publishes fixed host ports `3000` and `7777` to match the default `GAME_WS_URL`. For a non-local deploy, rebuild frontend with the public WebSocket URL:
+Override `FRONTEND_PORT` or `SERVER_PORT` to change the published host ports. For
+a non-local deploy, rebuild frontend with the public WebSocket URL:
 
 ```bash
 GAME_WS_URL=wss://game.example.com docker compose build frontend
 ```
+
+Both services expose `/healthz` for liveness and `/readyz` for readiness.
+Deployment topology and proxy requirements are documented in
+[`docs/ops/deployment.md`](./docs/ops/deployment.md).
 
 ## Scripts
 

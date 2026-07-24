@@ -4,13 +4,23 @@ services:
       context: .
       dockerfile: containers/frontend/Dockerfile
       args:
-        GAME_WS_URL: ${GAME_WS_URL:-ws://localhost:7777}
+        GAME_WS_URL: ${GAME_WS_URL:?Set GAME_WS_URL to the public ws:// or wss:// game endpoint}
     environment:
       PORT: 3000
       DOCS_HOST: ${DOCS_HOST:-wiki.bundu.io}
       DOCS_PUBLIC_ORIGIN: ${DOCS_PUBLIC_ORIGIN:-https://wiki.bundu.io}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:3000/readyz');if(!r.ok)process.exit(1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     depends_on:
-      - server
+      server:
+        condition: service_healthy
 
   server:
     build:
@@ -19,3 +29,12 @@ services:
     environment:
       WS_PORT: 7777
       BUNDU_CHEAT_PHRASE: ${BUNDU_CHEAT_PHRASE:-}
+    ports:
+      - "${SERVER_PORT:-7777}:7777"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:7777/readyz');if(!r.ok)process.exit(1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s

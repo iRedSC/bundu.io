@@ -41,6 +41,16 @@ const packHeaders = {
 
 controller.requiredPackFingerprint = resourcePacks.manifest.fingerprint;
 controller.http = (request, url) => {
+    if (url.pathname === "/healthz" || url.pathname === "/readyz") {
+        return Response.json(
+            {
+                status: url.pathname === "/healthz" ? "ok" : "ready",
+                packFingerprint: resourcePacks.manifest.fingerprint,
+            },
+            { headers: { "Cache-Control": "no-store" } }
+        );
+    }
+
     // Proxies may keep a mount prefix (e.g. /server/na/packs/...).
     const packsOffset = url.pathname.indexOf("/packs/");
     if (packsOffset < 0) return;

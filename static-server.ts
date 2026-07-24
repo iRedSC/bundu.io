@@ -277,6 +277,28 @@ function isDocsHost(host: string): boolean {
     return DOCS_HOSTS.has(host);
 }
 
+function healthResponse(): Response {
+    return Response.json(
+        { status: "ok" },
+        { headers: { "Cache-Control": "no-store" } }
+    );
+}
+
+function readinessResponse(): Response {
+    const siteReady = fs.existsSync(path.join(PUBLIC_DIR, "site", "index.html"));
+    const docsReady = fs.existsSync(path.join(DOCS_DIR, "index.html"));
+    return Response.json(
+        {
+            status: siteReady && docsReady ? "ready" : "not_ready",
+            checks: { site: siteReady, docs: docsReady },
+        },
+        {
+            status: siteReady && docsReady ? 200 : 503,
+            headers: { "Cache-Control": "no-store" },
+        }
+    );
+}
+
 /** Resolve a URL path under rootDir. Supports VitePress cleanUrls. */
 function resolvePublicFile(
     pathname: string,
@@ -396,6 +418,9 @@ serve({
     async fetch(req) {
         const url = new URL(req.url);
         const host = requestHost(req);
+
+        if (url.pathname === "/healthz") return healthResponse();
+        if (url.pathname === "/readyz") return readinessResponse();
 
         // wiki.bundu.io (etc.): public/docs as site root, including /assets.
         if (isDocsHost(host)) {
