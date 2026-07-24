@@ -16,6 +16,7 @@ export * from "./transforms";
 export * from "./attack_box";
 export * from "./range";
 export * from "./session";
+export * from "./username";
 export * from "./registry";
 export * from "./command";
 export * from "./entity_selector";

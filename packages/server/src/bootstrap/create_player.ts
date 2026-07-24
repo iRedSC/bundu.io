@@ -1,4 +1,10 @@
 import { tileCenterWorld } from "@bundu/shared/tiles";
+import { JOIN_RECLAIM_REJECTED } from "@bundu/shared/session";
+import {
+    resolveUsername,
+    usernameWithSuffix,
+    usernamesEqual,
+} from "@bundu/shared/username";
 import { Circle, Vector } from "sat";
 import type { World } from "../engine";
 import { Player } from "../game_objects/player";
@@ -7,8 +13,41 @@ import { getVariantName } from "@bundu/shared/variant_map";
 
 import { gameplayConfig } from "../configs/gameplay";
 
-/** Negative ids are reclaim failures — caller must reject the socket. */
-export const RECLAIM_REJECTED = -1;
+export { JOIN_RECLAIM_REJECTED as RECLAIM_REJECTED };
+
+type PlayerObjects = ReturnType<World["query"]>;
+
+function isUsernameTaken(
+    players: PlayerObjects,
+    username: string,
+    exceptId?: number
+): boolean {
+    return players.some(
+        (object) =>
+            object.active &&
+            object.id !== exceptId &&
+            usernamesEqual(object.get(PlayerData).name, username)
+    );
+}
+
+/** Empty → AdjectiveNoun; if taken, append 2, 3, … until free. */
+function claimUsername(
+    players: PlayerObjects,
+    raw: string,
+    exceptId?: number
+): string {
+    const base = resolveUsername(raw);
+    if (!isUsernameTaken(players, base, exceptId)) {
+        return base;
+    }
+    for (let n = 2; n < 10_000; n++) {
+        const candidate = usernameWithSuffix(base, n);
+        if (!isUsernameTaken(players, candidate, exceptId)) {
+            return candidate;
+        }
+    }
+    return usernameWithSuffix(base, Date.now());
+}
 
 export function createPlayer(
     world: World,
@@ -24,10 +63,10 @@ export function createPlayer(
 
     if (existing) {
         if (world.context.socketManager.getSocket(existing.id)) {
-            return RECLAIM_REJECTED;
+            return JOIN_RECLAIM_REJECTED;
         }
         const data = existing.get(PlayerData);
-        data.name = username;
+        data.name = claimUsername(players, username, existing.id);
         data.moveDir = [0, 0];
         data.attacking = false;
         data.blocking = false;
@@ -52,7 +91,7 @@ export function createPlayer(
             speed: config.physicsSpeed,
         },
         {
-            name: username,
+            name: claimUsername(players, username),
             score: 0,
             sessionId,
             playerSkin: getVariantName(skinId) ?? "base",

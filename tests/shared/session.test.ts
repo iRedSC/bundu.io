@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  JOIN_RECLAIM_REJECTED,
   SESSION_ENDED_CLOSE,
   SESSION_REJECTED_CLOSE,
   isHardSessionClose,
@@ -9,6 +10,10 @@ describe("session close codes", () => {
   test("exposes the hard-close wire codes", () => {
     expect(SESSION_ENDED_CLOSE).toBe(4000);
     expect(SESSION_REJECTED_CLOSE).toBe(4001);
+  });
+
+  test("exposes createPlayer join-failure ids", () => {
+    expect(JOIN_RECLAIM_REJECTED).toBe(-1);
   });
 
   test("isHardSessionClose is true only for ended and rejected", () => {

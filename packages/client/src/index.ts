@@ -9,6 +9,7 @@ import {
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
 import { WORLD_BOUNDS } from "@bundu/shared/tiles";
 import { percentOf } from "@bundu/shared/math";
+import { generateUsername } from "@bundu/shared/username";
 import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
 import { createUI } from "./ui/ui";
@@ -206,7 +207,7 @@ async function prepareConnectionPacks(): Promise<void> {
 
 function buildSocketUrl(username: string) {
     const url = new URL(GAME_WS_URL);
-    url.searchParams.set("username", username || "unnamed");
+    url.searchParams.set("username", username);
     url.searchParams.set("skin_id", "0");
     url.searchParams.set("session_id", ensureSessionId());
     url.searchParams.set("packs", packFingerprint);
@@ -377,7 +378,13 @@ async function main() {
         prepareConnection: prepareConnectionPacks,
         autoReconnect: true,
         buildSocketUrl,
-        getUsername: () => nameInput.value.trim(),
+        getUsername: () => {
+            const trimmed = nameInput.value.trim();
+            if (trimmed) return trimmed;
+            const generated = generateUsername();
+            nameInput.value = generated;
+            return generated;
+        },
         resetLocalState: () => {
             clientTime.resetServerSync();
             setFreecamUi(false);
