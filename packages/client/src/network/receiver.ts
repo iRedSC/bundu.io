@@ -29,7 +29,7 @@ function refreshCraftingMenu(ui: UI): void {
     applyCraftRecipeLocks(ui);
 }
 
-/** Show persistent lock on recipes whose ingredients are craft-locked. */
+/** Show persistent lock wipe on recipes whose ingredients are craft-locked. */
 function applyCraftRecipeLocks(ui: UI): void {
     for (const [i, button] of ui.craftingMenu.buttons.entries()) {
         const view = ui.craftingMenu.items[i];
@@ -42,14 +42,9 @@ function applyCraftRecipeLocks(ui: UI): void {
             button.setItemLock(null);
             continue;
         }
-        let craftLock: ReturnType<UI["inventory"]["getLock"]>;
-        for (const itemId of recipe.ingredients.keys()) {
-            const lock = ui.inventory.getLock(itemId, "craft");
-            if (lock) {
-                craftLock = lock;
-                break;
-            }
-        }
+        const craftLock = ui.inventory.craftLockForIngredients(
+            recipe.ingredients.keys()
+        );
         button.setItemLock(craftLock ?? null, craftLock !== undefined);
     }
 }

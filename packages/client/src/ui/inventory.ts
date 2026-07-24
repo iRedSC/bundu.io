@@ -1,5 +1,5 @@
 import { Container, Text } from "pixi.js";
-import { ItemButton, tickItemButton, type ItemLockVisual, LOCK_FLASH_MS, formatItemLockTooltip } from "./item_button";
+import { ItemButton, tickItemButton, type ItemLockVisual, LOCK_FLASH_MS, formatItemLockTooltip, mergeItemLockVisuals } from "./item_button";
 import { prettifyNumber, percentOf, lerp } from "@bundu/shared";
 import {
     LOCK_ANY_ITEM,
@@ -967,23 +967,21 @@ export class Inventory {
     private mergeLocks(
         locks: readonly ItemLockVisual[]
     ): ItemLockVisual | undefined {
-        if (locks.length === 0) return undefined;
-        if (locks.length === 1) return locks[0];
-        let itemId = LOCK_ANY_ITEM;
-        let endsAt = 0;
-        let durationMs = 0;
-        let flags = 0;
-        let slotFlags = 0;
-        for (const lock of locks) {
-            if (lock.itemId !== LOCK_ANY_ITEM) itemId = lock.itemId;
-            flags |= lock.flags;
-            slotFlags |= lock.slotFlags;
-            if (lock.endsAt > endsAt) {
-                endsAt = lock.endsAt;
-                durationMs = lock.durationMs;
-            }
+        return mergeItemLockVisuals(locks);
+    }
+
+    /**
+     * Merged craft lock across ingredient item ids (latest expiry wins).
+     */
+    craftLockForIngredients(
+        itemIds: Iterable<number>
+    ): ItemLockVisual | undefined {
+        const matched: ItemLockVisual[] = [];
+        for (const itemId of itemIds) {
+            const lock = this.findLock(itemId, "craft");
+            if (lock) matched.push(lock);
         }
-        return { itemId, endsAt, durationMs, flags, slotFlags };
+        return this.mergeLocks(matched);
     }
 
     private findLock(

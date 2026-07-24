@@ -709,7 +709,13 @@ async function main() {
             (itemId) => gui.inventory.isActionLocked(itemId, "craft")
         );
         if (lockedIngredient !== undefined) {
-            gui.inventory.flashItemLock(lockedIngredient);
+            const recipe = gui.recipeManager.recipes.get(recipeId);
+            const craftLock = recipe
+                ? gui.inventory.craftLockForIngredients(
+                      recipe.ingredients.keys()
+                  )
+                : undefined;
+            gui.inventory.flashItemLock(lockedIngredient, craftLock);
             const button = gui.craftingMenu.buttons.find(
                 (_, i) => gui.craftingMenu.items[i]?.recipeId === recipeId
             );

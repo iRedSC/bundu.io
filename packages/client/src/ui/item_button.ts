@@ -3,6 +3,7 @@ import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory"
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { percentOf } from "@bundu/shared/math";
 import {
+    LOCK_ANY_ITEM,
     LOCK_SLOTS,
     lockFlagsToActions,
     lockSlotFlagsToSlots,
@@ -134,6 +135,11 @@ const LOCK_ICON_ACTIVE = ITEM_BUTTON_SIZE * 0.42;
 /** Corner badge while locked actions exist but none are active on this slot. */
 const LOCK_ICON_BADGE = ITEM_BUTTON_SIZE * 0.26;
 const LOCK_BADGE_INSET = 3;
+/**
+ * Wipe radius past the button edge so the pie fills the face and clipping
+ * against the button mask is obvious.
+ */
+const LOCK_WIPE_RADIUS = ITEM_BUTTON_SIZE * 1.25;
 
 function formatActionList(actions: readonly LockAction[]): string {
     if (actions.length === 1) return actions[0]!;
@@ -163,6 +169,32 @@ export function formatItemLockTooltip(
     return `Can't ${formatActionList(actions)}${slotSuffix}${time}`;
 }
 
+/**
+ * Collapse overlapping lock visuals: flags OR'd, timer = latest expiry
+ * (duration from the rule that owns that expiry).
+ */
+export function mergeItemLockVisuals(
+    locks: readonly ItemLockVisual[]
+): ItemLockVisual | undefined {
+    if (locks.length === 0) return undefined;
+    if (locks.length === 1) return locks[0];
+    let itemId = LOCK_ANY_ITEM;
+    let endsAt = 0;
+    let durationMs = 0;
+    let flags = 0;
+    let slotFlags = 0;
+    for (const lock of locks) {
+        if (lock.itemId !== LOCK_ANY_ITEM) itemId = lock.itemId;
+        flags |= lock.flags;
+        slotFlags |= lock.slotFlags;
+        if (lock.endsAt > endsAt) {
+            endsAt = lock.endsAt;
+            durationMs = lock.durationMs;
+        }
+    }
+    return { itemId, endsAt, durationMs, flags, slotFlags };
+}
+
 export class ItemButton {
     button: Container;
     enabled: boolean = true;
@@ -177,8 +209,8 @@ export class ItemButton {
     private lockOverlay: Container;
     private lockWipe: Graphics;
     private lockIcon: ContaineredSprite;
-    /** Clips the wipe to the button face. */
-    private lockMask: Graphics;
+    /** Untinted button sprite used to clip the wipe to the slot face. */
+    private lockMask: ContaineredSprite;
     /** Small bottom-right lock when restrictions exist but aren't active yet. */
     private lockBadge: ContaineredSprite;
     private lockVisual: ItemLockVisual | null = null;
@@ -246,17 +278,15 @@ export class ItemButton {
         this.lockOverlay.addChild(this.lockWipe);
         this.lockOverlay.addChild(this.lockIcon);
 
-        // Mask wipe to the button bounds (wipe draws larger, clipped here).
-        this.lockMask = new Graphics()
-            .rect(
-                -ITEM_BUTTON_SIZE / 2,
-                -ITEM_BUTTON_SIZE / 2,
-                ITEM_BUTTON_SIZE,
-                ITEM_BUTTON_SIZE
-            )
-            .fill(0xffffff);
+        // Clip wipe to the button face (same texture, untinted so hover tint
+        // doesn't affect the mask). Wipe draws larger so edges are clipped.
+        this.lockMask = SpriteFactory.build("bundu/ui/item_button.png");
+        this.lockMask.width = ITEM_BUTTON_SIZE;
+        this.lockMask.height = ITEM_BUTTON_SIZE;
+        this.lockMask.anchor.set(0.5);
+        this.lockMask.tint = 0xffffff;
         this.lockMask.zIndex = 899;
-        this.lockOverlay.addChild(this.lockMask);
+        this.lockMask.renderable = false;
         this.lockOverlay.mask = this.lockMask;
 
         // Bottom-right corner (amount sits bottom-left).
@@ -273,6 +303,7 @@ export class ItemButton {
 
         this.button.addChild(this.itemDisplay);
         this.button.addChild(this.background);
+        this.button.addChild(this.lockMask);
         this.button.addChild(this.lockOverlay);
         this.button.addChild(this.lockBadge);
         this.button.addChild(this.disableSprite);
@@ -437,7 +468,7 @@ export class ItemButton {
                 Math.min(1, (visual.endsAt - now) / visual.durationMs)
             );
         }
-        const radius = ITEM_BUTTON_SIZE * 0.72;
+        const radius = LOCK_WIPE_RADIUS;
         this.lockWipe.clear();
         this.lockWipe
             .moveTo(0, 0)
@@ -497,6 +528,7 @@ export class ItemButton {
         this.disableSprite.destroy();
         this.lockWipe.destroy();
         this.lockIcon.destroy();
+        this.lockOverlay.mask = null;
         this.lockMask.destroy();
         this.lockBadge.destroy();
         this.lockOverlay.destroy({ children: false });
