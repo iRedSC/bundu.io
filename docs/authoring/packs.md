@@ -114,7 +114,9 @@ a swap cooldown, a cursed item that cannot be removed, or gear that temporarily
 disables another item. Ordinary attributes and flags that last while an item is
 held belong in `whenEquipped`.
 
-Both events fire once after the equipment transition commits. Like
+Both events fire once per equipment transition. Targets are resolved against
+one stable world snapshot before equipment changes; the resulting lock and
+unlock mutations apply only after the equipment state commits. Like
 `whenEquipped`, each entry is keyed by a target selector:
 
 ```yaml
@@ -148,7 +150,7 @@ lockItem:
 | Field | Required | Meaning |
 |---|---:|---|
 | `id` | No | Stable author-defined identity used by `unlockItem`. |
-| `items` | Conditional | Non-empty list of item ids and/or `#item` tags. |
+| `items` | Conditional | Non-empty list of item ids and/or item-registry `#tags`. |
 | `slots` | Conditional | Non-empty list of `mainhand`, `offhand`, or `helmet`. |
 | `lock` | Yes | Non-empty list of actions to restrict. |
 | `for` | No | Non-negative duration in milliseconds. Omit for an indefinite lock. |
@@ -186,8 +188,8 @@ finishes, so a lock applied during the crafting channel cannot be bypassed.
 #### Timed and indefinite locks
 
 `for` uses authoritative game time in milliseconds. A timed lock expires
-automatically. Omitting `for` creates an indefinite lock that must be removed
-with `unlockItem`.
+automatically; `for: 0` is valid but expires immediately. Omitting `for`
+creates an indefinite lock that must be removed with `unlockItem`.
 
 Give indefinite locks an `id` and reuse it in the releasing event:
 
@@ -225,7 +227,9 @@ unlockItem:
 ```
 
 This removes only rules created with that identity by the same equipment-event
-owner. Without an `id`, unlock by matching items and/or slots:
+owner. When `id` is present, source identity is the complete match:
+`items` and `slots` on that unlock object are ignored. Without an `id`, unlock
+by matching items and/or slots:
 
 ```yaml
 unlockItem:
@@ -268,8 +272,9 @@ onEquip:
 ```
 
 The server stores actions independently. Reapplying the same source, action,
-item, and slot refreshes that rule instead of accumulating duplicates.
-Different actions and durations do not shorten or corrupt one another.
+item, and slot replaces that rule instead of accumulating duplicates. The most
+recent application wins, even when its new expiry is sooner. Different
+normalized rules and durations do not shorten or corrupt one another.
 
 #### Player feedback
 
