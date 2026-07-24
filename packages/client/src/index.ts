@@ -704,27 +704,29 @@ async function main() {
     gui.craftingMenu.leftclick = (recipeId) => {
         const local = world.objects.get(world.user ?? -1);
         if (local instanceof Player && local.isCrafting) return;
-        const lockedItem = gui.recipeManager.craftLockedItem(
+        const lockedIngredient = gui.recipeManager.craftLockedIngredient(
             recipeId,
             (itemId) => gui.inventory.isActionLocked(itemId, "craft")
         );
-        if (lockedItem !== undefined) {
+        if (lockedIngredient !== undefined) {
             const recipe = gui.recipeManager.recipes.get(recipeId);
             const craftLock = recipe
-                ? gui.inventory.craftLockForRecipe(
-                      recipe.resultItemId,
+                ? gui.inventory.craftLockForIngredients(
                       recipe.ingredients.keys()
                   )
                 : undefined;
-            gui.inventory.flashItemLock(lockedItem, craftLock);
+            gui.inventory.flashItemLock(lockedIngredient, craftLock);
             const button = gui.craftingMenu.buttons.find(
                 (_, i) => gui.craftingMenu.items[i]?.recipeId === recipeId
             );
+            // Ensure the recipe button has a lock visual before flashing.
+            if (craftLock) button?.setItemLock(craftLock, true);
             button?.flashLock();
             return;
         }
         session.sendPacket(ClientPacket.CraftItem, { recipeId });
     };
+    gui.craftingMenu.rightclick = gui.craftingMenu.leftclick;
 
     app.canvas.oncontextmenu = () => {};
     document.body.appendChild(app.canvas);

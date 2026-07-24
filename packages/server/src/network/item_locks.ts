@@ -114,7 +114,7 @@ export function isActionLocked(
     slot?: LockSlot
 ): boolean {
     if (itemId === undefined) return false;
-    return findLock(player, itemId, action, now, slot) !== undefined;
+    return findLock(player, Number(itemId), action, now, slot) !== undefined;
 }
 
 function sameItemSet(
@@ -295,29 +295,14 @@ export function runEquipEvents(
     return locksChanged;
 }
 
-/** True if any ingredient has an active `craft` lock. */
+/** True if any recipe ingredient has an active `craft` lock. */
 export function inventoryHasLockedIngredient(
     player: GameObject,
     ingredients: ReadonlyMap<number, number>,
     now: number
 ): boolean {
-    if (ingredients.size === 0) return false;
     for (const itemId of ingredients.keys()) {
-        if (isActionLocked(player, itemId, "craft", now)) return true;
+        if (isActionLocked(player, Number(itemId), "craft", now)) return true;
     }
     return false;
-}
-
-/**
- * True if crafting this recipe is blocked: craft-locked result and/or
- * craft-locked ingredient.
- */
-export function recipeIsCraftLocked(
-    player: GameObject,
-    resultItemId: number,
-    ingredients: ReadonlyMap<number, number>,
-    now: number
-): boolean {
-    if (isActionLocked(player, resultItemId, "craft", now)) return true;
-    return inventoryHasLockedIngredient(player, ingredients, now);
 }

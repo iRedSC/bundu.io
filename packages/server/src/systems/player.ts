@@ -52,9 +52,9 @@ import {
 import {
     clearPlayerItemLocks,
     emitItemLocks,
+    inventoryHasLockedIngredient,
     isActionLocked,
     pruneExpiredLocks,
-    recipeIsCraftLocked,
 } from "../network/item_locks.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { groundWire } from "./ground_wire.js";
@@ -554,6 +554,16 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!recipe || !inv || !this.hasCraftingRequirements(player, recipe.flags)) {
             return;
         }
+        // Re-check craft locks at completion (lock may have been applied mid-channel).
+        if (
+            inventoryHasLockedIngredient(
+                player,
+                recipe.ingredients,
+                this.world.gameTime
+            )
+        ) {
+            return;
+        }
         if (!removeItems(inv, recipe.ingredients)) return;
         const remaining = receiveItem(player, recipe.resultItemId, recipe.amount);
         if (remaining > 0) {
@@ -586,9 +596,8 @@ export class PlayerSystem extends System<GameEventMap> {
             !inv ||
             !this.hasCraftingRequirements(player, recipe.flags) ||
             !hasItems(inv, recipe.ingredients) ||
-            recipeIsCraftLocked(
+            inventoryHasLockedIngredient(
                 player,
-                recipe.resultItemId,
                 recipe.ingredients,
                 this.world.gameTime
             ) ||

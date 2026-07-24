@@ -26,10 +26,9 @@ function refreshCraftingMenu(ui: UI): void {
         playerFlags
     );
     ui.craftingMenu.update();
-    applyCraftRecipeLocks(ui);
 }
 
-/** Show persistent lock wipe on recipes blocked by craft locks (result or ingredients). */
+/** Show persistent lock wipe on recipes with craft-locked ingredients. */
 function applyCraftRecipeLocks(ui: UI): void {
     for (const [i, button] of ui.craftingMenu.buttons.entries()) {
         const view = ui.craftingMenu.items[i];
@@ -42,8 +41,7 @@ function applyCraftRecipeLocks(ui: UI): void {
             button.setItemLock(null);
             continue;
         }
-        const craftLock = ui.inventory.craftLockForRecipe(
-            recipe.resultItemId,
+        const craftLock = ui.inventory.craftLockForIngredients(
             recipe.ingredients.keys()
         );
         button.setItemLock(craftLock ?? null, craftLock !== undefined);
@@ -123,6 +121,8 @@ export function setupGUIPacketReceiving(
     ui: UI,
     world: World
 ) {
+    ui.inventory.onLocksChanged = () => applyCraftRecipeLocks(ui);
+    ui.craftingMenu.onAfterUpdate = () => applyCraftRecipeLocks(ui);
     receiver.on(
         ServerPacket.UpdateVitals,
         ({ health, hunger, heat, thirst, air }) => {
@@ -143,7 +143,6 @@ export function setupGUIPacketReceiving(
     });
     receiver.on(ServerPacket.UpdateItemLocks, ({ locks }) => {
         ui.inventory.updateLocks(locks);
-        applyCraftRecipeLocks(ui);
     });
     receiver.on(ServerPacket.UpdateFlags, ({ flags }) => {
         playerFlags = [...flags];

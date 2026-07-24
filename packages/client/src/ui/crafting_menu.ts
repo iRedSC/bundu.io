@@ -67,28 +67,19 @@ export class RecipeManager {
     }
 
     /**
-     * First craft-locked item id for a recipe (result preferred, else an
-     * ingredient), if any.
+     * First craft-locked ingredient id for a recipe, if any.
+     * Does not consider the recipe result.
      */
-    craftLockedItem(
+    craftLockedIngredient(
         recipeId: number,
         isLocked: (itemId: number) => boolean
     ): number | undefined {
         const recipe = this.recipes.get(recipeId);
         if (!recipe) return undefined;
-        if (isLocked(recipe.resultItemId)) return recipe.resultItemId;
         for (const itemId of recipe.ingredients.keys()) {
-            if (isLocked(itemId)) return itemId;
+            if (isLocked(Number(itemId))) return Number(itemId);
         }
         return undefined;
-    }
-
-    /** @deprecated Prefer {@link craftLockedItem}. */
-    craftLockedIngredient(
-        recipeId: number,
-        isLocked: (itemId: number) => boolean
-    ): number | undefined {
-        return this.craftLockedItem(recipeId, isLocked);
     }
 }
 
@@ -103,6 +94,8 @@ export class CraftingMenu {
     private leftClickCB?: Callback;
     craftingRecipeId: number | null = null;
     private hoverScreen: { x: number; y: number } | null = null;
+    /** Called after buttons/items are rebuilt (e.g. re-apply craft locks). */
+    onAfterUpdate?: () => void;
 
     constructor(readonly grid: Grid) {}
 
@@ -162,6 +155,7 @@ export class CraftingMenu {
         } else if (hoverIndex < 0) {
             hideRegistryTooltip();
         }
+        this.onAfterUpdate?.();
     }
 
     private showRecipeTip(

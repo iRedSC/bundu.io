@@ -150,6 +150,8 @@ export class Inventory {
     };
     /** Fired when a denied use/craft should flash the above-name lock gauge. */
     onLockFlash?: (lock: ItemLockVisual) => void;
+    /** Fired after authoritative lock state is replaced (crafting menu sync). */
+    onLocksChanged?: () => void;
 
     onSelect?: SelectCB;
     onMove?: MoveCB;
@@ -971,29 +973,15 @@ export class Inventory {
     }
 
     /**
-     * Merged craft lock for a recipe: result and/or any ingredient
-     * (latest expiry wins).
+     * Merged craft lock across recipe ingredient ids (latest expiry wins).
+     * Does not consider the recipe result.
      */
-    craftLockForRecipe(
-        resultItemId: number,
-        ingredientIds: Iterable<number>
-    ): ItemLockVisual | undefined {
-        const matched: ItemLockVisual[] = [];
-        const resultLock = this.findLock(resultItemId, "craft");
-        if (resultLock) matched.push(resultLock);
-        for (const itemId of ingredientIds) {
-            const lock = this.findLock(itemId, "craft");
-            if (lock) matched.push(lock);
-        }
-        return this.mergeLocks(matched);
-    }
-
-    /** @deprecated Prefer {@link craftLockForRecipe}. */
     craftLockForIngredients(
         itemIds: Iterable<number>
     ): ItemLockVisual | undefined {
         const matched: ItemLockVisual[] = [];
-        for (const itemId of itemIds) {
+        for (const rawId of itemIds) {
+            const itemId = Number(rawId);
             const lock = this.findLock(itemId, "craft");
             if (lock) matched.push(lock);
         }
@@ -1005,10 +993,11 @@ export class Inventory {
         action: LockAction,
         slot?: LockSlot
     ): ItemLockVisual | undefined {
+        const id = Number(itemId);
         const matched: ItemLockVisual[] = [];
         for (const lock of this.itemLocks) {
             if (!lockFlagsHas(lock.flags, action)) continue;
-            if (this.ruleMatches(lock, itemId, slot)) matched.push(lock);
+            if (this.ruleMatches(lock, id, slot)) matched.push(lock);
         }
         return this.mergeLocks(matched);
     }
@@ -1162,8 +1151,13 @@ export class Inventory {
      */
     updateLocks(locks: ServerPacket.UpdateItemLocks["locks"]) {
         const now = performance.now();
-        this.itemLocks = locks.map(
-            ([itemId, remainingMs, durationMs, flags, slotFlags]) => ({
+        this.itemLocks = locks.map((entry) => {
+            const itemId = Number(entry[0]);
+            const remainingMs = Number(entry[1]);
+            const durationMs = Number(entry[2]);
+            const flags = Number(entry[3]);
+            const slotFlags = Number(entry[4] ?? 0);
+            return {
                 itemId,
                 endsAt:
                     remainingMs < 0
@@ -1172,14 +1166,15 @@ export class Inventory {
                 durationMs: Math.max(0, durationMs),
                 flags,
                 slotFlags,
-            })
-        );
+            };
+        });
         for (const [i, button] of this.buttons.entries()) {
             this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
         }
         if (this.cursor) {
             this.applyLockVisual(this.ghost, this.cursor[0]);
         }
+        this.onLocksChanged?.();
     }
 
     update({ items, cursor }: ServerPacket.UpdateInventory) {
@@ -1232,6 +1227,7 @@ export class Inventory {
             for (const [i, button] of this.buttons.entries()) {
                 this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
             }
+            this.onLocksChanged?.();
         }
         for (const [slot, button] of this.buttons.entries()) {
             button.selected = slot === this.selectedSlot;
