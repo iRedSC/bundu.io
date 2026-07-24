@@ -13,7 +13,8 @@ whenEquipped:
                 op: "multiply"
                 value: 0.8
 onEquip:
-    lockItem:
-        slots: [mainhand]
-        for: 2000
-        lock: [unequip, equip]
+    "@s":
+        lockItem:
+            slots: [mainhand]
+            for: 2000
+            lock: [unequip, equip]

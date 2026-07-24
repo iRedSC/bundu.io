@@ -9,8 +9,14 @@ import {
     type LockSlot,
 } from "@bundu/shared/item_lock";
 import type { GameRegistries } from "../registries.js";
+import {
+    parseEffectTargetMatch,
+    type EffectTargetMatch,
+} from "./effect_context.js";
 
 export type LockItemAction = {
+    /** Stable authored location used to refresh this lock without duplication. */
+    source: string;
     /**
      * Resolved item ids (from ids / `#tag`s).
      * `null` = any item (slot-only lock).
@@ -32,6 +38,8 @@ export type LockItemAction = {
 };
 
 export type UnlockItemAction = {
+    /** When set, remove only rules created by this authored lock id. */
+    source?: string;
     /** `null` = any item (clear by slots only). */
     items: ReadonlySet<RegistryId<"item">> | null;
     /** When set, only clear locks that overlap these slots. */
@@ -39,19 +47,18 @@ export type UnlockItemAction = {
     slotFlags?: number;
 };
 
-/** One-shot actions fired on equip / unequip. */
-export type EquipEvents = {
+export type EquipEventTarget = EffectTargetMatch & {
     commands: readonly string[];
     lockItems: readonly LockItemAction[];
     unlockItems: readonly UnlockItemAction[];
 };
 
-const EMPTY_EVENTS: EquipEvents = {
-    commands: [],
-    lockItems: [],
-    unlockItems: [],
+/** One-shot actions fired on equip / unequip, grouped by target selector. */
+export type EquipEvents = {
+    targets: readonly EquipEventTarget[];
 };
 
+const EMPTY_EVENTS: EquipEvents = { targets: [] };
 const ALL_SLOTS: readonly LockSlot[] = ["mainhand", "offhand", "helmet"];
 
 function namespace(id: string): string {
@@ -148,6 +155,18 @@ function requireItemsOrSlots(
     return { hasItems, hasSlots };
 }
 
+function parseLockSource(
+    raw: unknown,
+    path: string,
+    ownerId: string
+): string | undefined {
+    if (raw === undefined) return undefined;
+    if (typeof raw !== "string" || raw.trim().length === 0) {
+        throw new Error(`${path}: expected non-empty string`);
+    }
+    return `${ownerId}:${raw.trim()}`;
+}
+
 function parseLockItem(
     raw: unknown,
     path: string,
@@ -161,12 +180,14 @@ function parseLockItem(
             key !== "items" &&
             key !== "slots" &&
             key !== "lock" &&
-            key !== "for"
+            key !== "for" &&
+            key !== "id"
         ) {
             throw new Error(`${path}.${key}: unknown key`);
         }
     }
     const { hasItems, hasSlots } = requireItemsOrSlots(obj, path);
+    const source = parseLockSource(obj.id, `${path}.id`, ownerId) ?? path;
     const items = hasItems
         ? parseItems(obj.items, `${path}.items`, registries, ownerId)
         : null;
@@ -174,6 +195,14 @@ function parseLockItem(
         ? parseSlots(obj.slots, `${path}.slots`)
         : [...ALL_SLOTS];
     const lock = parseLockActions(obj.lock, `${path}.lock`);
+    if (
+        items === null &&
+        lock.some((action) => action === "drop" || action === "craft")
+    ) {
+        throw new Error(
+            `${path}.items: required when locking drop or craft`
+        );
+    }
     let forMs: number | undefined;
     if (obj.for !== undefined) {
         if (
@@ -186,6 +215,7 @@ function parseLockItem(
         forMs = obj.for;
     }
     return {
+        source,
         items,
         lock,
         flags: lockActionsToFlags(lock),
@@ -204,19 +234,23 @@ function parseUnlockItem(
     const obj = asObject(raw);
     if (!obj) throw new Error(`${path}: expected object`);
     for (const key of Object.keys(obj)) {
-        if (key !== "items" && key !== "slots") {
+        if (key !== "items" && key !== "slots" && key !== "id") {
             throw new Error(`${path}.${key}: unknown key`);
         }
+    }
+    const source = parseLockSource(obj.id, `${path}.id`, ownerId);
+    if (source && obj.items === undefined && obj.slots === undefined) {
+        return { source, items: null };
     }
     const { hasItems, hasSlots } = requireItemsOrSlots(obj, path);
     const items = hasItems
         ? parseItems(obj.items, `${path}.items`, registries, ownerId)
         : null;
     if (!hasSlots) {
-        return { items };
+        return { source, items };
     }
     const slots = parseSlots(obj.slots, `${path}.slots`);
-    return { items, slots, slotFlags: lockSlotsToFlags(slots) };
+    return { source, items, slots, slotFlags: lockSlotsToFlags(slots) };
 }
 
 function parseLockItems(
@@ -265,15 +299,14 @@ function parseCommands(raw: unknown, path: string): string[] {
  * Parse an onEquip / onUnequip block:
  * ```
  * onEquip:
- *   commands:
- *     - "give @s bundu:iridium 1"
- *   lockItem:
- *     items: [#bundu:swords]          # and/or slots (not neither)
- *     slots: [mainhand, offhand, helmet]
- *     lock: [equip, unequip, use, drop, craft]
- *     for: 5000
- *   unlockItem:
- *     items: [bundu:wood_sword]
+ *   "@s":
+ *     commands:
+ *       - "give @s bundu:iridium 1"
+ *     lockItem:
+ *       items: ["#bundu:swords"]      # and/or slots (not neither)
+ *       slots: [mainhand, offhand, helmet]
+ *       lock: [equip, unequip, use, drop, craft]
+ *       for: 5000
  * ```
  */
 export function parseEquipEvents(
@@ -285,34 +318,53 @@ export function parseEquipEvents(
     if (raw === undefined) return undefined;
     const obj = asObject(raw);
     if (!obj) throw new Error(`${path}: expected object`);
-    for (const key of Object.keys(obj)) {
-        if (key !== "commands" && key !== "lockItem" && key !== "unlockItem") {
-            throw new Error(`${path}.${key}: unknown key`);
+    const targets: EquipEventTarget[] = [];
+    for (const [selector, rawEvents] of Object.entries(obj)) {
+        const targetPath = `${path}.${selector}`;
+        const eventObj = asObject(rawEvents);
+        if (!eventObj) throw new Error(`${targetPath}: expected object`);
+        for (const key of Object.keys(eventObj)) {
+            if (
+                key !== "commands" &&
+                key !== "lockItem" &&
+                key !== "unlockItem"
+            ) {
+                throw new Error(`${targetPath}.${key}: unknown key`);
+            }
+        }
+        const target: EquipEventTarget = {
+            ...parseEffectTargetMatch(
+                selector,
+                targetPath,
+                registries,
+                ownerId
+            ),
+            commands: parseCommands(
+                eventObj.commands,
+                `${targetPath}.commands`
+            ),
+            lockItems: parseLockItems(
+                eventObj.lockItem,
+                `${targetPath}.lockItem`,
+                registries,
+                ownerId
+            ),
+            unlockItems: parseUnlockItems(
+                eventObj.unlockItem,
+                `${targetPath}.unlockItem`,
+                registries,
+                ownerId
+            ),
+        };
+        if (
+            target.commands.length > 0 ||
+            target.lockItems.length > 0 ||
+            target.unlockItems.length > 0
+        ) {
+            targets.push(target);
         }
     }
-    const events: EquipEvents = {
-        commands: parseCommands(obj.commands, `${path}.commands`),
-        lockItems: parseLockItems(
-            obj.lockItem,
-            `${path}.lockItem`,
-            registries,
-            ownerId
-        ),
-        unlockItems: parseUnlockItems(
-            obj.unlockItem,
-            `${path}.unlockItem`,
-            registries,
-            ownerId
-        ),
-    };
-    if (
-        events.commands.length === 0 &&
-        events.lockItems.length === 0 &&
-        events.unlockItems.length === 0
-    ) {
-        return undefined;
-    }
-    return events;
+    return targets.length > 0 ? { targets } : undefined;
 }
 
 /** Prefer override; fall back to base when override is absent. */
@@ -340,11 +392,7 @@ export function equipEventsAreEmpty(
     events: EquipEvents | undefined
 ): boolean {
     if (!events) return true;
-    return (
-        events.commands.length === 0 &&
-        events.lockItems.length === 0 &&
-        events.unlockItems.length === 0
-    );
+    return events.targets.length === 0;
 }
 
 export { LOCK_SLOTS_ALL };

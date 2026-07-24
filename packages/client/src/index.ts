@@ -1,6 +1,7 @@
 import { Application, Point, type Renderer } from "pixi.js";
 import "pixi.js/advanced-blend-modes";
 import {
+    resetGUIReceiverState,
     receiver,
     setupChatPacketReceiving,
     setupGUIPacketReceiving,
@@ -393,6 +394,7 @@ async function main() {
             gui.hunger.update(0);
             gui.heat.update(0);
             gui.thirst.update(0);
+            resetGUIReceiverState(gui);
             gui.inventory.update({ items: [], cursor: null });
             gui.recipeManager.recipes.clear();
             gui.craftingMenu.items = [];
@@ -679,8 +681,9 @@ async function main() {
     };
     gui.inventory.onSelect = (slot) => {
         const itemId = gui.inventory.slots[slot]?.[0];
-        gui.inventory.notifySelectDenied(itemId);
+        if (gui.inventory.notifySelectDenied(itemId)) return false;
         session.sendPacket(ClientPacket.SelectItem, { slot });
+        return true;
     };
     gui.inventory.creativeReplace = () => creative.isActive();
     gui.inventory.isVoidTarget = (screenX, screenY) =>

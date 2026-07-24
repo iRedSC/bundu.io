@@ -79,6 +79,8 @@ export const ServerPacket = {
      * `flags` bitmask of equip|unequip|use|drop|craft; `slotFlags` of mainhand|offhand|helmet.
      */
     UpdateItemLocks: 0x27,
+    /** Owner-only acknowledgement for authoritative hotbar selection. */
+    SelectItemResult: 0x28,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -231,6 +233,11 @@ export namespace ServerPacket {
             flags: number,
             slotFlags: number,
         ][];
+    };
+    export type SelectItemResult = {
+        requested: number;
+        selected: number;
+        accepted: boolean;
     };
     export type UnloadGround = {
         groundData: GroundWire[];
@@ -475,6 +482,7 @@ export type ServerPacketMap = {
     [ServerPacket.SetWorldSize]: ServerPacket.SetWorldSize;
     [ServerPacket.SetPlayerVisual]: ServerPacket.SetPlayerVisual;
     [ServerPacket.UpdateItemLocks]: ServerPacket.UpdateItemLocks;
+    [ServerPacket.SelectItemResult]: ServerPacket.SelectItemResult;
 };
 
 /** ID → payload map for client packets. */
@@ -581,6 +589,9 @@ export const ServerSchema: {
     [ServerPacket.SetWorldSize]: { fields: ["worldTiles"] },
     [ServerPacket.SetPlayerVisual]: { fields: ["id", "ghosted"] },
     [ServerPacket.UpdateItemLocks]: { fields: ["locks"] },
+    [ServerPacket.SelectItemResult]: {
+        fields: ["requested", "selected", "accepted"],
+    },
 };
 
 export const ClientSchema: {

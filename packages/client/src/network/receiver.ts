@@ -20,6 +20,12 @@ export const receiver = new ClientPacketReceiver(
 /** Effective sourced flags for the local player (crafting + gameplay). */
 let playerFlags: number[] = [];
 
+export function resetGUIReceiverState(ui: UI): void {
+    playerFlags = [];
+    ui.inventory.updateLocks([]);
+    ui.inventory.setEquipment(-1, -1, -1);
+}
+
 function refreshCraftingMenu(ui: UI): void {
     ui.craftingMenu.items = ui.recipeManager.filter(
         ui.inventory.items,
@@ -143,6 +149,9 @@ export function setupGUIPacketReceiving(
     });
     receiver.on(ServerPacket.UpdateItemLocks, ({ locks }) => {
         ui.inventory.updateLocks(locks);
+    });
+    receiver.on(ServerPacket.SelectItemResult, ({ selected }) => {
+        ui.inventory.reconcileSelection(selected);
     });
     receiver.on(ServerPacket.UpdateFlags, ({ flags }) => {
         playerFlags = [...flags];

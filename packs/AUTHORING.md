@@ -107,31 +107,36 @@ whenEquipped:
 
 ### Equip events (`onEquip` / `onUnequip`)
 
-Fire once when the item is equipped or unequipped (not while held). Event types:
+Fire once when the item is equipped or unequipped (not while held). Like
+`whenEquipped`, each entry is keyed by a target selector. Commands run as the
+matched target; item locks apply only to matched players.
 
 ```yaml
 onEquip:
-  commands:
-    - "give @s bundu:iridium 1"
-  lockItem:
-    items: [#bundu:swords]            # and/or slots (not neither)
-    slots: [mainhand, offhand, helmet]
-    lock: [equip, unequip, use, drop, craft]
-    for: 5000
+  "@s":
+    commands:
+      - "give @s bundu:iridium 1"
+    lockItem:
+      id: sword-swap-delay               # optional stable id
+      items: ["#bundu:swords"]          # and/or slots (not neither)
+      slots: [mainhand, offhand, helmet]
+      lock: [equip, unequip, use, drop, craft]
+      for: 5000
 onUnequip:
-  unlockItem:
-    items: [#bundu:swords]
+  "@s":
+    unlockItem:
+      id: sword-swap-delay
 ```
 
 | Event | Fields | Meaning |
 |---|---|---|
 | `commands` | string[] | Run slash commands as the wearer (leading `/` optional) |
-| `lockItem` | `items?`, `slots?`, `lock`, `for?` | Supply **`items` and/or `slots`** (not neither). `items` = item ids / `#tag`s; `slots` = `mainhand` \| `offhand` \| `helmet`. `lock` is `equip` \| `unequip` \| `use` \| `drop` \| `craft`. `for` is duration in ms (omit = until `unlockItem`). |
-| `unlockItem` | `items?`, `slots?` | Same items/slots rule — clear matching locks |
+| `lockItem` | `id?`, `items?`, `slots?`, `lock`, `for?` | Supply **`items` and/or `slots`** (not neither). `items` = item ids / `#tag`s; `slots` = `mainhand` \| `offhand` \| `helmet`. `drop` and `craft` require `items`; slots apply only to `equip`, `unequip`, and `use`. `for` is duration in ms (omit = until `unlockItem`). |
+| `unlockItem` | `id?`, `items?`, `slots?` | Prefer an authored `id` to clear exactly that lock source. Without `id`, supply items and/or slots to clear matching locks. |
 
 Lock icons appear as a full wipe while a restriction actively applies (e.g. `unequip` only after equipped). `equip` while already equipped (and `unequip` while unequipped) does not show a lock. Otherwise a small corner badge marks inactive locked actions (`use` / `craft`). Hover tooltips list what can't be done (and remaining time). Denied `use` / `craft` flashes the lock on the slot and above the player name (with a circular remaining-time gauge). `craft` blocks recipes that **consume** a craft-locked ingredient (not recipes that merely produce a locked item type). Locked recipes show the wipe on the crafting button. `lockItem` / `unlockItem` may be a single object or an array.
 
-Overlapping locks on the same items+slots coalesce (flags combine, timer keeps the later expiry). Overlaps across different scopes still all apply; the UI gauge uses the latest expiry among matches.
+Repeated locks with the same items, slots, actions, and duration refresh to the later expiry. Independent actions and durations remain independent; the UI gauge uses the latest expiry among matches.
 
 ### Display (item models)
 

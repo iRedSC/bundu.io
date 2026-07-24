@@ -47,6 +47,79 @@ export type EffectTargetMatch = {
     clauses: readonly ResolvedMatchClause[];
 };
 
+/** Parse one selector/filter/type key shared by effect-like config blocks. */
+export function parseEffectTargetMatch(
+    key: string,
+    path: string,
+    registries: GameRegistries,
+    ownerId: string
+): EffectTargetMatch {
+    if (key === "*") {
+        return { all: true, types: new Set(), clauses: [] };
+    }
+    if (key.startsWith("@")) {
+        const parsed = parseSelector(key);
+        if (!parsed.ok) throw new Error(`${path}: ${parsed.message}`);
+        for (const clause of parsed.value.clauses) {
+            if (clause.key === "limit" || clause.key === "sort") {
+                throw new Error(
+                    `${path}: ${clause.key} is not valid in effect target selectors`
+                );
+            }
+        }
+        registerFilterFlags(
+            parsed.value.clauses.map((clause) =>
+                clause.key === "flag"
+                    ? { key: "flag", value: clause.value }
+                    : { key: clause.key }
+            ),
+            path
+        );
+        return {
+            all: false,
+            base: parsed.value.base,
+            types: new Set(),
+            clauses: resolveEntityFilterClauses(
+                parsed.value.clauses,
+                ownerId,
+                path
+            ),
+        };
+    }
+    if (isEntityFilterKey(key)) {
+        const parsed = parseEntityFilter(key);
+        if (!parsed.ok) throw new Error(`${path}: ${parsed.message}`);
+        registerFilterFlags(
+            parsed.value.clauses.map((clause) =>
+                clause.key === "flag"
+                    ? { key: "flag", value: clause.value }
+                    : { key: clause.key }
+            ),
+            path
+        );
+        return {
+            all: false,
+            types: new Set(),
+            clauses: resolveEntityFilterClauses(
+                parsed.value.clauses,
+                ownerId,
+                path
+            ),
+        };
+    }
+    return {
+        all: false,
+        types: new Set(
+            registries.entity_type.resolveSet(
+                [key],
+                namespace(ownerId),
+                path
+            )
+        ),
+        clauses: [],
+    };
+}
+
 /**
  * One target selector entry after load.
  * - `*` → `all`
@@ -261,85 +334,13 @@ export function parseEffectContext(
     for (const [key, value] of Object.entries(obj)) {
         if (RESERVED.has(key)) continue;
         const payload = parsePayload(value, `${path}.${key}`, ownerId);
-        if (key === "*") {
-            targets.push({
-                all: true,
-                types: new Set(),
-                clauses: [],
-                effects: payload,
-            });
-            continue;
-        }
-        if (key.startsWith("@")) {
-            const parsed = parseSelector(key);
-            if (!parsed.ok) {
-                throw new Error(`${path}.${key}: ${parsed.message}`);
-            }
-            for (const clause of parsed.value.clauses) {
-                if (clause.key === "limit" || clause.key === "sort") {
-                    throw new Error(
-                        `${path}.${key}: ${clause.key} is not valid in effect target selectors`
-                    );
-                }
-            }
-            registerFilterFlags(
-                parsed.value.clauses.map((clause) =>
-                    clause.key === "flag"
-                        ? { key: "flag", value: clause.value }
-                        : { key: clause.key }
-                ),
-                `${path}.${key}`
-            );
-            const clauses = resolveEntityFilterClauses(
-                parsed.value.clauses,
-                ownerId,
-                `${path}.${key}`
-            );
-            targets.push({
-                all: false,
-                base: parsed.value.base,
-                types: new Set(),
-                clauses,
-                effects: payload,
-            });
-            continue;
-        }
-        if (isEntityFilterKey(key)) {
-            const parsed = parseEntityFilter(key);
-            if (!parsed.ok) {
-                throw new Error(`${path}.${key}: ${parsed.message}`);
-            }
-            // Register flag names so filters can mention flags before payloads do.
-            registerFilterFlags(
-                parsed.value.clauses.map((clause) =>
-                    clause.key === "flag"
-                        ? { key: "flag", value: clause.value }
-                        : { key: clause.key }
-                ),
-                `${path}.${key}`
-            );
-            const clauses = resolveEntityFilterClauses(
-                parsed.value.clauses,
-                ownerId,
-                `${path}.${key}`
-            );
-            targets.push({
-                all: false,
-                types: new Set(),
-                clauses,
-                effects: payload,
-            });
-            continue;
-        }
-        const ids = registries.entity_type.resolveSet(
-            [key],
-            namespace(ownerId),
-            `${path}.${key}`
-        );
         targets.push({
-            all: false,
-            types: new Set(ids),
-            clauses: [],
+            ...parseEffectTargetMatch(
+                key,
+                `${path}.${key}`,
+                registries,
+                ownerId
+            ),
             effects: payload,
         });
     }

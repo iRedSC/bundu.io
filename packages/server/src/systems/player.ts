@@ -53,9 +53,10 @@ import {
     clearPlayerItemLocks,
     emitItemLocks,
     inventoryHasLockedIngredient,
-    isActionLocked,
+    isItemLocked,
     pruneExpiredLocks,
 } from "../network/item_locks.js";
+import { equippedLockRequest } from "../components/item_locks.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { groundWire } from "./ground_wire.js";
 import { decorationWire } from "./decoration_wire.js";
@@ -165,7 +166,13 @@ export class PlayerSystem extends System<GameEventMap> {
         }
 
         if (data.attacking && data.lastAttackTime && !data.blocking && !data.crafting) {
-            if (isActionLocked(player, data.mainHand, "use", time, "mainhand")) {
+            if (
+                isItemLocked(
+                    player,
+                    equippedLockRequest("use", data.mainHand, "mainhand"),
+                    time
+                )
+            ) {
                 data.attacking = false;
             } else if (
                 data.lastAttackTime <
@@ -339,7 +346,7 @@ export class PlayerSystem extends System<GameEventMap> {
 
         const data = PlayerData.get(target);
         if (data) data.sessionId = undefined;
-        clearPlayerItemLocks(target.id);
+        clearPlayerItemLocks(target);
         clearAnimalsFrozenFor(target.id);
         clearEditorHistory(target.id);
         this.freecamGhostSystem?.despawnFor(target.id);
@@ -495,7 +502,13 @@ export class PlayerSystem extends System<GameEventMap> {
         const attributes = Attributes.get(player);
         const config = ItemConfigs.get(itemId);
         if (!data || !attributes || data.eating || config.type !== "food") return;
-        if (isActionLocked(player, itemId, "use", this.world.gameTime, "offhand"))
+        if (
+            isItemLocked(
+                player,
+                { action: "use", itemId, slot: "offhand" },
+                this.world.gameTime
+            )
+        )
             return;
 
         data.attacking = false;
@@ -663,12 +676,10 @@ export class PlayerSystem extends System<GameEventMap> {
         }
         if (
             !stop &&
-            isActionLocked(
+            isItemLocked(
                 player,
-                data.mainHand,
-                "use",
-                this.world.gameTime,
-                "mainhand"
+                equippedLockRequest("use", data.mainHand, "mainhand"),
+                this.world.gameTime
             )
         ) {
             data.attacking = false;
@@ -703,26 +714,20 @@ export class PlayerSystem extends System<GameEventMap> {
         }
         if (
             !stop &&
-            (isActionLocked(
+            (isItemLocked(
                 player,
-                data.mainHand,
-                "use",
-                this.world.gameTime,
-                "mainhand"
+                equippedLockRequest("use", data.mainHand, "mainhand"),
+                this.world.gameTime
             ) ||
-                isActionLocked(
+                isItemLocked(
                     player,
-                    data.offHand,
-                    "use",
-                    this.world.gameTime,
-                    "offhand"
+                    equippedLockRequest("use", data.offHand, "offhand"),
+                    this.world.gameTime
                 ) ||
-                isActionLocked(
+                isItemLocked(
                     player,
-                    data.helmet,
-                    "use",
-                    this.world.gameTime,
-                    "helmet"
+                    equippedLockRequest("use", data.helmet, "helmet"),
+                    this.world.gameTime
                 ))
         ) {
             return;
@@ -755,20 +760,35 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
-        if (!data?.clientReady || data.crafting) return;
-        this.clearEating(player);
         const inv = Inventory.get(player);
-        if (!inv || slot < 0 || slot >= inv.slots.length) return;
+        if (!data?.clientReady || !inv) return;
+        const respond = (accepted: boolean) => {
+            this.world.context.playerPacketManager.set(
+                player.id,
+                ServerPacket.SelectItemResult,
+                { requested: slot, selected: inv.selected, accepted }
+            );
+        };
+        if (data.crafting || slot < 0 || slot >= inv.slots.length) {
+            respond(false);
+            return;
+        }
+        this.clearEating(player);
 
-        inv.selected = slot;
-        selectEquipment(
+        const accepted = selectEquipment(
             player,
             inv.slots[slot]?.id,
             this.equipCtx()
         );
+        if (!accepted) {
+            respond(false);
+            return;
+        }
+        inv.selected = slot;
         this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         emitEquipment(player, this.world.context.worldPacketManager);
+        respond(true);
     };
 
     moveSlot = (playerId: number, { from, to }: ClientPacket.MoveSlot) => {
@@ -787,10 +807,9 @@ export class PlayerSystem extends System<GameEventMap> {
                 : undefined;
         if (
             dropped &&
-            isActionLocked(
+            isItemLocked(
                 player,
-                dropped.id,
-                "drop",
+                { action: "drop", itemId: dropped.id },
                 this.world.gameTime
             )
         ) {
@@ -843,7 +862,11 @@ export class PlayerSystem extends System<GameEventMap> {
         if (
             itemId !== undefined &&
             amount > 0 &&
-            isActionLocked(player, itemId, "drop", this.world.gameTime)
+            isItemLocked(
+                player,
+                { action: "drop", itemId },
+                this.world.gameTime
+            )
         ) {
             return;
         }
@@ -866,12 +889,10 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = PlayerData.get(player);
         if (
             data &&
-            isActionLocked(
+            isItemLocked(
                 player,
-                data.mainHand,
-                "use",
-                this.world.gameTime,
-                "mainhand"
+                equippedLockRequest("use", data.mainHand, "mainhand"),
+                this.world.gameTime
             )
         ) {
             return;

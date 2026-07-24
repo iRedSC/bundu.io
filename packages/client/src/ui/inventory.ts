@@ -114,7 +114,7 @@ const inventoryGrid = new Grid(
     1
 );
 
-type SelectCB = (slot: number) => void;
+type SelectCB = (slot: number) => boolean;
 type MoveCB = (from: number, to: number) => void;
 type CursorCB = (slot: number, mode: PlaceModeType) => void;
 type WorldDropCB = (
@@ -446,8 +446,9 @@ export class Inventory {
                             }
                             this.syncGhostToCursor();
                         }
-                        this.selectedSlot = from;
-                        this.onSelect?.(from);
+                        if (this.onSelect?.(from) !== false) {
+                            this.selectedSlot = from;
+                        }
                     } else if (
                         this.hoverSlot === null &&
                         this.isVoidTarget?.(ev.clientX, ev.clientY)
@@ -465,8 +466,9 @@ export class Inventory {
                         }
                     }
                 } else {
-                    this.selectedSlot = this.dragFrom;
-                    this.onSelect?.(this.dragFrom);
+                    if (this.onSelect?.(this.dragFrom) !== false) {
+                        this.selectedSlot = this.dragFrom;
+                    }
                 }
                 this.clearDrag();
             }
@@ -1066,6 +1068,15 @@ export class Inventory {
         for (const [i, button] of this.buttons.entries()) {
             this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
         }
+        if (this.cursor) {
+            this.applyLockVisual(this.ghost, this.cursor[0]);
+        }
+        this.onLocksChanged?.();
+    }
+
+    reconcileSelection(selected: number): void {
+        if (selected < 0 || selected >= this.buttons.length) return;
+        this.selectedSlot = selected;
     }
 
     getLock(

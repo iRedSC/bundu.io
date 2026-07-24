@@ -20,10 +20,13 @@ import {
 import { subjectMatchesTarget } from "../systems/effect_targets.js";
 import { syncFlags } from "./flags.js";
 import {
+    applyResolvedEquipEvents,
     emitItemLocks,
-    isActionLocked,
-    runEquipEvents,
+    isItemLocked,
+    resolveEquipEvents,
+    runResolvedEquipCommands,
     type EquipEventContext,
+    type ResolvedEquipEvent,
 } from "./item_locks.js";
 
 type EquipSlot = "mainHand" | "offHand" | "helmet";
@@ -55,14 +58,26 @@ export function equipContext(
 }
 
 function equipEventCtx(
-    target: GameObject,
     ctx: SelectEquipmentContext
 ): EquipEventContext {
     return {
         world: ctx.world,
         now: ctx.world.gameTime,
-        runCommand: (line) => ctx.runCommand?.(target, line),
+        runCommand: (target, line) => ctx.runCommand?.(target, line),
     };
+}
+
+function commitEquipEvents(
+    resolved: readonly ResolvedEquipEvent[],
+    ctx: SelectEquipmentContext
+): void {
+    for (const target of applyResolvedEquipEvents(
+        resolved,
+        ctx.world.gameTime
+    )) {
+        emitItemLocks(target, ctx.world.gameTime, ctx.playerPacketManager);
+    }
+    runResolvedEquipCommands(resolved, equipEventCtx(ctx).runCommand);
 }
 
 /** Unlock backpack state and grow inventory by one hotbar row. */
@@ -137,21 +152,19 @@ function clearSlot(
     ctx?: SelectEquipmentContext
 ) {
     const previous = data[slot];
+    const resolved =
+        previous !== undefined && ctx
+            ? resolveEquipEvents(
+                  target,
+                  ItemConfigs.get(previous).onUnequip,
+                  ctx.world
+              )
+            : [];
     data[slot] = undefined;
     clearContextSource(target, SLOT_SOURCE[slot]);
     if (ctx?.playerPacketManager) syncFlags(target, ctx.playerPacketManager);
 
-    if (previous !== undefined && ctx) {
-        const events = ItemConfigs.get(previous).onUnequip;
-        const locksChanged = runEquipEvents(
-            target,
-            events,
-            equipEventCtx(target, ctx)
-        );
-        if (locksChanged) {
-            emitItemLocks(target, ctx.world.gameTime, ctx.playerPacketManager);
-        }
-    }
+    if (ctx) commitEquipEvents(resolved, ctx);
 }
 
 /** Clear mainhand when it holds `itemId` (e.g. structure stack depleted). */
@@ -173,18 +186,14 @@ function setSlot(
     ctx?: SelectEquipmentContext
 ) {
     const previous = data[slot];
-    if (previous !== undefined && previous !== itemId && ctx) {
-        // Replacing another item counts as unequipping it first.
-        const unequip = ItemConfigs.get(previous).onUnequip;
-        const locksChanged = runEquipEvents(
-            target,
-            unequip,
-            equipEventCtx(target, ctx)
-        );
-        if (locksChanged) {
-            emitItemLocks(target, ctx.world.gameTime, ctx.playerPacketManager);
-        }
-    }
+    const unequipEvents =
+        previous !== undefined && previous !== itemId && ctx
+            ? resolveEquipEvents(
+                  target,
+                  ItemConfigs.get(previous).onUnequip,
+                  ctx.world
+              )
+            : [];
 
     data[slot] = itemId;
     const config = ItemConfigs.get(itemId);
@@ -206,14 +215,12 @@ function setSlot(
     }
 
     if (ctx && previous !== itemId) {
-        const locksChanged = runEquipEvents(
+        const equipEvents = resolveEquipEvents(
             target,
             config.onEquip,
-            equipEventCtx(target, ctx)
+            ctx.world
         );
-        if (locksChanged) {
-            emitItemLocks(target, ctx.world.gameTime, ctx.playerPacketManager);
-        }
+        commitEquipEvents([...unequipEvents, ...equipEvents], ctx);
     }
 }
 
@@ -234,27 +241,48 @@ function toggleSlot(
     slot: EquipSlot,
     itemId: number,
     ctx?: SelectEquipmentContext
-) {
+): boolean {
     const now = ctx?.world.gameTime ?? 0;
     const lockSlot = equipSlotToLockSlot(slot);
     // Same item → toggle unequip.
     if (data[slot] === itemId) {
-        if (ctx && isActionLocked(target, itemId, "unequip", now, lockSlot))
-            return;
+        if (
+            ctx &&
+            isItemLocked(
+                target,
+                { action: "unequip", itemId, slot: lockSlot },
+                now
+            )
+        )
+            return false;
         clearSlot(target, data, slot, ctx);
-        return;
+        return true;
     }
     // Different item: must be able to unequip what's in the slot first.
     const current = data[slot];
     if (
         ctx &&
         current !== undefined &&
-        isActionLocked(target, current, "unequip", now, lockSlot)
+        isItemLocked(
+            target,
+            { action: "unequip", itemId: current, slot: lockSlot },
+            now
+        )
     ) {
-        return;
+        return false;
     }
-    if (ctx && isActionLocked(target, itemId, "equip", now, lockSlot)) return;
+    if (
+        ctx &&
+        isItemLocked(
+            target,
+            { action: "equip", itemId, slot: lockSlot },
+            now
+        )
+    ) {
+        return false;
+    }
     setSlot(target, data, slot, itemId, ctx);
+    return true;
 }
 
 /**
@@ -265,30 +293,26 @@ export function selectEquipment(
     target: GameObject,
     itemId: number | undefined,
     ctx?: SelectEquipmentContext
-) {
-    if (itemId === undefined) return;
+): boolean {
+    if (itemId === undefined) return true;
 
     const data = PlayerData.get(target);
-    if (!data) return;
+    if (!data) return false;
 
     const config = ItemConfigs.get(itemId);
-    if (!config.function) return;
+    if (!config.function) return true;
 
     switch (config.function) {
         case "wear":
-            toggleSlot(target, data, "helmet", itemId, ctx);
-            break;
+            return toggleSlot(target, data, "helmet", itemId, ctx);
         case "main_hand":
-            toggleSlot(target, data, "mainHand", itemId, ctx);
-            break;
+            return toggleSlot(target, data, "mainHand", itemId, ctx);
         case "off_hand":
-            toggleSlot(target, data, "offHand", itemId, ctx);
-            break;
+            return toggleSlot(target, data, "offHand", itemId, ctx);
         case "building":
-            toggleSlot(target, data, "mainHand", itemId, ctx);
-            break;
+            return toggleSlot(target, data, "mainHand", itemId, ctx);
         default:
-            break;
+            return true;
     }
 }
 

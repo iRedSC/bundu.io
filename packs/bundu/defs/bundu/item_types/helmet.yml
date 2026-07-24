@@ -9,11 +9,13 @@ displays:
 ---
 function: "wear"
 onEquip:
-    lockItem:
-        items: [bundu:wood]
-        slots: [helmet]
-        lock: [equip, unequip, craft]
+    "@s":
+        lockItem:
+            items: [bundu:wood]
+            slots: [helmet]
+            lock: [equip, unequip, craft]
 onUnequip:
-    unlockItem:
-        items: [bundu:wood]
-        slots: [helmet]
+    "@s":
+        unlockItem:
+            items: [bundu:wood]
+            slots: [helmet]
