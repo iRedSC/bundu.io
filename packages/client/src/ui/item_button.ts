@@ -142,7 +142,7 @@ const LOCK_BADGE_INSET = 3;
 const LOCK_WIPE_RADIUS = ITEM_BUTTON_SIZE * 1.25;
 
 function formatActionList(actions: readonly LockAction[]): string {
-    if (actions.length === 1) return actions[0]!;
+    if (actions.length === 1) return actions[0] ?? "";
     if (actions.length === 2) return `${actions[0]} or ${actions[1]}`;
     return `${actions.slice(0, -1).join(", ")}, or ${actions[actions.length - 1]}`;
 }

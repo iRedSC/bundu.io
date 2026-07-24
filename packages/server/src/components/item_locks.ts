@@ -33,12 +33,10 @@ export type ItemLockRequest =
 
 export type ItemLockState = {
     rules: Map<string, ItemLockRule>;
-    revision: number;
 };
 
 export const ItemLocks = Component.register<ItemLockState>(() => ({
     rules: new Map(),
-    revision: 0,
 }));
 
 export function isEquippedLockAction(

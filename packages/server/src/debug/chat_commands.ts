@@ -63,12 +63,6 @@ type ExecHelpers = {
     onGodmode?: (player: GameObject) => boolean;
 };
 
-/** Helpers for pack-authored command strings (onEquip / onUnequip). */
-export type AuthoredCommandHelpers = Pick<
-    ExecHelpers,
-    "world" | "onKill" | "now" | "onSetTime" | "onFreecam" | "onCreative" | "onGodmode"
->;
-
 type ServerCommand = CommandProjection & {
     run: (
         player: GameObject,
@@ -385,27 +379,4 @@ export function tryHandleDebugChatCommand(
             error instanceof Error ? error.message : "Command failed";
         return { handled: true, ok: false, message: text };
     }
-}
-
-/**
- * Run a pack-authored command string (with or without leading `/`).
- * Bypasses op checks — authored content is trusted.
- */
-export function runAuthoredCommand(
-    player: GameObject,
-    commandLine: string,
-    helpers: AuthoredCommandHelpers
-): void {
-    const trimmed = commandLine.trim();
-    const message = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-    const registry = buildCommandRegistry();
-    const parsed = parseCommand(message, registry);
-    if (!parsed.ok) {
-        throw new Error(`authored command: ${parsed.message}`);
-    }
-    const command = COMMANDS.find((entry) => entry.name === parsed.name);
-    if (!command) {
-        throw new Error(`authored command: unknown /${parsed.name}`);
-    }
-    command.run(player, parsed.args, helpers);
 }

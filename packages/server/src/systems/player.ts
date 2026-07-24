@@ -64,9 +64,7 @@ import {
     effectiveOpLevel,
     emitCommandRegistry,
     emitCommandResult,
-    runAuthoredCommand,
     tryHandleDebugChatCommand,
-    type AuthoredCommandHelpers,
 } from "../debug/chat_commands.js";
 import { CHEAT_PHRASE } from "../debug/flag.js";
 import { clearEditorHistory } from "../admin/history.js";
@@ -116,28 +114,8 @@ export class PlayerSystem extends System<GameEventMap> {
         this.creativeModeSystem = system;
     }
 
-    private commandHelpers(): AuthoredCommandHelpers {
-        return {
-            world: this.world,
-            onKill: (target) => {
-                this.trigger(GameEvent.Kill, { object: target });
-            },
-            now: this.world.gameTime,
-            onSetTime: undefined,
-            onFreecam: (target) => this.toggleFreecam(target),
-            onCreative: (target) =>
-                this.creativeModeSystem?.toggleCreative(target),
-            onGodmode: (target) =>
-                this.creativeModeSystem?.toggleGodmode(target) ?? false,
-        };
-    }
-
     private equipCtx() {
-        return equipContext(this.world, {
-            runCommand: (player, line) => {
-                runAuthoredCommand(player, line, this.commandHelpers());
-            },
-        });
+        return equipContext(this.world);
     }
 
     override update(time: number, _delta: number, player: GameObject): void {
@@ -152,6 +130,46 @@ export class PlayerSystem extends System<GameEventMap> {
                 player,
                 time,
                 this.world.context.playerPacketManager
+            );
+        }
+
+        if (
+            data.eating &&
+            isItemLocked(
+                player,
+                {
+                    action: "use",
+                    itemId: data.eating.itemId,
+                    slot: "offhand",
+                },
+                time
+            )
+        ) {
+            this.clearEating(player);
+        }
+        if (
+            data.blocking &&
+            (isItemLocked(
+                player,
+                equippedLockRequest("use", data.mainHand, "mainhand"),
+                time
+            ) ||
+                isItemLocked(
+                    player,
+                    equippedLockRequest("use", data.offHand, "offhand"),
+                    time
+                ) ||
+                isItemLocked(
+                    player,
+                    equippedLockRequest("use", data.helmet, "helmet"),
+                    time
+                ))
+        ) {
+            data.blocking = false;
+            Attributes.get(player)?.clear("blocking");
+            this.world.context.worldPacketManager.emit(
+                ServerPacket.BlockEvent,
+                { id: player.id, stop: true }
             );
         }
 

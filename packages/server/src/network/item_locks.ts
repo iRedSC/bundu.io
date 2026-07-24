@@ -24,7 +24,6 @@ export function clearPlayerItemLocks(player: GameObject): void {
     const state = ItemLocks.get(player);
     if (state.rules.size === 0) return;
     state.rules.clear();
-    state.revision++;
 }
 
 export function findLock(
@@ -102,7 +101,6 @@ export function applyLockItem(
             }
         }
     }
-    state.revision++;
     return true;
 }
 
@@ -124,15 +122,13 @@ export function applyUnlockItem(
             action.items === null ||
             (rule.itemId !== null && action.items.has(rule.itemId));
         const slotMatches =
-            action.slotFlags === undefined ||
-            ("slot" in rule &&
-                (lockSlotsToFlags([rule.slot]) & action.slotFlags) !== 0);
+            action.slots === undefined ||
+            ("slot" in rule && action.slots.includes(rule.slot));
         if (itemMatches && slotMatches) {
             state.rules.delete(key);
             changed = true;
         }
     }
-    if (changed) state.revision++;
     return changed;
 }
 
@@ -145,7 +141,6 @@ export function pruneExpiredLocks(player: GameObject, now: number): boolean {
         state.rules.delete(key);
         changed = true;
     }
-    if (changed) state.revision++;
     return changed;
 }
 
@@ -172,28 +167,42 @@ export function emitItemLocks(
     playerPacketManager.set(player.id, ServerPacket.UpdateItemLocks, { locks });
 }
 
-export type EquipEventContext = {
-    world: World;
-    now: number;
-    runCommand: (target: GameObject, commandLine: string) => void;
-};
-
 export type ResolvedEquipEvent = {
     target: GameObject,
     events: EquipEventTarget,
+    executorId: number,
 };
 
 function applyTargetEvents(
-    { target, events }: ResolvedEquipEvent,
+    { target, events, executorId }: ResolvedEquipEvent,
     now: number
 ): boolean {
     let locksChanged = false;
     if (PlayerData.get(target)) {
         for (const action of events.lockItems) {
-            if (applyLockItem(target, action, now)) locksChanged = true;
+            if (
+                applyLockItem(target, {
+                    ...action,
+                    source: `${executorId}:${action.source}`,
+                }, now)
+            ) {
+                locksChanged = true;
+            }
         }
         for (const action of events.unlockItems) {
-            if (applyUnlockItem(target, action)) locksChanged = true;
+            if (
+                applyUnlockItem(
+                    target,
+                    action.source === undefined
+                        ? action
+                        : {
+                              ...action,
+                              source: `${executorId}:${action.source}`,
+                          }
+                )
+            ) {
+                locksChanged = true;
+            }
         }
     }
     return locksChanged;
@@ -220,7 +229,7 @@ export function resolveEquipEvents(
             ) {
                 continue;
             }
-            resolved.push({ target, events: event });
+            resolved.push({ target, events: event, executorId: executor.id });
         }
     }
     return resolved;
@@ -238,18 +247,6 @@ export function applyResolvedEquipEvents(
         }
     }
     return [...changed.values()];
-}
-
-/** Run commands only after the complete equipment transaction commits. */
-export function runResolvedEquipCommands(
-    resolved: readonly ResolvedEquipEvent[],
-    runCommand: EquipEventContext["runCommand"]
-): void {
-    for (const { target, events } of resolved) {
-        for (const line of events.commands) {
-            runCommand(target, line);
-        }
-    }
 }
 
 /** True if any recipe ingredient has an active `craft` lock. */

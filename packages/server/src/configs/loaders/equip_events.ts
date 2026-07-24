@@ -2,9 +2,6 @@ import type { RegistryId } from "@bundu/shared/registry";
 import {
     isLockAction,
     isLockSlot,
-    lockActionsToFlags,
-    lockSlotsToFlags,
-    LOCK_SLOTS_ALL,
     type LockAction,
     type LockSlot,
 } from "@bundu/shared/item_lock";
@@ -24,15 +21,11 @@ export type LockItemAction = {
     items: ReadonlySet<RegistryId<"item">> | null;
     /** Restricted actions for these items/slots. */
     lock: readonly LockAction[];
-    /** Bitmask of {@link lock} for wire / runtime checks. */
-    flags: number;
     /**
      * Equipment slots this lock applies to.
-     * When `slots` is omitted in YAML, all slots (`LOCK_SLOTS_ALL`).
+     * When `slots` is omitted in YAML, all equipment slots.
      */
     slots: readonly LockSlot[];
-    /** Bitmask of {@link slots}. */
-    slotFlags: number;
     /** Lock duration in ms. `undefined` = until unlockItem. */
     forMs?: number;
 };
@@ -44,11 +37,9 @@ export type UnlockItemAction = {
     items: ReadonlySet<RegistryId<"item">> | null;
     /** When set, only clear locks that overlap these slots. */
     slots?: readonly LockSlot[];
-    slotFlags?: number;
 };
 
 export type EquipEventTarget = EffectTargetMatch & {
-    commands: readonly string[];
     lockItems: readonly LockItemAction[];
     unlockItems: readonly UnlockItemAction[];
 };
@@ -58,7 +49,6 @@ export type EquipEvents = {
     targets: readonly EquipEventTarget[];
 };
 
-const EMPTY_EVENTS: EquipEvents = { targets: [] };
 const ALL_SLOTS: readonly LockSlot[] = ["mainhand", "offhand", "helmet"];
 
 function namespace(id: string): string {
@@ -218,9 +208,7 @@ function parseLockItem(
         source,
         items,
         lock,
-        flags: lockActionsToFlags(lock),
         slots,
-        slotFlags: hasSlots ? lockSlotsToFlags(slots) : LOCK_SLOTS_ALL,
         forMs,
     };
 }
@@ -250,7 +238,7 @@ function parseUnlockItem(
         return { source, items };
     }
     const slots = parseSlots(obj.slots, `${path}.slots`);
-    return { source, items, slots, slotFlags: lockSlotsToFlags(slots) };
+    return { source, items, slots };
 }
 
 function parseLockItems(
@@ -283,25 +271,11 @@ function parseUnlockItems(
     return [parseUnlockItem(raw, path, registries, ownerId)];
 }
 
-function parseCommands(raw: unknown, path: string): string[] {
-    if (raw === undefined) return [];
-    if (!Array.isArray(raw) || raw.some((entry) => typeof entry !== "string")) {
-        throw new Error(`${path}: expected string[]`);
-    }
-    return (raw as string[]).map((line, i) => {
-        const trimmed = line.trim();
-        if (!trimmed) throw new Error(`${path}[${i}]: empty command`);
-        return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-    });
-}
-
 /**
  * Parse an onEquip / onUnequip block:
  * ```
  * onEquip:
  *   "@s":
- *     commands:
- *       - "give @s bundu:iridium 1"
  *     lockItem:
  *       items: ["#bundu:swords"]      # and/or slots (not neither)
  *       slots: [mainhand, offhand, helmet]
@@ -324,11 +298,7 @@ export function parseEquipEvents(
         const eventObj = asObject(rawEvents);
         if (!eventObj) throw new Error(`${targetPath}: expected object`);
         for (const key of Object.keys(eventObj)) {
-            if (
-                key !== "commands" &&
-                key !== "lockItem" &&
-                key !== "unlockItem"
-            ) {
+            if (key !== "lockItem" && key !== "unlockItem") {
                 throw new Error(`${targetPath}.${key}: unknown key`);
             }
         }
@@ -338,10 +308,6 @@ export function parseEquipEvents(
                 targetPath,
                 registries,
                 ownerId
-            ),
-            commands: parseCommands(
-                eventObj.commands,
-                `${targetPath}.commands`
             ),
             lockItems: parseLockItems(
                 eventObj.lockItem,
@@ -357,7 +323,6 @@ export function parseEquipEvents(
             ),
         };
         if (
-            target.commands.length > 0 ||
             target.lockItems.length > 0 ||
             target.unlockItems.length > 0
         ) {
@@ -383,16 +348,3 @@ export function mergeEquipEvents(
     }
     return undefined;
 }
-
-export function emptyEquipEvents(): EquipEvents {
-    return EMPTY_EVENTS;
-}
-
-export function equipEventsAreEmpty(
-    events: EquipEvents | undefined
-): boolean {
-    if (!events) return true;
-    return events.targets.length === 0;
-}
-
-export { LOCK_SLOTS_ALL };

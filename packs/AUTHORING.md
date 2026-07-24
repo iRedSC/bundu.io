@@ -60,7 +60,7 @@ shared models
 | `eat_duration_ms` | `1000` | Eat channel length |
 | `places` | — | Structure id this item places |
 | `whenEquipped` | — | Effect context while equipped (slot from `function`) |
-| `onEquip` / `onUnequip` | — | One-shot events (`commands`, `lockItem`, `unlockItem`) |
+| `onEquip` / `onUnequip` | — | One-shot item lock events (`lockItem`, `unlockItem`) |
 
 Author `type: bundu:food` (namespaced); runtime stores the bare path (`food`) for
 eat/harvest checks.
@@ -108,14 +108,12 @@ whenEquipped:
 ### Equip events (`onEquip` / `onUnequip`)
 
 Fire once when the item is equipped or unequipped (not while held). Like
-`whenEquipped`, each entry is keyed by a target selector. Commands run as the
-matched target; item locks apply only to matched players.
+`whenEquipped`, each entry is keyed by a target selector. Item locks apply only
+to matched players.
 
 ```yaml
 onEquip:
   "@s":
-    commands:
-      - "give @s bundu:iridium 1"
     lockItem:
       id: sword-swap-delay               # optional stable id
       items: ["#bundu:swords"]          # and/or slots (not neither)
@@ -130,7 +128,6 @@ onUnequip:
 
 | Event | Fields | Meaning |
 |---|---|---|
-| `commands` | string[] | Run slash commands as the wearer (leading `/` optional) |
 | `lockItem` | `id?`, `items?`, `slots?`, `lock`, `for?` | Supply **`items` and/or `slots`** (not neither). `items` = item ids / `#tag`s; `slots` = `mainhand` \| `offhand` \| `helmet`. `drop` and `craft` require `items`; slots apply only to `equip`, `unequip`, and `use`. `for` is duration in ms (omit = until `unlockItem`). |
 | `unlockItem` | `id?`, `items?`, `slots?` | Prefer an authored `id` to clear exactly that lock source. Without `id`, supply items and/or slots to clear matching locks. |
 

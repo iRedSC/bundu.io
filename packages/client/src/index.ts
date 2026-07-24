@@ -681,9 +681,9 @@ async function main() {
     };
     gui.inventory.onSelect = (slot) => {
         const itemId = gui.inventory.slots[slot]?.[0];
-        if (gui.inventory.notifySelectDenied(itemId)) return false;
+        const predictedDenied = gui.inventory.notifySelectDenied(itemId);
         session.sendPacket(ClientPacket.SelectItem, { slot });
-        return true;
+        return !predictedDenied;
     };
     gui.inventory.creativeReplace = () => creative.isActive();
     gui.inventory.isVoidTarget = (screenX, screenY) =>

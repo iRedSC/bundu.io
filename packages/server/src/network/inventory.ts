@@ -24,8 +24,6 @@ import {
     emitItemLocks,
     isItemLocked,
     resolveEquipEvents,
-    runResolvedEquipCommands,
-    type EquipEventContext,
     type ResolvedEquipEvent,
 } from "./item_locks.js";
 
@@ -41,29 +39,13 @@ const SLOT_SOURCE: Record<EquipSlot, string> = {
 export type SelectEquipmentContext = {
     world: World;
     playerPacketManager: ServerContext["playerPacketManager"];
-    /** Run pack-authored command lines (onEquip / onUnequip). */
-    runCommand?: (player: GameObject, commandLine: string) => void;
 };
 
 /** Build equip context from a world. */
-export function equipContext(
-    world: World,
-    extras: Pick<SelectEquipmentContext, "runCommand"> = {}
-): SelectEquipmentContext {
+export function equipContext(world: World): SelectEquipmentContext {
     return {
         world,
         playerPacketManager: world.context.playerPacketManager,
-        runCommand: extras.runCommand,
-    };
-}
-
-function equipEventCtx(
-    ctx: SelectEquipmentContext
-): EquipEventContext {
-    return {
-        world: ctx.world,
-        now: ctx.world.gameTime,
-        runCommand: (target, line) => ctx.runCommand?.(target, line),
     };
 }
 
@@ -77,7 +59,6 @@ function commitEquipEvents(
     )) {
         emitItemLocks(target, ctx.world.gameTime, ctx.playerPacketManager);
     }
-    runResolvedEquipCommands(resolved, equipEventCtx(ctx).runCommand);
 }
 
 /** Unlock backpack state and grow inventory by one hotbar row. */
