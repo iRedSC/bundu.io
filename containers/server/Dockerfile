@@ -36,6 +36,9 @@ COPY tsconfig.json ./
 RUN --mount=type=cache,target=/app/.cache \
     bun run pack:gen
 
+# Runtime pack compilation refreshes the sanitized texture cache.
+RUN chown -R bun:bun /app/.cache
+
 EXPOSE 7777
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
     CMD ["bun", "-e", "const r=await fetch('http://127.0.0.1:7777/readyz');if(!r.ok)process.exit(1)"]
