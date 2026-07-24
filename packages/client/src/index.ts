@@ -624,6 +624,27 @@ async function main() {
         isOverInventory: () => gui.inventory.isInteracting,
         isPlacementAllowed: () => world.isPlacementAllowed(),
         isFreecam: () => world.camera.isFreecam(),
+        isUseBlocked: (kind) => {
+            if (kind === "attack" || kind === "place") {
+                return gui.inventory.denyAction(
+                    gui.inventory.equippedMainHand,
+                    "use"
+                );
+            }
+            // Block / eat — prefer off-hand, also flash if any equipped use-lock.
+            if (
+                gui.inventory.denyAction(gui.inventory.equippedOffHand, "use")
+            ) {
+                return true;
+            }
+            return (
+                gui.inventory.denyAction(
+                    gui.inventory.equippedMainHand,
+                    "use"
+                ) ||
+                gui.inventory.denyAction(gui.inventory.equippedHelmet, "use")
+            );
+        },
     });
     input.bindChat(chat);
     bindDebugChat?.(chat, (handler) => {
@@ -632,12 +653,23 @@ async function main() {
     input.onToggleLeaderboard = () => gui.leaderboard.toggle();
     input.onShowWorldHover = (show) => world.setShowAllHover(show);
     world.onPlacementValidity = (allowed) => input.onPlacementValidity(allowed);
+    world.onLocalEquipment = (mainhand, offhand, helmet) => {
+        gui.inventory.setEquipment(mainhand, offhand, helmet);
+    };
 
     gui.inventory.isLocked = () => {
         const local = world.objects.get(world.user ?? -1);
         return local instanceof Player && local.isCrafting;
     };
+    gui.inventory.onLockFlash = (lock) => {
+        const local = world.objects.get(world.user ?? -1);
+        if (!(local instanceof Player)) return;
+        local.flashLockHud(lock.endsAt, lock.durationMs);
+        world.objects.updating.add(local);
+    };
     gui.inventory.onSelect = (slot) => {
+        const itemId = gui.inventory.slots[slot]?.[0];
+        gui.inventory.notifySelectDenied(itemId);
         session.sendPacket(ClientPacket.SelectItem, { slot });
     };
     gui.inventory.creativeReplace = () => creative.isActive();
@@ -662,6 +694,18 @@ async function main() {
     gui.craftingMenu.leftclick = (recipeId) => {
         const local = world.objects.get(world.user ?? -1);
         if (local instanceof Player && local.isCrafting) return;
+        const lockedIngredient = gui.recipeManager.craftLockedIngredient(
+            recipeId,
+            (itemId) => gui.inventory.isActionLocked(itemId, "craft")
+        );
+        if (lockedIngredient !== undefined) {
+            gui.inventory.flashItemLock(lockedIngredient);
+            const button = gui.craftingMenu.buttons.find(
+                (_, i) => gui.craftingMenu.items[i]?.recipeId === recipeId
+            );
+            button?.flashLock();
+            return;
+        }
         session.sendPacket(ClientPacket.CraftItem, { recipeId });
     };
 

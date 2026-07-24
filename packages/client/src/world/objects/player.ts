@@ -8,7 +8,7 @@ import {
     clientRegistries,
     clientItemModelId,
 } from "../../configs/registries";
-import { type Container, Graphics, type Point, Text } from "pixi.js";
+import { Container, Graphics, type Point, Text } from "pixi.js";
 import GameObject from "../game_object";
 import type { AnimationManager } from "../../animation/runtime";
 import { SpriteFactory } from "../../assets/sprite_factory";
@@ -42,6 +42,13 @@ const CRAFT_BAR_BG = 0x1a1a1a;
 const CRAFT_BAR_FILL = 0xe8c547;
 const CHAT_MESSAGE_Y = -88;
 const CHAT_MESSAGE_DURATION = 5_000;
+/** Above-name lock icon / gauge (between craft bar and chat). */
+const LOCK_HUD_Y = -70;
+const LOCK_HUD_ICON = 18;
+const LOCK_HUD_RADIUS = 14;
+const LOCK_HUD_GAUGE_WIDTH = 3;
+const LOCK_HUD_COLOR = 0xe8e8e8;
+const LOCK_HUD_TRACK = 0x1a1a1a;
 
 /** Just under ocean FX so water draws over the gauge. */
 const AIR_RING_Z = GROUND_Z_OCEAN - 1;
@@ -71,6 +78,13 @@ export class Player extends GameObject implements AnimContext {
     craftBar: Graphics;
     /** World-space air gauge; sits under ocean FX. */
     airRing: Graphics;
+    /** Brief denied-action lock flash above the name. */
+    private lockHud: Container;
+    private lockHudIcon: ReturnType<typeof SpriteFactory.build>;
+    private lockHudGauge: Graphics;
+    private lockHudUntil = 0;
+    private lockHudEndsAt = 0;
+    private lockHudDurationMs = 0;
     parts: Map<string, PartNode>;
     private slots: Map<string, { node: PartNode; def: SlotDef }>;
     private readonly slotModels = new Map<string, MountedModel>();
@@ -168,11 +182,23 @@ export class Player extends GameObject implements AnimContext {
         this.airRing.zIndex = AIR_RING_Z;
         this.airRing.visible = false;
 
+        this.lockHudGauge = new Graphics();
+        this.lockHudIcon = SpriteFactory.build("bundu/ui/item_lock.png");
+        this.lockHudIcon.anchor.set(0.5);
+        this.lockHudIcon.width = LOCK_HUD_ICON;
+        this.lockHudIcon.height = LOCK_HUD_ICON;
+        this.lockHud = new Container();
+        this.lockHud.zIndex = 103;
+        this.lockHud.visible = false;
+        this.lockHud.addChild(this.lockHudGauge);
+        this.lockHud.addChild(this.lockHudIcon);
+
         this.positionStates.callback = () => {
             this.name.renderable = true;
             this.chatMessage.renderable = true;
             this.craftBar.renderable = true;
             this.airRing.renderable = true;
+            this.lockHud.renderable = true;
             this.container.renderable = true;
             this.debug.renderable = true;
         };
@@ -185,6 +211,7 @@ export class Player extends GameObject implements AnimContext {
             this.name,
             this.craftBar,
             this.chatMessage,
+            this.lockHud,
         ];
     }
 
@@ -197,10 +224,82 @@ export class Player extends GameObject implements AnimContext {
         );
         this.craftBar.position = this.position;
         this.airRing.position.copyFrom(this.position);
+        this.lockHud.position.set(
+            this.position.x,
+            this.position.y + LOCK_HUD_Y
+        );
         this.redrawCraftBar(now);
         const airAnimating = this.tickAirRing();
-        // Stay in the updating set while the bar / air ring is animating.
-        return done && !this.isCrafting && !airAnimating;
+        const lockAnimating = this.tickLockHud(performance.now());
+        // Stay in the updating set while the bar / air ring / lock flash animates.
+        return done && !this.isCrafting && !airAnimating && !lockAnimating;
+    }
+
+    /**
+     * Flash a lock icon above the name with an air-gauge-style remaining timer.
+     * `endsAt` / `durationMs` use client `performance.now()` (same as inventory locks).
+     */
+    flashLockHud(
+        endsAt: number,
+        durationMs: number,
+        flashMs = 1200,
+        now = performance.now()
+    ): void {
+        this.lockHudUntil = now + flashMs;
+        this.lockHudEndsAt = endsAt;
+        this.lockHudDurationMs = durationMs;
+        this.lockHud.visible = true;
+        this.redrawLockHud(now);
+    }
+
+    private tickLockHud(now: number): boolean {
+        if (this.lockHudUntil <= 0) return false;
+        if (now >= this.lockHudUntil) {
+            this.lockHudUntil = 0;
+            this.lockHud.visible = false;
+            this.lockHudGauge.clear();
+            return false;
+        }
+        this.redrawLockHud(now);
+        return true;
+    }
+
+    private redrawLockHud(now: number): void {
+        let remaining = 1;
+        if (
+            this.lockHudDurationMs > 0 &&
+            this.lockHudEndsAt !== Number.POSITIVE_INFINITY
+        ) {
+            remaining = Math.max(
+                0,
+                Math.min(1, (this.lockHudEndsAt - now) / this.lockHudDurationMs)
+            );
+        }
+        this.lockHudGauge.clear();
+        this.lockHudGauge.circle(0, 0, LOCK_HUD_RADIUS).stroke({
+            width: LOCK_HUD_GAUGE_WIDTH,
+            color: LOCK_HUD_TRACK,
+            alpha: 0.55,
+            cap: "round",
+            join: "round",
+        });
+        if (remaining > 0.001) {
+            const start = -Math.PI / 2;
+            const end = start + Math.PI * 2 * remaining;
+            this.lockHudGauge
+                .moveTo(
+                    Math.cos(start) * LOCK_HUD_RADIUS,
+                    Math.sin(start) * LOCK_HUD_RADIUS
+                )
+                .arc(0, 0, LOCK_HUD_RADIUS, start, end)
+                .stroke({
+                    width: LOCK_HUD_GAUGE_WIDTH,
+                    color: LOCK_HUD_COLOR,
+                    alpha: 0.95,
+                    cap: "round",
+                    join: "round",
+                });
+        }
     }
 
     /** Drive the underwater air ring from vitals (`air` / `airMax`). */

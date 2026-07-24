@@ -53,7 +53,7 @@ import {
     clearPlayerItemLocks,
     emitItemLocks,
     inventoryHasLockedIngredient,
-    isItemUseBlocked,
+    isActionLocked,
     pruneExpiredLocks,
 } from "../network/item_locks.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
@@ -165,7 +165,7 @@ export class PlayerSystem extends System<GameEventMap> {
         }
 
         if (data.attacking && data.lastAttackTime && !data.blocking && !data.crafting) {
-            if (isItemUseBlocked(player, data.mainHand, time)) {
+            if (isActionLocked(player, data.mainHand, "use", time)) {
                 data.attacking = false;
             } else if (
                 data.lastAttackTime <
@@ -495,7 +495,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const attributes = Attributes.get(player);
         const config = ItemConfigs.get(itemId);
         if (!data || !attributes || data.eating || config.type !== "food") return;
-        if (isItemUseBlocked(player, itemId, this.world.gameTime)) return;
+        if (isActionLocked(player, itemId, "use", this.world.gameTime)) return;
 
         data.attacking = false;
         data.eating = {
@@ -652,7 +652,7 @@ export class PlayerSystem extends System<GameEventMap> {
         }
         if (
             !stop &&
-            isItemUseBlocked(player, data.mainHand, this.world.gameTime)
+            isActionLocked(player, data.mainHand, "use", this.world.gameTime)
         ) {
             data.attacking = false;
             return;
@@ -686,9 +686,9 @@ export class PlayerSystem extends System<GameEventMap> {
         }
         if (
             !stop &&
-            (isItemUseBlocked(player, data.mainHand, this.world.gameTime) ||
-                isItemUseBlocked(player, data.offHand, this.world.gameTime) ||
-                isItemUseBlocked(player, data.helmet, this.world.gameTime))
+            (isActionLocked(player, data.mainHand, "use", this.world.gameTime) ||
+                isActionLocked(player, data.offHand, "use", this.world.gameTime) ||
+                isActionLocked(player, data.helmet, "use", this.world.gameTime))
         ) {
             return;
         }
@@ -750,6 +750,17 @@ export class PlayerSystem extends System<GameEventMap> {
             to === -1 && inv.slots[from]
                 ? { ...inv.slots[from] }
                 : undefined;
+        if (
+            dropped &&
+            isActionLocked(
+                player,
+                dropped.id,
+                "drop",
+                this.world.gameTime
+            )
+        ) {
+            return;
+        }
         if (!applyMoveSlot(inv, from, to, false)) return;
         if (dropped) this.dropItem(player, dropped.id, dropped.count);
 
@@ -794,6 +805,13 @@ export class PlayerSystem extends System<GameEventMap> {
                   )
                 : 0;
         const itemId = slot === -1 ? inv.cursor?.id : undefined;
+        if (
+            itemId !== undefined &&
+            amount > 0 &&
+            isActionLocked(player, itemId, "drop", this.world.gameTime)
+        ) {
+            return;
+        }
         if (!applyCursorSlot(inv, slot, placeMode, creativeReplace)) return;
         if (itemId !== undefined && amount > 0) {
             this.dropItem(player, itemId, amount);
@@ -813,7 +831,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = PlayerData.get(player);
         if (
             data &&
-            isItemUseBlocked(player, data.mainHand, this.world.gameTime)
+            isActionLocked(player, data.mainHand, "use", this.world.gameTime)
         ) {
             return;
         }

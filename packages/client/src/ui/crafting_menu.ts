@@ -64,6 +64,19 @@ export class RecipeManager {
         }
         return craftable;
     }
+
+    /** First craft-locked ingredient id for a recipe, if any. */
+    craftLockedIngredient(
+        recipeId: number,
+        isLocked: (itemId: number) => boolean
+    ): number | undefined {
+        const recipe = this.recipes.get(recipeId);
+        if (!recipe) return undefined;
+        for (const itemId of recipe.ingredients.keys()) {
+            if (isLocked(itemId)) return itemId;
+        }
+        return undefined;
+    }
 }
 
 type Callback = (recipeId: number, shift: boolean) => void;
@@ -152,6 +165,7 @@ export class CraftingMenu {
     }
 
     tick(now?: number) {
+        const t = now ?? performance.now();
         for (const [index, button] of this.buttons.entries()) {
             const active =
                 this.items[index]?.recipeId === this.craftingRecipeId;
@@ -160,8 +174,9 @@ export class CraftingMenu {
                 CRAFTING_COLORS,
                 0,
                 active ? 0.94 : 1,
-                now
+                t
             );
+            button.tickLock(t);
             button.button.alpha = lerp(
                 button.button.alpha,
                 active ? 1 : this.craftingRecipeId === null ? 1 : 0.35,

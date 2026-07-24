@@ -1,4 +1,8 @@
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
+import {
+    lockFlagsHas,
+    type LockAction,
+} from "@bundu/shared/item_lock";
 import type { GameObject, ServerContext, World } from "../engine";
 import type {
     EquipEvents,
@@ -11,7 +15,8 @@ export type ItemLockState = {
     endsAt: number;
     /** Authored duration in ms (0 when permanent). Used for wipe progress. */
     durationMs: number;
-    allowUse: boolean;
+    /** Bitmask of restricted {@link LockAction}s. */
+    flags: number;
 };
 
 /** Per-player item locks keyed by item registry id. */
@@ -47,23 +52,15 @@ export function getItemLock(
     return lock;
 }
 
-export function isItemLocked(
-    player: GameObject,
-    itemId: number,
-    now: number
-): boolean {
-    return getItemLock(player, itemId, now) !== undefined;
-}
-
-/** True when the item is locked and use actions should be blocked. */
-export function isItemUseBlocked(
+export function isActionLocked(
     player: GameObject,
     itemId: number | undefined,
+    action: LockAction,
     now: number
 ): boolean {
     if (itemId === undefined) return false;
     const lock = getItemLock(player, itemId, now);
-    return lock !== undefined && !lock.allowUse;
+    return lock !== undefined && lockFlagsHas(lock.flags, action);
 }
 
 export function applyLockItem(
@@ -80,7 +77,7 @@ export function applyLockItem(
         map.set(itemId, {
             endsAt,
             durationMs,
-            allowUse: action.allowUse,
+            flags: action.flags,
         });
         changed = true;
     }
@@ -130,12 +127,7 @@ export function emitItemLocks(
                 lock.endsAt === Number.POSITIVE_INFINITY
                     ? -1
                     : Math.max(0, Math.ceil(lock.endsAt - now));
-            locks.push([
-                itemId,
-                remainingMs,
-                lock.durationMs,
-                lock.allowUse ? 1 : 0,
-            ]);
+            locks.push([itemId, remainingMs, lock.durationMs, lock.flags]);
         }
     }
     playerPacketManager.set(player.id, ServerPacket.UpdateItemLocks, { locks });
@@ -167,7 +159,7 @@ export function runEquipEvents(
     return locksChanged;
 }
 
-/** True if any ingredient item id is currently locked on the player. */
+/** True if any ingredient has an active `craft` lock. */
 export function inventoryHasLockedIngredient(
     player: GameObject,
     ingredients: ReadonlyMap<number, number>,
@@ -175,7 +167,7 @@ export function inventoryHasLockedIngredient(
 ): boolean {
     if (ingredients.size === 0) return false;
     for (const itemId of ingredients.keys()) {
-        if (isItemLocked(player, itemId, now)) return true;
+        if (isActionLocked(player, itemId, "craft", now)) return true;
     }
     return false;
 }

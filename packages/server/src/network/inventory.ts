@@ -20,7 +20,7 @@ import { subjectMatchesTarget } from "../systems/effect_targets.js";
 import { syncFlags } from "./flags.js";
 import {
     emitItemLocks,
-    isItemLocked,
+    isActionLocked,
     runEquipEvents,
     type EquipEventContext,
 } from "./item_locks.js";
@@ -225,20 +225,17 @@ function toggleSlot(
 ) {
     const now = ctx?.world.gameTime ?? 0;
     if (data[slot] === itemId) {
-        // Unequip — blocked while this item is locked.
-        if (ctx && isItemLocked(target, itemId, now)) return;
+        if (ctx && isActionLocked(target, itemId, "unequip", now)) return;
         clearSlot(target, data, slot, ctx);
         return;
     }
-    // Equipping a locked item is blocked.
-    if (ctx && isItemLocked(target, itemId, now)) return;
-    // Replacing a locked equipped item would unequip it — block that too.
+    if (ctx && isActionLocked(target, itemId, "equip", now)) return;
     const current = data[slot];
     if (
         ctx &&
         current !== undefined &&
         current !== itemId &&
-        isItemLocked(target, current, now)
+        isActionLocked(target, current, "unequip", now)
     ) {
         return;
     }

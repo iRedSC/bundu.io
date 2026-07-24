@@ -1,6 +1,7 @@
 import { Container, Text } from "pixi.js";
-import { ItemButton, tickItemButton, type ItemLockVisual } from "./item_button";
+import { ItemButton, tickItemButton, type ItemLockVisual, LOCK_FLASH_MS } from "./item_button";
 import { prettifyNumber, percentOf, lerp } from "@bundu/shared";
+import { lockFlagsHas, type LockAction } from "@bundu/shared/item_lock";
 import { TEXT_STYLE } from "@client/assets/text";
 import { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
@@ -132,6 +133,14 @@ export class Inventory {
     items = new Map<number, number>();
     /** Active item locks keyed by item registry id. */
     private itemLocks = new Map<number, ItemLockVisual>();
+    /** Numeric equipment ids for the local player (from UpdateEquipment). */
+    private equipped = {
+        mainHand: -1,
+        offHand: -1,
+        helmet: -1,
+    };
+    /** Fired when a denied use/craft should flash the above-name lock gauge. */
+    onLockFlash?: (lock: ItemLockVisual) => void;
 
     onSelect?: SelectCB;
     onMove?: MoveCB;
@@ -436,8 +445,9 @@ export class Inventory {
                         this.onVoid?.(from);
                     } else {
                         const to = this.hoverSlot ?? -1;
-                        this.finishDrag(from, to);
-                        this.onMove?.(from, to);
+                        if (this.finishDrag(from, to)) {
+                            this.onMove?.(from, to);
+                        }
                     }
                 } else {
                     this.selectedSlot = this.dragFrom;
@@ -549,11 +559,11 @@ export class Inventory {
      * Left-drag release: animate into the target slot, and if swapping,
      * animate the displaced stack back to the source.
      */
-    private finishDrag(from: number, to: number) {
+    private finishDrag(from: number, to: number): boolean {
         const fromStack = this.slots[from];
         if (!fromStack) {
             this.syncGhostToCursor();
-            return;
+            return false;
         }
 
         const ghostX = this.ghost.button.position.x;
@@ -563,15 +573,26 @@ export class Inventory {
 
         if (to === from) {
             this.startFly(fromStack, ghostX, ghostY, ghostScale, "slot", from);
-            return;
+            return true;
         }
 
         if (to < 0) {
+            if (this.denyAction(fromStack[0], "drop")) {
+                this.startFly(
+                    fromStack,
+                    ghostX,
+                    ghostY,
+                    ghostScale,
+                    "slot",
+                    from
+                );
+                return false;
+            }
             this.emitWorldDrop(ghostX, ghostY, ghostScale);
             this.slots[from] = null;
             this.rebuildItemsMap();
             this.buttons[from]?.setStack(null);
-            return;
+            return true;
         }
 
         // Inventory↔inventory drag always swaps — creative replace only applies
@@ -588,6 +609,7 @@ export class Inventory {
         } else {
             this.buttons[from]?.setStack(null);
         }
+        return true;
     }
 
     private voidCursorLocal() {
@@ -621,6 +643,10 @@ export class Inventory {
 
         // Drop from cursor outside.
         if (slot < 0) {
+            if (this.denyAction(this.cursor[0], "drop")) {
+                this.syncGhostToCursor();
+                return;
+            }
             const take = amountForMode(this.cursor[1], mode);
             this.cursor = this.shrinkCursor(take);
             if (!this.cursor) this.cursorFromCreative = false;
@@ -841,7 +867,100 @@ export class Inventory {
             return;
         }
         const lock = this.itemLocks.get(itemId);
-        button.setItemLock(lock ?? null);
+        if (!lock) {
+            button.setItemLock(null);
+            return;
+        }
+        button.setItemLock(lock, this.shouldShowPersistentLock(itemId, lock));
+    }
+
+    private isEquipped(itemId: number): boolean {
+        return (
+            this.equipped.mainHand === itemId ||
+            this.equipped.offHand === itemId ||
+            this.equipped.helmet === itemId
+        );
+    }
+
+    /** Persistent slot lock when equip/unequip/drop currently applies. */
+    private shouldShowPersistentLock(
+        itemId: number,
+        lock: ItemLockVisual
+    ): boolean {
+        const equipped = this.isEquipped(itemId);
+        if (lockFlagsHas(lock.flags, "equip") && !equipped) return true;
+        if (lockFlagsHas(lock.flags, "unequip") && equipped) return true;
+        if (lockFlagsHas(lock.flags, "drop")) return true;
+        return false;
+    }
+
+    get equippedMainHand(): number | undefined {
+        return this.equipped.mainHand >= 0 ? this.equipped.mainHand : undefined;
+    }
+
+    get equippedOffHand(): number | undefined {
+        return this.equipped.offHand >= 0 ? this.equipped.offHand : undefined;
+    }
+
+    get equippedHelmet(): number | undefined {
+        return this.equipped.helmet >= 0 ? this.equipped.helmet : undefined;
+    }
+
+    setEquipment(mainhand: number, offhand: number, helmet: number) {
+        this.equipped = {
+            mainHand: mainhand >= 0 ? mainhand : -1,
+            offHand: offhand >= 0 ? offhand : -1,
+            helmet: helmet >= 0 ? helmet : -1,
+        };
+        for (const [i, button] of this.buttons.entries()) {
+            this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
+        }
+    }
+
+    getLock(itemId: number): ItemLockVisual | undefined {
+        return this.itemLocks.get(itemId);
+    }
+
+    isActionLocked(itemId: number | undefined, action: LockAction): boolean {
+        if (itemId === undefined || itemId < 0) return false;
+        const lock = this.itemLocks.get(itemId);
+        return lock !== undefined && lockFlagsHas(lock.flags, action);
+    }
+
+    /**
+     * Flash lock UI for a denied action. Returns true when the action is locked.
+     */
+    denyAction(itemId: number | undefined, action: LockAction): boolean {
+        if (itemId === undefined || itemId < 0) return false;
+        const lock = this.itemLocks.get(itemId);
+        if (!lock || !lockFlagsHas(lock.flags, action)) return false;
+        this.flashItemLock(itemId, lock);
+        return true;
+    }
+
+    /**
+     * If selecting `itemId` would toggle equip/unequip against a lock, flash and
+     * return true (caller should still send SelectItem — server is authoritative).
+     */
+    notifySelectDenied(itemId: number | undefined): boolean {
+        if (itemId === undefined) return false;
+        const equipped = this.isEquipped(itemId);
+        if (equipped) {
+            return this.denyAction(itemId, "unequip");
+        }
+        return this.denyAction(itemId, "equip");
+    }
+
+    /** Flash matching hotbar slots + optional above-name gauge. */
+    flashItemLock(itemId: number, lock = this.itemLocks.get(itemId)) {
+        if (!lock) return;
+        for (const [i, button] of this.buttons.entries()) {
+            if (this.slots[i]?.[0] === itemId) button.flashLock(LOCK_FLASH_MS);
+        }
+        if (this.cursor?.[0] === itemId) {
+            this.ghost.flashLock(LOCK_FLASH_MS);
+        }
+        this.onLockFlash?.(lock);
     }
 
     /**
@@ -851,13 +970,14 @@ export class Inventory {
     updateLocks(locks: ServerPacket.UpdateItemLocks["locks"]) {
         const next = new Map<number, ItemLockVisual>();
         const now = performance.now();
-        for (const [itemId, remainingMs, durationMs] of locks) {
+        for (const [itemId, remainingMs, durationMs, flags] of locks) {
             next.set(itemId, {
                 endsAt:
                     remainingMs < 0
                         ? Number.POSITIVE_INFINITY
                         : now + remainingMs,
                 durationMs: Math.max(0, durationMs),
+                flags,
             });
         }
         this.itemLocks = next;

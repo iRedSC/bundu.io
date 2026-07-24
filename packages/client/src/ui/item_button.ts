@@ -112,7 +112,11 @@ export type ItemLockVisual = {
     endsAt: number;
     /** Authored duration; 0 when permanent. */
     durationMs: number;
+    /** Bitmask of restricted actions (see `@bundu/shared/item_lock`). */
+    flags: number;
 };
+
+const LOCK_FLASH_MS = 1200;
 
 export class ItemButton {
     button: Container;
@@ -129,6 +133,10 @@ export class ItemButton {
     private lockWipe: Graphics;
     private lockIcon: ContaineredSprite;
     private lockVisual: ItemLockVisual | null = null;
+    /** Show wipe+icon while the restriction currently applies (equip/unequip/drop). */
+    private lockPersistent = false;
+    /** Force-show until this `performance.now()` (use/craft deny flash). */
+    private lockFlashUntil = 0;
 
     hovering: boolean = false;
     down: boolean = false;
@@ -267,15 +275,28 @@ export class ItemButton {
         this.button.eventMode = "static";
     }
 
-    setItemLock(visual: ItemLockVisual | null) {
+    /**
+     * @param persistent - show wipe+icon while the restriction applies now
+     *   (e.g. equip lock while unequipped). Craft/use-only locks stay hidden
+     *   until {@link flashLock}.
+     */
+    setItemLock(visual: ItemLockVisual | null, persistent = false) {
         this.lockVisual = visual;
+        this.lockPersistent = persistent && visual !== null;
         if (!visual) {
+            this.lockFlashUntil = 0;
             this.lockOverlay.visible = false;
             this.lockWipe.clear();
             return;
         }
-        this.lockOverlay.visible = true;
-        this.redrawLockWipe(performance.now());
+        this.syncLockOverlay(performance.now());
+    }
+
+    /** Briefly force-show the lock overlay (denied use/craft). */
+    flashLock(ms = LOCK_FLASH_MS, now = performance.now()) {
+        if (!this.lockVisual) return;
+        this.lockFlashUntil = Math.max(this.lockFlashUntil, now + ms);
+        this.syncLockOverlay(now);
     }
 
     /** Redraw circular wipe from remaining lock time. Returns true if still locked. */
@@ -292,13 +313,25 @@ export class ItemButton {
             now >= this.lockVisual.endsAt
         ) {
             this.lockVisual = null;
+            this.lockPersistent = false;
+            this.lockFlashUntil = 0;
             this.lockOverlay.visible = false;
             this.lockWipe.clear();
             return false;
         }
-        this.lockOverlay.visible = true;
+        this.syncLockOverlay(now);
+        return this.lockOverlay.visible || this.lockPersistent;
+    }
+
+    private syncLockOverlay(now: number) {
+        const flashing = now < this.lockFlashUntil;
+        const show = this.lockVisual !== null && (this.lockPersistent || flashing);
+        this.lockOverlay.visible = show;
+        if (!show || !this.lockVisual) {
+            this.lockWipe.clear();
+            return;
+        }
         this.redrawLockWipe(now);
-        return true;
     }
 
     private redrawLockWipe(now: number) {
@@ -379,3 +412,5 @@ export class ItemButton {
         this.button.destroy({ children: false });
     }
 }
+
+export { LOCK_FLASH_MS };

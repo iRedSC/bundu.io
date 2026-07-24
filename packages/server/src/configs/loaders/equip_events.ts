@@ -1,10 +1,18 @@
 import type { RegistryId } from "@bundu/shared/registry";
+import {
+    isLockAction,
+    lockActionsToFlags,
+    type LockAction,
+} from "@bundu/shared/item_lock";
 import type { GameRegistries } from "../registries.js";
 
 export type LockItemAction = {
     /** Resolved item ids (from an id or `#tag`). */
     items: ReadonlySet<RegistryId<"item">>;
-    allowUse: boolean;
+    /** Restricted actions for these items. */
+    lock: readonly LockAction[];
+    /** Bitmask of {@link lock} for wire / runtime checks. */
+    flags: number;
     /** Lock duration in ms. `undefined` = until unlockItem. */
     forMs?: number;
 };
@@ -51,6 +59,28 @@ function parseItemRef(
     );
 }
 
+function parseLockActions(raw: unknown, path: string): LockAction[] {
+    if (!Array.isArray(raw) || raw.length === 0) {
+        throw new Error(
+            `${path}: expected non-empty array of equip|unequip|use|drop|craft`
+        );
+    }
+    const seen = new Set<LockAction>();
+    const actions: LockAction[] = [];
+    for (const [i, entry] of raw.entries()) {
+        if (typeof entry !== "string" || !isLockAction(entry)) {
+            throw new Error(
+                `${path}[${i}]: expected equip|unequip|use|drop|craft`
+            );
+        }
+        if (!seen.has(entry)) {
+            seen.add(entry);
+            actions.push(entry);
+        }
+    }
+    return actions;
+}
+
 function parseLockItem(
     raw: unknown,
     path: string,
@@ -60,7 +90,7 @@ function parseLockItem(
     const obj = asObject(raw);
     if (!obj) throw new Error(`${path}: expected object`);
     for (const key of Object.keys(obj)) {
-        if (key !== "item" && key !== "allowUse" && key !== "for") {
+        if (key !== "item" && key !== "lock" && key !== "for") {
             throw new Error(`${path}.${key}: unknown key`);
         }
     }
@@ -68,13 +98,7 @@ function parseLockItem(
     if (items.size === 0) {
         throw new Error(`${path}.item: resolved to no items`);
     }
-    let allowUse = false;
-    if (obj.allowUse !== undefined) {
-        if (typeof obj.allowUse !== "boolean") {
-            throw new Error(`${path}.allowUse: expected boolean`);
-        }
-        allowUse = obj.allowUse;
-    }
+    const lock = parseLockActions(obj.lock, `${path}.lock`);
     let forMs: number | undefined;
     if (obj.for !== undefined) {
         if (
@@ -86,7 +110,7 @@ function parseLockItem(
         }
         forMs = obj.for;
     }
-    return { items, allowUse, forMs };
+    return { items, lock, flags: lockActionsToFlags(lock), forMs };
 }
 
 function parseUnlockItem(
@@ -159,7 +183,7 @@ function parseCommands(raw: unknown, path: string): string[] {
  *     - "give @s bundu:iridium 1"
  *   lockItem:
  *     item: #bundu:swords
- *     allowUse: true
+ *     lock: [equip, unequip, use, drop, craft]
  *     for: 5000
  *   unlockItem:
  *     item: bundu:wood_sword

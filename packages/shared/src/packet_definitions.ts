@@ -74,8 +74,9 @@ export const ServerPacket = {
      */
     SetPlayerVisual: 0x26,
     /**
-     * Owner-only item locks: `[itemId, remainingMs, durationMs, allowUse]`.
+     * Owner-only item locks: `[itemId, remainingMs, durationMs, flags]`.
      * `remainingMs === -1` means locked until unlockItem (no wipe timer).
+     * `flags` is a bitmask of equip|unequip|use|drop|craft (see item_lock.ts).
      */
     UpdateItemLocks: 0x27,
 } as const;
@@ -216,11 +217,12 @@ export namespace ServerPacket {
     };
     /**
      * Per-item lock state for the owning client's inventory UI.
-     * Tuple: `[itemId, remainingMs, durationMs, allowUse(0|1)]`.
+     * Tuple: `[itemId, remainingMs, durationMs, flags]`.
      * `remainingMs === -1` = permanent until unlockItem.
+     * `flags` bitmask: equip=1, unequip=2, use=4, drop=8, craft=16.
      */
     export type UpdateItemLocks = {
-        locks: [itemId: number, remainingMs: number, durationMs: number, allowUse: number][];
+        locks: [itemId: number, remainingMs: number, durationMs: number, flags: number][];
     };
     export type UnloadGround = {
         groundData: GroundWire[];

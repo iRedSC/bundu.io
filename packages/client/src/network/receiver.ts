@@ -5,6 +5,7 @@ import {
 } from "@bundu/shared/packet_definitions";
 import { ClientPacketReceiver } from "./client_receiver";
 import { Serializer } from "@bundu/shared";
+import { lockFlagsHas } from "@bundu/shared/item_lock";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
 import type { ChatController } from "../ui/chat";
@@ -26,6 +27,32 @@ function refreshCraftingMenu(ui: UI): void {
         playerFlags
     );
     ui.craftingMenu.update();
+    applyCraftRecipeLocks(ui);
+}
+
+/** Show persistent lock on recipes whose ingredients are craft-locked. */
+function applyCraftRecipeLocks(ui: UI): void {
+    for (const [i, button] of ui.craftingMenu.buttons.entries()) {
+        const view = ui.craftingMenu.items[i];
+        if (!view) {
+            button.setItemLock(null);
+            continue;
+        }
+        const recipe = ui.recipeManager.recipes.get(view.recipeId);
+        if (!recipe) {
+            button.setItemLock(null);
+            continue;
+        }
+        let craftLock: ReturnType<UI["inventory"]["getLock"]>;
+        for (const itemId of recipe.ingredients.keys()) {
+            const lock = ui.inventory.getLock(itemId);
+            if (lock && lockFlagsHas(lock.flags, "craft")) {
+                craftLock = lock;
+                break;
+            }
+        }
+        button.setItemLock(craftLock ?? null, craftLock !== undefined);
+    }
 }
 
 export function setupPacketReceiving(
@@ -121,6 +148,7 @@ export function setupGUIPacketReceiving(
     });
     receiver.on(ServerPacket.UpdateItemLocks, ({ locks }) => {
         ui.inventory.updateLocks(locks);
+        applyCraftRecipeLocks(ui);
     });
     receiver.on(ServerPacket.UpdateFlags, ({ flags }) => {
         playerFlags = [...flags];
