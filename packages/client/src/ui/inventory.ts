@@ -1099,6 +1099,8 @@ export class Inventory {
     /**
      * If selecting `itemId` would toggle equip/unequip against a lock, flash and
      * return true (caller should still send SelectItem — server is authoritative).
+     *
+     * Swapping into an occupied slot requires unequipping the current item first.
      */
     notifySelectDenied(itemId: number | undefined): boolean {
         if (itemId === undefined) return false;
@@ -1106,7 +1108,22 @@ export class Inventory {
         if (this.isEquipped(itemId)) {
             return this.denyAction(itemId, "unequip", slot);
         }
+        const current = this.equippedInSlot(slot);
+        if (
+            current !== undefined &&
+            current !== itemId &&
+            this.denyAction(current, "unequip", slot)
+        ) {
+            return true;
+        }
         return this.denyAction(itemId, "equip", slot);
+    }
+
+    private equippedInSlot(slot: LockSlot | undefined): number | undefined {
+        if (slot === "mainhand") return this.equippedMainHand;
+        if (slot === "offhand") return this.equippedOffHand;
+        if (slot === "helmet") return this.equippedHelmet;
+        return undefined;
     }
 
     /** Flash matching hotbar slots + optional above-name gauge. */

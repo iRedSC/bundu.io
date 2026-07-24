@@ -237,22 +237,23 @@ function toggleSlot(
 ) {
     const now = ctx?.world.gameTime ?? 0;
     const lockSlot = equipSlotToLockSlot(slot);
+    // Same item → toggle unequip.
     if (data[slot] === itemId) {
         if (ctx && isActionLocked(target, itemId, "unequip", now, lockSlot))
             return;
         clearSlot(target, data, slot, ctx);
         return;
     }
-    if (ctx && isActionLocked(target, itemId, "equip", now, lockSlot)) return;
+    // Different item: must be able to unequip what's in the slot first.
     const current = data[slot];
     if (
         ctx &&
         current !== undefined &&
-        current !== itemId &&
         isActionLocked(target, current, "unequip", now, lockSlot)
     ) {
         return;
     }
+    if (ctx && isActionLocked(target, itemId, "equip", now, lockSlot)) return;
     setSlot(target, data, slot, itemId, ctx);
 }
 
