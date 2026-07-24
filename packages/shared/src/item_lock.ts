@@ -49,6 +49,15 @@ export function lockFlagsHas(
     return (flags & LOCK_BITS[action]) !== 0;
 }
 
+/** Clear equip/unequip bits that don't apply given current equipped state. */
+export function mootEquipLockFlags(
+    flags: number,
+    equipped: boolean
+): number {
+    if (equipped) return flags & ~LOCK_BITS.equip;
+    return flags & ~LOCK_BITS.unequip;
+}
+
 export function lockFlagsToActions(flags: number): LockAction[] {
     const out: LockAction[] = [];
     for (const action of LOCK_ACTIONS) {

@@ -177,6 +177,8 @@ export class ItemButton {
     private lockOverlay: Container;
     private lockWipe: Graphics;
     private lockIcon: ContaineredSprite;
+    /** Clips the wipe to the button face. */
+    private lockMask: Graphics;
     /** Small bottom-right lock when restrictions exist but aren't active yet. */
     private lockBadge: ContaineredSprite;
     private lockVisual: ItemLockVisual | null = null;
@@ -244,6 +246,19 @@ export class ItemButton {
         this.lockOverlay.addChild(this.lockWipe);
         this.lockOverlay.addChild(this.lockIcon);
 
+        // Mask wipe to the button bounds (wipe draws larger, clipped here).
+        this.lockMask = new Graphics()
+            .rect(
+                -ITEM_BUTTON_SIZE / 2,
+                -ITEM_BUTTON_SIZE / 2,
+                ITEM_BUTTON_SIZE,
+                ITEM_BUTTON_SIZE
+            )
+            .fill(0xffffff);
+        this.lockMask.zIndex = 899;
+        this.lockOverlay.addChild(this.lockMask);
+        this.lockOverlay.mask = this.lockMask;
+
         // Bottom-right corner (amount sits bottom-left).
         this.lockBadge = SpriteFactory.build("bundu/ui/item_lock.png");
         this.lockBadge.anchor.set(1, 1);
@@ -255,7 +270,6 @@ export class ItemButton {
         );
         this.lockBadge.zIndex = 3;
         this.lockBadge.visible = false;
-        this.lockBadge.alpha = 0.9;
 
         this.button.addChild(this.itemDisplay);
         this.button.addChild(this.background);
@@ -423,7 +437,7 @@ export class ItemButton {
                 Math.min(1, (visual.endsAt - now) / visual.durationMs)
             );
         }
-        const radius = ITEM_BUTTON_SIZE * 0.48;
+        const radius = ITEM_BUTTON_SIZE * 0.72;
         this.lockWipe.clear();
         this.lockWipe
             .moveTo(0, 0)
@@ -483,6 +497,7 @@ export class ItemButton {
         this.disableSprite.destroy();
         this.lockWipe.destroy();
         this.lockIcon.destroy();
+        this.lockMask.destroy();
         this.lockBadge.destroy();
         this.lockOverlay.destroy({ children: false });
         this.itemDisplay.destroy({ children: true });

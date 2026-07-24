@@ -1,6 +1,7 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="14" y="28" width="36" height="28" rx="4" fill="#1a1a1a" stroke="#ececec" stroke-width="3"/>
-  <path d="M22 28V20a10 10 0 0 1 20 0v8" stroke="#ececec" stroke-width="3" stroke-linecap="round" fill="none"/>
-  <circle cx="32" cy="40" r="3.5" fill="#ececec"/>
-  <rect x="30.5" y="40" width="3" height="8" rx="1.5" fill="#ececec"/>
+  <!-- Solid lock silhouette -->
+  <path d="M22 28V20c0-5.523 4.477-10 10-10s10 4.477 10 10v8h-6V20a4 4 0 1 0-8 0v8h-6z" fill="#f2f2f2"/>
+  <rect x="12" y="26" width="40" height="30" rx="5" fill="#f2f2f2"/>
+  <circle cx="32" cy="40" r="4" fill="#1a1a1a"/>
+  <rect x="30" y="40" width="4" height="9" rx="2" fill="#1a1a1a"/>
 </svg>

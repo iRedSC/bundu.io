@@ -129,7 +129,7 @@ onUnequip:
 | `lockItem` | `items?`, `slots?`, `lock`, `for?` | Supply **`items` and/or `slots`** (not neither). `items` = item ids / `#tag`s; `slots` = `mainhand` \| `offhand` \| `helmet`. `lock` is `equip` \| `unequip` \| `use` \| `drop` \| `craft`. `for` is duration in ms (omit = until `unlockItem`). |
 | `unlockItem` | `items?`, `slots?` | Same items/slots rule — clear matching locks |
 
-Lock icons appear as a full wipe while a restriction actively applies (e.g. `unequip` only after equipped). Otherwise a small corner badge marks inactive locked actions. Hover tooltips list what can't be done (and remaining time). Denied `use` / `craft` flashes the lock on the slot and above the player name (with a circular remaining-time gauge). Craft-locked ingredients also show a lock on the recipe button. `lockItem` / `unlockItem` may be a single object or an array.
+Lock icons appear as a full wipe while a restriction actively applies (e.g. `unequip` only after equipped). `equip` while already equipped (and `unequip` while unequipped) does not show a lock. Otherwise a small corner badge marks inactive locked actions (`use` / `craft`). Hover tooltips list what can't be done (and remaining time). Denied `use` / `craft` flashes the lock on the slot and above the player name (with a circular remaining-time gauge). `craft` locks ingredients by item type (slots only gate equip/unequip/use). Craft-locked ingredients also show a lock on the recipe button. `lockItem` / `unlockItem` may be a single object or an array.
 
 Overlapping locks on the same items+slots coalesce (flags combine, timer keeps the later expiry). Overlaps across different scopes still all apply; the UI gauge uses the latest expiry among matches.
 

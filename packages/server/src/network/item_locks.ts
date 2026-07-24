@@ -1,6 +1,5 @@
 import {
     LOCK_ANY_ITEM,
-    LOCK_SLOTS_ALL,
     lockFlagsHas,
     lockSlotFlagsHas,
     type LockAction,
@@ -67,9 +66,9 @@ function isEquippedInSlots(
  * Whether a rule applies to `itemId` (+ optional equipment `slot`).
  *
  * - **items** filter (when set): item must be in the set
- * - **slots** filter: when `slot` is provided, it must be included; when omitted
- *   (drop/craft), item-only locks (`slotFlags === ALL`) match by item; otherwise
- *   the item must currently be equipped in one of the rule's slots
+ * - **slots** filter: when `slot` is provided (equip/unequip/use), it must be included
+ * - **drop/craft** (no slot): item filter alone is enough; slot-only rules still
+ *   require the item to be equipped in one of the rule's slots
  */
 function ruleMatches(
     player: GameObject,
@@ -81,8 +80,8 @@ function ruleMatches(
     if (slot !== undefined) {
         return lockSlotFlagsHas(rule.slotFlags, slot);
     }
-    // No slot context (drop / craft).
-    if (rule.slotFlags === LOCK_SLOTS_ALL && rule.items) return true;
+    // Drop / craft: scoped items match by type; slot-only needs equipped.
+    if (rule.items) return true;
     return isEquippedInSlots(player, itemId, rule.slotFlags);
 }
 

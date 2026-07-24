@@ -42,13 +42,16 @@ const CRAFT_BAR_BG = 0x1a1a1a;
 const CRAFT_BAR_FILL = 0xe8c547;
 const CHAT_MESSAGE_Y = -88;
 const CHAT_MESSAGE_DURATION = 5_000;
-/** Above-name lock icon / gauge (between craft bar and chat). */
-const LOCK_HUD_Y = -70;
-const LOCK_HUD_ICON = 18;
-const LOCK_HUD_RADIUS = 14;
-const LOCK_HUD_GAUGE_WIDTH = 3;
+/** Gap above the name text for the denied-action lock flash. */
+const LOCK_HUD_NAME_GAP = 10;
+const LOCK_HUD_ICON = 26;
+const LOCK_HUD_RADIUS = 20;
+const LOCK_HUD_GAUGE_WIDTH = 3.5;
 const LOCK_HUD_COLOR = 0xe8e8e8;
 const LOCK_HUD_TRACK = 0x1a1a1a;
+const LOCK_HUD_FLASH_MS = 1400;
+const LOCK_HUD_FADE_IN = 0.18;
+const LOCK_HUD_FADE_OUT = 0.28;
 
 /** Just under ocean FX so water draws over the gauge. */
 const AIR_RING_Z = GROUND_Z_OCEAN - 1;
@@ -83,6 +86,8 @@ export class Player extends GameObject implements AnimContext {
     private lockHudIcon: ReturnType<typeof SpriteFactory.build>;
     private lockHudGauge: Graphics;
     private lockHudUntil = 0;
+    private lockHudStartedAt = 0;
+    private lockHudFlashMs = LOCK_HUD_FLASH_MS;
     private lockHudEndsAt = 0;
     private lockHudDurationMs = 0;
     parts: Map<string, PartNode>;
@@ -224,9 +229,13 @@ export class Player extends GameObject implements AnimContext {
         );
         this.craftBar.position = this.position;
         this.airRing.position.copyFrom(this.position);
+        // Sit above the name label (not overlapping it).
+        const nameTop =
+            this.name.position.y -
+            this.name.anchor.y * this.name.height * this.name.scale.y;
         this.lockHud.position.set(
             this.position.x,
-            this.position.y + LOCK_HUD_Y
+            nameTop - LOCK_HUD_NAME_GAP - LOCK_HUD_RADIUS
         );
         this.redrawCraftBar(now);
         const airAnimating = this.tickAirRing();
@@ -242,13 +251,16 @@ export class Player extends GameObject implements AnimContext {
     flashLockHud(
         endsAt: number,
         durationMs: number,
-        flashMs = 1200,
+        flashMs = LOCK_HUD_FLASH_MS,
         now = performance.now()
     ): void {
+        this.lockHudFlashMs = flashMs;
+        this.lockHudStartedAt = now;
         this.lockHudUntil = now + flashMs;
         this.lockHudEndsAt = endsAt;
         this.lockHudDurationMs = durationMs;
         this.lockHud.visible = true;
+        this.lockHud.alpha = 0;
         this.redrawLockHud(now);
     }
 
@@ -257,9 +269,18 @@ export class Player extends GameObject implements AnimContext {
         if (now >= this.lockHudUntil) {
             this.lockHudUntil = 0;
             this.lockHud.visible = false;
+            this.lockHud.alpha = 1;
             this.lockHudGauge.clear();
             return false;
         }
+        const t = (now - this.lockHudStartedAt) / this.lockHudFlashMs;
+        let alpha = 1;
+        if (t < LOCK_HUD_FADE_IN) {
+            alpha = Math.max(0, t / LOCK_HUD_FADE_IN);
+        } else if (t > 1 - LOCK_HUD_FADE_OUT) {
+            alpha = Math.max(0, (1 - t) / LOCK_HUD_FADE_OUT);
+        }
+        this.lockHud.alpha = alpha;
         this.redrawLockHud(now);
         return true;
     }

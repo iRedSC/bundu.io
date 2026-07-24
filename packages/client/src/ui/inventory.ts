@@ -3,10 +3,10 @@ import { ItemButton, tickItemButton, type ItemLockVisual, LOCK_FLASH_MS, formatI
 import { prettifyNumber, percentOf, lerp } from "@bundu/shared";
 import {
     LOCK_ANY_ITEM,
-    LOCK_SLOTS_ALL,
     lockFlagsHas,
     lockSlotFlagsHas,
     lockSlotForItemFunction,
+    mootEquipLockFlags,
     type LockAction,
     type LockSlot,
 } from "@bundu/shared/item_lock";
@@ -879,12 +879,25 @@ export class Inventory {
             button.setItemLock(null);
             return;
         }
-        const lock = this.findLockForItem(itemId);
+        const lock = this.displayLockForItem(itemId);
         if (!lock) {
             button.setItemLock(null);
             return;
         }
         button.setItemLock(lock, this.shouldShowPersistentLock(itemId, lock));
+    }
+
+    /**
+     * Lock visual for UI: drop equip/unequip flags that don't apply to the
+     * current equipped state (e.g. no equip lock badge while already equipped).
+     */
+    private displayLockForItem(itemId: number): ItemLockVisual | undefined {
+        const lock = this.findLockForItem(itemId);
+        if (!lock) return undefined;
+        const flags = mootEquipLockFlags(lock.flags, this.isEquipped(itemId));
+        if (flags === 0) return undefined;
+        if (flags === lock.flags) return lock;
+        return { ...lock, flags };
     }
 
     private isEquipped(itemId: number): boolean {
@@ -942,9 +955,8 @@ export class Inventory {
         if (slot !== undefined) {
             return lockSlotFlagsHas(lock.slotFlags, slot);
         }
-        if (lock.slotFlags === LOCK_SLOTS_ALL && lock.itemId !== LOCK_ANY_ITEM) {
-            return true;
-        }
+        // Drop / craft: item-scoped locks match by type; slot-only needs equipped.
+        if (lock.itemId !== LOCK_ANY_ITEM) return true;
         return this.isEquippedInSlots(itemId, lock.slotFlags);
     }
 
@@ -1058,7 +1070,7 @@ export class Inventory {
         action?: LockAction
     ): ItemLockVisual | undefined {
         if (action) return this.findLock(itemId, action);
-        return this.findLockForItem(itemId);
+        return this.displayLockForItem(itemId);
     }
 
     isActionLocked(
