@@ -20,7 +20,7 @@ import {
 } from "./effect_context.js";
 import { packs } from "../packs.js";
 import { gameplayConfig, setGameplayConfig } from "../gameplay.js";
-import { resetFlagRegistry } from "../flag_registry.js";
+import { flagRegistry, resetFlagRegistry } from "../flag_registry.js";
 import { loadCraftingConfigs } from "./crafting.js";
 import { loadLootTables } from "./loot_tables.js";
 import {
@@ -691,6 +691,9 @@ export function loadConfigs() {
 
     // Recipes resolve flags after contexts register them.
     loadCraftingConfigs(sources.recipe);
+
+    // Engine-granted flags (not authored on tile/item contexts).
+    flagRegistry().register("near_enemy", "engine:near_enemy");
 
     const gameplay = gameplayConfig();
     registries.item.resolve(
