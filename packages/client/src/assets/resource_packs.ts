@@ -27,7 +27,7 @@ type ManifestAsset = {
     size: number;
 };
 
-type Manifest = {
+export type Manifest = {
     format: 2;
     fingerprint: string;
     models: { hash: string; url: string };
@@ -64,7 +64,7 @@ function string(value: unknown, path: string): string {
     return value;
 }
 
-function parseManifest(value: unknown): Manifest {
+export function parseManifest(value: unknown): Manifest {
     const raw = record(value, "pack manifest");
     if (raw.format !== 2) {
         throw new Error(`Unsupported resource pack format ${String(raw.format)}`);
@@ -123,7 +123,7 @@ function parseManifest(value: unknown): Manifest {
     return manifest;
 }
 
-function parseCompiledModels(value: unknown): CompiledModelDefs {
+export function parseCompiledModels(value: unknown): CompiledModelDefs {
     const raw = record(value, "model definitions");
     if (raw.format !== 2) {
         throw new Error(
