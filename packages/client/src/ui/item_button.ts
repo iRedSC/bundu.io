@@ -3,6 +3,12 @@ import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory"
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { percentOf } from "@bundu/shared/math";
 import {
+    LOCK_SLOTS,
+    lockFlagsToActions,
+    lockSlotFlagsToSlots,
+    type LockAction,
+} from "@bundu/shared/item_lock";
+import {
     clientRegistries,
     clientItemModelId,
 } from "../configs/registries";
@@ -123,6 +129,39 @@ export type ItemLockVisual = {
 };
 
 const LOCK_FLASH_MS = 1200;
+/** Centered icon while a restriction is actively applied / flashing. */
+const LOCK_ICON_ACTIVE = ITEM_BUTTON_SIZE * 0.42;
+/** Corner badge while locked actions exist but none are active on this slot. */
+const LOCK_ICON_BADGE = ITEM_BUTTON_SIZE * 0.26;
+const LOCK_BADGE_INSET = 3;
+
+function formatActionList(actions: readonly LockAction[]): string {
+    if (actions.length === 1) return actions[0]!;
+    if (actions.length === 2) return `${actions[0]} or ${actions[1]}`;
+    return `${actions.slice(0, -1).join(", ")}, or ${actions[actions.length - 1]}`;
+}
+
+/** Tooltip line describing lock restrictions. */
+export function formatItemLockTooltip(
+    lock: ItemLockVisual,
+    now = performance.now()
+): string {
+    const actions = lockFlagsToActions(lock.flags);
+    if (actions.length === 0) return "";
+    const slots = lockSlotFlagsToSlots(lock.slotFlags);
+    const slotSuffix =
+        slots.length > 0 && slots.length < LOCK_SLOTS.length
+            ? ` (${slots.join(", ")})`
+            : "";
+    let time = "";
+    if (lock.endsAt === Number.POSITIVE_INFINITY) {
+        time = " until unlocked";
+    } else {
+        const secs = Math.max(0, Math.ceil((lock.endsAt - now) / 1000));
+        if (secs > 0) time = ` · ${secs}s left`;
+    }
+    return `Can't ${formatActionList(actions)}${slotSuffix}${time}`;
+}
 
 export class ItemButton {
     button: Container;
@@ -138,6 +177,8 @@ export class ItemButton {
     private lockOverlay: Container;
     private lockWipe: Graphics;
     private lockIcon: ContaineredSprite;
+    /** Small bottom-right lock when restrictions exist but aren't active yet. */
+    private lockBadge: ContaineredSprite;
     private lockVisual: ItemLockVisual | null = null;
     /** Show wipe+icon while the restriction currently applies (equip/unequip/drop). */
     private lockPersistent = false;
@@ -193,8 +234,8 @@ export class ItemButton {
         this.lockWipe.zIndex = 0;
         this.lockIcon = SpriteFactory.build("bundu/ui/item_lock.png");
         this.lockIcon.anchor.set(0.5);
-        this.lockIcon.width = ITEM_BUTTON_SIZE * 0.42;
-        this.lockIcon.height = ITEM_BUTTON_SIZE * 0.42;
+        this.lockIcon.width = LOCK_ICON_ACTIVE;
+        this.lockIcon.height = LOCK_ICON_ACTIVE;
         this.lockIcon.zIndex = 1;
         this.lockOverlay = new Container();
         this.lockOverlay.sortableChildren = true;
@@ -203,9 +244,23 @@ export class ItemButton {
         this.lockOverlay.addChild(this.lockWipe);
         this.lockOverlay.addChild(this.lockIcon);
 
+        // Bottom-right corner (amount sits bottom-left).
+        this.lockBadge = SpriteFactory.build("bundu/ui/item_lock.png");
+        this.lockBadge.anchor.set(1, 1);
+        this.lockBadge.width = LOCK_ICON_BADGE;
+        this.lockBadge.height = LOCK_ICON_BADGE;
+        this.lockBadge.position.set(
+            ITEM_BUTTON_SIZE / 2 - LOCK_BADGE_INSET,
+            ITEM_BUTTON_SIZE / 2 - LOCK_BADGE_INSET
+        );
+        this.lockBadge.zIndex = 3;
+        this.lockBadge.visible = false;
+        this.lockBadge.alpha = 0.9;
+
         this.button.addChild(this.itemDisplay);
         this.button.addChild(this.background);
         this.button.addChild(this.lockOverlay);
+        this.button.addChild(this.lockBadge);
         this.button.addChild(this.disableSprite);
         this.button.sortChildren();
 
@@ -283,8 +338,8 @@ export class ItemButton {
 
     /**
      * @param persistent - show wipe+icon while the restriction applies now
-     *   (e.g. equip lock while unequipped). Craft/use-only locks stay hidden
-     *   until {@link flashLock}.
+     *   (e.g. equip lock while unequipped). Otherwise a corner badge stays
+     *   visible for inactive locked actions until {@link flashLock}.
      */
     setItemLock(visual: ItemLockVisual | null, persistent = false) {
         this.lockVisual = visual;
@@ -292,10 +347,16 @@ export class ItemButton {
         if (!visual) {
             this.lockFlashUntil = 0;
             this.lockOverlay.visible = false;
+            this.lockBadge.visible = false;
             this.lockWipe.clear();
             return;
         }
         this.syncLockOverlay(performance.now());
+    }
+
+    /** Current lock state for tooltips (null when unlocked). */
+    get itemLock(): ItemLockVisual | null {
+        return this.lockVisual;
     }
 
     /** Briefly force-show the lock overlay (denied use/craft). */
@@ -308,8 +369,9 @@ export class ItemButton {
     /** Redraw circular wipe from remaining lock time. Returns true if still locked. */
     tickLock(now = performance.now()): boolean {
         if (!this.lockVisual) {
-            if (this.lockOverlay.visible) {
+            if (this.lockOverlay.visible || this.lockBadge.visible) {
                 this.lockOverlay.visible = false;
+                this.lockBadge.visible = false;
                 this.lockWipe.clear();
             }
             return false;
@@ -322,18 +384,26 @@ export class ItemButton {
             this.lockPersistent = false;
             this.lockFlashUntil = 0;
             this.lockOverlay.visible = false;
+            this.lockBadge.visible = false;
             this.lockWipe.clear();
             return false;
         }
         this.syncLockOverlay(now);
-        return this.lockOverlay.visible || this.lockPersistent;
+        return (
+            this.lockOverlay.visible ||
+            this.lockBadge.visible ||
+            this.lockPersistent
+        );
     }
 
     private syncLockOverlay(now: number) {
         const flashing = now < this.lockFlashUntil;
-        const show = this.lockVisual !== null && (this.lockPersistent || flashing);
-        this.lockOverlay.visible = show;
-        if (!show || !this.lockVisual) {
+        const showActive =
+            this.lockVisual !== null && (this.lockPersistent || flashing);
+        this.lockOverlay.visible = showActive;
+        // Inactive locked actions → small corner badge (hidden while active/flash).
+        this.lockBadge.visible = this.lockVisual !== null && !showActive;
+        if (!showActive || !this.lockVisual) {
             this.lockWipe.clear();
             return;
         }
@@ -413,6 +483,7 @@ export class ItemButton {
         this.disableSprite.destroy();
         this.lockWipe.destroy();
         this.lockIcon.destroy();
+        this.lockBadge.destroy();
         this.lockOverlay.destroy({ children: false });
         this.itemDisplay.destroy({ children: true });
         this.button.destroy({ children: false });

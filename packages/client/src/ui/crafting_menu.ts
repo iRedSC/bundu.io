@@ -1,15 +1,16 @@
-import { ItemButton, tickItemButton } from "./item_button";
+import { ItemButton, tickItemButton, formatItemLockTooltip } from "./item_button";
 import type { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Container } from "pixi.js";
 import { colorLerp, lerp } from "@bundu/shared/transforms";
 import { clientRegistries } from "../configs/registries";
+import { tooltipCopy } from "../lang/lang";
 import {
     hideRegistryTooltip,
     moveRegistryTooltip,
-    showRegistryTooltip,
 } from "./registry_tooltip";
+import { showTooltip } from "./tooltip";
 
 const CRAFTING_COLORS = {
     empty: 0x777777,
@@ -128,12 +129,7 @@ export class CraftingMenu {
                     return;
                 }
                 this.hoverScreen = { x: ev.global.x, y: ev.global.y };
-                showRegistryTooltip(
-                    "item",
-                    clientRegistries().item.location(recipe.resultItemId),
-                    ev.global.x,
-                    ev.global.y
-                );
+                this.showRecipeTip(recipe.resultItemId, button, ev.global.x, ev.global.y);
             };
             button.onHoverMove = (ev) => {
                 this.hoverScreen = { x: ev.global.x, y: ev.global.y };
@@ -145,15 +141,33 @@ export class CraftingMenu {
         const hoverIndex = this.buttons.findIndex((button) => button.hovering);
         const hovered = hoverIndex >= 0 ? this.items[hoverIndex] : undefined;
         if (hovered && this.hoverScreen) {
-            showRegistryTooltip(
-                "item",
-                clientRegistries().item.location(hovered.resultItemId),
+            this.showRecipeTip(
+                hovered.resultItemId,
+                this.buttons[hoverIndex]!,
                 this.hoverScreen.x,
                 this.hoverScreen.y
             );
         } else if (hoverIndex < 0) {
             hideRegistryTooltip();
         }
+    }
+
+    private showRecipeTip(
+        resultItemId: number,
+        button: ItemButton,
+        screenX: number,
+        screenY: number
+    ) {
+        const copy = tooltipCopy(
+            "item",
+            clientRegistries().item.location(resultItemId)
+        );
+        const lock = button.itemLock;
+        if (lock) {
+            const lockLine = formatItemLockTooltip(lock);
+            copy.body = copy.body ? `${copy.body}\n${lockLine}` : lockLine;
+        }
+        showTooltip(copy, screenX, screenY);
     }
 
     set rightclick(value: Callback) {

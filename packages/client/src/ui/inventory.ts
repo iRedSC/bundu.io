@@ -1,5 +1,5 @@
 import { Container, Text } from "pixi.js";
-import { ItemButton, tickItemButton, type ItemLockVisual, LOCK_FLASH_MS } from "./item_button";
+import { ItemButton, tickItemButton, type ItemLockVisual, LOCK_FLASH_MS, formatItemLockTooltip } from "./item_button";
 import { prettifyNumber, percentOf, lerp } from "@bundu/shared";
 import {
     LOCK_ANY_ITEM,
@@ -22,11 +22,12 @@ import {
     type PlaceMode as PlaceModeType,
 } from "@bundu/shared/inventory";
 import { clientItemMeta, clientRegistries } from "../configs/registries";
+import { tooltipCopy } from "../lang/lang";
 import {
     hideRegistryTooltip,
     moveRegistryTooltip,
-    showRegistryTooltip,
 } from "./registry_tooltip";
+import { showTooltip } from "./tooltip";
 
 type ItemStack = [id: number, amount: number];
 
@@ -296,12 +297,16 @@ export class Inventory {
             hideRegistryTooltip();
             return;
         }
-        showRegistryTooltip(
+        const copy = tooltipCopy(
             "item",
-            clientRegistries().item.location(itemId),
-            screenX,
-            screenY
+            clientRegistries().item.location(itemId)
         );
+        const lock = this.getLock(itemId);
+        if (lock) {
+            const lockLine = formatItemLockTooltip(lock);
+            copy.body = copy.body ? `${copy.body}\n${lockLine}` : lockLine;
+        }
+        showTooltip(copy, screenX, screenY);
     }
 
     private wireButton(button: InventoryButton, slot: number) {
