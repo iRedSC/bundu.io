@@ -73,6 +73,37 @@ describe("Quadtree", () => {
     ]);
   });
 
+  test("divide keeps ids whose objectList position was mutated before a sibling split", () => {
+    // Leaf capacity 5: fill a NW neighborhood, mutate one live position far
+    // away without re-insert, then force a split. Query filters by live
+    // objectList coords, so a full-world query still finds the id iff divide
+    // kept it in the tree (old leaf-only divide dropped it).
+    const crowded = new Quadtree(objectList, WORLD, 5, 8);
+    const points: BasicPoint[] = [];
+    for (let i = 0; i < 5; i++) {
+      const pos = { x: 5 + i, y: 5 + i };
+      points.push(pos);
+      crowded.insert(i, pos);
+    }
+
+    points[0]!.x = 90;
+    points[0]!.y = 90;
+    crowded.insert(99, { x: 8, y: 8 });
+
+    expect(sorted(crowded.query(WORLD))).toEqual(
+      sorted([0, 1, 2, 3, 4, 99]),
+    );
+
+    crowded.insert(0, points[0]!);
+    expect(sorted(crowded.query(WORLD))).toEqual(
+      sorted([0, 1, 2, 3, 4, 99]),
+    );
+    expect(sorted(crowded.query([{ x: 85, y: 85 }, { x: 95, y: 95 }]))).toEqual(
+      [0],
+    );
+  });
+
+
   test("query returns only ids whose positions fall inside the range", () => {
     tree.insert(1, { x: 10, y: 10 });
     tree.insert(2, { x: 50, y: 50 });

@@ -64,8 +64,9 @@ export class Quadtree {
             }
         }
         this.objects.set(objectId, position);
-        this.locations.set(objectId, { x: position.x, y: position.y });
-        this.tree.insert(objectId, this.objects);
+        const snapshot = { x: position.x, y: position.y };
+        this.locations.set(objectId, snapshot);
+        this.tree.insert(objectId, snapshot);
     }
 
     query(bounds: [BasicPoint, BasicPoint]) {
@@ -76,8 +77,9 @@ export class Quadtree {
         this.tree.clear();
         this.locations.clear();
         for (const [id, position] of this.objects) {
-            this.locations.set(id, { x: position.x, y: position.y });
-            this.tree.insert(id, this.objects);
+            const snapshot = { x: position.x, y: position.y };
+            this.locations.set(id, snapshot);
+            this.tree.insert(id, snapshot);
         }
     }
 
@@ -97,14 +99,17 @@ export class Quadtree {
 /**
  * Point quadtree: objects live only in leaves, splits empty the parent,
  * depth is capped, and deletes walk by position (with a scan fallback).
+ *
+ * Leaves store a coordinate snapshot so divide never re-reads mutable
+ * `objectList` positions (callers often mutate Physics before re-insert).
  */
 class InternalQuadtree {
     bounds: Range;
     maxObjects: number;
     maxDepth: number;
     depth: number;
-    /** Ids stored only while this node is a leaf. */
-    objects: Set<number>;
+    /** Snapshot positions stored only while this node is a leaf. */
+    objects: Map<number, StoredPoint>;
     nodes: InternalQuadtree[];
 
     constructor(
@@ -117,7 +122,7 @@ class InternalQuadtree {
         this.maxObjects = maxObjects;
         this.maxDepth = maxDepth;
         this.depth = depth;
-        this.objects = new Set();
+        this.objects = new Map();
         this.nodes = [];
     }
 
@@ -155,7 +160,7 @@ class InternalQuadtree {
         return node;
     }
 
-    private divide(objectList: QuadtreeObjectList) {
+    private divide() {
         const [min, max] = this.bounds.normalized;
         const cx = min.x + (max.x - min.x) / 2;
         const cy = min.y + (max.y - min.y) / 2;
@@ -188,10 +193,12 @@ class InternalQuadtree {
             ),
         ];
 
-        const ids = this.objects;
-        this.objects = new Set();
-        for (const id of ids) {
-            this.insert(id, objectList);
+        const previous = this.objects;
+        this.objects = new Map();
+        for (const [id, position] of previous) {
+            if (!this.insert(id, position)) {
+                console.error(`quadtree divide dropped object ${id}`);
+            }
         }
     }
 
@@ -206,10 +213,10 @@ class InternalQuadtree {
             if (total > this.maxObjects) return;
         }
 
-        const merged = new Set<number>();
+        const merged = new Map<number, StoredPoint>();
         for (const node of this.nodes) {
-            for (const id of node.objects) {
-                merged.add(id);
+            for (const [id, position] of node.objects) {
+                merged.set(id, position);
             }
         }
         this.objects = merged;
@@ -226,7 +233,7 @@ class InternalQuadtree {
         }
 
         if (this.isLeaf()) {
-            for (const id of this.objects) {
+            for (const id of this.objects.keys()) {
                 const position = objectList.get(id);
                 if (position && range.contains(position)) {
                     found.push(id);
@@ -271,23 +278,18 @@ class InternalQuadtree {
         return deleted;
     }
 
-    insert(id: number, objectList: QuadtreeObjectList): boolean {
-        const position = objectList.get(id);
-        if (!position) {
-            console.error(`CANNOT ADD OBJECT ${id} TO TREE`);
-            return false;
-        }
+    insert(id: number, position: BasicPoint): boolean {
         if (!this.bounds.contains(position)) {
             return false;
         }
 
         if (!this.isLeaf()) {
-            return this.child(position).insert(id, objectList);
+            return this.child(position).insert(id, position);
         }
 
-        this.objects.add(id);
+        this.objects.set(id, { x: position.x, y: position.y });
         if (this.objects.size > this.maxObjects && this.depth < this.maxDepth) {
-            this.divide(objectList);
+            this.divide();
         }
         return true;
     }
