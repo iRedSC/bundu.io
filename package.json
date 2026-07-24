@@ -31,6 +31,7 @@
         "lint": "biome lint .",
         "pack:gen": "bun run scripts/pack-gen/cli-generate.ts",
         "pack:gen:check": "bun run scripts/pack-gen/cli-generate.ts --check",
+        "pack:explain": "bun run scripts/pack-gen/cli-explain.ts",
         "validate:packs": "bun run pack:gen && bun run scripts/validate-packs.ts",
         "test": "bun test",
         "test:integration": "bun run pack:gen && bun run scripts/ci/websocket-smoke.ts",

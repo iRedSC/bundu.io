@@ -25,6 +25,26 @@ export type GenerateResult = {
     unchanged: boolean;
 };
 
+export type GeneratedDocumentRole = "display" | "data";
+
+export type ExplainedDestination = {
+    role: GeneratedDocumentRole;
+    path: string;
+};
+
+export type ExplainResult = {
+    source: string;
+    documents: readonly GeneratedDocumentRole[];
+    destinations: readonly ExplainedDestination[];
+};
+
+type Planned = {
+    filename: string;
+    content: string | Uint8Array;
+    source: string;
+    role: GeneratedDocumentRole | "asset";
+};
+
 function rel(from: string, filename: string): string {
     return path.relative(from, filename).replaceAll("\\", "/");
 }
@@ -111,25 +131,31 @@ function clearManagedFiles(
     return removed;
 }
 
-function generateNamespace(
+function planNamespace(
     packRoot: string,
-    namespace: string,
-    check: boolean
-): GenerateResult {
+    namespace: string
+): Planned[] {
     const roots = packRoots(packRoot);
     const defsNs = path.join(roots.defs, namespace);
-    const wrote: string[] = [];
-    const removed: string[] = [];
-
-    type Planned = { filename: string; content: string | Uint8Array };
     const planned: Planned[] = [];
-    const planWrite = (filename: string, content: string | Uint8Array) => {
-        if (planned.some((entry) => entry.filename === filename)) {
-            throw new Error(`Multiple definitions generate ${filename}`);
+    const planWrite = (
+        filename: string,
+        content: string | Uint8Array,
+        sourceFile: string,
+        role: Planned["role"]
+    ) => {
+        const source = rel(packRoot, sourceFile);
+        const existing = planned.find((entry) => entry.filename === filename);
+        if (existing) {
+            throw new Error(
+                `${source}: collides with ${existing.source} at ${rel(roots.output, filename)}`
+            );
         }
         planned.push({
             filename,
             content: typeof content === "string" ? ensureSame(content) : content,
+            source,
+            role,
         });
     };
 
@@ -139,7 +165,7 @@ function generateNamespace(
         const stem = rel(itemTypesRoot, filename).replace(/\.ya?ml$/i, "");
         if (stem.includes("/")) {
             throw new Error(
-                `${filename}: item_types must be flat (no subfolders)`
+                `${rel(packRoot, filename)}: item_types must be flat (no subfolders)`
             );
         }
         const split = splitDefSource(readText(filename), filename);
@@ -157,19 +183,19 @@ function generateNamespace(
         );
 
         if (split.display !== null && split.data !== null) {
-            planWrite(modelOut, split.display);
-            planWrite(dataOut, split.data);
+            planWrite(modelOut, split.display, filename, "display");
+            planWrite(dataOut, split.data, filename, "data");
         } else if (split.display !== null) {
-            planWrite(modelOut, split.display);
+            planWrite(modelOut, split.display, filename, "display");
         } else if (split.data !== null) {
             // Single-doc: model-shaped (id/abstract/displays) → assets; else data.
             if (looksLikeItemTypeModel(split.data)) {
-                planWrite(modelOut, split.data);
+                planWrite(modelOut, split.data, filename, "display");
             } else {
-                planWrite(dataOut, split.data);
+                planWrite(dataOut, split.data, filename, "data");
             }
         } else {
-            throw new Error(`${filename}: empty item type`);
+            throw new Error(`${rel(packRoot, filename)}: empty item type`);
         }
     }
 
@@ -187,19 +213,26 @@ function generateNamespace(
             const split = splitDefSource(readText(sourceFile), sourceFile);
             if (split.display) {
                 throw new Error(
-                    `${sourceFile}: namespace-root defs are data-only (no display half)`
+                    `${rel(packRoot, sourceFile)}: namespace-root defs are data-only (no display half)`
                 );
             }
             if (!split.data) {
-                throw new Error(`${sourceFile}: expected a data document`);
+                throw new Error(
+                    `${rel(packRoot, sourceFile)}: expected a data document`
+                );
             }
-            planWrite(path.join(roots.data, namespace, entry.name), split.data);
+            planWrite(
+                path.join(roots.data, namespace, entry.name),
+                split.data,
+                sourceFile,
+                "data"
+            );
             continue;
         }
 
         if (!entry.isDirectory()) {
             throw new Error(
-                `${path.join(defsNs, entry.name)}: unsupported definition entry`
+                `${rel(packRoot, path.join(defsNs, entry.name))}: unsupported definition entry`
             );
         }
         const dir = entry.name;
@@ -220,7 +253,9 @@ function generateNamespace(
                             registry,
                             `${dataStem}.yml`
                         ),
-                        split.data
+                        split.data,
+                        filename,
+                        "data"
                     );
                 }
 
@@ -232,17 +267,21 @@ function generateNamespace(
                     );
                     if (modelRel.includes("..") || path.isAbsolute(modelRel)) {
                         throw new Error(
-                            `${filename}: invalid @pack-gen model path "${modelRel}"`
+                            `${rel(packRoot, filename)}: invalid @pack-gen model path "${modelRel}"`
                         );
                     }
                     planWrite(
                         path.join(roots.assets, namespace, modelRel),
-                        split.display
+                        split.display,
+                        filename,
+                        "display"
                     );
                 }
 
                 if (split.display === null && split.data === null) {
-                    throw new Error(`${filename}: empty definition`);
+                    throw new Error(
+                        `${rel(packRoot, filename)}: empty definition`
+                    );
                 }
             }
             continue;
@@ -255,22 +294,26 @@ function generateNamespace(
                 const split = splitDefSource(readText(filename), filename);
                 if (split.display) {
                     throw new Error(
-                        `${filename}: ${dir} defs are data-only (no display half)`
+                        `${rel(packRoot, filename)}: ${dir} defs are data-only (no display half)`
                     );
                 }
                 if (!split.data) {
-                    throw new Error(`${filename}: expected a data document`);
+                    throw new Error(
+                        `${rel(packRoot, filename)}: expected a data document`
+                    );
                 }
                 planWrite(
                     path.join(roots.data, namespace, dir, relative),
-                    split.data
+                    split.data,
+                    filename,
+                    "data"
                 );
             }
             continue;
         }
 
         throw new Error(
-            `${path.join(defsNs, dir)}: unknown definition directory`
+            `${rel(packRoot, path.join(defsNs, dir))}: unknown definition directory`
         );
     }
 
@@ -281,12 +324,21 @@ function generateNamespace(
         const split = splitDefSource(readText(filename), filename);
         if (split.display && split.data) {
             throw new Error(
-                `${filename}: models/ defs are display-only (no data half)`
+                `${rel(packRoot, filename)}: models/ defs are display-only (no data half)`
             );
         }
         const body = split.display ?? split.data;
-        if (!body) throw new Error(`${filename}: expected a model document`);
-        planWrite(path.join(roots.assets, namespace, "models", relative), body);
+        if (!body) {
+            throw new Error(
+                `${rel(packRoot, filename)}: expected a model document`
+            );
+        }
+        planWrite(
+            path.join(roots.assets, namespace, "models", relative),
+            body,
+            filename,
+            "display"
+        );
     }
 
     // Client-only: defs/<ns>/client/** → assets/<ns>/**
@@ -296,20 +348,41 @@ function generateNamespace(
         if (!/\.ya?ml$/i.test(filename)) {
             planWrite(
                 path.join(roots.assets, namespace, relative),
-                fs.readFileSync(filename)
+                fs.readFileSync(filename),
+                filename,
+                "asset"
             );
             continue;
         }
         const split = splitDefSource(readText(filename), filename);
         if (split.display) {
             throw new Error(
-                `${filename}: client/ defs are single-doc (do not use ---)`
+                `${rel(packRoot, filename)}: client/ defs are single-doc (do not use ---)`
             );
         }
-        if (!split.data) throw new Error(`${filename}: expected a document`);
-        planWrite(path.join(roots.assets, namespace, relative), split.data);
+        if (!split.data) {
+            throw new Error(`${rel(packRoot, filename)}: expected a document`);
+        }
+        planWrite(
+            path.join(roots.assets, namespace, relative),
+            split.data,
+            filename,
+            "display"
+        );
     }
 
+    return planned;
+}
+
+function generateNamespace(
+    packRoot: string,
+    namespace: string,
+    check: boolean
+): GenerateResult {
+    const roots = packRoots(packRoot);
+    const planned = planNamespace(packRoot, namespace);
+    const wrote: string[] = [];
+    const removed: string[] = [];
     const plannedPaths = new Set(planned.map((entry) => entry.filename));
 
     if (check) {
@@ -400,6 +473,52 @@ export function generatePack(options: GenerateOptions): GenerateResult {
     }
 
     return { wrote, removed, unchanged };
+}
+
+export function planAuthoredSource(
+    packRoot: string,
+    filename: string
+): ExplainResult {
+    const roots = packRoots(packRoot);
+    const relative = rel(roots.defs, filename);
+    const parts = relative.split("/");
+    const namespace = parts[0];
+    if (
+        !namespace ||
+        parts.length < 2 ||
+        relative === ".." ||
+        relative.startsWith("../") ||
+        path.isAbsolute(relative)
+    ) {
+        throw new Error("authored path must be inside defs/<namespace>/");
+    }
+
+    const source = `defs/${relative}`;
+    const entries = planNamespace(packRoot, namespace).filter(
+        (entry) => entry.source === source
+    );
+    if (entries.length === 0) {
+        throw new Error(`${source}: unsupported authored source`);
+    }
+    const destinations = entries
+        .filter(
+            (
+                entry
+            ): entry is Planned & { role: GeneratedDocumentRole } =>
+                entry.role !== "asset"
+        )
+        .map((entry) => ({
+            role: entry.role,
+            path: rel(roots.output, entry.filename),
+        }))
+        .sort(
+            (left, right) =>
+                (left.role === "display" ? 0 : 1) -
+                    (right.role === "display" ? 0 : 1) ||
+                left.path.localeCompare(right.path)
+        );
+    const documents = destinations.map((entry) => entry.role);
+    return { source, documents, destinations };
 }
 
 export function discoverPacks(packsRoot: string): string[] {
