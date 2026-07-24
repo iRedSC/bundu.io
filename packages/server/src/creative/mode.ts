@@ -11,6 +11,7 @@ import {
     clearMissingEquipment,
     emitEquipment,
     emitInventory,
+    equipContext,
     receiveItem,
 } from "../network/inventory.js";
 import { ItemConfigs } from "../configs/loaders/items.js";
@@ -105,7 +106,7 @@ function knownItem(itemId: number): boolean {
 
 function syncInv(player: GameObject, world: World): void {
     const { playerPacketManager, worldPacketManager } = world.context;
-    clearMissingEquipment(player, playerPacketManager);
+    clearMissingEquipment(player, equipContext(world));
     emitInventory(player, playerPacketManager);
     emitEquipment(player, worldPacketManager);
 }

@@ -1,7 +1,7 @@
 texture: bundu/misc/unknown_asset.svg
 ---
 type: bundu:helmet
-whenHelmet:
+whenEquipped:
     "@s":
         attributes:
             health.defense:

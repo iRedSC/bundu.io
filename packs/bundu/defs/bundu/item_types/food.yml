@@ -6,7 +6,7 @@ displays:
         scale: 0.4
 ---
 function: "off_hand"
-whenOffHand:
+whenEquipped:
     "@s":
         attributes:
             "eating.movement_speed_multiplier":

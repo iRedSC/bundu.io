@@ -3,7 +3,7 @@ texture: bundu/item/equipment/stone_helmet.svg
 ---
 type: bundu:helmet
 level: 2
-whenHelmet:
+whenEquipped:
     "@s":
         attributes:
             health.defense:
