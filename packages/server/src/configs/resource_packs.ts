@@ -430,6 +430,7 @@ export class ResourcePackService {
                         function: config.function,
                         type: config.type,
                         places: config.places,
+                        showOverlay: config.showOverlay,
                     },
                 ])
             ),

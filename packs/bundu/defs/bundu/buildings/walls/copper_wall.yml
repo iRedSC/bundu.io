@@ -2,8 +2,8 @@ extends: model:bundu:walls/wall
 defaultVariant: base
 variants:
   base:
-    main: bundu/structure/wall/copper_wall.png
-    spike: bundu/structure/spike/copper_spike.png
+    main: bundu/structure/wall/copper_wall.svg
+    spike: bundu/structure/spike/copper_spike.svg
 ---
 class: wall
 material: copper

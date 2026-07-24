@@ -1,0 +1,17 @@
+extends: item_type:bundu:hat
+texture: bundu/item/equipment/ninja_hat.svg
+---
+type: bundu:hat
+whenEquipped:
+    "@s":
+        attributes:
+            movement.speed:
+                op: multiply
+                value: 1.1
+            health.defense:
+                op: add
+                value: 2
+    "@s[flag=!near_enemy]":
+        hide:
+            visualEffect: self
+            full: true

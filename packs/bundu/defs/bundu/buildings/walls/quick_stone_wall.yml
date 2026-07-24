@@ -2,8 +2,8 @@ extends: model:bundu:walls/wall
 defaultVariant: base
 variants:
   base:
-    main: bundu/structure/wall/stone_wall.png
-    spike: bundu/structure/spike/stone_spike.png
+    main: bundu/structure/wall/stone_wall.svg
+    spike: bundu/structure/spike/stone_spike.svg
 ---
 class: wall
 material: quick_stone

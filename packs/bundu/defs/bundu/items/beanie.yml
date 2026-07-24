@@ -7,4 +7,4 @@ whenEquipped:
         attributes:
             temperature.warmth:
                 op: add
-                value: 12
+                value: 6

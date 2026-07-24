@@ -1,4 +1,4 @@
-texture: bundu/resource/stone_ore.png
+texture: bundu/resource/stone_ore.svg
 displays:
     world:
         scale: 1.7

@@ -1,0 +1,13 @@
+result:
+    item: crystal_medallion
+    amount: 1
+duration: 22000
+score: 6000
+ingredients:
+    copper: 180
+    silver: 40
+    ice: 10
+requirements:
+    - near_fire
+    - near_anvil
+    - near_crafting_table

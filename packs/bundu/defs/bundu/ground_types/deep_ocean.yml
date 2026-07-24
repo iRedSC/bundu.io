@@ -17,6 +17,6 @@ whenOccupied:
     attributes:
       movement.speed: { op: multiply, value: 0.5 }
       attack.reach: { op: multiply, value: 0.6 }
-      air.oxygen: { op: add, value: -8 }
+      air.oxygen: { op: add, value: -15 }
       temperature.warmth: { op: add, value: -8 }
       thirst.hydration: { op: add, value: 10 }

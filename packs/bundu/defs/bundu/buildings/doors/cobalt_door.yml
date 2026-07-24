@@ -2,9 +2,9 @@ extends: model:bundu:doors/door
 defaultVariant: base
 variants:
   base:
-    wall: bundu/structure/wall/cobalt_wall.png
-    main: bundu/structure/door/cobalt_door.png
-    spike: bundu/structure/spike/cobalt_spike.png
+    wall: bundu/structure/wall/cobalt_wall.svg
+    main: bundu/structure/door/cobalt_door.svg
+    spike: bundu/structure/spike/cobalt_spike.svg
 ---
 class: door
 material: cobalt

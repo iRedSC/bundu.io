@@ -1,0 +1,11 @@
+result:
+    item: ninja_hat
+    amount: 1
+duration: 15000
+score: 800
+ingredients:
+    cloth: 8
+    deer_hide: 4
+    bird_skull: 1
+requirements:
+    - near_crafting_table

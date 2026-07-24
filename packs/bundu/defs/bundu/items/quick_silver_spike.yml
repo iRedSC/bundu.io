@@ -1,5 +1,5 @@
 extends: item_type:bundu:spike
-texture: bundu/item/structure/spike/silver_spike.png
+texture: bundu/item/structure/silver_spike.svg
 ---
 type: bundu:building
 places: quick_silver_spike

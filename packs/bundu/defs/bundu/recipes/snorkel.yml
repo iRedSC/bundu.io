@@ -1,0 +1,12 @@
+result:
+    item: snorkel
+    amount: 1
+duration: 12000
+score: 1200
+ingredients:
+    fish_scale: 8
+    silver: 20
+    stone: 40
+requirements:
+    - near_crafting_table
+    - near_anvil

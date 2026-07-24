@@ -62,14 +62,15 @@ export function clientItemMeta(itemId: number): {
     function: string | null;
     type: string | null;
     places: number | null;
+    showOverlay: boolean;
 } {
-    return (
-        metadata?.items[itemId] ?? {
-            function: null,
-            type: null,
-            places: null,
-        }
-    );
+    const meta = metadata?.items[itemId];
+    return {
+        function: meta?.function ?? null,
+        type: meta?.type ?? null,
+        places: meta?.places ?? null,
+        showOverlay: meta?.showOverlay ?? false,
+    };
 }
 
 /** Model id for a gameplay registry location (`item:bundu:wood_sword`). */

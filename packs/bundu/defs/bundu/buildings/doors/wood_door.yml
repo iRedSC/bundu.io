@@ -2,9 +2,9 @@ extends: model:bundu:doors/door
 defaultVariant: base
 variants:
   base:
-    wall: bundu/structure/wall/wood_wall.png
-    main: bundu/structure/door/wood_door.png
-    spike: bundu/structure/spike/wood_spike.png
+    wall: bundu/structure/wall/wood_wall.svg
+    main: bundu/structure/door/wood_door.svg
+    spike: bundu/structure/spike/wood_spike.svg
 ---
 class: door
 material: wood

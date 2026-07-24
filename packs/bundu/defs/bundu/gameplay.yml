@@ -133,7 +133,7 @@ worldgen:
   resource_count: 450
   border_padding_tiles: 3
   placement_attempt_multiplier: 8
-  resources: [forest_tree, stone, copper, silver, cobalt]
+  resources: [forest_tree, stone, stone_small, stone_large, copper, copper_small, silver, silver_small, silver_large, cobalt, cobalt_small, cobalt_large]
   animals: [bear, deer, ram, elephant, komodo_dragon, alligator, bee]
   starter_structure:
     id: wood_wall

@@ -1,5 +1,5 @@
 extends: item_type:bundu:wall
-texture: bundu/structure/wall/stone_wall.png
+texture: bundu/item/structure/stone_wall.svg
 ---
 type: bundu:building
 places: quick_stone_wall

@@ -1,5 +1,5 @@
 extends: item_type:bundu:book
-texture: bundu/item/book/book.svg
+texture: bundu/item/accessory/book.svg
 ---
 type: bundu:book
 whenEquipped:

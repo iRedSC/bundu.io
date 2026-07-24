@@ -1,0 +1,4 @@
+extends: item_type:bundu:book
+texture: bundu/item/accessory/recipe_book.svg
+---
+type: bundu:book

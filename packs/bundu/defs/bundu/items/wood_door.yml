@@ -1,5 +1,5 @@
 extends: item_type:bundu:door
-texture: bundu/structure/door/wood_door.png
+texture: bundu/structure/door/wood_door.svg
 ---
 type: bundu:building
 places: wood_door

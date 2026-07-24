@@ -1,0 +1,12 @@
+result:
+    item: recipe_book
+    amount: 1
+duration: 25000
+score: 2000
+ingredients:
+    book: 1
+    silver: 40
+    copper: 60
+    wood: 80
+requirements:
+    - near_crafting_table
