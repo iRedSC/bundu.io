@@ -21,6 +21,8 @@ export type PlayerData = {
      * Client stores it (sessionStorage) and sends it on reconnect.
      */
     sessionId?: string;
+    /** GameTime when the last socket detached; undefined while connected. */
+    parkedAt?: number;
 
     playerSkin: string;
     selectedStructure: {

@@ -35,6 +35,7 @@ export type AdminEditor = {
  */
 export function createAdminEditor(
     sendPacket: SendPacket,
+    importMap: (yaml: string) => Promise<void>,
     screenToWorld: (screenX: number, screenY: number) => { x: number; y: number },
     world: World,
     worldLayer: Container
@@ -121,10 +122,14 @@ export function createAdminEditor(
             sendPacket(ClientPacket.AdminDownloadMap, {});
         },
         onImportMap: () => {
-            void promptImportMap().then((yaml) => {
-                if (yaml === null) return;
-                sendPacket(ClientPacket.AdminImportMap, { yaml });
-            });
+            void promptImportMap()
+                .then((yaml) => {
+                    if (yaml === null) return;
+                    return importMap(yaml);
+                })
+                .catch((error: unknown) => {
+                    console.error("Map import failed", error);
+                });
         },
         onNewMap: () => {
             void promptNewMap().then((result) => {

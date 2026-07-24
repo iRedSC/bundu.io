@@ -1,8 +1,15 @@
-import { ClientPacket } from "@bundu/shared/packet_definitions";
+import {
+    ClientPacket,
+    type ClientPacketMap,
+} from "@bundu/shared/packet_definitions";
 import type { ServerPacketReceiver } from "../engine";
 import type { AdminEditorSystem } from "../admin/editor";
 import type { CreativeModeSystem } from "../creative/mode";
 import type { PlayerSystem } from "../systems/player";
+import {
+    canUseCapability,
+    type Capability,
+} from "../auth/capabilities";
 
 export function setupPacketReceiving(
     receiver: ServerPacketReceiver,
@@ -10,44 +17,88 @@ export function setupPacketReceiving(
     admin: AdminEditorSystem,
     creative: CreativeModeSystem
 ) {
-    receiver.on(ClientPacket.Attack, system.attack);
-    receiver.on(ClientPacket.Interact, system.interact);
-    receiver.on(ClientPacket.Block, system.block);
+    const authorized = <I extends keyof ClientPacketMap & number>(
+        capability: Capability,
+        id: I,
+        handler: (playerId: number, packet: ClientPacketMap[I]) => void
+    ) => {
+        receiver.on(id, (playerId, packet) => {
+            const player = system.world.getObject(playerId);
+            if (!player || !canUseCapability(player, capability)) return;
+            handler(playerId, packet);
+        });
+    };
+
+    authorized("gameplay", ClientPacket.Attack, system.attack);
+    authorized("gameplay", ClientPacket.Interact, system.interact);
+    authorized("gameplay", ClientPacket.Block, system.block);
     receiver.on(ClientPacket.ChatMessage, system.chatMessage);
-    receiver.on(ClientPacket.Movement, system.move);
-    receiver.on(ClientPacket.Rotation, system.rotate);
-    receiver.on(ClientPacket.PlaceStructure, system.placeStructure);
-    receiver.on(
+    authorized("gameplay", ClientPacket.Movement, system.move);
+    authorized("gameplay", ClientPacket.Rotation, system.rotate);
+    authorized("gameplay", ClientPacket.PlaceStructure, system.placeStructure);
+    authorized(
+        "gameplay",
         ClientPacket.SetStructurePlacement,
         system.setStructurePlacement
     );
-    receiver.on(ClientPacket.SelectItem, system.selectItem);
-    receiver.on(ClientPacket.MoveSlot, system.moveSlot);
-    receiver.on(ClientPacket.CursorSlot, system.cursorSlot);
-    receiver.on(ClientPacket.CraftItem, system.craftItem);
+    authorized("gameplay", ClientPacket.SelectItem, system.selectItem);
+    authorized("gameplay", ClientPacket.MoveSlot, system.moveSlot);
+    authorized("gameplay", ClientPacket.CursorSlot, system.cursorSlot);
+    authorized("gameplay", ClientPacket.CraftItem, system.craftItem);
     receiver.on(ClientPacket.ViewBounds, system.viewBounds);
     receiver.on(ClientPacket.FreecamCursor, system.freecamCursor);
     receiver.on(ClientPacket.ClientReady, system.clientReady);
     receiver.on(ClientPacket.ExitFreecamAt, system.exitFreecamAt);
-    receiver.on(ClientPacket.AdminPlace, admin.adminPlace);
-    receiver.on(ClientPacket.AdminDeleteAt, admin.adminDeleteAt);
-    receiver.on(ClientPacket.AdminSetAnimalsFrozen, admin.adminSetAnimalsFrozen);
-    receiver.on(ClientPacket.AdminSetGhostVisible, admin.adminSetGhostVisible);
-    receiver.on(ClientPacket.AdminKillAnimals, admin.adminKillAnimals);
-    receiver.on(ClientPacket.AdminStrokeBegin, admin.adminStrokeBegin);
-    receiver.on(ClientPacket.AdminStrokeEnd, admin.adminStrokeEnd);
-    receiver.on(ClientPacket.AdminUndo, admin.adminUndo);
-    receiver.on(ClientPacket.AdminRedo, admin.adminRedo);
-    receiver.on(ClientPacket.AdminSaveMap, admin.adminSaveMap);
-    receiver.on(ClientPacket.AdminDownloadMap, admin.adminDownloadMap);
-    receiver.on(ClientPacket.AdminNewMap, admin.adminNewMap);
-    receiver.on(ClientPacket.AdminImportMap, admin.adminImportMap);
-    receiver.on(ClientPacket.CreativeGive, creative.creativeGive);
-    receiver.on(ClientPacket.CreativeSetGodmode, creative.creativeSetGodmode);
-    receiver.on(ClientPacket.CreativeSetSpeed, creative.creativeSetSpeed);
-    receiver.on(ClientPacket.CreativeSetInstakill, creative.creativeSetInstakill);
-    receiver.on(ClientPacket.CreativeGiveToCursor, creative.creativeGiveToCursor);
-    receiver.on(ClientPacket.CreativeVoid, creative.creativeVoid);
-    receiver.on(ClientPacket.CreativeClearInventory, creative.creativeClearInventory);
-    receiver.on(ClientPacket.CreativeGiveKit, creative.creativeGiveKit);
+    authorized("admin", ClientPacket.AdminPlace, admin.adminPlace);
+    authorized("admin", ClientPacket.AdminDeleteAt, admin.adminDeleteAt);
+    authorized(
+        "admin",
+        ClientPacket.AdminSetAnimalsFrozen,
+        admin.adminSetAnimalsFrozen
+    );
+    authorized(
+        "admin",
+        ClientPacket.AdminSetGhostVisible,
+        admin.adminSetGhostVisible
+    );
+    authorized("admin", ClientPacket.AdminKillAnimals, admin.adminKillAnimals);
+    authorized("admin", ClientPacket.AdminStrokeBegin, admin.adminStrokeBegin);
+    authorized("admin", ClientPacket.AdminStrokeEnd, admin.adminStrokeEnd);
+    authorized("admin", ClientPacket.AdminUndo, admin.adminUndo);
+    authorized("admin", ClientPacket.AdminRedo, admin.adminRedo);
+    authorized("admin", ClientPacket.AdminSaveMap, admin.adminSaveMap);
+    authorized("admin", ClientPacket.AdminDownloadMap, admin.adminDownloadMap);
+    authorized("admin", ClientPacket.AdminNewMap, admin.adminNewMap);
+    authorized("creative", ClientPacket.CreativeGive, creative.creativeGive);
+    authorized(
+        "creative",
+        ClientPacket.CreativeSetGodmode,
+        creative.creativeSetGodmode
+    );
+    authorized(
+        "creative",
+        ClientPacket.CreativeSetSpeed,
+        creative.creativeSetSpeed
+    );
+    authorized(
+        "creative",
+        ClientPacket.CreativeSetInstakill,
+        creative.creativeSetInstakill
+    );
+    authorized(
+        "creative",
+        ClientPacket.CreativeGiveToCursor,
+        creative.creativeGiveToCursor
+    );
+    authorized("creative", ClientPacket.CreativeVoid, creative.creativeVoid);
+    authorized(
+        "creative",
+        ClientPacket.CreativeClearInventory,
+        creative.creativeClearInventory
+    );
+    authorized(
+        "creative",
+        ClientPacket.CreativeGiveKit,
+        creative.creativeGiveKit
+    );
 }

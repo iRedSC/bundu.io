@@ -1,5 +1,7 @@
+import { serverDebugEnabled } from "../auth/capabilities.js";
+
 /** Server-side development-only placement affordances. */
-export const SERVER_DEBUG = process.env.BUNDU_DEBUG === "1";
+export const SERVER_DEBUG = serverDebugEnabled();
 
 /**
  * Secret chat phrase that sets a player's `opLevel` to 4 (full commands).

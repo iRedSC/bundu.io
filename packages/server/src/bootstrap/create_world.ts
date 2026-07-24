@@ -44,6 +44,7 @@ export type ServerWorld = {
     playerSystem: PlayerSystem;
     renderDistanceSystem: RenderDistanceSystem;
     receiver: ServerPacketReceiver;
+    adminEditor: AdminEditorSystem;
 };
 
 export function createWorld(): ServerWorld {
@@ -104,5 +105,5 @@ export function createWorld(): ServerWorld {
         .addSystem(renderDistanceSystem)
         .addSystem(freecamGhostSystem);
 
-    return { world, playerSystem, renderDistanceSystem, receiver };
+    return { world, playerSystem, renderDistanceSystem, receiver, adminEditor };
 }

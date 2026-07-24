@@ -32,6 +32,7 @@ export type GameSessionHooks = {
     buildSocketUrl: (username: string) => string;
     getUsername: () => string;
     getPackFingerprint: () => string;
+    setReconnectCredential: (credential: string) => void;
     resetLocalState: () => void;
     setConnecting: (connecting: boolean) => void;
     onConnected: () => void;
@@ -157,6 +158,9 @@ export class GameSession {
                     return;
                 }
                 this.connecting = false;
+                this.hooks.setReconnectCredential(
+                    welcome.reconnectCredential
+                );
                 this.reconnectDelay = 250;
                 this.hadSession = true;
                 this.hooks.setConnecting(false);
