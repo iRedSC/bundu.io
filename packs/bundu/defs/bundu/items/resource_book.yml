@@ -2,7 +2,7 @@ extends: item_type:bundu:book
 texture: bundu/item/accessory/resource_book.svg
 ---
 type: bundu:book
-whenOffHand:
+whenEquipped:
     "@s":
         attributes:
             crafting.multiplier:
