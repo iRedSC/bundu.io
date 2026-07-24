@@ -61,6 +61,12 @@ export function resolveUsername(raw: string | null | undefined): string {
     return trimmed.slice(0, MAX_USERNAME_LENGTH);
 }
 
+/** Append `n` to `base`, truncating the base so the result fits maxlength. */
+export function usernameWithSuffix(base: string, n: number): string {
+    const suffix = String(n);
+    return base.slice(0, MAX_USERNAME_LENGTH - suffix.length) + suffix;
+}
+
 export function usernamesEqual(a: string, b: string): boolean {
     return a.toLowerCase() === b.toLowerCase();
 }

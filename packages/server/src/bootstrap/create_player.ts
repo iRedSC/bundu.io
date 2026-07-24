@@ -1,11 +1,8 @@
 import { tileCenterWorld } from "@bundu/shared/tiles";
+import { JOIN_RECLAIM_REJECTED } from "@bundu/shared/session";
 import {
-    JOIN_RECLAIM_REJECTED,
-    JOIN_USERNAME_TAKEN,
-} from "@bundu/shared/session";
-import {
-    generateUsername,
     resolveUsername,
+    usernameWithSuffix,
     usernamesEqual,
 } from "@bundu/shared/username";
 import { Circle, Vector } from "sat";
@@ -16,10 +13,7 @@ import { getVariantName } from "@bundu/shared/variant_map";
 
 import { gameplayConfig } from "../configs/gameplay";
 
-export {
-    JOIN_RECLAIM_REJECTED as RECLAIM_REJECTED,
-    JOIN_USERNAME_TAKEN as USERNAME_TAKEN,
-};
+export { JOIN_RECLAIM_REJECTED as RECLAIM_REJECTED };
 
 type PlayerObjects = ReturnType<World["query"]>;
 
@@ -36,36 +30,23 @@ function isUsernameTaken(
     );
 }
 
-/** Empty input → unique AdjectiveNoun; provided name → reject if taken. */
+/** Empty → AdjectiveNoun; if taken, append 2, 3, … until free. */
 function claimUsername(
     players: PlayerObjects,
     raw: string,
     exceptId?: number
-): string | typeof JOIN_USERNAME_TAKEN {
-    const trimmed = raw.trim();
-    if (trimmed) {
-        const username = resolveUsername(trimmed);
-        if (isUsernameTaken(players, username, exceptId)) {
-            return JOIN_USERNAME_TAKEN;
-        }
-        return username;
+): string {
+    const base = resolveUsername(raw);
+    if (!isUsernameTaken(players, base, exceptId)) {
+        return base;
     }
-
-    for (let attempt = 0; attempt < 64; attempt++) {
-        const username = generateUsername();
-        if (!isUsernameTaken(players, username, exceptId)) {
-            return username;
+    for (let n = 2; n < 10_000; n++) {
+        const candidate = usernameWithSuffix(base, n);
+        if (!isUsernameTaken(players, candidate, exceptId)) {
+            return candidate;
         }
     }
-
-    for (let n = 2; n < 1000; n++) {
-        const username = resolveUsername(`${generateUsername()}${n}`);
-        if (!isUsernameTaken(players, username, exceptId)) {
-            return username;
-        }
-    }
-
-    return JOIN_USERNAME_TAKEN;
+    return usernameWithSuffix(base, Date.now());
 }
 
 export function createPlayer(
@@ -84,12 +65,8 @@ export function createPlayer(
         if (world.context.socketManager.getSocket(existing.id)) {
             return JOIN_RECLAIM_REJECTED;
         }
-        const claimed = claimUsername(players, username, existing.id);
-        if (claimed === JOIN_USERNAME_TAKEN) {
-            return JOIN_USERNAME_TAKEN;
-        }
         const data = existing.get(PlayerData);
-        data.name = claimed;
+        data.name = claimUsername(players, username, existing.id);
         data.moveDir = [0, 0];
         data.attacking = false;
         data.blocking = false;
@@ -97,11 +74,6 @@ export function createPlayer(
             `Reclaimed player ${existing.id} for session ${sessionId.slice(0, 8)}`
         );
         return existing.id;
-    }
-
-    const claimed = claimUsername(players, username);
-    if (claimed === JOIN_USERNAME_TAKEN) {
-        return JOIN_USERNAME_TAKEN;
     }
 
     const config = gameplayConfig().player;
@@ -119,7 +91,7 @@ export function createPlayer(
             speed: config.physicsSpeed,
         },
         {
-            name: claimed,
+            name: claimUsername(players, username),
             score: 0,
             sessionId,
             playerSkin: getVariantName(skinId) ?? "base",

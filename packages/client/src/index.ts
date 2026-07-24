@@ -9,7 +9,6 @@ import {
 import { ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions";
 import { WORLD_BOUNDS } from "@bundu/shared/tiles";
 import { percentOf } from "@bundu/shared/math";
-import { USERNAME_TAKEN_CLOSE } from "@bundu/shared/session";
 import { generateUsername } from "@bundu/shared/username";
 import { World } from "./world/world";
 import { createViewport, destroyViewport } from "./rendering/viewport";
@@ -443,7 +442,7 @@ async function main() {
             await sleep(75);
             deathFrame = captureDeathLayers(app, [viewport], deathUiLayers);
         },
-        onHardDisconnected: ({ died, code }) => {
+        onHardDisconnected: ({ died }) => {
             worldGateGeneration++;
             hideLoading();
             dropSessionId();
@@ -458,9 +457,6 @@ async function main() {
             hideGameOver();
             deathFrame = null;
             setMenuVisible(true);
-            if (code === USERNAME_TAKEN_CLOSE) {
-                window.alert("That username is already in use.");
-            }
             nameInput.focus();
         },
     });
