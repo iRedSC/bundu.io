@@ -8,7 +8,7 @@ whenEquipped:
         attributes:
             attack.damage:
                 op: add
-                value: 22
+                value: 13
             health.defense.blocking:
                 op: add
                 value: 5

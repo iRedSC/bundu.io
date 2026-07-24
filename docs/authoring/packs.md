@@ -349,7 +349,7 @@ level: 1
 whenEquipped:
   "@s":
     attributes:
-      attack.damage: { op: add, value: 13 }
+      attack.damage: { op: add, value: 5 }
       health.defense.blocking: { op: add, value: 2 }
 ```
 
