@@ -117,7 +117,7 @@ function record(value: unknown, source: string): Record<string, unknown> {
     return value as Record<string, unknown>;
 }
 
-function validateCompiledTextures(
+export function validateCompiledTextures(
     defs: CompiledModelDefs,
     availableAssets: ReadonlySet<string>
 ): void {
@@ -151,7 +151,7 @@ function validateCompiledTextures(
     }
 }
 
-function validateGroundModelTextures(
+export function validateGroundModelTextures(
     models: GroundModelSet,
     availableAssets: ReadonlySet<string>
 ): void {
