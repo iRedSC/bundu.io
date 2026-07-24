@@ -207,10 +207,12 @@ export class ItemButton {
     itemDisplay: Container;
     /** Dark circular wipe + lock icon while the stack's item is locked. */
     private lockOverlay: Container;
+    /** Wipe only — masked to the button face; icon stays unmasked. */
+    private lockWipeLayer: Container;
     private lockWipe: Graphics;
     private lockIcon: ContaineredSprite;
-    /** Untinted button sprite used to clip the wipe to the slot face. */
-    private lockMask: ContaineredSprite;
+    /** Opaque shape used to clip the wipe. */
+    private lockMask: Graphics;
     /** Small bottom-right lock when restrictions exist but aren't active yet. */
     private lockBadge: ContaineredSprite;
     private lockVisual: ItemLockVisual | null = null;
@@ -271,23 +273,29 @@ export class ItemButton {
         this.lockIcon.width = LOCK_ICON_ACTIVE;
         this.lockIcon.height = LOCK_ICON_ACTIVE;
         this.lockIcon.zIndex = 1;
+
+        // Opaque mask — button texture is 50% alpha and would hide the wipe.
+        const corner = ITEM_BUTTON_SIZE * 0.18;
+        this.lockMask = new Graphics()
+            .roundRect(
+                -ITEM_BUTTON_SIZE / 2,
+                -ITEM_BUTTON_SIZE / 2,
+                ITEM_BUTTON_SIZE,
+                ITEM_BUTTON_SIZE,
+                corner
+            )
+            .fill(0xffffff);
+        this.lockWipeLayer = new Container();
+        this.lockWipeLayer.addChild(this.lockWipe);
+        this.lockWipeLayer.addChild(this.lockMask);
+        this.lockWipeLayer.mask = this.lockMask;
+
         this.lockOverlay = new Container();
         this.lockOverlay.sortableChildren = true;
         this.lockOverlay.zIndex = 900;
         this.lockOverlay.visible = false;
-        this.lockOverlay.addChild(this.lockWipe);
+        this.lockOverlay.addChild(this.lockWipeLayer);
         this.lockOverlay.addChild(this.lockIcon);
-
-        // Clip wipe to the button face (same texture, untinted so hover tint
-        // doesn't affect the mask). Wipe draws larger so edges are clipped.
-        this.lockMask = SpriteFactory.build("bundu/ui/item_button.png");
-        this.lockMask.width = ITEM_BUTTON_SIZE;
-        this.lockMask.height = ITEM_BUTTON_SIZE;
-        this.lockMask.anchor.set(0.5);
-        this.lockMask.tint = 0xffffff;
-        this.lockMask.zIndex = 899;
-        this.lockMask.renderable = false;
-        this.lockOverlay.mask = this.lockMask;
 
         // Bottom-right corner (amount sits bottom-left).
         this.lockBadge = SpriteFactory.build("bundu/ui/item_lock.png");
@@ -303,7 +311,6 @@ export class ItemButton {
 
         this.button.addChild(this.itemDisplay);
         this.button.addChild(this.background);
-        this.button.addChild(this.lockMask);
         this.button.addChild(this.lockOverlay);
         this.button.addChild(this.lockBadge);
         this.button.addChild(this.disableSprite);
