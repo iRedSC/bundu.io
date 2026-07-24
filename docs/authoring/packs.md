@@ -18,6 +18,25 @@ bun run validate:packs    # regenerates, then validates the runtime mirror
 | Recipes / loot / tags | Data-only files | `defs/.../recipes/`, `loot_tables/`, `tags/` |
 | Textures | Manual | `defs/<ns>/client/textures/` (copied to generated `assets/`) |
 
+## Pack overlays
+
+Dependencies load first; later packs then apply these rules:
+
+| Resource | Identity | Overlay |
+|---|---|---|
+| Data documents | Namespace + path | Replace the complete document |
+| Data records | Namespace + record id | Merge records; later records replace matching ids |
+| Registry definitions | Namespace + relative path | Replace matching definitions |
+| Registry tags | Namespace + relative path | Append values, unless `replace: true` resets the tag |
+| Client gameplay / stat bars | Complete document | Replace |
+| Language | Locale + flattened key | Merge keys; later strings replace matching keys |
+| Models | Authored or path-derived model id | Replace matching models |
+| Ground models | Relative file stem | Replace matching models |
+| Textures | Namespace + sanitized relative path | Conflict; duplicate output paths are invalid |
+
+The executable policy is exported as `PACK_MERGE_POLICIES` beside the pack
+loader so CI and authoring tools can present the same contract.
+
 Path owns identity. Don’t write `id:` unless it must differ from the file path.
 Items default `extends` to `item_type:<ns>:none` — only set `extends` for a
 non-default parent.

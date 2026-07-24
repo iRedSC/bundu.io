@@ -25,6 +25,83 @@ export type SourcedTag = SourcedRecord & {
     category: boolean;
 };
 
+export type PackOverlayRule =
+    | "replace"
+    | "merge"
+    | "append-or-replace"
+    | "conflict";
+
+export type PackMergePolicy = {
+    resource: string;
+    identity: string;
+    order: "dependency-first";
+    overlay: PackOverlayRule;
+};
+
+/** The runtime overlay contract, kept alongside the methods that implement it. */
+export const PACK_MERGE_POLICIES = [
+    {
+        resource: "data documents",
+        identity: "namespace + path",
+        order: "dependency-first",
+        overlay: "replace",
+    },
+    {
+        resource: "data records",
+        identity: "namespace + record id",
+        order: "dependency-first",
+        overlay: "merge",
+    },
+    {
+        resource: "registry definitions",
+        identity: "namespace + relative path",
+        order: "dependency-first",
+        overlay: "replace",
+    },
+    {
+        resource: "registry tags",
+        identity: "namespace + relative path",
+        order: "dependency-first",
+        overlay: "append-or-replace",
+    },
+    {
+        resource: "client gameplay",
+        identity: "document",
+        order: "dependency-first",
+        overlay: "replace",
+    },
+    {
+        resource: "client stat bars",
+        identity: "document",
+        order: "dependency-first",
+        overlay: "replace",
+    },
+    {
+        resource: "language strings",
+        identity: "locale + flattened key",
+        order: "dependency-first",
+        overlay: "merge",
+    },
+    {
+        resource: "models",
+        identity: "authored or path-derived model id",
+        order: "dependency-first",
+        overlay: "replace",
+    },
+    {
+        resource: "ground models",
+        identity: "relative file stem",
+        order: "dependency-first",
+        overlay: "replace",
+    },
+    {
+        resource: "textures",
+        identity: "namespace + sanitized relative path",
+        order: "dependency-first",
+        overlay: "conflict",
+    },
+] as const satisfies readonly PackMergePolicy[];
+
 function object(value: unknown, source: string): Record<string, unknown> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
         throw new Error(`${source}: expected an object`);
@@ -97,12 +174,14 @@ function orderPacks(packs: ReadonlyMap<string, Pack>): Pack[] {
 
 export class PackStack {
     readonly packs: readonly Pack[];
+    readonly root: string;
 
     constructor(root: string) {
+        this.root = path.resolve(root);
         const discovered = new Map<string, Pack>();
-        for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+        for (const entry of fs.readdirSync(this.root, { withFileTypes: true })) {
             if (!entry.isDirectory()) continue;
-            const directory = path.join(root, entry.name);
+            const directory = path.join(this.root, entry.name);
             const packManifest = manifest(directory);
             if (discovered.has(packManifest.id)) {
                 throw new Error(`Duplicate pack id "${packManifest.id}"`);
