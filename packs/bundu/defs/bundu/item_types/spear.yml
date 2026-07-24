@@ -11,6 +11,12 @@ displays:
         y: -8
 ---
 function: "main_hand"
+onEquip:
+    "@s":
+        lockItem:
+            slots: [mainhand]
+            lock: [unequip]
+            for: 10000
 whenEquipped:
     "@s":
         attributes:
