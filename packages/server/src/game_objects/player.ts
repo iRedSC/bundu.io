@@ -91,6 +91,7 @@ export class Player extends GameObject {
                 getVariantId(data.playerSkin),
                 physics.collisionRadius,
                 scale,
+                false,
             ],
         };
     }

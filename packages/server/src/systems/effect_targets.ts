@@ -1,5 +1,8 @@
 import type { RegistryId } from "@bundu/shared/registry";
-import type { TargetEffect } from "../configs/loaders/effect_context.js";
+import type {
+    EffectTargetMatch,
+    TargetEffect,
+} from "../configs/loaders/effect_context.js";
 import type { GameObject } from "../engine";
 import {
     subjectMatchesBase,
@@ -13,7 +16,7 @@ export type { MatchContext };
 
 export function subjectMatchesTarget(
     subject: GameObject,
-    target: TargetEffect,
+    target: EffectTargetMatch,
     ctx: MatchContext = {}
 ): boolean {
     if (target.all) return true;

@@ -68,6 +68,11 @@ export const ServerPacket = {
     CreativeMode: 0x24,
     /** Authoritative playable world size in tiles (join + new/import map). */
     SetWorldSize: 0x25,
+    /**
+     * Viewer-relative hide visual: subject's model alpha (not the anon proxy).
+     * Sent per viewer via player packets.
+     */
+    SetPlayerVisual: 0x26,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -199,6 +204,11 @@ export namespace ServerPacket {
     };
     /** Square world edge length in tiles. */
     export type SetWorldSize = { worldTiles: number };
+    /** Toggle semi-transparent model for a loaded player (viewer-relative). */
+    export type SetPlayerVisual = {
+        id: number;
+        ghosted: boolean;
+    };
     export type UnloadGround = {
         groundData: GroundWire[];
     };
@@ -440,6 +450,7 @@ export type ServerPacketMap = {
     [ServerPacket.CommandResult]: ServerPacket.CommandResult;
     [ServerPacket.CreativeMode]: ServerPacket.CreativeMode;
     [ServerPacket.SetWorldSize]: ServerPacket.SetWorldSize;
+    [ServerPacket.SetPlayerVisual]: ServerPacket.SetPlayerVisual;
 };
 
 /** ID → payload map for client packets. */
@@ -544,6 +555,7 @@ export const ServerSchema: {
         fields: ["enabled", "godmode", "speed", "instakill"],
     },
     [ServerPacket.SetWorldSize]: { fields: ["worldTiles"] },
+    [ServerPacket.SetPlayerVisual]: { fields: ["id", "ghosted"] },
 };
 
 export const ClientSchema: {

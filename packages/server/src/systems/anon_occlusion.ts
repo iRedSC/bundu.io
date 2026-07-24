@@ -1,4 +1,5 @@
 import { Range } from "@bundu/shared";
+import { GameObjectData } from "@bundu/shared/object_types.js";
 import { worldToDeci, worldToTile } from "@bundu/shared/tiles";
 import { Circle, Vector } from "sat";
 import { getVariantId } from "@bundu/shared/variant_map.js";
@@ -9,13 +10,16 @@ import { AnonProxy } from "../components/anon_proxy.js";
 import { PlayerData } from "../components/player.js";
 import { VisibleObjects } from "../components/visible_objects.js";
 import { gameplayConfig } from "../configs/gameplay.js";
+import { matchingPayloads } from "../configs/loaders/effect_context.js";
 import { ItemConfigs } from "../configs/loaders/items.js";
-import type { Hide } from "../configs/loaders/hide.js";
+import type { Hide, VisualHideSource } from "../configs/loaders/hide.js";
 import { orHide, shouldAnonymize } from "../configs/loaders/hide.js";
 import { System, type GameObject, type World } from "../engine";
 import { AnonymousPlayer } from "../game_objects/anonymous_player.js";
-import { payloadForSubject } from "./effect_apply.js";
-import { resolveSpatialHide } from "./effect_contexts.js";
+import {
+    forEachSpatialHidePayload,
+    resolveSpatialHide,
+} from "./effect_contexts.js";
 import { subjectMatchesTarget } from "./effect_targets.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import type { RoofSystem } from "./roof.js";
@@ -26,28 +30,115 @@ const EQUIP_SLOTS = [
     ["helmet", "whenHelmet"],
 ] as const;
 
-/** Effective hide for a player (spatial contexts OR equipped gear). */
-export function resolveEffectiveHide(
+/** Visit each equip hide payload for a player (before OR-merge). */
+function forEachEquipHidePayload(
     player: GameObject,
-    world: World
-): Hide | undefined {
+    world: World,
+    visit: (hide: Hide) => void
+): void {
     const data = PlayerData.get(player);
-    if (!data) return undefined;
-
-    let hide = resolveSpatialHide(player, world);
+    if (!data) return;
 
     for (const [slot, contextName] of EQUIP_SLOTS) {
         const itemId = data[slot];
         if (itemId === undefined) continue;
         const context = ItemConfigs.get(itemId)[contextName];
         if (!context) continue;
-        const payload = payloadForSubject(context, (t) =>
+        for (const payload of matchingPayloads(context, (t) =>
             subjectMatchesTarget(player, t, { world, executor: player })
-        );
-        hide = orHide(hide, payload.hide);
+        )) {
+            if (payload.hide) visit(payload.hide);
+        }
     }
+}
 
+/** Effective hide for a player (spatial contexts OR equipped gear). */
+export function resolveEffectiveHide(
+    player: GameObject,
+    world: World
+): Hide | undefined {
+    if (!PlayerData.get(player)) return undefined;
+
+    let hide = resolveSpatialHide(player, world);
+    forEachEquipHidePayload(player, world, (payload) => {
+        hide = orHide(hide, payload);
+    });
     return hide;
+}
+
+/**
+ * Per-source visual hide contributions. Exclusion targets are not merged —
+ * being excluded from one source must not cancel another.
+ */
+export function collectVisualHideSources(
+    player: GameObject,
+    world: World
+): VisualHideSource[] {
+    if (!PlayerData.get(player)) return [];
+
+    const sources: VisualHideSource[] = [];
+    const visit = (hide: Hide) => {
+        if (hide.visualEffect !== "self" && hide.visualEffect !== "exclusions") {
+            return;
+        }
+        sources.push({
+            visualEffect: hide.visualEffect,
+            exclusionTarget: hide.exclusionTarget,
+        });
+    };
+    forEachSpatialHidePayload(player, world, visit);
+    forEachEquipHidePayload(player, world, visit);
+    return sources;
+}
+
+/**
+ * Whether `viewer` should see `subject`'s real model as semi-transparent.
+ * Never applies to anon proxies.
+ */
+export function shouldSeeHideVisual(
+    viewer: GameObject,
+    subject: GameObject,
+    world: World,
+    sources?: readonly VisualHideSource[]
+): boolean {
+    if (AnonProxy.get(subject)) return false;
+    if (!PlayerData.get(subject)) return false;
+
+    const list = sources ?? collectVisualHideSources(subject, world);
+    for (const source of list) {
+        if (source.visualEffect === "self") {
+            if (viewer === subject) return true;
+            continue;
+        }
+        // exclusions: people hide does not apply to (exclusionTarget) see ghost
+        if (
+            source.exclusionTarget &&
+            subjectMatchesTarget(viewer, source.exclusionTarget, {
+                world,
+                executor: subject,
+            })
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** Patch LoadObject player data with viewer-relative ghosted flag. */
+export function loadObjectPacketForViewer(
+    object: GameObject,
+    viewer: GameObject,
+    world: World
+): ServerPacket.LoadObject | undefined {
+    const packet = object.getNewObjectPacket();
+    if (!packet) return undefined;
+    if (packet.type !== GameObjectData.PlayerType) return packet;
+
+    const ghosted = shouldSeeHideVisual(viewer, object, world);
+    if (packet.data[8] === ghosted) return packet;
+    const data = [...packet.data] as GameObjectData.PlayerData;
+    data[8] = ghosted;
+    return { ...packet, data };
 }
 
 export function sameRoofGroup(
@@ -127,10 +218,63 @@ export function hidesFromLeaderboard(
 
 const proxyBySource = new Map<number, number>();
 const sourceByProxy = new Map<number, number>();
+/** viewerId → subjectId → ghosted */
+const ghostedByViewer = new Map<number, Map<number, boolean>>();
+
+function ghostKeySet(
+    viewerId: number,
+    subjectId: number,
+    ghosted: boolean
+): boolean {
+    let bySubject = ghostedByViewer.get(viewerId);
+    if (!bySubject) {
+        bySubject = new Map();
+        ghostedByViewer.set(viewerId, bySubject);
+    }
+    const prev = bySubject.get(subjectId);
+    if (prev === ghosted) return false;
+    bySubject.set(subjectId, ghosted);
+    return true;
+}
+
+/** Record ghosted state when LoadObject is sent (avoids duplicate SetPlayerVisual). */
+export function noteGhostedOnLoad(
+    viewerId: number,
+    subjectId: number,
+    ghosted: boolean
+): void {
+    let bySubject = ghostedByViewer.get(viewerId);
+    if (!bySubject) {
+        bySubject = new Map();
+        ghostedByViewer.set(viewerId, bySubject);
+    }
+    bySubject.set(subjectId, ghosted);
+}
+
+/** Drop tracked ghost state when a subject leaves a viewer's AOI. */
+export function clearGhostedForView(
+    viewerId: number,
+    subjectIds: readonly number[]
+): void {
+    const bySubject = ghostedByViewer.get(viewerId);
+    if (!bySubject) return;
+    for (const id of subjectIds) bySubject.delete(id);
+}
+
+function clearGhostStateForSubject(subjectId: number): void {
+    for (const bySubject of ghostedByViewer.values()) {
+        bySubject.delete(subjectId);
+    }
+}
+
+function clearGhostStateForViewer(viewerId: number): void {
+    ghostedByViewer.delete(viewerId);
+}
 
 /**
  * Tracks under-roof groups, spawns/mirrors anon proxies, and keeps scrubbed
- * appearance/equipment in sync for outsiders.
+ * appearance/equipment in sync for outsiders. Also reconciles viewer-relative
+ * hide visual transparency on real player bodies.
  */
 export class AnonOcclusionSystem extends System<GameEventMap> {
     private roofSystem?: RoofSystem;
@@ -158,6 +302,7 @@ export class AnonOcclusionSystem extends System<GameEventMap> {
             this.destroyProxy(player.id);
             const wasHidden = this.hiddenFromOutsiders.delete(player.id);
             if (wasHidden) this.reconcileVisibility(player);
+            this.reconcileVisual(player);
             return;
         }
 
@@ -178,11 +323,14 @@ export class AnonOcclusionSystem extends System<GameEventMap> {
         if (hideReal || wasHidden || proxyBySource.has(player.id)) {
             this.reconcileVisibility(player);
         }
+        this.reconcileVisual(player);
     }
 
     override exit(object: GameObject): void {
         this.destroyProxy(object.id);
         this.hiddenFromOutsiders.delete(object.id);
+        clearGhostStateForSubject(object.id);
+        clearGhostStateForViewer(object.id);
     }
 
     private onDelete = ({ object }: GameEvent.DeleteObject) => {
@@ -195,6 +343,8 @@ export class AnonOcclusionSystem extends System<GameEventMap> {
         if (PlayerData.get(object)) {
             this.destroyProxy(object.id);
             this.hiddenFromOutsiders.delete(object.id);
+            clearGhostStateForSubject(object.id);
+            clearGhostStateForViewer(object.id);
         }
     };
 
@@ -237,7 +387,11 @@ export class AnonOcclusionSystem extends System<GameEventMap> {
             if (shouldSee === has) continue;
 
             if (shouldSee) {
-                const packet = candidate.getNewObjectPacket();
+                const packet = loadObjectPacketForViewer(
+                    candidate,
+                    viewer,
+                    this.world
+                );
                 if (!packet) continue;
                 visible.visible.add(candidate);
                 playerPacketManager.add(
@@ -245,12 +399,49 @@ export class AnonOcclusionSystem extends System<GameEventMap> {
                     ServerPacket.LoadObject,
                     packet
                 );
+                if (packet.type === GameObjectData.PlayerType) {
+                    noteGhostedOnLoad(
+                        viewer.id,
+                        candidate.id,
+                        packet.data[8]
+                    );
+                }
             } else {
                 visible.visible.delete(candidate);
+                ghostedByViewer.get(viewer.id)?.delete(candidate.id);
                 playerPacketManager.add(viewer.id, ServerPacket.DeleteObjects, {
                     objects: [candidate.id],
                 });
             }
+        }
+    }
+
+    /** Sync semi-transparent model state for viewers who already see the subject. */
+    private reconcileVisual(subject: GameObject): void {
+        if (AnonProxy.get(subject) || !PlayerData.get(subject)) return;
+
+        const sources = collectVisualHideSources(subject, this.world);
+        const { playerPacketManager } = this.world.context;
+
+        for (const viewer of this.world.query([VisibleObjects])) {
+            const visible = VisibleObjects.get(viewer);
+            if (!visible?.visible.has(subject)) {
+                ghostedByViewer.get(viewer.id)?.delete(subject.id);
+                continue;
+            }
+
+            const ghosted = shouldSeeHideVisual(
+                viewer,
+                subject,
+                this.world,
+                sources
+            );
+            if (!ghostKeySet(viewer.id, subject.id, ghosted)) continue;
+
+            playerPacketManager.add(viewer.id, ServerPacket.SetPlayerVisual, {
+                id: subject.id,
+                ghosted,
+            });
         }
     }
 

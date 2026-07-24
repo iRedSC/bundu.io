@@ -17,7 +17,12 @@ export namespace GameObjectData {
         playerSkin: nullish<number>,
         collisionRadius: number,
         /** `physics.scale` multiplier; identity = 1. */
-        scale: number
+        scale: number,
+        /**
+         * Viewer-relative: subject's model should render semi-transparent.
+         * Always false on anon proxies.
+         */
+        ghosted: boolean
     ];
 
     export const ResourceNodeType = 0x01;
