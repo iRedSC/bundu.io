@@ -420,7 +420,11 @@ export class ResourcePackService {
             structures: Object.fromEntries(
                 [...BuildingConfigs.entries].map(([location, config]) => [
                     registries.structure.resolve(location),
-                    config.placement,
+                    {
+                        ...config.placement,
+                        class: config.class,
+                        solid: config.solid,
+                    },
                 ])
             ),
             items: Object.fromEntries(

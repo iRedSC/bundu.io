@@ -21,6 +21,7 @@ import { ResourceSystem } from "../systems/resource";
 import { GroundItemSystem } from "../systems/ground_item";
 import { PointGeneratorSystem } from "../systems/point_generator";
 import { DoorSystem } from "../systems/door";
+import { InteractionSystem } from "../systems/interaction";
 import { RoofSystem } from "../systems/roof";
 import {
     AnonOcclusionSystem,
@@ -83,6 +84,7 @@ export function createWorld(): ServerWorld {
         .addSystem(new AttackSystem(world))
         .addSystem(new SpikeSystem(world))
         .addSystem(new RottingSystem(world))
+        .addSystem(new InteractionSystem(world))
         .addSystem(new DoorSystem(world))
         .addSystem(roofSystem)
         .addSystem(new ResourceSystem(world))

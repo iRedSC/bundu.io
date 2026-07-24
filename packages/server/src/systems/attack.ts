@@ -10,7 +10,7 @@ import {
     Attributes,
     type AttackDamageChannel,
 } from "../components/attributes.js";
-import { AnimalData, Door, Physics, Rotting, TileEntity } from "../components/base.js";
+import { AnimalData, Physics, TileEntity } from "../components/base.js";
 import { PlayerData } from "../components/player.js";
 import { type GameObject, System, type World } from "../engine";
 import { getSizedBounds, SPATIAL_QUERY_PADDING } from "./position.js";
@@ -158,17 +158,6 @@ export class AttackSystem extends System<GameEventMap> {
             const angle = targetPoint
                 ? lookToward(origin, targetPoint)
                 : facing;
-            // Intact doors toggle; rotting doors take damage / claim via Hurt.
-            if (Door.get(object) && !Rotting.get(object)) {
-                this.world.context.worldPacketManager.emit(ServerPacket.HitEvent, {
-                    id: object.id,
-                    angle,
-                    strength: 1,
-                    flash: 0,
-                });
-                this.trigger(GameEvent.ToggleDoor, { object, source });
-                continue;
-            }
             const hit = { strength: 0 };
             this.trigger(GameEvent.Hurt, {
                 object,

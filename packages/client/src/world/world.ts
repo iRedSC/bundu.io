@@ -95,6 +95,12 @@ import {
 } from "@client/rendering/shadow_layer";
 import { shadowStyle, type ShadowLight } from "../models/shadow";
 import { updateOcclusion } from "./occlusion";
+import { pickInteractHover, type InteractHover } from "./interaction";
+import { InteractionHighlight } from "./interaction_highlight";
+import {
+    hideInteractTooltip,
+    showInteractTooltip,
+} from "../ui/world_tooltip";
 import { Animal } from "./objects/animal";
 import { FreecamGhost } from "./objects/freecam_ghost";
 import { clientTime } from "@client/globals";
@@ -209,6 +215,9 @@ export class World {
     private cursorWorld?: { x: number; y: number };
     /** Hold Tab: treat every structure as hovered for health bars. */
     private showAllHover = false;
+    private interactHover: InteractHover | null = null;
+    private readonly interactionHighlight = new InteractionHighlight();
+    private interactTooltipShown = false;
     private readonly pendingObjectStates = new Map<number, EntityStateSnapshot>();
     /**
      * Client ground patches. Stack order / unload / delete-hover use entity `id`
@@ -357,6 +366,7 @@ export class World {
         this.clearPlacementGhost();
         this.cursorWorld = undefined;
         this.showAllHover = false;
+        this.clearInteractHover();
         this.pendingObjectStates.clear();
         this.pendingLocalDrops.length = 0;
         this.user = undefined;
@@ -364,6 +374,7 @@ export class World {
 
     destroy(): void {
         this.clear();
+        this.interactionHighlight.dispose();
         this.nearshoreFill.clearModelMasks();
         this.particles.destroy();
         setActiveShadowLayer(undefined);
@@ -395,6 +406,7 @@ export class World {
                 object.updateHealthBar(now, this.cursorWorld, this.showAllHover);
             }
         }
+        this.updateInteractHover();
         this.particles.update(deltaMS);
         this.updateGroundVisuals(deltaMS, now);
         this.updatePlacementGhost();
@@ -446,6 +458,57 @@ export class World {
 
     setShowAllHover(show: boolean) {
         this.showAllHover = show;
+    }
+
+    /** Hovered interactable for RMB Interact-vs-Block. */
+    getInteractHover(): { targetId: number; canInteract: boolean } | null {
+        if (!this.interactHover) return null;
+        return {
+            targetId: this.interactHover.structure.id,
+            canInteract: this.interactHover.canInteract,
+        };
+    }
+
+    private clearInteractHover(): void {
+        this.interactHover = null;
+        this.interactionHighlight.dispose();
+        if (this.interactTooltipShown) {
+            hideInteractTooltip();
+            this.interactTooltipShown = false;
+        }
+    }
+
+    private updateInteractHover(): void {
+        if (this.camera.isFreecam()) {
+            this.clearInteractHover();
+            return;
+        }
+        const local =
+            this.user !== undefined ? this.objects.get(this.user) : undefined;
+        const hover = pickInteractHover(
+            this.cursorWorld,
+            this.objects.all(),
+            local
+        );
+        if (!hover) {
+            this.clearInteractHover();
+            return;
+        }
+
+        const mode = hover.canInteract ? "can" : "cannot";
+        this.interactHover = hover;
+        this.interactionHighlight.attach(hover.structure, mode);
+        this.interactionHighlight.syncVisibility();
+
+        if (hover.canInteract && this.cursorWorld) {
+            const screen = this.viewport.toGlobal(this.cursorWorld);
+            // Re-show every tick so inventory/admin tips don't permanently steal the tip.
+            showInteractTooltip(hover.structure, screen.x, screen.y);
+            this.interactTooltipShown = true;
+        } else if (this.interactTooltipShown) {
+            hideInteractTooltip();
+            this.interactTooltipShown = false;
+        }
     }
 
     /**
@@ -794,7 +857,8 @@ export class World {
             getVariantName(variantId),
             health,
             maxHealth,
-            states ?? {}
+            states ?? {},
+            nodeType
         );
         this.registerStructure(structure);
         structure.trigger(ANIMATION.PLACE, AnimationManagers.World, true);

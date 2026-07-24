@@ -11,6 +11,7 @@ import {
     SpriteFactory,
     type ContaineredSprite,
 } from "@client/assets/sprite_factory";
+import { clientStructurePlacement } from "../../configs/registries";
 import { assemble, assembleTileEntity } from "../../models/assemble";
 import { bindAnimations } from "../../models/bind";
 import {
@@ -60,6 +61,8 @@ function ownerIdFromStates(states: EntityStateSnapshot): number {
 export class Structure extends GameObject {
     private _sprite?: ContaineredSprite;
     readonly type: string;
+    /** Gameplay registry id (`structure` / `resource`); `-1` when unset. */
+    readonly typeId: number;
     /** Resource vs structure — used by freecam delete hover filtering. */
     placeKind:
         | typeof AdminPlaceKind.Resource
@@ -92,6 +95,7 @@ export class Structure extends GameObject {
     /** World-space overlays synced like healthBar (placement invalid mark). */
     private syncedOverlays: Container[] = [];
     private visuals: ContaineredSprite[] = [];
+    private parts = new Map<string, PartNode>();
 
     constructor(
         id: number,
@@ -104,11 +108,13 @@ export class Structure extends GameObject {
         variant?: string,
         health?: number,
         maxHealth?: number,
-        states: EntityStateSnapshot = {}
+        states: EntityStateSnapshot = {},
+        typeId = -1
     ) {
         super(id, pos, radians(rotationDegrees), collisionRadius, visualScale);
 
         this.type = type;
+        this.typeId = typeId;
         this.variant = variant;
         this.animationManager = animationManager;
         this.states = new EntityStateStore(states);
@@ -136,6 +142,31 @@ export class Structure extends GameObject {
 
     set sprite(value: ContaineredSprite) {
         this._sprite = value;
+    }
+
+    /** Part visuals used for texture-following interaction highlights. */
+    partNodes(): ReadonlyMap<string, PartNode> {
+        return this.parts;
+    }
+
+    get ownerIdValue(): number {
+        return this.ownerId;
+    }
+
+    getState(name: string): EntityStateValue | undefined {
+        return this.states.get(name);
+    }
+
+    /** Intact doors (and future interactables) under the cursor. */
+    get isInteractable(): boolean {
+        if (this.placeKind !== AdminPlaceKind.Structure) return false;
+        if (this.typeId < 0) return false;
+        if (this.states.get("rotting") === true) return false;
+        try {
+            return clientStructurePlacement(this.typeId).class === "door";
+        } catch {
+            return false;
+        }
     }
 
     override update(_now?: number): boolean {
@@ -356,6 +387,7 @@ export class Structure extends GameObject {
         }
 
         this.promoteWorldLayers(def, parts);
+        this.parts = parts;
         this.visuals = [...parts.values()].map((part) => part.visual);
         this.sprite = first.visual;
         this.usesWorldDisplay = tileEntity === undefined;
@@ -489,6 +521,7 @@ export class Structure extends GameObject {
         this.worldLayers = [];
         this.skyHoleRadiusScales = [];
         this.visuals = [];
+        this.parts = new Map();
         for (const child of this.container.removeChildren()) {
             child.destroy({ children: true });
         }

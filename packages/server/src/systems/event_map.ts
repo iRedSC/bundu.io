@@ -89,6 +89,10 @@ export namespace GameEvent {
 
     export const ToggleDoor = 27;
     export type ToggleDoor = { object: GameObject; source?: GameObject };
+
+    /** Player right-clicked a world object (doors, …). */
+    export const Interact = 28;
+    export type Interact = { object: GameObject; target: GameObject };
 }
 
 export type GameEventMap = {
@@ -104,6 +108,7 @@ export type GameEventMap = {
     [GameEvent.PlaceSelectedStructure]: GameEvent.PlaceSelectedStructure;
     [GameEvent.ValidateSelectedStructure]: GameEvent.ValidateSelectedStructure;
     [GameEvent.ToggleDoor]: GameEvent.ToggleDoor;
+    [GameEvent.Interact]: GameEvent.Interact;
 };
 
 export type GameEventCallback<T extends keyof GameEventMap> =

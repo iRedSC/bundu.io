@@ -19,6 +19,7 @@ export const AttributeList = [
     "physics.scale",
 
     "placement.reach",
+    "interaction.reach",
 
     "health.max",
     "health.regen_amount",
