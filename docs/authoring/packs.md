@@ -27,7 +27,7 @@ level: 1
 whenMainHand:
   "@s":
     attributes:
-      attack.damage: { op: add, value: 13 }
+      attack.damage: { op: add, value: 5 }
 ```
 
 ```yaml
