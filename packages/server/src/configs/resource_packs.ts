@@ -41,6 +41,7 @@ import {
     assertPackAssetBudget,
     sanitizePackTexture,
 } from "./sanitize_pack_assets";
+import { assertValidPackStack } from "./pack_validation";
 
 export type ResourceAsset = {
     path: string;
@@ -199,6 +200,7 @@ export class ResourcePackService {
 
     /** Load, sanitize, and compile pack assets for hostile client delivery. */
     static async create(): Promise<ResourcePackService> {
+        assertValidPackStack(packs.root);
         const models: Record<string, unknown> = {};
         const groundModelDocs: Record<string, unknown> = {};
         const pendingTextures: { logicalPath: string; bytes: Uint8Array }[] =
