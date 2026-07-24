@@ -1,5 +1,5 @@
 import { Container, Text } from "pixi.js";
-import { ItemButton, tickItemButton } from "./item_button";
+import { ItemButton, tickItemButton, type ItemLockVisual } from "./item_button";
 import { prettifyNumber, percentOf, lerp } from "@bundu/shared";
 import { TEXT_STYLE } from "@client/assets/text";
 import { Grid } from "./grid";
@@ -70,7 +70,10 @@ export class InventoryButton extends ItemButton {
 
     setStack(stack: ItemStack | null) {
         this.clear();
-        if (!stack) return;
+        if (!stack) {
+            this.setItemLock(null);
+            return;
+        }
         const [itemId, amount] = stack;
         this.amount.text = prettifyNumber(amount);
         this.item = itemId;
@@ -84,6 +87,7 @@ export class InventoryButton extends ItemButton {
             this.selected ? 0.92 : 1,
             now
         );
+        this.tickLock(now);
     }
 
     override destroy(): void {
@@ -126,6 +130,8 @@ export class Inventory {
     slots: (ItemStack | null)[] = [];
     cursor: ItemStack | null = null;
     items = new Map<number, number>();
+    /** Active item locks keyed by item registry id. */
+    private itemLocks = new Map<number, ItemLockVisual>();
 
     onSelect?: SelectCB;
     onMove?: MoveCB;
@@ -408,9 +414,12 @@ export class Inventory {
                     if (!this.dragCommitted) {
                         // Never left the click slack — treat as select.
                         if (this.dragStack) {
-                            this.buttons[from]?.setStack(
-                                this.slots[from] ?? null
-                            );
+                            const stack = this.slots[from] ?? null;
+                            const button = this.buttons[from];
+                            if (button) {
+                                button.setStack(stack);
+                                this.applyLockVisual(button, stack?.[0]);
+                            }
                             this.syncGhostToCursor();
                         }
                         this.selectedSlot = from;
@@ -455,7 +464,12 @@ export class Inventory {
     private abortDrag() {
         const from = this.dragFrom;
         if (from !== null && this.dragStack) {
-            this.buttons[from]?.setStack(this.slots[from] ?? null);
+            const stack = this.slots[from] ?? null;
+            const button = this.buttons[from];
+            if (button) {
+                button.setStack(stack);
+                this.applyLockVisual(button, stack?.[0]);
+            }
             this.syncGhostToCursor();
         }
         this.clearDrag();
@@ -510,10 +524,16 @@ export class Inventory {
     private finishFly(fly: Fly) {
         if (fly.mode === "slot" && fly.slot !== undefined) {
             this.settling.delete(fly.slot);
-            this.buttons[fly.slot]?.setStack(this.slots[fly.slot] ?? null);
+            const stack = this.slots[fly.slot] ?? null;
+            const button = this.buttons[fly.slot];
+            if (button) {
+                button.setStack(stack);
+                this.applyLockVisual(button, stack?.[0]);
+            }
         } else if (fly.mode === "pointer") {
             if (this.cursor) {
                 this.ghost.setStack(this.cursor);
+                this.applyLockVisual(this.ghost, this.cursor[0]);
                 this.ghost.button.visible = true;
                 this.ghost.button.position.copyFrom(fly.view.button.position);
                 this.ghost.button.scale.copyFrom(fly.view.button.scale);
@@ -727,9 +747,11 @@ export class Inventory {
         this.ghost.disableSprite.visible = false;
         if (this.cursor) {
             this.ghost.setStack(this.cursor);
+            this.applyLockVisual(this.ghost, this.cursor[0]);
             this.ghost.button.visible = true;
             this.container.addChild(this.ghost.button);
         } else {
+            this.ghost.setItemLock(null);
             this.ghost.button.visible = false;
             this.snapGhost = false;
         }
@@ -806,6 +828,44 @@ export class Inventory {
                 continue;
             }
             button.setStack(this.slots[i] ?? null);
+            this.applyLockVisual(button, this.slots[i]?.[0]);
+        }
+    }
+
+    private applyLockVisual(
+        button: InventoryButton,
+        itemId: number | undefined
+    ) {
+        if (itemId === undefined) {
+            button.setItemLock(null);
+            return;
+        }
+        const lock = this.itemLocks.get(itemId);
+        button.setItemLock(lock ?? null);
+    }
+
+    /**
+     * Apply authoritative item locks.
+     * `remainingMs === -1` → permanent until unlockItem.
+     */
+    updateLocks(locks: ServerPacket.UpdateItemLocks["locks"]) {
+        const next = new Map<number, ItemLockVisual>();
+        const now = performance.now();
+        for (const [itemId, remainingMs, durationMs] of locks) {
+            next.set(itemId, {
+                endsAt:
+                    remainingMs < 0
+                        ? Number.POSITIVE_INFINITY
+                        : now + remainingMs,
+                durationMs: Math.max(0, durationMs),
+            });
+        }
+        this.itemLocks = next;
+        for (const [i, button] of this.buttons.entries()) {
+            this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
+        }
+        if (this.cursor) {
+            this.applyLockVisual(this.ghost, this.cursor[0]);
         }
     }
 
@@ -849,9 +909,18 @@ export class Inventory {
     }
 
     tick(now?: number) {
+        const t = now ?? performance.now();
+        for (const [itemId, lock] of this.itemLocks) {
+            if (
+                lock.endsAt !== Number.POSITIVE_INFINITY &&
+                t >= lock.endsAt
+            ) {
+                this.itemLocks.delete(itemId);
+            }
+        }
         for (const [slot, button] of this.buttons.entries()) {
             button.selected = slot === this.selectedSlot;
-            button.tick(now);
+            button.tick(t);
         }
 
         const pointer = this.pointerLocal();

@@ -26,6 +26,7 @@ import {
     clearMissingEquipment,
     emitEquipment,
     emitInventory,
+    equipContext,
     receiveItem,
 } from "../network/inventory.js";
 import { resolveSelector } from "../systems/entity_selector.js";
@@ -33,10 +34,11 @@ import { SERVER_DEBUG } from "./flag.js";
 
 /** Push inventory + equipment to every target that received items. */
 function syncInventories(targets: readonly GameObject[], world: World): void {
-    const { playerPacketManager, worldPacketManager } = world.context;
+    const { worldPacketManager } = world.context;
+    const ctx = equipContext(world);
     for (const target of targets) {
-        clearMissingEquipment(target, playerPacketManager);
-        emitInventory(target, playerPacketManager);
+        clearMissingEquipment(target, ctx);
+        emitInventory(target, world.context.playerPacketManager);
         emitEquipment(target, worldPacketManager);
     }
 }
@@ -60,6 +62,12 @@ type ExecHelpers = {
     onCreative?: (player: GameObject) => void;
     onGodmode?: (player: GameObject) => boolean;
 };
+
+/** Helpers for pack-authored command strings (onEquip / onUnequip). */
+export type AuthoredCommandHelpers = Pick<
+    ExecHelpers,
+    "world" | "onKill" | "now" | "onSetTime" | "onFreecam" | "onCreative" | "onGodmode"
+>;
 
 type ServerCommand = CommandProjection & {
     run: (
@@ -377,4 +385,27 @@ export function tryHandleDebugChatCommand(
             error instanceof Error ? error.message : "Command failed";
         return { handled: true, ok: false, message: text };
     }
+}
+
+/**
+ * Run a pack-authored command string (with or without leading `/`).
+ * Bypasses op checks — authored content is trusted.
+ */
+export function runAuthoredCommand(
+    player: GameObject,
+    commandLine: string,
+    helpers: AuthoredCommandHelpers
+): void {
+    const trimmed = commandLine.trim();
+    const message = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    const registry = buildCommandRegistry();
+    const parsed = parseCommand(message, registry);
+    if (!parsed.ok) {
+        throw new Error(`authored command: ${parsed.message}`);
+    }
+    const command = COMMANDS.find((entry) => entry.name === parsed.name);
+    if (!command) {
+        throw new Error(`authored command: unknown /${parsed.name}`);
+    }
+    command.run(player, parsed.args, helpers);
 }

@@ -1,4 +1,4 @@
-import { Container } from "pixi.js";
+import { Container, Graphics } from "pixi.js";
 import { SpriteFactory, type ContaineredSprite } from "../assets/sprite_factory";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import { percentOf } from "@bundu/shared/math";
@@ -107,6 +107,13 @@ export function tickItemButton(
     );
 }
 
+export type ItemLockVisual = {
+    /** `performance.now()` when the lock ends; `Infinity` = until unlock. */
+    endsAt: number;
+    /** Authored duration; 0 when permanent. */
+    durationMs: number;
+};
+
 export class ItemButton {
     button: Container;
     enabled: boolean = true;
@@ -117,6 +124,11 @@ export class ItemButton {
     disableSprite: ContaineredSprite;
     /** Icon content root (texture sprite or assembled `model:` def). */
     itemDisplay: Container;
+    /** Dark circular wipe + lock icon while the stack's item is locked. */
+    private lockOverlay: Container;
+    private lockWipe: Graphics;
+    private lockIcon: ContaineredSprite;
+    private lockVisual: ItemLockVisual | null = null;
 
     hovering: boolean = false;
     down: boolean = false;
@@ -163,8 +175,23 @@ export class ItemButton {
         this.itemDisplay = new Container();
         this.itemDisplay.zIndex = 1;
 
+        this.lockWipe = new Graphics();
+        this.lockWipe.zIndex = 0;
+        this.lockIcon = SpriteFactory.build("bundu/ui/item_lock.png");
+        this.lockIcon.anchor.set(0.5);
+        this.lockIcon.width = ITEM_BUTTON_SIZE * 0.42;
+        this.lockIcon.height = ITEM_BUTTON_SIZE * 0.42;
+        this.lockIcon.zIndex = 1;
+        this.lockOverlay = new Container();
+        this.lockOverlay.sortableChildren = true;
+        this.lockOverlay.zIndex = 900;
+        this.lockOverlay.visible = false;
+        this.lockOverlay.addChild(this.lockWipe);
+        this.lockOverlay.addChild(this.lockIcon);
+
         this.button.addChild(this.itemDisplay);
         this.button.addChild(this.background);
+        this.button.addChild(this.lockOverlay);
         this.button.addChild(this.disableSprite);
         this.button.sortChildren();
 
@@ -240,6 +267,68 @@ export class ItemButton {
         this.button.eventMode = "static";
     }
 
+    setItemLock(visual: ItemLockVisual | null) {
+        this.lockVisual = visual;
+        if (!visual) {
+            this.lockOverlay.visible = false;
+            this.lockWipe.clear();
+            return;
+        }
+        this.lockOverlay.visible = true;
+        this.redrawLockWipe(performance.now());
+    }
+
+    /** Redraw circular wipe from remaining lock time. Returns true if still locked. */
+    tickLock(now = performance.now()): boolean {
+        if (!this.lockVisual) {
+            if (this.lockOverlay.visible) {
+                this.lockOverlay.visible = false;
+                this.lockWipe.clear();
+            }
+            return false;
+        }
+        if (
+            this.lockVisual.endsAt !== Number.POSITIVE_INFINITY &&
+            now >= this.lockVisual.endsAt
+        ) {
+            this.lockVisual = null;
+            this.lockOverlay.visible = false;
+            this.lockWipe.clear();
+            return false;
+        }
+        this.lockOverlay.visible = true;
+        this.redrawLockWipe(now);
+        return true;
+    }
+
+    private redrawLockWipe(now: number) {
+        const visual = this.lockVisual;
+        if (!visual) return;
+        let remaining = 1;
+        if (
+            visual.durationMs > 0 &&
+            visual.endsAt !== Number.POSITIVE_INFINITY
+        ) {
+            remaining = Math.max(
+                0,
+                Math.min(1, (visual.endsAt - now) / visual.durationMs)
+            );
+        }
+        const radius = ITEM_BUTTON_SIZE * 0.48;
+        this.lockWipe.clear();
+        this.lockWipe
+            .moveTo(0, 0)
+            .arc(
+                0,
+                0,
+                radius,
+                -Math.PI / 2,
+                -Math.PI / 2 + Math.PI * 2 * remaining
+            )
+            .lineTo(0, 0)
+            .fill({ color: 0x000000, alpha: 0.55 });
+    }
+
     set item(item: number | null) {
         this.clearIcon?.();
         this.clearIcon = undefined;
@@ -247,6 +336,7 @@ export class ItemButton {
         if (item === null) {
             this._item = null;
             this.itemDisplay.visible = false;
+            this.setItemLock(null);
             return;
         }
 
@@ -282,6 +372,9 @@ export class ItemButton {
 
         this.background.destroy();
         this.disableSprite.destroy();
+        this.lockWipe.destroy();
+        this.lockIcon.destroy();
+        this.lockOverlay.destroy({ children: false });
         this.itemDisplay.destroy({ children: true });
         this.button.destroy({ children: false });
     }

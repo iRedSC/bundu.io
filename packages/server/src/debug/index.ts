@@ -4,8 +4,10 @@
 export { SERVER_DEBUG } from "./flag.js";
 export {
     tryHandleDebugChatCommand,
+    runAuthoredCommand,
     buildCommandRegistry,
     effectiveOpLevel,
     emitCommandRegistry,
     emitCommandResult,
 } from "./chat_commands.js";
+export type { AuthoredCommandHelpers } from "./chat_commands.js";

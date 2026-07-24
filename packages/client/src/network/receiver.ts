@@ -119,6 +119,9 @@ export function setupGUIPacketReceiving(
         ui.inventory.update(packet);
         refreshCraftingMenu(ui);
     });
+    receiver.on(ServerPacket.UpdateItemLocks, ({ locks }) => {
+        ui.inventory.updateLocks(locks);
+    });
     receiver.on(ServerPacket.UpdateFlags, ({ flags }) => {
         playerFlags = [...flags];
         refreshCraftingMenu(ui);

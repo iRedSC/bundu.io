@@ -3,7 +3,7 @@ texture: bundu/item/tool/wood_pickaxe.svg
 ---
 type: bundu:pickaxe
 level: 1
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

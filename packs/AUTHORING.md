@@ -59,15 +59,19 @@ shared models
 | `can_saturate` | `false` | Food may fill past normal hunger cap |
 | `eat_duration_ms` | `1000` | Eat channel length |
 | `places` | — | Structure id this item places |
-| `whenMainHand` / `whenOffHand` / `whenHelmet` | — | Effect contexts (attributes, flags, hide) |
+| `whenEquipped` | — | Effect context while equipped (slot from `function`) |
+| `onEquip` / `onUnequip` | — | One-shot events (`commands`, `lockItem`, `unlockItem`) |
 
 Author `type: bundu:food` (namespaced); runtime stores the bare path (`food`) for
 eat/harvest checks.
 
 ### Effect contexts (items)
 
+An item has one `function`, so there is a single equip context — `whenEquipped` —
+applied whenever that item is in its equipment slot.
+
 ```yaml
-whenMainHand:
+whenEquipped:
   "@s":
     attributes:
       attack.damage: { op: add, value: 13 }
@@ -93,13 +97,39 @@ use `@a[connected=true]` for online-only. Example — aura on everyone else with
 10 tiles:
 
 ```yaml
-whenMainHand:
+whenEquipped:
   "@s":
     attributes:
       attack.damage: { op: add, value: 13 }
   "@a[distance=0.2..10]":
     flags: [near_banner]
 ```
+
+### Equip events (`onEquip` / `onUnequip`)
+
+Fire once when the item is equipped or unequipped (not while held). Event types:
+
+```yaml
+onEquip:
+  commands:
+    - "give @s bundu:iridium 1"
+  lockItem:
+    item: #bundu:swords
+    allowUse: true
+    for: 5000
+onUnequip:
+  unlockItem:
+    item: #bundu:swords
+```
+
+| Event | Fields | Meaning |
+|---|---|---|
+| `commands` | string[] | Run slash commands as the wearer (leading `/` optional) |
+| `lockItem` | `item`, `allowUse?`, `for?` | Lock matching item id(s) / `#tag`. Blocks equip/unequip and crafting; drop still allowed. `allowUse: true` keeps attack/eat/place while equipped. `for` is duration in ms (omit = until `unlockItem`). |
+| `unlockItem` | `item` | Clear locks for matching item id(s) / `#tag` |
+
+Locked slots darken with a circular wipe timer and a lock icon. `lockItem` /
+`unlockItem` may be a single object or an array.
 
 ### Display (item models)
 
@@ -132,7 +162,7 @@ texture: bundu/item/tool/wood_sword.svg
 ---
 type: bundu:sword
 level: 1
-whenMainHand:
+whenEquipped:
   "@s":
     attributes:
       attack.damage: { op: add, value: 13 }
@@ -150,14 +180,14 @@ extends: item_type:bundu:helmet
 texture: bundu/item/equipment/wood_helmet.svg
 ---
 type: bundu:helmet
-whenHelmet:
+whenEquipped:
   "@s":
     attributes:
       health.defense: { op: add, value: 5 }
 ```
 
 Hats use `type: bundu:hat` / `extends: item_type:bundu:hat` (same `wear` slot).
-Warmth gear often adds `temperature.*` attributes on `whenHelmet`.
+Warmth gear often adds `temperature.*` attributes on `whenEquipped`.
 
 ### Food
 
@@ -183,7 +213,7 @@ extends: item_type:bundu:book
 texture: bundu/item/book/book.svg
 ---
 type: bundu:book
-whenOffHand:
+whenEquipped:
   "@s":
     flags: [holding_book]
 ```

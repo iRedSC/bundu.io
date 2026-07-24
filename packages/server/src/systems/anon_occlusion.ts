@@ -25,9 +25,9 @@ import { GameEvent, type GameEventMap } from "./event_map.js";
 import type { RoofSystem } from "./roof.js";
 
 const EQUIP_SLOTS = [
-    ["mainHand", "whenMainHand"],
-    ["offHand", "whenOffHand"],
-    ["helmet", "whenHelmet"],
+    ["mainHand", "whenEquipped:mainHand"],
+    ["offHand", "whenEquipped:offHand"],
+    ["helmet", "whenEquipped:helmet"],
 ] as const;
 
 /** Visit each equip hide payload for a player (before OR-merge). */
@@ -39,10 +39,10 @@ function forEachEquipHidePayload(
     const data = PlayerData.get(player);
     if (!data) return;
 
-    for (const [slot, contextName] of EQUIP_SLOTS) {
+    for (const [slot] of EQUIP_SLOTS) {
         const itemId = data[slot];
         if (itemId === undefined) continue;
-        const context = ItemConfigs.get(itemId)[contextName];
+        const context = ItemConfigs.get(itemId).whenEquipped;
         if (!context) continue;
         for (const payload of matchingPayloads(context, (t) =>
             subjectMatchesTarget(player, t, { world, executor: player })

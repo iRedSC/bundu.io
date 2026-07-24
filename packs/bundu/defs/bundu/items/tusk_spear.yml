@@ -3,7 +3,7 @@ texture: bundu/item/tool/hunting_spear.svg
 ---
 type: bundu:spear
 level: 5
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

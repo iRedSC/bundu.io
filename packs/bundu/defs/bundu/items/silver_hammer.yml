@@ -3,7 +3,7 @@ texture: bundu/item/tool/silver_hammer.svg
 ---
 type: bundu:hammer
 level: 4
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

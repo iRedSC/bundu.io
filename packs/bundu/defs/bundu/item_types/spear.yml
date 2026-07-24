@@ -11,7 +11,7 @@ displays:
         y: -8
 ---
 function: "main_hand"
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             "movement.speed":

@@ -77,14 +77,19 @@ export type EffectContext = {
     targets: readonly TargetEffect[];
 };
 
-export type EquipContextName = "whenMainHand" | "whenOffHand" | "whenHelmet";
+export type EquipContextName = "whenEquipped";
 export type SpatialContextName = "whenOccupied" | "whenNearby";
 export type ContextName = EquipContextName | SpatialContextName;
 
-export const EQUIP_CONTEXTS = [
+/** Legacy equip context keys — rejected at load with a rename hint. */
+export const LEGACY_EQUIP_CONTEXTS = [
     "whenMainHand",
     "whenOffHand",
     "whenHelmet",
+] as const;
+
+export const EQUIP_CONTEXTS = [
+    "whenEquipped",
 ] as const satisfies readonly EquipContextName[];
 
 export const SPATIAL_CONTEXTS = [
@@ -98,9 +103,7 @@ const OCCUPATION_TYPES = new Set<OccupationType>(["center", "collider"]);
 const ATTR_OPS = new Set<string>(AttributeOperationList);
 
 export type ContextBundle = {
-    whenMainHand?: EffectContext;
-    whenOffHand?: EffectContext;
-    whenHelmet?: EffectContext;
+    whenEquipped?: EffectContext;
     whenOccupied?: EffectContext;
     whenNearby?: EffectContext;
 };

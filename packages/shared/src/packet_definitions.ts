@@ -73,6 +73,11 @@ export const ServerPacket = {
      * Sent per viewer via player packets.
      */
     SetPlayerVisual: 0x26,
+    /**
+     * Owner-only item locks: `[itemId, remainingMs, durationMs, allowUse]`.
+     * `remainingMs === -1` means locked until unlockItem (no wipe timer).
+     */
+    UpdateItemLocks: 0x27,
 } as const;
 
 /** Payload shapes for `ServerPacket.*` (merged with the const above). */
@@ -208,6 +213,14 @@ export namespace ServerPacket {
     export type SetPlayerVisual = {
         id: number;
         ghosted: boolean;
+    };
+    /**
+     * Per-item lock state for the owning client's inventory UI.
+     * Tuple: `[itemId, remainingMs, durationMs, allowUse(0|1)]`.
+     * `remainingMs === -1` = permanent until unlockItem.
+     */
+    export type UpdateItemLocks = {
+        locks: [itemId: number, remainingMs: number, durationMs: number, allowUse: number][];
     };
     export type UnloadGround = {
         groundData: GroundWire[];
@@ -451,6 +464,7 @@ export type ServerPacketMap = {
     [ServerPacket.CreativeMode]: ServerPacket.CreativeMode;
     [ServerPacket.SetWorldSize]: ServerPacket.SetWorldSize;
     [ServerPacket.SetPlayerVisual]: ServerPacket.SetPlayerVisual;
+    [ServerPacket.UpdateItemLocks]: ServerPacket.UpdateItemLocks;
 };
 
 /** ID → payload map for client packets. */
@@ -556,6 +570,7 @@ export const ServerSchema: {
     },
     [ServerPacket.SetWorldSize]: { fields: ["worldTiles"] },
     [ServerPacket.SetPlayerVisual]: { fields: ["id", "ghosted"] },
+    [ServerPacket.UpdateItemLocks]: { fields: ["locks"] },
 };
 
 export const ClientSchema: {
