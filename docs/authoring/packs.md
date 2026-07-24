@@ -9,6 +9,20 @@ bun run pack:gen          # defs/ → .generated/packs/*/{data,assets}
 bun run validate:packs    # regenerates, then validates the runtime mirror
 ```
 
+### Explain generated destinations
+
+Before generating a pack, inspect how an authored YAML source maps to runtime
+documents:
+
+```sh
+bun run pack:explain packs/bundu/defs/bundu/items/lumber_axe.yml
+```
+
+For paired definitions, document 1 is the display document and document 2 is
+the gameplay data document. The command prints each generated destination and
+also validates the surrounding namespace for invalid layouts, collisions, and
+unsafe directive paths. Diagnostics use pack-relative source paths.
+
 ## Mental model
 
 | Side | What | Where |
