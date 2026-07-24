@@ -6,6 +6,8 @@ export type GameSocketData = {
     sessionId: string;
     playerId: number;
     skinId: number;
+    negotiated: boolean;
+    invalidFrames: number;
 };
 
 export class SocketManager {

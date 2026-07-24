@@ -2,20 +2,23 @@ import {
     isHardSessionClose,
     SESSION_ENDED_CLOSE,
 } from "@bundu/shared/session";
-import { decodePacketData } from "../network/decode";
-import type { SerializedPacketArray } from "../network/client_receiver";
+import {
+    decodeWelcome,
+    encodeHello,
+    NEGOTIATION_PACKET_ID,
+    PROTOCOL_VERSION,
+    ProtocolCodec,
+    SUPPORTED_FEATURES,
+    type ServerFrame,
+} from "@bundu/shared";
 import { serializer } from "../network/serializer";
 import { Socket } from "../network/socket";
 
 export type GameSocket = Socket;
 
 export type PacketReceiver = {
-    process(packets: SerializedPacketArray): void;
+    process(packets: ServerFrame): void;
 };
-
-function isPacketArray(data: unknown): data is SerializedPacketArray {
-    return Array.isArray(data) && typeof data[0] === "number";
-}
 
 export type HardDisconnectInfo = {
     /** True when the server ended a live session (player death). */
@@ -28,6 +31,7 @@ export type GameSessionHooks = {
     autoReconnect: boolean;
     buildSocketUrl: (username: string) => string;
     getUsername: () => string;
+    getPackFingerprint: () => string;
     resetLocalState: () => void;
     setConnecting: (connecting: boolean) => void;
     onConnected: () => void;
@@ -47,6 +51,7 @@ export type GameSessionHooks = {
  * Bootstrap wires hooks; input/UI call sendPacket / isInGame.
  */
 export class GameSession {
+    private readonly codec = new ProtocolCodec();
     private socket: GameSocket | null = null;
     private connecting = false;
     private generation = 0;
@@ -132,18 +137,43 @@ export class GameSession {
             if (!(raw instanceof ArrayBuffer) && !ArrayBuffer.isView(raw)) {
                 return;
             }
-            const data = decodePacketData(raw);
-            if (!isPacketArray(data)) return;
-            this.receiver.process(data);
+            const decoded = this.codec.decodeServerFrame(raw);
+            if (!decoded.ok) {
+                console.warn("Dropped invalid server frame", decoded.error);
+                return;
+            }
+            const [, ...packets] = decoded.value;
+            const welcomePacket = packets.find(
+                (packet) => packet[0] === NEGOTIATION_PACKET_ID
+            );
+            if (welcomePacket) {
+                const welcome = decodeWelcome(welcomePacket);
+                if (
+                    !welcome ||
+                    welcome.protocolVersion !== PROTOCOL_VERSION ||
+                    welcome.packFingerprint !== this.hooks.getPackFingerprint()
+                ) {
+                    next.close(1008, "invalid welcome");
+                    return;
+                }
+                this.connecting = false;
+                this.reconnectDelay = 250;
+                this.hadSession = true;
+                this.hooks.setConnecting(false);
+                this.hooks.onConnected();
+                return;
+            }
+            this.receiver.process(decoded.value);
         };
 
         next.onopen = () => {
             if (this.socket !== next) return;
-            this.connecting = false;
-            this.reconnectDelay = 250;
-            this.hadSession = true;
-            this.hooks.setConnecting(false);
-            this.hooks.onConnected();
+            const hello = encodeHello({
+                    protocolVersion: PROTOCOL_VERSION,
+                    packFingerprint: this.hooks.getPackFingerprint(),
+                    features: [...SUPPORTED_FEATURES],
+                });
+            next.send(hello.slice().buffer);
         };
 
         next.onerror = () => {
