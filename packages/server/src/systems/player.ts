@@ -45,9 +45,18 @@ import {
     clearMissingEquipment,
     emitEquipment,
     emitInventory,
+    equipContext,
     receiveItem,
     selectEquipment,
 } from "../network/inventory.js";
+import {
+    clearPlayerItemLocks,
+    emitItemLocks,
+    inventoryHasLockedIngredient,
+    isItemLocked,
+    pruneExpiredLocks,
+} from "../network/item_locks.js";
+import { equippedLockRequest } from "../components/item_locks.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
 import { groundWire } from "./ground_wire.js";
 import { decorationWire } from "./decoration_wire.js";
@@ -105,12 +114,64 @@ export class PlayerSystem extends System<GameEventMap> {
         this.creativeModeSystem = system;
     }
 
+    private equipCtx() {
+        return equipContext(this.world);
+    }
+
     override update(time: number, _delta: number, player: GameObject): void {
         // Soft-disconnect parks intent/combat only — vitals still tick without a socket.
         if (!this.world.context.socketManager.getSocket(player.id)) return;
         const data = PlayerData.get(player);
         // Waiting for ClientReady, or freecam: body parked — no combat/move ticks.
         if (!data?.clientReady || data.freecam) return;
+
+        if (pruneExpiredLocks(player, time)) {
+            emitItemLocks(
+                player,
+                time,
+                this.world.context.playerPacketManager
+            );
+        }
+
+        if (
+            data.eating &&
+            isItemLocked(
+                player,
+                {
+                    action: "use",
+                    itemId: data.eating.itemId,
+                    slot: "offhand",
+                },
+                time
+            )
+        ) {
+            this.clearEating(player);
+        }
+        if (
+            data.blocking &&
+            (isItemLocked(
+                player,
+                equippedLockRequest("use", data.mainHand, "mainhand"),
+                time
+            ) ||
+                isItemLocked(
+                    player,
+                    equippedLockRequest("use", data.offHand, "offhand"),
+                    time
+                ) ||
+                isItemLocked(
+                    player,
+                    equippedLockRequest("use", data.helmet, "helmet"),
+                    time
+                ))
+        ) {
+            data.blocking = false;
+            Attributes.get(player)?.clear("blocking");
+            this.world.context.worldPacketManager.emit(
+                ServerPacket.BlockEvent,
+                { id: player.id, stop: true }
+            );
+        }
 
         const attributes = player.get(Attributes);
 
@@ -124,6 +185,14 @@ export class PlayerSystem extends System<GameEventMap> {
 
         if (data.attacking && data.lastAttackTime && !data.blocking && !data.crafting) {
             if (
+                isItemLocked(
+                    player,
+                    equippedLockRequest("use", data.mainHand, "mainhand"),
+                    time
+                )
+            ) {
+                data.attacking = false;
+            } else if (
                 data.lastAttackTime <
                 time - (1 / attributes.get("attack.speed")) * 1000
             ) {
@@ -267,6 +336,7 @@ export class PlayerSystem extends System<GameEventMap> {
         }
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
+        emitItemLocks(player, this.world.gameTime, playerPacketManager);
         emitCommandRegistry(
             player.id,
             effectiveOpLevel(data),
@@ -294,6 +364,7 @@ export class PlayerSystem extends System<GameEventMap> {
 
         const data = PlayerData.get(target);
         if (data) data.sessionId = undefined;
+        clearPlayerItemLocks(target);
         clearAnimalsFrozenFor(target.id);
         clearEditorHistory(target.id);
         this.freecamGhostSystem?.despawnFor(target.id);
@@ -438,7 +509,7 @@ export class PlayerSystem extends System<GameEventMap> {
         }
 
         this.clearEating(player);
-        clearMissingEquipment(player, playerPacketManager);
+        clearMissingEquipment(player, this.equipCtx());
         emitInventory(player, playerPacketManager);
         emitEquipment(player, worldPacketManager);
         emitVitals(player, playerPacketManager);
@@ -449,6 +520,14 @@ export class PlayerSystem extends System<GameEventMap> {
         const attributes = Attributes.get(player);
         const config = ItemConfigs.get(itemId);
         if (!data || !attributes || data.eating || config.type !== "food") return;
+        if (
+            isItemLocked(
+                player,
+                { action: "use", itemId, slot: "offhand" },
+                this.world.gameTime
+            )
+        )
+            return;
 
         data.attacking = false;
         data.eating = {
@@ -506,6 +585,16 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!recipe || !inv || !this.hasCraftingRequirements(player, recipe.flags)) {
             return;
         }
+        // Re-check craft locks at completion (lock may have been applied mid-channel).
+        if (
+            inventoryHasLockedIngredient(
+                player,
+                recipe.ingredients,
+                this.world.gameTime
+            )
+        ) {
+            return;
+        }
         if (!removeItems(inv, recipe.ingredients)) return;
         const remaining = receiveItem(player, recipe.resultItemId, recipe.amount);
         if (remaining > 0) {
@@ -514,7 +603,7 @@ export class PlayerSystem extends System<GameEventMap> {
 
         data.score += recipe.score;
 
-        clearMissingEquipment(player, this.world.context.playerPacketManager);
+        clearMissingEquipment(player, this.equipCtx());
         this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
@@ -538,6 +627,11 @@ export class PlayerSystem extends System<GameEventMap> {
             !inv ||
             !this.hasCraftingRequirements(player, recipe.flags) ||
             !hasItems(inv, recipe.ingredients) ||
+            inventoryHasLockedIngredient(
+                player,
+                recipe.ingredients,
+                this.world.gameTime
+            ) ||
             (result.function === "backpack" && data.backpack)
         ) {
             return;
@@ -598,6 +692,17 @@ export class PlayerSystem extends System<GameEventMap> {
             data.attacking = false;
             return;
         }
+        if (
+            !stop &&
+            isItemLocked(
+                player,
+                equippedLockRequest("use", data.mainHand, "mainhand"),
+                this.world.gameTime
+            )
+        ) {
+            data.attacking = false;
+            return;
+        }
 
         data.attacking = !stop;
         if (data.lastAttackTime === undefined) {
@@ -623,6 +728,26 @@ export class PlayerSystem extends System<GameEventMap> {
             ItemConfigs.get(itemId).type === "food"
         ) {
             this.startEating(player, itemId);
+            return;
+        }
+        if (
+            !stop &&
+            (isItemLocked(
+                player,
+                equippedLockRequest("use", data.mainHand, "mainhand"),
+                this.world.gameTime
+            ) ||
+                isItemLocked(
+                    player,
+                    equippedLockRequest("use", data.offHand, "offhand"),
+                    this.world.gameTime
+                ) ||
+                isItemLocked(
+                    player,
+                    equippedLockRequest("use", data.helmet, "helmet"),
+                    this.world.gameTime
+                ))
+        ) {
             return;
         }
         const blocking = attributes.get("health.defense.blocking");
@@ -653,20 +778,35 @@ export class PlayerSystem extends System<GameEventMap> {
         const player = this.world.getObject(playerId);
         if (!player) return;
         const data = PlayerData.get(player);
-        if (!data?.clientReady || data.crafting) return;
-        this.clearEating(player);
         const inv = Inventory.get(player);
-        if (!inv || slot < 0 || slot >= inv.slots.length) return;
+        if (!data?.clientReady || !inv) return;
+        const respond = (accepted: boolean) => {
+            this.world.context.playerPacketManager.set(
+                player.id,
+                ServerPacket.SelectItemResult,
+                { requested: slot, selected: inv.selected, accepted }
+            );
+        };
+        if (data.crafting || slot < 0 || slot >= inv.slots.length) {
+            respond(false);
+            return;
+        }
+        this.clearEating(player);
 
-        inv.selected = slot;
-        selectEquipment(
+        const accepted = selectEquipment(
             player,
             inv.slots[slot]?.id,
-            this.world.context.playerPacketManager
+            this.equipCtx()
         );
+        if (!accepted) {
+            respond(false);
+            return;
+        }
+        inv.selected = slot;
         this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         emitEquipment(player, this.world.context.worldPacketManager);
+        respond(true);
     };
 
     moveSlot = (playerId: number, { from, to }: ClientPacket.MoveSlot) => {
@@ -683,10 +823,20 @@ export class PlayerSystem extends System<GameEventMap> {
             to === -1 && inv.slots[from]
                 ? { ...inv.slots[from] }
                 : undefined;
+        if (
+            dropped &&
+            isItemLocked(
+                player,
+                { action: "drop", itemId: dropped.id },
+                this.world.gameTime
+            )
+        ) {
+            return;
+        }
         if (!applyMoveSlot(inv, from, to, false)) return;
         if (dropped) this.dropItem(player, dropped.id, dropped.count);
 
-        clearMissingEquipment(player, this.world.context.playerPacketManager);
+        clearMissingEquipment(player, this.equipCtx());
         this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
@@ -727,12 +877,23 @@ export class PlayerSystem extends System<GameEventMap> {
                   )
                 : 0;
         const itemId = slot === -1 ? inv.cursor?.id : undefined;
+        if (
+            itemId !== undefined &&
+            amount > 0 &&
+            isItemLocked(
+                player,
+                { action: "drop", itemId },
+                this.world.gameTime
+            )
+        ) {
+            return;
+        }
         if (!applyCursorSlot(inv, slot, placeMode, creativeReplace)) return;
         if (itemId !== undefined && amount > 0) {
             this.dropItem(player, itemId, amount);
         }
 
-        clearMissingEquipment(player, this.world.context.playerPacketManager);
+        clearMissingEquipment(player, this.equipCtx());
         this.syncSelectedStructure(player);
         this.clearStaleBlocking(player);
         const { playerPacketManager, worldPacketManager } = this.world.context;
@@ -743,6 +904,17 @@ export class PlayerSystem extends System<GameEventMap> {
     placeStructure = (playerId: number, _packet: ClientPacket.PlaceStructure) => {
         const player = this.world.getObject(playerId);
         if (!player || PlayerData.get(player)?.crafting) return;
+        const data = PlayerData.get(player);
+        if (
+            data &&
+            isItemLocked(
+                player,
+                equippedLockRequest("use", data.mainHand, "mainhand"),
+                this.world.gameTime
+            )
+        ) {
+            return;
+        }
         this.trigger(GameEvent.PlaceSelectedStructure, {
             object: player,
         });
@@ -830,7 +1002,7 @@ export class PlayerSystem extends System<GameEventMap> {
             clearMainHandIf(
                 player,
                 data.mainHand,
-                this.world.context.playerPacketManager
+                this.equipCtx()
             );
         }
         if (
@@ -913,7 +1085,7 @@ export class PlayerSystem extends System<GameEventMap> {
             }
             if (command.ok) {
                 emitInventory(player, playerPacketManager);
-                clearMissingEquipment(player, playerPacketManager);
+                clearMissingEquipment(player, this.equipCtx());
                 this.syncSelectedStructure(player);
                 this.clearStaleBlocking(player);
                 emitEquipment(player, worldPacketManager);

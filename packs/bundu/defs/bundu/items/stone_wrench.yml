@@ -2,7 +2,7 @@ extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/stone_wrench.svg
 ---
 type: bundu:wrench
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

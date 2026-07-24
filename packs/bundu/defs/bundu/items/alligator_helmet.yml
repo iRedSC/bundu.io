@@ -2,7 +2,7 @@ texture: bundu/item/equipment/alligator_helmet.svg
 extends: item_type:bundu:helmet
 ---
 type: bundu:helmet
-whenHelmet:
+whenEquipped:
     "@s":
         attributes:
             health.defense:

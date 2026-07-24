@@ -8,3 +8,9 @@ displays:
         scale: 1.75
 ---
 function: "wear"
+onEquip:
+    "@s":
+        lockItem:
+            slots: [helmet]
+            lock: [unequip]
+            for: 10000

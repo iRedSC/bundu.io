@@ -35,6 +35,7 @@ import {
     emitInventory,
     clearMainHandIf,
     clearMissingEquipment,
+    equipContext,
 } from "../network/inventory.js";
 import { syncStructureStates } from "../network/object_state.js";
 import { GameEvent, type GameEventMap } from "./event_map.js";
@@ -121,7 +122,7 @@ export class StructureSystem extends System<GameEventMap> {
             clearMainHandIf(
                 player,
                 itemId,
-                this.world.context.playerPacketManager
+                equipContext(this.world)
             );
             this.world.context.playerPacketManager.set(
                 player.id,
@@ -132,7 +133,7 @@ export class StructureSystem extends System<GameEventMap> {
 
         clearMissingEquipment(
             player,
-            this.world.context.playerPacketManager
+            equipContext(this.world)
         );
         emitEquipment(player, this.world.context.worldPacketManager);
 

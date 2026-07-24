@@ -1,6 +1,6 @@
 # Authoring
 
-How content enters the game. Keep this section short; deep field reference stays in the repo guide.
+How content enters the game, from source definitions to validated runtime packs.
 
 ## Mental model
 
@@ -31,5 +31,4 @@ texture: bundu/item/material/pinecone.svg
 
 ## Next
 
-- [Packs](./packs) — discovery, overlays, `defs/` layout
-- Full field guide: [`packs/AUTHORING.md`](https://github.com/iRedSC/bundu.io/blob/main/packs/AUTHORING.md)
+- [Pack authoring](./packs) — complete tutorials and field reference, including item locks

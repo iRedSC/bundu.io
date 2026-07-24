@@ -261,6 +261,12 @@ export class World {
     private readonly ambientParticles = new AmbientParticles();
     /** Fired when server reports placement validity for the current ghost. */
     onPlacementValidity?: (allowed: boolean) => void;
+    /** Local player's equipment ids changed (for inventory lock UI). */
+    onLocalEquipment?: (
+        mainhand: number,
+        offhand: number,
+        helmet: number
+    ) => void;
     /** Fired after {@link setWorldSize} changes the live playable edge. */
     onWorldSizeChanged?: () => void;
     /** True after local death — keep avatar, skip corpse for the game-over capture. */
@@ -741,6 +747,11 @@ export class World {
 
         if (id === this.user) {
             this.attachLocalPlayer(player);
+            this.onLocalEquipment?.(
+                mainhand ?? -1,
+                offhand ?? -1,
+                helmet ?? -1
+            );
         }
     };
 
@@ -906,6 +917,13 @@ export class World {
         const player = this.objects.get(packet.id);
         if (player instanceof Player) {
             player.setEquipment(packet);
+        }
+        if (packet.id === this.user) {
+            this.onLocalEquipment?.(
+                packet.mainhand,
+                packet.offhand,
+                packet.helmet
+            );
         }
     };
 

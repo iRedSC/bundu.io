@@ -3,7 +3,7 @@ extends: item_type:bundu:book
 ---
 type: bundu:book
 function: off_hand
-whenOffHand:
+whenEquipped:
     "@s":
         attributes:
             temperature.warmth:

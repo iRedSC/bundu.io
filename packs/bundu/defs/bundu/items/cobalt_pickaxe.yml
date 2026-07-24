@@ -3,7 +3,7 @@ texture: bundu/item/tool/cobalt_pickaxe.svg
 ---
 type: bundu:pickaxe
 level: 5
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

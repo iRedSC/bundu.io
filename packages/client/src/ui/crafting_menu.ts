@@ -1,15 +1,16 @@
-import { ItemButton, tickItemButton } from "./item_button";
+import { ItemButton, tickItemButton, formatItemLockTooltip } from "./item_button";
 import type { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
 import type { ServerPacket } from "@bundu/shared/packet_definitions";
 import { Container } from "pixi.js";
 import { colorLerp, lerp } from "@bundu/shared/transforms";
 import { clientRegistries } from "../configs/registries";
+import { tooltipCopy } from "../lang/lang";
 import {
     hideRegistryTooltip,
     moveRegistryTooltip,
-    showRegistryTooltip,
 } from "./registry_tooltip";
+import { showTooltip } from "./tooltip";
 
 const CRAFTING_COLORS = {
     empty: 0x777777,
@@ -64,6 +65,22 @@ export class RecipeManager {
         }
         return craftable;
     }
+
+    /**
+     * First craft-locked ingredient id for a recipe, if any.
+     * Does not consider the recipe result.
+     */
+    craftLockedIngredient(
+        recipeId: number,
+        isLocked: (itemId: number) => boolean
+    ): number | undefined {
+        const recipe = this.recipes.get(recipeId);
+        if (!recipe) return undefined;
+        for (const itemId of recipe.ingredients.keys()) {
+            if (isLocked(Number(itemId))) return Number(itemId);
+        }
+        return undefined;
+    }
 }
 
 type Callback = (recipeId: number, shift: boolean) => void;
@@ -77,6 +94,8 @@ export class CraftingMenu {
     private leftClickCB?: Callback;
     craftingRecipeId: number | null = null;
     private hoverScreen: { x: number; y: number } | null = null;
+    /** Called after buttons/items are rebuilt (e.g. re-apply craft locks). */
+    onAfterUpdate?: () => void;
 
     constructor(readonly grid: Grid) {}
 
@@ -115,12 +134,7 @@ export class CraftingMenu {
                     return;
                 }
                 this.hoverScreen = { x: ev.global.x, y: ev.global.y };
-                showRegistryTooltip(
-                    "item",
-                    clientRegistries().item.location(recipe.resultItemId),
-                    ev.global.x,
-                    ev.global.y
-                );
+                this.showRecipeTip(recipe.resultItemId, button, ev.global.x, ev.global.y);
             };
             button.onHoverMove = (ev) => {
                 this.hoverScreen = { x: ev.global.x, y: ev.global.y };
@@ -132,15 +146,34 @@ export class CraftingMenu {
         const hoverIndex = this.buttons.findIndex((button) => button.hovering);
         const hovered = hoverIndex >= 0 ? this.items[hoverIndex] : undefined;
         if (hovered && this.hoverScreen) {
-            showRegistryTooltip(
-                "item",
-                clientRegistries().item.location(hovered.resultItemId),
+            this.showRecipeTip(
+                hovered.resultItemId,
+                this.buttons[hoverIndex]!,
                 this.hoverScreen.x,
                 this.hoverScreen.y
             );
         } else if (hoverIndex < 0) {
             hideRegistryTooltip();
         }
+        this.onAfterUpdate?.();
+    }
+
+    private showRecipeTip(
+        resultItemId: number,
+        button: ItemButton,
+        screenX: number,
+        screenY: number
+    ) {
+        const copy = tooltipCopy(
+            "item",
+            clientRegistries().item.location(resultItemId)
+        );
+        const lock = button.itemLock;
+        if (lock) {
+            const lockLine = formatItemLockTooltip(lock);
+            copy.body = copy.body ? `${copy.body}\n${lockLine}` : lockLine;
+        }
+        showTooltip(copy, screenX, screenY);
     }
 
     set rightclick(value: Callback) {
@@ -152,6 +185,7 @@ export class CraftingMenu {
     }
 
     tick(now?: number) {
+        const t = now ?? performance.now();
         for (const [index, button] of this.buttons.entries()) {
             const active =
                 this.items[index]?.recipeId === this.craftingRecipeId;
@@ -160,8 +194,9 @@ export class CraftingMenu {
                 CRAFTING_COLORS,
                 0,
                 active ? 0.94 : 1,
-                now
+                t
             );
+            button.tickLock(t);
             button.button.alpha = lerp(
                 button.button.alpha,
                 active ? 1 : this.craftingRecipeId === null ? 1 : 0.35,

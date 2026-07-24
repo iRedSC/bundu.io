@@ -3,7 +3,7 @@ extends: item_type:bundu:hat
 ---
 type: bundu:helmet
 showOverlay: true
-whenHelmet:
+whenEquipped:
     "@s":
         attributes:
             health.defense:

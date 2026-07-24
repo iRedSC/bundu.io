@@ -30,6 +30,11 @@ export type InputPlayerFacade = {
     isPlacementAllowed(): boolean | undefined;
     /** Freecam mode — suppress body input packets. */
     isFreecam(): boolean;
+    /**
+     * True when a use-locked item blocks this press (attack / block / place).
+     * Caller flashes lock UI.
+     */
+    isUseBlocked?: (kind: "attack" | "block" | "place") => boolean;
 };
 
 /**
@@ -202,6 +207,7 @@ export class InputController {
         if (this.facade.isOverInventory()) return;
         if (this.facade.getLocalPlayer()?.isCrafting) return;
         if (event.button === 2) {
+            if (this.facade.isUseBlocked?.("block")) return;
             this.sendPacket(ClientPacket.Block, { stop: false });
             return;
         }
@@ -209,6 +215,7 @@ export class InputController {
 
         const player = this.facade.getLocalPlayer();
         if (player?.getStructureGhost()) {
+            if (this.facade.isUseBlocked?.("place")) return;
             this.syncCursorFromScreen(event.clientX, event.clientY);
             this.placing = true;
             this.lastAttemptKey = "";
@@ -216,6 +223,7 @@ export class InputController {
             return;
         }
 
+        if (this.facade.isUseBlocked?.("attack")) return;
         this.sendPacket(ClientPacket.Attack, { stop: false });
     }
 

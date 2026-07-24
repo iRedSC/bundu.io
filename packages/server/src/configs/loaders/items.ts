@@ -1,6 +1,7 @@
 import type { RegistryId } from "@bundu/shared/registry";
 import { ConfigLoader } from "./loader.js";
 import type { ContextBundle } from "./effect_context.js";
+import type { EquipEvents } from "./equip_events.js";
 
 export type ItemConfig = ContextBundle & {
     type: string | null;
@@ -13,6 +14,10 @@ export type ItemConfig = ContextBundle & {
     places: RegistryId<"structure"> | null;
     /** Keep face/hair body art when this helmet/hat is worn. */
     showOverlay: boolean;
+    /** Fire once when this item is equipped. */
+    onEquip?: EquipEvents;
+    /** Fire once when this item is unequipped. */
+    onUnequip?: EquipEvents;
 };
 
 const fallback: ItemConfig = {

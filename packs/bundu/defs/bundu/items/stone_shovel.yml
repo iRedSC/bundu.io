@@ -2,7 +2,7 @@ extends: item_type:bundu:pickaxe
 texture: bundu/item/tool/stone_shovel.svg
 ---
 type: bundu:shovel
-whenMainHand:
+whenEquipped:
     "@s":
         attributes:
             attack.damage:

@@ -2,7 +2,7 @@ extends: item_type:bundu:hat
 texture: bundu/item/equipment/artic_gear.svg
 ---
 type: bundu:hat
-whenHelmet:
+whenEquipped:
     "@s":
         attributes:
             temperature.warmth:

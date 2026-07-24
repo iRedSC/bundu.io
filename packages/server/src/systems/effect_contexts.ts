@@ -9,7 +9,6 @@ import { flagRegistry } from "../configs/flag_registry.js";
 import type {
     EffectContext,
     EffectPayload,
-    EquipContextName,
 } from "../configs/loaders/effect_context.js";
 import {
     contextHasEffects,
@@ -54,11 +53,11 @@ type Applied = {
 const appliedBySubject = new Map<number, Applied>();
 
 const EQUIP_SLOTS = [
-    ["mainHand", "whenMainHand"],
-    ["offHand", "whenOffHand"],
-    ["helmet", "whenHelmet"],
+    ["mainHand", "whenEquipped:mainHand"],
+    ["offHand", "whenEquipped:offHand"],
+    ["helmet", "whenEquipped:helmet"],
 ] as const satisfies ReadonlyArray<
-    readonly ["mainHand" | "offHand" | "helmet", EquipContextName]
+    readonly ["mainHand" | "offHand" | "helmet", string]
 >;
 
 let cachedMaxProximity: number | undefined;
@@ -90,23 +89,16 @@ function maxEquipEmanationDistance(): number {
     let maxTiles = 0;
     let unbounded = false;
     for (const config of ItemConfigs.entries.values()) {
-        for (const contextName of [
-            "whenMainHand",
-            "whenOffHand",
-            "whenHelmet",
-        ] as const) {
-            const context = config[contextName];
-            if (!context) continue;
-            for (const target of context.targets) {
-                if (!targetCanAffectOthers(target)) continue;
-                const tiles = distanceClauseMaxTiles(target.clauses);
-                if (tiles === undefined) {
-                    unbounded = true;
-                    break;
-                }
-                if (tiles > maxTiles) maxTiles = tiles;
+        const context = config.whenEquipped;
+        if (!context) continue;
+        for (const target of context.targets) {
+            if (!targetCanAffectOthers(target)) continue;
+            const tiles = distanceClauseMaxTiles(target.clauses);
+            if (tiles === undefined) {
+                unbounded = true;
+                break;
             }
-            if (unbounded) break;
+            if (tiles > maxTiles) maxTiles = tiles;
         }
         if (unbounded) break;
     }
@@ -357,27 +349,27 @@ export class EffectContextSystem extends System<GameEventMap> {
         if (!data) return;
 
         // Self gear: re-evaluate so time=/ground= stay live. Managed by inventory
-        // equip/unequip too — do not put bare whenMainHand ids into `desired`, or
+        // equip/unequip too — do not put bare whenEquipped ids into `desired`, or
         // freecam clearAll would unequip-attribute wipe (legacy setSlot behavior).
         const selfCtx = { world: this.world, executor: subject };
-        for (const [slot, contextName] of EQUIP_SLOTS) {
+        for (const [slot, sourceId] of EQUIP_SLOTS) {
             const itemId = data[slot];
             if (itemId === undefined) {
-                clearContextSource(subject, contextName);
+                clearContextSource(subject, sourceId);
                 continue;
             }
-            const context = ItemConfigs.get(itemId)[contextName];
+            const context = ItemConfigs.get(itemId).whenEquipped;
             if (!context || !contextHasEffects(context)) {
-                clearContextSource(subject, contextName);
+                clearContextSource(subject, sourceId);
                 continue;
             }
             const payload = payloadForSubject(context, (t) =>
                 subjectMatchesTarget(subject, t, selfCtx)
             );
             if (payloadIsEmpty(payload)) {
-                clearContextSource(subject, contextName);
+                clearContextSource(subject, sourceId);
             } else {
-                applyContextEffects(subject, contextName, context, payload);
+                applyContextEffects(subject, sourceId, context, payload);
             }
         }
 
@@ -395,10 +387,10 @@ export class EffectContextSystem extends System<GameEventMap> {
             const holderData = PlayerData.get(holder);
             if (!holderData) continue;
             const matchCtx = { world: this.world, executor: holder };
-            for (const [slot, contextName] of EQUIP_SLOTS) {
+            for (const [slot, sourceId] of EQUIP_SLOTS) {
                 const itemId = holderData[slot];
                 if (itemId === undefined) continue;
-                const context = ItemConfigs.get(itemId)[contextName];
+                const context = ItemConfigs.get(itemId).whenEquipped;
                 if (!context || !contextHasEffects(context)) continue;
                 if (!context.targets.some(targetCanAffectOthers)) continue;
 
@@ -407,14 +399,14 @@ export class EffectContextSystem extends System<GameEventMap> {
                 );
                 if (payloadIsEmpty(payload)) continue;
 
-                const sourceKey = `${contextName}:player:${holder.id}`;
-                const sourceId = applyContextEffects(
+                const sourceKey = `${sourceId}:player:${holder.id}`;
+                const appliedId = applyContextEffects(
                     subject,
                     sourceKey,
                     { ...context, stack: "replace" },
                     payload
                 );
-                if (sourceId) desired.add(sourceId);
+                if (appliedId) desired.add(appliedId);
             }
         }
     }

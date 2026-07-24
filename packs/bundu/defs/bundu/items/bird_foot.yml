@@ -2,7 +2,7 @@ texture: bundu/item/accessory/bird_foot.svg
 ---
 type: bundu:book
 function: off_hand
-whenOffHand:
+whenEquipped:
     "*":
         attributes:
             attack.damage.animal:

@@ -26,6 +26,7 @@ import {
     clearMissingEquipment,
     emitEquipment,
     emitInventory,
+    equipContext,
     receiveItem,
 } from "../network/inventory.js";
 import { resolveSelector } from "../systems/entity_selector.js";
@@ -33,10 +34,11 @@ import { SERVER_DEBUG } from "./flag.js";
 
 /** Push inventory + equipment to every target that received items. */
 function syncInventories(targets: readonly GameObject[], world: World): void {
-    const { playerPacketManager, worldPacketManager } = world.context;
+    const { worldPacketManager } = world.context;
+    const ctx = equipContext(world);
     for (const target of targets) {
-        clearMissingEquipment(target, playerPacketManager);
-        emitInventory(target, playerPacketManager);
+        clearMissingEquipment(target, ctx);
+        emitInventory(target, world.context.playerPacketManager);
         emitEquipment(target, worldPacketManager);
     }
 }

@@ -11,7 +11,13 @@ displays:
         y: -8
 ---
 function: "main_hand"
-whenMainHand:
+onEquip:
+    "@s":
+        lockItem:
+            slots: [mainhand]
+            lock: [unequip]
+            for: 10000
+whenEquipped:
     "@s":
         attributes:
             "movement.speed":
