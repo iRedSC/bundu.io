@@ -15,7 +15,7 @@ export class ClientPacketReceiver<
 > {
     private handlers = new Map<
         keyof DataMap & number,
-        Handler<DataMap, keyof DataMap & number>
+        Set<Handler<DataMap, keyof DataMap & number>>
     >();
 
     constructor(private serializer: Serializer<DataMap>) {}
@@ -23,11 +23,19 @@ export class ClientPacketReceiver<
     on<I extends keyof DataMap & number>(
         id: I,
         callback: Handler<DataMap, I>
-    ) {
-        this.handlers.set(
-            id,
-            callback as Handler<DataMap, keyof DataMap & number>
-        );
+    ): () => void {
+        const handler = callback as Handler<
+            DataMap,
+            keyof DataMap & number
+        >;
+        const handlers = this.handlers.get(id) ?? new Set();
+        handlers.add(handler);
+        this.handlers.set(id, handlers);
+
+        return () => {
+            handlers.delete(handler);
+            if (handlers.size === 0) this.handlers.delete(id);
+        };
     }
 
     process(packets: SerializedPacketArray) {
@@ -40,7 +48,9 @@ export class ClientPacketReceiver<
                 const data = this.serializer.deserialize(
                     packet as [typeof id, ...unknown[]]
                 );
-                this.handlers.get(id)?.(data, timestamp);
+                for (const handler of this.handlers.get(id) ?? []) {
+                    handler(data, timestamp);
+                }
             } catch (error) {
                 console.error("Dropped bad packet", packet, error);
             }

@@ -2,20 +2,15 @@ import {
     isHardSessionClose,
     SESSION_ENDED_CLOSE,
 } from "@bundu/shared/session";
-import { decodePacketData } from "../network/decode";
-import type { SerializedPacketArray } from "../network/client_receiver";
+import { ProtocolCodec, type ServerFrame } from "@bundu/shared";
 import { serializer } from "../network/serializer";
 import { Socket } from "../network/socket";
 
 export type GameSocket = Socket;
 
 export type PacketReceiver = {
-    process(packets: SerializedPacketArray): void;
+    process(packets: ServerFrame): void;
 };
-
-function isPacketArray(data: unknown): data is SerializedPacketArray {
-    return Array.isArray(data) && typeof data[0] === "number";
-}
 
 export type HardDisconnectInfo = {
     /** True when the server ended a live session (player death). */
@@ -47,6 +42,7 @@ export type GameSessionHooks = {
  * Bootstrap wires hooks; input/UI call sendPacket / isInGame.
  */
 export class GameSession {
+    private readonly codec = new ProtocolCodec();
     private socket: GameSocket | null = null;
     private connecting = false;
     private generation = 0;
@@ -132,9 +128,12 @@ export class GameSession {
             if (!(raw instanceof ArrayBuffer) && !ArrayBuffer.isView(raw)) {
                 return;
             }
-            const data = decodePacketData(raw);
-            if (!isPacketArray(data)) return;
-            this.receiver.process(data);
+            const decoded = this.codec.decodeServerFrame(raw);
+            if (!decoded.ok) {
+                console.warn("Dropped invalid server frame", decoded.error);
+                return;
+            }
+            this.receiver.process(decoded.value);
         };
 
         next.onopen = () => {

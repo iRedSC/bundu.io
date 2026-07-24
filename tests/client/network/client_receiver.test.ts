@@ -58,16 +58,20 @@ describe("ClientPacketReceiver", () => {
     ]);
   });
 
-  test("replaces a packet handler when the same id is registered again", () => {
+  test("notifies every subscriber and supports unsubscribe", () => {
     const first = mock(() => {});
-    const replacement = mock(() => {});
-    receiver.on(2, first);
-    receiver.on(2, replacement);
+    const second = mock(() => {});
+    const unsubscribe = receiver.on(2, first);
+    receiver.on(2, second);
 
     receiver.process([10, [2]]);
+    unsubscribe();
+    receiver.process([20, [2]]);
 
-    expect(first).not.toHaveBeenCalled();
-    expect(replacement).toHaveBeenCalledWith({}, 10);
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(first).toHaveBeenCalledWith({}, 10);
+    expect(second).toHaveBeenCalledTimes(2);
+    expect(second).toHaveBeenLastCalledWith({}, 20);
   });
 
   test("drops malformed packets and continues the batch", () => {
