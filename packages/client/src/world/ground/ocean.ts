@@ -4,7 +4,7 @@ import { toSanitizedTexturePath } from "@bundu/shared/models/texture_paths";
 import {
     Container,
     DisplacementFilter,
-    Rectangle,
+    type Rectangle,
     type Renderer,
     RenderTexture,
     Sprite,
@@ -20,8 +20,6 @@ import {
 import { POND_SEAM_AMPLITUDE, seamOffsetPond } from "./land_seam";
 import {
     bakeOrganicRectMask,
-    ORGANIC_EDGE_SUBDIV,
-    ORGANIC_EDGE_TEXTURE_MAX,
 } from "./organic_boundary";
 import { AnchoredDisplacementFilter } from "./anchored_displacement";
 import { ambientRate } from "./ambient_fx";
@@ -32,6 +30,7 @@ import {
     createSplashRefractionFilter,
 } from "./splash_refraction";
 import { sizeEnvelope } from "../../rendering/particles/size_envelope";
+import { createPondBorder } from "./pond_border";
 import type {
     GroundUpdateContext,
     GroundVisual,
@@ -42,8 +41,11 @@ import type {
 const SPLASH_OVERLAY_Z = 1_000_000_000;
 /** Cap bake RT edge so huge views stay cheap. */
 const BAKE_RT_MAX = 1024;
-/** Let pond caustics clear the organic edge before disappearing. */
-const ORGANIC_FX_OVERSHOOT_TILES = 0.25;
+/** Intentional soft halo: water fill resolves first, then caustics disappear. */
+const ORGANIC_FX_OVERSHOOT_TILES = 0.4;
+/** FX-only pond mask; the visible pond edge is the analytic mesh. */
+const POND_MASK_SUBDIV = 12;
+const POND_MASK_TEXTURE_MAX = 1024;
 /** World-space radius sampled when stabilizing anchored displacement. */
 const ANCHORED_DISPLACE_SAMPLE_RADIUS = 64;
 
@@ -109,9 +111,6 @@ export function createOceanGround(
     };
     const materialColor = parseHexColor(model.color);
     let waterModelIds: ReadonlySet<string> = new Set([model.id]);
-    const organicFill = new Sprite(Texture.EMPTY);
-    if (hasOrganicEdge) root.addChild(organicFill);
-
     const causticsTex = tex(model.textures.caustics);
     const displaceTex = tex(model.textures.displace);
     const rippleIdleTex = tex(model.textures.rippleIdle);
@@ -228,17 +227,13 @@ export function createOceanGround(
     anchoredDisplace.padding = 80;
     anchoredContent.filters = [anchoredDisplace];
     let organicMaskTexture: Texture | undefined;
-    let organicFillTexture: Texture | undefined;
 
     const setOrganicMaskBounds = (waterBounds: readonly Rectangle[]) => {
         if (!hasOrganicEdge) return;
         fxMask.texture = Texture.EMPTY;
         anchoredMask.texture = Texture.EMPTY;
-        organicFill.texture = Texture.EMPTY;
         organicMaskTexture?.destroy(true);
-        organicFillTexture?.destroy(true);
         organicMaskTexture = undefined;
-        organicFillTexture = undefined;
 
         const bounds = waterBounds.map((waterBoundsPx) => ({
                 x: waterBoundsPx.x / TILE_SIZE,
@@ -249,20 +244,14 @@ export function createOceanGround(
         const baked = bakeOrganicRectMask(
             bounds,
             { amplitude: POND_SEAM_AMPLITUDE, offset: seamOffsetPond },
-            ORGANIC_EDGE_SUBDIV,
-            ORGANIC_EDGE_TEXTURE_MAX,
+            POND_MASK_SUBDIV,
+            POND_MASK_TEXTURE_MAX,
             { x: 0, y: 0, w: WORLD_TILES, h: WORLD_TILES },
             ORGANIC_FX_OVERSHOOT_TILES,
-            0xffffff,
-            materialColor
+            0xffffff
         );
-        if (!baked?.fillTexture) return;
+        if (!baked) return;
         organicMaskTexture = baked.texture;
-        organicFillTexture = baked.fillTexture;
-        organicFill.texture = baked.fillTexture;
-        organicFill.position.set(baked.x * TILE_SIZE, baked.y * TILE_SIZE);
-        organicFill.width = baked.w * TILE_SIZE;
-        organicFill.height = baked.h * TILE_SIZE;
         for (const maskSprite of [fxMask, anchoredMask]) {
             maskSprite.texture = baked.texture;
             maskSprite.position.set(
@@ -818,8 +807,6 @@ export function createOceanGround(
             anchoredMaskBind.source = undefined;
             organicMaskTexture?.destroy(true);
             organicMaskTexture = undefined;
-            organicFillTexture?.destroy(true);
-            organicFillTexture = undefined;
             mapRt.destroy(true);
             anchoredMapRt.destroy(true);
             splashRt.destroy(true);
@@ -839,8 +826,11 @@ export function createOceanFill(
     zIndex: number
 ): GroundVisual {
     if (model.edge === "organic") {
-        const fill = new Container();
-        fill.zIndex = zIndex;
+        const fill = createPondBorder(
+            bounds,
+            parseHexColor(model.color),
+            zIndex
+        );
         return { container: fill };
     }
 

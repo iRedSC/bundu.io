@@ -4,7 +4,7 @@ import type {
 } from "@bundu/shared/ground_models";
 import type { Container, Rectangle, Renderer, Texture } from "pixi.js";
 import type { ParticleBurst } from "../../rendering/particles/types";
-import type { LandSeamChunkBake } from "./land_seam";
+import type { LandBorderSegment } from "./land_border";
 
 /** World-space view used to keep expensive FX viewport-scoped. */
 export type GroundViewBounds = {
@@ -72,12 +72,8 @@ export type GroundVisual = {
      * Tile-space inland sampler — same contract as sand-band shading.
      */
     paintLandFill?(inlandAt: (tileX: number, tileY: number) => number): void;
-    /** Append one edge-band seam chunk (solid land only). */
-    applyLandSeam?(chunk: LandSeamChunkBake): void;
-    /** Drop one streamed seam chunk before its texture is destroyed. */
-    removeLandSeam?(key: string): void;
-    /** Drop seam overlays before textures are destroyed. */
-    clearLandSeam?(): void;
+    /** Replace land edge geometry; shader keeps edges resolution-independent. */
+    setLandBorders?(segments: readonly LandBorderSegment[]): void;
     /** Free GPU resources when the patch is unloaded. */
     destroy?(): void;
     /**
