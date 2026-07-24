@@ -29,3 +29,11 @@ export {
     type PacketGuards,
     type SerializedPacket,
 } from "./network/serializer";
+export {
+    DEFAULT_PROTOCOL_LIMITS,
+    ProtocolCodec,
+    type ProtocolDecodeError,
+    type ProtocolDecodeResult,
+    type ProtocolLimits,
+    type ServerFrame,
+} from "./network/protocol_codec";
