@@ -67,6 +67,11 @@ export type ResourcePackManifest = {
 
 type ServedAsset = ResourceAsset & { bytes: Uint8Array };
 
+const PACK_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+};
+
 let loadedModels: CompiledModelDefs | undefined;
 
 export function modelSupportsVariant(id: string, variant: string): boolean {
@@ -508,5 +513,73 @@ export class ResourcePackService {
 
     asset(logicalPath: string): ServedAsset | undefined {
         return this.servedAssets.get(logicalPath);
+    }
+
+    /**
+     * Serve a manifest-indexed resource pack request.
+     * Returns undefined when the URL is outside a `/packs/` mount.
+     */
+    respond(request: Request, url = new URL(request.url)): Response | undefined {
+        const packsOffset = url.pathname.indexOf("/packs/");
+        if (packsOffset < 0) return;
+        const packPath = url.pathname.slice(packsOffset);
+
+        if (request.method === "OPTIONS") {
+            return new Response(null, { status: 204, headers: PACK_HEADERS });
+        }
+        if (request.method !== "GET") {
+            return new Response("Method Not Allowed", {
+                status: 405,
+                headers: PACK_HEADERS,
+            });
+        }
+        if (packPath === "/packs/manifest.json") {
+            return Response.json(this.manifest, {
+                headers: { ...PACK_HEADERS, "Cache-Control": "no-store" },
+            });
+        }
+
+        const documents = [
+            [this.manifest.models, this.modelsJson],
+            [this.manifest.registries, this.registriesJson],
+            [this.manifest.gameplay, this.gameplayJson],
+            [this.manifest.statBars, this.statBarsJson],
+            [this.manifest.lang, this.langJson],
+        ] as const;
+        const document = documents.find(([entry]) => entry.url === packPath);
+        if (document) {
+            const [entry, body] = document;
+            if (url.searchParams.get("hash") !== entry.hash) {
+                return new Response("Not Found", {
+                    status: 404,
+                    headers: PACK_HEADERS,
+                });
+            }
+            return new Response(body, {
+                headers: {
+                    ...PACK_HEADERS,
+                    "Content-Type": "application/json",
+                    "Cache-Control": "public, max-age=31536000, immutable",
+                },
+            });
+        }
+
+        const assetsPrefix = "/packs/assets/";
+        const asset =
+            packPath.startsWith(assetsPrefix) &&
+            this.asset(packPath.slice(assetsPrefix.length));
+        if (!asset || url.searchParams.get("hash") !== asset.hash) {
+            return new Response("Not Found", {
+                status: 404,
+                headers: PACK_HEADERS,
+            });
+        }
+        return new Response(Buffer.from(asset.bytes), {
+            headers: {
+                ...PACK_HEADERS,
+                "Content-Type": "image/png",
+                "Cache-Control": "public, max-age=31536000, immutable",
+            },
+        });
     }
 }
