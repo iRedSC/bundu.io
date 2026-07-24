@@ -28,28 +28,17 @@ import {
     groundModel,
     isOceanGroundModel,
     LandDistanceField,
-    LandSeamBaker,
-    LAND_SEAM_IDLE_GAP_MS,
-    LAND_SEAM_KEEP_TILES,
-    LAND_SEAM_READY_TILES,
-    cancelLandSeamIdle,
-    scheduleLandSeamIdle,
     NearshoreFill,
     oceanGroundModel,
-    seamLodFromZoom,
     solidGroundModel,
     waterFxProfileKey,
     type GroundVisual,
-    type LandSeamIdleHandle,
-    type SeamLod,
     type ShoreSample,
-    type GroundViewBounds,
 } from "./ground";
 import {
     DEFAULT_OCEAN_FADE_TILES,
     DEFAULT_WATER_WATER_FADE_TILES,
     parseHexColor,
-    type SolidGroundFill,
 } from "@bundu/shared/ground_models";
 import type { ModelFootstepsDef } from "@bundu/shared/models/types";
 import { toSanitizedTexturePath } from "@bundu/shared/models/texture_paths";
@@ -57,6 +46,7 @@ import { AmbientParticles } from "./ground/particles/ambient";
 import { softCircleTexture } from "./ground/particles/circle";
 import { landFootstep } from "./ground/particles/footsteps";
 import { landTrailBursts } from "./ground/particles/trail";
+import { buildLandBorderSegments } from "./ground/land_border";
 import { createDecoration, type DecorationSprite } from "./decoration";
 import {
     radians,
@@ -227,12 +217,11 @@ export class World {
     private readonly groundPatches: GroundPatch[] = [];
     /** One FX stack per ocean-kind ground model (ocean, pond, …). */
     private readonly oceanVisuals = new Map<string, GroundVisual>();
+    /** Last complete authored water bounds, reused for eager pond mask rebuilds. */
+    private waterBoundsByFxProfile = new Map<string, Rectangle[]>();
     private shoreSamples: ShoreSample[] = [];
     private readonly landDistance = new LandDistanceField();
     private readonly nearshoreFill = new NearshoreFill();
-    private readonly landSeamBaker = new LandSeamBaker();
-    /** Pending between-frame bake; cancelled on reset / rebuild. */
-    private landSeamIdle: LandSeamIdleHandle | null = null;
     private oceanTypeIds = new Set<number>();
     /** Topmost-patch ocean mask (1 = ocean). Empty tiles stay 0. */
     private oceanTiles = new Uint8Array(WORLD_TILES * WORLD_TILES);
@@ -306,7 +295,6 @@ export class World {
         this.topGroundTypes = new Uint16Array(n);
         this.landDistance.resizeForWorld();
         this.nearshoreFill.resizeForWorld();
-        this.landSeamBaker.resizeForWorld();
         if (this.oceanVisuals.size > 0) {
             for (const [key, visual] of [...this.oceanVisuals]) {
                 this.disposeOceanVisual(key, visual);
@@ -336,6 +324,7 @@ export class World {
         this.renderer.delete(GROUND_RENDER_ID);
         this.oceanVisuals.clear();
         this.groundPatches.length = 0;
+        this.waterBoundsByFxProfile.clear();
         this.oceanTypeIds.clear();
         this.oceanTiles.fill(0);
         this.topGroundTypes.fill(0);
@@ -343,8 +332,6 @@ export class World {
         // Keep nearshore mask sources across sessions — destroying them while
         // Pixi's pooled AlphaMask BindGroup still references them crashes on
         // the next ocean render (respawn). syncModelMasks reuses entries.
-        this.landSeamBaker.reset();
-        this.cancelLandSeamIdleWork();
         this.groundSynced = false;
         this.wakeIdleAt.clear();
         this.wakeMoveAt.clear();
@@ -403,7 +390,6 @@ export class World {
             }
         }
         this.particles.update(deltaMS);
-        this.tickLandSeams();
         this.updateGroundVisuals(deltaMS, now);
         this.updatePlacementGhost();
         this.camera.update();
@@ -582,9 +568,6 @@ export class World {
      */
     setFreecamMode(enabled: boolean): void {
         this.camera.setFreecam(enabled);
-        if (enabled) {
-            this.applyLandSeamLod(0);
-        }
         const local =
             this.user !== undefined ? this.objects.get(this.user) : undefined;
         if (local) {
@@ -598,6 +581,7 @@ export class World {
                 this.camera.follow(local.container);
             }
         }
+        if (!enabled) this.rebuildOrganicWaterMasks();
         this.lastViewBoundsKey = "";
     }
 
@@ -1249,6 +1233,7 @@ export class World {
             }
         }
         if (oceanColor !== undefined) this.oceanColor = oceanColor;
+        this.waterBoundsByFxProfile = boundsByFxProfile;
 
         if (this.oceanTypeIds.size === 0 && this.oceanVisuals.size > 0) {
             this.detachLocalAirRingFromOcean();
@@ -1266,10 +1251,6 @@ export class World {
         const isOcean = (type: number) => this.oceanTypeIds.has(type);
         const colorOfType = (type: number) =>
             parseHexColor(groundModel(clientGroundType(type).model).color);
-        const fillOfType = (type: number): SolidGroundFill | undefined => {
-            const model = groundModel(clientGroundType(type).model);
-            return model.kind === "solid" ? model.fill : undefined;
-        };
         this.shoreSamples = collectShoreSamples(this.groundPatches, isOcean);
         this.landDistance.rebuild(this.groundPatches, isOcean, colorOfType);
         this.nearshoreFill.paint(
@@ -1333,128 +1314,29 @@ export class World {
         for (const patch of this.groundPatches) {
             patch.visual.paintLandFill?.(inlandAt);
         }
-        // Unbind before prepare destroys textures — Pixi crashes on null alphaMode
-        // if sprites still reference destroyed sources.
-        for (const patch of this.groundPatches) {
-            patch.visual.clearLandSeam?.();
-        }
-        // Rebuild at crisp LOD; freecam / zoom-out may drop via live ticks.
-        // Surface water (ponds) is transparent to seam occupancy so land↔land
-        // borders keep baking underneath — ponds still draw above and cover them.
-        this.landSeamBaker.prepare(
-            this.groundPatches.filter((patch) => {
-                if (!isOcean(patch.type)) return true;
-                return !oceanGroundModel(clientGroundType(patch.type).model)
-                    .surfaceLayer;
-            }),
-            isOcean,
-            colorOfType,
-            2,
-            fillOfType,
-            inlandAt
-        );
-        // Live bake runs between frames; join still flushes the ready ring sync.
-        this.cancelLandSeamIdleWork();
-        this.scheduleLandSeamIdleWork();
-    }
-
-    /**
-     * Live: LOD only on the ticker — bake + unload happen in paced idle slices.
-     * Flush (loading): sync-bake the small ready ring.
-     */
-    private tickLandSeams(limit?: number): void {
-        const view = this.camera.worldBounds();
-        if (limit === undefined) {
-            const zoom = Math.hypot(
-                this.viewport.scale.x,
-                this.viewport.scale.y
-            );
-            this.applyLandSeamLod(
-                seamLodFromZoom(zoom, this.camera.isFreecam())
-            );
-            if (
-                this.landSeamBaker.nearbyPending(view, LAND_SEAM_KEEP_TILES) > 0
-            ) {
-                this.scheduleLandSeamIdleWork();
-            }
-            return;
-        }
-        this.bakeLandSeamChunks(limit, view, LAND_SEAM_READY_TILES);
-    }
-
-    private cancelLandSeamIdleWork(): void {
-        cancelLandSeamIdle(this.landSeamIdle);
-        this.landSeamIdle = null;
-    }
-
-    /** @param gapMs wait before asking for idle time (paces live generation). */
-    private scheduleLandSeamIdleWork(gapMs = 0): void {
-        if (this.landSeamIdle) return;
-        if (gapMs > 0) {
-            const id = window.setTimeout(() => {
-                this.landSeamIdle = null;
-                this.scheduleLandSeamIdleWork(0);
-            }, gapMs);
-            this.landSeamIdle = { kind: "timeout", id };
-            return;
-        }
-        this.landSeamIdle = scheduleLandSeamIdle((budgetMs) => {
-            this.landSeamIdle = null;
-            this.bakeLandSeamsIdle(budgetMs);
+        // The shader border is geometry-only: rebuild cheap edge runs when the
+        // authored patch stack changes, with no raster or texture upload.
+        const borderPatches = this.groundPatches.filter((patch) => {
+            if (!isOcean(patch.type)) return true;
+            return !oceanGroundModel(clientGroundType(patch.type).model)
+                .surfaceLayer;
         });
-    }
-
-    /**
-     * At most one chunk per true-idle slice. Busy / starved callbacks skip and
-     * retry after {@link LAND_SEAM_IDLE_GAP_MS}.
-     */
-    private bakeLandSeamsIdle(budgetMs: number): void {
-        const view = this.camera.worldBounds();
-        if (budgetMs <= 0) {
-            if (
-                this.landSeamBaker.nearbyPending(view, LAND_SEAM_KEEP_TILES) > 0
-            ) {
-                this.scheduleLandSeamIdleWork(LAND_SEAM_IDLE_GAP_MS);
-            }
-            return;
-        }
-        this.applyLandSeamUnloads(view);
-        this.bakeLandSeamChunks(1, view, LAND_SEAM_KEEP_TILES);
-        if (this.landSeamBaker.nearbyPending(view, LAND_SEAM_KEEP_TILES) > 0) {
-            this.scheduleLandSeamIdleWork(LAND_SEAM_IDLE_GAP_MS);
+        const borders = buildLandBorderSegments(borderPatches, isOcean);
+        for (const patch of this.groundPatches) {
+            patch.visual.setLandBorders?.(borders.get(patch.id) ?? []);
         }
     }
 
-    private applyLandSeamUnloads(view: GroundViewBounds): void {
-        const byId = new Map(
-            this.groundPatches.map((patch) => [patch.id, patch])
-        );
-        for (const unloaded of this.landSeamBaker.unloadDistant(view)) {
-            byId.get(unloaded.id)?.visual.removeLandSeam?.(unloaded.key);
-            unloaded.texture.destroy(true);
+    /** Synchronously rebuild every organic water mask from the complete bounds. */
+    private rebuildOrganicWaterMasks(): void {
+        for (const [profileKey, visual] of this.oceanVisuals) {
+            visual.setWaterBounds?.(
+                this.waterBoundsByFxProfile.get(profileKey) ?? []
+            );
         }
-    }
-
-    /** Bake up to `limit` chunks inside `padTiles` of the view. */
-    private bakeLandSeamChunks(
-        limit: number,
-        view: GroundViewBounds,
-        padTiles: number
-    ): number {
-        if (this.landSeamBaker.nearbyPending(view, padTiles) === 0) return 0;
-        const baked = this.landSeamBaker.tick(limit, view, padTiles);
-        if (baked.length === 0) return 0;
-        const byId = new Map(
-            this.groundPatches.map((patch) => [patch.id, patch])
-        );
-        for (const chunk of baked) {
-            byId.get(chunk.id)?.visual.applyLandSeam?.(chunk);
-        }
-        return baked.length;
     }
 
     private disposeGroundVisual(visual: GroundVisual): void {
-        visual.clearLandSeam?.();
         if (visual.destroy) {
             visual.destroy();
             return;
@@ -1463,26 +1345,11 @@ export class World {
         visual.overlay?.destroy({ children: true });
     }
 
-    /** Swap seam LOD; clears applied overlays when the baker rebuilds. */
-    private applyLandSeamLod(lod: SeamLod): void {
-        if (lod === this.landSeamBaker.getLod()) return;
-        // Unbind before setLod destroys textures.
-        this.cancelLandSeamIdleWork();
-        for (const patch of this.groundPatches) {
-            patch.visual.clearLandSeam?.();
-        }
-        this.landSeamBaker.setLod(lod);
-        this.scheduleLandSeamIdleWork();
-    }
-
     /**
      * Ready-ring bake progress (join bar). Prefetch keep ring streams later.
      */
     landSeamProgress(): { done: number; total: number; pending: number } {
-        return this.landSeamBaker.nearbyProgress(
-            this.camera.worldBounds(),
-            LAND_SEAM_READY_TILES
-        );
+        return { done: 0, total: 0, pending: 0 };
     }
 
     /** True once the server has sent at least one ground sync this session. */
@@ -1494,14 +1361,8 @@ export class World {
      * Bake several ready-ring seam chunks now (loading screen).
      * Returns true when the ready ring around the camera is fully baked.
      */
-    flushLandSeams(limit = 6): boolean {
-        this.tickLandSeams(limit);
-        return (
-            this.landSeamBaker.nearbyPending(
-                this.camera.worldBounds(),
-                LAND_SEAM_READY_TILES
-            ) === 0
-        );
+    flushLandSeams(_limit = 6): boolean {
+        return true;
     }
 
     private updateGroundVisuals(deltaMS: number, now: number): void {

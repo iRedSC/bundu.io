@@ -9,11 +9,10 @@ import type { SolidGroundFill } from "@bundu/shared/ground_models";
 import { TILE_SIZE } from "@bundu/shared/tiles";
 import { shadeLandFill } from "./land_fill_shade";
 import {
-    LAND_SEAM_FILL_INSET_TILES,
-    addLandSeamChunk,
-    clearLandSeamLayer,
-    type LandSeamChunkBake,
-} from "./land_seam";
+    clearLandBorderMeshes,
+    LAND_FILL_INSET_TILES,
+    setLandBorderMeshes,
+} from "./land_border";
 import type { GroundVisual } from "./types";
 
 /** Texels per tile for inset fill bake — matches former overlay density. */
@@ -33,9 +32,9 @@ export function createSolidGround(
     const root = new Container();
     root.zIndex = zIndex;
 
-    // Prefer #202 FILL_INSET so organic cuts never reveal a hard rect; for tiny
-    // patches keep a full AABB fill (#204) so LOD clears don't leave holes.
-    const insetPx = LAND_SEAM_FILL_INSET_TILES * TILE_SIZE;
+    // Keep the texture safely inside the maximum organic cut. The border shader
+    // crossfades over this inset; tiny patches retain a full fallback fill.
+    const insetPx = LAND_FILL_INSET_TILES * TILE_SIZE;
     const insetW = bounds.width - insetPx * 2;
     const insetH = bounds.height - insetPx * 2;
     const useInset = insetW > 0 && insetH > 0;
@@ -45,6 +44,7 @@ export function createSolidGround(
     const fillH = useInset ? insetH : bounds.height;
 
     let owned: Texture | undefined;
+    const borderLayer = new Container();
     let paintLandFill: GroundVisual["paintLandFill"];
     if (fill) {
         const sprite = new Sprite(Texture.WHITE);
@@ -54,6 +54,8 @@ export function createSolidGround(
         sprite.height = fillH;
         root.addChild(sprite);
         paintLandFill = (inlandAt) => {
+            // Border shaders sample the old fill; unbind them before replacing it.
+            clearLandBorderMeshes(borderLayer);
             const next = bakeInsetFill(
                 color,
                 fill,
@@ -77,35 +79,30 @@ export function createSolidGround(
         root.addChild(flat);
     }
 
-    const seamLayer = new Container();
-    root.addChild(seamLayer);
-    const seamSprites = new Map<string, Sprite>();
+    root.addChild(borderLayer);
 
     return {
         container: root,
         paintLandFill,
-        applyLandSeam(chunk: LandSeamChunkBake) {
-            const prev = seamSprites.get(chunk.key);
-            if (prev) {
-                prev.destroy();
-                seamSprites.delete(chunk.key);
-            }
-            seamSprites.set(chunk.key, addLandSeamChunk(seamLayer, chunk));
-        },
-        removeLandSeam(key: string) {
-            const sprite = seamSprites.get(key);
-            if (!sprite) return;
-            sprite.destroy();
-            seamSprites.delete(key);
-        },
-        clearLandSeam() {
-            seamSprites.clear();
-            clearLandSeamLayer(seamLayer);
+        setLandBorders(segments) {
+            setLandBorderMeshes(
+                borderLayer,
+                segments,
+                bounds,
+                color,
+                owned,
+                {
+                    x: fillX,
+                    y: fillY,
+                    width: fillW,
+                    height: fillH,
+                }
+            );
         },
         destroy() {
             owned?.destroy(true);
             owned = undefined;
-            seamSprites.clear();
+            clearLandBorderMeshes(borderLayer);
             root.destroy({ children: true });
         },
     };
