@@ -2,7 +2,15 @@ import {
     isHardSessionClose,
     SESSION_ENDED_CLOSE,
 } from "@bundu/shared/session";
-import { ProtocolCodec, type ServerFrame } from "@bundu/shared";
+import {
+    decodeWelcome,
+    encodeHello,
+    NEGOTIATION_PACKET_ID,
+    PROTOCOL_VERSION,
+    ProtocolCodec,
+    SUPPORTED_FEATURES,
+    type ServerFrame,
+} from "@bundu/shared";
 import { serializer } from "../network/serializer";
 import { Socket } from "../network/socket";
 
@@ -23,6 +31,7 @@ export type GameSessionHooks = {
     autoReconnect: boolean;
     buildSocketUrl: (username: string) => string;
     getUsername: () => string;
+    getPackFingerprint: () => string;
     resetLocalState: () => void;
     setConnecting: (connecting: boolean) => void;
     onConnected: () => void;
@@ -133,16 +142,38 @@ export class GameSession {
                 console.warn("Dropped invalid server frame", decoded.error);
                 return;
             }
+            const [, ...packets] = decoded.value;
+            const welcomePacket = packets.find(
+                (packet) => packet[0] === NEGOTIATION_PACKET_ID
+            );
+            if (welcomePacket) {
+                const welcome = decodeWelcome(welcomePacket);
+                if (
+                    !welcome ||
+                    welcome.protocolVersion !== PROTOCOL_VERSION ||
+                    welcome.packFingerprint !== this.hooks.getPackFingerprint()
+                ) {
+                    next.close(1008, "invalid welcome");
+                    return;
+                }
+                this.connecting = false;
+                this.reconnectDelay = 250;
+                this.hadSession = true;
+                this.hooks.setConnecting(false);
+                this.hooks.onConnected();
+                return;
+            }
             this.receiver.process(decoded.value);
         };
 
         next.onopen = () => {
             if (this.socket !== next) return;
-            this.connecting = false;
-            this.reconnectDelay = 250;
-            this.hadSession = true;
-            this.hooks.setConnecting(false);
-            this.hooks.onConnected();
+            const hello = encodeHello({
+                    protocolVersion: PROTOCOL_VERSION,
+                    packFingerprint: this.hooks.getPackFingerprint(),
+                    features: [...SUPPORTED_FEATURES],
+                });
+            next.send(hello.slice().buffer);
         };
 
         next.onerror = () => {

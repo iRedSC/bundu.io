@@ -155,7 +155,10 @@ controller.disconnect = (socket) => {
 };
 
 controller.message = (socket, packet) => {
-    receiver.add(socket.data.playerId, packet);
+    const outcome = receiver.add(socket.data.playerId, packet);
+    if (outcome === "disconnect") {
+        socket.close(1008, "reliable queue overflow");
+    }
 };
 
 const WS_PORT = Number(process.env.WS_PORT ?? 7777);

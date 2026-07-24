@@ -1,5 +1,9 @@
 import { decode, encode } from "@msgpack/msgpack";
-import type { SerializedPacket } from "./serializer";
+import type {
+    PacketGuards,
+    SerializedPacket,
+    Serializer,
+} from "./serializer";
 
 export type ServerFrame = [serverTime: number, ...packets: SerializedPacket[]];
 
@@ -9,10 +13,24 @@ export type ProtocolDecodeError =
     | "invalid_envelope"
     | "invalid_timestamp"
     | "too_many_packets"
-    | "invalid_packet";
+    | "invalid_packet"
+    | "unknown_packet"
+    | "invalid_field_count"
+    | "invalid_fields";
 
 export type ProtocolDecodeResult =
     | { ok: true; value: ServerFrame }
+    | { ok: false; error: ProtocolDecodeError };
+
+export type ClientPacketDecodeResult<
+    DataMap extends Record<number, object>,
+> =
+    | {
+          ok: true;
+          id: keyof DataMap & number;
+          packet: DataMap[keyof DataMap & number];
+          serialized: SerializedPacket;
+      }
     | { ok: false; error: ProtocolDecodeError };
 
 export type ProtocolLimits = {
@@ -84,5 +102,57 @@ export class ProtocolCodec {
 
     encodeServerFrame(frame: ServerFrame): Uint8Array {
         return encode(frame);
+    }
+
+    decodeClientPacket<DataMap extends Record<number, object>>(
+        data: ArrayBuffer | ArrayBufferView,
+        serializer: Serializer<DataMap>,
+        guards: PacketGuards<DataMap>
+    ): ClientPacketDecodeResult<DataMap> {
+        const bytes = asBytes(data);
+        if (bytes.byteLength > this.limits.maxFrameBytes) {
+            return { ok: false, error: "frame_too_large" };
+        }
+
+        let decoded: unknown;
+        try {
+            decoded = decode(bytes, {
+                maxArrayLength: 64,
+                maxBinLength: this.limits.maxFrameBytes,
+                maxMapLength: 64,
+                maxStrLength: this.limits.maxFrameBytes,
+            });
+        } catch {
+            return { ok: false, error: "invalid_msgpack" };
+        }
+        if (!Array.isArray(decoded) || decoded.length === 0) {
+            return { ok: false, error: "invalid_envelope" };
+        }
+        if (!Number.isSafeInteger(decoded[0])) {
+            return { ok: false, error: "invalid_packet" };
+        }
+
+        const id = decoded[0] as keyof DataMap & number;
+        if (!serializer.has(id) || !guards[id]) {
+            return { ok: false, error: "unknown_packet" };
+        }
+
+        let packet: DataMap[typeof id];
+        try {
+            packet = serializer.deserialize(
+                decoded as [typeof id, ...unknown[]]
+            );
+        } catch {
+            return { ok: false, error: "invalid_field_count" };
+        }
+        if (!guards[id](packet)) {
+            return { ok: false, error: "invalid_fields" };
+        }
+        return {
+            ok: true,
+            id,
+            packet,
+            serialized: decoded as SerializedPacket,
+        };
     }
 }

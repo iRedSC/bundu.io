@@ -18,6 +18,7 @@ export * from "./transforms";
 export * from "./attack_box";
 export * from "./range";
 export * from "./session";
+export * from "./network/negotiation";
 export * from "./username";
 export * from "./registry";
 export * from "./command";
@@ -34,6 +35,7 @@ export {
     ProtocolCodec,
     type ProtocolDecodeError,
     type ProtocolDecodeResult,
+    type ClientPacketDecodeResult,
     type ProtocolLimits,
     type ServerFrame,
 } from "./network/protocol_codec";

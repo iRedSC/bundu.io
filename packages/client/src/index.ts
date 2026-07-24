@@ -367,6 +367,7 @@ async function main() {
         prepareConnection: prepareConnectionPacks,
         autoReconnect: true,
         buildSocketUrl,
+        getPackFingerprint: () => packFingerprint,
         getUsername: () => {
             const trimmed = nameInput.value.trim();
             if (trimmed) return trimmed;

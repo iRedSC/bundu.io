@@ -2,6 +2,7 @@ import { ServerPacketReceiver, World } from "../engine";
 import { loadConfigs } from "../configs/loaders/load";
 import { PlayerSystem } from "../systems/player";
 import {
+    ClientPacket,
     ClientPacketGuards,
     type ClientPacketMap,
     ClientSchema,
@@ -62,7 +63,14 @@ export function createWorld(): ServerWorld {
     playerSystem.setCreativeModeSystem(creativeMode);
     adminEditor.setFreecamGhostSystem(freecamGhostSystem);
     const serializer = new Serializer<ClientPacketMap>(ClientSchema);
-    const receiver = new ServerPacketReceiver(serializer, ClientPacketGuards);
+    const receiver = new ServerPacketReceiver(serializer, ClientPacketGuards, {
+        latestWinsIds: new Set([
+            ClientPacket.Movement,
+            ClientPacket.Rotation,
+            ClientPacket.ViewBounds,
+            ClientPacket.FreecamCursor,
+        ]),
+    });
     setupPacketReceiving(receiver, playerSystem, adminEditor, creativeMode);
 
     const roofSystem = new RoofSystem(world);
