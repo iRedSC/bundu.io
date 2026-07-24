@@ -36,8 +36,9 @@ export type Hide = {
     /** Widest-wins when OR-merged: exclusions > self > none. */
     visualEffect?: VisualEffect;
     /**
-     * Entities matching this selector do not receive this source's visual
-     * effect. Kept per-source; stripped by {@link orHide}.
+     * Who is excluded from this hide (hide does not apply to them). With
+     * `visualEffect: exclusions`, those entities see the ghost model.
+     * Kept per-source; stripped by {@link orHide}.
      */
     exclusionTarget?: HideExclusionTarget;
 };
@@ -220,5 +221,6 @@ export function shouldAnonymize(hide: Hide | undefined): boolean {
 /** A single hide payload that contributes a visual effect. */
 export type VisualHideSource = {
     visualEffect: Exclude<VisualEffect, "none">;
+    /** Audience for `exclusions` mode: viewers matching this see the ghost. */
     exclusionTarget?: HideExclusionTarget;
 };

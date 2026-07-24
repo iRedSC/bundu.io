@@ -110,15 +110,14 @@ export function shouldSeeHideVisual(
             if (viewer === subject) return true;
             continue;
         }
-        // exclusions: everyone except matching exclusionTarget
-        if (source.exclusionTarget) {
-            const excluded = subjectMatchesTarget(
-                viewer,
-                source.exclusionTarget,
-                { world, executor: subject }
-            );
-            if (!excluded) return true;
-        } else {
+        // exclusions: people hide does not apply to (exclusionTarget) see ghost
+        if (
+            source.exclusionTarget &&
+            subjectMatchesTarget(viewer, source.exclusionTarget, {
+                world,
+                executor: subject,
+            })
+        ) {
             return true;
         }
     }
