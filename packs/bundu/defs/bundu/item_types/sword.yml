@@ -9,6 +9,12 @@ displays:
         scale: 1.25
 ---
 function: "main_hand"
+onEquip:
+    "@s":
+        lockItem:
+            slots: [mainhand]
+            lock: [unequip]
+            for: 10000
 whenEquipped:
     "@s":
         attributes:
