@@ -1,5 +1,10 @@
 import { decode } from "@msgpack/msgpack";
-import { SESSION_REJECTED_CLOSE } from "@bundu/shared/session";
+import {
+    JOIN_RECLAIM_REJECTED,
+    JOIN_USERNAME_TAKEN,
+    SESSION_REJECTED_CLOSE,
+    USERNAME_TAKEN_CLOSE,
+} from "@bundu/shared/session";
 import type { ServerWebSocket } from "bun";
 import type { GameSocketData, SocketManager } from "./socket_manager";
 
@@ -51,7 +56,7 @@ export class ServerController {
                         { status: 409 }
                     );
                 }
-                const username = url.searchParams.get("username") ?? "unnamed";
+                const username = url.searchParams.get("username") ?? "";
                 const skin_id = Number(url.searchParams.get("skin_id")) || 0;
                 const sessionId = url.searchParams.get("session_id") ?? crypto.randomUUID();
 
@@ -75,7 +80,11 @@ export class ServerController {
                         ws.data.skinId,
                         ws.data.sessionId
                     );
-                    if (playerId < 0) {
+                    if (playerId === JOIN_USERNAME_TAKEN) {
+                        ws.close(USERNAME_TAKEN_CLOSE, "username in use");
+                        return;
+                    }
+                    if (playerId === JOIN_RECLAIM_REJECTED) {
                         ws.close(SESSION_REJECTED_CLOSE, "session in use");
                         return;
                     }
