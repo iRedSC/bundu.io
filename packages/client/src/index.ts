@@ -22,6 +22,7 @@ import {
     MODE_CONTROL_SIZE,
 } from "./ui/freecam_control";
 import { createAdminEditor } from "./admin/editor";
+import { importMapJob } from "./admin/map_import";
 import { createCreativeControl, createCreativeEditor } from "./creative";
 import { initAssets } from "./assets/load";
 import {
@@ -106,6 +107,10 @@ function ensureSessionId(): string {
 
 function dropSessionId(): void {
     sessionStorage.removeItem(SESSION_KEY);
+}
+
+function setSessionId(sessionId: string): void {
+    sessionStorage.setItem(SESSION_KEY, sessionId);
 }
 
 ensureSessionId();
@@ -368,6 +373,7 @@ async function main() {
         autoReconnect: true,
         buildSocketUrl,
         getPackFingerprint: () => packFingerprint,
+        setReconnectCredential: setSessionId,
         getUsername: () => {
             const trimmed = nameInput.value.trim();
             if (trimmed) return trimmed;
@@ -454,6 +460,7 @@ async function main() {
 
     const editor = createAdminEditor(
         session.sendPacket,
+        (yaml) => importMapJob(GAME_WS_URL, readSessionId(), yaml),
         (screenX, screenY) => viewport.toLocal({ x: screenX, y: screenY }),
         world,
         viewport

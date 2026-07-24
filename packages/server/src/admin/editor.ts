@@ -292,14 +292,12 @@ export class AdminEditorSystem extends System<GameEventMap> {
         }
     };
 
-    adminImportMap = (
-        playerId: number,
-        packet: ClientPacket.AdminImportMap
-    ) => {
+    importMap(playerId: number, yaml: string, signal?: AbortSignal): void {
         const player = this.world.getObject(playerId);
         if (!player || !canUseEditor(player)) return;
+        if (signal?.aborted) return;
         try {
-            importMapLive(this.world, packet.yaml, this.trigger, {
+            importMapLive(this.world, yaml, this.trigger, {
                 broadcastGround: (wire) => this.broadcastGround(wire),
                 broadcastUnloadGround: (wire) =>
                     this.broadcastUnloadGround(wire),
@@ -310,9 +308,11 @@ export class AdminEditorSystem extends System<GameEventMap> {
                     this.broadcastWorldSize(worldTiles),
             });
         } catch (error) {
-            console.warn("[admin] import map failed:", error);
+            throw new Error(
+                error instanceof Error ? error.message : "Map import failed"
+            );
         }
-    };
+    }
 
     adminPlace = (playerId: number, packet: ClientPacket.AdminPlace) => {
         const player = this.world.getObject(playerId);

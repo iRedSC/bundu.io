@@ -12,6 +12,10 @@ import { PlayerData } from "../components/player";
 import { getVariantName } from "@bundu/shared/variant_map";
 
 import { gameplayConfig } from "../configs/gameplay";
+import {
+    reconnectCredentialMatches,
+    rotateReconnectCredential,
+} from "../auth/session_policy";
 
 export { JOIN_RECLAIM_REJECTED as RECLAIM_REJECTED };
 
@@ -54,11 +58,15 @@ export function createPlayer(
     username: string,
     skinId: number,
     sessionId: string
-): number {
+): { playerId: number; reconnectCredential: string } | typeof JOIN_RECLAIM_REJECTED {
     const players = world.query([PlayerData]);
     const existing = players.find(
         (object) =>
-            object.active && object.get(PlayerData).sessionId === sessionId
+            object.active &&
+            reconnectCredentialMatches(
+                object.get(PlayerData).sessionId,
+                sessionId
+            )
     );
 
     if (existing) {
@@ -66,6 +74,9 @@ export function createPlayer(
             return JOIN_RECLAIM_REJECTED;
         }
         const data = existing.get(PlayerData);
+        const reconnectCredential = rotateReconnectCredential();
+        data.sessionId = reconnectCredential;
+        data.parkedAt = undefined;
         data.name = claimUsername(players, username, existing.id);
         data.moveDir = [0, 0];
         data.attacking = false;
@@ -73,7 +84,7 @@ export function createPlayer(
         console.log(
             `Reclaimed player ${existing.id} for session ${sessionId.slice(0, 8)}`
         );
-        return existing.id;
+        return { playerId: existing.id, reconnectCredential };
     }
 
     const config = gameplayConfig().player;
@@ -112,5 +123,5 @@ export function createPlayer(
     console.log(
         `Added player ${player.id} for session ${sessionId.slice(0, 8)}`
     );
-    return player.id;
+    return { playerId: player.id, reconnectCredential: sessionId };
 }

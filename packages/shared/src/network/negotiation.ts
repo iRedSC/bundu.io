@@ -22,6 +22,7 @@ export type Welcome = {
     packFingerprint: string;
     limits: ServerLimits;
     features: string[];
+    reconnectCredential: string;
 };
 
 export type NegotiationFailure =
@@ -99,20 +100,24 @@ export function encodeWelcome(welcome: Welcome, serverTime: number): Uint8Array 
             welcome.packFingerprint,
             welcome.limits,
             welcome.features,
+            welcome.reconnectCredential,
         ],
     ]);
 }
 
 export function decodeWelcome(packet: readonly unknown[]): Welcome | undefined {
     if (
-        packet.length !== 5 ||
+        packet.length !== 6 ||
         packet[0] !== NEGOTIATION_PACKET_ID ||
         !Number.isSafeInteger(packet[1]) ||
         typeof packet[2] !== "string" ||
         typeof packet[3] !== "object" ||
         packet[3] === null ||
         !Array.isArray(packet[4]) ||
-        !packet[4].every((feature) => typeof feature === "string")
+        !packet[4].every((feature) => typeof feature === "string") ||
+        typeof packet[5] !== "string" ||
+        packet[5].length < 16 ||
+        packet[5].length > 128
     ) {
         return;
     }
@@ -130,5 +135,6 @@ export function decodeWelcome(packet: readonly unknown[]): Welcome | undefined {
         packFingerprint: packet[2],
         limits: limits as ServerLimits,
         features: packet[4],
+        reconnectCredential: packet[5],
     };
 }

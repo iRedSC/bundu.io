@@ -9,8 +9,16 @@ import {
     restoreDevCheckpoint,
     saveDevCheckpoint,
 } from "./bootstrap/dev_checkpoint";
+import {
+    assertProductionDebugPolicy,
+    canUseCapability,
+} from "./auth/capabilities";
+import { PlayerData } from "./components/player";
+import { MapImportJobs } from "./admin/import_jobs";
 
-const { world, playerSystem, receiver } = createWorld();
+assertProductionDebugPolicy();
+
+const { world, playerSystem, receiver, adminEditor } = createWorld();
 const resourcePacks = await ResourcePackService.create();
 const DEBUG = process.env.BUNDU_DEBUG === "1";
 if (
@@ -22,6 +30,21 @@ if (
 }
 
 const { socketManager } = world.context;
+const importJobs = new MapImportJobs({
+    authorize: (credential) => {
+        const player = world
+            .query([PlayerData])
+            .find(
+                (candidate) =>
+                    candidate.get(PlayerData).sessionId === credential
+            );
+        return player && canUseCapability(player, "admin")
+            ? player.id
+            : undefined;
+    },
+    run: (playerId, yaml, signal) =>
+        adminEditor.importMap(playerId, yaml, signal),
+});
 
 const controller = new ServerController(socketManager, (username, skinId, sessionId) =>
     createPlayer(world, username, skinId, sessionId)
@@ -41,6 +64,12 @@ const packHeaders = {
 
 controller.requiredPackFingerprint = resourcePacks.manifest.fingerprint;
 controller.http = (request, url) => {
+    const importOffset = url.pathname.indexOf("/admin/maps/import");
+    if (importOffset >= 0) {
+        const jobUrl = new URL(url);
+        jobUrl.pathname = url.pathname.slice(importOffset);
+        return importJobs.respond(request, jobUrl);
+    }
     // Proxies may keep a mount prefix (e.g. /server/na/packs/...).
     const packsOffset = url.pathname.indexOf("/packs/");
     if (packsOffset < 0) return;

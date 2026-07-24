@@ -30,7 +30,13 @@ export class ServerController {
         socket: ServerWebSocket<GameSocketData>,
         message: [number, ...unknown[]]
     ) => void = () => {};
-    createPlayer: (username: string, skinId: number, sessionId: string) => number;
+    createPlayer: (
+        username: string,
+        skinId: number,
+        sessionId: string
+    ) =>
+        | { playerId: number; reconnectCredential: string }
+        | typeof JOIN_RECLAIM_REJECTED;
     manager: SocketManager;
     requiredPackFingerprint: string | undefined;
     limits: ServerLimits = {
@@ -39,11 +45,20 @@ export class ServerController {
         maxPacketsPerPlayerTick: 32,
         maxPacketsGlobalTick: 2_048,
     };
-    http: (request: Request, url: URL) => Response | undefined = () => undefined;
+    http: (
+        request: Request,
+        url: URL
+    ) => Response | Promise<Response | undefined> | undefined = () => undefined;
 
     constructor(
         manager: SocketManager,
-        createPlayer: (username: string, skinId: number, sessionId: string) => number
+        createPlayer: (
+            username: string,
+            skinId: number,
+            sessionId: string
+        ) =>
+            | { playerId: number; reconnectCredential: string }
+            | typeof JOIN_RECLAIM_REJECTED
     ) {
         this.createPlayer = createPlayer;
         this.manager = manager;
@@ -68,9 +83,9 @@ export class ServerController {
         });
         const server = Bun.serve<GameSocketData>({
             port,
-            fetch: (req, server) => {
+            fetch: async (req, server) => {
                 const url = new URL(req.url);
-                const response = this.http(req, url);
+                const response = await this.http(req, url);
                 if (response) return response;
 
                 const isWebsocketUpgrade =
@@ -135,16 +150,18 @@ export class ServerController {
                             ws.close(1008, hello.error);
                             return;
                         }
-                        const playerId = this.createPlayer(
+                        const session = this.createPlayer(
                             ws.data.username,
                             ws.data.skinId,
                             ws.data.sessionId
                         );
-                        if (playerId === JOIN_RECLAIM_REJECTED) {
+                        if (session === JOIN_RECLAIM_REJECTED) {
                             ws.close(SESSION_REJECTED_CLOSE, "session in use");
                             return;
                         }
+                        const { playerId, reconnectCredential } = session;
                         ws.data.playerId = playerId;
+                        ws.data.sessionId = reconnectCredential;
                         ws.data.negotiated = true;
                         this.manager.addClient(ws, playerId);
                         ws.send(
@@ -154,6 +171,7 @@ export class ServerController {
                                     packFingerprint,
                                     limits: this.limits,
                                     features: [...SUPPORTED_FEATURES],
+                                    reconnectCredential,
                                 },
                                 performance.now()
                             )

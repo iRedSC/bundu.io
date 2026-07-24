@@ -16,8 +16,8 @@ import {
 } from "../network/inventory.js";
 import { ItemConfigs } from "../configs/loaders/items.js";
 import { gameRegistries } from "../configs/registries.js";
-import { SERVER_DEBUG } from "../debug/index.js";
 import type { GameEventMap } from "../systems/event_map.js";
+import { canUseCapability } from "../auth/capabilities.js";
 
 const CREATIVE_ATTR = "creative";
 const INSTAKILL_DAMAGE = 10_000;
@@ -27,9 +27,7 @@ export type CreativeSpeed = (typeof CREATIVE_SPEEDS)[number];
 type AttrPatch = Parameters<AttributesData["replace"]>[1];
 
 export function canUseCreative(player: GameObject): boolean {
-    const data = PlayerData.get(player);
-    if (!data) return false;
-    return (data.opLevel ?? 0) >= 4 || data.cheatsEnabled === true || SERVER_DEBUG;
+    return canUseCapability(player, "creative");
 }
 
 /** Creative inventory chrome is parked during freecam — reject mutations too. */

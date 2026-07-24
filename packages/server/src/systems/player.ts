@@ -96,6 +96,7 @@ import type { RenderDistanceSystem } from "./render_distance.js";
 import type { FreecamGhostSystem } from "./freecam_ghost.js";
 import type { CreativeModeSystem } from "../creative/mode.js";
 import { gameRegistries } from "../configs/registries.js";
+import { parkedPlayerExpired } from "../auth/session_policy.js";
 
 /**
  * Player input + lifecycle. Packet handlers are attack surface — keep them small.
@@ -150,9 +151,13 @@ export class PlayerSystem extends System<GameEventMap> {
     }
 
     override update(time: number, _delta: number, player: GameObject): void {
-        // Soft-disconnect parks intent/combat only — vitals still tick without a socket.
-        if (!this.world.context.socketManager.getSocket(player.id)) return;
         const data = PlayerData.get(player);
+        if (!this.world.context.socketManager.getSocket(player.id)) {
+            if (parkedPlayerExpired(data?.parkedAt, time)) {
+                this.expireParked(player);
+            }
+            return;
+        }
         // Waiting for ClientReady, or freecam: body parked — no combat/move ticks.
         if (!data?.clientReady || data.freecam) return;
 
@@ -271,6 +276,7 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = PlayerData.get(player);
         if (!data) return;
         data.clientReady = false;
+        data.parkedAt = this.world.gameTime;
         // clearCraft/clearEating before intent wipe so channel side effects still run.
         this.clearCraft(player, false);
         this.clearEating(player, false);
@@ -284,6 +290,18 @@ export class PlayerSystem extends System<GameEventMap> {
         }
         // Client will rebuild; drop stale ghost Load tracking for this viewer.
         this.freecamGhostSystem?.clearViewer(player.id);
+    }
+
+    private expireParked(player: GameObject): void {
+        const data = PlayerData.get(player);
+        if (!data?.sessionId) return;
+        data.sessionId = undefined;
+        clearPlayerItemLocks(player);
+        clearAnimalsFrozenFor(player.id);
+        clearEditorHistory(player.id);
+        this.freecamGhostSystem?.despawnFor(player.id);
+        player.active = false;
+        this.trigger(GameEvent.DeleteObject, { object: player });
     }
 
     /**
@@ -332,7 +350,10 @@ export class PlayerSystem extends System<GameEventMap> {
      */
     syncSession(player: GameObject) {
         const data = PlayerData.get(player);
-        if (data) data.clientReady = false;
+        if (data) {
+            data.clientReady = false;
+            data.parkedAt = undefined;
+        }
         const packets = [...this.world.query([GroundData])]
             .sort((a, b) => a.id - b.id)
             .map((ground) => groundWire(ground));
