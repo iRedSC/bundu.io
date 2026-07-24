@@ -52,6 +52,21 @@ function forEachEquipHidePayload(
     }
 }
 
+/** Every hide payload on a subject (spatial + equip), before OR-merge. */
+export function collectHideSources(
+    player: GameObject,
+    world: World
+): Hide[] {
+    if (!PlayerData.get(player)) return [];
+    const sources: Hide[] = [];
+    const visit = (hide: Hide) => {
+        sources.push(hide);
+    };
+    forEachSpatialHidePayload(player, world, visit);
+    forEachEquipHidePayload(player, world, visit);
+    return sources;
+}
+
 /** Effective hide for a player (spatial contexts OR equipped gear). */
 export function resolveEffectiveHide(
     player: GameObject,
@@ -67,6 +82,40 @@ export function resolveEffectiveHide(
 }
 
 /**
+ * True when this hide source applies to `viewer`. Excluded viewers skip that
+ * source only — other sources may still apply.
+ */
+export function hideSourceAppliesToViewer(
+    viewer: GameObject,
+    subject: GameObject,
+    source: Hide,
+    world: World
+): boolean {
+    if (!source.exclusionTarget) return true;
+    return !subjectMatchesTarget(viewer, source.exclusionTarget, {
+        world,
+        executor: subject,
+    });
+}
+
+/** OR-merge of hide sources that still apply to this viewer. */
+export function resolveEffectiveHideForViewer(
+    viewer: GameObject,
+    subject: GameObject,
+    world: World,
+    sources?: readonly Hide[]
+): Hide | undefined {
+    let hide: Hide | undefined;
+    for (const source of sources ?? collectHideSources(subject, world)) {
+        if (!hideSourceAppliesToViewer(viewer, subject, source, world)) {
+            continue;
+        }
+        hide = orHide(hide, source);
+    }
+    return hide;
+}
+
+/**
  * Per-source visual hide contributions. Exclusion targets are not merged —
  * being excluded from one source must not cancel another.
  */
@@ -74,20 +123,16 @@ export function collectVisualHideSources(
     player: GameObject,
     world: World
 ): VisualHideSource[] {
-    if (!PlayerData.get(player)) return [];
-
     const sources: VisualHideSource[] = [];
-    const visit = (hide: Hide) => {
+    for (const hide of collectHideSources(player, world)) {
         if (hide.visualEffect !== "self" && hide.visualEffect !== "exclusions") {
-            return;
+            continue;
         }
         sources.push({
             visualEffect: hide.visualEffect,
             exclusionTarget: hide.exclusionTarget,
         });
-    };
-    forEachSpatialHidePayload(player, world, visit);
-    forEachEquipHidePayload(player, world, visit);
+    }
     return sources;
 }
 
@@ -110,7 +155,7 @@ export function shouldSeeHideVisual(
             if (viewer === subject) return true;
             continue;
         }
-        // exclusions: people hide does not apply to (exclusionTarget) see ghost
+        // exclusions: people this hide does not apply to see the ghost model
         if (
             source.exclusionTarget &&
             subjectMatchesTarget(viewer, source.exclusionTarget, {
@@ -186,7 +231,7 @@ export function isVisibleToViewer(
 
     if (!candidateData) return true;
 
-    const hide = resolveEffectiveHide(candidate, world);
+    const hide = resolveEffectiveHideForViewer(viewer, candidate, world);
     if (!hide) return true;
     if (!hide.full && !shouldAnonymize(hide)) return true;
 
@@ -202,7 +247,8 @@ function shouldSeeAnonProxy(
     const sourceData = PlayerData.get(source);
     if (!sourceData || sourceData.freecam) return false;
     if (sameRoofGroup(PlayerData.get(viewer), sourceData)) return false;
-    return shouldAnonymize(resolveEffectiveHide(source, world));
+    const hide = resolveEffectiveHideForViewer(viewer, source, world);
+    return shouldAnonymize(hide);
 }
 
 export function getAnonProxyId(sourceId: number): number | undefined {
