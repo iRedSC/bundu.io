@@ -7,6 +7,10 @@ import {
 import { attackFacingRadians } from "@bundu/shared/attack_box";
 import { decodeMoveDirection } from "@bundu/shared/movement";
 import { type ClientPacket, ServerPacket } from "@bundu/shared/packet_definitions.js";
+import {
+    craftDurationMs,
+    scaleCraftIngredients,
+} from "@bundu/shared/crafting";
 import { HitFlash } from "@bundu/shared/hit_flash";
 import {
     DecorationData,
@@ -84,6 +88,10 @@ import { Resource } from "../game_objects/resource.js";
 import { Circle, Vector } from "sat";
 import { gameplayConfig } from "../configs/gameplay.js";
 import { syncFlags } from "../network/flags.js";
+import {
+    clearCraftingMultiplierSync,
+    syncCraftingMultiplier,
+} from "../network/crafting_multiplier.js";
 import type { RenderDistanceSystem } from "./render_distance.js";
 import type { FreecamGhostSystem } from "./freecam_ghost.js";
 import type { CreativeModeSystem } from "../creative/mode.js";
@@ -96,6 +104,7 @@ export class PlayerSystem extends System<GameEventMap> {
     private renderDistanceSystem?: RenderDistanceSystem;
     private freecamGhostSystem?: FreecamGhostSystem;
     private creativeModeSystem?: CreativeModeSystem;
+    private multiplierListeners = new Map<number, (value: number) => void>();
 
     constructor(world: World) {
         super(world, [PlayerData, Physics]);
@@ -116,6 +125,28 @@ export class PlayerSystem extends System<GameEventMap> {
 
     private equipCtx() {
         return equipContext(this.world);
+    }
+
+    override enter(player: GameObject): void {
+        const sync = () =>
+            syncCraftingMultiplier(
+                player,
+                this.world.context.playerPacketManager
+            );
+        Attributes.get(player)?.addEventListener("crafting.multiplier", sync);
+        this.multiplierListeners.set(player.id, sync);
+    }
+
+    override exit(player: GameObject): void {
+        const sync = this.multiplierListeners.get(player.id);
+        if (sync) {
+            Attributes.get(player)?.removeEventListener(
+                "crafting.multiplier",
+                sync
+            );
+            this.multiplierListeners.delete(player.id);
+        }
+        clearCraftingMultiplierSync(player.id);
     }
 
     override update(time: number, _delta: number, player: GameObject): void {
@@ -330,6 +361,7 @@ export class PlayerSystem extends System<GameEventMap> {
         dayCycle.syncPlayer(player.id, playerPacketManager);
         emitVitals(player, playerPacketManager);
         syncFlags(player, playerPacketManager, true);
+        syncCraftingMultiplier(player, playerPacketManager, true);
         const inv = Inventory.get(player);
         if (inv && data?.backpack) {
             ensureSlotCapacity(inv, slotCapacityFor(true));
@@ -572,31 +604,53 @@ export class PlayerSystem extends System<GameEventMap> {
         return required.every((flag) => flags.has(flag));
     }
 
+    private craftIngredients(player: GameObject, recipeId: number) {
+        const recipe = craftingList.get(recipeId);
+        if (!recipe) return undefined;
+        const attributes = Attributes.get(player);
+        const multiplier = attributes?.get("crafting.multiplier") ?? 1;
+        const speed = attributes?.get("crafting.speed") ?? 1;
+        return {
+            recipe,
+            ingredients: scaleCraftIngredients(recipe.ingredients, multiplier),
+            duration: craftDurationMs(recipe.duration, speed),
+        };
+    }
+
     private finishCraft(player: GameObject) {
         const data = PlayerData.get(player);
         const crafting = data?.crafting;
         if (!data || !crafting) return;
 
         const recipe = craftingList.get(crafting.recipeId);
+        const ingredients = crafting.ingredients;
         const inv = Inventory.get(player);
         data.crafting = undefined;
         this.emitCraftEvent(player, 0);
 
-        if (!recipe || !inv || !this.hasCraftingRequirements(player, recipe.flags)) {
+        if (
+            !recipe ||
+            !inv ||
+            !this.hasCraftingRequirements(player, recipe.flags)
+        ) {
             return;
         }
         // Re-check craft locks at completion (lock may have been applied mid-channel).
         if (
             inventoryHasLockedIngredient(
                 player,
-                recipe.ingredients,
+                ingredients,
                 this.world.gameTime
             )
         ) {
             return;
         }
-        if (!removeItems(inv, recipe.ingredients)) return;
-        const remaining = receiveItem(player, recipe.resultItemId, recipe.amount);
+        if (!removeItems(inv, ingredients)) return;
+        const remaining = receiveItem(
+            player,
+            recipe.resultItemId,
+            recipe.amount
+        );
         if (remaining > 0) {
             this.dropItem(player, recipe.resultItemId, remaining);
         }
@@ -618,18 +672,18 @@ export class PlayerSystem extends System<GameEventMap> {
         if (!data?.clientReady || data.crafting) return;
         this.clearEating(player);
 
-        const recipe = craftingList.get(recipeId);
-        if (!recipe) return;
+        const crafted = this.craftIngredients(player, recipeId);
+        if (!crafted) return;
 
         const inv = Inventory.get(player);
-        const result = ItemConfigs.get(recipe.resultItemId);
+        const result = ItemConfigs.get(crafted.recipe.resultItemId);
         if (
             !inv ||
-            !this.hasCraftingRequirements(player, recipe.flags) ||
-            !hasItems(inv, recipe.ingredients) ||
+            !this.hasCraftingRequirements(player, crafted.recipe.flags) ||
+            !hasItems(inv, crafted.ingredients) ||
             inventoryHasLockedIngredient(
                 player,
-                recipe.ingredients,
+                crafted.ingredients,
                 this.world.gameTime
             ) ||
             (result.function === "backpack" && data.backpack)
@@ -650,13 +704,15 @@ export class PlayerSystem extends System<GameEventMap> {
 
         data.crafting = {
             recipeId,
-            endsAt: this.world.gameTime + recipe.duration,
+            endsAt: this.world.gameTime + crafted.duration,
+            // Freeze scaled costs at channel start (blocks mid-channel multiplier swaps).
+            ingredients: crafted.ingredients,
         };
         this.emitCraftEvent(
             player,
-            recipe.duration,
-            recipe.id,
-            recipe.resultItemId
+            crafted.duration,
+            crafted.recipe.id,
+            crafted.recipe.resultItemId
         );
     };
 

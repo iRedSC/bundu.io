@@ -31,6 +31,9 @@ export const AttributeList = [
     "hunger.cancel_regen_above",
     "eating.movement_speed_multiplier",
 
+    "crafting.multiplier",
+    "crafting.speed",
+
     "temperature.max",
     "temperature.warmth",
     "temperature.insulation",

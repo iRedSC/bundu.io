@@ -19,9 +19,12 @@ export const receiver = new ClientPacketReceiver(
 
 /** Effective sourced flags for the local player (crafting + gameplay). */
 let playerFlags: number[] = [];
+/** Effective `crafting.multiplier` for local craft cost checks. */
+let craftingMultiplier = 1;
 
 export function resetGUIReceiverState(ui: UI): void {
     playerFlags = [];
+    craftingMultiplier = 1;
     ui.inventory.updateLocks([]);
     ui.inventory.setEquipment(-1, -1, -1);
 }
@@ -29,7 +32,8 @@ export function resetGUIReceiverState(ui: UI): void {
 function refreshCraftingMenu(ui: UI): void {
     ui.craftingMenu.items = ui.recipeManager.filter(
         ui.inventory.items,
-        playerFlags
+        playerFlags,
+        craftingMultiplier
     );
     ui.craftingMenu.update();
 }
@@ -155,6 +159,10 @@ export function setupGUIPacketReceiving(
     });
     receiver.on(ServerPacket.UpdateFlags, ({ flags }) => {
         playerFlags = [...flags];
+        refreshCraftingMenu(ui);
+    });
+    receiver.on(ServerPacket.UpdateCraftingMultiplier, ({ multiplier }) => {
+        craftingMultiplier = multiplier;
         refreshCraftingMenu(ui);
     });
     receiver.on(
