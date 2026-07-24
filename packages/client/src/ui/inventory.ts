@@ -1,7 +1,15 @@
 import { Container, Text } from "pixi.js";
 import { ItemButton, tickItemButton, type ItemLockVisual, LOCK_FLASH_MS } from "./item_button";
 import { prettifyNumber, percentOf, lerp } from "@bundu/shared";
-import { lockFlagsHas, type LockAction } from "@bundu/shared/item_lock";
+import {
+    LOCK_ANY_ITEM,
+    LOCK_SLOTS_ALL,
+    lockFlagsHas,
+    lockSlotFlagsHas,
+    lockSlotForItemFunction,
+    type LockAction,
+    type LockSlot,
+} from "@bundu/shared/item_lock";
 import { TEXT_STYLE } from "@client/assets/text";
 import { Grid } from "./grid";
 import { ITEM_BUTTON_SIZE } from "../constants";
@@ -13,7 +21,7 @@ import {
     placeModeFromModifiers,
     type PlaceMode as PlaceModeType,
 } from "@bundu/shared/inventory";
-import { clientRegistries } from "../configs/registries";
+import { clientItemMeta, clientRegistries } from "../configs/registries";
 import {
     hideRegistryTooltip,
     moveRegistryTooltip,
@@ -131,8 +139,8 @@ export class Inventory {
     slots: (ItemStack | null)[] = [];
     cursor: ItemStack | null = null;
     items = new Map<number, number>();
-    /** Active item locks keyed by item registry id. */
-    private itemLocks = new Map<number, ItemLockVisual>();
+    /** Active item lock rules (item-specific and/or slot-only). */
+    private itemLocks: ItemLockVisual[] = [];
     /** Numeric equipment ids for the local player (from UpdateEquipment). */
     private equipped = {
         mainHand: -1,
@@ -866,7 +874,7 @@ export class Inventory {
             button.setItemLock(null);
             return;
         }
-        const lock = this.itemLocks.get(itemId);
+        const lock = this.findLockForItem(itemId);
         if (!lock) {
             button.setItemLock(null);
             return;
@@ -882,15 +890,107 @@ export class Inventory {
         );
     }
 
+    private equippedSlotOf(itemId: number): LockSlot | undefined {
+        if (this.equipped.mainHand === itemId) return "mainhand";
+        if (this.equipped.offHand === itemId) return "offhand";
+        if (this.equipped.helmet === itemId) return "helmet";
+        return undefined;
+    }
+
+    private isEquippedInSlots(itemId: number, slotFlags: number): boolean {
+        if (
+            lockSlotFlagsHas(slotFlags, "mainhand") &&
+            this.equipped.mainHand === itemId
+        ) {
+            return true;
+        }
+        if (
+            lockSlotFlagsHas(slotFlags, "offhand") &&
+            this.equipped.offHand === itemId
+        ) {
+            return true;
+        }
+        if (
+            lockSlotFlagsHas(slotFlags, "helmet") &&
+            this.equipped.helmet === itemId
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    private targetSlotForItem(itemId: number): LockSlot | undefined {
+        return (
+            this.equippedSlotOf(itemId) ??
+            lockSlotForItemFunction(clientItemMeta(itemId).function)
+        );
+    }
+
+    private ruleMatches(
+        lock: ItemLockVisual,
+        itemId: number,
+        slot?: LockSlot
+    ): boolean {
+        if (lock.itemId !== LOCK_ANY_ITEM && lock.itemId !== itemId) {
+            return false;
+        }
+        if (slot !== undefined) {
+            return lockSlotFlagsHas(lock.slotFlags, slot);
+        }
+        if (lock.slotFlags === LOCK_SLOTS_ALL && lock.itemId !== LOCK_ANY_ITEM) {
+            return true;
+        }
+        return this.isEquippedInSlots(itemId, lock.slotFlags);
+    }
+
+    private findLock(
+        itemId: number,
+        action: LockAction,
+        slot?: LockSlot
+    ): ItemLockVisual | undefined {
+        for (const lock of this.itemLocks) {
+            if (!lockFlagsHas(lock.flags, action)) continue;
+            if (this.ruleMatches(lock, itemId, slot)) return lock;
+        }
+        return undefined;
+    }
+
+    /** Best lock to show on a hotbar stack (any overlapping rule). */
+    private findLockForItem(itemId: number): ItemLockVisual | undefined {
+        const slot = this.targetSlotForItem(itemId);
+        for (const lock of this.itemLocks) {
+            if (this.ruleMatches(lock, itemId, slot)) return lock;
+            // Also surface item-specific locks even when slot filter wouldn't
+            // match the item's equip slot (e.g. craft/drop-only rules).
+            if (lock.itemId === itemId) return lock;
+        }
+        return undefined;
+    }
+
     /** Persistent slot lock when equip/unequip/drop currently applies. */
     private shouldShowPersistentLock(
         itemId: number,
         lock: ItemLockVisual
     ): boolean {
         const equipped = this.isEquipped(itemId);
-        if (lockFlagsHas(lock.flags, "equip") && !equipped) return true;
-        if (lockFlagsHas(lock.flags, "unequip") && equipped) return true;
-        if (lockFlagsHas(lock.flags, "drop")) return true;
+        const slot = this.targetSlotForItem(itemId);
+        if (
+            lockFlagsHas(lock.flags, "equip") &&
+            !equipped &&
+            (slot === undefined || lockSlotFlagsHas(lock.slotFlags, slot))
+        ) {
+            return true;
+        }
+        if (
+            lockFlagsHas(lock.flags, "unequip") &&
+            equipped &&
+            (slot === undefined || lockSlotFlagsHas(lock.slotFlags, slot))
+        ) {
+            return true;
+        }
+        if (lockFlagsHas(lock.flags, "drop") && this.ruleMatches(lock, itemId)) {
+            return true;
+        }
         return false;
     }
 
@@ -917,23 +1017,35 @@ export class Inventory {
         }
     }
 
-    getLock(itemId: number): ItemLockVisual | undefined {
-        return this.itemLocks.get(itemId);
+    getLock(
+        itemId: number,
+        action?: LockAction
+    ): ItemLockVisual | undefined {
+        if (action) return this.findLock(itemId, action);
+        return this.findLockForItem(itemId);
     }
 
-    isActionLocked(itemId: number | undefined, action: LockAction): boolean {
+    isActionLocked(
+        itemId: number | undefined,
+        action: LockAction,
+        slot?: LockSlot
+    ): boolean {
         if (itemId === undefined || itemId < 0) return false;
-        const lock = this.itemLocks.get(itemId);
-        return lock !== undefined && lockFlagsHas(lock.flags, action);
+        return this.findLock(itemId, action, slot) !== undefined;
     }
 
     /**
      * Flash lock UI for a denied action. Returns true when the action is locked.
      */
-    denyAction(itemId: number | undefined, action: LockAction): boolean {
+    denyAction(
+        itemId: number | undefined,
+        action: LockAction,
+        slot?: LockSlot
+    ): boolean {
         if (itemId === undefined || itemId < 0) return false;
-        const lock = this.itemLocks.get(itemId);
-        if (!lock || !lockFlagsHas(lock.flags, action)) return false;
+        const resolvedSlot = slot ?? this.targetSlotForItem(itemId);
+        const lock = this.findLock(itemId, action, resolvedSlot);
+        if (!lock) return false;
         this.flashItemLock(itemId, lock);
         return true;
     }
@@ -944,43 +1056,45 @@ export class Inventory {
      */
     notifySelectDenied(itemId: number | undefined): boolean {
         if (itemId === undefined) return false;
-        const equipped = this.isEquipped(itemId);
-        if (equipped) {
-            return this.denyAction(itemId, "unequip");
+        const slot = this.targetSlotForItem(itemId);
+        if (this.isEquipped(itemId)) {
+            return this.denyAction(itemId, "unequip", slot);
         }
-        return this.denyAction(itemId, "equip");
+        return this.denyAction(itemId, "equip", slot);
     }
 
     /** Flash matching hotbar slots + optional above-name gauge. */
-    flashItemLock(itemId: number, lock = this.itemLocks.get(itemId)) {
-        if (!lock) return;
+    flashItemLock(itemId: number, lock?: ItemLockVisual) {
+        const visual = lock ?? this.findLockForItem(itemId);
+        if (!visual) return;
         for (const [i, button] of this.buttons.entries()) {
             if (this.slots[i]?.[0] === itemId) button.flashLock(LOCK_FLASH_MS);
         }
         if (this.cursor?.[0] === itemId) {
             this.ghost.flashLock(LOCK_FLASH_MS);
         }
-        this.onLockFlash?.(lock);
+        this.onLockFlash?.(visual);
     }
 
     /**
      * Apply authoritative item locks.
      * `remainingMs === -1` → permanent until unlockItem.
+     * `itemId === -1` → slot-only (any item in those slots).
      */
     updateLocks(locks: ServerPacket.UpdateItemLocks["locks"]) {
-        const next = new Map<number, ItemLockVisual>();
         const now = performance.now();
-        for (const [itemId, remainingMs, durationMs, flags] of locks) {
-            next.set(itemId, {
+        this.itemLocks = locks.map(
+            ([itemId, remainingMs, durationMs, flags, slotFlags]) => ({
+                itemId,
                 endsAt:
                     remainingMs < 0
                         ? Number.POSITIVE_INFINITY
                         : now + remainingMs,
                 durationMs: Math.max(0, durationMs),
                 flags,
-            });
-        }
-        this.itemLocks = next;
+                slotFlags,
+            })
+        );
         for (const [i, button] of this.buttons.entries()) {
             this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
         }
@@ -1030,12 +1144,14 @@ export class Inventory {
 
     tick(now?: number) {
         const t = now ?? performance.now();
-        for (const [itemId, lock] of this.itemLocks) {
-            if (
-                lock.endsAt !== Number.POSITIVE_INFINITY &&
-                t >= lock.endsAt
-            ) {
-                this.itemLocks.delete(itemId);
+        const before = this.itemLocks.length;
+        this.itemLocks = this.itemLocks.filter(
+            (lock) =>
+                lock.endsAt === Number.POSITIVE_INFINITY || t < lock.endsAt
+        );
+        if (this.itemLocks.length !== before) {
+            for (const [i, button] of this.buttons.entries()) {
+                this.applyLockVisual(button, this.slots[i]?.[0] ?? undefined);
             }
         }
         for (const [slot, button] of this.buttons.entries()) {

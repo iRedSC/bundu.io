@@ -114,19 +114,20 @@ onEquip:
   commands:
     - "give @s bundu:iridium 1"
   lockItem:
-    item: #bundu:swords
+    items: [#bundu:swords]            # and/or slots (not neither)
+    slots: [mainhand, offhand, helmet]
     lock: [equip, unequip, use, drop, craft]
     for: 5000
 onUnequip:
   unlockItem:
-    item: #bundu:swords
+    items: [#bundu:swords]
 ```
 
 | Event | Fields | Meaning |
 |---|---|---|
 | `commands` | string[] | Run slash commands as the wearer (leading `/` optional) |
-| `lockItem` | `item`, `lock`, `for?` | Lock matching item id(s) / `#tag`. `lock` is a list of `equip` \| `unequip` \| `use` \| `drop` \| `craft`. `for` is duration in ms (omit = until `unlockItem`). |
-| `unlockItem` | `item` | Clear locks for matching item id(s) / `#tag` |
+| `lockItem` | `items?`, `slots?`, `lock`, `for?` | Supply **`items` and/or `slots`** (not neither). `items` = item ids / `#tag`s; `slots` = `mainhand` \| `offhand` \| `helmet`. `lock` is `equip` \| `unequip` \| `use` \| `drop` \| `craft`. `for` is duration in ms (omit = until `unlockItem`). |
+| `unlockItem` | `items?`, `slots?` | Same items/slots rule — clear matching locks |
 
 Lock icons appear only while a restriction actively applies (e.g. `unequip` only after equipped). Denied `use` / `craft` flashes the lock on the slot and above the player name (with a circular remaining-time gauge). Craft-locked ingredients also show a lock on the recipe button. `lockItem` / `unlockItem` may be a single object or an array.
 

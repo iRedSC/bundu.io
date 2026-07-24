@@ -628,21 +628,31 @@ async function main() {
             if (kind === "attack" || kind === "place") {
                 return gui.inventory.denyAction(
                     gui.inventory.equippedMainHand,
-                    "use"
+                    "use",
+                    "mainhand"
                 );
             }
             // Block / eat — prefer off-hand, also flash if any equipped use-lock.
             if (
-                gui.inventory.denyAction(gui.inventory.equippedOffHand, "use")
+                gui.inventory.denyAction(
+                    gui.inventory.equippedOffHand,
+                    "use",
+                    "offhand"
+                )
             ) {
                 return true;
             }
             return (
                 gui.inventory.denyAction(
                     gui.inventory.equippedMainHand,
-                    "use"
+                    "use",
+                    "mainhand"
                 ) ||
-                gui.inventory.denyAction(gui.inventory.equippedHelmet, "use")
+                gui.inventory.denyAction(
+                    gui.inventory.equippedHelmet,
+                    "use",
+                    "helmet"
+                )
             );
         },
     });

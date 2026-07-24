@@ -108,12 +108,18 @@ export function tickItemButton(
 }
 
 export type ItemLockVisual = {
+    /**
+     * Registry item id, or `LOCK_ANY_ITEM` (-1) for slot-only locks.
+     */
+    itemId: number;
     /** `performance.now()` when the lock ends; `Infinity` = until unlock. */
     endsAt: number;
     /** Authored duration; 0 when permanent. */
     durationMs: number;
     /** Bitmask of restricted actions (see `@bundu/shared/item_lock`). */
     flags: number;
+    /** Bitmask of equipment slots this lock applies to. */
+    slotFlags: number;
 };
 
 const LOCK_FLASH_MS = 1200;

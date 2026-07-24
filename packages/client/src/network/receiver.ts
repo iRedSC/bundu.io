@@ -5,7 +5,6 @@ import {
 } from "@bundu/shared/packet_definitions";
 import { ClientPacketReceiver } from "./client_receiver";
 import { Serializer } from "@bundu/shared";
-import { lockFlagsHas } from "@bundu/shared/item_lock";
 import type { World } from "../world/world";
 import type { UI } from "../ui/ui";
 import type { ChatController } from "../ui/chat";
@@ -45,8 +44,8 @@ function applyCraftRecipeLocks(ui: UI): void {
         }
         let craftLock: ReturnType<UI["inventory"]["getLock"]>;
         for (const itemId of recipe.ingredients.keys()) {
-            const lock = ui.inventory.getLock(itemId);
-            if (lock && lockFlagsHas(lock.flags, "craft")) {
+            const lock = ui.inventory.getLock(itemId, "craft");
+            if (lock) {
                 craftLock = lock;
                 break;
             }

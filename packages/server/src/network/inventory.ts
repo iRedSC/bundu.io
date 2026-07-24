@@ -1,4 +1,5 @@
 import { ServerPacket } from "@bundu/shared/packet_definitions.js";
+import type { LockSlot } from "@bundu/shared/item_lock";
 import {
     addItem,
     ensureSlotCapacity,
@@ -216,6 +217,17 @@ function setSlot(
     }
 }
 
+function equipSlotToLockSlot(slot: EquipSlot): LockSlot {
+    switch (slot) {
+        case "mainHand":
+            return "mainhand";
+        case "offHand":
+            return "offhand";
+        case "helmet":
+            return "helmet";
+    }
+}
+
 function toggleSlot(
     target: GameObject,
     data: PlayerData,
@@ -224,18 +236,20 @@ function toggleSlot(
     ctx?: SelectEquipmentContext
 ) {
     const now = ctx?.world.gameTime ?? 0;
+    const lockSlot = equipSlotToLockSlot(slot);
     if (data[slot] === itemId) {
-        if (ctx && isActionLocked(target, itemId, "unequip", now)) return;
+        if (ctx && isActionLocked(target, itemId, "unequip", now, lockSlot))
+            return;
         clearSlot(target, data, slot, ctx);
         return;
     }
-    if (ctx && isActionLocked(target, itemId, "equip", now)) return;
+    if (ctx && isActionLocked(target, itemId, "equip", now, lockSlot)) return;
     const current = data[slot];
     if (
         ctx &&
         current !== undefined &&
         current !== itemId &&
-        isActionLocked(target, current, "unequip", now)
+        isActionLocked(target, current, "unequip", now, lockSlot)
     ) {
         return;
     }

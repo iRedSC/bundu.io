@@ -165,7 +165,7 @@ export class PlayerSystem extends System<GameEventMap> {
         }
 
         if (data.attacking && data.lastAttackTime && !data.blocking && !data.crafting) {
-            if (isActionLocked(player, data.mainHand, "use", time)) {
+            if (isActionLocked(player, data.mainHand, "use", time, "mainhand")) {
                 data.attacking = false;
             } else if (
                 data.lastAttackTime <
@@ -495,7 +495,8 @@ export class PlayerSystem extends System<GameEventMap> {
         const attributes = Attributes.get(player);
         const config = ItemConfigs.get(itemId);
         if (!data || !attributes || data.eating || config.type !== "food") return;
-        if (isActionLocked(player, itemId, "use", this.world.gameTime)) return;
+        if (isActionLocked(player, itemId, "use", this.world.gameTime, "offhand"))
+            return;
 
         data.attacking = false;
         data.eating = {
@@ -652,7 +653,13 @@ export class PlayerSystem extends System<GameEventMap> {
         }
         if (
             !stop &&
-            isActionLocked(player, data.mainHand, "use", this.world.gameTime)
+            isActionLocked(
+                player,
+                data.mainHand,
+                "use",
+                this.world.gameTime,
+                "mainhand"
+            )
         ) {
             data.attacking = false;
             return;
@@ -686,9 +693,27 @@ export class PlayerSystem extends System<GameEventMap> {
         }
         if (
             !stop &&
-            (isActionLocked(player, data.mainHand, "use", this.world.gameTime) ||
-                isActionLocked(player, data.offHand, "use", this.world.gameTime) ||
-                isActionLocked(player, data.helmet, "use", this.world.gameTime))
+            (isActionLocked(
+                player,
+                data.mainHand,
+                "use",
+                this.world.gameTime,
+                "mainhand"
+            ) ||
+                isActionLocked(
+                    player,
+                    data.offHand,
+                    "use",
+                    this.world.gameTime,
+                    "offhand"
+                ) ||
+                isActionLocked(
+                    player,
+                    data.helmet,
+                    "use",
+                    this.world.gameTime,
+                    "helmet"
+                ))
         ) {
             return;
         }
@@ -831,7 +856,13 @@ export class PlayerSystem extends System<GameEventMap> {
         const data = PlayerData.get(player);
         if (
             data &&
-            isActionLocked(player, data.mainHand, "use", this.world.gameTime)
+            isActionLocked(
+                player,
+                data.mainHand,
+                "use",
+                this.world.gameTime,
+                "mainhand"
+            )
         ) {
             return;
         }
