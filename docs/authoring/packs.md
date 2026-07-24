@@ -451,7 +451,7 @@ loot_table: copper
 | Field | Default | Meaning |
 |---|---|---|
 | `quantity` | `0` | Stock units |
-| `loot_table` | — | Loot table id (one harvest hit) |
+| `loot_table` | — | Loot table id, or an inline table (registered as this resource's `namespace:path`; errors if that id already exists) |
 | `level` | `0` | Vs tool `level` |
 | `multipliers` | `{}` | Map of item type → amount scale (`pickaxe`, `knife`, …) |
 | `exclusive` | `false` | Tool type must appear in `multipliers` |
@@ -778,7 +778,10 @@ Two recipes may share the same `result.item` — use distinct file/ids.
 
 ## Loot tables
 
-**Path:** `defs/<ns>/loot_tables/<id>.yml` — referenced by `loot_table:` on resources.
+**Path:** `defs/<ns>/loot_tables/<id>.yml` — referenced by `loot_table:` on resources
+(string id), **or** inline on the resource as an object (same schema). Inline tables
+register under the resource’s own `namespace:path` and throw if that loot table id
+already exists.
 
 **Fixed** (bundu’s style):
 
@@ -789,6 +792,17 @@ entries:
     count: 3
   - item: bear_fur
     count: 1
+```
+
+Inline on a resource:
+
+```yaml
+quantity: 4
+loot_table:
+  type: fixed
+  entries:
+    - item: meat
+      count: 3
 ```
 
 **Pool** (supported, unused in bundu): weighted entries, `rolls`, count ranges
